@@ -214,8 +214,14 @@ export default function AgentOverview({
             </button>
 
             {/* 3. Active Agents & Active Researchers (stacked) */}
-            <button type="button" className="aoc-kpi-panel aoc-kpi-panel-split" onClick={() => onNavigate?.(userProfile?.is_super_agent ? 'My Agent Accounts' : 'Researchers')}>
-              <div className="aoc-kpi-row">
+            <div className="aoc-kpi-panel aoc-kpi-panel-split">
+              <div 
+                className="aoc-kpi-row clickable-row" 
+                onClick={() => onNavigate?.(userProfile?.is_super_agent ? 'My Agent Accounts' : 'My Sub-Agents')}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onNavigate?.(userProfile?.is_super_agent ? 'My Agent Accounts' : 'My Sub-Agents'); }}
+              >
                 <div className="aoc-kpi-left-small">
                   <Users stroke="url(#metalGrad)" strokeWidth={1.5} size={48} style={{ filter: 'drop-shadow(0px 3px 3px rgba(0,0,0,0.8))' }} />
                 </div>
@@ -226,7 +232,14 @@ export default function AgentOverview({
                 </div>
               </div>
               <div className="aoc-kpi-divider-h" />
-              <div className="aoc-kpi-row" style={{ marginTop: '16px' }}>
+              <div 
+                className="aoc-kpi-row clickable-row" 
+                style={{ marginTop: '16px' }}
+                onClick={() => onNavigate?.('Researchers')}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onNavigate?.('Researchers'); }}
+              >
                 <div className="aoc-kpi-left-small">
                   <FlaskConical stroke="url(#metalGrad)" strokeWidth={1.5} size={48} style={{ filter: 'drop-shadow(0px 3px 3px rgba(0,0,0,0.8))' }} />
                 </div>
@@ -236,7 +249,7 @@ export default function AgentOverview({
                   <span className="metal-text row-label">ACTIVE RESEARCHERS</span>
                 </div>
               </div>
-            </button>
+            </div>
           </div>
         </div>
       </div>
@@ -388,7 +401,13 @@ export default function AgentOverview({
         .aoc-kpi-panel-split {
           flex-direction: column;
           align-items: stretch;
-          padding: 24px;
+          padding: 16px 24px;
+          cursor: default;
+        }
+        .aoc-kpi-panel-split:hover {
+          background-image: 
+            linear-gradient(180deg, #1C2732 0%, #0B1015 100%),
+            linear-gradient(135deg, #d1d6dc 0%, #6a7683 25%, #3a4249 50%, #909ba7 75%, #e6e9ec 100%);
         }
         
         .aoc-kpi-left {
@@ -429,6 +448,22 @@ export default function AgentOverview({
         .aoc-kpi-row {
           display: flex;
           align-items: center;
+        }
+        .clickable-row {
+          cursor: pointer;
+          border-radius: 6px;
+          transition: background 0.15s ease;
+          outline: none;
+        }
+        .clickable-row:hover {
+          background: rgba(255, 255, 255, 0.04);
+        }
+        .clickable-row:active {
+          background: rgba(255, 255, 255, 0.08);
+        }
+        .clickable-row:focus-visible {
+          outline: 2px solid var(--teal, #00C4BC);
+          outline-offset: 4px;
         }
         .aoc-kpi-right-row {
           display: flex;
