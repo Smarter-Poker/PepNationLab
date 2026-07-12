@@ -5,18 +5,66 @@ import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
 
 const CALCULATORS = [
-  { id: 'reconstitution', label: 'Reconstitution' },
-  { id: 'shelf-life', label: 'Shelf Life Tracker' },
-  { id: 'dilution', label: 'Serial Dilution' },
-  { id: 'concentration', label: 'Concentration Converter' },
-  { id: 'stability', label: 'Arrhenius Stability' },
-  { id: 'cost', label: 'Cost Per Dose' },
-  { id: 'pooling', label: 'Vial Pooling' },
-  { id: 'hplc-rt', label: 'HPLC RT Predictor' },
-  { id: 'mass-spec', label: 'Mass Spec m/z' },
-  { id: 'spps-cost', label: 'Fmoc-SPPS Cost' },
-  { id: 'solubility', label: 'Solubility Predictor' },
-  { id: 'vial-quantity', label: 'Vial Quantity Power' },
+  {
+    id: 'reconstitution',
+    label: 'Reconstitution',
+    desc: 'Calculate exactly how much bacteriostatic water to add to your lyophilized peptide vial to hit a target concentration, then read off your syringe draw in units.'
+  },
+  {
+    id: 'dilution',
+    label: 'Serial Dilution',
+    desc: 'Design multi-step dilution curves for dose-response assays. Calculates concentrations and pipetting volumes for each tube in the series.'
+  },
+  {
+    id: 'concentration',
+    label: 'Concentration Converter',
+    desc: 'Convert between mass units (mg/mL, mcg/mL, ng/mL) and molar units (mmol/L, µmol/L, nmol/L). Pulls molecular weight automatically from the compound database.'
+  },
+  {
+    id: 'stability',
+    label: 'Arrhenius Stability',
+    desc: 'Predicts how long a peptide stays potent at a new storage temperature using the Arrhenius equation — the same math used in pharmaceutical stability testing.'
+  },
+  {
+    id: 'cost',
+    label: 'Cost Per Dose',
+    desc: 'Enter a vial price, peptide mass, and your per-dose amount to instantly see cost-per-dose, doses-per-vial, and projected monthly / annual spend. Side-by-side vendor comparison included.'
+  },
+  {
+    id: 'pooling',
+    label: 'Vial Pooling',
+    desc: 'Aggregate multiple vials into one working stock. Accounts for pipette tip type, fluid viscosity, and transfer loss to give you the true final concentration.'
+  },
+  {
+    id: 'hplc-rt',
+    label: 'HPLC RT Predictor',
+    desc: 'Estimates reversed-phase HPLC retention time for a peptide sequence based on amino acid hydrophobicity (Kyte–Doolittle scale) — useful for method development.'
+  },
+  {
+    id: 'mass-spec',
+    label: 'Mass Spec m/z',
+    desc: 'Predicts ESI-MS charge-state envelopes (m/z peaks) for a peptide sequence. Enter the sequence to see expected [M+H]⁺, [M+2H]²⁺, and higher charge states.'
+  },
+  {
+    id: 'spps-cost',
+    label: 'Fmoc-SPPS Cost',
+    desc: 'Estimates solid-phase peptide synthesis reagent cost using Fmoc amino acid prices, coupling cycles, resin load, and scale — useful for budgeting custom synthesis runs.'
+  },
+  {
+    id: 'solubility',
+    label: 'Solubility Predictor',
+    desc: 'Predicts aqueous solubility of a peptide from its sequence using charge, hydrophobicity, and isoelectric point — flags sequences likely to precipitate.'
+  },
+  {
+    id: 'vial-quantity',
+    label: 'Vial Quantity Power',
+    desc: 'Calculates how many vials you need to complete a research protocol given a dose amount, schedule, number of subjects, and desired buffer supply.'
+  },
+  {
+    id: 'shelf-life',
+    label: 'Shelf Life Tracker',
+    desc: 'Track reconstituted vial shelf life and get expiry alerts based on the compound and storage temperature.'
+  },
 ];
 
 
@@ -148,7 +196,56 @@ export default function DynamicCalculatorHero({ onSelect }: { onSelect?: (id: st
         )}
       </div>
 
-      {/* Grid Overlay */}
+      {/* Grid Overlay — transparent hit-targets with rich hover tooltips */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        .calc-hero-btn { position: relative; background: transparent; border: none; cursor: pointer; width: 100%; height: 100%; display: block; }
+        .calc-hero-btn:hover .calc-tip { opacity: 1; pointer-events: auto; transform: translateY(0); }
+        .calc-tip {
+          position: absolute;
+          bottom: calc(100% + 8px);
+          left: 50%;
+          transform: translateX(-50%) translateY(6px);
+          min-width: 200px;
+          max-width: 240px;
+          background: rgba(8, 10, 20, 0.97);
+          border: 1px solid rgba(0, 229, 255, 0.35);
+          border-radius: 10px;
+          padding: 10px 13px;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.18s ease, transform 0.18s ease;
+          z-index: 999;
+          backdrop-filter: blur(12px);
+          box-shadow: 0 8px 32px rgba(0,0,0,0.8), 0 0 0 1px rgba(0,229,255,0.08);
+          text-align: left;
+        }
+        .calc-tip-name {
+          display: block;
+          font-weight: 800;
+          font-size: 12px;
+          color: #00E5FF;
+          margin-bottom: 5px;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+        }
+        .calc-tip-desc {
+          display: block;
+          font-size: 11px;
+          color: #A8B4C0;
+          line-height: 1.5;
+          font-weight: 400;
+          text-transform: none;
+        }
+        .calc-tip-cta {
+          display: inline-block;
+          margin-top: 6px;
+          font-size: 10px;
+          font-weight: 700;
+          color: #00E5FF;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+        }
+      ` }} />
       <div style={{ 
         position: 'absolute', 
         top: '45.2%', 
@@ -162,19 +259,39 @@ export default function DynamicCalculatorHero({ onSelect }: { onSelect?: (id: st
         rowGap: '6%',
         zIndex: 10
       }}>
-        <button type="button" aria-label="Reconstitution" style={buttonStyle} onClick={() => onSelect?.('reconstitution')} />
-        <button type="button" aria-label="Serial Dilution" style={buttonStyle} onClick={() => onSelect?.('dilution')} />
-        <button type="button" aria-label="Concentration Converter" style={buttonStyle} onClick={() => onSelect?.('concentration')} />
-        <button type="button" aria-label="Arrhenius Stability" style={buttonStyle} onClick={() => onSelect?.('stability')} />
-        <button type="button" aria-label="Cost Per Dose" style={buttonStyle} onClick={() => onSelect?.('cost')} />
-        <button type="button" aria-label="Vial Pooling" style={buttonStyle} onClick={() => onSelect?.('pooling')} />
-        
-        <button type="button" aria-label="HPLC RT Predictor" style={buttonStyle} onClick={() => onSelect?.('hplc-rt')} />
-        <button type="button" aria-label="Mass Spec m/z" style={buttonStyle} onClick={() => onSelect?.('mass-spec')} />
-        <button type="button" aria-label="Fmoc-SPPS Cost" style={buttonStyle} onClick={() => onSelect?.('spps-cost')} />
-        <button type="button" aria-label="Solubility Predictor" style={buttonStyle} onClick={() => onSelect?.('solubility')} />
-        <button type="button" aria-label="Vial Quantity Power" style={buttonStyle} onClick={() => onSelect?.('vial-quantity')} />
-        <div /> {/* Empty 6th slot */}
+        {/* Row 1: first 6 calculators */}
+        {CALCULATORS.slice(0, 6).map(calc => (
+          <button
+            key={calc.id}
+            type="button"
+            aria-label={calc.label}
+            className="calc-hero-btn"
+            onClick={() => onSelect?.(calc.id)}
+          >
+            <span className="calc-tip">
+              <span className="calc-tip-name">{calc.label}</span>
+              <span className="calc-tip-desc">{calc.desc}</span>
+              <span className="calc-tip-cta">Open Calculator →</span>
+            </span>
+          </button>
+        ))}
+        {/* Row 2: next 5 calculators + empty slot */}
+        {CALCULATORS.slice(6, 11).map(calc => (
+          <button
+            key={calc.id}
+            type="button"
+            aria-label={calc.label}
+            className="calc-hero-btn"
+            onClick={() => onSelect?.(calc.id)}
+          >
+            <span className="calc-tip">
+              <span className="calc-tip-name">{calc.label}</span>
+              <span className="calc-tip-desc">{calc.desc}</span>
+              <span className="calc-tip-cta">Open Calculator →</span>
+            </span>
+          </button>
+        ))}
+        <div /> {/* Empty 6th slot in row 2 */}
       </div>
     </div>
   );
