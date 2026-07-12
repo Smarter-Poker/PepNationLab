@@ -363,12 +363,12 @@ export default function DiscoveryHero({
             if (query.trim()) {
               void submitTypedGoal();
             } else {
-              const el = document.getElementById('discovery-search-input') as HTMLInputElement | null;
-              if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                el.focus();
-                setSuggestOpen(true);
-              }
+              // No goal typed yet. The search box sits at the very top of this
+              // tall hero and programmatic scrolling is unreliable on this page,
+              // so focusing it did nothing the user could see -- the button
+              // looked dead. Open the guided wizard instead: it collects the
+              // research goal in-place and funnels into the same match engine.
+              setWizardOpen(true);
             }
           }}
           title="Match Me"
