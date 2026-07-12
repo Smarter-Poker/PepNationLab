@@ -1161,13 +1161,20 @@ export default function AgentDashboardClient({
         {/* TAB: Discount Coupons */}
         {activeTab === 'Coupons' && <AgentCoupons />}
 
-        {/* TAB: My Sub-Agents / My Agent Accounts (team management) */}
-        {(activeTab === 'My Sub-Agents' || activeTab === 'My Agent Accounts') && (
+        {/* TAB: My Sub-Agents (regular agents manage their promoted sub-agents) */}
+        {activeTab === 'My Sub-Agents' && (
           <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
             <AgentSubAgents />
           </div>
         )}
 
+        {/* TAB: My Agent Accounts (super-agents create + manage their agent accounts) */}
+        {activeTab === 'My Agent Accounts' && (
+          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+            <AgentDownline agentId={userProfile.id} />
+            <AgentNetworkMap />
+          </div>
+        )}
 
 
 
@@ -1284,4 +1291,3 @@ export default function AgentDashboardClient({
     </div>
   );
 }
-
