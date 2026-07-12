@@ -10,6 +10,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { GraduationCap } from 'lucide-react';
 import LearnGuidesExplorer from '@/components/research/LearnGuidesExplorer';
+import { LEARN_GUIDES } from '@/lib/research-education';
 
 export const metadata: Metadata = {
   title: 'Peptide Education Hub | Learn About Research Peptides | Pep Nation Lab',
@@ -49,7 +50,7 @@ export default function LearnHubPage() {
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
           { '@type': 'ListItem', position: 2, name: 'Research Library', item: 'https://pepnationlab.com/research' },
-          { '@type': 'ListItem', position: 3, name: 'learn', item: 'https://pepnationlab.com/research/learn' }
+          { '@type': 'ListItem', position: 3, name: 'Learn', item: 'https://pepnationlab.com/research/learn' }
         ]
       }
     ]
@@ -78,6 +79,32 @@ export default function LearnHubPage() {
       </header>
 
       <LearnGuidesExplorer />
+
+      <section aria-label="All Education Guides" style={{ marginTop: 'var(--space-7, 48px)' }}>
+        <h2 className="sr-only">Complete Guide Library</h2>
+        {LEARN_GUIDES.map((guide) => (
+          <article key={guide.slug} style={{ marginBottom: 'var(--space-7, 48px)' }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--white, #FFFFFF)', margin: '0 0 var(--space-2, 8px)' }}>
+              {guide.title}
+            </h2>
+            <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '1rem', margin: '0 0 var(--space-4, 16px)' }}>
+              {guide.intro}
+            </p>
+            {guide.sections.map((section, i) => (
+              <div key={i} style={{ marginBottom: 'var(--space-4, 16px)' }}>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--white, #FFFFFF)', margin: '0 0 var(--space-2, 8px)' }}>
+                  {section.heading}
+                </h3>
+                {section.body.split('\n\n').map((para, j) => (
+                  <p key={j} style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.95rem', lineHeight: 1.7, margin: '0 0 var(--space-2, 8px)' }}>
+                    {para}
+                  </p>
+                ))}
+              </div>
+            ))}
+          </article>
+        ))}
+      </section>
 
       <p style={{ fontSize: '0.78rem', color: 'var(--grey-500, #6B7785)', marginTop: 'var(--space-7, 48px)' }}>
         For Laboratory Research Use Only. This Material Restates Published Science And Is Not Medical Advice, Dosing
