@@ -50,7 +50,15 @@ export async function POST(req: NextRequest) {
     // Upgrading to Super Agent re-triggers onboarding so the new super agent
     // completes the super-agent setup (incl. agent markup) before using the
     // dashboard. A downgrade does not force re-onboarding.
-    const upgradeUpdate: Record<string, unknown> = { is_super_agent };
+    //
+    // CRITICAL: role MUST be kept in sync with is_super_agent. Several
+    // permission gates check role === 'super_agent' exclusively (not the flag).
+    // The previous bug was that this route only set the flag and left role='agent',
+    // causing super agents to be treated as regular agents in role-gated paths.
+    const upgradeUpdate: Record<string, unknown> = {
+      is_super_agent,
+      role: is_super_agent ? 'super_agent' : 'agent',
+    };
     if (is_super_agent === true) {
       upgradeUpdate.onboarding_completed_at = null;
       // Clear stale step acknowledgments so the agent does not skip the new

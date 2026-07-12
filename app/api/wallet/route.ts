@@ -59,7 +59,13 @@ export async function GET() {
   const role = (profile.role as string) || 'researcher';
   const accountType = (profile.account_type as string | null) ?? null;
   const prepaidBalance = num(profile.prepaid_balance);
-  const creditLimit = profile.credit_limit != null ? num(profile.credit_limit) : null;
+  // Only surface a credit line to accounts explicitly set to account_type='credit'.
+  // All profiles have a credit_limit DB column (default $100k) as an internal
+  // ceiling, but prepaid agents must NOT see it as an available credit line.
+  const creditLimit =
+    accountType === 'credit' && profile.credit_limit != null
+      ? num(profile.credit_limit)
+      : null;
 
   // ── Legacy store credit (vestigial) ───────────────────────────────
   const { data: scRows } = await service
