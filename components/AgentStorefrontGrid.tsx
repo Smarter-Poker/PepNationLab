@@ -2483,19 +2483,19 @@ export default function AgentStorefrontGrid({
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                           {isOnSale && (
                             <span style={{ fontSize: '0.95rem', color: 'var(--grey-500)', textDecoration: 'line-through', fontWeight: 600 }}>
-                              ${displayOriginalPrice.toFixed(2)}
+                              ${formatPrice(displayOriginalPrice)}
                             </span>
                           )}
                           {_showMarketAvg && (
                             <span style={{ fontSize: '0.95rem', color: 'var(--grey-500)', textDecoration: 'line-through', fontWeight: 600 }}>
-                              ${_marketAvgDisplay.toFixed(2)}
+                              ${formatPrice(_marketAvgDisplay)}
                             </span>
                           )}
                           <span className="sf-product-price-nickel" style={{
                             fontSize: '1.2rem', fontWeight: 800,
                             fontFamily: 'var(--font-brand)',
                           }}>
-                            {displaySizeText} &nbsp;${displayPrice.toFixed(2)}
+                            {displaySizeText} &nbsp;${formatPrice(displayPrice)}
                           </span>
                         </div>
                       </>
@@ -3559,16 +3559,16 @@ export default function AgentStorefrontGrid({
                         <span style={{ color: 'var(--white)', fontWeight: 800, fontSize: '1.25rem', letterSpacing: '0.01em' }}>
                           {saved > 0.004 && (
                             <span style={{ textDecoration: 'line-through', color: 'var(--grey-400)', fontWeight: 600, fontSize: '0.9rem', marginRight: 8 }}>
-                              ${flatTotal.toFixed(2)}
+                              ${formatPrice(flatTotal)}
                             </span>
                           )}
-                          ${discTotal.toFixed(2)}
+                          ${formatPrice(discTotal)}
                         </span>
                       </div>
                       {saved > 0.004 && (
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#68D391', fontWeight: 700, marginBottom: 4 }}>
                           <span>Quantity Discounts Applied</span>
-                          <span>You Save ${saved.toFixed(2)}</span>
+                          <span>You Save ${formatPrice(saved)}</span>
                         </div>
                       )}
                       {totalCartItems > 0 && totalCartItems < overallMin && (
@@ -3599,7 +3599,7 @@ export default function AgentStorefrontGrid({
                     }}>
                       {remaining <= 0
                         ? 'Your Order Qualifies For Free Shipping'
-                        : `Add $${remaining.toFixed(2)} More To Unlock Free Shipping On Orders $100+`}
+                        : `Add $${formatPrice(remaining)} More To Unlock Free Shipping On Orders $100+`}
                     </div>
                   );
                 })()}
@@ -3759,7 +3759,7 @@ export default function AgentStorefrontGrid({
                       {toTitleCase(detailProduct.name)}
                     </div>
                     <div style={{ fontSize: '0.8rem', color: primaryColor, fontWeight: 800, fontFamily: 'var(--font-brand)' }}>
-                      ${stickyPer.toFixed(2)} Per Vial{stickyQty > 1 ? ` - ${stickyQty} Selected` : ''}
+                      ${formatPrice(stickyPer)} Per Vial{stickyQty > 1 ? ` - ${stickyQty} Selected` : ''}
                     </div>
                   </div>
                   <DynamicAddToCartButton
@@ -4137,8 +4137,8 @@ export default function AgentStorefrontGrid({
                                 </div>
                               )}
                               <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, whiteSpace: 'nowrap' }}>
-                                <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>${unitPrice.toFixed(2)} × {qty} =</span>
-                                <span style={{ fontSize: '1.4rem', fontWeight: 800, color: primaryColor, fontFamily: 'var(--font-brand)' }}>${lineTotal.toFixed(2)}</span>
+                                <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>${formatPrice(unitPrice)} × {qty} =</span>
+                                <span style={{ fontSize: '1.4rem', fontWeight: 800, color: primaryColor, fontFamily: 'var(--font-brand)' }}>${formatPrice(lineTotal)}</span>
                               </div>
                             </div>
                             <DynamicAddToCartButton
@@ -4174,7 +4174,7 @@ export default function AgentStorefrontGrid({
                                   {t.pct === 0 && tiers.length > 1 && <span style={{ color: 'var(--grey-400)', marginLeft: 8, fontSize: '0.75rem' }}>Standard</span>}
                                 </span>
                                 <span style={{ fontSize: '0.95rem', fontWeight: 700, fontFamily: 'var(--font-brand)', color: isActive ? primaryColor : 'var(--grey-300)' }}>
-                                  ${tierPrice.toFixed(2)}/ea
+                                  ${formatPrice(tierPrice)}/ea
                                 </span>
                               </div>
                             );
@@ -4272,7 +4272,7 @@ export default function AgentStorefrontGrid({
                                   {tier.min}+ Vials <span style={{ color: '#68D391', marginLeft: 8, fontSize: '0.9rem', fontWeight: 700 }}>{tier.pct}% Off</span>
                                 </span>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                  <span style={{ fontSize: '0.9rem', fontWeight: 700, fontFamily: 'var(--font-brand)', color: 'var(--grey-300)' }}>${dp.toFixed(2)} / Vial</span>
+                                  <span style={{ fontSize: '0.9rem', fontWeight: 700, fontFamily: 'var(--font-brand)', color: 'var(--grey-300)' }}>${formatPrice(dp)} / Vial</span>
                                   <button
                                     type="button"
                                     aria-label={`Add ${tier.min} Vials To Cart`}
