@@ -1017,6 +1017,11 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
       setServerTotal(data.total);
       setTotalAdjusted(Math.abs(data.total - grandTotal) > 0.01);
       setOrderSuccess(data.orderId);
+      // Funnel analytics (best-effort, non-blocking): order completed.
+      trackStorefrontEvent(agentSlug, 'order_complete', {
+        order_id: data.orderId,
+        amount_cents: Math.round(data.total * 100),
+      });
       clearAllCarts();
       resetIdempotencyKey();
       submittedRef.current = false;
