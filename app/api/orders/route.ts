@@ -1196,7 +1196,7 @@ export async function POST(request: NextRequest) {
         // Previously this was incorrectly set to superAgentProfile.id, making the
         // order invisible in the agent's own sales dashboard. superAgentProfile is
         // used only for pricing/billing-chain — it does NOT own the sale.
-        agent_id: isAgentSelfBuy ? agentProfile.id : (agentProfile ? agentProfile.id : null),
+        agent_id: agentProfile?.id || null,
         is_wholesale_restock: isWholesaleRestock,
         status: initialStatus,
         fulfillment_method: fulfillmentMethod,
