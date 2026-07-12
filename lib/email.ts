@@ -352,7 +352,7 @@ export async function sendOrderConfirmationEmail(params: {
 }): Promise<SendEmailResult> {
   const name = (params.fullName || '').trim() || 'Researcher';
   const short = shortId(params.orderId);
-  const money = (n: number) => `$${Number(n).toFixed(2)}`;
+  const money = (n: number) => `$${(Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const items = params.itemsSummary
     ? `<p style="font-size:13px;line-height:1.7;color:#A8B4C0;margin:0 0 16px;">${escapeHtml(params.itemsSummary)}</p>`
     : '';

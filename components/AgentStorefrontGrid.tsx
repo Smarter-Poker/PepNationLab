@@ -183,7 +183,7 @@ function fuzzyMatch(query: string, text: string): boolean {
 }
 
 function formatPrice(price: number): string {
-  return price.toFixed(2);
+  return (Number(price) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 import { highlightText, splitProductName, getEditDistance } from '@/lib/storefront-helpers';
