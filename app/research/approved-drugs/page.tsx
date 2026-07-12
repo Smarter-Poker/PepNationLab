@@ -109,7 +109,7 @@ export default async function ResearchApprovedDrugsPage() {
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
           { '@type': 'ListItem', position: 2, name: 'Research Library', item: 'https://pepnationlab.com/research' },
-          { '@type': 'ListItem', position: 3, name: 'approved drugs', item: 'https://pepnationlab.com/research/approved-drugs' }
+          { '@type': 'ListItem', position: 3, name: 'Approved Drugs', item: 'https://pepnationlab.com/research/approved-drugs' }
         ]
       }
     ] as Record<string, unknown>[]

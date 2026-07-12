@@ -62,7 +62,7 @@ export default async function ResearchByMechanismPage() {
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
           { '@type': 'ListItem', position: 2, name: 'Research Library', item: 'https://pepnationlab.com/research' },
-          { '@type': 'ListItem', position: 3, name: 'by mechanism', item: 'https://pepnationlab.com/research/by-mechanism' }
+          { '@type': 'ListItem', position: 3, name: 'By Mechanism', item: 'https://pepnationlab.com/research/by-mechanism' }
         ]
       }
     ]
