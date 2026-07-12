@@ -42,7 +42,14 @@ export async function GET() {
       return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
     }
 
-    return NextResponse.json({ data });
+    // Strip the plaintext provisioned_password from the list payload; expose
+    // only a boolean flag. The password itself is fetched on demand via the
+    // audited /api/admin/agents/reveal-password endpoint.
+    const rows = ((data ?? []) as unknown as Array<Record<string, unknown>>).map((r) => {
+      const { provisioned_password, ...rest } = r;
+      return { ...rest, has_provisioned_password: provisioned_password != null };
+    });
+    return NextResponse.json({ data: rows });
   } catch (err) {
     console.error('[admin/agents] GET error:', err);
     return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });

@@ -79,8 +79,10 @@ export async function GET(req: NextRequest) {
     }
     const enriched = rows.map((r: any) => {
       const owner = r.referring_agent_id ? ownerMap[r.referring_agent_id] : undefined;
+      const { provisioned_password, ...rest } = r;
+      void provisioned_password;
       return {
-        ...r,
+        ...rest,
         referring_agent_name: owner?.name ?? null,
         referring_agent_slug: owner?.slug ?? null,
         referring_agent_role: owner?.role ?? null,

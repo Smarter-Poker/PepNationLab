@@ -992,7 +992,7 @@ function PricingConfig({ agentId }: { agentId: string }) {
       {showConfig && (
         <div style={{ padding: 'var(--space-5) var(--space-8) var(--space-8)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
           <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', marginBottom: 'var(--space-2)' }}>
-            Configure Quantity-Based Pricing And Bulk Volume Discounts For Your Storefront.
+            Configure Quantity-Based Pricing For Your Storefront.
           </p>
           
           <div style={{ background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.2)', padding: '12px 16px', borderRadius: 8, marginBottom: 'var(--space-6)', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
@@ -1050,63 +1050,6 @@ function PricingConfig({ agentId }: { agentId: string }) {
                 <strong style={{ color: '#68D391' }}>20% Off</strong>
               </div>
             </div>
-          </div>
-
-          <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.05)', margin: 'var(--space-4) 0' }} />
-
-          {/* Bulk Discounts Section */}
-          <div style={{ marginBottom: 'var(--space-6)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 4 }}>
-                  <h4 style={{ color: '#fff', fontSize: '1.05rem', margin: 0 }}>Bulk Volume Discounts</h4>
-                  <button 
-                    type="button" 
-                    onClick={() => setShowBulkExplain(!showBulkExplain)}
-                    style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', fontSize: '0.7rem', padding: '2px 8px', borderRadius: 12, cursor: 'pointer', transition: 'background 0.2s' }}
-                  >
-                    {showBulkExplain ? 'Hide Explanation' : 'Explain Bulk Pricing'}
-                  </button>
-                </div>
-                <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', margin: 0 }}>Offer Discounts For Large Quantity Orders (100+ Vials). Bulk Volume Discounts Are Permanently Active For All Users.</p>
-              </div>
-              <div style={{ padding: '4px 12px', background: 'rgba(0,196,188,0.1)', color: 'var(--teal)', borderRadius: 12, fontSize: '0.75rem', fontWeight: 600, border: '1px solid rgba(0,196,188,0.2)' }}>
-                ALWAYS ON
-              </div>
-            </div>
-
-            {showBulkExplain && (
-              <div style={{ background: 'var(--surface-2)', padding: '12px 16px', borderRadius: 8, marginBottom: 'var(--space-4)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                <p style={{ fontSize: '0.85rem', color: 'var(--silver)', margin: 0, lineHeight: 1.5 }}>
-                  How It Works: Bulk Pricing Automatically Applies A Percentage Discount To The Entire Order Subtotal When The Customer&apos;s Cart Reaches A Specific Total Vial Count. For Example, If A Customer Buys 50 Vials Of BPC-157 And 50 Vials Of TB-500, They Reach The 100-Vial Tier And Receive The Discount Off Their Total. This Encourages Larger Overall Purchases Across Your Entire Catalog. This Feature Is Always Active To Ensure High Conversions.
-                </p>
-              </div>
-            )}
-
-            {enableBulk && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                {bulkTiers.map((tier, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', fontSize: '0.85rem' }}>
-                    <input type="number" min={1} className="form-input" style={{ width: 80, padding: '4px 8px', height: 32 }}
-                      value={tier.min_qty} onChange={e => {
-                        const next = [...bulkTiers]; next[i] = { ...next[i], min_qty: Number(e.target.value) || 1 }; setBulkTiers(next);
-                      }} />
-                    <span style={{ color: 'var(--grey-400)' }}>+ vials =</span>
-                    <input type="number" min={0} max={100} className="form-input" style={{ width: 60, padding: '4px 8px', height: 32 }}
-                      value={tier.discount_percent} onChange={e => {
-                        const next = [...bulkTiers]; next[i] = { ...next[i], discount_percent: Number(e.target.value) || 0 }; setBulkTiers(next);
-                      }} />
-                    <span style={{ color: 'var(--grey-400)' }}>% off</span>
-                    <button type="button" onClick={() => setBulkTiers(prev => prev.filter((_, j) => j !== i))}
-                      style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: '0.8rem' }}>Remove</button>
-                  </div>
-                ))}
-                <button type="button" onClick={() => setBulkTiers(prev => [...prev, { min_qty: 100, discount_percent: 5 }])}
-                  className="btn btn-secondary btn-sm" style={{ alignSelf: 'flex-start', fontSize: '0.78rem' }}>
-                  + Add Tier
-                </button>
-              </div>
-            )}
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>

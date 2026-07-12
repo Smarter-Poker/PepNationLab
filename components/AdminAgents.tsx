@@ -38,11 +38,28 @@ export default function AdminAgents() {
   const [researchers, setResearchers] = useState<any[]>([]);
   const [researchersLoading, setResearchersLoading] = useState(true);
   const [researchersExpanded, setResearchersExpanded] = useState(true);
+  // Provisioned passwords are no longer shipped in the admin list payloads; they
+  // are fetched on demand from an audited endpoint only when an admin reveals one.
+  const [fetchedPasswords, setFetchedPasswords] = useState<Record<string, string>>({});
+  const fetchRevealedPassword = async (userId: string) => {
+    if (fetchedPasswords[userId]) return;
+    try {
+      const res = await fetch('/api/admin/agents/reveal-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && typeof data.password === 'string') {
+        setFetchedPasswords(prev => ({ ...prev, [userId]: data.password }));
+      }
+    } catch { /* ignore */ }
+  };
   const [revealedResearcherPasswords, setRevealedResearcherPasswords] = useState<Set<string>>(new Set());
   const toggleRevealResearcherPassword = (id: string) => {
     setRevealedResearcherPasswords(prev => {
       const next = new Set(prev);
-      if (next.has(id)) { next.delete(id); } else { next.add(id); }
+      if (next.has(id)) { next.delete(id); } else { next.add(id); void fetchRevealedPassword(id); }
       return next;
     });
   };
@@ -60,7 +77,7 @@ export default function AdminAgents() {
   const toggleRevealPassword = (agentId: string) => {
     setRevealedPasswords(prev => {
       const next = new Set(prev);
-      if (next.has(agentId)) { next.delete(agentId); } else { next.add(agentId); }
+      if (next.has(agentId)) { next.delete(agentId); } else { next.add(agentId); void fetchRevealedPassword(agentId); }
       return next;
     });
   };
@@ -512,10 +529,10 @@ export default function AdminAgents() {
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span style={{ fontSize: '0.7rem', color: 'var(--grey-500)', minWidth: 54 }}>Password</span>
-                      {agent.provisioned_password ? (
+                      {agent.has_provisioned_password ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                           <span style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: revealedPasswords.has(agent.id) ? '#00C4BC' : 'var(--silver)', letterSpacing: revealedPasswords.has(agent.id) ? 'normal' : '0.1em' }}>
-                            {revealedPasswords.has(agent.id) ? agent.provisioned_password : '••••••••'}
+                            {revealedPasswords.has(agent.id) ? (fetchedPasswords[agent.id] ?? '...') : '••••••••'}
                           </span>
                           <button
                             onClick={() => toggleRevealPassword(agent.id)}
@@ -762,10 +779,10 @@ export default function AdminAgents() {
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <span style={{ fontSize: '0.7rem', color: 'var(--grey-500)', minWidth: 54 }}>Password</span>
-                        {r.provisioned_password ? (
+                        {r.has_provisioned_password ? (
                           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                             <span style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: revealedResearcherPasswords.has(r.id) ? '#00C4BC' : 'var(--silver)', letterSpacing: revealedResearcherPasswords.has(r.id) ? 'normal' : '0.1em' }}>
-                              {revealedResearcherPasswords.has(r.id) ? r.provisioned_password : '••••••••'}
+                              {revealedResearcherPasswords.has(r.id) ? (fetchedPasswords[r.id] ?? '...') : '••••••••'}
                             </span>
                             <button
                               onClick={() => toggleRevealResearcherPassword(r.id)}

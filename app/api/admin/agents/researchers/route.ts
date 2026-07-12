@@ -38,10 +38,14 @@ export async function GET() {
       }
     }
 
-    const enriched = (data ?? []).map(r => ({
-      ...r,
-      parent_agent_name: r.parent_agent_id ? (parentNames[r.parent_agent_id] ?? 'Unknown') : null,
-    }));
+    const enriched = (data ?? []).map(r => {
+      const { provisioned_password, ...rest } = r as Record<string, unknown>;
+      return {
+        ...rest,
+        has_provisioned_password: provisioned_password != null,
+        parent_agent_name: r.parent_agent_id ? (parentNames[r.parent_agent_id] ?? 'Unknown') : null,
+      };
+    });
 
     return NextResponse.json({ data: enriched });
   } catch (err) {
