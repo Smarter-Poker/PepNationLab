@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { resolveEffectiveUserId } from '@/lib/impersonation';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,10 +51,14 @@ export async function GET() {
 
   const service = await createServiceClient();
 
+  // Honor an active admin "View As" session so the wallet reflects the agent
+  // being viewed, not the admin's own $100k balance.
+  const { effectiveUserId } = await resolveEffectiveUserId(user.id);
+
   const { data: profile } = await service
     .from('profiles')
     .select('role, account_type, prepaid_balance, credit_limit')
-    .eq('id', user.id)
+    .eq('id', effectiveUserId)
     .maybeSingle();
 
   if (!profile) {
@@ -75,7 +80,7 @@ export async function GET() {
   const { data: scRows } = await service
     .from('store_credits')
     .select('id, amount, balance_before, balance_after, type, description, created_at')
-    .eq('user_id', user.id)
+    .eq('user_id', effectiveUserId)
     .order('created_at', { ascending: false })
     .limit(500);
 
@@ -85,7 +90,7 @@ export async function GET() {
   const { data: btRows } = await service
     .from('balance_transactions')
     .select('id, type, amount, balance_before, balance_after, description, created_at')
-    .eq('agent_id', user.id)
+    .eq('agent_id', effectiveUserId)
     .order('created_at', { ascending: false })
     .limit(500);
 
@@ -95,7 +100,7 @@ export async function GET() {
     const { data: stmts } = await service
       .from('weekly_statements')
       .select('total_owed')
-      .eq('agent_id', user.id)
+      .eq('agent_id', effectiveUserId)
       .eq('status', 'pending_payment');
     creditUsed = (stmts ?? []).reduce((acc, s) => acc + num(s.total_owed), 0);
   }

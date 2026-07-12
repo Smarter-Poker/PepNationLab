@@ -94,3 +94,27 @@ export async function getImpersonationContext(): Promise<ImpersonationContext | 
     targetName: (target?.full_name as string | null) ?? null,
   };
 }
+
+
+/**
+ * Resolve the EFFECTIVE user id for per-user data reads (wallet, balances,
+ * statements, etc.). When the authenticated admin has an active "View As"
+ * impersonation session that THEY started, this returns the impersonated
+ * target's id so the target's own data is served instead of the admin's own.
+ * Otherwise it returns the authenticated user's id unchanged.
+ *
+ * This is the piece impersonation was missing: the Supabase auth session stays
+ * bound to the admin (see getImpersonationContext), so any money/data route
+ * that keys off auth.getUser() alone would otherwise serve the ADMIN's rows
+ * while "viewing as" an agent -- e.g. rendering the admin's $100k prepaid
+ * balance as that agent's credit line.
+ */
+export async function resolveEffectiveUserId(
+  authedUserId: string,
+): Promise<{ effectiveUserId: string; impersonating: boolean; targetUserId: string | null }> {
+  const ctx = await getImpersonationContext();
+  if (ctx && ctx.impersonatorId === authedUserId) {
+    return { effectiveUserId: ctx.targetUserId, impersonating: true, targetUserId: ctx.targetUserId };
+  }
+  return { effectiveUserId: authedUserId, impersonating: false, targetUserId: null };
+}

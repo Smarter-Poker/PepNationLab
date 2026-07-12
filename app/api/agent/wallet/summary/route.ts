@@ -2,6 +2,7 @@
 // Powers WalletStatusStrip and the /wallet hero card.
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { resolveEffectiveUserId } from '@/lib/impersonation';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -13,10 +14,14 @@ export async function GET() {
   if (authError || !user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
   const svc = await createServiceClient();
+
+  // Honor an active admin "View As" session so this summary reflects the agent
+  // being viewed, not the admin's own balance.
+  const { effectiveUserId } = await resolveEffectiveUserId(user.id);
   const { data: profile } = await svc
     .from('profiles')
     .select('id, role, account_type, prepaid_balance, credit_limit, credit_used, preferred_payout_handle')
-    .eq('id', user.id)
+    .eq('id', effectiveUserId)
     .maybeSingle();
   if (!profile) return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
 
@@ -29,7 +34,7 @@ export async function GET() {
   const { data: openStmts } = await svc
     .from('weekly_statements')
     .select('id, total_owed, status, week_start, week_end, due_date')
-    .eq('agent_id', user.id)
+    .eq('agent_id', effectiveUserId)
     .in('status', ['open', 'pending_payment'])
     .order('week_start', { ascending: false });
 
@@ -50,7 +55,7 @@ export async function GET() {
   // Forecast WIP this week
   let forecastNext = 0;
   // R24 hotfix: forecast RPC requires auth.uid(); call via user-authed client.
-  const { data: forecast, error: forecastError } = await supabase.rpc('forecast_next_statement', { p_agent_id: user.id });
+  const { data: forecast, error: forecastError } = await supabase.rpc('forecast_next_statement', { p_agent_id: effectiveUserId });
   if (forecastError) console.error('[wallet/summary] forecast RPC error:', forecastError.message);
   if (typeof forecast === 'number') forecastNext = forecast;
 
