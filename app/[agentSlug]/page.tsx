@@ -282,19 +282,21 @@ export default async function AgentStorefrontPage({ params }: Props) {
     notFound(); // returns HTTP 404; prevents bots indexing dead storefronts as valid pages
   }
 
-  // OWNER RULE (2026-07-07): Guests ALWAYS browse the admin / house storefront
-  // (researchstore -- Daniel Bekavac) so they always see admin pricing. Any
-  // unauthenticated visitor who lands on a different agent's storefront is
-  // redirected to the house store. Signed-in researchers, agents, and store
-  // owners continue to see their own storefront and pricing untouched.
-  // NOTE: this intentionally consolidates the anonymous storefront experience
-  // onto researchstore (crawlers are anonymous, so agent-store URLs 302 here
-  // for bots too -- SEO focus is /research and /peptides, not agent stores).
+  // GUEST QR / LINK RULE (2026-07-12): a guest who scans an agent QR code or
+  // opens an agent storefront link lands on the public HOME / sign-up page
+  // first -- a clean, welcoming first screen instead of a bare storefront (and
+  // no longer the full-screen legal wall that read as a broken site). Guests
+  // enter the store via "Continue As Guest" on the landing page.
+  //
+  // The house store (researchstore -- Daniel Bekavac) still renders directly
+  // for guests AND for anonymous crawlers, so it stays indexable and remains
+  // the destination "Continue As Guest" lands on. Signed-in researchers,
+  // agents, and store owners continue to see their own storefront untouched.
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user && agentSlug !== DEFAULT_STORE_SLUG) {
-    redirect(`/${DEFAULT_STORE_SLUG}`);
+    redirect('/');
   }
 
   if (agent.is_active === false) {

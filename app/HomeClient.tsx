@@ -20,9 +20,9 @@ import { isDisclaimerAccepted, recordDisclaimerAcceptance } from '@/lib/disclaim
 // keyword stuffing. The image itself is never modified.
 //
 // Flow: The Landing Artwork Is ALWAYS The First Thing A Visitor Sees.
-// Clicking ANY Zone Checks The Layer-1 Disclaimer; First-Time Visitors
-// Get The Mandatory Research-Only Acknowledgment Before Being Taken To
-// Their Destination (Log In, Create Account, Guest, Etc.).
+// Only "Continue As Guest" (entering the store without an account) shows the
+// Research-Only acknowledgment before navigating. Log In and Create Account go
+// straight through -- sign-up and checkout each carry their own acknowledgment.
 
 // Standard "visually hidden" pattern: present in the DOM and the accessibility
 // tree (so crawlers and screen readers read it), but painted 1px and clipped so
@@ -67,14 +67,25 @@ export default function HomeClient() {
   const router = useRouter();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
 
+  // Only ENTERING THE STORE as a guest requires the Research-Only
+  // acknowledgment here. Both "Continue As Guest" and the "Browse The Research
+  // Catalog" badge point at the house store, so we gate by destination. Every
+  // other zone (Log In, Create Account, and the research / education links)
+  // navigates straight through -- sign-up and checkout carry their own.
+  const STORE_HREF = `/${DEFAULT_STORE_SLUG}`;
+
   const handleZoneClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
-    if (isDisclaimerAccepted()) {
-      router.push(href);
+    const isGuestStoreEntry =
+      href === STORE_HREF ||
+      href.startsWith(`${STORE_HREF}?`) ||
+      href.startsWith(`${STORE_HREF}#`);
+    if (isGuestStoreEntry && !isDisclaimerAccepted()) {
+      // First-time guest entering the store: acknowledge first, then navigate.
+      setPendingHref(href);
       return;
     }
-    // First-Time Visitor: Show The Mandatory Acknowledgment Before Navigating.
-    setPendingHref(href);
+    router.push(href);
   };
 
   const handleAccept = () => {
