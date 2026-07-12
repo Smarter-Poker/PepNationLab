@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useTransition, useEffect, useMemo } from 'react';
+import { useState, useTransition, useEffect, useMemo, useRef, useCallback } from 'react';
 import SmartStackBuilder from '@/components/researcher/SmartStackBuilder';
-import { Heart, Trash2, ExternalLink, PackageOpen, History, LayoutGrid, List as ListIcon, Search, X, Check, ShoppingCart, Info, TrendingUp, TrendingDown, XCircle, Layers, FlaskConical, Zap, Target, Activity, Calendar, Syringe, Flame, Clock, Droplet, MapPin, Repeat, ChevronRight, Beaker, Gauge, Camera } from 'lucide-react';
+import { Heart, Trash2, ExternalLink, PackageOpen, History, LayoutGrid, List as ListIcon, Search, X, Check, ShoppingCart, Info, TrendingUp, TrendingDown, XCircle, Layers, FlaskConical, Zap, Target, Activity, Calendar, Syringe, Flame, Clock, Droplet, MapPin, Repeat, ChevronRight, Beaker, Gauge, Camera, Bell, BellOff } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -229,6 +229,44 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   const [scheduleUnit, setScheduleUnit] = useState('mcg');
   const [scheduleFrequency, setScheduleFrequency] = useState('Every Day');
   const [selectedSite, setSelectedSite] = useState<string>('');
+
+  // Push Notifications State
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission | 'unsupported'>('default');
+  const notifTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Frequency label helper
+  const freqLabel = (f: string): string => {
+    const s = (f || '').toLowerCase();
+    if (s.includes('every day') || s.includes('daily')) return 'Take Daily';
+    if (s.includes('every other')) return 'Every Other Day';
+    if (s.includes('5 days')) return '5 Days On · 2 Off';
+    if (s.includes('twice')) return 'Twice Weekly';
+    if (s.includes('once') || s.includes('weekly')) return 'Once Weekly';
+    return f;
+  };
+
+  // Push Notification helpers
+  const requestNotifPermission = useCallback(async () => {
+    if (!('Notification' in window)) { setNotifPermission('unsupported'); return; }
+    const result = await Notification.requestPermission();
+    setNotifPermission(result);
+    if (result === 'granted') {
+      new Notification('PepNationLab Alerts Enabled 🔔', {
+        body: 'You will be reminded when a protocol dose is due.',
+        icon: '/icon-192.png',
+      });
+    }
+  }, []);
+
+  const sendDoseReminder = useCallback((compoundName: string) => {
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+      new Notification(`⏰ Dose Due: ${compoundName}`, {
+        body: `Your protocol schedule shows ${compoundName} is due today. Log your dose in the Lab Journal.`,
+        icon: '/icon-192.png',
+        tag: `dose-${compoundName}`,
+      });
+    }
+  }, []);
 
   // Check cart status
 
@@ -499,6 +537,29 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     };
     syncLegacyData();
   }, []);
+
+  // Initialize notification permission from browser on mount + schedule daily dose reminders
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setNotifPermission(Notification.permission);
+    } else {
+      setNotifPermission('unsupported');
+    }
+  }, []);
+
+  // Auto-fire reminders once per page load if permission already granted and doses are due
+  useEffect(() => {
+    if (notifPermission !== 'granted' || scheduledDoses.length === 0) return;
+    const due = scheduledDoses.filter(s => scheduleDueStatus(s).status === 'due');
+    if (due.length === 0) return;
+    // Small delay to not immediately fire on page load — gives the user a moment first
+    const t = setTimeout(() => {
+      due.forEach(s => sendDoseReminder(s.compound_slug || s.compound));
+    }, 8000);
+    notifTimerRef.current = t;
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notifPermission, scheduledDoses]);
 
   const updateInventory = async (productId: string, field: string, value: any) => {
     // Optimistic write with rollback: recon_mg/recon_ml/recon_dose feed the
@@ -2393,11 +2454,15 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                     <div className="glass-panel" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)' }}>
                       <h3 style={{ color: 'var(--white)', marginBottom: 'var(--space-3)', textAlign: 'center', fontSize: '1rem' }}>Injection Site Rotation</h3>
                       {(() => {
+                        // Sites mapped to % coords on the real body image (2:3 ratio, 840×1260 intrinsic)
+                        // Image: shoulders ~22% from top, triceps ~35%, abdomen ~52%
                         const SITES = [
-                          { id: 'left_arm', x: 25, y: 33, label: 'L Arm' }, { id: 'right_arm', x: 75, y: 33, label: 'R Arm' },
-                          { id: 'left_abdomen', x: 41, y: 50, label: 'L Abdomen' }, { id: 'right_abdomen', x: 59, y: 50, label: 'R Abdomen' },
-                          { id: 'left_glute', x: 41, y: 63, label: 'L Glute' }, { id: 'right_glute', x: 59, y: 63, label: 'R Glute' },
-                          { id: 'left_thigh', x: 43, y: 78, label: 'L Thigh' }, { id: 'right_thigh', x: 57, y: 78, label: 'R Thigh' },
+                          { id: 'left_deltoid',  x: 26,  y: 22,  label: 'L Shoulder' },
+                          { id: 'right_deltoid', x: 74,  y: 22,  label: 'R Shoulder' },
+                          { id: 'left_tricep',   x: 18,  y: 36,  label: 'L Tricep'   },
+                          { id: 'right_tricep',  x: 82,  y: 36,  label: 'R Tricep'   },
+                          { id: 'left_abdomen',  x: 43,  y: 52,  label: 'L Abdomen'  },
+                          { id: 'right_abdomen', x: 57,  y: 52,  label: 'R Abdomen'  },
                         ];
                         const suggestion = [...SITES].sort((a, b) => {
                           const la = computedInjectionSites[a.id] || 0;
@@ -2406,35 +2471,99 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                         })[0];
                         return (
                           <>
-                            <div style={{ position: 'relative', width: 190, height: 340, background: 'radial-gradient(circle at 50% 30%, rgba(0,196,188,0.04), transparent)', borderRadius: 12, margin: '0 auto', border: '1px solid rgba(255,255,255,0.05)' }}>
-                              <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-                                <path d="M50 5 a8 8 0 1 0 0 16 a8 8 0 1 0 0 -16 z M30 25 q20 -10 40 0 l10 30 l-10 -5 l-10 45 l-10 0 l0 -30 l0 30 l-10 0 l-10 -45 l-10 5 z" fill="rgba(0,196,188,0.05)" stroke="rgba(0,196,188,0.3)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-                              </svg>
+                            {/* Real anatomical image with dot overlay */}
+                            <div style={{ position: 'relative', width: '100%', maxWidth: 240, margin: '0 auto', borderRadius: 12, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }}>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src="/images/injection-site-body.jpg"
+                                alt="Injection site body map"
+                                style={{ width: '100%', display: 'block', borderRadius: 12 }}
+                              />
+                              {/* Interactive dot overlay */}
+                              <div style={{ position: 'absolute', inset: 0 }}>
+                                {SITES.map(site => {
+                                  const lastUsed = computedInjectionSites[site.id];
+                                  const daysSince = lastUsed ? (Date.now() - lastUsed) / 86400000 : Infinity;
+                                  let color = '#00c4bc';
+                                  let glow = '0 0 0 3px rgba(0,196,188,0.3), 0 0 12px rgba(0,196,188,0.5)';
+                                  if (daysSince < 2) { color = '#ef4444'; glow = '0 0 0 3px rgba(239,68,68,0.3), 0 0 12px rgba(239,68,68,0.6)'; }
+                                  else if (daysSince < 5) { color = '#eab308'; glow = '0 0 0 3px rgba(234,179,8,0.3), 0 0 12px rgba(234,179,8,0.5)'; }
+                                  const isSel = selectedSite === site.id;
+                                  const isSuggested = suggestion && site.id === suggestion.id && daysSince >= 5;
+                                  const dotSize = isSel ? 22 : 16;
+                                  return (
+                                    <button
+                                      key={site.id}
+                                      onClick={() => setSelectedSite(site.id === selectedSite ? '' : site.id)}
+                                      title={`${site.label}${lastUsed ? ` — ${Math.round(daysSince)}d ago` : ' — Never Used'}`}
+                                      style={{
+                                        position: 'absolute',
+                                        left: `${site.x}%`,
+                                        top: `${site.y}%`,
+                                        transform: 'translate(-50%, -50%)',
+                                        width: dotSize,
+                                        height: dotSize,
+                                        borderRadius: '50%',
+                                        background: color,
+                                        border: isSel ? '2.5px solid #fff' : `1.5px solid ${color}`,
+                                        cursor: 'pointer',
+                                        boxShadow: isSuggested ? `${glow}, 0 0 0 6px rgba(0,196,188,0.15)` : glow,
+                                        transition: 'all 0.18s ease',
+                                        animation: isSuggested ? 'pulse-site 1.8s ease-in-out infinite' : 'none',
+                                        padding: 0,
+                                      }}
+                                    />
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            {/* Labels row */}
+                            <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 12, fontSize: '0.72rem', color: 'var(--silver)', flexWrap: 'wrap' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--red)' }} /> &lt;2d (rest)</div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 8, height: 8, borderRadius: '50%', background: '#eab308' }} /> 2-5d</div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 8, height: 8, borderRadius: '50%', background: '#00c4bc' }} /> Ready</div>
+                            </div>
+
+                            {/* Site legend */}
+                            <div style={{ marginTop: 10, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 8px' }}>
                               {SITES.map(site => {
                                 const lastUsed = computedInjectionSites[site.id];
-                                const daysSince = lastUsed ? (Date.now() - lastUsed) / 86400000 : Infinity;
-                                let color = 'rgba(0,196,188,0.9)';
-                                if (daysSince < 2) color = 'var(--red)';
-                                else if (daysSince < 5) color = '#eab308';
+                                const daysSince = lastUsed ? Math.round((Date.now() - lastUsed) / 86400000) : null;
                                 const isSel = selectedSite === site.id;
-                                const isSuggested = suggestion && site.id === suggestion.id && daysSince >= 5;
                                 return (
-                                  <div key={site.id} onClick={() => setSelectedSite(site.id)} style={{ position: 'absolute', left: `${site.x}%`, top: `${site.y}%`, transform: 'translate(-50%, -50%)', width: isSel ? 20 : 15, height: isSel ? 20 : 15, borderRadius: '50%', background: color, border: isSel ? '2px solid white' : '1px solid rgba(0,0,0,0.5)', cursor: 'pointer', boxShadow: isSuggested ? '0 0 0 4px rgba(0,196,188,0.25)' : '0 0 8px rgba(0,0,0,0.5)', transition: 'all 0.2s' }} title={`${site.label} ${lastUsed ? `(${Math.round(daysSince)}d ago)` : '(Never Used)'}`} />
+                                  <button
+                                    key={site.id}
+                                    onClick={() => setSelectedSite(site.id === selectedSite ? '' : site.id)}
+                                    style={{
+                                      background: isSel ? 'rgba(0,196,188,0.12)' : 'rgba(255,255,255,0.03)',
+                                      border: `1px solid ${isSel ? 'rgba(0,196,188,0.4)' : 'rgba(255,255,255,0.07)'}`,
+                                      borderRadius: 6,
+                                      padding: '4px 8px',
+                                      color: isSel ? 'var(--teal)' : 'var(--silver)',
+                                      fontSize: '0.72rem',
+                                      cursor: 'pointer',
+                                      textAlign: 'left',
+                                      fontWeight: isSel ? 700 : 400,
+                                    }}
+                                  >
+                                    {site.label}{daysSince !== null ? <span style={{ opacity: 0.6 }}> · {daysSince}d</span> : ''}
+                                  </button>
                                 );
                               })}
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 12, fontSize: '0.72rem', color: 'var(--silver)' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--red)' }} /> &lt;2d</div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 8, height: 8, borderRadius: '50%', background: '#eab308' }} /> 2-5d</div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--teal)' }} /> Ready</div>
-                            </div>
+
                             {suggestion && (
                               <div style={{ textAlign: 'center', marginTop: 10, color: 'var(--teal)', fontSize: '0.8rem' }}>
                                 Suggested Next: <strong>{suggestion.label}</strong>
                                 {computedInjectionSites[suggestion.id] ? ` (${Math.round((Date.now() - computedInjectionSites[suggestion.id]) / 86400000)}d Rest)` : ' (Never Used)'}
                               </div>
                             )}
-                            {selectedSite && <div style={{ textAlign: 'center', marginTop: 8, color: 'var(--white)', fontWeight: 700, fontSize: '0.85rem' }}>Selected: {selectedSite.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</div>}
+                            {selectedSite && (
+                              <div style={{ textAlign: 'center', marginTop: 8, color: 'var(--white)', fontWeight: 700, fontSize: '0.85rem' }}>
+                                ✓ Selected: {selectedSite.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                              </div>
+                            )}
                           </>
                         );
                       })()}
@@ -2485,15 +2614,43 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
 
                   {/* Protocol Scheduler */}
                   <div className="glass-panel" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-6)' }}>
-                    <h3 style={{ color: 'var(--white)', marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 8 }}><Clock size={18} style={{ color: 'var(--teal)' }} /> Protocol Scheduler</h3>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 'var(--space-4)' }}>
+                      <h3 style={{ color: 'var(--white)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><Clock size={18} style={{ color: 'var(--teal)' }} /> Protocol Scheduler</h3>
+                      {/* Push Notification toggle */}
+                      <button
+                        onClick={requestNotifPermission}
+                        disabled={notifPermission === 'granted' || notifPermission === 'unsupported'}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 6,
+                          background: notifPermission === 'granted' ? 'rgba(0,196,188,0.1)' : 'rgba(255,255,255,0.06)',
+                          border: `1px solid ${notifPermission === 'granted' ? 'rgba(0,196,188,0.35)' : 'rgba(255,255,255,0.12)'}`,
+                          color: notifPermission === 'granted' ? 'var(--teal)' : 'var(--silver)',
+                          padding: '6px 14px', borderRadius: 999, fontSize: '0.8rem', cursor: notifPermission === 'granted' ? 'default' : 'pointer',
+                        }}
+                      >
+                        {notifPermission === 'granted' ? <Bell size={14} /> : <BellOff size={14} />}
+                        {notifPermission === 'granted' ? 'Alerts On' : notifPermission === 'unsupported' ? 'Unsupported' : 'Enable Dose Alerts'}
+                      </button>
+                    </div>
+
                     {scheduledDoses.length > 0 && (() => {
                       const due = scheduledDoses.filter(s => scheduleDueStatus(s).status === 'due');
                       return (
-                        <div style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-3) var(--space-4)', borderRadius: 8, background: due.length ? 'rgba(0,196,188,0.08)' : 'rgba(255,255,255,0.03)', border: `1px solid ${due.length ? 'rgba(0,196,188,0.25)' : 'rgba(255,255,255,0.06)'}`, display: 'flex', alignItems: 'center', gap: 8 }}>
-                          {due.length > 0 ? <Zap size={16} style={{ color: 'var(--teal)' }} /> : <Check size={16} style={{ color: 'var(--silver)' }} />}
-                          <span style={{ color: 'var(--white)', fontSize: '0.9rem' }}>
-                            {due.length > 0 ? `${due.length} Protocol${due.length === 1 ? '' : 's'} Due Today: ${due.map(s => s.compound_slug || s.compound).join(', ')}` : 'Nothing Due Today. You Are On Track.'}
-                          </span>
+                        <div style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-3) var(--space-4)', borderRadius: 8, background: due.length ? 'rgba(0,196,188,0.08)' : 'rgba(255,255,255,0.03)', border: `1px solid ${due.length ? 'rgba(0,196,188,0.25)' : 'rgba(255,255,255,0.06)'}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            {due.length > 0 ? <Zap size={16} style={{ color: 'var(--teal)' }} /> : <Check size={16} style={{ color: 'var(--silver)' }} />}
+                            <span style={{ color: 'var(--white)', fontSize: '0.9rem' }}>
+                              {due.length > 0 ? `${due.length} Protocol${due.length === 1 ? '' : 's'} Due Today: ${due.map(s => s.compound_slug || s.compound).join(', ')}` : 'Nothing Due Today. You Are On Track.'}
+                            </span>
+                          </div>
+                          {due.length > 0 && notifPermission === 'granted' && (
+                            <button
+                              onClick={() => due.forEach(s => sendDoseReminder(s.compound_slug || s.compound))}
+                              style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(0,196,188,0.12)', border: '1px solid rgba(0,196,188,0.3)', color: 'var(--teal)', padding: '4px 12px', borderRadius: 999, fontSize: '0.78rem', cursor: 'pointer' }}
+                            >
+                              <Bell size={12} /> Send Reminder
+                            </button>
+                          )}
                         </div>
                       );
                     })()}
@@ -2526,29 +2683,54 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                       <select value={scheduleUnit} onChange={e => setScheduleUnit(e.target.value)} style={{ width: 90, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)' }}>
                         <option value="mcg">mcg</option><option value="mg">mg</option><option value="iu">IU</option><option value="ml">ml</option>
                       </select>
-                      <select value={scheduleFrequency} onChange={e => setScheduleFrequency(e.target.value)} style={{ width: 150, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)' }}>
-                        <option value="Every Day">Every Day</option><option value="Every Other Day">Every Other Day</option><option value="5 Days On, 2 Off">5 Days On, 2 Off</option><option value="Once Weekly">Once Weekly</option><option value="Twice Weekly">Twice Weekly</option>
+                      <select value={scheduleFrequency} onChange={e => setScheduleFrequency(e.target.value)} style={{ width: 160, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)' }}>
+                        <option value="Every Day">Every Day</option>
+                        <option value="Every Other Day">Every Other Day</option>
+                        <option value="5 Days On, 2 Off">5 Days On, 2 Off</option>
+                        <option value="Once Weekly">Once Weekly</option>
+                        <option value="Twice Weekly">Twice Weekly</option>
+                        <option value="Every 5 Days">Every 5 Days</option>
+                        <option value="Every 10 Days">Every 10 Days</option>
+                        <option value="Cycle Off">Cycle Off (Paused)</option>
                       </select>
                       <button onClick={addScheduledDose} disabled={!scheduleCompound || !scheduleAmount} className="btn btn-secondary" style={{ padding: '12px 24px', borderRadius: 8 }}>Add Schedule</button>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: 'var(--space-3)' }}>
-                      {scheduledDoses.map(s => (
-                        <div key={s.id} style={{ background: 'rgba(255,255,255,0.05)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', position: 'relative' }}>
-                          <button onClick={() => deleteScheduledDose(s.id)} style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer' }}><X size={16} /></button>
-                          <div style={{ color: 'var(--teal)', fontWeight: 700 }}>{s.compound_slug || s.compound}</div>
-                          <div style={{ color: 'var(--white)' }}>{s.amount} {s.unit}</div>
-                          <div style={{ color: 'var(--silver)', fontSize: '0.85rem', marginTop: 4 }}><Clock size={12} style={{ display: 'inline', marginRight: 4 }} />{s.frequency}</div>
-                          {(() => {
-                            const st = scheduleDueStatus(s);
-                            if (!st.label) return null;
-                            const isDue = st.status === 'due';
-                            const color = isDue ? 'var(--black)' : st.status === 'logged' ? '#68D391' : 'var(--silver)';
-                            const bg = isDue ? 'var(--teal)' : 'rgba(255,255,255,0.06)';
-                            return <div style={{ marginTop: 8, display: 'inline-block', fontSize: '0.68rem', fontWeight: 700, color, background: bg, padding: '2px 8px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{st.label}</div>;
-                          })()}
-                        </div>
-                      ))}
-                      {scheduledDoses.length === 0 && <div style={{ color: 'var(--silver)' }}>No Scheduled Protocols Yet. Add One To Track Adherence.</div>}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 'var(--space-3)' }}>
+                      {scheduledDoses.map(s => {
+                        const st = scheduleDueStatus(s);
+                        const isDue = st.status === 'due';
+                        const isCycleOff = (s.frequency || '').toLowerCase().includes('cycle off') || (s.frequency || '').toLowerCase().includes('paused');
+                        return (
+                          <div key={s.id} style={{ background: isDue ? 'rgba(0,196,188,0.06)' : 'rgba(255,255,255,0.04)', padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', position: 'relative', border: `1px solid ${isDue ? 'rgba(0,196,188,0.2)' : 'rgba(255,255,255,0.06)'}`, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            <button onClick={() => deleteScheduledDose(s.id)} style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: 'rgba(255,255,255,0.25)', cursor: 'pointer' }} title="Remove protocol"><X size={14} /></button>
+                            <div style={{ color: 'var(--teal)', fontWeight: 700, fontSize: '0.95rem', paddingRight: 20 }}>{s.compound_slug || s.compound}</div>
+                            <div style={{ color: 'var(--white)', fontSize: '0.88rem' }}>{s.amount} {s.unit}</div>
+                            {/* Frequency badge */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: isCycleOff ? 'rgba(239,68,68,0.1)' : 'rgba(0,196,188,0.08)', border: `1px solid ${isCycleOff ? 'rgba(239,68,68,0.25)' : 'rgba(0,196,188,0.2)'}`, borderRadius: 6, padding: '3px 8px', width: 'fit-content' }}>
+                              <Clock size={11} style={{ color: isCycleOff ? '#ef4444' : 'var(--teal)', flexShrink: 0 }} />
+                              <span style={{ color: isCycleOff ? '#ef4444' : 'var(--teal)', fontSize: '0.72rem', fontWeight: 600 }}>{freqLabel(s.frequency)}</span>
+                            </div>
+                            {/* Due status + notification bell */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                              {st.label && (() => {
+                                const color = isDue ? 'var(--black)' : st.status === 'logged' ? '#68D391' : 'var(--silver)';
+                                const bg = isDue ? 'var(--teal)' : 'rgba(255,255,255,0.06)';
+                                return <div style={{ fontSize: '0.68rem', fontWeight: 700, color, background: bg, padding: '2px 8px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{st.label}</div>;
+                              })()}
+                              {isDue && notifPermission === 'granted' && (
+                                <button
+                                  onClick={() => sendDoseReminder(s.compound_slug || s.compound)}
+                                  title="Send push reminder"
+                                  style={{ background: 'none', border: 'none', color: 'var(--teal)', cursor: 'pointer', padding: 2 }}
+                                >
+                                  <Bell size={13} />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {scheduledDoses.length === 0 && <div style={{ color: 'var(--silver)', gridColumn: '1/-1' }}>No Scheduled Protocols Yet. Add One To Track Adherence.</div>}
                     </div>
                   </div>
 
