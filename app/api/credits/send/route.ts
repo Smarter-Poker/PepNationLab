@@ -164,7 +164,7 @@ export async function POST(req: NextRequest) {
       action: 'wallet_transfer',
       entity_type: 'profile',
       entity_id: recipient.id,
-      // @ts-expect-error Database schema mismatch from generated types
+      //  Database schema mismatch from generated types
       changes: {
         amount,
         drew_from: (transfer as Record<string, unknown>)?.drew_from ?? null,

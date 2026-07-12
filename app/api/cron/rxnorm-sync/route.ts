@@ -39,7 +39,7 @@ export async function GET(req: Request) {
       const ndcs = await getNdcByRxcui(rx.rxcui);
       const { error } = await supabase
         .from('compound_references')
-        // @ts-expect-error Database schema mismatch from generated types
+        //  Database schema mismatch from generated types
         .upsert({
           compound_slug: row.slug,
           source_type: 'rxnorm',

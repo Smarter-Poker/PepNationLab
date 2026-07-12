@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
       stack: clamp(body?.stack, 8000),
       url: clamp(body?.url, 1000),
       user_agent: clamp(req.headers.get('user-agent'), 500),
-      // @ts-expect-error Database schema mismatch from generated types
+      //  Database schema mismatch from generated types
       meta: clampMeta(body?.meta),
     });
     // Forward to Sentry so client errors alert like server errors instead of

@@ -205,7 +205,7 @@ export async function withIdempotency(opts: IdempotencyOptions): Promise<NextRes
     .from('idempotency_keys')
     .update({
       response_status: status,
-      // @ts-expect-error Database schema mismatch from generated types
+      //  Database schema mismatch from generated types
       response_body: body ?? {},
       updated_at: new Date().toISOString(),
     })

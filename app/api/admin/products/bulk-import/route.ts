@@ -408,7 +408,7 @@ export async function POST(req: NextRequest) {
 
   const { data: upserted, error: upsertErr } = await supabase
     .from('products')
-    // @ts-expect-error Database schema mismatch from generated types
+    //  Database schema mismatch from generated types
     .upsert(payload, { onConflict: 'slug' })
     .select('id, slug');
 

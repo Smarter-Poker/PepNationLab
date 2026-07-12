@@ -65,7 +65,7 @@ export default function AdminAnalytics() {
         dailyMap.set(d.toISOString().slice(0, 10), 0);
       }
       orders.forEach(o => {
-        const day = o.created_at.slice(0, 10); // @ts-ignore
+        const day = (o.created_at || "").slice(0, 10);
         if (dailyMap.has(day)) dailyMap.set(day, (dailyMap.get(day) || 0) + Number(o.total));
       });
       const revenueData = Array.from(dailyMap.entries()).map(([date, revenue]) => ({

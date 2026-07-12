@@ -92,7 +92,7 @@ export async function GET() {
           total_spent: Number(o.total) || 0,
         });
       } else {
-        // @ts-expect-error Database schema mismatch from generated types
+        //  Database schema mismatch from generated types
         existing.orders.push({ date: o.created_at, amount: Number(o.total) || 0 });
         existing.total_spent += Number(o.total) || 0;
       }

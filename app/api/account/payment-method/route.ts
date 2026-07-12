@@ -139,7 +139,7 @@ export async function PUT(req: NextRequest) {
   if (update.payment_handles !== undefined) {
     await supabase
       .from('agent_profiles')
-      // @ts-expect-error Database schema mismatch from generated types
+      //  Database schema mismatch from generated types
       .update({ payment_handles: update.payment_handles })
       .eq('id', user.id);
   }

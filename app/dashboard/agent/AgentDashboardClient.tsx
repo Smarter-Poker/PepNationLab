@@ -394,7 +394,7 @@ export default function AgentDashboardClient({
         throw new Error(insertError.message ?? 'Failed To Create Storefront Profile.');
       }
 
-      setAgentProfile(data); // @ts-ignore
+      setAgentProfile(data as any); // @ts-ignore
       setDisplayName(data.display_name); // @ts-ignore
       setSlug(data.slug ?? ''); // @ts-ignore
       setLogoUrl(data.logo_url ?? ''); // @ts-ignore

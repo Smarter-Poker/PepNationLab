@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
 
     const { data, error } = await supabase
       .from('products')
-      // @ts-expect-error Database schema mismatch from generated types
+      //  Database schema mismatch from generated types
       .insert({
         name,
         slug,

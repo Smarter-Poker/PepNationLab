@@ -74,7 +74,7 @@ export default async function LabJournalPage() {
       if (item.product_id) {
         const existing = pastOrderProducts.get(item.product_id);
         if (!existing) {
-          // @ts-expect-error Database schema mismatch from generated types
+          //  Database schema mismatch from generated types
           pastOrderProducts.set(item.product_id, { date: o.created_at, count: 1 });
         } else {
           pastOrderProducts.set(item.product_id, { date: existing.date, count: existing.count + 1 });

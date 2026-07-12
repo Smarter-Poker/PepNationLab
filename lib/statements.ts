@@ -195,7 +195,7 @@ export async function persistStatement(
 
   const { data: statement, error: upsertError } = await supabase
     .from('weekly_statements')
-    // @ts-expect-error Database schema mismatch from generated types
+    //  Database schema mismatch from generated types
     .upsert(upsertPayload, { onConflict: 'agent_id,week_start' })
     .select('id')
     .maybeSingle();

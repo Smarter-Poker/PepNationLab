@@ -59,7 +59,7 @@ export async function recordCallTelemetry(
       action,
       entity_type: 'messenger_call',
       entity_id: payload.call_id,
-      // @ts-expect-error Database schema mismatch from generated types
+      //  Database schema mismatch from generated types
       changes: payload,
       ip_address: ipAddress ?? null,
       user_agent: userAgent ?? null,

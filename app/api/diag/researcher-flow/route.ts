@@ -114,7 +114,7 @@ async function runScenario(
 
     const { data: upserted, error: upsertErr } = await admin
       .from('profiles')
-      // @ts-expect-error Database schema mismatch from generated types
+      //  Database schema mismatch from generated types
       .upsert(payload, { onConflict: 'id' })
       .select('id, referring_agent_id, referring_sub_agent_id, role, created_by_role');
     if (upsertErr) {

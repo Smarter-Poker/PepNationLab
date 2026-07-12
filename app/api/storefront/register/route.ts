@@ -194,7 +194,7 @@ export async function POST(req: NextRequest) {
 
     const { error: profileError } = await admin
       .from('profiles')
-      // @ts-expect-error Database schema mismatch from generated types
+      //  Database schema mismatch from generated types
       .upsert(profilePayload, { onConflict: 'id' });
 
     if (profileError) {

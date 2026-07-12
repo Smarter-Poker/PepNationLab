@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
     created_at: new Date().toISOString(),
   };
   const updated = [...existing, newBundle];
-  // @ts-expect-error Database schema mismatch from generated types
+  //  Database schema mismatch from generated types
   const { error } = await supabase.from('agent_profiles').update({ bundles_config: updated, updated_at: new Date().toISOString() }).eq('id', gate.user.id);
   if (error) return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
   // Bundles surface on the public storefront - purge this store's cached
@@ -107,7 +107,7 @@ export async function PATCH(req: NextRequest) {
   const { data: profile } = await supabase.from('agent_profiles').select('bundles_config, slug').eq('id', gate.user.id).maybeSingle();
   const existing: Bundle[] = profile?.bundles_config || []; // @ts-ignore
   const updated = existing.map(b => b.id === id ? { ...b, is_active: action === 'toggle' ? !b.is_active : b.is_active } : b);
-  // @ts-expect-error Database schema mismatch from generated types
+  //  Database schema mismatch from generated types
   const { error } = await supabase.from('agent_profiles').update({ bundles_config: updated, updated_at: new Date().toISOString() }).eq('id', gate.user.id);
   if (error) return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
   // Bundle visibility toggled - purge this store's cached public catalog.
@@ -132,7 +132,7 @@ export async function DELETE(req: NextRequest) {
   const { data: profile } = await supabase.from('agent_profiles').select('bundles_config, slug').eq('id', gate.user.id).maybeSingle();
   const existing: Bundle[] = profile?.bundles_config || []; // @ts-ignore
   const updated = existing.filter(b => b.id !== id);
-  // @ts-expect-error Database schema mismatch from generated types
+  //  Database schema mismatch from generated types
   const { error } = await supabase.from('agent_profiles').update({ bundles_config: updated, updated_at: new Date().toISOString() }).eq('id', gate.user.id);
   if (error) return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
   // Bundle removed - purge this store's cached public catalog.

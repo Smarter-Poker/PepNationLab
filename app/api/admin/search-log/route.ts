@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
       admin_id: admin.userId ?? null,
       query,
       scope,
-      // @ts-expect-error Database schema mismatch from generated types
+      //  Database schema mismatch from generated types
       filters,
       user_agent: ua,
     });

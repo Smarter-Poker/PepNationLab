@@ -100,7 +100,7 @@ export async function GET(req: NextRequest) {
         text: row.text,
         message_type: row.message_type,
         media_url: row.media_url,
-        // @ts-expect-error Database schema mismatch from generated types
+        //  Database schema mismatch from generated types
         media_metadata: row.media_metadata ?? {},
         reply_to_id: replyToId,
       })

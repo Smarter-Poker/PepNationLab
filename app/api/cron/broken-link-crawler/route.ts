@@ -56,7 +56,7 @@ export async function GET(req: Request) {
       }
       if (!ok) {
         broken += 1;
-        // @ts-expect-error Database schema mismatch from generated types
+        //  Database schema mismatch from generated types
         const { error } = await supabase.from('compound_recall_alerts').insert({
           compound_slug: row.compound_slug,
           alert_type: 'label_change',
