@@ -197,8 +197,8 @@ export default function AgentOverview({
               </div>
             </button>
 
-            {/* 2. Recent Activity (Combined) */}
-            <button type="button" className="aoc-kpi-panel" onClick={() => onNavigate?.('Orders')}>
+            {/* 2. Recent Activity (Combined) — opens the full chronological activity feed page */}
+            <button type="button" className="aoc-kpi-panel" onClick={() => handleNav('/dashboard/agent/activity')}>
               <div className="aoc-kpi-left">
                 <Activity stroke="url(#metalGrad)" strokeWidth={1.5} size={72} style={{ filter: 'drop-shadow(0px 4px 4px rgba(0,0,0,0.8))' }} />
               </div>
@@ -218,8 +218,8 @@ export default function AgentOverview({
 
             {/* 3. Active Agents & Active Researchers (stacked) */}
             <div className="aoc-kpi-panel aoc-kpi-panel-split">
-              <div 
-                className="aoc-kpi-row clickable-row" 
+              <div
+                className="aoc-kpi-row clickable-row"
                 onClick={() => onNavigate?.(userProfile?.is_super_agent ? 'My Agent Accounts' : 'My Sub-Agents')}
                 role="button"
                 tabIndex={0}
@@ -235,8 +235,8 @@ export default function AgentOverview({
                 </div>
               </div>
               <div className="aoc-kpi-divider-h" />
-              <div 
-                className="aoc-kpi-row clickable-row" 
+              <div
+                className="aoc-kpi-row clickable-row"
                 style={{ marginTop: '16px' }}
                 onClick={() => onNavigate?.('Researchers')}
                 role="button"
@@ -346,7 +346,7 @@ export default function AgentOverview({
           /* Thick brushed nickel background */
           background: linear-gradient(135deg, #e6e9ec 0%, #aeb6bf 25%, #6a7683 50%, #909ba7 75%, #d1d6dc 100%);
           padding: 8px; /* Thickness of the frame */
-          box-shadow: 
+          box-shadow:
             0 12px 30px rgba(0,0,0,0.6),
             inset 0 1px 3px rgba(255,255,255,0.8),
             inset 0 -1px 4px rgba(0,0,0,0.6);
@@ -375,10 +375,10 @@ export default function AgentOverview({
           align-items: center; /* side by side */
           text-align: left;
           padding: 24px;
-          
+
           /* Thin brushed nickel edge + slight background gradient */
           border: 1.5px solid transparent;
-          background-image: 
+          background-image:
             linear-gradient(180deg, #1C2732 0%, #0B1015 100%),
             linear-gradient(135deg, #d1d6dc 0%, #6a7683 25%, #3a4249 50%, #909ba7 75%, #e6e9ec 100%);
           background-origin: padding-box, border-box;
@@ -391,17 +391,17 @@ export default function AgentOverview({
           font-family: inherit;
           min-height: 120px;
           min-width: 0;
-          box-shadow: 
+          box-shadow:
             0 8px 16px rgba(0,0,0,0.8),
             inset 0 1px 2px rgba(255,255,255,0.05);
           color: white;
         }
         .aoc-kpi-panel:hover {
-          background-image: 
+          background-image:
             linear-gradient(180deg, #243240 0%, #10171F 100%),
             linear-gradient(135deg, #e6e9ec 0%, #7a8591 25%, #4a5259 50%, #a0abb7 75%, #f4f5f7 100%);
         }
-        
+
         .aoc-kpi-panel-split {
           flex-direction: column;
           align-items: stretch;
@@ -409,11 +409,11 @@ export default function AgentOverview({
           cursor: default;
         }
         .aoc-kpi-panel-split:hover {
-          background-image: 
+          background-image:
             linear-gradient(180deg, #1C2732 0%, #0B1015 100%),
             linear-gradient(135deg, #d1d6dc 0%, #6a7683 25%, #3a4249 50%, #909ba7 75%, #e6e9ec 100%);
         }
-        
+
         .aoc-kpi-left {
           display: flex;
           align-items: center;
@@ -428,7 +428,7 @@ export default function AgentOverview({
           width: 80px;
           flex-shrink: 0;
         }
-        
+
         .aoc-kpi-separator {
           width: 2px;
           align-self: stretch;
@@ -441,7 +441,7 @@ export default function AgentOverview({
           background: linear-gradient(90deg, rgba(0,0,0,0.8) 0%, rgba(255,255,255,0.05) 100%);
           margin: 0 24px;
         }
-        
+
         .aoc-kpi-right {
           display: flex;
           flex-direction: column;
@@ -450,7 +450,7 @@ export default function AgentOverview({
           min-width: 0;
           overflow: hidden;
         }
-        
+
         .aoc-kpi-row {
           display: flex;
           align-items: center;
@@ -461,7 +461,7 @@ export default function AgentOverview({
           transition: background 0.15s ease;
           outline: none;
         }
-        
+
         /* Flask: dynamic glow pulse — no movement */
         @keyframes flask-glow {
           0%, 100% { filter: drop-shadow(0px 3px 3px rgba(0,0,0,0.8)) drop-shadow(0 0 4px rgba(45,212,191,0.15)); }
@@ -487,14 +487,14 @@ export default function AgentOverview({
           gap: 12px;
           min-width: 0;
         }
-        
+
         .aoc-kpi-divider-h {
           height: 2px;
           width: 100%;
           background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(255,255,255,0.03) 100%);
           margin: 16px 0 0 0;
         }
-        
+
         /* Metallic text styling */
         .metal-icon-text {
           font-family: Arial, Helvetica, sans-serif;
@@ -507,7 +507,7 @@ export default function AgentOverview({
           filter: drop-shadow(0px 4px 4px rgba(0,0,0,0.8));
           margin-top: -6px;
         }
-        
+
         .metal-text {
           background: linear-gradient(180deg, #d4d9de 0%, #a2abb3 45%, #6a7683 55%, #c8d0d8 100%);
           -webkit-background-clip: text;
@@ -530,7 +530,7 @@ export default function AgentOverview({
           font-weight: 600;
           font-size: 0.875rem;
         }
-        
+
         .aoc-kpi-title {
           font-size: 0.95rem;
           margin-bottom: 8px;
