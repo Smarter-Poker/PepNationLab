@@ -226,12 +226,12 @@ export default function AgentOverview({
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onNavigate?.(userProfile?.is_super_agent ? 'My Agent Accounts' : 'My Sub-Agents'); }}
               >
                 <div className="aoc-kpi-left-small">
-                  <Users stroke="url(#metalGrad)" strokeWidth={1.5} size={48} style={{ filter: 'drop-shadow(0px 3px 3px rgba(0,0,0,0.8))' }} />
+                  <Users stroke="url(#metalGrad)" strokeWidth={1.5} size={56} style={{ filter: 'drop-shadow(0px 3px 3px rgba(0,0,0,0.8))' }} />
                 </div>
                 <div className="aoc-kpi-separator-small" />
                 <div className="aoc-kpi-right-row">
                   <span className="metal-text-large row-num">{activeAgentsCount}</span>
-                  <span className="metal-text row-label">ACTIVE AGENTS</span>
+                  <span className="metal-text row-label">AGENTS</span>
                 </div>
               </div>
               <div className="aoc-kpi-divider-h" />
@@ -243,13 +243,13 @@ export default function AgentOverview({
                 tabIndex={0}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onNavigate?.('Researchers'); }}
               >
-                <div className="aoc-kpi-left-small dynamic-flask">
-                  <FlaskConical stroke="url(#metalGrad)" strokeWidth={1.5} size={48} style={{ filter: 'drop-shadow(0px 3px 3px rgba(0,0,0,0.8))' }} />
+                <div className="aoc-kpi-left-small">
+                  <FlaskConical stroke="url(#metalGrad)" strokeWidth={1.5} size={56} style={{ filter: 'drop-shadow(0px 3px 3px rgba(0,0,0,0.8))' }} />
                 </div>
                 <div className="aoc-kpi-separator-small" />
                 <div className="aoc-kpi-right-row">
                   <span className="metal-text-large row-num">{activeResearchersCount}</span>
-                  <span className="metal-text row-label">ACTIVE RESEARCHERS</span>
+                  <span className="metal-text row-label">RESEARCHERS</span>
                 </div>
               </div>
             </div>
@@ -462,15 +462,13 @@ export default function AgentOverview({
           outline: none;
         }
         
-        @keyframes tilt-flask {
-          0% { transform: rotate(0deg); }
-          25% { transform: rotate(-5deg); }
-          75% { transform: rotate(5deg); }
-          100% { transform: rotate(0deg); }
+        /* Flask: dynamic glow pulse — no movement */
+        @keyframes flask-glow {
+          0%, 100% { filter: drop-shadow(0px 3px 3px rgba(0,0,0,0.8)) drop-shadow(0 0 4px rgba(45,212,191,0.15)); }
+          50%       { filter: drop-shadow(0px 3px 3px rgba(0,0,0,0.8)) drop-shadow(0 0 12px rgba(45,212,191,0.55)); }
         }
-        .dynamic-flask {
-          animation: tilt-flask 4s ease-in-out infinite;
-          transform-origin: bottom center;
+        .dynamic-flask svg {
+          animation: flask-glow 3s ease-in-out infinite;
         }
 
         .clickable-row:hover {
