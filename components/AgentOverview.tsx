@@ -177,6 +177,9 @@ export default function AgentOverview({
           </linearGradient>
         </defs>
       </svg>
+      <div className="aoc-header" style={{ justifyContent: 'center', marginBottom: '8px' }}>
+        <h1 className="aoc-title metal-text" style={{ fontSize: '2rem' }}>Agent Dashboard</h1>
+      </div>
       {/* Three KPI boxes embedded in a metallic frame */}
       <div className="aoc-kpi-frame">
         <div className="aoc-kpi-inner">
