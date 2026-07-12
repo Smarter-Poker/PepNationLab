@@ -4,7 +4,7 @@ import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { getSupabaseUrl } from '@/lib/supabase/url';
 import { captureError } from '@/lib/sentry';
 
-// ─── Global API Rate Limiting ────────────────────────────────────────────────
+// ─── Global API Rate Limiting ──────────────────────────────────────────────
 // Edge-level backstop against scrape bots and abuse across all ~80 /api/*
 // endpoints. Individual hot routes keep their own tighter limits (register,
 // orders, disclaimer-log, research search) — this is the outer wall.
@@ -76,6 +76,9 @@ const PUBLIC_ROUTES = [
   '/api/auth/change-password',
   // Public signup email-verification code issuer (rate-limited inside the route).
   '/api/auth/request-code',
+  // Public one-click marketing-email unsubscribe (CAN-SPAM / RFC 8058).
+  // Token-gated inside the route via a per-user HMAC.
+  '/api/unsubscribe',
   // Public code-based password reset (both steps are for logged-out users;
   // each is rate-limited + CSRF-checked inside its route).
   '/api/auth/reset-password',

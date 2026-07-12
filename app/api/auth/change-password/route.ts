@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { after, NextRequest, NextResponse } from 'next/server';
 import { getSupabaseUrl } from '@/lib/supabase/url';
 import { createServerClient } from '@supabase/ssr';
 import { createAdminClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { emailConfigured, sendPasswordChangedEmail } from '@/lib/email';
 import { safeError } from '@/lib/api-error';
 
 // POST /api/auth/change-password
@@ -125,6 +126,27 @@ export async function POST(req: NextRequest) {
     console.error('Profile flag update error:', profileErr);
     return NextResponse.json({ error: 'Failed To Update Profile Settings.' }, { status: 500 });
   }
+
+  // Security alert: notify the account's verified email that the password
+  // changed. Runs via after() so it cannot slow or fail the response; a user
+  // whose session was stolen gets a signal instead of silence.
+  try {
+    if (emailConfigured()) {
+      const { data: prof } = await admin
+        .from('profiles')
+        .select('contact_email, email_verified, full_name')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (prof?.contact_email && prof.email_verified) {
+        after(
+          sendPasswordChangedEmail({
+            to: prof.contact_email,
+            fullName: prof.full_name,
+          }).catch(() => { /* best-effort */ })
+        );
+      }
+    }
+  } catch { /* best-effort */ }
 
   return response;
 }

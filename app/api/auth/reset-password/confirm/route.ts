@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { emailConfigured, sendPasswordChangedEmail } from '@/lib/email';
 import {
   normalizeEmail,
   isValidEmail,
@@ -102,6 +103,14 @@ export async function POST(req: NextRequest) {
 
     // Consume the code so it cannot be reused.
     await admin.from('email_verification_codes').update({ consumed: true }).eq('id', codeRow.id);
+
+    // Security alert: confirm the change to the same verified inbox that
+    // received the reset code. Best-effort; never breaks the reset.
+    try {
+      if (emailConfigured()) {
+        await sendPasswordChangedEmail({ to: email }).catch(() => { /* best-effort */ });
+      }
+    } catch { /* best-effort */ }
 
     return NextResponse.json({ success: true });
   } catch (err) {
