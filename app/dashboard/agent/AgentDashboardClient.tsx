@@ -1161,6 +1161,13 @@ export default function AgentDashboardClient({
         {/* TAB: Discount Coupons */}
         {activeTab === 'Coupons' && <AgentCoupons />}
 
+        {/* TAB: My Sub-Agents / My Agent Accounts (team management) */}
+        {(activeTab === 'My Sub-Agents' || activeTab === 'My Agent Accounts') && (
+          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+            <AgentSubAgents />
+          </div>
+        )}
+
 
 
 

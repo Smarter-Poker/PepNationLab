@@ -66,7 +66,7 @@ export async function getImpersonationContext(): Promise<ImpersonationContext | 
   // Validate the session row.
   const { data: session } = await service
     .from('impersonation_sessions')
-    .select('id, impersonator_id, target_user_id, ended_at')
+    .select('id, impersonator_id, target_user_id, ended_at, started_at')
     .eq('id', payload.sid)
     .maybeSingle();
 
@@ -76,6 +76,13 @@ export async function getImpersonationContext(): Promise<ImpersonationContext | 
     session.impersonator_id !== payload.imp ||
     session.target_user_id !== payload.tgt
   ) {
+    return null;
+  }
+
+  // Enforce the 30-minute TTL server-side. The cookie maxAge is client-side
+  // only; a persisted or replayed cookie must not outlive the session TTL.
+  const startedMs = session.started_at ? Date.parse(session.started_at as string) : NaN;
+  if (!Number.isFinite(startedMs) || Date.now() - startedMs > IMPERSONATION_TTL_SECONDS * 1000) {
     return null;
   }
 

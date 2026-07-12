@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { createServiceClient } from '@/lib/supabase/server';
+import { sniffImageMime } from '@/lib/image-sniff';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -127,16 +128,23 @@ export async function POST(req: NextRequest) {
       continue;
     }
 
-    const ext = MIME_TO_EXT[file.type];
-    const storagePath = `${baseSlug}.${ext}`;
-
     const arrayBuffer = await file.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
+
+    // Authoritative content sniff -- the client-declared type can be spoofed.
+    const sniffedMime = sniffImageMime(bytes);
+    if (!sniffedMime || !MIME_TO_EXT[sniffedMime]) {
+      skipped.push({ file: fileName, reason: 'File Content Is Not A Supported Image (JPEG, PNG, Or WEBP).' });
+      continue;
+    }
+
+    const ext = MIME_TO_EXT[sniffedMime];
+    const storagePath = `${baseSlug}.${ext}`;
 
     const { error: uploadErr } = await supabase.storage
       .from('product-images')
       .upload(storagePath, bytes, {
-        contentType: file.type,
+        contentType: sniffedMime,
         upsert: true,
       });
 

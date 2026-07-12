@@ -733,7 +733,7 @@ function Reconstitution({ compounds }: { compounds: CompoundListItem[] }) {
             <div style={{ ...resultStyle, marginTop: 20 }}>
               To Draw A Dose Of <strong>{dMassNumeric} <span className="calc-no-capitalize">{unit}</span></strong>, Pull Liquid To:
               <span style={{ fontSize: 28, color: '#68D391', fontWeight: 800, display: 'block', margin: '8px 0' }}>
-                {Math.round(drawMl * syringeMultiplier)} Units (${syringeType.toUpperCase()})
+                {Math.round(drawMl * syringeMultiplier)} Units ({syringeType.toUpperCase()})
               </span>
               <span style={{ fontSize: 13, color: '#A8B4C0' }}>
                 (<span className="calc-no-capitalize">{drawMl.toFixed(3)} mL</span> Of Working Solution)

@@ -105,7 +105,7 @@ export default async function SharedProtocolPage({
                     but since this is a dedicated page, we might just redirect to the storefront with a cart intent parameter.
                     For now, we'll link to the storefront home. */}
                 <a 
-                  href={`/${brandId}?add=${product.id}`}
+                  href={`/${brandId}?product=${product.id}`}
                   style={{
                     display: 'inline-flex', padding: '12px 24px', background: config.primary_color || '#C0C5CE',
                     color: '#0A1018', fontWeight: 800, borderRadius: 12, textDecoration: 'none'

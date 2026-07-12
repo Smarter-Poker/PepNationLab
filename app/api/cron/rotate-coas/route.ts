@@ -156,7 +156,7 @@ export async function GET(req: NextRequest) {
   const nowStr = new Date().toISOString().split('T')[0];
   const claim = await claimCronRun('rotate_coas', nowStr);
   if (!claim) {
-    console.log('[rotate-coas] Run already claimed for today. Exiting.');
+    // debug log removed
     return NextResponse.json({ message: 'Already ran today' });
   }
 
@@ -185,7 +185,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (!raw || raw.length === 0) {
-    console.log('[rotate-coas] no lots due for rotation');
+    // debug log removed
     await finishCronRun(claim.id, 'succeeded', JSON.stringify({ message: 'No lots due', rotated: 0 }));
     return NextResponse.json({ message: 'No lots due for rotation', rotated: 0 });
   }
@@ -335,7 +335,7 @@ export async function GET(req: NextRequest) {
           .remove([`chromatograms/${lot.id}.png`, `chromatograms/${lot.id}.svg`]);
 
         rotated.push(`${lot.product_name}: ${lot.lot_number} → ${newLot} (${newPurity}%)`);
-        console.log(`[rotate-coas] ✓ ${lot.product_name} ${lot.lot_number} → ${newLot} (${newPurity}%)`);
+        // debug log removed
 
       } catch (lotErr: unknown) {
         errors.push(`${lot.product_name}: unexpected — ${String(lotErr)}`);

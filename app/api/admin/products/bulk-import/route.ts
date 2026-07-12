@@ -198,6 +198,7 @@ export async function POST(req: NextRequest) {
   }
 
   const headersRaw = grid[0].map((h) => h.trim().toLowerCase());
+  const presentHeaders = new Set(headersRaw);
   const headerIndex = (name: string): number => headersRaw.indexOf(name);
 
   const requiredHeaders = ['name', 'category', 'base_cost'];
@@ -236,7 +237,7 @@ export async function POST(req: NextRequest) {
   const inFileSlugs = new Map<string, number>();
 
   const results: RowResult[] = [];
-  const validParsed: { rowIndex: number; data: ParsedRow; isUpdate: boolean }[] = [];
+  const validParsed: { rowIndex: number; data: ParsedRow; isUpdate: boolean; updateData: Record<string, unknown> }[] = [];
 
   const get = (row: string[], col: string): string | undefined => {
     const idx = headerIndex(col);
@@ -351,9 +352,33 @@ export async function POST(req: NextRequest) {
       parsed,
     });
 
+    // Sparse update payload: only columns whose header is present in the CSV
+    // are written on an update, so a partial-column CSV can never zero
+    // inventory or null descriptions/images/SKUs on an existing product.
+    const updateData: Record<string, unknown> = {};
+    const setIfPresent = (header: string, value: unknown) => {
+      if (presentHeaders.has(header) && value !== undefined) updateData[header] = value;
+    };
+    setIfPresent('name', name);
+    setIfPresent('category', category);
+    setIfPresent('base_cost', baseCost);
+    setIfPresent('description', description);
+    setIfPresent('image_url', imageUrl);
+    setIfPresent('weight_oz', weightOz);
+    setIfPresent('sku', sku);
+    setIfPresent('unit_size', unitSize);
+    setIfPresent('unit_measure', (get(row, 'unit_measure') ?? '').trim() || undefined);
+    setIfPresent('inventory_count', inventoryCount);
+    setIfPresent('low_stock_threshold', lowStockThreshold);
+    setIfPresent('backorder_days', backorderDays);
+    setIfPresent('admin_bulk_price', adminBulkPrice);
+    setIfPresent('admin_bulk_threshold', adminBulkThreshold);
+    setIfPresent('is_active', isActive);
+
     validParsed.push({
       rowIndex: r,
       isUpdate,
+      updateData,
       data: {
         name,
         category,
@@ -402,26 +427,45 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Stamp updated_at so the update path doesn't leave a stale timestamp.
   const nowIso = new Date().toISOString();
-  const payload = validParsed.map((v) => ({ ...v.data, updated_at: nowIso }));
+  const slugs: string[] = [];
+  let insertedCount = 0;
+  let updatedCount = 0;
 
-  const { data: upserted, error: upsertErr } = await supabase
-    .from('products')
-    //  Database schema mismatch from generated types
-    .upsert(payload, { onConflict: 'slug' })
-    .select('id, slug');
+  // New rows get a full insert (defaults applied). Existing rows get a SPARSE
+  // update (only CSV-present columns) so an omitted column is never reset.
+  const newRows = validParsed
+    .filter((v) => !v.isUpdate)
+    .map((v) => ({ ...v.data, updated_at: nowIso }));
 
-  if (upsertErr) {
-    return NextResponse.json(
-      { error: 'Database Upsert Failed.' },
-      { status: 500 }
-    );
+  if (newRows.length > 0) {
+    const { data: inserted, error: insertErr } = await supabase
+      .from('products')
+      //  Database schema mismatch from generated types
+      .insert(newRows)
+      .select('id, slug');
+    if (insertErr) {
+      return NextResponse.json({ error: 'Database Insert Failed.' }, { status: 500 });
+    }
+    insertedCount = inserted?.length ?? 0;
+    for (const u of inserted ?? []) {
+      if (u.slug) slugs.push(u.slug);
+    }
   }
 
-  const insertedCount = summary.valid_new;
-  const updatedCount = summary.valid_update;
-  const slugs = (upserted ?? []).map((u) => u.slug);
+  for (const v of validParsed) {
+    if (!v.isUpdate) continue;
+    const { error: updErr } = await supabase
+      .from('products')
+      //  Database schema mismatch from generated types
+      .update({ ...v.updateData, updated_at: nowIso })
+      .eq('slug', v.data.slug);
+    if (updErr) {
+      return NextResponse.json({ error: 'Database Update Failed.' }, { status: 500 });
+    }
+    updatedCount += 1;
+    slugs.push(v.data.slug);
+  }
 
   await supabase.from('admin_audit_log').insert({
     actor_id: gate.userId,

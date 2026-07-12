@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { createServiceClient } from '@/lib/supabase/server';
+import { sniffImageMime } from '@/lib/image-sniff';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -61,7 +62,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const { data: existing } = await supabase
     .from('product_lots')
-    .select('id, product_id, coa_storage_key')
+    .select('id, product_id, coa_storage_key, coa_verified_at, coa_retracted_at')
     .eq('id', lotId)
     .eq('product_id', id)
     .maybeSingle();
@@ -70,7 +71,29 @@ export async function POST(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Lot Not Found.' }, { status: 404 });
   }
 
-  const ext = MIME_TO_EXT[fileEntry.type];
+  // A published (verified, not-retracted) certificate's file is frozen. Its
+  // bytes must not be silently replaced; require a retraction first.
+  if (existing.coa_verified_at && !existing.coa_retracted_at) {
+    return NextResponse.json(
+      { error: 'This Certificate Is Published And Frozen. Retract It Before Replacing The File.' },
+      { status: 409 }
+    );
+  }
+
+  const bytes = new Uint8Array(await fileEntry.arrayBuffer());
+  // Authoritative content sniff -- the client-declared MIME type can be spoofed.
+  const isPdf =
+    bytes.length >= 5 &&
+    bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46 && bytes[4] === 0x2d;
+  const sniffedMime = isPdf ? 'application/pdf' : sniffImageMime(bytes);
+  if (!sniffedMime || !MIME_TO_EXT[sniffedMime]) {
+    return NextResponse.json(
+      { error: 'File Content Does Not Match A Supported Type. Use PDF, PNG, JPEG, Or WEBP.' },
+      { status: 400 }
+    );
+  }
+
+  const ext = MIME_TO_EXT[sniffedMime];
   const storageKey = `${id}/${lotId}.${ext}`;
 
   // If there is an existing COA at a different key (different extension), drop it.
@@ -78,11 +101,10 @@ export async function POST(req: NextRequest, { params }: Params) {
     await supabase.storage.from('product-coas').remove([existing.coa_storage_key]).catch(() => null);
   }
 
-  const bytes = new Uint8Array(await fileEntry.arrayBuffer());
   const { error: uploadErr } = await supabase.storage
     .from('product-coas')
     .upload(storageKey, bytes, {
-      contentType: fileEntry.type,
+      contentType: sniffedMime,
       upsert: true,
     });
 
@@ -95,7 +117,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     .from('product_lots')
     .update({
       coa_storage_key: storageKey,
-      coa_mime_type: fileEntry.type,
+      coa_mime_type: sniffedMime,
       coa_file_size: fileEntry.size,
       coa_uploaded_at: nowIso,
       coa_uploaded_by: gate.userId,
@@ -139,13 +161,22 @@ export async function DELETE(req: NextRequest, { params }: Params) {
 
   const { data: existing } = await supabase
     .from('product_lots')
-    .select('id, product_id, coa_storage_key')
+    .select('id, product_id, coa_storage_key, coa_verified_at, coa_retracted_at')
     .eq('id', lotId)
     .eq('product_id', id)
     .maybeSingle();
 
   if (!existing) {
     return NextResponse.json({ error: 'Lot Not Found.' }, { status: 404 });
+  }
+
+  // A published (verified, not-retracted) certificate's file is frozen and
+  // cannot be deleted; it must be retracted through the results route first.
+  if (existing.coa_verified_at && !existing.coa_retracted_at) {
+    return NextResponse.json(
+      { error: 'This Certificate Is Published And Frozen. Retract It Before Removing The File.' },
+      { status: 409 }
+    );
   }
 
   if (existing.coa_storage_key) {

@@ -134,6 +134,12 @@ export async function POST(req: NextRequest) {
           if (!existingStmt) {
             return NextResponse.json({ error: 'Statement Not Found.' }, { status: 404 });
           }
+          // Idempotency only covers same-key retries; a differently-keyed
+          // re-submit must not re-flip an already-paid statement (which would
+          // reset paid_at and overwrite the recorded payment evidence).
+          if (existingStmt.status === 'paid') {
+            return NextResponse.json({ error: 'Statement Already Paid.' }, { status: 409 });
+          }
 
           // Persist the canonical columns (payment_method, payment_reference) and
           // keep admin_notes available for free-form annotations. The legacy

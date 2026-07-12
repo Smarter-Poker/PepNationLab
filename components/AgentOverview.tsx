@@ -159,7 +159,7 @@ export default function AgentOverview({
     { id: 'inventory', label: 'Inventory', left: '51.5%', width: '44.5%', top: '51%', height: '10.5%', action: () => onNavigate?.('Inventory') },
     { id: 'research_library', label: 'Research Library', left: '51.5%', width: '44.5%', top: '63%', height: '10.5%', action: () => handleNav('/research') },
     { id: 'account_settings', label: 'Account Settings', left: '51.5%', width: '44.5%', top: '75%', height: '10.5%', action: () => handleNav('/account') },
-    { id: 'help_support', label: 'Help And Support', left: '51.5%', width: '44.5%', top: '87%', height: '10.5%', action: () => onNavigate?.('/dashboard/agent/help') },
+    { id: 'help_support', label: 'Help And Support', left: '51.5%', width: '44.5%', top: '87%', height: '10.5%', action: () => handleNav('/dashboard/agent/help') },
   ];
 
   const heroImage = isSubAgent ? '/images/sub-agent-dashboard.png' : '/images/agent-dashboard-16.png';
@@ -243,7 +243,7 @@ export default function AgentOverview({
                 tabIndex={0}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onNavigate?.('Researchers'); }}
               >
-                <div className="aoc-kpi-left-small">
+                <div className="aoc-kpi-left-small dynamic-flask">
                   <FlaskConical stroke="url(#metalGrad)" strokeWidth={1.5} size={48} style={{ filter: 'drop-shadow(0px 3px 3px rgba(0,0,0,0.8))' }} />
                 </div>
                 <div className="aoc-kpi-separator-small" />
@@ -458,6 +458,18 @@ export default function AgentOverview({
           transition: background 0.15s ease;
           outline: none;
         }
+        
+        @keyframes tilt-flask {
+          0% { transform: rotate(0deg); }
+          25% { transform: rotate(-5deg); }
+          75% { transform: rotate(5deg); }
+          100% { transform: rotate(0deg); }
+        }
+        .dynamic-flask {
+          animation: tilt-flask 4s ease-in-out infinite;
+          transform-origin: bottom center;
+        }
+
         .clickable-row:hover {
           background: rgba(255, 255, 255, 0.04);
         }
@@ -470,7 +482,7 @@ export default function AgentOverview({
         }
         .aoc-kpi-right-row {
           display: flex;
-          align-items: baseline;
+          align-items: center;
           gap: 12px;
         }
         
@@ -483,10 +495,10 @@ export default function AgentOverview({
         
         /* Metallic text styling */
         .metal-icon-text {
-          font-family: "Times New Roman", Times, serif;
+          font-family: Arial, Helvetica, sans-serif;
           font-size: 80px;
           line-height: 1;
-          font-weight: 400;
+          font-weight: 500;
           background: linear-gradient(180deg, #f4f5f7 0%, #d1d6dc 25%, #7a8591 50%, #96a2ae 51%, #c8d0d8 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
