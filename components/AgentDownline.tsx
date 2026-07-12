@@ -80,8 +80,8 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
           full_name: `${caFirstName.trim()} ${caLastName.trim()}`.trim(),
           username: caUsername,
           password: caPassword,
-          display_name: caDisplayName,
-          slug: caSlug,
+          display_name: caDisplayName || caUsername,
+          slug: caSlug || caUsername.toLowerCase().replace(/[^a-z0-9\-]/g, ''),
           account_type: caAccountType,
           credit_limit: caAccountType === 'credit' ? caCreditLimit : undefined,
           prepaid_balance: caAccountType === 'prepaid' ? caPrepaidBalance : undefined,
@@ -293,6 +293,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                   <input
                     type="text"
                     required
+                    autoComplete="new-password"
                     style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                     value={caUsername}
                     onChange={e => setCaUsername(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
@@ -305,6 +306,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                     type="password"
                     required
                     minLength={8}
+                    autoComplete="new-password"
                     style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                     value={caPassword}
                     onChange={e => setCaPassword(e.target.value)}
@@ -315,25 +317,23 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                 <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)', margin: 'var(--space-2) 0' }} />
 
                 <div>
-                  <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Storefront Name</label>
+                  <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Storefront Name (Optional)</label>
                   <input
                     type="text"
-                    required
                     style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                     value={caDisplayName}
                     onChange={e => setCaDisplayName(e.target.value)}
-                    placeholder="E.g., John's Store"
+                    placeholder={`Defaults to Username (${caUsername || '...'})`}
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>URL Name</label>
+                  <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>URL Name (Optional)</label>
                   <input
                     type="text"
-                    required
                     style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                     value={caSlug}
                     onChange={e => setCaSlug(e.target.value.toLowerCase().replace(/[^a-z0-9\-]/g, ''))}
-                    placeholder="PepNationLab.com/MyStoreNameHere"
+                    placeholder={`Defaults to Username (${caUsername.toLowerCase().replace(/[^a-z0-9\-]/g, '') || '...'})`}
                   />
                 </div>
 

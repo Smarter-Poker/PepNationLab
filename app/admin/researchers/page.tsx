@@ -423,8 +423,8 @@ function ResearchersAdminPageInner() {
           account_type: newAccountType,
           credit_limit: newAccountType === 'credit' ? Number(newCreditLimit) : null,
           prepaid_balance: newAccountType === 'prepaid' ? Number(newPrepaidBalance) : 0,
-          slug: newSlug,
-          display_name: newDisplayName,
+          slug: newSlug || newUsername.toLowerCase().replace(/[^a-z0-9\-]/g, ''),
+          display_name: newDisplayName || newUsername,
         }),
       });
       const json = await res.json();
@@ -878,10 +878,6 @@ function ResearchersAdminPageInner() {
                   <input type="text" className="form-input" placeholder="First Name" value={newFirstName}
                     onChange={e => {
                       setNewFirstName(e.target.value);
-                      if (!usernameDirty) {
-                        const sanitized = e.target.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
-                        setNewUsername(sanitized);
-                      }
                     }} required />
                 </div>
                 <div className="form-group" style={{ marginTop: 0 }}>
@@ -894,7 +890,7 @@ function ResearchersAdminPageInner() {
               <div className="form-group">
                 <label className="form-label">Login Username</label>
                 <input type="text" className="form-input" placeholder="E.g. john_doe (Login Handle)" value={newUsername}
-                  onChange={e => { setNewUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '')); setUsernameDirty(true); }} required />
+                  onChange={e => { setNewUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '')); setUsernameDirty(true); }} required autoComplete="new-password" />
                 {newUsernameMsg && (
                   <p style={{ fontSize: '0.72rem', marginTop: 4, color: newUsernameMsg.color }}>
                     {newUsernameMsg.text}
@@ -905,7 +901,7 @@ function ResearchersAdminPageInner() {
               <div className="form-group">
                 <label className="form-label">Temporary Password</label>
                 <input type="password" className="form-input" placeholder="Set Initial Password" value={newPassword}
-                  onChange={e => setNewPassword(e.target.value)} required minLength={6} />
+                  onChange={e => setNewPassword(e.target.value)} required minLength={6} autoComplete="new-password" />
               </div>
 
               {createRole === 'researcher' && (
@@ -957,16 +953,16 @@ function ResearchersAdminPageInner() {
 
               <h4 style={{ fontSize: '0.88rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>Storefront Setup</h4>
               <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
-                <label className="form-label">Display Name</label>
-                <input type="text" className="form-input" placeholder="E.g. Pep Nation Orlando" value={newDisplayName}
-                  onChange={e => setNewDisplayName(e.target.value)} required />
+                <label className="form-label">Display Name (Optional)</label>
+                <input type="text" className="form-input" placeholder={`Defaults to Username (${newUsername || '...'})`} value={newDisplayName}
+                  onChange={e => setNewDisplayName(e.target.value)} />
               </div>
               <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
-                <label className="form-label">Storefront Slug (URL)</label>
+                <label className="form-label">Storefront Slug (URL) (Optional)</label>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                   <span style={{ color: 'var(--grey-500)', marginRight: 4, fontSize: '0.85rem', whiteSpace: 'nowrap' }}>pepnationlab.com/</span>
-                  <input type="text" className="form-input" placeholder="E.g. orlando-peps" value={newSlug}
-                    onChange={e => setNewSlug(e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, ''))} required />
+                  <input type="text" className="form-input" placeholder={`Defaults to Username (${newUsername.toLowerCase().replace(/[^a-z0-9\-]/g, '') || '...'})`} value={newSlug}
+                    onChange={e => setNewSlug(e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, ''))} />
                 </div>
               </div>
 
