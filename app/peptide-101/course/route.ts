@@ -10,8 +10,10 @@ export async function GET() {
     return new Response('Course content unavailable', { status: 503 });
   }
 
-  // Cache-bust ALL static course scripts so users always get the latest version.
-  const v = Date.now();
+  // Cache-bust ALL static course scripts per DEPLOY (not per request).
+  // Date.now() forced a full re-download of every course engine on every
+  // visit; the commit SHA changes exactly when the scripts can change.
+  const v = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 12) ?? 'dev';
   html = html.replace(/\/peptide-101\.app\.js/g, `/peptide-101.app.js?v=${v}`);
   html = html.replace(/\/peptide-101\.v4\.js/g,  `/peptide-101.v4.js?v=${v}`);
 
@@ -22,6 +24,24 @@ export async function GET() {
   } else {
     // Already present - still bust its cache.
     html = html.replace(/\/peptide-101\.v14\.js(\?v=\d+)?/g, `/peptide-101.v14.js?v=${v}`);
+  }
+
+  // SEO head fixes injected here (the 200KB static HTML is easier to manage
+  // when head tags are maintained in one place): canonical, and a real
+  // title/description instead of the thin defaults baked into the file.
+  html = html.replace(
+    /<title>[^<]*<\/title>/,
+    '<title>Peptide 101 Course | The Complete Beginner Guide To Research Peptides | Pep Nation Lab</title>',
+  );
+  html = html.replace(
+    /<meta name="description" content="[^"]*">/,
+    '<meta name="description" content="Fourteen interactive modules covering what peptides are, peptide families, laboratory handling, storage, reconstitution, quality verification, and research-use legality. Research Use Only.">',
+  );
+  if (!html.includes('rel="canonical"')) {
+    html = html.replace(
+      '</head>',
+      '<link rel="canonical" href="https://pepnationlab.com/peptide-101/course">\n</head>',
+    );
   }
 
   // Inject the certificate upgrade (dynamic name entry + printable cert on s15).
@@ -36,8 +56,10 @@ export async function GET() {
   return new Response(html, {
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
-      // Never serve a cached copy - course content changes frequently.
-      'Cache-Control': 'no-store, must-revalidate',
+      // Short CDN cache + stale-while-revalidate: course content only changes
+      // on deploy (scripts are SHA-busted above), so no-store was pure
+      // re-download cost on every mobile visit.
+      'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=86400',
     },
   });
 }
