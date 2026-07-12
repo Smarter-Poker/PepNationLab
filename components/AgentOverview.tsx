@@ -359,23 +359,30 @@ export default function AgentOverview({
           align-items: center; /* side by side */
           text-align: left;
           padding: 24px;
-          background: linear-gradient(180deg, #182432 0%, #0F161E 100%);
-          border: 1px solid rgba(255, 255, 255, 0.03);
-          border-top: 1px solid rgba(255, 255, 255, 0.08); /* Slight top highlight */
-          border-bottom: 1px solid rgba(0, 0, 0, 0.8); /* Deep shadow at bottom */
-          border-radius: 8px;
+          
+          /* Thin brushed nickel edge + slight background gradient */
+          border: 1.5px solid transparent;
+          background-image: 
+            linear-gradient(180deg, #1C2732 0%, #0B1015 100%),
+            linear-gradient(135deg, #d1d6dc 0%, #6a7683 25%, #3a4249 50%, #909ba7 75%, #e6e9ec 100%);
+          background-origin: padding-box, border-box;
+          background-clip: padding-box, border-box;
+
+          border-radius: 10px;
           overflow: hidden;
           cursor: pointer;
           transition: all 0.2s ease;
           font-family: inherit;
           min-height: 120px;
           box-shadow: 
-            0 4px 6px rgba(0,0,0,0.4),
-            inset 0 1px 1px rgba(255,255,255,0.05);
+            0 8px 16px rgba(0,0,0,0.8),
+            inset 0 1px 2px rgba(255,255,255,0.05);
           color: white;
         }
         .aoc-kpi-panel:hover {
-          background: linear-gradient(180deg, #1C2B3C 0%, #121A24 100%);
+          background-image: 
+            linear-gradient(180deg, #243240 0%, #10171F 100%),
+            linear-gradient(135deg, #e6e9ec 0%, #7a8591 25%, #4a5259 50%, #a0abb7 75%, #f4f5f7 100%);
         }
         
         .aoc-kpi-panel-split {
