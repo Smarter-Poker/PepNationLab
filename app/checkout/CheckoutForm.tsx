@@ -959,10 +959,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
       }
       setOrderSuccess(data.orderId);
       // Funnel analytics (best-effort, non-blocking): order completed.
-      trackStorefrontEvent(agentSlug, 'order_complete', {
-        order_id: data.orderId,
-        amount_cents: Math.round((Number(data.total) || grandTotal || 0) * 100),
-      });
+      // (order_complete is server-emitted, skipped client-side)
       clearAllCarts();
       resetIdempotencyKey();
       submittedRef.current = false;
