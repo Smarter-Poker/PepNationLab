@@ -12,20 +12,20 @@ export default function FooterSection() {
       paddingBottom: 'var(--space-8)'
     }}>
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--space-10)', padding: '0 var(--space-4)' }}>
-        <Image 
-          src="/images/badges/research_use_pill_transparent.png" 
-          alt="Research Use Only - Not For Human Use - Laboratory Research Only" 
+        <Image
+          src="/images/badges/research_use_pill_transparent.png"
+          alt="Research Use Only - Not For Human Use - Laboratory Research Only"
           width={800}
           height={150}
           unoptimized
-          style={{ maxWidth: '95%', height: 'auto', maxHeight: '150px' }} 
+          style={{ maxWidth: '95%', height: 'auto', maxHeight: '150px' }}
         />
       </div>
       <div className="container">
         {/* Top row */}
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(4, 1fr)', 
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
           gap: 'var(--space-8)',
           marginBottom: 'var(--space-10)'
         }}>
@@ -54,8 +54,8 @@ export default function FooterSection() {
 
           {/* Platform links */}
           <div>
-            <h6 style={{ 
-              color: 'var(--silver-light)', 
+            <h6 style={{
+              color: 'var(--silver-light)',
               marginBottom: 'var(--space-4)',
               textTransform: 'uppercase',
               letterSpacing: '0.08em',
@@ -64,7 +64,7 @@ export default function FooterSection() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
               {[
                 { label: 'Research Library', href: '/research' },
-                { label: 'Find A Peptide', href: '/research/match' },
+                { label: 'Find A Peptide', href: '/find-a-peptide' },
                 { label: 'Peptide 101 Academy', href: '/peptide-101' },
                 { label: 'Reconstitution Calculators', href: '/research/calculators' },
                 { label: 'Compare Compounds', href: '/research/compare' },
@@ -85,8 +85,8 @@ export default function FooterSection() {
 
           {/* Legal */}
           <div>
-            <h6 style={{ 
-              color: 'var(--silver-light)', 
+            <h6 style={{
+              color: 'var(--silver-light)',
               marginBottom: 'var(--space-4)',
               textTransform: 'uppercase',
               letterSpacing: '0.08em',
@@ -110,16 +110,16 @@ export default function FooterSection() {
 
           {/* Contact */}
           <div>
-            <h6 style={{ 
-              color: 'var(--silver-light)', 
+            <h6 style={{
+              color: 'var(--silver-light)',
               marginBottom: 'var(--space-4)',
               textTransform: 'uppercase',
               letterSpacing: '0.08em',
               fontSize: '0.75rem'
             }}>Connect</h6>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-              <a href="mailto:research@pepnationlab.com" style={{ 
-                fontSize: '0.85rem', color: 'var(--grey-400)', 
+              <a href="mailto:research@pepnationlab.com" style={{
+                fontSize: '0.85rem', color: 'var(--grey-400)',
                 display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
                 transition: 'color 0.2s'
               }}
@@ -183,18 +183,18 @@ export default function FooterSection() {
               <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
             <strong style={{ color: 'var(--red)' }}>Research Use Only Disclaimer:</strong>{' '}
-            All products sold on PepNationLab.com are strictly for <em>in vitro</em> laboratory research and analytical purposes only. 
-            They are NOT intended for human or animal consumption, ingestion, or injection. 
-            These products have not been evaluated or approved by the FDA. 
+            All products sold on PepNationLab.com are strictly for <em>in vitro</em> laboratory research and analytical purposes only.
+            They are NOT intended for human or animal consumption, ingestion, or injection.
+            These products have not been evaluated or approved by the FDA.
             Pep Nation Lab does not sell needles, syringes, or any injection delivery devices.
             Purchasers assume full legal responsibility for compliance with all applicable laws.
           </p>
         </div>
 
         {/* Bottom bar */}
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
           alignItems: 'center',
           paddingTop: 'var(--space-4)',
           borderTop: '1px solid rgba(255,255,255,0.05)',
