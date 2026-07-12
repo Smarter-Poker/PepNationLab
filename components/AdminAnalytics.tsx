@@ -124,8 +124,8 @@ export default function AdminAnalytics() {
         .slice(0, 8);
 
       // Monthly comparisons
-      const thisMonthOrders = allOrders.filter(o => o.created_at >= thisMonthStart); // @ts-ignore
-      const lastMonthOrders = allOrders.filter(o => o.created_at >= lastMonthStart && o.created_at <= lastMonthEnd); // @ts-ignore
+      const thisMonthOrders = allOrders.filter(o => o.created_at && o.created_at >= thisMonthStart); // @ts-ignore
+      const lastMonthOrders = allOrders.filter(o => o.created_at && o.created_at >= lastMonthStart && o.created_at <= lastMonthEnd); // @ts-ignore
 
       const revenueThisMonth = thisMonthOrders.reduce((s, o) => s + Number(o.total), 0);
       const revenueLastMonth = lastMonthOrders.reduce((s, o) => s + Number(o.total), 0);
