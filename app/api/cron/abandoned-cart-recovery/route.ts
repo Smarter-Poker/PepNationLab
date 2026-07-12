@@ -67,7 +67,7 @@ export async function GET(req: Request) {
 
     const { data: candidates, error: fetchError } = await supabase
       .from('profiles')
-      .select('id, full_name, cart_state, cart_updated_at, contact_email, email_verified')
+      .select('id, full_name, cart_state, cart_updated_at, contact_email, email_verified, email_opt_out')
       .eq('role', 'researcher')
       .not('cart_state', 'is', null)
       .neq('cart_state', '[]')
@@ -140,18 +140,11 @@ export async function GET(req: Request) {
       if (step.free_shipping) body += `\n\nOffer: Free Shipping On Your Order.`;
       const subject = step.subject || 'You Left Items In Your Cart';
 
-      const { error: msgError } = await supabase.from('internal_messages').insert({
-        sender_id: null,
-        receiver_id: candidate.id,
-        subject,
-        body,
-        type: 'notification',
-        is_read: false,
-      });
-      if (msgError) { skipped++; continue; }
-
-      await notifyCartReminder(supabase, candidate.id, itemCount, cartValue).catch(() => { /* best-effort */ });
-
+      // Write the dedup row FIRST. Every channel below (in-app message, bell,
+      // email) is gated behind this row, so a crash or partial failure can
+      // never replay the same step on the next run. Previously the in-app
+      // message + bell fired before this row existed; a failed insert meant
+      // they re-sent every 6 hours forever.
       const { error: reminderErr } = await supabase.from('abandoned_cart_reminders').insert({
         user_id: candidate.id,
         cart_state_snapshot: candidate.cart_state,
@@ -162,22 +155,42 @@ export async function GET(req: Request) {
       });
 
       if (reminderErr) {
-        // Don't increment sent -- without the reminder record, next run will
-        // re-send the same message (duplicate notification loop).
         console.error('[abandoned-cart-recovery] reminder insert failed for user', candidate.id, reminderErr);
         skipped++;
         continue;
       }
 
-      // Mirror the reminder to the researcher's inbox (best-effort). Only after
-      // the reminder-log row is confirmed above, so it inherits the same
-      // once-per-step dedup and cannot double-send. Verified contact email only.
-      if (emailConfigured() && (candidate as any).contact_email && (candidate as any).email_verified) {
-        void sendCartRecoveryEmail({
+      // In-app copies (best-effort after the dedup row is committed).
+      const { error: msgError } = await supabase.from('internal_messages').insert({
+        sender_id: null,
+        receiver_id: candidate.id,
+        subject,
+        body,
+        type: 'notification',
+        is_read: false,
+      });
+      if (msgError) {
+        console.error('[abandoned-cart-recovery] internal message insert failed for user', candidate.id, msgError);
+      }
+
+      await notifyCartReminder(supabase, candidate.id, itemCount, cartValue).catch(() => { /* best-effort */ });
+
+      // Mirror the reminder to the researcher's inbox. MARKETING send: only to
+      // a verified, non-opted-out contact email, and AWAITED so the serverless
+      // runtime cannot drop it after the response is flushed. Carries a
+      // one-click unsubscribe (userId) per CAN-SPAM / RFC 8058.
+      if (
+        emailConfigured() &&
+        (candidate as any).contact_email &&
+        (candidate as any).email_verified &&
+        !(candidate as any).email_opt_out
+      ) {
+        await sendCartRecoveryEmail({
           to: (candidate as any).contact_email,
           fullName: candidate.full_name,
           subject,
           body,
+          userId: candidate.id,
         }).catch(() => { /* best-effort */ });
       }
 

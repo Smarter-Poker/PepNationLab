@@ -19,6 +19,7 @@ import { purchaseLabelForOrder } from '@/lib/shipping';
 import { enqueueOrderPush, shortOrderId } from '@/lib/push-enqueue';
 import { enqueueWebhook, fetchOrderForWebhook } from '@/lib/webhook-dispatch';
 import { notifyOrderShipped } from '@/lib/notify';
+import { emailConfigured, sendOrderShippedEmail } from '@/lib/email';
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
 
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .select('*, profiles!orders_agent_id_fkey(parent_agent_id), buyer:profiles!orders_buyer_id_fkey(full_name, email)')
+      .select('*, profiles!orders_agent_id_fkey(parent_agent_id), buyer:profiles!orders_buyer_id_fkey(full_name, email, contact_email, email_verified)')
       .eq('id', orderId).maybeSingle();
 
     if (orderError || !order) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
@@ -81,6 +82,24 @@ export async function POST(req: NextRequest) {
         await notifyOrderShipped(supabase, order.buyer_id, orderId, short, trackingNumber ?? undefined);
         await enqueueOrderPush(supabase, { userId: order.buyer_id, orderId, event: 'order_shipped', tracking: trackingNumber });
       } catch { /* notification failures must not break shipping */ }
+
+      // Tracking email on the PRIMARY shipping path. Label purchase is how
+      // agents actually ship; the shipped email previously existed only on the
+      // admin manual mark-shipped path, which is unreachable once the label
+      // purchase has already set status='shipped' -- so buyers never received
+      // tracking by email. Awaited (a detached promise can be killed by the
+      // serverless runtime) and best-effort: never breaks shipping.
+      try {
+        const buyer = pickOne<{ full_name: string | null; contact_email: string | null; email_verified: boolean | null }>(order.buyer);
+        if (emailConfigured() && buyer?.contact_email && buyer.email_verified) {
+          await sendOrderShippedEmail({
+            to: buyer.contact_email,
+            fullName: buyer.full_name,
+            orderId,
+            trackingNumber: trackingNumber ?? undefined,
+          });
+        }
+      } catch { /* email failures must not break shipping */ }
     }
 
     // Awaited webhook: order.shipped

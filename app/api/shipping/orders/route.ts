@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { canTransition, type OrderStatus } from '@/lib/order-states';
+import { notifyOrderShipped } from '@/lib/notify';
+import { enqueueOrderPush, shortOrderId } from '@/lib/push-enqueue';
+import { emailConfigured, sendOrderShippedEmail } from '@/lib/email';
 
 export async function GET() {
   try {
@@ -122,6 +125,7 @@ export async function POST(request: NextRequest) {
     // -- including orders still awaiting customer payment or admin approval -- because
     // the GET filter does not constrain POST inputs. canTransition('...','shipping')
     // permits only the post-admin-gate transitions.
+    let prevStatus: OrderStatus | null = null;
     const nextStatus = updateData.status as OrderStatus | undefined;
     if (nextStatus) {
       const { data: current, error: currentErr } = await serviceClient
@@ -135,6 +139,7 @@ export async function POST(request: NextRequest) {
       if (!current) {
         return NextResponse.json({ error: 'Order Not Found' }, { status: 404 });
       }
+      prevStatus = current.status as OrderStatus;
       if (!canTransition(current.status as OrderStatus, nextStatus, 'shipping')) {
         return NextResponse.json(
           { error: `Cannot Move Order From ${current.status} To ${nextStatus}.` },
@@ -169,6 +174,39 @@ export async function POST(request: NextRequest) {
         },
       });
     } catch { /* audit failure must not break the shipping response */ }
+
+    // Buyer notification + tracking email. This shipping-console path used to
+    // flip the order silently -- the buyer got no in-app message, no push, and
+    // no email at all. Mirror the admin mark-shipped path, gated on an actual
+    // transition (prevStatus) so a re-save cannot double-notify.
+    const buyerId = (data as { buyer_id?: string | null } | null)?.buyer_id ?? null;
+    if (action === 'mark_shipped' && buyerId && prevStatus !== 'shipped') {
+      try {
+        const short = shortOrderId(order_id);
+        await notifyOrderShipped(serviceClient, buyerId, order_id, short, tracking_number ?? undefined);
+        await enqueueOrderPush(serviceClient, {
+          userId: buyerId,
+          orderId: order_id,
+          event: 'order_shipped',
+          tracking: tracking_number ?? null,
+        });
+        if (emailConfigured()) {
+          const { data: buyer } = await serviceClient
+            .from('profiles')
+            .select('contact_email, email_verified, full_name')
+            .eq('id', buyerId)
+            .maybeSingle();
+          if (buyer?.contact_email && buyer.email_verified) {
+            await sendOrderShippedEmail({
+              to: buyer.contact_email,
+              fullName: buyer.full_name,
+              orderId: order_id,
+              trackingNumber: tracking_number ?? null,
+            });
+          }
+        }
+      } catch { /* notifications must not break the shipping response */ }
+    }
 
     return NextResponse.json({ data, message: 'Order Updated Successfully' });
   } catch (err) {
