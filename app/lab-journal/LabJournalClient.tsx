@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect, useMemo, useRef, useCallback } from 'react';
 import SmartStackBuilder from '@/components/researcher/SmartStackBuilder';
-import { Heart, Trash2, ExternalLink, PackageOpen, History, LayoutGrid, List as ListIcon, Search, X, Check, ShoppingCart, Info, TrendingUp, TrendingDown, XCircle, Layers, FlaskConical, Zap, Target, Activity, Calendar, Syringe, Flame, Clock, Droplet, MapPin, Repeat, ChevronRight, Beaker, Gauge, Camera, Bell, BellOff } from 'lucide-react';
+import { Heart, Trash2, ExternalLink, PackageOpen, History, LayoutGrid, List as ListIcon, Search, X, Check, ShoppingCart, Info, TrendingUp, TrendingDown, XCircle, Layers, FlaskConical, Zap, Target, Activity, Calendar, Syringe, Flame, Clock, Droplet, MapPin, Repeat, ChevronRight, Beaker, Gauge, Camera, Bell, BellOff, DollarSign } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -119,6 +119,31 @@ function dayKey(d: Date | string | number): string {
   return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
 }
 
+function CycleEditor({ id, cycleStartDates, cycleLengthWeeks, cycleOffWeeks, reminderTimes, onSave }: {
+  id: string;
+  cycleStartDates: Record<string, string>;
+  cycleLengthWeeks: Record<string, number>;
+  cycleOffWeeks: Record<string, number>;
+  reminderTimes: Record<string, string>;
+  onSave: (id: string, start: string, len: number, off: number, rem: string) => void;
+}) {
+  const [localStart, setLocalStart] = useState(cycleStartDates[id] || '');
+  const [localLen, setLocalLen] = useState(cycleLengthWeeks[id] || 8);
+  const [localOff, setLocalOff] = useState(cycleOffWeeks[id] || 4);
+  const [localRem, setLocalRem] = useState(reminderTimes[id] || '08:00');
+  return (
+    <div style={{ marginTop: 6, padding: 10, background: 'rgba(0,0,0,0.2)', borderRadius: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+        <div><div style={{ color: 'var(--silver)', fontSize: '0.68rem', marginBottom: 2 }}>Cycle Start</div><input type="date" value={localStart} onChange={e => setLocalStart(e.target.value)} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', borderRadius: 6, color: 'var(--white)', fontSize: '0.8rem' }} /></div>
+        <div><div style={{ color: 'var(--silver)', fontSize: '0.68rem', marginBottom: 2 }}>Daily Reminder</div><input type="time" value={localRem} onChange={e => setLocalRem(e.target.value)} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', borderRadius: 6, color: 'var(--white)', fontSize: '0.8rem' }} /></div>
+        <div><div style={{ color: 'var(--silver)', fontSize: '0.68rem', marginBottom: 2 }}>On-cycle (wks)</div><input type="number" min={1} max={52} value={localLen} onChange={e => setLocalLen(parseInt(e.target.value) || 8)} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', borderRadius: 6, color: 'var(--white)', fontSize: '0.8rem' }} /></div>
+        <div><div style={{ color: 'var(--silver)', fontSize: '0.68rem', marginBottom: 2 }}>Off-cycle (wks)</div><input type="number" min={0} max={52} value={localOff} onChange={e => setLocalOff(parseInt(e.target.value) || 4)} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', borderRadius: 6, color: 'var(--white)', fontSize: '0.8rem' }} /></div>
+      </div>
+      <button onClick={() => onSave(id, localStart, localLen, localOff, localRem)} style={{ background: 'rgba(0,196,188,0.15)', border: '1px solid rgba(0,196,188,0.3)', color: 'var(--teal)', borderRadius: 6, padding: '6px 12px', fontSize: '0.78rem', cursor: 'pointer' }}>Save Cycle Settings</button>
+    </div>
+  );
+}
+
 export default function LabJournalClient({ favorites: initialFavorites, pastOrders, recentlyViewed: initialRecentlyViewed, bundles, catalog, trending, categories, storefrontSlug, isAgentSelfBuy = false }: Props) {
   const [favorites, setFavorites] = useState<Item[]>(initialFavorites);
   const [recentlyViewed, setRecentlyViewed] = useState<Item[]>(initialRecentlyViewed);
@@ -183,7 +208,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   };
   
   // UX Features State
-  const [activeTab, setActiveTab] = useState<'bundles' | 'favorites' | 'recentlyViewed' | 'inventory' | 'compareHistory' | 'notes' | 'doses' | 'biometrics' | 'goals' | 'progress'>('bundles');
+  const [activeTab, setActiveTab] = useState<'bundles' | 'favorites' | 'recentlyViewed' | 'inventory' | 'compareHistory' | 'notes' | 'doses' | 'biometrics' | 'goals' | 'progress'>('doses');
 
   // Progress Photos state
   const [progressPhotos, setProgressPhotos] = useState<any[]>([]);
@@ -229,6 +254,39 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   const [scheduleUnit, setScheduleUnit] = useState('mcg');
   const [scheduleFrequency, setScheduleFrequency] = useState('Every Day');
   const [selectedSite, setSelectedSite] = useState<string>('');
+
+  // Cycle Tracker State
+  const [cycleStartDates, setCycleStartDates] = useState<Record<string, string>>({});
+  const [cycleLengthWeeks, setCycleLengthWeeks] = useState<Record<string, number>>({});
+  const [cycleOffWeeks, setCycleOffWeeks] = useState<Record<string, number>>({});
+  const [reminderTimes, setReminderTimes] = useState<Record<string, string>>({});
+  const [showCycleEditor, setShowCycleEditor] = useState<string | null>(null);
+
+  // Quick-Log FAB State
+  const [quickLogOpen, setQuickLogOpen] = useState(false);
+  const [quickCompound, setQuickCompound] = useState('');
+  const [quickAmount, setQuickAmount] = useState('');
+  const [quickUnit, setQuickUnit] = useState('mcg');
+  const [quickSaving, setQuickSaving] = useState(false);
+
+  // Symptom Log State
+  const [symptoms, setSymptoms] = useState<any[]>([]);
+  const [symptomName, setSymptomName] = useState('');
+  const [symptomSeverity, setSymptomSeverity] = useState(5);
+  const [symptomNote, setSymptomNote] = useState('');
+  const [symptomSaving, setSymptomSaving] = useState(false);
+
+  // Protocol Cost Tracking State
+  const [protocolCosts, setProtocolCosts] = useState<Record<string, number>>({});
+
+  // Photo Compare State
+  const [comparePhotoA, setComparePhotoA] = useState<any>(null);
+  const [comparePhotoB, setComparePhotoB] = useState<any>(null);
+  const [sliderPos, setSliderPos] = useState(50);
+  const [showPhotoCompare, setShowPhotoCompare] = useState(false);
+
+  // Expiry banner state
+  const [expBannerDismissed, setExpBannerDismissed] = useState(false);
 
   // Push Notifications State
   const [notifPermission, setNotifPermission] = useState<NotificationPermission | 'unsupported'>('default');
@@ -711,6 +769,11 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
       .then(res => res.json())
       .then(data => { if (data.photos) setProgressPhotos(data.photos); })
       .catch(console.error);
+
+    // Symptoms (may 404 if API not yet created — gracefully ignore)
+    fetch('/api/researcher/symptoms').then(res => {
+      if (res.ok) return res.json().then(sd => setSymptoms(sd.symptoms || []));
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -727,6 +790,109 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
       })
       .catch(() => setIntelligenceData(null));
   }, [intelligenceCompound]);
+
+  // Load cycle/reminder state from localStorage
+  useEffect(() => {
+    try {
+      const c = localStorage.getItem('pnl_cycle_data');
+      if (c) {
+        const parsed = JSON.parse(c);
+        setCycleStartDates(parsed.startDates || {});
+        setCycleLengthWeeks(parsed.lengthWeeks || {});
+        setCycleOffWeeks(parsed.offWeeks || {});
+        setReminderTimes(parsed.reminderTimes || {});
+      }
+    } catch {}
+  }, []);
+
+  // Load protocol costs from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('pnl_protocol_costs');
+      if (saved) setProtocolCosts(JSON.parse(saved));
+    } catch {}
+  }, []);
+
+  const saveCycleData = (id: string, startDate: string, lengthWks: number, offWks: number, remTime: string) => {
+    const newStarts = { ...cycleStartDates, [id]: startDate };
+    const newLength = { ...cycleLengthWeeks, [id]: lengthWks };
+    const newOff = { ...cycleOffWeeks, [id]: offWks };
+    const newRem = { ...reminderTimes, [id]: remTime };
+    setCycleStartDates(newStarts);
+    setCycleLengthWeeks(newLength);
+    setCycleOffWeeks(newOff);
+    setReminderTimes(newRem);
+    setShowCycleEditor(null);
+    try {
+      localStorage.setItem('pnl_cycle_data', JSON.stringify({ startDates: newStarts, lengthWeeks: newLength, offWeeks: newOff, reminderTimes: newRem }));
+    } catch {}
+  };
+
+  const getCycleStatus = (id: string): { phase: 'active' | 'off' | 'none'; daysLeft: number; label: string } => {
+    const start = cycleStartDates[id];
+    const len = cycleLengthWeeks[id] || 8;
+    const off = cycleOffWeeks[id] || 4;
+    if (!start) return { phase: 'none', daysLeft: 0, label: '' };
+    const startMs = new Date(start).getTime();
+    const now = Date.now();
+    const daysSinceStart = Math.floor((now - startMs) / 86400000);
+    const cycleDays = len * 7;
+    const offDays = off * 7;
+    const totalCycle = cycleDays + offDays;
+    const posInCycle = daysSinceStart % totalCycle;
+    if (posInCycle < cycleDays) {
+      const daysLeft = cycleDays - posInCycle;
+      return { phase: 'active', daysLeft, label: `On-cycle \u00b7 ${daysLeft}d left` };
+    } else {
+      const daysLeft = totalCycle - posInCycle;
+      return { phase: 'off', daysLeft, label: `Off-cycle \u00b7 ${daysLeft}d left` };
+    }
+  };
+
+  const setProtocolCost = (id: string, cost: number) => {
+    const updated = { ...protocolCosts, [id]: cost };
+    setProtocolCosts(updated);
+    try { localStorage.setItem('pnl_protocol_costs', JSON.stringify(updated)); } catch {}
+  };
+
+  const saveSymptom = async () => {
+    if (!symptomName) return;
+    setSymptomSaving(true);
+    try {
+      const newSymptom = { id: Date.now().toString(), symptom_name: symptomName, severity: symptomSeverity, notes: symptomNote, logged_at: new Date().toISOString() };
+      setSymptoms(prev => [newSymptom, ...prev]);
+      setSymptomName('');
+      setSymptomSeverity(5);
+      setSymptomNote('');
+      await fetch('/api/researcher/symptoms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symptom_name: symptomName, severity: symptomSeverity, notes: symptomNote }),
+      }).catch(() => {});
+    } finally {
+      setSymptomSaving(false);
+    }
+  };
+
+  const quickLog = async () => {
+    if (!quickCompound || !quickAmount) return;
+    setQuickSaving(true);
+    try {
+      const res = await fetch('/api/researcher/doses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ compound_slug: quickCompound, dose_amount: parseFloat(quickAmount), unit: quickUnit, injection_site: selectedSite || null, notes: '' }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setDoses(prev => [data.dose, ...prev]);
+        setQuickAmount('');
+        setQuickLogOpen(false);
+      }
+    } catch {} finally {
+      setQuickSaving(false);
+    }
+  };
 
   const saveGoal = async () => {
     if (!goalName) return;
@@ -1329,6 +1495,20 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     [biometrics]
   );
 
+  const expiringVials = useMemo(() => {
+    const now = Date.now();
+    return Object.entries(inventoryData)
+      .filter(([, v]) => {
+        if (!v.expiration) return false;
+        const exp = new Date(v.expiration).getTime();
+        return exp > now && exp - now < 7 * 86400000;
+      })
+      .map(([pid, v]) => {
+        const item = [...catalog, ...pastOrders].find(i => i.product_id === pid);
+        return { name: item?.name || pid, expiration: v.expiration };
+      });
+  }, [inventoryData, catalog, pastOrders]);
+
   // Dose-day vs non-dose-day associational comparison (Bearable-style "Impacts")
   const doseImpacts = useMemo(() => {
     const doseDaySet = new Set(doses.map(d => dayKey(d.dosed_at)));
@@ -1882,6 +2062,30 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                   </button>
                 </div>
               )}
+              {/* Doses Remaining */}
+              {(() => {
+                const inv = inventoryData[item.product_id];
+                if (!inv?.recon_mg || !inv?.recon_ml || !inv?.recon_dose) return null;
+                const mg = parseFloat(inv.recon_mg); const ml = parseFloat(inv.recon_ml); const dose = parseFloat(inv.recon_dose);
+                if (!mg || !ml || !dose) return null;
+                const doseVol = (dose * ml * 100) / (mg * 1000); // in units/IU (0.01ml per unit)
+                const totalVol = ml * 100; // total units in vial
+                const onHand = inv.on_hand ?? 1;
+                const dosesPerVial = Math.floor(totalVol / doseVol);
+                const daysLeft = dosesPerVial * onHand;
+                const pct = Math.min(100, (daysLeft / (dosesPerVial * 2)) * 100);
+                return (
+                  <div style={{ marginTop: 4 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                      <span style={{ color: 'var(--silver)', fontSize: '0.72rem' }}>Doses Remaining</span>
+                      <span style={{ color: daysLeft < 10 ? '#F6AD55' : 'var(--teal)', fontWeight: 700, fontSize: '0.75rem' }}>{dosesPerVial * onHand}</span>
+                    </div>
+                    <div style={{ height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${pct}%`, background: daysLeft < 10 ? '#F6AD55' : 'var(--teal)', borderRadius: 4, transition: 'width 0.4s' }} />
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
@@ -1912,16 +2116,26 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
 
   return (
     <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 'var(--space-6)', paddingBottom: '100px', alignItems: 'flex-start' }}>
+      {/* Expiry banner */}
+      {!expBannerDismissed && expiringVials.length > 0 && (
+        <div style={{ gridColumn: '1/-1', width: '100%', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 12, padding: '14px 20px', marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div style={{ color: '#fc8181', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Info size={16} />
+            <strong>Vials Expiring Soon:</strong> {expiringVials.map(v => `${v.name} (exp. ${new Date(v.expiration).toLocaleDateString()})`).join(' · ')}
+          </div>
+          <button onClick={() => setExpBannerDismissed(true)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}><X size={16} /></button>
+        </div>
+      )}
       {/* Left Sidebar Menu */}
       <div style={{ flex: '0 0 240px', display: 'flex', flexDirection: 'column', position: 'sticky', top: '100px', gap: 'var(--space-2)' }}>
         {[
           { id: 'notes', label: 'My Notes', icon: Info },
-          { id: 'goals', label: 'Research Goals', icon: Target },
-          { id: 'bundles', label: 'Bundles & Stacks', icon: Layers },
-          { id: 'favorites', label: 'Saved Compounds', icon: Heart },
           { id: 'doses', label: 'Dose Tracker', icon: Syringe },
           { id: 'biometrics', label: 'Biometrics', icon: Activity },
           { id: 'progress', label: 'Progress Photos', icon: Camera },
+          { id: 'goals', label: 'Research Goals', icon: Target },
+          { id: 'bundles', label: 'Bundles & Stacks', icon: Layers },
+          { id: 'favorites', label: 'Saved Compounds', icon: Heart },
           { id: 'recentlyViewed', label: 'Recently Viewed', icon: History },
           { id: 'compareHistory', label: 'Compare History', icon: Search }
         ].map(t => (
@@ -2445,6 +2659,22 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                         onChange={e => setDoseNote(e.target.value)}
                         style={{ width: '100%', marginTop: 'var(--space-3)', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '10px 12px', borderRadius: 8, color: 'var(--white)', fontSize: '0.9rem' }}
                       />
+                      {/* Change 10: Recon units hint */}
+                      {(() => {
+                        if (!doseCompound || !doseAmount) return null;
+                        const matchedItem = [...catalog, ...favorites, ...pastOrders, ...recentlyViewed].find(i => i.name === doseCompound);
+                        const inv = matchedItem ? inventoryData[matchedItem.product_id] : null;
+                        if (!inv?.recon_mg || !inv?.recon_ml) return null;
+                        const mg = parseFloat(inv.recon_mg); const ml = parseFloat(inv.recon_ml); const dose = parseFloat(doseAmount);
+                        if (!mg || !ml || !dose) return null;
+                        const units = ((dose * ml * 100) / (mg * 1000)).toFixed(1);
+                        return (
+                          <div style={{ marginTop: 8, padding: '8px 12px', borderRadius: 8, background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.2)', color: 'var(--teal)', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <Beaker size={13} />
+                            Pull syringe to <strong>{units} units (IU)</strong> for {doseAmount}{doseUnit} from your reconstituted vial ({inv.recon_mg}mg in {inv.recon_ml}ml)
+                          </div>
+                        );
+                      })()}
                       <button onClick={saveDose} disabled={!doseCompound || !doseAmount || doseSaving || !selectedSite} className="btn btn-primary" style={{ width: '100%', marginTop: 'var(--space-3)', padding: '12px 24px', borderRadius: 8 }}>
                         {doseSaving ? 'Saving...' : selectedSite ? `Log Dose To ${selectedSite.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}` : 'Log Dose'}
                       </button>
@@ -2710,6 +2940,17 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                               <Clock size={11} style={{ color: isCycleOff ? '#ef4444' : 'var(--teal)', flexShrink: 0 }} />
                               <span style={{ color: isCycleOff ? '#ef4444' : 'var(--teal)', fontSize: '0.72rem', fontWeight: 600 }}>{freqLabel(s.frequency)}</span>
                             </div>
+                            {/* Cycle status badge */}
+                            {(() => { const cs = getCycleStatus(s.id); return cs.phase !== 'none' ? (<div style={{ fontSize: '0.68rem', fontWeight: 700, color: cs.phase === 'active' ? 'var(--teal)' : '#ef4444', background: cs.phase === 'active' ? 'rgba(0,196,188,0.1)' : 'rgba(239,68,68,0.1)', border: `1px solid ${cs.phase === 'active' ? 'rgba(0,196,188,0.25)' : 'rgba(239,68,68,0.25)'}`, padding: '2px 8px', borderRadius: 999, width: 'fit-content' }}>{cs.label}</div>) : null; })()}
+                            {/* Cost tracking */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                              <DollarSign size={10} style={{ color: 'var(--silver)', flexShrink: 0 }} />
+                              <input type="number" min={0} step={0.01} placeholder="$/dose" value={protocolCosts[s.id] || ''} onChange={e => setProtocolCost(s.id, parseFloat(e.target.value))} style={{ width: 70, background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 5, padding: '2px 6px', color: 'var(--silver)', fontSize: '0.72rem' }} />
+                              {protocolCosts[s.id] > 0 && (() => { const freq = (s.frequency || '').toLowerCase(); const perMonth = freq.includes('every day') || freq.includes('daily') ? protocolCosts[s.id] * 30 : freq.includes('every other') ? protocolCosts[s.id] * 15 : freq.includes('twice') ? protocolCosts[s.id] * 8 : freq.includes('once') || freq.includes('weekly') ? protocolCosts[s.id] * 4 : protocolCosts[s.id]; return <span style={{ color: 'var(--silver)', fontSize: '0.68rem' }}>≈ ${perMonth.toFixed(0)}/mo</span>; })()}
+                            </div>
+                            {/* Cycle editor toggle */}
+                            <button onClick={() => setShowCycleEditor(showCycleEditor === s.id ? null : s.id)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '0.68rem', textAlign: 'left', padding: 0, marginTop: 2 }}>{showCycleEditor === s.id ? '▾ Hide Cycle' : '▸ Cycle Settings'}</button>
+                            {showCycleEditor === s.id && <CycleEditor id={s.id} cycleStartDates={cycleStartDates} cycleLengthWeeks={cycleLengthWeeks} cycleOffWeeks={cycleOffWeeks} reminderTimes={reminderTimes} onSave={saveCycleData} />}
                             {/* Due status + notification bell */}
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                               {st.label && (() => {
@@ -2838,8 +3079,9 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                         type="text"
                         placeholder="Metric Name"
                         value={bioName}
+                        readOnly={BIOMETRIC_PRESETS.some(p => p.name === bioName)}
                         onChange={e => setBioName(e.target.value)}
-                        style={{ flex: 1, minWidth: 160, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem' }}
+                        style={{ flex: 1, minWidth: 160, background: BIOMETRIC_PRESETS.some(p => p.name === bioName) ? 'rgba(0,196,188,0.08)' : 'rgba(0,0,0,0.3)', border: `1px solid ${BIOMETRIC_PRESETS.some(p => p.name === bioName) ? 'rgba(0,196,188,0.3)' : 'rgba(255,255,255,0.1)'}`, padding: '12px', borderRadius: 8, color: BIOMETRIC_PRESETS.some(p => p.name === bioName) ? 'var(--teal)' : 'var(--white)', fontSize: '1rem', cursor: BIOMETRIC_PRESETS.some(p => p.name === bioName) ? 'default' : 'text' }}
                       />
                       <input
                         type="number"
@@ -2993,6 +3235,41 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                       {biometrics.length === 0 && <div style={{ color: 'var(--silver)' }}>No Biometrics Logged Yet.</div>}
                     </div>
                   </div>
+
+                  {/* Symptom / Side Effect Log */}
+                  <div className="glass-panel" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', marginTop: 'var(--space-6)' }}>
+                    <h3 style={{ color: 'var(--white)', marginBottom: 'var(--space-2)', display: 'flex', alignItems: 'center', gap: 8 }}><Zap size={18} style={{ color: '#F6AD55' }} /> Symptom &amp; Side Effect Log</h3>
+                    <p style={{ color: 'var(--silver)', fontSize: '0.82rem', marginTop: 0, marginBottom: 'var(--space-4)' }}>Track side effects tied to your protocol timeline. Severity 1–10.</p>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 'var(--space-3)' }}>
+                      {['Headache', 'Fatigue', 'Water Retention', 'Joint Pain', 'Mood Shift', 'Insomnia', 'Nausea', 'Appetite Change'].map(s => (
+                        <button key={s} onClick={() => setSymptomName(s)} style={{ background: symptomName === s ? 'rgba(246,173,85,0.15)' : 'rgba(255,255,255,0.04)', color: symptomName === s ? '#F6AD55' : 'var(--silver)', border: `1px solid ${symptomName === s ? 'rgba(246,173,85,0.3)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 999, padding: '5px 10px', fontSize: '0.78rem', cursor: 'pointer' }}>{s}</button>
+                      ))}
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                      <input type="text" placeholder="Symptom name" value={symptomName} onChange={e => setSymptomName(e.target.value)} style={{ flex: 1, minWidth: 160, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '10px 12px', borderRadius: 8, color: 'var(--white)', fontSize: '0.9rem' }} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ color: 'var(--silver)', fontSize: '0.8rem' }}>Severity</span>
+                        <input type="range" min={1} max={10} value={symptomSeverity} onChange={e => setSymptomSeverity(parseInt(e.target.value))} style={{ width: 100, accentColor: 'var(--teal)' }} />
+                        <span style={{ color: 'var(--white)', fontWeight: 700, minWidth: 16 }}>{symptomSeverity}</span>
+                      </div>
+                      <input type="text" placeholder="Note (optional)" value={symptomNote} onChange={e => setSymptomNote(e.target.value)} style={{ flex: 1, minWidth: 160, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '10px 12px', borderRadius: 8, color: 'var(--white)', fontSize: '0.9rem' }} />
+                      <button onClick={saveSymptom} disabled={!symptomName || symptomSaving} className="btn btn-primary" style={{ padding: '10px 20px', borderRadius: 8, background: 'rgba(246,173,85,0.15)', color: '#F6AD55', border: '1px solid rgba(246,173,85,0.3)' }}>{symptomSaving ? 'Saving...' : 'Log'}</button>
+                    </div>
+                    {symptoms.length > 0 && (
+                      <div style={{ marginTop: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {symptoms.slice(0, 20).map((s: any) => (
+                          <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', borderRadius: 8, padding: '8px 12px' }}>
+                            <div>
+                              <span style={{ color: '#F6AD55', fontWeight: 700 }}>{s.symptom_name}</span>
+                              <span style={{ color: 'var(--silver)', fontSize: '0.8rem' }}> &middot; Severity {s.severity}/10</span>
+                              {s.notes && <span style={{ color: 'var(--silver)', fontSize: '0.78rem', fontStyle: 'italic' }}> &middot; {s.notes}</span>}
+                            </div>
+                            <span style={{ color: 'var(--silver)', fontSize: '0.75rem', flexShrink: 0 }}>{new Date(s.logged_at).toLocaleDateString()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
               ) : activeTab === 'progress' ? (
@@ -3015,6 +3292,52 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                       </label>
                     </div>
                   </div>
+
+                  {/* Before/After Photo Slider */}
+                  {progressPhotos.length >= 2 && (
+                    <div className="glass-panel" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-6)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-3)' }}>
+                        <h3 style={{ color: 'var(--white)', margin: 0, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: 8 }}><Camera size={16} style={{ color: 'var(--teal)' }} /> Before / After Compare</h3>
+                        <button onClick={() => setShowPhotoCompare(s => !s)} style={{ background: 'rgba(0,196,188,0.1)', border: '1px solid rgba(0,196,188,0.25)', color: 'var(--teal)', borderRadius: 999, padding: '4px 12px', fontSize: '0.8rem', cursor: 'pointer' }}>{showPhotoCompare ? 'Hide' : 'Compare Photos'}</button>
+                      </div>
+                      {showPhotoCompare && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                            <div style={{ flex: 1, minWidth: 160 }}>
+                              <div style={{ color: 'var(--silver)', fontSize: '0.72rem', marginBottom: 4 }}>Before Photo</div>
+                              <select value={comparePhotoA?.id || ''} onChange={e => setComparePhotoA(progressPhotos.find((p: any) => p.id === e.target.value) || null)} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 10px', borderRadius: 8, color: 'var(--white)', fontSize: '0.85rem' }}>
+                                <option value="">Select photo...</option>
+                                {[...progressPhotos].sort((a: any, b: any) => a.taken_at > b.taken_at ? 1 : -1).map((p: any) => <option key={p.id} value={p.id}>{p.caption || new Date(p.taken_at + 'T00:00:00').toLocaleDateString()}</option>)}
+                              </select>
+                            </div>
+                            <div style={{ flex: 1, minWidth: 160 }}>
+                              <div style={{ color: 'var(--silver)', fontSize: '0.72rem', marginBottom: 4 }}>After Photo</div>
+                              <select value={comparePhotoB?.id || ''} onChange={e => setComparePhotoB(progressPhotos.find((p: any) => p.id === e.target.value) || null)} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 10px', borderRadius: 8, color: 'var(--white)', fontSize: '0.85rem' }}>
+                                <option value="">Select photo...</option>
+                                {[...progressPhotos].sort((a: any, b: any) => a.taken_at > b.taken_at ? 1 : -1).map((p: any) => <option key={p.id} value={p.id}>{p.caption || new Date(p.taken_at + 'T00:00:00').toLocaleDateString()}</option>)}
+                              </select>
+                            </div>
+                          </div>
+                          {comparePhotoA?.url && comparePhotoB?.url && (
+                            <div style={{ position: 'relative', width: '100%', maxWidth: 500, margin: '0 auto', overflow: 'hidden', borderRadius: 12, userSelect: 'none' }}>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={comparePhotoA.url} alt="Before" style={{ width: '100%', display: 'block', borderRadius: 12 }} />
+                              <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', width: `${sliderPos}%`, borderRadius: 12 }}>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={comparePhotoB.url} alt="After" style={{ width: `${10000 / sliderPos}%`, maxWidth: 'none', display: 'block', borderRadius: 12 }} />
+                              </div>
+                              <div style={{ position: 'absolute', top: 0, bottom: 0, left: `${sliderPos}%`, width: 3, background: 'var(--teal)', transform: 'translateX(-50%)', cursor: 'ew-resize' }}>
+                                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 28, height: 28, borderRadius: '50%', background: 'var(--teal)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', color: 'var(--black)', fontWeight: 900 }}>⟺</div>
+                              </div>
+                              <input type="range" min={5} max={95} value={sliderPos} onChange={e => setSliderPos(parseInt(e.target.value))} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'ew-resize', margin: 0 }} />
+                              <div style={{ position: 'absolute', bottom: 8, left: 8, color: '#fff', fontSize: '0.7rem', background: 'rgba(0,0,0,0.5)', padding: '2px 8px', borderRadius: 999 }}>Before</div>
+                              <div style={{ position: 'absolute', bottom: 8, right: 8, color: '#fff', fontSize: '0.7rem', background: 'rgba(0,0,0,0.5)', padding: '2px 8px', borderRadius: 999 }}>After</div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {progressPhotos.length === 0 ? (
                     <div className="glass-panel" style={{ padding: 'var(--space-8)', borderRadius: 'var(--radius-lg)', textAlign: 'center' }}>
@@ -3356,6 +3679,40 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
           </div>
         </div>
       )}
+
+      {/* Quick-Log FAB */}
+      <div style={{ position: 'fixed', bottom: 100, right: 24, zIndex: 9998, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 12 }}>
+        {quickLogOpen && (
+          <div className="glass-panel" style={{ padding: 'var(--space-4)', borderRadius: 16, minWidth: 260, boxShadow: '0 12px 40px rgba(0,0,0,0.6)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ color: 'var(--white)', fontWeight: 700, fontSize: '0.9rem', marginBottom: 2 }}>Quick-Log Dose</div>
+            <select value={quickCompound} onChange={e => setQuickCompound(e.target.value)} style={{ width: '100%', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.15)', padding: '8px 10px', borderRadius: 8, color: 'var(--white)', fontSize: '0.9rem' }}>
+              <option value="">Select Compound</option>
+              {Array.from(new Set([...favorites, ...pastOrders, ...recentlyViewed].filter(i => i.name).map(i => i.name))).map(n => (
+                <option key={n as string} value={n as string}>{n}</option>
+              ))}
+            </select>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input type="number" placeholder="Amount" value={quickAmount} onChange={e => setQuickAmount(e.target.value)} style={{ flex: 1, background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.15)', padding: '8px 10px', borderRadius: 8, color: 'var(--white)', fontSize: '0.9rem' }} />
+              <select value={quickUnit} onChange={e => setQuickUnit(e.target.value)} style={{ width: 72, background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.15)', padding: '8px 6px', borderRadius: 8, color: 'var(--white)', fontSize: '0.9rem' }}>
+                <option value="mcg">mcg</option>
+                <option value="mg">mg</option>
+                <option value="iu">IU</option>
+                <option value="ml">ml</option>
+              </select>
+            </div>
+            <button onClick={quickLog} disabled={!quickCompound || !quickAmount || quickSaving} className="btn btn-primary" style={{ width: '100%', padding: '10px', borderRadius: 8 }}>
+              {quickSaving ? 'Logging...' : 'Log Now'}
+            </button>
+          </div>
+        )}
+        <button
+          onClick={() => setQuickLogOpen(o => !o)}
+          style={{ width: 56, height: 56, borderRadius: '50%', background: quickLogOpen ? '#ef4444' : 'var(--teal)', border: 'none', color: quickLogOpen ? '#fff' : 'var(--black)', fontSize: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 6px 24px rgba(0,196,188,0.5)', transition: 'all 0.2s ease' }}
+          title={quickLogOpen ? 'Close' : 'Quick Log Dose'}
+        >
+          {quickLogOpen ? <X size={22} /> : <Syringe size={22} />}
+        </button>
+      </div>
 
       {/* CSS for animations */}
       <style dangerouslySetInnerHTML={{__html: `

@@ -10,7 +10,6 @@ import MessageBell from '@/components/MessageBell';
 import NavbarWalletBadge from '@/components/NavbarWalletBadge';
 import { getRoleNavLinks } from '@/components/roleNavLinks';
 import MyQRCodeModal from './MyQRCodeModal';
-import { useMessengerStore } from '@/stores/messengerStore';
 import { evictAllCatalogCaches } from '@/lib/storefront-cache';
 import { useModalA11y } from '@/lib/useModalA11y';
 import GlobalCompletenessWidget from '@/components/GlobalCompletenessWidget';
@@ -127,7 +126,6 @@ const IP = { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 
 export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgentSlug }: { onMenuClick?: () => void; isOpen?: boolean; title?: string; agentSlug?: string } = {}) {
   const router = useRouter();
   const pathname = usePathname();
-  const activeId = useMessengerStore((s) => s.activeConversationId);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
@@ -269,78 +267,11 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
   };
 
   const handleBack = () => {
-    const isHistoryEmpty = typeof window !== 'undefined' && window.history.length <= 1;
-
-    const compoundSubpageMatch = pathname.match(/^\/research\/([a-zA-Z0-9_-]+)\/(spec|regulatory|references|structure)$/);
-    if (compoundSubpageMatch) {
-      router.push(`/research/${compoundSubpageMatch[1]}`);
-      return;
-    }
-
-    const compoundPageMatch = pathname.match(/^\/research\/([a-zA-Z0-9_-]+)$/);
-    const reservedResearchSlugs = [
-      'areas', 'catalog', 'compare', 'stacks', 'calculators', 'about-areas',
-      'approved-drugs', 'discontinued', 'orphan-drugs',
-      'reading-queue', 'saved', 'timeline', 'in-pipeline', 'most-cited',
-      'most-studied-2026', 'new-additions', 'evidence', 'correlated', 'faq',
-      'glossary', 'api-docs', 'search-index', 'search', 'learn', 'data',
-      'match', 'subscriptions'
-    ];
-    if (compoundPageMatch && !reservedResearchSlugs.includes(compoundPageMatch[1])) {
-      if (isHistoryEmpty) {
-        router.push('/research/catalog');
-      } else {
-        router.back();
-      }
-      return;
-    }
-
-    const areaPageMatch = pathname.match(/^\/research\/area\/([a-zA-Z0-9_-]+)$/);
-    if (areaPageMatch) {
-      router.push('/research/areas');
-      return;
-    }
-
-    const isCategoryFilter = pathname.startsWith('/research/by-class') ||
-                             pathname.startsWith('/research/by-half-life') ||
-                             pathname.startsWith('/research/by-mechanism') ||
-                             pathname.startsWith('/research/by-mw') ||
-                             pathname.startsWith('/research/by-route') ||
-                             pathname.startsWith('/research/by-target');
-    if (isCategoryFilter) {
-      router.push('/research/catalog');
-      return;
-    }
-
-    if (pathname === '/research' || pathname === '/research/') {
-      router.push(dashLink);
-      return;
-    }
-
-    if (pathname.startsWith('/messenger')) {
-      if (activeId) {
-        router.back();
-      } else {
-        router.push(dashLink);
-      }
-      return;
-    }
-
-    const isGenericResearchPage = pathname.startsWith('/research/') && reservedResearchSlugs.some(s => pathname.startsWith(`/research/${s}`));
-    if (isGenericResearchPage) {
-      if (isHistoryEmpty) {
-        router.push('/research');
-      } else {
-        router.back();
-      }
-      return;
-    }
-
-    if (isHistoryEmpty) {
-      router.push(dashLink);
-    } else {
-      router.back();
-    }
+    // Pure browser-back: always return to the exact previous page the user was
+    // on. No computed parent-route hierarchy or history-length heuristics -- if
+    // there is no history entry (cold load / direct link) the browser simply
+    // stays put, which is the accepted trade-off for true back navigation.
+    router.back();
   };
 
   const isStorefront = activeAgentSlug && pathname === `/${activeAgentSlug}`;
