@@ -1,0 +1,30 @@
+name: Tmp Sync Globals
+on:
+  push:
+    branches:
+      - tmp-sync-globals-3of3
+permissions:
+  contents: write
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Assemble Verify And Push
+        run: |
+          set -euo pipefail
+          base64 -d sync-payload/globals.css.gz.b64 | gunzip > /tmp/globals.css
+          HASH=$(git hash-object /tmp/globals.css)
+          echo "Computed blob hash: $HASH"
+          test "$HASH" = "b734fedac7f5468dd0190782aaa38e243a67af69"
+          git config user.name "Smarter-Poker"
+          git config user.email "254329056+Smarter-Poker@users.noreply.github.com"
+          git fetch origin main
+          git checkout -B main origin/main
+          cp /tmp/globals.css app/globals.css
+          git add app/globals.css
+          git commit -m "mobile: final optimization sweep - LCP image fixes, banner/nav overlap, touch glossary, form autofill, font floor (3/3)"
+          git push origin main
+          git push origin --delete tmp-sync-globals-3of3
