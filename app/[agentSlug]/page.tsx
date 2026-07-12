@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 
-import { Suspense } from 'react';
+import { Suspense, cache } from 'react';
 import { preload } from 'react-dom';
 import { notFound, redirect } from 'next/navigation';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
@@ -8,7 +8,7 @@ import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 import Link from 'next/link';
 import AgentStorefrontGrid from '@/components/AgentStorefrontGrid';
 import { getCompoundsBySlugs } from '@/lib/compounds-server';
-import { computeAgentCostForAgent, type AgentTier } from '@/lib/pricing';
+import { computeAgentCostsForAgent, type AgentTier } from '@/lib/pricing';
 import CouponLinkCapture from '@/components/CouponLinkCapture';
 import StorefrontRenameBanner from '@/components/StorefrontRenameBanner';
 import Navbar from '@/components/Navbar';
@@ -19,6 +19,37 @@ import AgentLinkCapture from '@/components/AgentLinkCapture';
 interface Props {
   params: Promise<{ agentSlug: string }>;
 }
+
+// Request-scoped memo: both the page body and generateMetadata resolve the
+// storefront row by slug during the same request. React cache() deduplicates
+// the second call, so the agent_profiles row is fetched once per request.
+// The select is the union of the columns both consumers need (the page body's
+// full column set plus tagline for generateMetadata).
+const getAgentProfileBySlug = cache(async (agentSlug: string) => {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('agent_profiles')
+    .select(`
+      id,
+      slug,
+      display_name,
+      tagline,
+      logo_url,
+      primary_color,
+      secondary_color,
+      qr_code_url,
+      qr_code_data,
+      is_active,
+      volume_pricing_enabled,
+      min_order_qty,
+      min_overall_qty,
+      storefront_renamed_at,
+      featured_products
+    `)
+    .eq('slug', agentSlug)
+    .maybeSingle();
+  return { data, error };
+});
 
 async function AgentStorefrontDataLoader({
   agentSlug,
@@ -138,17 +169,26 @@ async function AgentStorefrontDataLoader({
   if (isStorefrontOwner && (products?.length ?? 0) > 0) {
     const svc = await createServiceClient();
     const ownerTier = ((userProfile as { tier?: AgentTier } | null)?.tier ?? 'tier_3') as AgentTier;
-    productsWithCost = await Promise.all(
-      (products ?? []).map(async (p) => {
-        let costPrice: number | null = null;
-        try {
-          costPrice = await computeAgentCostForAgent(svc, p.product_id, agent.id, ownerTier);
-        } catch {
-          costPrice = null;
-        }
-        return { ...(p as Record<string, unknown>), cost_price: costPrice };
-      })
-    );
+    // Resolve the owner's pricing context once and price the whole catalog in
+    // memory - previously this issued 2-3 queries per product. Products with
+    // a NULL base_cost are excluded from the batch so their cost_price stays
+    // null, matching the old per-product throw-and-null behavior.
+    let costMap = new Map<string, number>();
+    try {
+      const pricedProducts = (products ?? [])
+        .filter((p) => !!p.product_id && (p.products as { base_cost?: number | null } | null)?.base_cost != null)
+        .map((p) => ({
+          id: p.product_id as string,
+          base_cost: Number((p.products as { base_cost?: number | null }).base_cost),
+        }));
+      costMap = await computeAgentCostsForAgent(svc, agent.id, ownerTier, pricedProducts);
+    } catch {
+      costMap = new Map<string, number>();
+    }
+    productsWithCost = (products ?? []).map((p) => ({
+      ...(p as Record<string, unknown>),
+      cost_price: costMap.get(p.product_id as string) ?? null,
+    }));
   }
 
   const compoundsBySlug = await getCompoundsBySlugs(
@@ -234,26 +274,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
   const { agentSlug } = await params;
   const supabase = await createClient();
 
-  const { data: agent, error } = await supabase
-    .from('agent_profiles')
-    .select(`
-      id,
-      slug,
-      display_name,
-      logo_url,
-      primary_color,
-      secondary_color,
-      qr_code_url,
-      qr_code_data,
-      is_active,
-      volume_pricing_enabled,
-      min_order_qty,
-      min_overall_qty,
-      storefront_renamed_at,
-      featured_products
-    `)
-    .eq('slug', agentSlug)
-    .maybeSingle();
+  const { data: agent, error } = await getAgentProfileBySlug(agentSlug);
 
   if (error || !agent) {
     notFound(); // returns HTTP 404; prevents bots indexing dead storefronts as valid pages
@@ -396,12 +417,9 @@ export default async function AgentStorefrontPage({ params }: Props) {
 
 export async function generateMetadata({ params }: Props) {
   const { agentSlug } = await params;
-  const supabase = await createClient();
-  const { data: agent } = await supabase
-    .from('agent_profiles')
-    .select('display_name, tagline')
-    .eq('slug', agentSlug)
-    .maybeSingle();
+  // Shares the request-scoped cached lookup with the page body, so the
+  // agent_profiles row is only fetched once per request.
+  const { data: agent } = await getAgentProfileBySlug(agentSlug);
 
   if (!agent) return { title: 'Store Not Found | Pep Nation Lab' };
 

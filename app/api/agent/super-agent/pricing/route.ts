@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
-import { computeAgentCostForAgent } from '@/lib/pricing';
+import { computeAgentCostForAgent, computeAgentCostsForAgent } from '@/lib/pricing';
 import type { AgentTier } from '@/lib/pricing';
 import { SubAgentPricingSchema } from '@/lib/schemas/product';
 
@@ -57,14 +57,18 @@ export async function GET(req: NextRequest) {
 
     // Merge pricing with products, calculating EXACT super agent cost
     const pricingMap = new Map(pricing?.map(p => [p.product_id, p]) || []);
-    
-    const mergedDataPromises = products?.map(async prod => {
+
+    // Resolve the super agent's pricing context once and price the whole
+    // catalog in memory - previously this issued 2-3 queries per product.
+    const pricedProducts = (products ?? [])
+      .filter(prod => Number(prod.base_cost) > 0)
+      .map(prod => ({ id: prod.id, base_cost: Number(prod.base_cost) }));
+    const costMap = await computeAgentCostsForAgent(supabase, superAgentId, tier, pricedProducts);
+
+    const mergedData = (products ?? []).map(prod => {
       const base = Number(prod.base_cost);
-      let exactCost = 0;
-      if (base > 0) {
-        exactCost = await computeAgentCostForAgent(supabase, prod.id, superAgentId, tier);
-      }
-      
+      const exactCost = base > 0 ? (costMap.get(prod.id) ?? 0) : 0;
+
       const priceRow = pricingMap.get(prod.id);
       return {
         id: prod.id,
@@ -75,8 +79,6 @@ export async function GET(req: NextRequest) {
         bulk_threshold: priceRow?.bulk_threshold ?? 100,
       };
     });
-
-    const mergedData = mergedDataPromises ? await Promise.all(mergedDataPromises) : [];
 
     return NextResponse.json({ data: mergedData });
   } catch (error) {

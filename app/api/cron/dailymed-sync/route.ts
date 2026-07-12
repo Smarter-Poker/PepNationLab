@@ -1,10 +1,10 @@
-// @ts-nocheck
 /**
  * GET /api/cron/dailymed-sync
  * Weekly DailyMed sync. Updates compounds.dailymed_setid and writes a
  * provenance row to compound_references for each new SPL setid.
  */
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 import { searchSpl } from '@/lib/research/dailymed';
@@ -60,6 +60,14 @@ export async function GET(req: Request) {
       await sleep(GAP_MS);
     }
     await finishCronRun(claim.id, 'succeeded', `processed=${processed} errored=${errored} deferred=${deferred}`);
+    // Expire the shared 'compounds' cache tag when compound rows changed
+    // (setid/sync columns are updated on every processed compound). Next 16
+    // revalidateTag takes a profile arg; { expire: 0 } expires immediately.
+    if (processed > 0) {
+      try {
+        revalidateTag('compounds', { expire: 0 });
+      } catch { /* best-effort cache refresh */ }
+    }
     return NextResponse.json({ ok: true, processed, errored, deferred });
   } catch (err) {
     const m = err instanceof Error ? err.message : String(err);

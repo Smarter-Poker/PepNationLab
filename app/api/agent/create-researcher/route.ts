@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { sanitizeUsername } from '@/lib/usernames';
@@ -154,6 +154,7 @@ export async function POST(req: NextRequest) {
 
   const { data: upsertedRows, error: profileError } = await admin
     .from('profiles')
+    // @ts-expect-error Database schema mismatch from generated types
     .upsert(profilePayload, { onConflict: 'id' })
     .select('id, referring_agent_id, referring_sub_agent_id, created_by_agent_id');
 

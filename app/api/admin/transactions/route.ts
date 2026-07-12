@@ -66,41 +66,34 @@ export async function POST(req: NextRequest) {
         if (!description || typeof description !== 'string' || description.trim().length === 0) return NextResponse.json({ error: 'Description Is Required' }, { status: 400 });
         if (description.trim().length > 500) return NextResponse.json({ error: 'Description Too Long (Max 500 Characters)' }, { status: 400 });
 
-        const { data: agentProfile, error: profileErr } = await supabase.from('profiles').select('prepaid_balance').eq('id', agent_id).maybeSingle();
-        if (profileErr || !agentProfile) return NextResponse.json({ error: 'Agent Not Found' }, { status: 404 });
+        // Atomic adjustment via SECURITY DEFINER RPC: row lock + relative
+        // balance update + ledger insert happen in one DB transaction, so a
+        // concurrent deduction can never be erased by an absolute write.
+        // The function applies the same CREDIT_TYPES direction logic this
+        // route used to compute in JS.
+        const { data, error } = await supabase.rpc('admin_adjust_balance', {
+          p_agent_id: agent_id,
+          p_type: type,
+          p_amount: parsedAmount,
+          p_description: description.trim(),
+          p_created_by: gate.userId,
+          p_reference_id: reference_id ?? null,
+          p_reference_type: reference_type ?? null,
+        });
+        if (error) {
+          if ((error.message ?? '').includes('Agent not found')) {
+            return NextResponse.json({ error: 'Agent Not Found' }, { status: 404 });
+          }
+          return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
+        }
+        // The RPC RETURNS TABLE, so supabase-js resolves to an array of rows.
+        const row = Array.isArray(data) ? data[0] : data;
+        if (!row) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
 
-        const balanceBefore = Number(agentProfile.prepaid_balance) || 0;
-        // Determine direction: credit types add to balance, debit types subtract.
-        const CREDIT_TYPES = ['credit', 'deposit', 'bonus', 'commission', 'adjustment', 'manual_adjustment'];
-        const direction = CREDIT_TYPES.includes(type) ? 1 : -1;
-        const balanceAfter = balanceBefore + direction * parsedAmount;
+        const balanceBefore = Number(row.balance_before);
+        const balanceAfter = Number(row.balance_after);
 
-        // Update profiles.prepaid_balance atomically before inserting the ledger row
-        const { error: balanceErr } = await supabase
-          .from('profiles')
-          .update({ prepaid_balance: balanceAfter, updated_at: new Date().toISOString() })
-          .eq('id', agent_id);
-        if (balanceErr) return NextResponse.json({ error: 'An Unexpected Error Occurred Updating Balance' }, { status: 500 });
-
-        const { data, error } = await supabase.from('balance_transactions').insert({
-          agent_id,
-          type,
-          amount: parsedAmount,
-          balance_before: balanceBefore,
-          balance_after: balanceAfter,
-          description: description.trim(),
-          reference_id: reference_id ?? null,
-          reference_type: reference_type ?? null,
-          created_by: gate.userId,
-        }).select('id').maybeSingle();
-        if (error || !data) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
-
-        // Audit every manual balance move. NOTE: the read-modify-write above is
-        // not atomic against a concurrent order debit (last-writer-wins can
-        // desync prepaid_balance from the ledger). The hardening report ships a
-        // paired migration (admin_adjust_prepaid_balance RPC with FOR UPDATE)
-        // that replaces this block; apply it to close the race. The audit row
-        // here is safe to add now and is a prerequisite either way.
+        // Audit every manual balance move (retained from concurrent change).
         await writeAuditLog(supabase, {
           actorId: gate.userId,
           action: 'manual_balance_adjustment',
@@ -109,7 +102,7 @@ export async function POST(req: NextRequest) {
           changes: { type, amount: parsedAmount, balance_before: balanceBefore, balance_after: balanceAfter, description: description.trim() },
         });
 
-        return NextResponse.json({ success: true, id: data.id, balanceBefore, balanceAfter });
+        return NextResponse.json({ success: true, id: row.transaction_id, balanceBefore, balanceAfter });
       },
     });
   } catch (err) {

@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { revalidateTag } from 'next/cache';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgentOrAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
-import { computeAgentCostForAgent } from '@/lib/pricing';
+import { computeAgentCostsForAgent } from '@/lib/pricing';
 import type { AgentTier } from '@/lib/pricing';
 
 export async function POST(req: NextRequest) {
@@ -82,57 +81,69 @@ export async function POST(req: NextRequest) {
     const { data: profData } = await supabase.from('profiles').select('tier').eq('id', agentId).maybeSingle();
     const tier = (profData?.tier as AgentTier | null) ?? 'tier_3';
 
-    let updatedCount = 0;
-    const updateResults = await Promise.all(
-      agentProducts.map(async ap => {
-        const productId = ap.product_id as string;
+    // Resolve the agent's pricing context once and price the whole catalog in
+    // memory - previously this issued 2-3 queries per product.
+    const pricedProducts = agentProducts
+      .filter(ap => {
         const rawCost = (ap.products as any)?.base_cost;
         const baseCost = rawCost != null ? Number(rawCost) : NaN;
-        // Skip products with missing or zero cost - writing $0 retail would
-        // make the product free. Agent must set price manually for these.
-        if (!Number.isFinite(baseCost) || baseCost <= 0) return null;
-
-        // Admin cost basis on the house store is base_cost (COGS); agents
-        // get their tier-derived cost.
-        const agentCostPer10 = gate.isAdmin
-          ? baseCost
-          : await computeAgentCostForAgent(supabase, productId, agentId, tier);
-        const maxMargin = Number((ap.products as any)?.max_margin_percent || 300);
-        const minRetailPrice = Number((ap.products as any)?.min_retail_price || agentCostPer10);
-
-        // Margin ceiling applies to agents only; the admin's cost basis is
-        // raw COGS so the ceiling would wrongly block normal retail pricing.
-        if (!gate.isAdmin && marginPercent > maxMargin) {
-          return null; // Skip if it exceeds ceiling (or we could reject, but skipping allows the rest to update)
-        }
-
-        const retailPrice = agentCostPer10 * (1 + marginPercent / 100);
-        if (retailPrice < minRetailPrice) {
-           return null; // Skip if it falls below MAP
-        }
-
-        const { error: updateErr } = await supabase
-          .from('agent_products')
-          .update({ margin_percent: marginPercent, retail_price: retailPrice })
-          .eq('id', ap.id)
-          .eq('agent_id', agentId);
-
-        if (updateErr) {
-          console.error('[bulk-margin] update failed for ap', ap.id, ':', updateErr.message);
-          return null;
-        }
-        return ap.id;
+        return !!ap.product_id && Number.isFinite(baseCost) && baseCost > 0;
       })
-    );
-    updatedCount = updateResults.filter(r => r !== null).length;
+      .map(ap => ({ id: ap.product_id as string, base_cost: Number((ap.products as any).base_cost) }));
+    const costMap = gate.isAdmin
+      ? new Map<string, number>()
+      : await computeAgentCostsForAgent(supabase, agentId, tier, pricedProducts);
 
-    // Bulk retail-price rewrite - purge the public storefront catalog cache
-    // so the new prices show immediately. Only fires when rows were actually
-    // updated; the agent slug is not in scope so the global tag is used.
-    if (updatedCount > 0) {
-      try {
-        revalidateTag('storefront-catalog', { expire: 0 });
-      } catch { /* best-effort cache refresh */ }
+    const updates: Array<{ agent_id: string; product_id: string; margin_percent: number; retail_price: number }> = [];
+    for (const ap of agentProducts) {
+      const productId = ap.product_id as string;
+      const rawCost = (ap.products as any)?.base_cost;
+      const baseCost = rawCost != null ? Number(rawCost) : NaN;
+      // Skip products with missing or zero cost - writing $0 retail would
+      // make the product free. Agent must set price manually for these.
+      if (!Number.isFinite(baseCost) || baseCost <= 0) continue;
+
+      // Admin cost basis on the house store is base_cost (COGS); agents
+      // get their tier-derived cost.
+      const agentCostPer10 = gate.isAdmin ? baseCost : (costMap.get(productId) ?? 0);
+      const maxMargin = Number((ap.products as any)?.max_margin_percent || 300);
+      const minRetailPrice = Number((ap.products as any)?.min_retail_price || agentCostPer10);
+
+      // Margin ceiling applies to agents only; the admin's cost basis is
+      // raw COGS so the ceiling would wrongly block normal retail pricing.
+      if (!gate.isAdmin && marginPercent > maxMargin) {
+        continue; // Skip if it exceeds ceiling (or we could reject, but skipping allows the rest to update)
+      }
+
+      const retailPrice = agentCostPer10 * (1 + marginPercent / 100);
+      if (retailPrice < minRetailPrice) {
+        continue; // Skip if it falls below MAP
+      }
+
+      updates.push({
+        agent_id: agentId,
+        product_id: productId,
+        margin_percent: marginPercent,
+        retail_price: retailPrice,
+      });
+    }
+
+    // Single batched write instead of one update per row. agent_products has
+    // a UNIQUE constraint on (agent_id, product_id)
+    // (agent_products_agent_id_product_id_key), so every row hits the
+    // conflict-update path and writes exactly the same two columns the
+    // previous per-row updates wrote (margin_percent, retail_price).
+    let updatedCount = 0;
+    if (updates.length > 0) {
+      const { error: upsertErr } = await supabase
+        .from('agent_products')
+        .upsert(updates, { onConflict: 'agent_id,product_id' });
+
+      if (upsertErr) {
+        console.error('[bulk-margin] batched update failed:', upsertErr.message);
+      } else {
+        updatedCount = updates.length;
+      }
     }
 
     return NextResponse.json({ success: true, updated: updatedCount });

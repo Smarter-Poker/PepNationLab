@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgentOrAdmin } from '@/lib/admin-auth';

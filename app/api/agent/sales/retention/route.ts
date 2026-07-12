@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgentOrAdmin } from '@/lib/admin-auth';
@@ -92,6 +92,7 @@ export async function GET() {
           total_spent: Number(o.total) || 0,
         });
       } else {
+        // @ts-expect-error Database schema mismatch from generated types
         existing.orders.push({ date: o.created_at, amount: Number(o.total) || 0 });
         existing.total_spent += Number(o.total) || 0;
       }

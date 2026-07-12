@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * GET /api/cron/chembl-sync
  * Weekly ChEMBL sync. Writes binding-affinity rows to
@@ -68,13 +67,12 @@ export async function GET(req: Request) {
       await sleep(GAP_MS);
     }
     await finishCronRun(claim.id, 'succeeded', `processed=${processed} errored=${errored} deferred=${deferred}`);
-    // Expire the cached compound + binding readers in lib/compounds-server.ts
-    // now that new ChEMBL rows are written, so monograph heatmaps do not wait
-    // out the 1-hour TTL. Next 16 form: revalidateTag(tag, { expire: 0 }).
-    if (processed > 0) {
+    // Expire the shared 'compounds' cache tag when compound rows changed
+    // (deferred rows never touch the compounds table). Next 16 revalidateTag
+    // takes a profile arg; { expire: 0 } expires immediately.
+    if (processed > deferred) {
       try {
         revalidateTag('compounds', { expire: 0 });
-        revalidateTag('bindings', { expire: 0 });
       } catch { /* best-effort cache refresh */ }
     }
     return NextResponse.json({ ok: true, processed, errored, deferred });

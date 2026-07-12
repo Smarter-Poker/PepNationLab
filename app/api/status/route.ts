@@ -27,7 +27,9 @@ export async function GET() {
   const dbStart = Date.now();
   try {
     const svc = await createServiceClient();
-    const { error } = await svc.from('profiles').select('id', { count: 'exact', head: true }).limit(1);
+    // Minimal existence probe: fetch at most one id rather than counting the
+    // whole profiles table on every liveness check.
+    const { error } = await svc.from('profiles').select('id').limit(1);
     if (error) throw new Error(error.message);
     report.checks.db = { ok: true, latency_ms: Date.now() - dbStart };
   } catch (err) {

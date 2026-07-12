@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
@@ -40,7 +39,7 @@ export async function POST(req: NextRequest) {
 
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .select('*, order_items(product_id, product_name, quantity, unit_cost_price, unit_super_agent_cost), profiles!orders_agent_id_fkey(parent_agent_id)')
+      .select('*, order_items(product_id, product_name, quantity, unit_cost_price, unit_super_agent_cost, fulfilled_locally), profiles!orders_agent_id_fkey(parent_agent_id)')
       .eq('id', orderId)
       .maybeSingle();
 
@@ -102,12 +101,13 @@ export async function POST(req: NextRequest) {
       product_name?: string;
       unit_cost_price?: number;
       unit_super_agent_cost?: number;
+      fulfilled_locally?: boolean;
     }
     let totalCogs = 0;
     const items = (order.order_items as OrderItem[]) || [];
 
     let billedAgentTier: AgentTier = 'tier_3';
-    const { data: billedProfile } = await supabase.from('profiles').select('tier').eq('id', primaryBilledAgentId).maybeSingle(); // @ts-ignore
+    const { data: billedProfile } = await supabase.from('profiles').select('tier').eq('id', primaryBilledAgentId).maybeSingle();
     billedAgentTier = (billedProfile?.tier as AgentTier | null) ?? 'tier_3';
 
     for (const item of items) {
@@ -116,11 +116,11 @@ export async function POST(req: NextRequest) {
       if (isSubAgentOrder) {
         const stored = Number(item.unit_super_agent_cost);
         if (Number.isFinite(stored) && stored >= 0) totalCogs += stored * qty;
-        else if (item.product_id) totalCogs += (await computeAgentCostForAgent(supabase, item.product_id, primaryBilledAgentId, billedAgentTier) / 10) * qty; // @ts-ignore
+        else if (item.product_id) totalCogs += (await computeAgentCostForAgent(supabase, item.product_id, primaryBilledAgentId, billedAgentTier) / 10) * qty;
       } else {
         const stored = Number(item.unit_cost_price);
         if (Number.isFinite(stored) && stored >= 0) totalCogs += stored * qty;
-        else if (item.product_id) totalCogs += (await computeAgentCostForAgent(supabase, item.product_id, primaryBilledAgentId, billedAgentTier) / 10) * qty; // @ts-ignore
+        else if (item.product_id) totalCogs += (await computeAgentCostForAgent(supabase, item.product_id, primaryBilledAgentId, billedAgentTier) / 10) * qty;
       }
     }
 
@@ -129,13 +129,13 @@ export async function POST(req: NextRequest) {
 
     const { data: primaryProfile, error: profileError } = await supabase
       .from('profiles').select('account_type, prepaid_balance, credit_limit')
-      .eq('id', primaryBilledAgentId).maybeSingle(); // @ts-ignore
+      .eq('id', primaryBilledAgentId).maybeSingle();
 
     if (profileError || !primaryProfile) return NextResponse.json({ error: 'Failed To Retrieve Billing Profile' }, { status: 500 });
 
     const chainCheck = await assertChainCanTransact(
       supabase,
-      primaryBilledAgentId, // @ts-ignore
+      primaryBilledAgentId,
       totalOwed,
       order.agent_id,
     );
@@ -156,16 +156,36 @@ export async function POST(req: NextRequest) {
     }
 
     if (order.agent_id && order.fulfillment_method === 'ship') {
-      for (const item of items) {
-        if (!item.product_id) continue;
+      const itemsToCheck = items.filter((item) => {
+        if (!item.product_id) return false;
         const qtyRequired = Number(item.quantity) || 0;
-        if (qtyRequired <= 0) continue;
-        const { data: invData } = await supabase.from('agent_inventory').select('stock_count').eq('agent_id', order.agent_id).eq('product_id', item.product_id).maybeSingle();
-        const currentStock = Number(invData?.stock_count) || 0;
-        if (currentStock < qtyRequired) {
-          return NextResponse.json({
-            error: `Insufficient Inventory For "${item.product_name}". You Need ${qtyRequired} Units, But Only Have ${currentStock} In Stock. Please Purchase More Bulk Inventory Before Approving This Order.`
-          }, { status: 400 });
+        if (qtyRequired <= 0) return false;
+        // Mirror the DB trigger's H10 guard: when the order was reserved at
+        // checkout, reserve_inventory ALREADY deducted agent_inventory for
+        // locally fulfilled lines, so re-checking on-hand stock here would
+        // falsely block a fully reserved order.
+        if (order.inventory_reserved === true && item.fulfilled_locally === true) return false;
+        return true;
+      });
+      if (itemsToCheck.length > 0) {
+        const productIds = Array.from(new Set(itemsToCheck.map((item) => item.product_id as string)));
+        const { data: invRows } = await supabase
+          .from('agent_inventory')
+          .select('product_id, stock_count')
+          .eq('agent_id', order.agent_id)
+          .in('product_id', productIds);
+        const stockByProduct = new Map<string, number>();
+        for (const inv of (invRows ?? []) as Array<{ product_id: string; stock_count: number | null }>) {
+          stockByProduct.set(inv.product_id, Number(inv.stock_count) || 0);
+        }
+        for (const item of itemsToCheck) {
+          const qtyRequired = Number(item.quantity) || 0;
+          const currentStock = stockByProduct.get(item.product_id as string) ?? 0;
+          if (currentStock < qtyRequired) {
+            return NextResponse.json({
+              error: `Insufficient Inventory For "${item.product_name}". You Need ${qtyRequired} Units, But Only Have ${currentStock} In Stock. Please Purchase More Bulk Inventory Before Approving This Order.`
+            }, { status: 400 });
+          }
         }
       }
     }
@@ -198,7 +218,7 @@ export async function POST(req: NextRequest) {
     let oldBalance = 0;
     if (primaryProfile.account_type === 'prepaid') {
       oldBalance = Number(primaryProfile.prepaid_balance) || 0;
-      const { data: deductSuccess, error: deductError } = await supabase.rpc('deduct_prepaid_balance', { agent_id: primaryBilledAgentId, amount: totalOwed }); // @ts-ignore
+      const { data: deductSuccess, error: deductError } = await supabase.rpc('deduct_prepaid_balance', { agent_id: primaryBilledAgentId, amount: totalOwed });
       if (deductError || !deductSuccess) {
         // Money did not move -- release the claim so the agent can retry.
         const { error: revertErr } = await supabase
@@ -220,7 +240,7 @@ export async function POST(req: NextRequest) {
     if (prepaidDeducted) {
       const newBalance = oldBalance - totalOwed;
       const { error: txError } = await supabase.from('balance_transactions').insert({
-        agent_id: primaryBilledAgentId, type: 'order_charge', amount: totalOwed, // @ts-ignore
+        agent_id: primaryBilledAgentId, type: 'order_charge', amount: totalOwed,
         balance_before: oldBalance, balance_after: newBalance,
         description: `Charge for Order ${orderId}`, reference_id: orderId, reference_type: 'order', created_by: callerId
       });

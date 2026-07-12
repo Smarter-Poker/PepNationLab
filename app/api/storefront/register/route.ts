@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
@@ -194,6 +194,7 @@ export async function POST(req: NextRequest) {
 
     const { error: profileError } = await admin
       .from('profiles')
+      // @ts-expect-error Database schema mismatch from generated types
       .upsert(profilePayload, { onConflict: 'id' });
 
     if (profileError) {

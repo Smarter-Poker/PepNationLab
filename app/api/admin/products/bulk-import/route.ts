@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
@@ -408,6 +408,7 @@ export async function POST(req: NextRequest) {
 
   const { data: upserted, error: upsertErr } = await supabase
     .from('products')
+    // @ts-expect-error Database schema mismatch from generated types
     .upsert(payload, { onConflict: 'slug' })
     .select('id, slug');
 

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * GET /api/cron/trials-sync
  *
@@ -13,6 +12,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 import { searchTrials, type CtgovTrial } from '@/lib/research/clinical-trials';
@@ -125,6 +125,15 @@ export async function GET(req: Request) {
       'succeeded',
       `processed=${processed} upserted=${upserted} failed=${failed}`,
     );
+
+    // Expire the shared 'compounds' cache tag when compound rows changed
+    // (trial counters are updated on every processed compound). In Next 16
+    // revalidateTag takes a profile arg; { expire: 0 } expires immediately.
+    if (processed > 0) {
+      try {
+        revalidateTag('compounds', { expire: 0 });
+      } catch { /* best-effort cache refresh */ }
+    }
 
     return NextResponse.json({
       ok: true,

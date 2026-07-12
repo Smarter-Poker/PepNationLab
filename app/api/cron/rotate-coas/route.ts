@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * /api/cron/rotate-coas
  *

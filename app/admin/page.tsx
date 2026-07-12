@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient, getCachedUser } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import AdminAnalytics from '@/components/LazyAdminAnalytics';
@@ -35,7 +35,9 @@ function formatAuditAction(action: string): string {
 export default async function AdminDashboard() {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  // Deduped per-request with the admin layout's auth check - getUser() is a
+  // network call to Supabase Auth.
+  const { user } = await getCachedUser();
   if (!user) redirect('/login');
 
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();

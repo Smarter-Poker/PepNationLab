@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 // R24 hotfix - Super-agent rollup of sub-agent sales.
 // Aggregates directly on the orders table (service client) instead of looping
 // through the auth-checked agent_sales_kpis RPC (which rejects service-role).

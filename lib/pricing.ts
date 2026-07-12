@@ -59,14 +59,19 @@ export async function getTierMultiplier(supabase: ServiceClient, productId: stri
   return getDefaultTierMultiplier(supabase, tier);
 }
 
+/** Shared legacy (v1) rounding: cost = base * multiplier, clamped to safe values. */
+function applyLegacyMultiplier(base: number, multiplier: number): number {
+  const safeBase = Number.isFinite(base) && base > 0 ? base : 0;
+  const safeMult = Number.isFinite(multiplier) && multiplier > 0 ? multiplier : 1.7;
+  return Math.round(safeBase * safeMult * 100) / 100;
+}
+
 export async function computeAgentCost(supabase: ServiceClient, productId: string, tier: AgentTier): Promise<number> {
   const [base, multiplier] = await Promise.all([
     getProductBaseCost(supabase, productId),
     getTierMultiplier(supabase, productId, tier),
   ]);
-  const safeBase = Number.isFinite(base) && base > 0 ? base : 0;
-  const safeMult = Number.isFinite(multiplier) && multiplier > 0 ? multiplier : 1.7;
-  return Math.round(safeBase * safeMult * 100) / 100;
+  return applyLegacyMultiplier(base, multiplier);
 }
 
 export async function computeSubAgentBaselineCost(supabase: ServiceClient, productId: string, superAgentId: string): Promise<number> {
@@ -136,31 +141,58 @@ export async function resolveHouseTierLevel(supabase: ServiceClient, agentId: st
   return Number(data);
 }
 
-/** v2 wholesale cost for a House-facing agent: cost = base * (1 + markup(level)). */
-export async function computeAgentCostV2(supabase: ServiceClient, productId: string, agentId: string): Promise<number> {
-  const [base, profileRes, level, tiers] = await Promise.all([
-    getProductBaseCost(supabase, productId),
-    supabase.from('profiles').select('custom_markup_override').eq('id', agentId).maybeSingle(),
-    resolveHouseTierLevel(supabase, agentId),
+/** Cached per-agent flat markup override (profiles.custom_markup_override). */
+async function getAgentMarkupOverride(supabase: ServiceClient, agentId: string): Promise<number | null> {
+  const key = `markupOverride:${agentId}`;
+  const hit = getCached<number | null>(key);
+  if (hit !== undefined) return hit;
+  const { data } = await supabase.from('profiles').select('custom_markup_override').eq('id', agentId).maybeSingle();
+  const value = data?.custom_markup_override != null ? Number(data.custom_markup_override) : null;
+  return setCache(key, value);
+}
+
+/** Cached wrapper around resolveHouseTierLevel, keyed per agent. */
+async function getHouseTierLevelCached(supabase: ServiceClient, agentId: string): Promise<number> {
+  const key = `houseLevel:${agentId}`;
+  const hit = getCached<number>(key);
+  if (hit !== undefined) return hit;
+  return setCache(key, await resolveHouseTierLevel(supabase, agentId));
+}
+
+/** Shared v2 rounding: cost = base * (1 + markup), clamped to safe values. */
+function applyHouseMarkup(base: number, markup: number): number {
+  const safeMarkup = Number.isFinite(markup) && markup >= 0 ? markup : 0.7; // Hard fail-safe
+  const safeBase = Number.isFinite(base) && base > 0 ? base : 0;
+  return Math.round(safeBase * (1 + safeMarkup) * 100) / 100;
+}
+
+/**
+ * Resolve the agent's effective v2 markup (flat override else house tier
+ * ladder) once. All per-agent inputs are TTL-cached, so repeat calls within
+ * the cache window are free.
+ */
+async function resolveV2Markup(supabase: ServiceClient, agentId: string): Promise<number> {
+  const [customOverride, level, tiers] = await Promise.all([
+    getAgentMarkupOverride(supabase, agentId),
+    getHouseTierLevelCached(supabase, agentId),
     getHouseTiers(supabase),
   ]);
-  const customOverride = profileRes.data?.custom_markup_override != null ? Number(profileRes.data.custom_markup_override) : null;
-  
-  let markup = 0;
-  if (customOverride !== null) {
-    markup = customOverride;
-  } else {
-    const tier = tiers.find((t) => t.level === level);
-    // Safety: on an unknown level or missing config, fall back to the HIGHEST
-    // configured markup (most house-protective), or 0.7 if the table is empty.
-    markup = tier
-      ? tier.markup
-      : (tiers.length ? Math.max(...tiers.map((t) => t.markup)) : 0.7);
-  }
-  
-  if (!Number.isFinite(markup) || markup < 0) markup = 0.7; // Hard fail-safe
-  const safeBase = Number.isFinite(base) && base > 0 ? base : 0;
-  return Math.round(safeBase * (1 + markup) * 100) / 100;
+  if (customOverride !== null) return customOverride;
+  const tier = tiers.find((t) => t.level === level);
+  // Safety: on an unknown level or missing config, fall back to the HIGHEST
+  // configured markup (most house-protective), or 0.7 if the table is empty.
+  return tier
+    ? tier.markup
+    : (tiers.length ? Math.max(...tiers.map((t) => t.markup)) : 0.7);
+}
+
+/** v2 wholesale cost for a House-facing agent: cost = base * (1 + markup(level)). */
+export async function computeAgentCostV2(supabase: ServiceClient, productId: string, agentId: string): Promise<number> {
+  const [base, markup] = await Promise.all([
+    getProductBaseCost(supabase, productId),
+    resolveV2Markup(supabase, agentId),
+  ]);
+  return applyHouseMarkup(base, markup);
 }
 
 /**
@@ -176,6 +208,112 @@ export async function computeAgentCostForAgent(
 ): Promise<number> {
   if (isTierLadderV2()) return computeAgentCostV2(supabase, productId, agentId);
   return computeAgentCost(supabase, productId, legacyTier);
+}
+
+/* ── Batch pricing API ──────────────────────────────────────────────────────
+   Per-product calls to computeAgentCostForAgent re-resolve the same per-agent
+   constants on every call (custom_markup_override select + house tier RPC on
+   the live v2 path), turning an N-product catalog into 2-3 x N queries. The
+   helpers below resolve that agent context ONCE (TTL-cached per agent) and
+   then price any number of products in memory with the exact same formula
+   and rounding as the per-product path. */
+
+export type AgentPricingContext =
+  | { ladderV2: true; markup: number }
+  | { ladderV2: false; tier: AgentTier; defaultMultiplier: number };
+
+/** Resolve the per-agent pricing constants once (flag-aware, TTL-cached). */
+export async function resolveAgentPricingContext(
+  supabase: ServiceClient,
+  agentId: string,
+  legacyTier: AgentTier,
+): Promise<AgentPricingContext> {
+  if (isTierLadderV2()) {
+    return { ladderV2: true, markup: await resolveV2Markup(supabase, agentId) };
+  }
+  return {
+    ladderV2: false,
+    tier: legacyTier,
+    defaultMultiplier: await getDefaultTierMultiplier(supabase, legacyTier),
+  };
+}
+
+/** Batched legacy per-product override lookup, sharing the per-product TTL cache. */
+async function getProductOverrideMultipliers(
+  supabase: ServiceClient,
+  productIds: string[],
+  tier: AgentTier,
+): Promise<Map<string, number | null>> {
+  const result = new Map<string, number | null>();
+  const missing: string[] = [];
+  for (const id of productIds) {
+    const hit = getCached<number | null>(`override:${id}:${tier}`);
+    if (hit !== undefined) result.set(id, hit);
+    else missing.push(id);
+  }
+  if (missing.length > 0) {
+    const { data } = await supabase
+      .from('product_tier_overrides')
+      .select('product_id, custom_multiplier')
+      .in('product_id', missing)
+      .eq('tier_name', tier);
+    const fetched = new Map<string, number | null>(
+      (data ?? []).map((r) => [String(r.product_id), r.custom_multiplier != null ? Number(r.custom_multiplier) : null]),
+    );
+    for (const id of missing) {
+      result.set(id, setCache(`override:${id}:${tier}`, fetched.get(id) ?? null));
+    }
+  }
+  return result;
+}
+
+/** Price a single product against an already-resolved agent context. */
+async function computeCostWithContext(
+  supabase: ServiceClient,
+  context: AgentPricingContext,
+  productId: string,
+): Promise<number> {
+  const base = await getProductBaseCost(supabase, productId);
+  if (context.ladderV2) return applyHouseMarkup(base, context.markup);
+  const override = await getProductOverrideMultiplier(supabase, productId, context.tier);
+  return applyLegacyMultiplier(base, override !== null ? override : context.defaultMultiplier);
+}
+
+/**
+ * Batch version of computeAgentCostForAgent: resolves the agent context once
+ * and prices every product in memory, producing identical numbers to the
+ * per-product path on both the v2-live and legacy (v1) paths.
+ *
+ * Callers supply each product's base_cost (the same products.base_cost column
+ * the per-product path reads). Products with a NULL base_cost must be
+ * excluded by the caller - the per-product path throws for them, so their
+ * cost is undefined and lookups on the returned map miss.
+ */
+export async function computeAgentCostsForAgent(
+  supabase: ServiceClient,
+  agentId: string,
+  legacyTier: AgentTier,
+  products: ReadonlyArray<{ id: string; base_cost: number }>,
+): Promise<Map<string, number>> {
+  const costs = new Map<string, number>();
+  if (products.length === 0) return costs;
+  const context = await resolveAgentPricingContext(supabase, agentId, legacyTier);
+  if (context.ladderV2) {
+    for (const p of products) {
+      costs.set(p.id, applyHouseMarkup(Number(p.base_cost), context.markup));
+    }
+    return costs;
+  }
+  const overrides = await getProductOverrideMultipliers(
+    supabase,
+    products.map((p) => p.id),
+    context.tier,
+  );
+  for (const p of products) {
+    const override = overrides.get(p.id) ?? null;
+    costs.set(p.id, applyLegacyMultiplier(Number(p.base_cost), override !== null ? override : context.defaultMultiplier));
+  }
+  return costs;
 }
 
 export function applyBulkPrice(base: number, qty: number, bulkPrice: number | null | undefined, bulkThreshold: number | null | undefined): number {
@@ -226,7 +364,7 @@ export async function verifyCommissionSafeguard(
 
   if (!products || products.length === 0) return { safe: true, warning: false };
 
-  // Need legacy tier for computeAgentCostForAgent
+  // Need legacy tier for the pricing context (legacy v1 fallback path)
   const { data: agentProfile } = await supabase
     .from('profiles')
     .select('tier')
@@ -234,14 +372,37 @@ export async function verifyCommissionSafeguard(
     .maybeSingle();
   const legacyTier = (agentProfile?.tier as AgentTier | null) ?? 'tier_3';
 
+  // Resolve the per-agent pricing constants ONCE and prefetch every product
+  // cost in parallel. Previously this loop re-resolved the agent context per
+  // product (2-3 sequential queries x N products). Errors are captured per
+  // product and re-thrown at that product's position in the ordered loop
+  // below, preserving the original sequential semantics (an earlier unsafe
+  // product still short-circuits before a later product's error surfaces).
+  const context = await resolveAgentPricingContext(supabase, agentId, legacyTier);
+  const costResults: Array<{ cost: number } | { err: unknown } | null> = await Promise.all(
+    products.map(async (p) => {
+      const retail = Number(p.retail_price);
+      if (!Number.isFinite(retail) || retail <= 0) return null;
+      try {
+        return { cost: await computeCostWithContext(supabase, context, p.product_id) };
+      } catch (err) {
+        return { err };
+      }
+    })
+  );
+
   let hasWarning = false;
 
-  for (const p of products) {
+  for (let i = 0; i < products.length; i++) {
+    const p = products[i];
     const retail = Number(p.retail_price);
     if (!Number.isFinite(retail) || retail <= 0) continue;
 
-    const cost = await computeAgentCostForAgent(supabase, p.product_id, agentId, legacyTier);
-    
+    const resolved = costResults[i];
+    if (resolved == null) continue;
+    if ('err' in resolved) throw resolved.err;
+    const cost = resolved.cost;
+
     // Agent Net Profit Pct = (Retail - Cost) / Retail * 100 - Commission Pct
     const grossMarginPct = ((retail - cost) / retail) * 100;
     const netMarginPct = grossMarginPct - checkPct;

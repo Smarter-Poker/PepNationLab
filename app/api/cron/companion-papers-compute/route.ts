@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * GET /api/cron/companion-papers-compute
  * Weekly recompute of compound_companion_papers using PMID co-occurrence
@@ -56,6 +56,7 @@ export async function GET(req: Request) {
       }));
       const { error } = await supabase
         .from('compound_companion_papers')
+        // @ts-expect-error Database schema mismatch from generated types
         .upsert(toUpsert, { onConflict: 'compound_slug,related_slug' });
       if (!error) written += toUpsert.length;
     }

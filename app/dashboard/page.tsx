@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, getCachedUser } from '@/lib/supabase/server';
 import Navbar from '@/components/Navbar';
 import ResearcherDashboard from '@/components/ResearcherDashboard';
 
@@ -9,7 +9,9 @@ export default async function DashboardPage({
   searchParams: Promise<{ welcome?: string }>;
 }) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  // Deduped per-request with the dashboard layout's auth check - getUser()
+  // is a network call to Supabase Auth.
+  const { user } = await getCachedUser();
 
   if (!user) redirect('/login');
 

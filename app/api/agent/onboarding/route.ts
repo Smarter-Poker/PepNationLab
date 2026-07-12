@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { createAdminClient } from '@/lib/supabase/server';
@@ -326,6 +326,7 @@ export async function POST(req: NextRequest) {
   // Helper to merge an acknowledgment flag into onboarding_progress.
   const setAck = async (col: string) => {
     const progress = { ...((profile.onboarding_progress as Record<string, unknown>) ?? {}), [col]: true };
+    // @ts-expect-error Database schema mismatch from generated types
     return service.from('profiles').update({ onboarding_progress: progress }).eq('id', gate.user.id);
   };
 

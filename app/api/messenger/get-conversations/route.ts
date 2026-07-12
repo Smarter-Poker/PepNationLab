@@ -207,7 +207,7 @@ async function shouldUseHierarchy(
 
   const { data, error } = await svc
     .from('profiles')
-    .select('id', { count: 'exact', head: false })
+    .select('id')
     .or(`parent_agent_id.eq.${caller.id},referring_agent_id.eq.${caller.id},referring_sub_agent_id.eq.${caller.id}`)
     .neq('id', caller.id)
     .eq('is_active', true)

@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, getCachedUser } from '@/lib/supabase/server';
 import { AdminLayoutClient } from './AdminLayoutClient';
 
 // This layout calls supabase.auth.getUser() (reads cookies) to gate admins, so
@@ -14,7 +14,9 @@ export const dynamic = 'force-dynamic';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  // Deduped per-request with the admin page's auth check - getUser() is a
+  // network call to Supabase Auth.
+  const { user } = await getCachedUser();
   if (!user) redirect('/login');
 
   // maybeSingle() instead of single() so a fresh auth user without a profiles

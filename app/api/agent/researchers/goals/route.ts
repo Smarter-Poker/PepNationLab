@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';

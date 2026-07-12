@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 // R24 hotfix - Sales auto-insights.
 // Uses real schema: agent_inventory.stock_count, derives dormancy via orders join.
 // All RPC calls use user-authed client so SECURITY DEFINER caller-check passes.

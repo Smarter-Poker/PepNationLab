@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgentOrAdmin } from '@/lib/admin-auth';
@@ -34,12 +33,25 @@ export async function GET(req: NextRequest) {
         cart: r.cart_state,
         updated_at: r.cart_updated_at
       }))
-      .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()); // @ts-ignore
+      .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
 
     // 2. Fetch all orders for this agent
+    // Explicit column lists instead of '*, order_items(*)': this fetch is
+    // capped at 2500 orders, and the wildcard pulled every order and line-item
+    // column into the route. The order columns below are exactly the ones the
+    // mapping further down reads; the order_items columns cover the route's
+    // profit math (unit_retail_price, unit_cost_price, quantity) plus the raw
+    // items passthrough consumed by components/AgentSales.tsx (product_name,
+    // quantity, unit_retail_price, unit_cost_price).
     const { data: orders, error: ordersError } = await supabase
       .from('orders')
-      .select('*, order_items(*), profiles!orders_buyer_id_fkey(full_name, email)')
+      .select(
+        'id, buyer_id, agent_id, status, fulfillment_method, payment_method, shipping_address, ' +
+        'shipping_cost, subtotal, total, discount_amount, coupon_code, created_at, ' +
+        'tracking_number, label_url, ' +
+        'order_items(id, order_id, product_id, product_name, quantity, unit_retail_price, unit_cost_price), ' +
+        'profiles!orders_buyer_id_fkey(full_name, email)'
+      )
       .eq('agent_id', agentId)
       // Exclude wholesale restock orders from the sales view.
       // Restocks were appearing as zero-profit 'sales' in the agent dashboard.

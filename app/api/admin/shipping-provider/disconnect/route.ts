@@ -11,6 +11,7 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { requireAdmin, assertMfaRecent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { invalidateActiveKeyCache } from '@/lib/shipping';
 import { createServiceClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
@@ -53,6 +54,8 @@ export async function DELETE(req: NextRequest) {
       { status: 500 },
     );
   }
+
+  invalidateActiveKeyCache();
 
   await supabase.from('admin_audit_log').insert({
     actor_id: gate.userId,

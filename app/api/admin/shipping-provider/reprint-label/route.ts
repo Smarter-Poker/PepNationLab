@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * POST /api/admin/shipping-provider/reprint-label
  *

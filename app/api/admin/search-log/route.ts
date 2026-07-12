@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
       admin_id: admin.userId ?? null,
       query,
       scope,
+      // @ts-expect-error Database schema mismatch from generated types
       filters,
       user_agent: ua,
     });

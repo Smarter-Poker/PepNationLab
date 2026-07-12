@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * POST /api/webhooks/easypost  (also GET for portal liveness checks)
  *
@@ -141,6 +141,7 @@ export async function POST(req: NextRequest) {
       .insert({
         event_id: `rejected:${asString(parsed.id) || fallbackEventId(rawBody)}:${Date.now()}`,
         event_type: description,
+        // @ts-expect-error Database schema mismatch from generated types
         payload: parsed,
         provider: 'easypost',
         processing_error: 'signature_invalid',
@@ -154,6 +155,7 @@ export async function POST(req: NextRequest) {
   const eventId = asString(parsed.id) || fallbackEventId(rawBody);
   const { error: claimErr } = await supabase
     .from('shipping_webhook_events')
+    // @ts-expect-error Database schema mismatch from generated types
     .insert({ event_id: eventId, event_type: description, payload: parsed, provider: 'easypost' });
   if (claimErr) {
     // Unique violation => already processed; anything else is a genuine DB

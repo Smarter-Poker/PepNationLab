@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 import { type NextRequest } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 

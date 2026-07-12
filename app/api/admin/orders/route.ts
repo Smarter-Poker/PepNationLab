@@ -1,4 +1,3 @@
-// @ts-nocheck
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
@@ -25,12 +24,23 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get('status');
     const query = searchParams.get('query');
 
+    // Explicit column list instead of '*': this fetch is capped at 5000 rows
+    // and the wildcard shipped every order column to the admin client. The
+    // list below covers every field the consumer (app/admin/orders/page.tsx)
+    // reads, plus every column referenced by the in-memory status-visibility
+    // filter and text search below (status, agent_id, id, joined profiles).
     let dbQuery = supabase
       .from('orders')
-      .select('*, profiles!orders_buyer_id_fkey(full_name, email, phone)');
+      .select(
+        'id, buyer_id, agent_id, status, fulfillment_method, payment_method, shipping_address, ' +
+        'shipping_cost, subtotal, discount_amount, coupon_code, total, tracking_number, ' +
+        'agent_approved_at, agent_approval_notes, created_at, is_wholesale_restock, ' +
+        'buyer_name, buyer_email, ' +
+        'profiles!orders_buyer_id_fkey(full_name, email, phone)'
+      );
 
     if (status) {
-      dbQuery = dbQuery.eq('status', status); // @ts-ignore
+      dbQuery = dbQuery.eq('status', status);
     }
 
     // Sort by created_at desc. Safety-valve cap against an unbounded full-table

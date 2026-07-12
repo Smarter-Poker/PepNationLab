@@ -1,4 +1,3 @@
-// @ts-nocheck
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
@@ -19,9 +18,22 @@ export async function GET() {
   try {
     const supabase = createAdminClient();
 
+    // Explicit column list instead of '*': this endpoint returns up to 2000
+    // profile rows, and the wildcard was shipping wide/unused columns
+    // (cart_state JSONB, commission config, acquisition metadata, ...) to the
+    // browser on every load. The list below covers every field read by the
+    // consumers of this response (components/AdminAgents.tsx,
+    // app/admin/agent-notes/page.tsx, app/admin/coupons/page.tsx).
+    // provisioned_password stays intentionally - the admin agents screen has a
+    // reveal-password feature that renders it.
     const { data, error } = await supabase
       .from('profiles')
-      .select('*, auto_approve_orders, provisioned_password, agent_profiles(slug, is_active)')
+      .select(
+        'id, created_at, full_name, first_name, last_name, username, email, phone, role, tier, ' +
+        'account_type, credit_limit, prepaid_balance, is_active, is_super_agent, is_sub_agent, ' +
+        'parent_agent_id, auto_approve_orders, provisioned_password, last_sign_in_at, ' +
+        'agent_profiles(slug, is_active)'
+      )
       .in('role', ['agent', 'super_agent'])
       .order('created_at', { ascending: false })
       .limit(2000);

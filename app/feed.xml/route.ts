@@ -89,8 +89,6 @@ ${items.map((it) => `    <item>
     status: 200,
     headers: {
       'Content-Type': 'application/rss+xml; charset=utf-8',
-      // Browser and CDN 15m, then serve stale for 1h while revalidating -
-      // feed readers poll aggressively and never need up-to-the-second data.
       'Cache-Control': 'public, max-age=900, s-maxage=900, stale-while-revalidate=3600',
     },
   });

@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * Server-only helpers for resolving products on research area pages.
  * Bridges compounds → products → agent pricing for the logged-in user.

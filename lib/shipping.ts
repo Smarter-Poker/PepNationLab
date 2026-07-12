@@ -212,6 +212,37 @@ function getAdminClient(): SupabaseClient {
 // Key resolver
 // ---------------------------------------------------------------------------
 
+// Module-level in-process TTL cache for the resolved active key, mirroring the
+// getCached/setCache pattern in lib/pricing.ts. Without it every shipping
+// quote re-queries shipping_provider_credentials (and re-decrypts the key).
+// Keyed by provider; this module only speaks EasyPost today.
+const ACTIVE_KEY_CACHE_TTL_MS = 60_000;
+interface ActiveKeyCacheEntry { value: ActiveKey; expires: number; }
+const activeKeyCache = new Map<string, ActiveKeyCacheEntry>();
+
+function getCachedActiveKey(provider: string): ActiveKey | undefined {
+  const entry = activeKeyCache.get(provider);
+  if (!entry) return undefined;
+  if (Date.now() > entry.expires) { activeKeyCache.delete(provider); return undefined; }
+  return entry.value;
+}
+
+function setActiveKeyCache(provider: string, value: ActiveKey): ActiveKey {
+  activeKeyCache.set(provider, { value, expires: Date.now() + ACTIVE_KEY_CACHE_TTL_MS });
+  return value;
+}
+
+/**
+ * Drop the cached active key so the next getActiveKey() re-reads the DB.
+ * No code path in this module writes or rotates credentials; the admin
+ * connect / disconnect / rotate routes own those writes and can call this
+ * to bust the in-process cache immediately (the 60s TTL bounds staleness
+ * for any other warm instance).
+ */
+export function invalidateActiveKeyCache(): void {
+  activeKeyCache.clear();
+}
+
 /**
  * Resolve the active EasyPost API key in priority order:
  *   1. Active row in `shipping_provider_credentials` (admin-connected).
@@ -228,6 +259,10 @@ function getAdminClient(): SupabaseClient {
 export async function getActiveKey(agentId?: string): Promise<ActiveKey> {
   void agentId; // per-agent keys no longer exist; parameter kept for API parity
 
+  const cacheProvider = 'easypost';
+  const cached = getCachedActiveKey(cacheProvider);
+  if (cached) return cached;
+
   // 1) Active platform DB row
   try {
     const admin = getAdminClient();
@@ -242,11 +277,11 @@ export async function getActiveKey(agentId?: string): Promise<ActiveKey> {
         iv: row.api_key_iv as Buffer,
         tag: row.api_key_tag as Buffer,
       });
-      return {
+      return setActiveKeyCache(cacheProvider, {
         token: plaintext,
         mode: (row.mode as ShippingMode) ?? inferMode(plaintext),
         source: 'platform_db',
-      };
+      });
     }
   } catch (err) {
     console.warn('[shipping] shipping_provider_credentials lookup failed; falling through:', err);
@@ -260,11 +295,11 @@ export async function getActiveKey(agentId?: string): Promise<ActiveKey> {
       ? envLive || envTest
       : envTest || envLive;
   if (envToken) {
-    return {
+    return setActiveKeyCache(cacheProvider, {
       token: envToken,
       mode: inferMode(envToken),
       source: 'env',
-    };
+    });
   }
 
   throw new Error('No active EasyPost credentials. Connect EasyPost in the admin settings or set EASYPOST_API_KEY.');

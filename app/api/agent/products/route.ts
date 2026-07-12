@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { revalidateTag } from 'next/cache';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgentOrAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
-import { computeAgentCostForAgent } from '@/lib/pricing';
+import { computeAgentCostForAgent, computeAgentCostsForAgent } from '@/lib/pricing';
 import type { AgentTier } from '@/lib/pricing';
 import { AgentProductPatchSchema } from '@/lib/schemas/product';
 import { parseJsonBody } from '@/lib/schemas/http';
@@ -45,7 +44,18 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
     }
 
-    const augmentedPromises = (data ?? []).map(async ap => {
+    const rows = data ?? [];
+
+    // Resolve the agent's pricing context once and price the whole catalog in
+    // memory - previously this issued 2-3 queries per agent product.
+    const pricedProducts = rows
+      .filter(ap => ap.product_id && (ap.products as any)?.base_cost != null && Number((ap.products as any).base_cost) > 0)
+      .map(ap => ({ id: ap.product_id as string, base_cost: Number((ap.products as any).base_cost) }));
+    const costMap = gate.isAdmin
+      ? new Map<string, number>()
+      : await computeAgentCostsForAgent(supabase, agentId, tier, pricedProducts);
+
+    const augmented = rows.map(ap => {
       const productId = ap.product_id as string;
       const baseCost = (ap.products as any)?.base_cost != null
         ? Number((ap.products as any).base_cost)
@@ -55,9 +65,7 @@ export async function GET(req: NextRequest) {
       // get their tier-multiplied / custom-scaled cost.
       let agentCost = 0;
       if (baseCost > 0) {
-         agentCost = gate.isAdmin
-           ? baseCost
-           : await computeAgentCostForAgent(supabase, productId, agentId, tier);
+         agentCost = gate.isAdmin ? baseCost : (costMap.get(productId) ?? 0);
       }
 
       const { base_cost: _stripped, ...safeProducts } = (ap.products as any) ?? {};
@@ -70,8 +78,6 @@ export async function GET(req: NextRequest) {
         agent_tier: tier,
       };
     });
-
-    const augmented = await Promise.all(augmentedPromises);
 
     return NextResponse.json({ data: augmented });
   } catch (err) {
@@ -306,14 +312,6 @@ export async function PATCH(req: NextRequest) {
     if (error) {
       return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
     }
-
-    // Purge the public storefront catalog cache so shoppers see the price /
-    // visibility / naming change immediately instead of waiting out the 120s
-    // data-cache window. Global tag only - the agent's slug is not in scope
-    // here and fetching it would cost an extra round-trip.
-    try {
-      revalidateTag('storefront-catalog', { expire: 0 });
-    } catch { /* best-effort cache refresh */ }
 
     return NextResponse.json({ success: true });
   } catch (err) {

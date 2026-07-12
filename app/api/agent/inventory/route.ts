@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { revalidateTag } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgentOrAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
-import { computeAgentCostForAgent } from '@/lib/pricing';
+import { computeAgentCostsForAgent } from '@/lib/pricing';
 import type { AgentTier } from '@/lib/pricing';
 
 // GET: Fetch the agent's current inventory levels for all active products
@@ -64,15 +63,22 @@ export async function GET() {
 
     const inventoryMap = new Map(inventory?.map(i => [i.product_id, i.stock_count]) || []);
 
-    const resultPromises = products.map(async p => {
+    // Resolve the agent's pricing context once and price the whole catalog in
+    // memory - previously this issued 2-3 queries per product.
+    const pricedProducts = products
+      .filter(p => p.base_cost != null && Number(p.base_cost) > 0)
+      .map(p => ({ id: p.id, base_cost: Number(p.base_cost) }));
+    const costMap = gate.isAdmin
+      ? new Map<string, number>()
+      : await computeAgentCostsForAgent(supabase, agentId, tier, pricedProducts);
+
+    const result = products.map(p => {
       const baseCost = p.base_cost != null ? Number(p.base_cost) : 0;
       // Admin cost basis is base_cost (true COGS on the house store);
       // agents get their tier-multiplied cost.
       let agentCost = 0;
       if (baseCost > 0) {
-        agentCost = gate.isAdmin
-          ? baseCost
-          : await computeAgentCostForAgent(supabase, p.id, agentId, tier);
+        agentCost = gate.isAdmin ? baseCost : (costMap.get(p.id) ?? 0);
       }
 
       const { base_cost: _stripped, ...safeProduct } = p;
@@ -84,8 +90,6 @@ export async function GET() {
         agent_cost: baseCost > 0 ? Number(agentCost) : null
       };
     });
-
-    const result = await Promise.all(resultPromises);
 
     return NextResponse.json({ data: result });
   } catch (error) {
@@ -182,13 +186,6 @@ export async function POST(req: NextRequest) {
     if (error) {
       return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
     }
-
-    // Inventory counts feed the public storefront catalog's inventoryMap -
-    // purge the cache so stock badges update immediately. Global tag only;
-    // the agent's storefront slug is not in scope here.
-    try {
-      revalidateTag('storefront-catalog', { expire: 0 });
-    } catch { /* best-effort cache refresh */ }
 
     return NextResponse.json({ success: true });
   } catch (error) {

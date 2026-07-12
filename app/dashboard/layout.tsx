@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, getCachedUser } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +18,9 @@ export const dynamic = 'force-dynamic';
  */
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  // Deduped per-request: the page below also needs the auth user, and
+  // auth.getUser() is a network call to Supabase Auth.
+  const { user } = await getCachedUser();
 
   if (!user) {
     redirect('/login');

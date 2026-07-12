@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
@@ -139,6 +139,7 @@ export async function PUT(req: NextRequest) {
   if (update.payment_handles !== undefined) {
     await supabase
       .from('agent_profiles')
+      // @ts-expect-error Database schema mismatch from generated types
       .update({ payment_handles: update.payment_handles })
       .eq('id', user.id);
   }

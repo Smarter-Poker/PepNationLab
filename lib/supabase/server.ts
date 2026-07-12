@@ -1,6 +1,6 @@
 import 'server-only';
+import { cache } from 'react';
 import { createServerClient } from '@supabase/ssr';
-import type { Database } from '@/types/database.types';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { getSupabaseUrl } from '@/lib/supabase/url';
@@ -8,7 +8,7 @@ import { getSupabaseUrl } from '@/lib/supabase/url';
 export async function createClient() {
   const cookieStore = await cookies();
 
-  const client = createServerClient<Database>(
+  const client = createServerClient(
     getSupabaseUrl(),
     (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim(),
     {
@@ -47,8 +47,26 @@ export async function createClient() {
   return client;
 }
 
+/**
+ * getCachedUser - React cache()-deduped per-request auth lookup.
+ *
+ * supabase.auth.getUser() is a NETWORK round-trip to Supabase Auth, and in a
+ * single request the layout and the page under it each call it. cache()
+ * memoizes the result for the lifetime of one server render pass, so the
+ * network call happens at most once per request. Uses the same SSR client
+ * factory above (including its getUser error guard), so the returned user is
+ * shape-identical to `(await supabase.auth.getUser()).data.user`. The client
+ * that performed the lookup is returned for convenience; call sites that run
+ * additional queries may keep creating their own client via createClient().
+ */
+export const getCachedUser = cache(async () => {
+  const supabase = await createClient();
+  const { data: { user }, error } = await supabase.auth.getUser();
+  return { user, error, supabase };
+});
+
 export async function createServiceClient() {
-  return createServerClient<Database>(
+  return createServerClient(
     getSupabaseUrl(),
     (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim(),
     {
@@ -71,7 +89,7 @@ export async function createServiceClient() {
  * NEVER expose this client to the browser.
  */
 export function createAdminClient() {
-  return createSupabaseClient<Database>(
+  return createSupabaseClient(
     getSupabaseUrl(),
     (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim(),
     {

@@ -1,6 +1,4 @@
-// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
-import { revalidateTag } from 'next/cache';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { CheckoutSchema } from '@/lib/schemas/order';
 import { applyBulkPrice, isTierLadderV2 } from '@/lib/pricing';
@@ -158,6 +156,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Consolidated agent_profiles config for the agent of record. One query
+    // covers everything this route needs from that table: slug + min-qty rules
+    // (storefront checks below), bundles_config (stack discount), and
+    // volume_pricing_enabled (quantity discounts) -- previously fetched in up
+    // to three separate round trips.
+    let agentConfig: {
+      id: string;
+      slug: string | null;
+      min_overall_qty: number | null;
+      min_order_qty: number | null;
+      bundles_config: unknown;
+      volume_pricing_enabled: boolean | null;
+    } | null = null;
+    if (agentProfile) {
+      const { data: acRow } = await serviceSupabase
+        .from('agent_profiles')
+        .select('id, slug, min_overall_qty, min_order_qty, bundles_config, volume_pricing_enabled')
+        .eq('id', agentProfile.id)
+        .maybeSingle();
+      agentConfig = acRow ?? null;
+    }
+
     // Cart item ids may be agent_product ids (mobile by-name / quick-add path via
     // CartContext, where the storefront grid is not mounted) or master product ids
     // (storefront / reorder paths). Every downstream lookup here resolves against
@@ -187,6 +207,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed To Retrieve Product Data.' }, { status: 400 });
     }
 
+    // O(1) product lookups inside the per-item loops below (replaces repeated
+    // Array.find scans; same rows, same misses).
+    const productById = new Map(dbProducts.map(p => [p.id as string, p]));
+
     // Fetch Agent Inventory if a researcher is buying
     let agentStockMap: Record<string, number> = {};
     if (agentProfile && !isAgentSelfBuy) {
@@ -206,7 +230,7 @@ export async function POST(request: NextRequest) {
     // Check for banned or deactivated products and inventory limits
     for (let idx = 0; idx < items.length; idx++) {
       const cartItem = items[idx];
-      const dbProduct = dbProducts.find(p => p.id === cartItem.id);
+      const dbProduct = productById.get(cartItem.id);
       if (!dbProduct) {
         return NextResponse.json(
           { error: `Product ID "${cartItem.id}" Is No Longer Available. Please Return To The Store And Refresh Your Cart.` },
@@ -253,19 +277,29 @@ export async function POST(request: NextRequest) {
       const visibleSet = new Set((visibleRows ?? []).map((r: any) => r.product_id as string));
       const blocked = items.find(i => !visibleSet.has(i.id));
       if (blocked) {
-        const blockedName = dbProducts?.find(p => p.id === blocked.id)?.name ?? blocked.id;
+        const blockedName = productById.get(blocked.id)?.name ?? blocked.id;
         return NextResponse.json({ error: `Product "${blockedName}" Is Not Available Through This Agent's Store.` }, { status: 403 });
       }
     }
 
     if (agentSlug) {
+      // Reuse the consolidated agent-of-record row when its slug is an exact
+      // match for the requested storefront (agent_profiles.slug is UNIQUE, so
+      // the by-slug query would return the same row). Otherwise fall back to
+      // the by-slug lookup -- e.g. an agent self-buy on a different agent's
+      // storefront, or a buyer with no agent of record.
       // Use .eq() not .ilike() -- slug is a user-supplied value; underscore in
       // .ilike() is a LIKE wildcard that could match wrong storefronts.
-      const { data: storefrontAgent } = await serviceSupabase
-        .from('agent_profiles')
-        .select('id, min_overall_qty, min_order_qty')
-        .eq('slug', agentSlug)
-        .maybeSingle();
+      let storefrontAgent: { id: string; min_overall_qty: number | null; min_order_qty: number | null } | null =
+        agentConfig && agentConfig.slug === agentSlug ? agentConfig : null;
+      if (!storefrontAgent) {
+        const { data: slugAgent } = await serviceSupabase
+          .from('agent_profiles')
+          .select('id, min_overall_qty, min_order_qty')
+          .eq('slug', agentSlug)
+          .maybeSingle();
+        storefrontAgent = slugAgent ?? null;
+      }
 
       if (!storefrontAgent) {
         return NextResponse.json({ error: 'Agent Storefront Not Found.' }, { status: 404 });
@@ -294,71 +328,104 @@ export async function POST(request: NextRequest) {
       // per-slug visible-products query since the universal guard ran first.
     }
 
-    // 1. Fetch Admin Default Multipliers
-    const { data: tiers } = await serviceSupabase.from('pricing_tiers').select('tier_name, multiplier');
-    const tierMultipliers: Record<string, number> = {};
-    tiers?.forEach(t => { tierMultipliers[t.tier_name] = Number(t.multiplier); });
-
-    // fix-57 #2: fetch active flash sale (if any). Single row max.
-    // Applied to researcher retail pricing only - agent self-buys and
-    // wholesale restocks are exempt (already at wholesale tier).
+    // Wholesale / flash-sale eligibility flags (decide which pricing reads to
+    // issue below).
+    // fix-57 #2: flash sale applies to researcher retail pricing only - agent
+    // self-buys and wholesale restocks are exempt (already at wholesale tier).
     const wholesaleExplicit = explicitWholesale === true &&
       (profile.role === 'agent' || profile.role === 'super_agent') &&
       !isSubAgent;
     const flashSaleEligible = !isAgentSelfBuy && !isSubAgent && !wholesaleExplicit;
+
+    const agentTier = agentProfile?.tier || 'tier_3';
+    const superAgentTier = superAgentProfile ? (superAgentProfile.tier || 'tier_3') : null;
+    const cartProductIds = items.map(i => i.id);
+    const nowIso = new Date().toISOString();
+
+    // 1-5. Pricing inputs. Every read below is independent of the others once
+    // the agent of record and the cart are known, so issue them as one
+    // parallel batch instead of sequential round trips: pricing_tiers, active
+    // flash sale (single row max), product_tier_overrides (agent + super tiers
+    // in ONE query, cart products only), agent_products custom retail (cart
+    // products only), super_agent_pricing baselines, and the effective-markup
+    // RPC (agent ID is constant for the entire checkout, so one call).
+    const [
+      { data: tiers },
+      { data: activeSale },
+      { data: overrideRows },
+      { data: acr },
+      { data: sab },
+      { data: markupData },
+    ] = await Promise.all([
+      serviceSupabase.from('pricing_tiers').select('tier_name, multiplier'),
+      flashSaleEligible
+        ? serviceSupabase
+            .from('flash_sales')
+            .select('discount_pct')
+            .eq('is_active', true)
+            .lte('starts_at', nowIso)
+            .gte('ends_at', nowIso)
+            .order('ends_at', { ascending: true })
+            .limit(1)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+      serviceSupabase
+        .from('product_tier_overrides')
+        .select('tier_name, product_id, custom_multiplier')
+        .in('tier_name', superAgentTier && superAgentTier !== agentTier ? [agentTier, superAgentTier] : [agentTier])
+        .in('product_id', cartProductIds),
+      agentProfile
+        ? serviceSupabase
+            .from('agent_products')
+            .select('product_id, retail_price, is_on_sale, sale_price')
+            .eq('agent_id', agentProfile.id)
+            .in('product_id', cartProductIds)
+        : Promise.resolve({ data: null }),
+      superAgentProfile
+        ? serviceSupabase
+            .from('super_agent_pricing')
+            .select('product_id, baseline_cost, bulk_baseline_cost, bulk_threshold')
+            .eq('super_agent_id', superAgentProfile.id)
+        : Promise.resolve({ data: null }),
+      agentProfile && !agentProfile.is_sub_agent
+        ? serviceSupabase.rpc('fn_agent_effective_markup', { p_agent: agentProfile.id })
+        : Promise.resolve({ data: null }),
+    ]);
+
+    // 1. Admin default multipliers
+    const tierMultipliers: Record<string, number> = {};
+    tiers?.forEach((t: { tier_name: string; multiplier: unknown }) => { tierMultipliers[t.tier_name] = Number(t.multiplier); });
+
     let flashSaleDiscountPct = 0;
-    if (flashSaleEligible) {
-      const nowIso = new Date().toISOString();
-      const { data: activeSale } = await serviceSupabase
-        .from('flash_sales')
-        .select('discount_pct')
-        .eq('is_active', true)
-        .lte('starts_at', nowIso)
-        .gte('ends_at', nowIso)
-        .order('ends_at', { ascending: true })
-        .limit(1)
-        .maybeSingle();
-      if (activeSale) {
-        const d = Number(activeSale.discount_pct);
-        if (Number.isFinite(d) && d > 0 && d <= 90) {
-          flashSaleDiscountPct = d;
-        }
+    if (flashSaleEligible && activeSale) {
+      const d = Number(activeSale.discount_pct);
+      if (Number.isFinite(d) && d > 0 && d <= 90) {
+        flashSaleDiscountPct = d;
       }
     }
     const flashMultiplier = 1 - (flashSaleDiscountPct / 100);
 
     // 2. Agent profiles already resolved above.
 
-    // 3. Fetch Override Rule Sets
-    const getOverrides = async (tier: string) => {
-      const { data } = await serviceSupabase.from('product_tier_overrides').select('product_id, custom_multiplier').eq('tier_name', tier); // @ts-ignore
-      const map: Record<string, number> = {};
-      data?.forEach(o => { map[o.product_id] = Number(o.custom_multiplier); });
-      return map;
-    };
+    // 3. Override rule sets: both tiers came back in the single query above;
+    // split them into the same two per-tier maps as before. Precedence is
+    // unchanged -- agent and super-agent overrides are consulted independently
+    // in the per-item loop below.
+    const agentOverrides: Record<string, number> = {};
+    const superAgentOverrides: Record<string, number> = {};
+    overrideRows?.forEach((o: { tier_name: string; product_id: string; custom_multiplier: unknown }) => {
+      if (o.tier_name === agentTier) agentOverrides[o.product_id] = Number(o.custom_multiplier);
+      if (superAgentTier !== null && o.tier_name === superAgentTier) superAgentOverrides[o.product_id] = Number(o.custom_multiplier);
+    });
 
-    const agentTier = agentProfile?.tier || 'tier_3';
-    const agentOverrides = await getOverrides(agentTier);
-
-    let superAgentOverrides: Record<string, number> = {};
-    if (superAgentProfile) {
-      superAgentOverrides = await getOverrides(superAgentProfile.tier || 'tier_3');
-    }
-
-    // 4. Fetch Custom Retail Prices
-    let agentCustomRetail: Record<string, number> = {};
-    if (agentProfile) {
-      const { data: acr } = await serviceSupabase
-        .from('agent_products')
-        .select('product_id, retail_price, is_on_sale, sale_price')
-        .eq('agent_id', agentProfile.id);
-      acr?.forEach(a => {
-        const rawPrice = a.is_on_sale && a.sale_price != null
-          ? Number(a.sale_price)
-          : Number(a.retail_price);
-        agentCustomRetail[a.product_id] = rawPrice / 10;
-      });
-    }
+    // 4. Custom retail prices (cart products only; fetched above)
+    const agentCustomRetail: Record<string, number> = {};
+    acr?.forEach((a: { product_id: string; retail_price: unknown; is_on_sale: boolean | null; sale_price: number | null }) => {
+      const rawPrice = a.is_on_sale && a.sale_price != null
+        ? Number(a.sale_price)
+        : Number(a.retail_price);
+      agentCustomRetail[a.product_id] = rawPrice / 10;
+    });
 
     // 4a. Legitimate stack/bundle membership. The 10% bundle discount is applied
     // per line only when the client-supplied bundleName matches an ACTIVE bundle
@@ -368,12 +435,7 @@ export async function POST(request: NextRequest) {
     // Map: normalized bundle name -> Set of member product_ids.
     const validBundleMembers = new Map<string, Set<string>>();
     if (agentProfile) {
-      const { data: bundleRow } = await serviceSupabase
-        .from('agent_profiles')
-        .select('bundles_config')
-        .eq('id', agentProfile.id)
-        .maybeSingle();
-      const bundles = Array.isArray(bundleRow?.bundles_config) ? bundleRow!.bundles_config : [];
+      const bundles = Array.isArray(agentConfig?.bundles_config) ? agentConfig!.bundles_config : [];
       for (const b of bundles as Array<{ name?: string; product_ids?: string[]; is_active?: boolean }>) {
         if (!b || b.is_active === false || typeof b.name !== 'string' || !Array.isArray(b.product_ids)) continue;
         const key = b.name.trim().toLowerCase();
@@ -392,46 +454,34 @@ export async function POST(request: NextRequest) {
     // volume_pricing_enabled Toggle (Default On). Researcher Retail Only.
     let volumeDiscountsEnabled = true;
     if (agentProfile && !isAgentSelfBuy && !isSubAgent) {
-      const { data: vpRow } = await serviceSupabase
-        .from('agent_profiles')
-        .select('volume_pricing_enabled')
-        .eq('id', agentProfile.id)
-        .maybeSingle();
-      volumeDiscountsEnabled = vpRow?.volume_pricing_enabled !== false;
+      volumeDiscountsEnabled = agentConfig?.volume_pricing_enabled !== false;
     }
 
-    // 5. Fetch Super Agent Baseline Costs
-    let superAgentBaselines: Record<string, { baseline_cost: number, bulk_baseline_cost: number | null, bulk_threshold: number }> = {};
-    if (superAgentProfile) {
-      const { data: sab } = await serviceSupabase
-        .from('super_agent_pricing')
-        .select('product_id, baseline_cost, bulk_baseline_cost, bulk_threshold')
-        .eq('super_agent_id', superAgentProfile.id);
-      sab?.forEach(b => {
-        superAgentBaselines[b.product_id] = {
-          baseline_cost: Number(b.baseline_cost),
-          bulk_baseline_cost: b.bulk_baseline_cost !== null ? Number(b.bulk_baseline_cost) : null,
-          bulk_threshold: b.bulk_threshold ?? 100
-        };
-      });
-    }
+    // 5. Super agent baseline costs (fetched above)
+    const superAgentBaselines: Record<string, { baseline_cost: number, bulk_baseline_cost: number | null, bulk_threshold: number }> = {};
+    sab?.forEach((b: { product_id: string; baseline_cost: unknown; bulk_baseline_cost: number | null; bulk_threshold: number | null }) => {
+      superAgentBaselines[b.product_id] = {
+        baseline_cost: Number(b.baseline_cost),
+        bulk_baseline_cost: b.bulk_baseline_cost !== null ? Number(b.bulk_baseline_cost) : null,
+        bulk_threshold: b.bulk_threshold ?? 100
+      };
+    });
 
     // 6. Compute Costs per Item
     let subtotal = 0;
     let totalWeightOz = 0;
     const computedItems = [];
 
-    // Hoist the effective-markup RPC out of the per-item loop -- the agent ID
-    // is constant for the entire checkout, calling it once saves N-1 round trips.
+    // Effective markup was fetched once in the parallel batch above (the agent
+    // ID is constant for the entire checkout); consume the result here.
     let agentEffectiveMarkupPct = 0;
     if (agentProfile && !agentProfile.is_sub_agent) {
-      const { data: markupData } = await serviceSupabase.rpc('fn_agent_effective_markup', { p_agent: agentProfile.id });
       agentEffectiveMarkupPct = Number(markupData) || 0;
     }
 
     for (let idx = 0; idx < items.length; idx++) {
       const cartItem = items[idx];
-      const dbProduct = dbProducts.find(p => p.id === cartItem.id);
+      const dbProduct = productById.get(cartItem.id);
       if (!dbProduct) {
         return NextResponse.json(
           { error: `Product ID "${cartItem.id}" Is No Longer Available. Please Return To The Store And Refresh Your Cart.` },
@@ -656,7 +706,7 @@ export async function POST(request: NextRequest) {
         }
       }
       if (chinaReserved && chinaItems.length > 0) {
-        const { error: relErr } = await serviceSupabase.rpc('release_inventory', { p_items: chinaItems, p_agent_id: null, p_is_agent_ship: false }); // @ts-ignore
+        const { error: relErr } = await serviceSupabase.rpc('release_inventory', { p_items: chinaItems, p_agent_id: null, p_is_agent_ship: false });
         if (relErr) {
           logError('orders.POST.compensation.release_inventory_china', { userId: user.id }, relErr);
           captureError(relErr, { context: 'orders.POST.compensation.release_inventory_china', userId: user.id, items: chinaItems });
@@ -683,7 +733,7 @@ export async function POST(request: NextRequest) {
         localReserved = true;
       }
       if (chinaItems.length > 0) {
-        const { error: reserveErr } = await serviceSupabase.rpc('reserve_inventory', { p_items: chinaItems, p_agent_id: null, p_is_agent_ship: false }); // @ts-ignore
+        const { error: reserveErr } = await serviceSupabase.rpc('reserve_inventory', { p_items: chinaItems, p_agent_id: null, p_is_agent_ship: false });
         if (reserveErr) {
           await releaseReservedInventory();
           const isStock = /Insufficient inventory/i.test(reserveErr.message);
@@ -980,7 +1030,7 @@ export async function POST(request: NextRequest) {
         const { data: deductSuccess } = await serviceSupabase.rpc('deduct_prepaid_balance', {
           agent_id: saProfile.id,
           amount: amount,
-          p_order_id: null, // @ts-ignore
+          p_order_id: null,
           p_description: 'Order Payment',
         });
         if (!deductSuccess) return { error: 'Failed To Deduct Prepaid Balance.', status: 500 };
@@ -993,15 +1043,22 @@ export async function POST(request: NextRequest) {
         const { data: subAgents } = await serviceSupabase.from('profiles').select('id').eq('parent_agent_id', saProfile.id);
         const agentIds = [saProfile.id, ...(subAgents?.map((s: { id: string }) => s.id) || [])];
 
+        // Unbilled = no statement_orders link. statement_orders.statement_id is
+        // NOT NULL, so "embedded resource is empty" is exactly the set the old
+        // in-memory filter kept; push it server-side via .is(..., null) and
+        // select only the columns the in-flight sum reads (id dropped).
         const { data: approvedOrders } = await serviceSupabase
           .from('orders')
-          .select('id, shipping_cost, statement_orders(statement_id), order_items(quantity, unit_cost_price, unit_super_agent_cost), agent_id')
+          .select('shipping_cost, statement_orders(statement_id), order_items(quantity, unit_cost_price, unit_super_agent_cost), agent_id')
           .in('agent_id', agentIds)
           .eq('is_wholesale_restock', false)
-          .in('status', ['approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered']);
+          .in('status', ['approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered'])
+          .is('statement_orders', null);
 
         let inFlight = 0;
         for (const o of approvedOrders ?? []) {
+          // Belt-and-braces: the server-side .is() filter above already excludes
+          // billed orders; this guard keeps the computed sum exact regardless.
           const links = (o.statement_orders as unknown) as Array<{ statement_id: string | null }> | null;
           if (Array.isArray(links) && links.some((l) => l?.statement_id)) continue;
           const ship = Number((o as { shipping_cost?: unknown }).shipping_cost) || 0;
@@ -1138,9 +1195,9 @@ export async function POST(request: NextRequest) {
         // Previously this was incorrectly set to superAgentProfile.id, making the
         // order invisible in the agent's own sales dashboard. superAgentProfile is
         // used only for pricing/billing-chain — it does NOT own the sale.
-        agent_id: isAgentSelfBuy ? (agentProfile?.id ?? null) : (agentProfile ? agentProfile.id : null),
+        agent_id: isAgentSelfBuy ? agentProfile.id : (agentProfile ? agentProfile.id : null),
         is_wholesale_restock: isWholesaleRestock,
-        status: initialStatus, // @ts-ignore
+        status: initialStatus,
         fulfillment_method: fulfillmentMethod,
         payment_method: paymentMethod,
         shipping_address: shippingAddress ?? null,
@@ -1237,14 +1294,6 @@ export async function POST(request: NextRequest) {
     // inventory/coupon/prepaid -- those belong to this order.
     orderCommitted = true;
     compensateOnThrow = null;
-
-    // Order + items are committed and reserve_inventory has already deducted
-    // stock, so the public catalog's inventoryMap is now stale - purge the
-    // storefront catalog cache. Best-effort and non-blocking by design; this
-    // must NEVER fail a placed order.
-    try {
-      revalidateTag('storefront-catalog', { expire: 0 });
-    } catch { /* best-effort cache refresh */ }
 
     if (initialStatus === 'approved_ship' || initialStatus === 'approved_pickup') {
       const { error: creditErr } = await serviceSupabase.rpc('charge_order_credit_line', { p_order_id: order.id, p_created_by: user.id });
@@ -1345,19 +1394,20 @@ export async function POST(request: NextRequest) {
       // Best-effort attribution
     }
 
-    // In-app + push notifications for new order
+    // In-app + push notifications for new order. Each call is an independent
+    // best-effort side effect (the helpers never throw -- they swallow their
+    // own errors), so run them in parallel; allSettled keeps the same
+    // fire-and-forget tolerance as the surrounding try/catch. Buyer name comes
+    // from the profile row already loaded at the top of the route (the old
+    // refetch of profiles.full_name was redundant).
     try {
       const short = shortOrderId(order.id);
+      const notificationTasks: Promise<unknown>[] = [];
       if (agentProfile && !isAgentSelfBuy) {
-        const { data: buyerProfile } = await serviceSupabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', user.id)
-          .maybeSingle();
-        const buyerName = buyerProfile?.full_name || 'A Researcher';
-        await notifyOrderPlaced(serviceSupabase, agentProfile.id, order.id, short, buyerName);
+        const buyerName = (profile as { full_name?: string | null }).full_name || 'A Researcher';
+        notificationTasks.push(notifyOrderPlaced(serviceSupabase, agentProfile.id, order.id, short, buyerName));
         if (appliedCouponCode && discountAmount > 0) {
-          await notifyCouponRedeemed(
+          notificationTasks.push(notifyCouponRedeemed(
             serviceSupabase,
             agentProfile.id,
             appliedCouponCode,
@@ -1365,9 +1415,9 @@ export async function POST(request: NextRequest) {
             Number(order.total) || 0,
             order.id,
             short,
-          );
+          ));
         }
-        await enqueuePush(serviceSupabase, {
+        notificationTasks.push(enqueuePush(serviceSupabase, {
           userId: agentProfile.id,
           title: `New Order #${short}`,
           body: `${buyerName} Placed A New Order. Tap To Review.`,
@@ -1375,16 +1425,16 @@ export async function POST(request: NextRequest) {
           event: 'order_new',
           relatedOrderId: order.id,
           tag: `new-order-${order.id}`,
-        });
+        }));
       }
-      await notify(serviceSupabase, {
+      notificationTasks.push(notify(serviceSupabase, {
         userId: user.id,
         type: 'order_placed',
         title: `Order #${short} Placed`,
         body: 'Your Order Has Been Placed. You Will Be Notified When It Is Approved.',
         url: `/orders/${order.id}`,
-      });
-      await enqueuePush(serviceSupabase, {
+      }));
+      notificationTasks.push(enqueuePush(serviceSupabase, {
         userId: user.id,
         title: `Order #${short} Placed`,
         body: 'Your Order Has Been Placed. You Will Be Notified When It Is Approved.',
@@ -1392,7 +1442,8 @@ export async function POST(request: NextRequest) {
         event: 'order_placed',
         relatedOrderId: order.id,
         tag: `order-placed-${order.id}`,
-      });
+      }));
+      await Promise.allSettled(notificationTasks);
     } catch (notifErr) {
       // Never propagate - notifications are best-effort. But a silent swallow
       // here previously meant a broken notify()/enqueuePush() migration could

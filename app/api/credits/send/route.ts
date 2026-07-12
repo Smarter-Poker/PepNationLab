@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
@@ -164,6 +164,7 @@ export async function POST(req: NextRequest) {
       action: 'wallet_transfer',
       entity_type: 'profile',
       entity_id: recipient.id,
+      // @ts-expect-error Database schema mismatch from generated types
       changes: {
         amount,
         drew_from: (transfer as Record<string, unknown>)?.drew_from ?? null,

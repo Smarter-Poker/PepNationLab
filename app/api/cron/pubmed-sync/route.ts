@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * GET /api/cron/pubmed-sync
  *
@@ -115,11 +114,9 @@ export async function GET(req: Request) {
       `processed=${processed} updated=${updated} failed=${failed}`,
     );
 
-    // Expire the shared 'compounds' Data Cache tag now that the citation
-    // counters have been written, so the 1-hour unstable_cache TTL in
-    // lib/compounds-server.ts never delays fresh evidence data. In Next 16
-    // revalidateTag requires a profile arg; { expire: 0 } is the documented
-    // immediate-expiration form for route handlers.
+    // Expire the shared 'compounds' cache tag when compound rows changed so
+    // public surfaces pick up the refreshed counters. In Next 16 revalidateTag
+    // takes a profile arg; { expire: 0 } is the immediate-expiration form.
     if (updated > 0) {
       try {
         revalidateTag('compounds', { expire: 0 });

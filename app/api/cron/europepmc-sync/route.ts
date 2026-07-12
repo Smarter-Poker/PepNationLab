@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 /**
  * GET /api/cron/europepmc-sync
  * Weekly Europe PMC sync. Captures open-access PDF URLs that PubMed
@@ -48,6 +48,7 @@ export async function GET(req: Request) {
       }));
       const { error } = await supabase
         .from('compound_references')
+        // @ts-expect-error Database schema mismatch from generated types
         .upsert(refs, { onConflict: 'compound_slug,source_type,external_id' });
       if (error) errored += 1;
       await sleep(GAP_MS);
