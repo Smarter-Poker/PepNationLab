@@ -307,8 +307,12 @@ export async function POST(req: NextRequest) {
     }
     if (paymentModel === 'credit') {
       updatePayload.credit_limit = creditLimit;
+      updatePayload.auto_approve_orders = true;
+      updatePayload.max_auto_approve_limit = creditLimit;
     } else {
-      updatePayload.credit_limit = 0;
+      updatePayload.credit_limit = null;
+      updatePayload.auto_approve_orders = false;
+      updatePayload.max_auto_approve_limit = null;
     }
 
     const { error: updateError } = await admin

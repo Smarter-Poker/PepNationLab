@@ -168,6 +168,16 @@ export async function POST(req: NextRequest) {
   if (invite.intended_credit_limit != null) profilePatch.credit_limit = invite.intended_credit_limit;
   if (invite.intended_prepaid_balance != null) profilePatch.prepaid_balance = invite.intended_prepaid_balance;
 
+  // Hard-lock: keep credit limit and auto-approve behavior in sync with account type
+  if (profilePatch.account_type === 'prepaid' || profilePatch.account_type === null) {
+    profilePatch.credit_limit = null;
+    profilePatch.auto_approve_orders = false;
+    profilePatch.max_auto_approve_limit = null;
+  } else if (profilePatch.account_type === 'credit') {
+    profilePatch.auto_approve_orders = true;
+    profilePatch.max_auto_approve_limit = profilePatch.credit_limit || null;
+  }
+
   const { error: profileError } = await supabase
     .from('profiles')
     .update(profilePatch)
