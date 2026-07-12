@@ -297,7 +297,7 @@ export default function MessageBubble({
                overflow: 'hidden',
                width: '100%',
             }}>
-              <Image src={message.media_url} alt="Image" loading="lazy" width={320} height={240} className="media-edge-to-edge"
+              <Image src={message.media_url} alt={meta.filename ? `Image Attachment: ${meta.filename}` : 'Image Attachment'} loading="lazy" width={320} height={240} className="media-edge-to-edge"
                 unoptimized
                 onLoad={() => {
                   if (isLast) {
@@ -332,7 +332,7 @@ export default function MessageBubble({
             }} 
             style={{ background: 'transparent', border: 0, padding: 0, cursor: isOptimistic ? 'default' : 'zoom-in' }}
           >
-            <Image src={message.media_url} alt="Gif" loading="lazy" width={320} height={240} className="media-edge-to-edge"
+            <Image src={message.media_url} alt="Animated GIF Attachment" loading="lazy" width={320} height={240} className="media-edge-to-edge"
               unoptimized
               onLoad={() => {
                 if (isLast) {

@@ -2195,7 +2195,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                         )}
                         <h3 style={{ color: 'var(--white)', paddingRight: 80 }}>{n.title || 'Journal Entry'}</h3>
                         <p style={{ color: 'var(--silver)', whiteSpace: 'pre-wrap', marginTop: 'var(--space-3)' }}>{n.note_text}</p>
-                        <div style={{ marginTop: 'var(--space-4)', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', paddingTop: 'var(--space-2)' }}>
+                        <div style={{ marginTop: 'var(--space-4)', fontSize: '0.75rem', color: 'var(--grey-400)', paddingTop: 'var(--space-2)' }}>
                           Last updated: {new Date(n.updated_at).toLocaleDateString()} at {new Date(n.updated_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                         </div>
                       </div>

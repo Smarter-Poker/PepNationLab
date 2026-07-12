@@ -77,7 +77,7 @@ const STATUS_COLORS: Record<string, string> = {
   in_fulfillment: '#C0B8A8',
   shipped: '#0099FF',
   delivered: '#68D391',
-  cancelled: 'rgba(255,255,255,0.25)',
+  cancelled: '#8794A4',
 };
 
 const IP = { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
@@ -486,7 +486,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
           padding: '16px 16px 12px',
           borderBottom: '1px solid rgba(192,184,168,0.08)',
         }}>
-          <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.35)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>Researcher</div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>Researcher</div>
           <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userName}</div>
           {agentName && (
             <div style={{ fontSize: '0.7rem', color: 'var(--teal)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -690,7 +690,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                 </svg>
               </div>
               <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '1.2rem', fontWeight: 800, marginBottom: 8, letterSpacing: '0.05em' }}>No Orders Yet</div>
-              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', maxWidth: 400, margin: '0 auto 20px', lineHeight: 1.5 }}>
+              <p style={{ color: 'var(--grey-400)', fontSize: '0.9rem', maxWidth: 400, margin: '0 auto 20px', lineHeight: 1.5 }}>
                 You Have Not Placed Any Orders. Start Browsing The Catalog To Find The Products You Need.
               </p>
               <button onClick={() => navigateWithLoader(agentSlug ? `/${agentSlug}` : '/products')} style={{ display: 'inline-block', padding: '10px 24px', borderRadius: '8px', background: 'rgba(0,196,188,0.1)', border: '1px solid rgba(0,196,188,0.3)', fontSize: '0.9rem', color: '#00E5FF', fontWeight: 700, cursor: 'pointer' }}>Browse Catalog</button>
@@ -716,7 +716,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                           </div>
                           <div>
                             <div style={{ fontSize: '1.1rem', fontWeight: 700, fontFamily: 'var(--font-brand)' }}>Order #{o.id.slice(0, 8).toUpperCase()}</div>
-                            <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', marginTop: 4, fontWeight: 500 }}>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--grey-400)', marginTop: 4, fontWeight: 500 }}>
                               {new Date(o.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                               <span style={{ margin: '0 6px', color: 'rgba(255,255,255,0.2)' }}>|</span>
                               {o.order_items?.length || 0} items
@@ -751,7 +751,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                                 <OrderTimeline status={o.status} hasTracking={!!o.tracking_number} />
                               </div>
                               <div style={{ marginTop: 20 }}>
-                            <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', fontWeight: 700, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Order Items</div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)', fontWeight: 700, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Order Items</div>
                             {o.order_items?.map(item => (
                               <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                                 <span style={{ color: 'rgba(255,255,255,0.85)' }}>{item.product_name} <span style={{ color: 'var(--teal)', marginLeft: 8, fontWeight: 600 }}>x{item.quantity}</span></span>
@@ -867,8 +867,8 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                   <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12, opacity: 0.3 }}>
                     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                   </div>
-                  <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem' }}>No Agent Assigned</div>
-                  <div style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.78rem', marginTop: 6 }}>Contact Support If You Need Assistance.</div>
+                  <div style={{ color: 'var(--grey-400)', fontSize: '0.9rem' }}>No Agent Assigned</div>
+                  <div style={{ color: 'var(--grey-400)', fontSize: '0.78rem', marginTop: 6 }}>Contact Support If You Need Assistance.</div>
                 </div>
               )}
             </div>
@@ -921,7 +921,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                       )}
                     </svg>
                   </div>
-                  <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', fontWeight: 600, marginBottom: 12 }}>
+                  <div style={{ color: 'var(--grey-400)', fontSize: '0.9rem', fontWeight: 600, marginBottom: 12 }}>
                     {favoritesTab === 'favorites' ? 'No Favorites Yet' : 'No Past Orders Found'}
                   </div>
                   <a href={agentSlug ? `/${agentSlug}` : '/dashboard'} style={{ display: 'inline-block', fontSize: '0.82rem', color: 'var(--teal)', fontWeight: 600 }}>Browse Catalog</a>
@@ -934,7 +934,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                         {f.products.image_url ? (
                           <Image src={f.products.image_url} alt={f.products.name} width={400} height={400} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
-                          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.2)' }}>No Image</div>
+                          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--grey-400)' }}>No Image</div>
                         )}
                         {favoritesTab === 'pastOrders' && f.created_at && (
                           <div style={{
@@ -957,7 +957,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                         )}
                       </div>
                       <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff', marginBottom: 4 }}>{f.products.name}</div>
-                      {f.products.category && <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', marginBottom: 6 }}>{f.products.category}</div>}
+                      {f.products.category && <div style={{ fontSize: '0.65rem', color: 'var(--grey-400)', marginBottom: 6 }}>{f.products.category}</div>}
                       <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--teal)', marginBottom: 8 }}>${Number(f.products.base_price).toFixed(2)}</div>
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button onClick={() => navigateWithLoader(agentSlug ? `/${agentSlug}` : '/products')} style={{ flex: 1, textAlign: 'center', padding: '5px 10px', background: 'rgba(192,184,168,0.08)', border: '1px solid rgba(192,184,168,0.15)', borderRadius: 6, color: 'var(--teal)', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer' }}>View In Store</button>
@@ -982,24 +982,24 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                        create-account / edit-account form on the platform. */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)', alignItems: 'start' }}>
                     <div>
-                      <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>First Name</label>
+                      <label style={{ fontSize: '0.75rem', color: 'var(--grey-400)', display: 'block', marginBottom: 4 }}>First Name</label>
                       <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} className="form-input" />
                     </div>
                     <div>
-                      <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>Last Name</label>
+                      <label style={{ fontSize: '0.75rem', color: 'var(--grey-400)', display: 'block', marginBottom: 4 }}>Last Name</label>
                       <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} className="form-input" />
                     </div>
                   </div>
                   <div>
-                    <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>Email</label>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--grey-400)', display: 'block', marginBottom: 4 }}>Email</label>
                     <input type="email" value={userEmail} disabled className="form-input" style={{ opacity: 0.5 }} />
                   </div>
                   <div>
-                    <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>Phone</label>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--grey-400)', display: 'block', marginBottom: 4 }}>Phone</label>
                     <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} className="form-input" />
                   </div>
                   <div>
-                    <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>New Password</label>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--grey-400)', display: 'block', marginBottom: 4 }}>New Password</label>
                     <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="form-input" placeholder="Leave blank to keep current" />
                   </div>
                   <button onClick={saveProfile} disabled={saving} className="btn btn-primary" style={{ justifyContent: 'center' }}>
@@ -1021,7 +1021,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                     { label: 'Total Spent', value: `$${totalSpent.toFixed(2)}` },
                   ].map((item) => (
                     <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                      <span style={{ color: 'rgba(255,255,255,0.4)' }}>{item.label}</span>
+                      <span style={{ color: 'var(--grey-400)' }}>{item.label}</span>
                       <span style={{ color: '#fff', fontWeight: 600 }}>{item.value}</span>
                     </div>
                   ))}
@@ -1029,7 +1029,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
 
                 {agentName && (
                   <div style={{ marginTop: 'var(--space-5)', padding: '12px 14px', background: 'rgba(192,184,168,0.04)', borderRadius: 10, border: '1px solid rgba(192,184,168,0.1)' }}>
-                    <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', marginBottom: 4 }}>Your Agent</div>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--grey-400)', marginBottom: 4 }}>Your Agent</div>
                     <div style={{ fontSize: '0.85rem', color: 'var(--teal)', fontWeight: 700 }}>{agentName}</div>
                   </div>
                 )}

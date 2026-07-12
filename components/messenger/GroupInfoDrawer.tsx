@@ -8,6 +8,7 @@ import type { ThemeValue } from '@/lib/messenger/schemas';
 import ParticipantList from './ParticipantList';
 import ContactPicker, { type Contact } from './ContactPicker';
 import ThemePicker from './ThemePicker';
+import { useModalA11y } from '@/lib/useModalA11y';
 
 interface Props {
   conversation: ConversationListItem;
@@ -196,8 +197,18 @@ export default function GroupInfoDrawer({
   const canManage = selfRole === 'owner' || selfRole === 'admin';
   const isDirect = conversation.type === 'direct';
 
+  // A11y: initial focus, Tab trap, Escape-to-close, focus restore. While the
+  // nested Add People dialog is open, Escape closes only that dialog.
+  const drawerRef = useModalA11y<HTMLDivElement>(true, {
+    onClose: () => { if (adding) setAdding(false); else onClose(); },
+  });
+  const addPeopleRef = useModalA11y<HTMLDivElement>(adding, {
+    onClose: () => setAdding(false),
+  });
+
   return (
     <div
+      ref={drawerRef}
       role="dialog"
       aria-modal="true"
       aria-label="Conversation Info"
@@ -414,6 +425,7 @@ export default function GroupInfoDrawer({
 
         {adding && (
           <div
+            ref={addPeopleRef}
             role="dialog"
             aria-modal="true"
             aria-label="Add People"

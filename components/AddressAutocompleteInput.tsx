@@ -36,6 +36,10 @@ export default function AddressAutocompleteInput({
   disabled,
   inputType = 'text',
   maxLength,
+  // Default stays "off": this component renders its own suggestion listbox,
+  // and the browser's native address autofill dropdown would overlay it.
+  // Callers without the custom dropdown concern can pass e.g. "address-line1".
+  autoComplete = 'off',
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -49,6 +53,7 @@ export default function AddressAutocompleteInput({
   disabled?: boolean;
   inputType?: string;
   maxLength?: number;
+  autoComplete?: string;
 }) {
   const [items, setItems] = useState<AcItem[]>([]);
   const [open, setOpen] = useState(false);
@@ -107,7 +112,7 @@ export default function AddressAutocompleteInput({
         required={required}
         disabled={disabled}
         maxLength={maxLength}
-        autoComplete="off"
+        autoComplete={autoComplete}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
         onFocus={() => { if (items.length > 0) setOpen(true); }}

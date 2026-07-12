@@ -23,6 +23,17 @@ interface Props {
 export default function InteractiveGlossaryText({ text }: Props) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
+  // WCAG 1.4.13: the tooltip must be dismissable with Escape while shown,
+  // whether it was triggered by hover or by keyboard focus.
+  React.useEffect(() => {
+    if (hoveredIndex === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setHoveredIndex(null);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [hoveredIndex]);
+
   if (!text) return null;
 
   // Curated list of glossary terms sorted by descending length to prevent substring clashes
@@ -50,6 +61,9 @@ export default function InteractiveGlossaryText({ text }: Props) {
       nodes.push(
         <span
           key={currentIndex}
+          role="button"
+          tabIndex={0}
+          aria-expanded={hoveredIndex === currentIndex}
           style={{
             position: 'relative',
             display: 'inline-block',
@@ -57,6 +71,14 @@ export default function InteractiveGlossaryText({ text }: Props) {
           }}
           onMouseEnter={() => setHoveredIndex(currentIndex)}
           onMouseLeave={() => setHoveredIndex(null)}
+          onFocus={() => setHoveredIndex(currentIndex)}
+          onBlur={() => setHoveredIndex(null)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setHoveredIndex(hoveredIndex === currentIndex ? null : currentIndex);
+            }
+          }}
         >
           <span
             style={{

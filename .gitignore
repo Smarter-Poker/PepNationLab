@@ -83,3 +83,8 @@ __pycache__/
 tsconfig.cmpcheck.json
 tsconfig.cmp2.json
 tsconfig.trkcheck.json
+
+# hardening-session junk artifacts (do not commit)
+_analytics_extra*
+_to_delete/
+_hardening_changes.tgz

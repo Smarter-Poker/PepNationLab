@@ -3933,6 +3933,7 @@ export default function AgentStorefrontGrid({
                             >-</button>
                             <input
                               type="number"
+                              aria-label="Quantity"
                               value={qty || ''}
                               onChange={e => {
                                 const val = parseInt(e.target.value, 10);

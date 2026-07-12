@@ -110,7 +110,7 @@ export default function ResetPasswordPage() {
           <h2 className="animated-gradient-text" style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)', textAlign: 'center' }}>New Password</h2>
           
           {success ? (
-            <div style={{ textAlign: 'center', margin: 'var(--space-6) 0' }}>
+            <div role="status" style={{ textAlign: 'center', margin: 'var(--space-6) 0' }}>
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--space-4)', color: 'var(--teal)' }}>
                 <CheckCircle2 size={48} />
               </div>

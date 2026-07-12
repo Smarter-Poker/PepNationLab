@@ -11,6 +11,7 @@ import StackBuilder from './StackBuilder';
 import { FlaskConical, Beaker, CheckCircle2, X, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import IframeModal from '@/components/ui/IframeModal';
 import { toast } from 'sonner';
+import { useModalA11y } from '@/lib/useModalA11y';
 
 function sortStackProducts(a: AreaProduct, b: AreaProduct) {
   const a10 = (a.productName || '').includes('10mg') || (a.unitSize || '').includes('10mg');
@@ -737,10 +738,13 @@ interface StacksCompareDrawerProps {
 }
 
 function StacksCompareDrawer({ stack1, stack2, bySlug, products, onClose, synergy1, synergy2, bundlePrice1, bundlePrice2 }: StacksCompareDrawerProps) {
+  // A11y: initial focus, Tab trap, Escape-to-close, focus restore
+  const dialogRef = useModalA11y<HTMLDivElement>(true, { onClose });
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', justifyContent: 'flex-end' }}>
       <div style={{ position: 'absolute', inset: 0 }} onClick={onClose} aria-hidden="true" />
-      <motion.div 
+      <motion.div
+        ref={dialogRef}
         initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }}
         role="dialog"
         aria-modal="true"
@@ -836,6 +840,9 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
   const stack = bySlug.get(stackSlug);
   const [isSynergyExpanded, setIsSynergyExpanded] = useState(false);
 
+  // A11y: initial focus, Tab trap, Escape-to-close, focus restore
+  const dialogRef = useModalA11y<HTMLDivElement>(!!stack, { onClose });
+
   if (!stack) return null;
 
   let mainTitle = stack.display_name;
@@ -860,6 +867,7 @@ function StackDrawer({ stackSlug, bySlug, products, onClose, onAddToCart, bundle
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(16px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
       <div style={{ position: 'absolute', inset: 0 }} onClick={onClose} aria-hidden="true" />
       <motion.div
+        ref={dialogRef}
         initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }} transition={{ type: 'spring', damping: 25, stiffness: 200 }}
         role="dialog"
         aria-modal="true"

@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ExternalLink, Thermometer, Clock, AlertTriangle, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
+import { useModalA11y } from '@/lib/useModalA11y';
 
 interface ScoreBreakdown {
   base: number;
@@ -46,18 +47,18 @@ interface CompoundDrawerProps {
 }
 
 export default function CompoundDrawer({ isOpen, onClose, result }: CompoundDrawerProps) {
-  // Escape-to-close + lock background scroll while the drawer is open.
+  // Lock background scroll while the drawer is open.
   useEffect(() => {
     if (!isOpen) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', onKey);
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
-      document.removeEventListener('keydown', onKey);
       document.body.style.overflow = prevOverflow;
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
+
+  // A11y: initial focus, Tab trap, Escape-to-close, focus restore
+  const dialogRef = useModalA11y<HTMLDivElement>(isOpen && !!result, { onClose });
 
   if (!result) return null;
 
@@ -83,6 +84,7 @@ export default function CompoundDrawer({ isOpen, onClose, result }: CompoundDraw
             }}
           />
           <motion.div
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
             aria-label={`${result.displayName} details`}

@@ -2896,7 +2896,7 @@ export default function CompareTool({ compounds, initialSlugs = [], products: in
               </div>
               
               {isAnalyzing && (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 200, gap: 16 }}>
+                <div role="status" aria-live="polite" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 200, gap: 16 }}>
                   <div className="spinner" style={{ width: 40, height: 40, border: '4px solid rgba(0,196,188,0.2)', borderTopColor: '#00C4BC', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
                   <div style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>Analyzing {selected.length} compounds...</div>
                 </div>

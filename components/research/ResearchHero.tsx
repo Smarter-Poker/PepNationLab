@@ -9,9 +9,16 @@ const AnimatedCounter = ({ end, duration = 2, suffix = '' }: { end: number, dura
   const [count, setCount] = useState(0);
 
   useEffect(() => {
+    // A11y: honor prefers-reduced-motion — show the final value immediately
+    // instead of ticking up. Guarded for SSR where window is undefined.
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setCount(end);
+      return;
+    }
+
     let start = 0;
     const incrementTime = (duration / end) * 1000;
-    
+
     const timer = setInterval(() => {
       start += Math.ceil(end / (duration * 60)); // smooth increment
       if (start >= end) {

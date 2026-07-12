@@ -20,6 +20,7 @@ import DynamicAddToCartButton from './DynamicAddToCartButton';
 import DynamicCompareButton from './DynamicCompareButton';
 import IframeModal from '../ui/IframeModal';
 import { prewarmProxy, isSocialPlatformUrl } from '@/lib/ArticleProxyUtils';
+import { useModalA11y } from '@/lib/useModalA11y';
 
 interface PinnedItem {
   productName: string;
@@ -246,10 +247,10 @@ function AnimatedScoreRingDrawer({ score, color }: { score: CompoundScore; color
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: '0.88rem', fontWeight: 900, color: (gradeColor === '#00C4BC' || gradeColor === '#FC8181') ? '#FFF' : gradeColor }}>Grade {score.letter}</div>
-          <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.4)', marginBottom: 5 }}>{score.verdict}</div>
+          <div style={{ fontSize: '0.62rem', color: 'var(--grey-400)', marginBottom: 5 }}>{score.verdict}</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {[['Evidence', score.breakdown.evidence, 28], ['Safety', score.breakdown.safety, 24], ['Science', score.breakdown.science, 14], ['Coverage', score.breakdown.coverage, 16], ['Handling', score.breakdown.handling, 10], ['Depth', score.breakdown.completeness, 8]].map(([lbl, val, max]) => (
-              <div key={String(lbl)} style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: '0.58rem', color: 'rgba(255,255,255,0.35)' }}>
+              <div key={String(lbl)} style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: '0.58rem', color: 'var(--grey-400)' }}>
                 <span style={{ minWidth: 50 }}>{lbl}</span>
                 <div style={{ flex: 1, height: 2, background: 'rgba(255,255,255,0.06)', borderRadius: 999, overflow: 'hidden' }}>
                   <div style={{ height: '100%', width: `${(Number(val)/Number(max))*100}%`, background: color, borderRadius: 999 }} />
@@ -978,6 +979,12 @@ export default function StorefrontCompareDrawer({
 
   const [matrixTab, setMatrixTab] = useState<'matrix' | 'proscons' | 'brief' | 'mechanism' | 'protocol' | 'verdict'>('matrix');
 
+  // A11y: initial focus, Tab trap, Escape-to-close, focus restore for the
+  // full-screen comparison modal
+  const matrixDialogRef = useModalA11y<HTMLDivElement>(showMatrix, {
+    onClose: () => setShowMatrix(false),
+  });
+
   const analystBriefLines = useMemo(() => {
     if (sortedPinnedItems.length < 2) return [];
     const lines: string[] = [];
@@ -1171,7 +1178,12 @@ export default function StorefrontCompareDrawer({
 
       {/* Full-Screen Comparison Modal */}
       {showMatrix && (
-        <div style={{
+        <div
+          ref={matrixDialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Compare Products"
+          style={{
           position: 'fixed', inset: 0, zIndex: 99999,
           background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1252,7 +1264,7 @@ export default function StorefrontCompareDrawer({
                 }}>
                   <Image src="/images/badges/badge_top_pick.png" alt="Top Pick" width={200} height={200} unoptimized style={{ height: '36px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />
                   <span style={{ fontWeight: 800, fontSize: '0.92rem', color: '#FFF' }}>Top Pick: {sortedPinnedItems[0].productName}</span>
-                  <span style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.4)', marginLeft: 4 }}>· Leading with a composite score of {pinnedScores[0].total}/100</span>
+                  <span style={{ fontSize: '0.74rem', color: 'var(--grey-400)', marginLeft: 4 }}>· Leading with a composite score of {pinnedScores[0].total}/100</span>
                 </div>
               )}
  
@@ -1291,7 +1303,7 @@ export default function StorefrontCompareDrawer({
                             <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--white)', wordBreak: 'break-word' }}>{p.productName}</div>
                             {p.pricePerVialDollars != null && (
                               <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#68D391', marginTop: 2 }}>
-                                ${Number(p.pricePerVialDollars).toFixed(2)} <span style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>/ vial</span>
+                                ${Number(p.pricePerVialDollars).toFixed(2)} <span style={{ fontSize: '0.62rem', color: 'var(--grey-400)', fontWeight: 500 }}>/ vial</span>
                               </div>
                             )}
                           </div>
@@ -1304,7 +1316,25 @@ export default function StorefrontCompareDrawer({
 
               {/* Tab navigation */}
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20, width: '100%' }}>
-                <div role="tablist" aria-label="Comparison Sections" style={{ position: 'relative', width: '100%', maxWidth: '993px', aspectRatio: '993 / 148', userSelect: 'none' }}>
+                <div
+                  role="tablist"
+                  aria-label="Comparison Sections"
+                  onKeyDown={(e) => {
+                    const order = ['matrix', 'proscons', 'brief', 'mechanism', 'protocol', 'verdict'] as const;
+                    const idx = order.indexOf(matrixTab);
+                    let next: (typeof order)[number] | null = null;
+                    if (e.key === 'ArrowRight') next = order[(idx + 1) % order.length];
+                    else if (e.key === 'ArrowLeft') next = order[(idx - 1 + order.length) % order.length];
+                    else if (e.key === 'Home') next = order[0];
+                    else if (e.key === 'End') next = order[order.length - 1];
+                    if (next) {
+                      e.preventDefault();
+                      setMatrixTab(next);
+                      document.getElementById(`compare-tab-${next}`)?.focus();
+                    }
+                  }}
+                  style={{ position: 'relative', width: '100%', maxWidth: '993px', aspectRatio: '993 / 148', userSelect: 'none' }}
+                >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <Image src="/images/compare-pill-bar.png" alt="Compare Section Tabs" width={200} height={200} unoptimized style={{ width: '100%', height: '100%', display: 'block', pointerEvents: 'none' }} />
                   {([
@@ -1325,6 +1355,7 @@ export default function StorefrontCompareDrawer({
                         aria-selected={isActive}
                         aria-controls={`compare-panel-${id}`}
                         aria-label={label}
+                        tabIndex={isActive ? 0 : -1}
                         onClick={() => setMatrixTab(id)}
                         title={label}
                         style={{
@@ -1336,7 +1367,6 @@ export default function StorefrontCompareDrawer({
                           border: 'none',
                           background: 'transparent',
                           cursor: 'pointer',
-                          outline: 'none',
                           zIndex: 10,
                         }}
                       />
@@ -1411,7 +1441,7 @@ export default function StorefrontCompareDrawer({
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
                   <Info size={15} color={primaryColor} />
                   <span style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--white)' }}>Analyst Brief</span>
-                  <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', fontStyle: 'italic' }}>Research reference only</span>
+                  <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color: 'var(--grey-400)', fontStyle: 'italic' }}>Research reference only</span>
                 </div>
                 {smartSummary && (
                   <div style={{
@@ -1448,14 +1478,14 @@ export default function StorefrontCompareDrawer({
                         <span style={{ color: 'var(--white)', fontWeight: 800 }}>{p.productName}</span>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                        {c?.compound_class && <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Compound Class</div><div style={{ fontSize: '0.78rem', color: '#FFF' }}>{c.compound_class}</div></div>}
-                        {c?.molecular_target && <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Molecular Target</div><div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.8)', lineHeight: 1.4 }}>{c.molecular_target}</div></div>}
-                        {c?.mechanism && <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Mechanism of Action</div><div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>{c.mechanism}</div></div>}
-                        {c?.pk_summary && <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Pharmacokinetics</div><div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>{c.pk_summary}</div></div>}
-                        {c?.risk_reasons?.length ? <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Risk Considerations</div><div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>{c.risk_reasons.map((r, ri) => <div key={ri} style={{ display: 'flex', gap: 5, alignItems: 'flex-start' }}><AlertTriangle size={10} color={RISK_META[c.risk_level]?.color ?? '#F6AD55'} style={{ marginTop: 2, flexShrink: 0 }} /><span style={{ fontSize: '0.72rem', color: '#FFF', lineHeight: 1.4 }}>{r}</span></div>)}</div></div> : null}
+                        {c?.compound_class && <div><div style={{ fontSize: '0.6rem', color: 'var(--grey-400)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Compound Class</div><div style={{ fontSize: '0.78rem', color: '#FFF' }}>{c.compound_class}</div></div>}
+                        {c?.molecular_target && <div><div style={{ fontSize: '0.6rem', color: 'var(--grey-400)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Molecular Target</div><div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.8)', lineHeight: 1.4 }}>{c.molecular_target}</div></div>}
+                        {c?.mechanism && <div><div style={{ fontSize: '0.6rem', color: 'var(--grey-400)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Mechanism of Action</div><div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>{c.mechanism}</div></div>}
+                        {c?.pk_summary && <div><div style={{ fontSize: '0.6rem', color: 'var(--grey-400)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Pharmacokinetics</div><div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>{c.pk_summary}</div></div>}
+                        {c?.risk_reasons?.length ? <div><div style={{ fontSize: '0.6rem', color: 'var(--grey-400)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Risk Considerations</div><div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>{c.risk_reasons.map((r, ri) => <div key={ri} style={{ display: 'flex', gap: 5, alignItems: 'flex-start' }}><AlertTriangle size={10} color={RISK_META[c.risk_level]?.color ?? '#F6AD55'} style={{ marginTop: 2, flexShrink: 0 }} /><span style={{ fontSize: '0.72rem', color: '#FFF', lineHeight: 1.4 }}>{r}</span></div>)}</div></div> : null}
                         {c?.is_pro_angiogenic && <Image src="/images/badges/badge_angio_alert.png" alt="Angio Alert" width={200} height={200} unoptimized style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', alignSelf: 'flex-start', flexShrink: 0 }} />}
                         {c?.is_glp1 && <Image src="/images/badges/badge_glp1.png" alt="GLP-1 Incretin" width={200} height={200} unoptimized style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', alignSelf: 'flex-start', flexShrink: 0 }} />}
-                        {c?.sources?.length ? <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Key Sources</div><div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>{c.sources.slice(0, 3).map((src, si) => <a key={si} href={src.startsWith('http') ? src : undefined} onClick={src.startsWith('http') ? (e) => { e.preventDefault(); if (isSocialPlatformUrl(src)) { window.open(src, '_blank', 'noopener,noreferrer'); } else { setModalUrl(src); } } : undefined} onMouseEnter={src.startsWith('http') ? () => prewarmProxy(src) : undefined} style={{ cursor: src.startsWith('http') ? 'pointer' : 'default', fontSize: '0.68rem', color: '#FFF', opacity: 0.8, wordBreak: 'break-all', lineHeight: 1.3, textDecoration: src.startsWith('http') ? 'underline' : 'none' }}>{src.startsWith('http') ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><BookOpen size={11} /> Source {si+1}</span> : src}</a>)}</div></div> : null}
+                        {c?.sources?.length ? <div><div style={{ fontSize: '0.6rem', color: 'var(--grey-400)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Key Sources</div><div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>{c.sources.slice(0, 3).map((src, si) => <a key={si} href={src.startsWith('http') ? src : undefined} onClick={src.startsWith('http') ? (e) => { e.preventDefault(); if (isSocialPlatformUrl(src)) { window.open(src, '_blank', 'noopener,noreferrer'); } else { setModalUrl(src); } } : undefined} onMouseEnter={src.startsWith('http') ? () => prewarmProxy(src) : undefined} style={{ cursor: src.startsWith('http') ? 'pointer' : 'default', fontSize: '0.68rem', color: '#FFF', opacity: 0.8, wordBreak: 'break-all', lineHeight: 1.3, textDecoration: src.startsWith('http') ? 'underline' : 'none' }}>{src.startsWith('http') ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><BookOpen size={11} /> Source {si+1}</span> : src}</a>)}</div></div> : null}
                       </div>
                       <div style={{ marginTop: 'auto', paddingTop: 10, borderTop: '2px solid rgba(155, 163, 174, 0.4)' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 }}>
@@ -1516,11 +1546,11 @@ export default function StorefrontCompareDrawer({
                         }}>
                           <div style={{ fontSize: '0.65rem', fontWeight: 800, color: color === primaryColor ? '#FFF' : color, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Reconstitution</div>
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3px 10px', fontSize: '0.74rem' }}>
-                            <div style={{ color: 'rgba(255,255,255,0.4)' }}>Form</div><div style={{ color: 'rgba(255,255,255,0.8)' }}>{c?.handling?.form ?? NL}</div>
-                            <div style={{ color: 'rgba(255,255,255,0.4)' }}>Diluent</div><div style={{ color: 'rgba(255,255,255,0.8)' }}>{c?.handling?.diluent ?? NL}</div>
-                            <div style={{ color: 'rgba(255,255,255,0.4)' }}>Storage</div><div style={{ color: 'rgba(255,255,255,0.8)' }}>{c?.handling?.storage_temp ?? NL}</div>
-                            <div style={{ color: 'rgba(255,255,255,0.4)' }}>Light</div><div style={{ color: 'rgba(255,255,255,0.8)' }}>{c?.handling?.light_sensitive == null ? NL : c.handling.light_sensitive ? 'Sensitive' : 'Safe'}</div>
-                            {shelf && <><div style={{ color: 'rgba(255,255,255,0.4)' }}>Shelf Life</div><div style={{ color: shelf >= 28 ? '#68D391' : shelf < 14 ? '#FFF' : '#F6AD55', fontWeight: 700 }}>{shelf} days</div></>}
+                            <div style={{ color: 'var(--grey-400)' }}>Form</div><div style={{ color: 'rgba(255,255,255,0.8)' }}>{c?.handling?.form ?? NL}</div>
+                            <div style={{ color: 'var(--grey-400)' }}>Diluent</div><div style={{ color: 'rgba(255,255,255,0.8)' }}>{c?.handling?.diluent ?? NL}</div>
+                            <div style={{ color: 'var(--grey-400)' }}>Storage</div><div style={{ color: 'rgba(255,255,255,0.8)' }}>{c?.handling?.storage_temp ?? NL}</div>
+                            <div style={{ color: 'var(--grey-400)' }}>Light</div><div style={{ color: 'rgba(255,255,255,0.8)' }}>{c?.handling?.light_sensitive == null ? NL : c.handling.light_sensitive ? 'Sensitive' : 'Safe'}</div>
+                            {shelf && <><div style={{ color: 'var(--grey-400)' }}>Shelf Life</div><div style={{ color: shelf >= 28 ? '#68D391' : shelf < 14 ? '#FFF' : '#F6AD55', fontWeight: 700 }}>{shelf} days</div></>}
                           </div>
                         </div>
                         {(c?.half_life || c?.typical_frequency) && (
@@ -1531,10 +1561,10 @@ export default function StorefrontCompareDrawer({
                             backgroundClip: 'padding-box, border-box',
                             borderRadius: 8, padding: '8px 10px'
                           }}>
-                            <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.35)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Administration</div>
+                            <div style={{ fontSize: '0.6rem', color: 'var(--grey-400)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Administration</div>
                             {c?.half_life && <div style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.7)', marginBottom: 3 }}><Clock size={9} style={{ marginRight: 4, display: 'inline-block', verticalAlign: 'middle' }} />Half-life: <strong style={{ color: color === primaryColor ? '#FFF' : color }}>{c.half_life}</strong></div>}
                             {c?.typical_frequency && <div style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.7)', marginBottom: 3 }}><Zap size={9} style={{ marginRight: 4, display: 'inline-block', verticalAlign: 'middle' }} />Frequency: <strong style={{ color: 'rgba(255,255,255,0.9)' }}>{c.typical_frequency}</strong></div>}
-                            {dosesPerWeek && <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.35)', marginTop: 3, fontStyle: 'italic' }}>~{dosesPerWeek}x per week based on half-life</div>}
+                            {dosesPerWeek && <div style={{ fontSize: '0.68rem', color: 'var(--grey-400)', marginTop: 3, fontStyle: 'italic' }}>~{dosesPerWeek}x per week based on half-life</div>}
                           </div>
                         )}
                         {c?.handling?.freeze_thaw && <div style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.6)', display: 'flex', gap: 5, alignItems: 'flex-start' }}><Thermometer size={11} color="#F6AD55" style={{ marginTop: 1, flexShrink: 0 }} /><span>{c.handling.freeze_thaw}</span></div>}
@@ -1585,7 +1615,7 @@ export default function StorefrontCompareDrawer({
                   ];
                   return (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
-                      <p style={{ margin: '0 0 4px 0', fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>Research verdict cards - scored on evidence strength, safety profile, scientific backing, research coverage, and handling practicality.</p>
+                      <p style={{ margin: '0 0 4px 0', fontSize: '0.78rem', color: 'var(--grey-400)', lineHeight: 1.5 }}>Research verdict cards - scored on evidence strength, safety profile, scientific backing, research coverage, and handling practicality.</p>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
                         {verdicts.map(v => (
                           <div key={v.label} style={{
@@ -1659,7 +1689,7 @@ export default function StorefrontCompareDrawer({
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                   {p.pricePerVialDollars != null && (
                                     <div style={{ fontSize: '0.86rem', fontWeight: 800, color: '#68D391' }}>
-                                      ${Number(p.pricePerVialDollars).toFixed(2)} <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>/ vial</span>
+                                      ${Number(p.pricePerVialDollars).toFixed(2)} <span style={{ fontSize: '0.68rem', color: 'var(--grey-400)', fontWeight: 500 }}>/ vial</span>
                                     </div>
                                   )}
                                   {isMobile && idx !== 0 && sortedPinnedItems.length > 2 && (

@@ -111,7 +111,7 @@ export default function QRCodeGenerator({
         display: 'inline-block',
         boxShadow: '0 0 20px rgba(192,184,168,0.15)',
       }}>
-        <canvas ref={canvasRef} style={{ display: 'block', width: size, height: size }} />
+        <canvas ref={canvasRef} role="img" aria-label={`QR Code Linking To ${url}`} style={{ display: 'block', width: size, height: size }} />
       </div>
       {dataUrl && (
         <a

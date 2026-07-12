@@ -127,7 +127,7 @@ export default function CollectionsManager() {
       ) : activeTab === 'collections' ? (
         collections.length === 0 ? (
           <div className="glass-panel" style={{ textAlign: 'center', padding: 48 }}>
-            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', fontWeight: 600, marginBottom: 12 }}>
+            <div style={{ color: 'var(--grey-400)', fontSize: '0.9rem', fontWeight: 600, marginBottom: 12 }}>
               No Collections Yet
             </div>
             <Link href="/research/search" style={{ display: 'inline-block', fontSize: '0.82rem', color: 'var(--teal)', fontWeight: 600 }}>
@@ -145,7 +145,7 @@ export default function CollectionsManager() {
                       <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff', marginBottom: 4, textTransform: 'capitalize' }}>
                         {s.compound_slug.replace(/-/g, ' ')}
                       </div>
-                      <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginBottom: 12 }}>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)', marginBottom: 12 }}>
                         Added {new Date(s.created_at).toLocaleDateString()}
                       </div>
                       <div style={{ display: 'flex', gap: 6 }}>
@@ -166,7 +166,7 @@ export default function CollectionsManager() {
       ) : (
         history.length === 0 ? (
           <div className="glass-panel" style={{ textAlign: 'center', padding: 48 }}>
-            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', fontWeight: 600, marginBottom: 12 }}>
+            <div style={{ color: 'var(--grey-400)', fontSize: '0.9rem', fontWeight: 600, marginBottom: 12 }}>
               No Reading History
             </div>
           </div>
@@ -177,7 +177,7 @@ export default function CollectionsManager() {
                 <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff', marginBottom: 4, textTransform: 'capitalize' }}>
                   {h.compound_slug ? h.compound_slug.replace(/-/g, ' ') : 'Reference Article'}
                 </div>
-                <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginBottom: 12 }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)', marginBottom: 12 }}>
                   Viewed {new Date(h.created_at).toLocaleDateString()}
                 </div>
                 <div style={{ display: 'flex', gap: 6 }}>

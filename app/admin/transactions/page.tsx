@@ -329,6 +329,7 @@ function AdminTransactionsPageInner() {
               textAlign: "left",
             }}
           >
+            <caption className="sr-only">Transaction Ledger</caption>
             <thead>
               <tr
                 style={{
@@ -336,6 +337,7 @@ function AdminTransactionsPageInner() {
                   }}
               >
                 <th
+                  scope="col"
                   style={{
                     padding: "var(--space-4)",
                     color: "var(--grey-400)",
@@ -348,6 +350,7 @@ function AdminTransactionsPageInner() {
                   Date
                 </th>
                 <th
+                  scope="col"
                   style={{
                     padding: "var(--space-4)",
                     color: "var(--grey-400)",
@@ -360,6 +363,7 @@ function AdminTransactionsPageInner() {
                   Agent Profile
                 </th>
                 <th
+                  scope="col"
                   style={{
                     padding: "var(--space-4)",
                     color: "var(--grey-400)",
@@ -372,6 +376,7 @@ function AdminTransactionsPageInner() {
                   Event Type
                 </th>
                 <th
+                  scope="col"
                   style={{
                     padding: "var(--space-4)",
                     color: "var(--grey-400)",
@@ -384,6 +389,7 @@ function AdminTransactionsPageInner() {
                   Description
                 </th>
                 <th
+                  scope="col"
                   style={{
                     padding: "var(--space-4)",
                     color: "var(--grey-400)",
@@ -397,6 +403,7 @@ function AdminTransactionsPageInner() {
                   Amount
                 </th>
                 <th
+                  scope="col"
                   style={{
                     padding: "var(--space-4)",
                     color: "var(--grey-400)",

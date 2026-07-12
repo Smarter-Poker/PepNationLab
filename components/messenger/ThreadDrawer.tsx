@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { X, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Message } from '@/lib/messenger/types';
+import { useModalA11y } from '@/lib/useModalA11y';
 
 interface Props {
   threadParentId: string;
@@ -43,13 +44,8 @@ export default function ThreadDrawer({ threadParentId, selfId, onClose }: Props)
 
   useEffect(() => { void load(); }, [load]);
 
-  // Audit3 fix: Escape key closes the drawer (parity with BookmarksDrawer,
-  // BlockList, ReportModal).
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [onClose]);
+  // A11y: initial focus, Tab trap, Escape-to-close, focus restore
+  const dialogRef = useModalA11y<HTMLDivElement>(true, { onClose });
 
   const handleSend = async () => {
     const trimmed = text.trim();
@@ -80,6 +76,7 @@ export default function ThreadDrawer({ threadParentId, selfId, onClose }: Props)
 
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-label="Thread Replies"

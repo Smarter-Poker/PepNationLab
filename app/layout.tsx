@@ -232,9 +232,9 @@ export default function RootLayout({
                 <MotionProvider>
                   {/* A11y: skip-link target (WCAG 2.4.1). tabIndex={-1} allows
                       programmatic focus without joining the tab order. */}
-                  <div className="page-container" id="main-content" tabIndex={-1}>
+                  <main className="page-container" id="main-content" tabIndex={-1}>
                     {children}
-                  </div>
+                  </main>
                 </MotionProvider>
               </InAppBrowserProvider>
             </CartProvider>

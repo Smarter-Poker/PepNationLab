@@ -136,7 +136,7 @@ function QrModal({ coupon, storefront }: { coupon: Coupon; storefront: string })
 
   return (
     <div style={{ textAlign: 'center' }}>
-      <canvas ref={canvasRef} style={{ borderRadius: '8px', marginBottom: 'var(--space-4)' }} />
+      <canvas ref={canvasRef} role="img" aria-label={`QR Code Linking To ${coupon.code ? `${storefront}?coupon=${coupon.code}` : storefront}`} style={{ borderRadius: '8px', marginBottom: 'var(--space-4)' }} />
       <p style={{ color: 'var(--silver)', fontSize: '0.85rem' }}>
         QR Code Links To Storefront With Coupon: <strong style={{ color: 'var(--teal)' }}>{coupon.code}</strong>
       </p>

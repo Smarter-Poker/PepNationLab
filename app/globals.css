@@ -202,8 +202,9 @@ html[data-theme="light"] {
 
   --grey-100:       #F8F5F0;
   --grey-200:       #E0DCD6;
-  --grey-300:       #B8B4AE;
-  --grey-400:       #7A7470;
+  /* A11y: raised for text contrast on light surfaces (WCAG 1.4.3) */
+  --grey-300:       #66615A;
+  --grey-400:       #6E6863;
   --grey-500:       #6A6460;
   --grey-600:       #4A4440;
   --grey-800:       #2A2420;
@@ -216,6 +217,12 @@ html[data-theme="light"] {
 
   --border-subtle:  1px solid rgba(0, 0, 0, 0.07);
   --border-silver:  1px solid rgba(0, 0, 0, 0.12);
+
+  /* A11y: darker accent so links, nav logo, and .text-teal meet 4.5:1 on
+     light backgrounds (WCAG 1.4.3). Button fills use literal gradient hexes
+     and are unaffected by this token remap. */
+  --teal:           #6E6248;
+  --teal-dark:      #5F5647;
 
   --teal-subtle:    rgba(192, 184, 168, 0.15);
   --red-bg:         rgba(229, 62, 62, 0.06);
@@ -678,7 +685,8 @@ a:hover { color: var(--teal-dark); }
 .btn-ghost {
   background: rgba(255, 255, 255, 0.05);
   color: var(--silver-light);
-  border: var(--border-silver);
+  /* A11y: perceivable button boundary at 3:1 against dark surfaces (WCAG 1.4.11) */
+  border: 1px solid rgba(168, 180, 192, 0.55);
 }
 
 .btn-ghost:hover {
@@ -720,7 +728,8 @@ a:hover { color: var(--teal-dark); }
   background: rgba(22, 34, 48, 0.6);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(168, 180, 192, 0.45);
+  /* A11y: raised from 0.45 so control boundary meets 3:1 on surface-1 (WCAG 1.4.11) */
+  border: 1px solid rgba(168, 180, 192, 0.65);
   border-radius: var(--radius-md);
   padding: var(--space-3) var(--space-4);
   color: var(--white);
@@ -1164,6 +1173,10 @@ a:hover { color: var(--teal-dark); }
 
 /*
    STATUS INDICATORS
+   A11y note: color alone must never convey status (WCAG 1.4.1). Any use of
+   .status-dot in JSX must pair the dot with a visible text label naming the
+   status. The class is currently unused in JSX; keep this rule if it is
+   adopted later.
 */
 .status-dot {
   width: 8px;
@@ -3584,7 +3597,7 @@ body > * {
 
 .account-page-wrapper,
 [data-account-page],
-body > main:not(.dashboard-main):not(.admin-main),
+body > main:not(.dashboard-main):not(.admin-main):not(.page-container),
 body > div.pnl-page:not(.pnl-page-with-navbar) {
   padding-top: max(var(--nav-offset, 60px), var(--safe-top, 0px));
 }
@@ -4071,8 +4084,9 @@ body > div.pnl-page:not(.pnl-page-with-navbar) {
 }
 
 @media (max-width: 768px) {
-  main:not(.dashboard-main):not(.admin-main),
+  main:not(.dashboard-main):not(.admin-main):not(.page-container),
   [role="main"]:not(.dashboard-main):not(.admin-main),
+  div.page-top-padding,
   body > div.pnl-page-with-navbar {
     padding-bottom: max(24px, var(--safe-bottom, 0px)) !important;
   }
@@ -4287,7 +4301,8 @@ a[href^="tel:"] *,
 .input {
   width: 100%;
   background: rgba(22, 34, 48, 0.6);
-  border: 1px solid rgba(168, 180, 192, 0.45);
+  /* A11y: raised from 0.45 so control boundary meets 3:1 on surface-1 (WCAG 1.4.11) */
+  border: 1px solid rgba(168, 180, 192, 0.65);
   border-radius: var(--radius-md);
   padding: var(--space-3) var(--space-4);
   color: var(--white);

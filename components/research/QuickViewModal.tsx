@@ -8,6 +8,7 @@ import { Compound, evidenceTier, intranasalDisplay } from '@/lib/compounds';
 import InteractiveGlossaryText from '@/components/research/InteractiveGlossaryText';
 import PinToCompareButton from '@/components/research/PinToCompareButton';
 import ResearchCartButton from '@/components/research/ResearchCartButton';
+import { useModalA11y } from '@/lib/useModalA11y';
 
 interface QuickViewModalProps {
   compound: Compound | null | any;
@@ -21,12 +22,15 @@ interface QuickViewModalProps {
 export default function QuickViewModal({ compound, isOpen, onClose, imageUrl, price, storeProduct }: QuickViewModalProps) {
   const formatPrice = (p: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(p);
   const nasal = intranasalDisplay(compound);
+  // A11y: initial focus, Tab trap, Escape-to-close, focus restore
+  const dialogRef = useModalA11y<HTMLDivElement>(isOpen && !!compound, { onClose });
   return (
     <AnimatePresence>
       {isOpen && compound && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(16px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
           <div style={{ position: 'absolute', inset: 0 }} onClick={onClose} aria-hidden="true" />
           <motion.div
+            ref={dialogRef}
             initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }} transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             role="dialog"
             aria-modal="true"

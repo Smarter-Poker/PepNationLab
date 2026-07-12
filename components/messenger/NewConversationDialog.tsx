@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import ContactPicker, { type Contact } from './ContactPicker';
 import { useMessengerStore } from '@/stores/messengerStore';
 import type { ConversationListItem } from '@/lib/messenger/types';
+import { useModalA11y } from '@/lib/useModalA11y';
 
 interface Props {
   selfId: string;
@@ -24,6 +25,9 @@ export default function NewConversationDialog({ selfId, onClose }: Props) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [title, setTitle] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // A11y: initial focus, Tab trap, Escape-to-close, focus restore
+  const dialogRef = useModalA11y<HTMLDivElement>(true, { onClose });
 
   useEffect(() => {
     let cancelled = false;
@@ -111,6 +115,7 @@ export default function NewConversationDialog({ selfId, onClose }: Props) {
 
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-label="Start A New Conversation"

@@ -7,6 +7,7 @@ import { ShoppingCart, X, Sparkles, Check, AlertTriangle } from 'lucide-react';
 import DynamicAddToCartButton from './DynamicAddToCartButton';
 import { ProtocolScheduler } from '../research/ProtocolScheduler';
 import { getTierPercent, getRiskPercent, getRiskColor, type MatchedProduct, type ExcludedCompound } from './discovery-shared';
+import { useModalA11y } from '@/lib/useModalA11y';
 
 export function MatchResultsDrawer({
   open,
@@ -91,13 +92,13 @@ export function MatchResultsDrawer({
     }
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', onKey);
     return () => {
       document.body.style.overflow = prev;
-      window.removeEventListener('keydown', onKey);
     };
-  }, [open, onClose]);
+  }, [open]);
+
+  // A11y: initial focus, Tab trap, Escape-to-close, focus restore
+  const dialogRef = useModalA11y<HTMLDivElement>(open, { onClose });
 
   const filteredResults = useMemo(() => {
     return results.filter(r => {
@@ -128,6 +129,7 @@ export function MatchResultsDrawer({
       <AnimatePresence>
         {open && (
           <motion.div
+          ref={dialogRef}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -255,8 +257,16 @@ export function MatchResultsDrawer({
             )}
 
             <div style={{ overflowY: 'auto', padding: '14px 20px 18px', flex: 1 }}>
+              {/* Screen-reader announcement of the result count once matching resolves */}
+              <span
+                role="status"
+                aria-live="polite"
+                style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 }}
+              >
+                {!loading && !matchError && !followUp ? `${filteredResults.length} Matches Found` : ''}
+              </span>
               {loading ? (
-                <div style={{ padding: '64px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
+                <div role="status" aria-live="polite" style={{ padding: '64px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
                   <div style={{
                     width: 60, height: 60, borderRadius: '50%',
                     border: '3px solid rgba(192, 197, 206, 0.2)',
@@ -375,7 +385,7 @@ export function MatchResultsDrawer({
                         /* eslint-disable-next-line @next/next/no-img-element */
                         <Image
                           src={r.image_url}
-                          alt=""
+                          alt={r.display_name}
                           onClick={() => onOpenProduct(r.product_id)}
                           style={{ width: 72, height: 72, borderRadius: 10, objectFit: 'cover', cursor: 'pointer', flexShrink: 0 }}
                           width={200} height={200} unoptimized

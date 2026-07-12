@@ -125,7 +125,7 @@ export default function BecomeAgentPage() {
               <li>Agreement To All Platform Compliance And Research-Use-Only Terms</li>
               <li>Weekly Billing Account (Credit Line Or Prepaid Balance)</li>
             </ul>
-            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', marginTop: 'var(--space-4)', marginBottom: 0 }}>
+            <p style={{ color: 'var(--grey-400)', fontSize: '0.8rem', marginTop: 'var(--space-4)', marginBottom: 0 }}>
               Agent Applications Are Reviewed Manually. All Compounds Distributed Through The Platform Are
               For Research Use Only And Not Intended For Human Consumption.
             </p>

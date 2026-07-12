@@ -66,7 +66,7 @@ const PHASE_COLORS: Record<string, string> = {
   'Phase 3': '#BBA371',
   'FDA Review': '#F6AD55',
   Approved: '#68D391',
-  'Unspecified Phase': '#718096',
+  'Unspecified Phase': '#8794A4',
 };
 
 export default async function ResearchInPipelinePage() {

@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { X, Calendar, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useModalA11y } from '@/lib/useModalA11y';
 
 interface ScheduledRow {
   id: string;
@@ -68,8 +69,12 @@ export default function ScheduledMessageList({ onClose }: Props) {
     }
   };
 
+  // A11y: initial focus, Tab trap, Escape-to-close, focus restore (WCAG 2.1.2, 2.4.3).
+  const dialogRef = useModalA11y<HTMLDivElement>(true, { onClose });
+
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-label="Scheduled Messages"

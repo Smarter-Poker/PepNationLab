@@ -52,6 +52,7 @@ export default function SearchFacets({ query }: { query: string }) {
           <button
             key={f.label}
             onClick={() => handleToggle(f)}
+            aria-pressed={active}
             style={{
               padding: '6px 14px',
               borderRadius: '999px',

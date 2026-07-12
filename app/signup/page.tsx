@@ -321,7 +321,7 @@ function SignupForm() {
             }}>
               <UserPlus size={20} aria-hidden="true" />
             </div>
-            <h2 className="animated-gradient-text" style={{ fontSize: '1.4rem', textAlign: 'center' }}>Create Researcher Account</h2>
+            <h1 className="animated-gradient-text" style={{ fontSize: '1.4rem', textAlign: 'center' }}>Create Researcher Account</h1>
           </div>
           <p style={{ marginBottom: 'var(--space-6)', fontSize: '0.85rem', color: 'var(--grey-400)', textAlign: 'center' }}>
             Join Pep Nation Lab For Peptide Education And Research
@@ -330,13 +330,13 @@ function SignupForm() {
 
 
           {error && (
-            <div className="disclaimer-warning" style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-3) var(--space-4)' }}>
+            <div role="alert" className="disclaimer-warning" style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-3) var(--space-4)' }}>
               <p style={{ fontSize: '0.85rem', color: 'var(--red)' }}>{error}</p>
             </div>
           )}
 
           {info && (
-            <div style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-4)', background: 'rgba(255,255,255,0.02)', border: '2px solid var(--silver-dark)', borderRadius: 8 }}>
+            <div role="status" style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-4)', background: 'rgba(255,255,255,0.02)', border: '2px solid var(--silver-dark)', borderRadius: 8 }}>
               <p style={{ fontSize: '0.9rem', color: 'var(--silver-light)', margin: 0, textAlign: 'center', lineHeight: 1.5 }}>{info}</p>
             </div>
           )}
@@ -430,9 +430,11 @@ function SignupForm() {
                 value={username} onChange={e => { setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '')); setUsernameDirty(true); }}
                 required minLength={2} maxLength={30}
                 autoComplete="username" autoCapitalize="none" spellCheck={false}
+                aria-describedby={usernameMsg ? 'username-status' : undefined}
+                aria-invalid={usernameBlocked || undefined}
               />
               {usernameMsg && (
-                <p style={{ fontSize: '0.72rem', marginTop: 4, color: usernameMsg.color }}>
+                <p id="username-status" role="status" style={{ fontSize: '0.72rem', marginTop: 4, color: usernameMsg.color }}>
                   {usernameMsg.text}
                 </p>
               )}
@@ -465,7 +467,7 @@ function SignupForm() {
               />
             </div>
 
-            <div style={{ margin: 'var(--space-5) 0', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            <div role="group" aria-label="Required Acknowledgments" style={{ margin: 'var(--space-5) 0', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
               {ACKNOWLEDGMENTS.map(a => (
                 <label key={a.key} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
                   <input
@@ -527,14 +529,14 @@ function SignupForm() {
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: 'var(--space-4)'
         }}>
           <div className="glass-panel" style={{ width: '100%', maxWidth: 460, padding: 'var(--space-6)', position: 'relative' }}>
-            <h3 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-3)', color: 'var(--white)' }}>
+            <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-3)', color: 'var(--white)' }}>
               Required Acknowledgments
-            </h3>
+            </h2>
             <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', marginBottom: 'var(--space-5)' }}>
               Before connecting your Google account to a Pep Nation Lab researcher profile, please confirm the following:
             </p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', marginBottom: 'var(--space-6)' }}>
+            <div role="group" aria-label="Required Acknowledgments" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', marginBottom: 'var(--space-6)' }}>
               {ACKNOWLEDGMENTS.map(a => (
                 <label key={a.key} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
                   <input

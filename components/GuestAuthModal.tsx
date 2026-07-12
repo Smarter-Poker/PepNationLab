@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useModalA11y } from '@/lib/useModalA11y';
 
 /**
  * GuestAuthModal - slide-up modal that prompts unauthenticated visitors
@@ -32,6 +33,9 @@ export default function GuestAuthModal({ open, onClose, featureLabel = 'This Fea
     return () => { document.body.style.overflow = ''; };
   }, [open]);
 
+  // A11y: initial focus, Tab trap, Escape-to-close, focus restore
+  const dialogRef = useModalA11y<HTMLDivElement>(open, { onClose });
+
   if (!open) return null;
 
   const currentPath = typeof window !== 'undefined'
@@ -59,6 +63,7 @@ export default function GuestAuthModal({ open, onClose, featureLabel = 'This Fea
 
       {/* Modal sheet */}
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label={`Sign in to use ${featureLabel}`}
@@ -92,7 +97,9 @@ export default function GuestAuthModal({ open, onClose, featureLabel = 'This Fea
             cursor: 'pointer',
             fontSize: '1.2rem',
             lineHeight: 1,
-            padding: '4px 8px',
+            padding: '8px 10px',
+            minWidth: 24,
+            minHeight: 24,
             borderRadius: 4,
           }}
         >

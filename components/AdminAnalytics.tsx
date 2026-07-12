@@ -240,7 +240,7 @@ export default function AdminAnalytics() {
             <h3 className="metal-text" style={{ fontSize: '0.92rem', color: '#fff', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)' }}>
               Revenue Trend
             </h3>
-          <div style={{ height: 260, width: '100%' }}>
+          <div style={{ height: 260, width: '100%' }} role="img" aria-label="Area Chart Of Platform Revenue Trend Over The Selected Date Range">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={data.revenueData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
                 <defs>
@@ -272,7 +272,7 @@ export default function AdminAnalytics() {
             </h3>
           {data.ordersByStatus.length > 0 ? (
             <>
-              <div style={{ height: 180, width: '100%' }}>
+              <div style={{ height: 180, width: '100%' }} role="img" aria-label={`Pie Chart Of Orders By Status: ${data.ordersByStatus.map((s) => `${s.name} ${s.value}`).join(', ')}`}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie data={data.ordersByStatus} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={3} dataKey="value" strokeWidth={0}>
@@ -308,7 +308,7 @@ export default function AdminAnalytics() {
               Top Products (By Revenue)
             </h3>
           {data.topProducts.length > 0 ? (
-            <div style={{ height: 240, width: '100%' }}>
+            <div style={{ height: 240, width: '100%' }} role="img" aria-label={`Bar Chart Of Top ${data.topProducts.length} Products By Revenue`}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.topProducts} layout="vertical" margin={{ top: 5, right: 5, left: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" horizontal={false} />

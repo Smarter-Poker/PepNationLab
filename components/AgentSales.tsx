@@ -682,7 +682,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
               </select>
             </div>
           </div>
-          <div style={{ width: '100%', height: 320 }}>
+          <div style={{ width: '100%', height: 320 }} role="img" aria-label="Area Chart Of Revenue And Profit Over The Selected Date Range">
             {a.hasCollected ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
@@ -710,7 +710,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
             <h2 className="metal-text" style={{ fontSize: '1.05rem', fontFamily: 'var(--font-brand)', margin: '0 0 12px' }}>Revenue By Product</h2>
             {a.topProductSlices.length > 0 ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
-                <div style={{ width: 170, height: 170 }}>
+                <div style={{ width: 170, height: 170 }} role="img" aria-label={`Pie Chart Of Revenue By Product Across ${a.topProductSlices.length} Products`}>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie data={a.topProductSlices} dataKey="value" nameKey="name" innerRadius={48} outerRadius={80} paddingAngle={2} stroke="none">
@@ -738,7 +738,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
           <div className="" style={{ padding: 'var(--space-6)' }}>
             <h2 className="metal-text" style={{ fontSize: '1.05rem', fontFamily: 'var(--font-brand)', margin: '0 0 12px' }}>Revenue By Payment Method</h2>
             {a.payMix.length > 0 ? (
-              <div style={{ width: '100%', height: 200 }}>
+              <div style={{ width: '100%', height: 200 }} role="img" aria-label="Bar Chart Of Revenue By Payment Method">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={a.payMix} layout="vertical" margin={{ top: 0, right: 12, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />

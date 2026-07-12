@@ -761,10 +761,10 @@ export default function AgentAccountDetail({
           <div className="glass-panel" style={{ width: '100%', maxWidth: 400 }}>
             <div style={{ padding: 'var(--space-6)' }}>
               <h3 className="metal-text" style={{ marginTop: 0, marginBottom: 'var(--space-4)', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Edit Password</h3>
-              <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', marginBottom: 'var(--space-2)' }}>
+              <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', marginBottom: 'var(--space-2)' }}>
                 Account: <strong style={{ color: '#fff' }}>{downlinePasswordAgent.full_name || downlinePasswordAgent.username}</strong>
               </p>
-              <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', marginBottom: 'var(--space-4)' }}>
+              <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', marginBottom: 'var(--space-4)' }}>
                 Username: <strong style={{ color: '#00C4BC', fontFamily: 'monospace' }}>{downlinePasswordAgent.username}</strong>
               </p>
               <form onSubmit={handleDownlinePasswordUpdate}>

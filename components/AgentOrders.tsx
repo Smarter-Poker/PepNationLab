@@ -956,6 +956,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                       borderCollapse: 'collapse',
                     }}
                   >
+                    <caption className="sr-only">Order Line Items</caption>
                     <thead>
                       <tr
                         style={{
@@ -964,10 +965,10 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                           borderBottom: '1px solid rgba(255,255,255,0.06)',
                         }}
                       >
-                        <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 600 }}>Product</th>
-                        <th style={{ textAlign: 'center', padding: '12px 16px', fontWeight: 600 }}>Quantity</th>
-                        <th style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 600 }}>Unit Price</th>
-                        <th style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 600 }}>Line Total</th>
+                        <th scope="col" style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 600 }}>Product</th>
+                        <th scope="col" style={{ textAlign: 'center', padding: '12px 16px', fontWeight: 600 }}>Quantity</th>
+                        <th scope="col" style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 600 }}>Unit Price</th>
+                        <th scope="col" style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 600 }}>Line Total</th>
                       </tr>
                     </thead>
                     <tbody>

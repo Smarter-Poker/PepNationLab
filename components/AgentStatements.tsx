@@ -81,14 +81,15 @@ export default function AgentStatements() {
 
         <div style={{ overflowX: 'auto' }}>
           <table className="table" style={{ minWidth: 600 }}>
+          <caption className="sr-only">Weekly Statements</caption>
           <thead>
             <tr>
-              <th style={{ textAlign: 'center' }}>Week</th>
-              <th style={{ textAlign: 'center' }}>Orders</th>
-              <th style={{ textAlign: 'center' }}>COGS</th>
-              <th style={{ textAlign: 'center' }}>Shipping</th>
-              <th style={{ textAlign: 'center' }}>Total Owed</th>
-              <th style={{ textAlign: 'center' }}>Status</th>
+              <th scope="col" style={{ textAlign: 'center' }}>Week</th>
+              <th scope="col" style={{ textAlign: 'center' }}>Orders</th>
+              <th scope="col" style={{ textAlign: 'center' }}>COGS</th>
+              <th scope="col" style={{ textAlign: 'center' }}>Shipping</th>
+              <th scope="col" style={{ textAlign: 'center' }}>Total Owed</th>
+              <th scope="col" style={{ textAlign: 'center' }}>Status</th>
             </tr>
           </thead>
           <tbody>

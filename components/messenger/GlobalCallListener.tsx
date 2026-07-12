@@ -70,7 +70,7 @@ class CallOverlayErrorBoundary extends React.Component<
               <p
                 style={{
                   marginBottom: 24,
-                  color: 'rgba(255,255,255,0.45)',
+                  color: 'rgba(255,255,255,0.6)',
                   fontSize: '0.72rem',
                   fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
                   wordBreak: 'break-word',

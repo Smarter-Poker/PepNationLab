@@ -269,12 +269,13 @@ export default function AgentStorefrontConfig({
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 'var(--space-4)' }}>
             <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label" style={{ color: 'var(--grey-400)' }}>Warehouse Name</label>
-              <input className="form-input" value={whName} onChange={e => setWhName(e.target.value)} placeholder="e.g. Primary Fulfillment Center" />
+              <label className="form-label" htmlFor="wh-name" style={{ color: 'var(--grey-400)' }}>Warehouse Name</label>
+              <input id="wh-name" className="form-input" value={whName} onChange={e => setWhName(e.target.value)} placeholder="e.g. Primary Fulfillment Center" />
             </div>
             <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label" style={{ color: 'var(--grey-400)' }}>Street Address</label>
+              <label className="form-label" htmlFor="wh-street" style={{ color: 'var(--grey-400)' }}>Street Address</label>
               <AddressAutocompleteInput
+                id="wh-street"
                 className="form-input"
                 value={whStreet1}
                 onChange={setWhStreet1}
@@ -284,22 +285,22 @@ export default function AgentStorefrontConfig({
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
               <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label" style={{ color: 'var(--grey-400)' }}>Apt / Suite (Optional)</label>
-                <input className="form-input" value={whStreet2} onChange={e => setWhStreet2(e.target.value)} placeholder="Suite 100" />
+                <label className="form-label" htmlFor="wh-suite" style={{ color: 'var(--grey-400)' }}>Apt / Suite (Optional)</label>
+                <input id="wh-suite" className="form-input" value={whStreet2} onChange={e => setWhStreet2(e.target.value)} placeholder="Suite 100" />
               </div>
               <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label" style={{ color: 'var(--grey-400)' }}>City</label>
-                <input className="form-input" value={whCity} onChange={e => setWhCity(e.target.value)} placeholder="Austin" />
+                <label className="form-label" htmlFor="wh-city" style={{ color: 'var(--grey-400)' }}>City</label>
+                <input id="wh-city" className="form-input" value={whCity} onChange={e => setWhCity(e.target.value)} placeholder="Austin" />
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
               <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label" style={{ color: 'var(--grey-400)' }}>State / Region</label>
-                <input className="form-input" value={whState} onChange={e => setWhState(e.target.value)} placeholder="TX" />
+                <label className="form-label" htmlFor="wh-state" style={{ color: 'var(--grey-400)' }}>State / Region</label>
+                <input id="wh-state" className="form-input" value={whState} onChange={e => setWhState(e.target.value)} placeholder="TX" />
               </div>
               <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label" style={{ color: 'var(--grey-400)' }}>ZIP / Postal Code</label>
-                <input className="form-input" value={whZip} onChange={e => setWhZip(e.target.value)} placeholder="78701" />
+                <label className="form-label" htmlFor="wh-zip" style={{ color: 'var(--grey-400)' }}>ZIP / Postal Code</label>
+                <input id="wh-zip" className="form-input" value={whZip} onChange={e => setWhZip(e.target.value)} placeholder="78701" />
               </div>
             </div>
           </div>

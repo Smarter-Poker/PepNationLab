@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { X, Sparkles, Flame, Shield, Heart, Moon } from 'lucide-react';
+import { useModalA11y } from '@/lib/useModalA11y';
 
 interface WizardFilters {
   area: string;
@@ -23,17 +24,8 @@ export default function HelpMeChooseWizard({ isOpen, onClose, onComplete }: Prop
   const [budget, setBudget] = useState('all');
   const [prep, setPrep] = useState('all');
 
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    if (isOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-    }
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isOpen, onClose]);
+  // A11y: initial focus, Tab trap, Escape-to-close, focus restore
+  const dialogRef = useModalA11y<HTMLDivElement>(isOpen, { onClose });
 
   if (!isOpen) return null;
 
@@ -112,7 +104,7 @@ export default function HelpMeChooseWizard({ isOpen, onClose, onComplete }: Prop
 
   return (
     <div style={modalOverlayStyle} onClick={onClose}>
-      <div style={modalContainerStyle} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Help Me Choose Wizard">
+      <div ref={dialogRef} style={modalContainerStyle} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Help Me Choose Wizard">
         <button
           onClick={onClose}
           aria-label="Close Wizard"

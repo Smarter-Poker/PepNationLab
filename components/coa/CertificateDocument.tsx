@@ -222,12 +222,13 @@ export default function CertificateDocument({ data }: { data: CertificateData })
 
       <div style={{ marginTop: 20, fontSize: 12, fontWeight: 500, color: TEAL_DARK, letterSpacing: 0.5 }}>Analytical Results</div>
       <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 6, fontSize: 13 }}>
+        <caption className="sr-only">Analytical Test Results</caption>
         <thead>
           <tr style={{ background: '#E1F5EE', color: '#04342C' }}>
-            <th style={{ textAlign: 'left', padding: '8px 10px', fontWeight: 500 }}>Test</th>
-            <th style={{ textAlign: 'left', padding: '8px 10px', fontWeight: 500 }}>Method</th>
-            <th style={{ textAlign: 'right', padding: '8px 10px', fontWeight: 500 }}>Result</th>
-            <th style={{ textAlign: 'right', padding: '8px 10px', fontWeight: 500 }}>Specification</th>
+            <th scope="col" style={{ textAlign: 'left', padding: '8px 10px', fontWeight: 500 }}>Test</th>
+            <th scope="col" style={{ textAlign: 'left', padding: '8px 10px', fontWeight: 500 }}>Method</th>
+            <th scope="col" style={{ textAlign: 'right', padding: '8px 10px', fontWeight: 500 }}>Result</th>
+            <th scope="col" style={{ textAlign: 'right', padding: '8px 10px', fontWeight: 500 }}>Specification</th>
           </tr>
         </thead>
         <tbody>

@@ -43,7 +43,7 @@ export default function ReceptorAffinityHeatmap({ bindings }: Props) {
 
   return (
     <div>
-      <div style={{ width: '100%', height: Math.max(240, data.length * 32 + 80) }}>
+      <div style={{ width: '100%', height: Math.max(240, data.length * 32 + 80) }} role="img" aria-label={`Bar Chart Of Binding Affinity (pChEMBL Values) For ${data.length} Targets Including ${data[0].full}`}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 30 }} layout="vertical">
             <CartesianGrid stroke="rgba(168,180,192,0.15)" />

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { useModalA11y } from '@/lib/useModalA11y';
 
 interface ExportJob {
   id: string;
@@ -75,6 +76,11 @@ export default function DangerZoneTab() {
       setDeactivating(false);
     }
   }, [router]);
+
+  // A11y: initial focus, Tab trap, Escape-to-close, focus restore for the confirm dialog
+  const confirmDialogRef = useModalA11y<HTMLDivElement>(confirmDeactivate, {
+    onClose: () => { if (!deactivating) setConfirmDeactivate(false); },
+  });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
@@ -166,6 +172,7 @@ export default function DangerZoneTab() {
 
       {confirmDeactivate && (
         <div
+          ref={confirmDialogRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby="confirm-deactivate-title"

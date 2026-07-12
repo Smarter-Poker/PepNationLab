@@ -28,6 +28,7 @@ import {
 import ReconstitutionCalculator from '@/components/research/ReconstitutionCalculator';
 import GlossaryText from '@/components/research/GlossaryText';
 import IframeModal from '@/components/ui/IframeModal';
+import { useModalA11y } from '@/lib/useModalA11y';
 
 export type ResearchSection = 'profile' | 'findings' | 'prep' | 'spec' | 'coa' | 'faq';
 type View = ResearchSection | 'full';
@@ -155,6 +156,9 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
     else onClose();
   };
 
+  // A11y: initial focus, Tab trap, Escape-to-close, focus restore
+  const dialogRef = useModalA11y<HTMLDivElement>(true, { onClose });
+
   const badge = (label: string, color: string) => (
     <span style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', padding: '5px 13px', borderRadius: 9999, background: `${color}1A`, border: `1px solid ${color}66`, color }}>
       {label}
@@ -187,6 +191,7 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
 
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-label={`${compound.display_name} ${VIEW_TITLE[view]}`}

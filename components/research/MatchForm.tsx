@@ -14,6 +14,7 @@ import type {
 import CompoundDrawer from './CompoundDrawer';
 import { saveMatchAction } from '@/app/research/actions';
 import { toast } from 'sonner';
+import { useModalA11y } from '@/lib/useModalA11y';
 
 interface ApiResponse {
   results?: MatchResult[];
@@ -228,18 +229,20 @@ function MatchFormInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [excludeSlugs]);
 
-  // Escape closes the compare modal + lock background scroll while it is open.
+  // Lock background scroll while the compare modal is open.
   useEffect(() => {
     if (!showCompare) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowCompare(false); };
-    document.addEventListener('keydown', onKey);
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
-      document.removeEventListener('keydown', onKey);
       document.body.style.overflow = prev;
     };
   }, [showCompare]);
+
+  // A11y: initial focus, Tab trap, Escape-to-close, focus restore for the compare modal
+  const compareDialogRef = useModalA11y<HTMLDivElement>(showCompare, {
+    onClose: () => setShowCompare(false),
+  });
 
   async function onAiSubmit() {
     if (!aiPrompt.trim()) return;
@@ -819,6 +822,7 @@ function MatchFormInner() {
           style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
         >
           <div
+            ref={compareDialogRef}
             role="dialog"
             aria-modal="true"
             aria-label="Head-to-head compound comparison"

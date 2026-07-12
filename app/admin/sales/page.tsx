@@ -209,10 +209,11 @@ export default function AdminSalesPage() {
                 <span style={{ fontSize: '0.76rem', color: 'var(--grey-500)' }}>Click Any Agent To View Their Transaction Ledger</span>
               </div>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <caption className="sr-only">Revenue By Agent</caption>
                 <thead>
                   <tr style={{ background: 'var(--surface-2)' }}>
                     {['Agent', 'Tier', 'Orders', 'Pending', 'Revenue', 'Actions'].map(h => (
-                      <th key={h} style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'left', fontSize: '0.72rem', fontWeight: 700, color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
+                      <th key={h} scope="col" style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'left', fontSize: '0.72rem', fontWeight: 700, color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, ArrowRight, Compass } from 'lucide-react';
 import type { Compound } from '@/lib/compounds';
 import { labelForArea, DEFAULT_WIZARD, type WizardState } from './discovery-shared';
+import { useModalA11y } from '@/lib/useModalA11y';
 
 export function GuidedDiscoveryWizard({
   open,
@@ -36,13 +37,13 @@ export function GuidedDiscoveryWizard({
     if (!open) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', onKey);
     return () => {
       document.body.style.overflow = prev;
-      window.removeEventListener('keydown', onKey);
     };
-  }, [open, onClose]);
+  }, [open]);
+
+  // A11y: initial focus, Tab trap, Escape-to-close, focus restore
+  const dialogRef = useModalA11y<HTMLDivElement>(open, { onClose });
 
   const TOTAL_STEPS = 4;
 
@@ -56,6 +57,7 @@ export function GuidedDiscoveryWizard({
     <AnimatePresence>
       {open && (
         <motion.div
+          ref={dialogRef}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
