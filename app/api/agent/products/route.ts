@@ -4,6 +4,8 @@ import { requireAgentOrAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { computeAgentCostForAgent } from '@/lib/pricing';
 import type { AgentTier } from '@/lib/pricing';
+import { AgentProductPatchSchema } from '@/lib/schemas/product';
+import { parseJsonBody } from '@/lib/schemas/http';
 
 // requireAgentOrAdmin is ownership-safe here: every query below is scoped to
 // agent_id = caller id, so an admin passing through only ever touches the
@@ -84,7 +86,14 @@ export async function PATCH(req: NextRequest) {
   const gate = await requireAgentOrAdmin();
   if (!gate.ok) return gate.response;
 
-  const body = await req.json().catch(() => ({}));
+  // Schema-locked body: money fields (retail_price, sale_price,
+  // margin_percent) are rejected at the boundary if they are NaN, Infinity,
+  // strings, or negative. Previously a NaN sale_price sailed through the
+  // MAP/cost-floor guards below (NaN comparisons are always false) and was
+  // written raw to agent_products.sale_price -- a column checkout pricing
+  // reads directly.
+  const parsed = await parseJsonBody(req, AgentProductPatchSchema);
+  if (!parsed.ok) return parsed.response;
   const {
     id,
     custom_name,
@@ -95,11 +104,7 @@ export async function PATCH(req: NextRequest) {
     is_visible,
     is_on_sale,
     sale_price,
-  } = body;
-
-  if (!id) {
-    return NextResponse.json({ error: 'Missing Agent Product ID' }, { status: 400 });
-  }
+  } = parsed.data;
 
   try {
     const supabase = await createServiceClient();
@@ -185,11 +190,22 @@ export async function PATCH(req: NextRequest) {
       resolvedMarginPercent = Math.round((resolvedRetailPrice! / agentCostPer10 - 1) * 100 * 100) / 100;
     }
 
-    const activeSalePrice = sale_price !== undefined && sale_price !== null ? Number(sale_price) : Number(check.sale_price);
+    const activeSalePrice = sale_price !== undefined && sale_price !== null ? sale_price : Number(check.sale_price);
     const activeIsOnSale = is_on_sale !== undefined ? Boolean(is_on_sale) : Boolean(check.is_on_sale);
 
-    if (activeIsOnSale) {
-      if (activeSalePrice < minRetailPrice) {
+    // Fail closed: the MAP/cost floors run whenever a sale price is being
+    // SET (not only when the sale is currently active) so a below-floor
+    // value can never be parked on the row and switched on later. A
+    // non-finite stored value also refuses to activate.
+    const salePriceBeingSet = sale_price !== undefined && sale_price !== null;
+    if (activeIsOnSale && !Number.isFinite(activeSalePrice)) {
+      return NextResponse.json(
+        { error: 'Sale Price Must Be A Valid Number Before The Sale Can Be Activated.' },
+        { status: 422 }
+      );
+    }
+    if (activeIsOnSale || salePriceBeingSet) {
+      if (!(activeSalePrice >= minRetailPrice)) {
         return NextResponse.json(
           {
             error: `Sale price ($${(activeSalePrice / 10).toFixed(2)}/vial) cannot be below the Minimum Advertised Price ($${(minRetailPrice / 10).toFixed(2)}/vial).`,
@@ -198,7 +214,7 @@ export async function PATCH(req: NextRequest) {
         );
       }
 
-      if (activeSalePrice < agentCostPer10) {
+      if (!(activeSalePrice >= agentCostPer10)) {
         return NextResponse.json(
           {
             error: `Sale price ($${(activeSalePrice / 10).toFixed(2)}/vial) cannot be below your cost ($${(agentCostPer10 / 10).toFixed(2)}/vial).`,

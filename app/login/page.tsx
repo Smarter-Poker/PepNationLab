@@ -1,11 +1,11 @@
 'use client';
 
+import { AuthResolveResponseSchema } from '@/lib/schemas/auth';
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Key } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { safeRelativePath } from '@/lib/safe-redirect';
-import { fetchJson } from '@/lib/fetch-json';
 
 function LoginPageInner() {
   const router = useRouter();
@@ -73,21 +73,21 @@ function LoginPageInner() {
         authEmail = raw;
       } else {
         // Everyone else - resolve username -> email via server
-        const r = await fetchJson<{ email?: string }>('/api/auth/resolve', {
+        const res = await fetch('/api/auth/resolve', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          timeoutMs: 12000,
-          errorContext: 'login.resolve',
           body: JSON.stringify({ username: raw }),
         });
-        if (!r.ok || !r.data?.email) {
-          setError(r.status === 0
-            ? 'Sign-In Is Taking Too Long. Please Check Your Connection And Try Again.'
-            : 'Invalid Username Or Password');
+        const rawData: unknown = await res.json();
+        // Schema-locked: this email is fed straight into
+        // supabase.auth.signInWithPassword, so it must be a real string.
+        const parsed = AuthResolveResponseSchema.safeParse(rawData);
+        if (!res.ok || !parsed.success) {
+          setError('Invalid Username Or Password');
           setLoading(false);
           return;
         }
-        authEmail = r.data.email;
+        authEmail = parsed.data.email;
       }
 
       const { error: authError } = await supabase.auth.signInWithPassword({
@@ -187,9 +187,9 @@ function LoginPageInner() {
             }}>
               <Key size={22} aria-hidden="true" />
             </div>
-            <h3 style={{ fontSize: '1.1rem', marginBottom: 'var(--space-3)', color: 'var(--white)' }}>
+            <h2 style={{ fontSize: '1.1rem', marginBottom: 'var(--space-3)', color: 'var(--white)' }}>
               Password Reset
-            </h3>
+            </h2>
             <p style={{ fontSize: '0.9rem', color: 'var(--grey-300)', lineHeight: 1.6 }}>
               Contact Your Research Agent If You Forgot Your Password Or Need It Reset
             </p>
@@ -206,13 +206,13 @@ function LoginPageInner() {
 
       <div style={{ width: '100%', maxWidth: 420, position: 'relative' }}>
         <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-8)', boxShadow: '0 0 40px rgba(104,211,145,0.05)' }}>
-          <h2 className="animated-gradient-text" style={{ marginBottom: 'var(--space-2)', fontSize: '1.4rem', textAlign: 'center' }}>Sign In</h2>
+          <h1 className="animated-gradient-text" style={{ marginBottom: 'var(--space-2)', fontSize: '1.4rem', textAlign: 'center' }}>Sign In</h1>
           <p style={{ marginBottom: 'var(--space-6)', fontSize: '0.85rem', color: 'var(--grey-400)', textAlign: 'center' }}>
             Access Your Account
           </p>
 
           {error && (
-            <div className="disclaimer-warning" style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-3) var(--space-4)' }}>
+            <div role="alert" className="disclaimer-warning" style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-3) var(--space-4)' }}>
               <p style={{ fontSize: '0.85rem', color: 'var(--red)' }}>{error}</p>
             </div>
           )}
@@ -316,8 +316,9 @@ function LoginPageInner() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--black)' }}>
-        <div style={{ width: 40, height: 40, borderRadius: '50%', border: '2px solid var(--teal)', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
+      <div role="status" style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--black)' }}>
+        <div aria-hidden="true" style={{ width: 40, height: 40, borderRadius: '50%', border: '2px solid var(--teal)', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
+        <span className="sr-only">Loading</span>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     }>

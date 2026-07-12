@@ -62,6 +62,17 @@ export default function AdminTierOverrideControl({ agentId }: { agentId: string 
   async function save(nextEnabled: boolean, nextLevel: number, nextCustomMarkup?: string) {
     setSaving(true);
     const resolvedMarkup = nextCustomMarkup !== undefined ? nextCustomMarkup : customMarkup;
+    // Fail-closed client guard mirroring the server rule (finite, 0-500%):
+    // a non-numeric entry previously became NaN in the payload and relied on
+    // the server 400 to bounce it.
+    if (resolvedMarkup !== '') {
+      const markupNum = Number(resolvedMarkup);
+      if (!Number.isFinite(markupNum) || markupNum < 0 || markupNum > 500) {
+        toast.error('Flat Markup Must Be A Number Between 0 And 500.');
+        setSaving(false);
+        return;
+      }
+    }
     try {
       const res = await fetch('/api/admin/agents/tier-override', {
         method: 'POST',

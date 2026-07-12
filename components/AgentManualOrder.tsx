@@ -90,7 +90,14 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
   };
 
   const subtotal = cart.reduce((sum, item) => sum + (Number(item.price) * Number(item.quantity)), 0);
-  const shippingCost = Number(shippingCostInput) || 0;
+  // Fail-closed shipping entry, mirroring the server clamp: finite, 0-1000,
+  // rounded to cents. `Number('-25') || 0` previously allowed a negative
+  // shipping figure into the payload (server clamped it, but the DISPLAYED
+  // total here went negative-adjusted and disagreed with the stored order).
+  const shippingCostRaw = Number(shippingCostInput);
+  const shippingCost = Number.isFinite(shippingCostRaw)
+    ? Math.min(1000, Math.max(0, Math.round(shippingCostRaw * 100) / 100))
+    : 0;
   const total = subtotal + (cart.length > 0 ? shippingCost : 0);
 
   const handleSubmit = async (e: React.FormEvent) => {

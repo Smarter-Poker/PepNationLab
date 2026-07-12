@@ -17,6 +17,12 @@ import { toast } from 'sonner';
 import { reportClientError } from '@/lib/report-client-error';
 import { getProductImage } from '@/lib/categoryImage';
 import { useModalA11y } from '@/lib/useModalA11y';
+import {
+  sanitizeStoredCart,
+  storedCartItemToClient,
+  ResolvedCartItemSchema,
+  CartRefreshItemSchema,
+} from '@/lib/schemas/cart';
 import DynamicAddToCartButton from '@/components/storefront/DynamicAddToCartButton';
 import DynamicCartButton from '@/components/storefront/DynamicCartButton';
 
@@ -250,7 +256,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         const res = await fetch('/api/cart/sync', { credentials: 'same-origin' });
         if (!res.ok) return; // 401 for guests: nothing to restore
         const json = await res.json();
-        const serverCart: CartItem[] = Array.isArray(json?.cart) ? json.cart : [];
+        // Fail-closed restore: the payload is a JSONB round-trip of
+        // client-authored data. Run it through the SAME sanitizer the sync
+        // route uses on write (lib/schemas/cart.ts) instead of a blind
+        // `CartItem[]` annotation -- malformed or NaN-priced lines are
+        // dropped, never adopted.
+        const serverCart: CartItem[] = sanitizeStoredCart(json?.cart).map(storedCartItemToClient);
         if (cancelled || serverCart.length === 0) return;
 
         let adopted = false;
@@ -375,9 +386,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             return;
           }
 
-          if (data.item) {
-            addMultipleToCart([{ product: data.item, quantity: data.quantity || 1 }], detail.name);
-            toast.success(`${data.item.name} Added To Cart.`);
+          // Schema-locked: the resolved item carries retailPrice/costPrice
+          // into the cart, so it must parse cleanly or be refused.
+          const parsedItem = ResolvedCartItemSchema.safeParse(data?.item);
+          if (parsedItem.success) {
+            const qty = Number(data.quantity);
+            const safeQty = Number.isFinite(qty) && qty >= 1 ? Math.min(9999, Math.floor(qty)) : 1;
+            const product = {
+              ...parsedItem.data,
+              sku: parsedItem.data.sku ?? '',
+              bulkThreshold: parsedItem.data.bulkThreshold ?? undefined,
+            };
+            addMultipleToCart([{ product, quantity: safeQty }], detail.name);
+            toast.success(`${parsedItem.data.name} Added To Cart.`);
           } else {
             toast.error(`${detail.name} Is Not Available.`);
           }
@@ -983,11 +1004,14 @@ function CartDrawer() {
         body: JSON.stringify({ productIds: [rec.id] }),
       });
       const data = await res.json();
-      const item = data?.items?.[0];
-      if (!item || !item.available) {
+      // Schema-locked: the refreshed line carries a server-authoritative
+      // price into the cart; a malformed line is treated as unavailable.
+      const parsedLine = CartRefreshItemSchema.safeParse(data?.items?.[0]);
+      if (!parsedLine.success || !parsedLine.data.available) {
         toast.error(`${rec.name} Is Not Currently Available`);
         return;
       }
+      const item = parsedLine.data;
       addToCart({
         id: rec.id,
         productId: item.productId ?? rec.id,
@@ -1013,11 +1037,13 @@ function CartDrawer() {
         body: JSON.stringify({ productIds: [product.id] }),
       });
       const data = await res.json();
-      const item = data?.items?.[0];
-      if (!item || !item.available) {
+      // Schema-locked: same rule as handleQuickAdd -- malformed = unavailable.
+      const parsedLine = CartRefreshItemSchema.safeParse(data?.items?.[0]);
+      if (!parsedLine.success || !parsedLine.data.available) {
         toast.error(`BAC Water Is Not Currently Available`);
         return;
       }
+      const item = parsedLine.data;
       addToCart(
         {
           id: product.id,

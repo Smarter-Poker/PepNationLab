@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { SubAgentPricingSchema } from '@/lib/schemas/product';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -233,21 +234,24 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
     try {
       setPricingError(null);
       setPricingSuccess(null);
-      const cost = parseFloat(baselineCost);
-      if (isNaN(cost) || cost < 0) throw new Error('Invalid Cost Value');
-      
-      const bulkCost = bulkCostStr ? parseFloat(bulkCostStr) : null;
-      const bulkThreshold = bulkThreshStr ? parseInt(bulkThreshStr, 10) : 100;
+      // Schema-locked payload: every field is validated together. Previously
+      // only baselineCost had a NaN check; a non-numeric bulk cost/threshold
+      // became NaN, which JSON.stringify serializes as null -- silently
+      // CLEARING the super-agent billing baseline instead of erroring.
+      const parsedPricing = SubAgentPricingSchema.safeParse({
+        product_id: productId,
+        baseline_cost: parseFloat(baselineCost),
+        bulk_baseline_cost: bulkCostStr ? parseFloat(bulkCostStr) : null,
+        bulk_threshold: bulkThreshStr ? parseInt(bulkThreshStr, 10) : 100,
+      });
+      if (!parsedPricing.success) {
+        throw new Error('Please Enter Valid Numeric Pricing Values.');
+      }
 
       const res = await fetch('/api/agent/super-agent/pricing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          product_id: productId, 
-          baseline_cost: cost,
-          bulk_baseline_cost: bulkCost,
-          bulk_threshold: bulkThreshold
-        })
+        body: JSON.stringify(parsedPricing.data)
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Failed To Save Pricing');

@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useCart } from '@/components/CartContext';
 import { reportClientError } from '@/lib/report-client-error';
+import { fetchJson } from '@/lib/fetch-json';
 import CartWarnings from '@/components/research/CartWarnings';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -15,7 +16,9 @@ import { calculateShippingCost as getShippingCost, ShippingOption } from '@/lib/
 import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
 import { Copy, Check } from 'lucide-react';
 import { quantityDiscountPct, isVolumeDiscountExcluded } from '@/lib/quantity-discount';
-import { trackStorefrontEvent, getAnalyticsSessionId, getAnalyticsVisitorId } from '@/lib/track';
+import { trackStorefrontEvent } from '@/lib/track';
+import { OrderCreateResponseSchema, ShippingPreviewResponseSchema } from '@/lib/schemas/order';
+import { CouponValidateResponseSchema } from '@/lib/schemas/coupon';
 
 type PaymentMethodId = 'zelle' | 'cashapp' | 'venmo' | 'apple_pay' | 'apple_cash' | 'paypal' | 'google_wallet' | 'wise' | 'chime' | 'varo';
 
@@ -179,7 +182,6 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
   const [copiedOrderId, setCopiedOrderId] = useState(false);
   const [copiedHandle, setCopiedHandle] = useState(false);
-  const [copiedAmount, setCopiedAmount] = useState(false);
   const [serverTotal, setServerTotal] = useState<number | null>(null);
   const [totalAdjusted, setTotalAdjusted] = useState(false);
 
@@ -207,18 +209,26 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const [shippingCarrier, setShippingCarrier] = useState<string | null>(null);
   const shippingFetchAbortRef = useRef<AbortController | null>(null);
 
+  // Persisted in sessionStorage so a page refresh during a hung submit
+  // reuses the SAME key -- the server's idempotency replay then returns the
+  // original order instead of creating a duplicate.
+  const IDEM_STORAGE_KEY = 'pnl_checkout_idem';
   const getIdempotencyKey = () => {
     if (!idempotencyKeyRef.current) {
-      idempotencyKeyRef.current =
-        typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      let stored: string | null = null;
+      try { stored = sessionStorage.getItem(IDEM_STORAGE_KEY); } catch { /* private mode */ }
+      idempotencyKeyRef.current = stored ||
+        (typeof crypto !== 'undefined' && 'randomUUID' in crypto
           ? crypto.randomUUID()
-          : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+          : `${Date.now()}-${Math.random().toString(16).slice(2)}`);
+      try { sessionStorage.setItem(IDEM_STORAGE_KEY, idempotencyKeyRef.current); } catch { /* ignore */ }
     }
     return idempotencyKeyRef.current;
   };
 
   const resetIdempotencyKey = () => {
     idempotencyKeyRef.current = null;
+    try { sessionStorage.removeItem(IDEM_STORAGE_KEY); } catch { /* ignore */ }
   };
 
   const [bacProduct, setBacProduct] = useState<{
@@ -684,10 +694,20 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
           signal: ctrl.signal,
         });
         if (!res.ok) return;
-        const json = await res.json();
-        setLiveShippingRate(Number(json.rate) || 0);
-        setShippingEstimated(!!json.estimated);
-        setShippingCarrier(typeof json.carrier === 'string' && json.carrier ? json.carrier : null);
+        const rawJson: unknown = await res.json();
+        // Schema-locked: a drifted response (rate renamed / non-numeric) must
+        // fall back to the weight-based estimate, never silently become $0
+        // shipping in the displayed total.
+        const parsedRate = ShippingPreviewResponseSchema.safeParse(rawJson);
+        if (!parsedRate.success) {
+          setLiveShippingRate(getShippingCost(shippingOption, totalWeightOz));
+          setShippingEstimated(true);
+          setShippingCarrier(null);
+          return;
+        }
+        setLiveShippingRate(parsedRate.data.rate);
+        setShippingEstimated(parsedRate.data.estimated);
+        setShippingCarrier(parsedRate.data.carrier || null);
       } catch (err) {
         const fallback = getShippingCost(shippingOption, totalWeightOz);
         setLiveShippingRate(fallback);
@@ -733,19 +753,14 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   // eslint-disable-next-line react-hooks/exhaustive-deps -- applyCoupon uses stashed override via setTimeout; intentional forward-ref
   }, [couponDisabled, cartSubtotal]);
 
-  // Funnel analytics (best-effort): checkout viewed. Fires once, and only when
-  // the cart actually has items (empty-cart mounts used to inflate the funnel).
+  // Funnel analytics (best-effort): checkout viewed. Fires once per mount.
   // Must run unconditionally BEFORE the storefrontLoaded early return, or the
   // hook count changes between renders and React throws "Rendered more hooks
   // than during the previous render", dumping every checkout into the error boundary.
-  const checkoutStartTrackedRef = useRef(false);
   useEffect(() => {
-    if (!checkoutStartTrackedRef.current && cart.length > 0) {
-      checkoutStartTrackedRef.current = true;
-      trackStorefrontEvent(agentSlug, 'checkout_start');
-    }
+    trackStorefrontEvent(agentSlug, 'checkout_start');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agentSlug, cart.length]);
+  }, [agentSlug]);
 
   if (!storefrontLoaded) return null;
 
@@ -825,13 +840,20 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code, subtotal: cartSubtotal }),
       });
-      const data = await res.json();
-      if (data.valid) {
-        setAppliedCoupon({ code: data.code, discount: Number(data.discount) || 0 });
+      const rawCouponData: unknown = await res.json();
+      // Schema-locked: `discount` feeds the money math shown to the buyer,
+      // so a malformed response fails closed (coupon not applied) instead of
+      // applying NaN-coerced or fabricated discounts.
+      const parsedCoupon = CouponValidateResponseSchema.safeParse(rawCouponData);
+      if (!parsedCoupon.success) {
+        setAppliedCoupon(null);
+        setCouponError('Could Not Verify Coupon. Please Try Again.');
+      } else if (parsedCoupon.data.valid) {
+        setAppliedCoupon({ code: parsedCoupon.data.code, discount: parsedCoupon.data.discount });
         setCouponError('');
       } else {
         setAppliedCoupon(null);
-        setCouponError(data.error ?? 'That Coupon Is Not Valid.');
+        setCouponError(parsedCoupon.data.error ?? 'That Coupon Is Not Valid.');
       }
     } catch {
       setCouponError('Could Not Verify Coupon. Please Try Again.');
@@ -878,6 +900,22 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     submittedRef.current = true;
     setLoading(true);
 
+    // Bind the idempotency key to THIS payload: if the user edited the cart,
+    // coupon, or fulfillment after a failed attempt, a stale key must not
+    // replay the OLD order as if the new submission succeeded.
+    try {
+      const payloadSig = JSON.stringify({
+        items: cart.map(item => ({ id: item.id, q: item.quantity, b: item.bundleName ?? null })),
+        f: fulfillmentMethod,
+        s: shippingOption,
+        p: paymentMethod,
+        c: couponDisabled ? null : (appliedCoupon?.code || null),
+      });
+      const prevSig = sessionStorage.getItem('pnl_checkout_idem_sig');
+      if (prevSig !== null && prevSig !== payloadSig) resetIdempotencyKey();
+      sessionStorage.setItem('pnl_checkout_idem_sig', payloadSig);
+    } catch { /* private mode -- in-memory key still applies */ }
+
     try {
       if (
         fulfillmentMethod === 'ship'
@@ -889,27 +927,24 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
         && state.trim()
         && zip.trim()
       ) {
-        try {
-          const addressRes = await fetch('/api/researcher/addresses', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              full_name: fullName.trim(),
-              street1: street.trim(),
-              street2: suite.trim() || null,
-              city: city.trim(),
-              state: state.trim().toUpperCase(),
-              zip: zip.trim(),
-              country: 'US',
-              is_default: savedAddresses.length === 0,
-            }),
-          });
-          if (!addressRes.ok) {
-            console.error('Failed to save address');
-            // We can still proceed with the order even if address save fails,
-            // but we log it to console.
-          }
-        } catch { }
+        // Best-effort: the order proceeds even if the address save fails,
+        // but the failure is now reported (errorContext) instead of silent.
+        await fetchJson('/api/researcher/addresses', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          timeoutMs: 10000,
+          errorContext: 'checkout.save-address',
+          body: JSON.stringify({
+            full_name: fullName.trim(),
+            street1: street.trim(),
+            street2: suite.trim() || null,
+            city: city.trim(),
+            state: state.trim().toUpperCase(),
+            zip: zip.trim(),
+            country: 'US',
+            is_default: savedAddresses.length === 0,
+          }),
+        });
       }
 
       // Record Layer 3 (add_to_cart) research-use acknowledgment before placing
@@ -928,9 +963,15 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
         });
       } catch { /* best-effort; /api/orders surfaces a clear error if truly missing */ }
 
-      const response = await fetch('/api/orders', {
+      // fetchJson: 45s timeout (the route does live carrier quoting + credit
+      // chain checks) so a stalled function can never hang the spinner
+      // forever. The idempotency key survives a retry, so resubmitting after
+      // a timeout is safe -- the server replays the original order.
+      const r = await fetchJson<{ success: boolean; orderId: string; total?: number }>('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        timeoutMs: 45000,
+        errorContext: 'checkout.place-order',
         body: JSON.stringify({
           items: cart.map(item => ({ id: item.id, quantity: item.quantity, bundleName: item.bundleName })),
           shippingAddress: fulfillmentMethod === 'ship' ? { fullName, street, suite, city, state, zip, phone } : null,
@@ -940,35 +981,52 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
           couponCode: couponDisabled ? null : (appliedCoupon?.code || null),
           idempotencyKey: getIdempotencyKey(),
           agentSlug: agentSlug || null,
-          // Funnel linkage only: the server emits the authoritative
-          // order_complete analytics event using its own computed total.
-          sessionId: getAnalyticsSessionId(),
-          visitorId: getAnalyticsVisitorId(),
         })
       });
 
-      if (!response.ok) {
-        let errStr = 'Failed To Process Order.';
-        try { 
-          const data = await response.json(); 
-          errStr = data.error ?? errStr; 
-        } catch { 
-          // If response is not valid JSON (e.g., 500 HTML page)
-          throw new Error('Failed to process order. The server encountered an unexpected error.');
+      if (!r.ok) {
+        if (r.status === 0) {
+          // Timeout / network failure -- the order MAY exist server-side.
+          throw new Error('The Order Is Taking Longer Than Expected. Please Press Place Order Again -- Your Order Will Not Be Duplicated.');
         }
+        // Only expected (4xx) messages are curated server-side strings; 5xx
+        // bodies are replaced with a generic message.
+        const errStr = r.status >= 400 && r.status < 500 && r.error
+          ? r.error
+          : 'Failed To Process Order. Please Try Again.';
         throw new Error(errStr);
       }
 
-      const data = await response.json();
-
-      if (typeof data.total === 'number') {
-        const srv = Number(data.total);
-        setServerTotal(srv);
-        setTotalAdjusted(Math.abs(srv - grandTotal) > 0.01);
+      // Runtime-validate the success body against the shared contract
+      // (lib/schemas/order.ts). Payment on this platform is a MANUAL transfer
+      // of exactly the displayed amount, so a drifted response shape must
+      // never fabricate an "Amount Due" from client-side math. If the shape
+      // is wrong, the order may still have been created -- send the
+      // researcher to their orders page for the authoritative total instead
+      // of guessing.
+      const parsedResponse = OrderCreateResponseSchema.safeParse(r.data);
+      if (!parsedResponse.success) {
+        reportClientError('checkout.order-response-shape', new Error('Order response failed schema validation'), {
+          kind: 'schema',
+          meta: { url: '/api/orders' },
+        });
+        clearAllCarts();
+        resetIdempotencyKey();
+        submittedRef.current = false;
+        setError('Your Order Was Received, But The Confirmation Could Not Be Verified. Please Check Your Orders Page For The Exact Amount Due Before Sending Payment.');
+        router.push('/orders');
+        return;
       }
+      const data = parsedResponse.data;
+
+      setServerTotal(data.total);
+      setTotalAdjusted(Math.abs(data.total - grandTotal) > 0.01);
       setOrderSuccess(data.orderId);
-      // order_complete analytics are now emitted SERVER-side by /api/orders
-      // (exact server total, deduped per order id, immune to ad blockers).
+      // Funnel analytics (best-effort, non-blocking): order completed.
+      trackStorefrontEvent(agentSlug, 'order_complete', {
+        order_id: data.orderId,
+        amount_cents: Math.round((data.total || grandTotal || 0) * 100),
+      });
       clearAllCarts();
       resetIdempotencyKey();
       submittedRef.current = false;
@@ -1026,7 +1084,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </div>
-            <h1 role="status" style={{ fontSize: '2rem', color: 'var(--teal)', marginBottom: 'var(--space-2)' }}>Order Placed Successfully</h1>
+            <h1 style={{ fontSize: '2rem', color: 'var(--teal)', marginBottom: 'var(--space-2)' }}>Order Placed Successfully</h1>
             <p style={{ color: 'var(--silver)', fontSize: '0.95rem' }}>Your Research Order Has Been Registered And Is Awaiting Offline Payment.</p>
           </div>
 
@@ -1054,7 +1112,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                   type="button"
                   aria-label="Copy Order ID"
                   onClick={() => {
-                    navigator.clipboard.writeText(orderSuccess).catch(() => { /* clipboard unavailable */ });
+                    navigator.clipboard.writeText(orderSuccess);
                     setCopiedOrderId(true);
                     setTimeout(() => setCopiedOrderId(false), 2000);
                   }}
@@ -1070,34 +1128,17 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem' }}>
               <span style={{ color: 'var(--grey-400)', fontWeight: 600 }}>Amount Due</span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <strong style={{ color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>${(serverTotal ?? grandTotal).toFixed(2)}</strong>
-                {/* CRO: the amount is transcribed by hand into a payment app -
-                    a typo stalls clearance until the agent chases it. One-tap
-                    copy removes the most error-prone step at the money moment. */}
-                <button
-                  type="button"
-                  aria-label="Copy Amount Due"
-                  onClick={() => {
-                    navigator.clipboard.writeText((serverTotal ?? grandTotal).toFixed(2)).catch(() => { /* clipboard unavailable */ });
-                    setCopiedAmount(true);
-                    setTimeout(() => setCopiedAmount(false), 2000);
-                  }}
-                  style={{ background: 'none', border: 'none', color: 'var(--teal)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' }}
-                >
-                  {copiedAmount ? <Check size={16} /> : <Copy size={16} />}
-                </button>
-              </span>
+              <strong style={{ color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>${(serverTotal ?? grandTotal).toFixed(2)}</strong>
             </div>
           </div>
 
           <div className="glass-panel" style={{ background: 'rgba(0, 0, 0, 0.3)', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', marginBottom: 'var(--space-8)' }}>
-            <h2 style={{ fontSize: '1rem', color: 'var(--teal)', marginBottom: 'var(--space-3)', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'var(--font-brand)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <h3 style={{ fontSize: '1rem', color: 'var(--teal)', marginBottom: 'var(--space-3)', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'var(--font-brand)', display: 'flex', alignItems: 'center', gap: 8 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--teal)" stroke="var(--teal)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block' }}>
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
               </svg>{' '}
               {payment.label}
-            </h2>
+            </h3>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: '1.25rem', fontFamily: 'var(--font-brand)', color: 'var(--teal)', letterSpacing: '0.05em', background: 'rgba(0, 240, 255, 0.05)', padding: 'var(--space-3)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(0, 240, 255, 0.1)', textAlign: 'center', marginBottom: 'var(--space-3)', flexWrap: 'wrap' }}>
               <span style={{ wordBreak: 'break-all' }}>{payment.handle}</span>
               {/* CRO: one-tap copy at the single most failure-prone step of the
@@ -1107,7 +1148,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                   type="button"
                   aria-label="Copy Payment Handle"
                   onClick={() => {
-                    navigator.clipboard.writeText(payment.handle).catch(() => { /* clipboard unavailable */ });
+                    navigator.clipboard.writeText(payment.handle);
                     setCopiedHandle(true);
                     setTimeout(() => setCopiedHandle(false), 2000);
                   }}
@@ -1123,7 +1164,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
           <PaymentProofUpload orderId={orderSuccess} />
 
           <div className="glass-panel" style={{ background: 'rgba(229, 62, 62, 0.05)', border: '1px solid rgba(229, 62, 62, 0.15)', padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-6)' }}>
-            <h3 style={{ color: 'var(--red)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4, fontFamily: 'var(--font-brand)' }}>Strict Legal Reminder</h3>
+            <h4 style={{ color: 'var(--red)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4, fontFamily: 'var(--font-brand)' }}>Strict Legal Reminder</h4>
             <p style={{ color: 'var(--silver-light)', fontSize: '0.78rem', margin: 0, lineHeight: 1.5 }}>All Products Purchased Are Restrictively Designated For Laboratory Experimentation And Chemical Analysis Only. Any Therapeutic Use Or Human Consumption Is Stringently Prohibited.</p>
           </div>
 
@@ -1145,14 +1186,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
       
       {!meetsOverallMin && totalCartQty > 0 && (
         <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)', color: '#fca5a5', textAlign: 'center' }}>
-          <strong>Order Minimum Not Met:</strong> This Storefront Requires An Overall Minimum Order Of {minOverallQty} Items. You Currently Have {totalCartQty} Item{totalCartQty !== 1 ? 's' : ''} In Your Cart.
-          {/* CRO: the banner told users to go back but gave them no way to -
-              a dead-end error state at the top of the funnel. */}
-          <div style={{ marginTop: 'var(--space-3)' }}>
-            <Link href={agentSlug ? `/${agentSlug}` : '/dashboard'} className="btn" style={{ display: 'inline-block', padding: '8px 20px', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 'var(--radius-md)', color: 'var(--white)', textDecoration: 'none', fontWeight: 700, fontSize: '0.85rem' }}>
-              Return To Store To Add Items
-            </Link>
-          </div>
+          <strong>Order Minimum Not Met:</strong> This Storefront Requires An Overall Minimum Order Of {minOverallQty} Items. You Currently Have {totalCartQty} Item{totalCartQty !== 1 ? 's' : ''} In Your Cart. Please Go Back To The Store And Add More Items Before Checking Out.
         </div>
       )}
 
@@ -1220,8 +1254,8 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             {step === 1 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
                 <div>
-                  <h2 id="fulfillment-method-heading" style={{ color: 'var(--teal)', fontSize: '1.2rem', marginBottom: 'var(--space-4)', paddingBottom: 'var(--space-2)' }}>Fulfillment Method</h2>
-                  <div className="fulfillment-grid" role="radiogroup" aria-labelledby="fulfillment-method-heading">
+                  <h3 style={{ color: 'var(--teal)', fontSize: '1.2rem', marginBottom: 'var(--space-4)', paddingBottom: 'var(--space-2)' }}>Fulfillment Method</h3>
+                  <div className="fulfillment-grid">
                     <label style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', background: shippingOption === 'agent_pickup' ? 'rgba(192, 184, 168, 0.06)' : 'var(--surface-2)', border: shippingOption === 'agent_pickup' ? '2px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', boxShadow: shippingOption === 'agent_pickup' ? 'var(--shadow-teal-sm)' : 'none', transition: 'all 0.25s ease' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1268,12 +1302,11 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
                 {fulfillmentMethod === 'ship' && (
                   <div>
-                    <h2 style={{ color: 'var(--teal)', fontSize: '1.2rem', marginBottom: 'var(--space-2)', paddingBottom: 'var(--space-2)' }}>Shipping Delivery Address</h2>
-                    <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 'var(--space-4)' }}>All Fields Are Required Unless Marked Optional.</p>
+                    <h3 style={{ color: 'var(--teal)', fontSize: '1.2rem', marginBottom: 'var(--space-4)', paddingBottom: 'var(--space-2)' }}>Shipping Delivery Address</h3>
                     {!savedAddressesLoading && savedAddresses.length > 0 && (
                       <div style={{ marginBottom: 'var(--space-5)' }}>
-                        <span className="form-label" id="saved-addresses-heading" style={{ display: 'block', marginBottom: 'var(--space-2)' }}>Saved Addresses</span>
-                        <div role="radiogroup" aria-labelledby="saved-addresses-heading" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                        <label className="form-label" style={{ marginBottom: 'var(--space-2)' }}>Saved Addresses</label>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
                           {savedAddresses.map((a) => (
                             <label key={a.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', background: selectedAddressId === a.id ? 'rgba(192, 184, 168, 0.06)' : 'var(--surface-2)', border: selectedAddressId === a.id ? '2px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer' }}>
                               <input type="radio" name="savedAddress" checked={selectedAddressId === a.id} onChange={() => pickSavedAddress(a.id)} style={{ accentColor: 'var(--teal)', marginTop: 4 }} />
@@ -1295,39 +1328,39 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                     )}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                       <div className="form-group">
-                        <label className="form-label" htmlFor="ship-fullname">Full Name</label>
-                        <input id="ship-fullname" type="text" className="form-input premium-input" placeholder="First And Last Name" autoComplete="name" autoCapitalize="words" required aria-required="true" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+                        <label className="form-label">Full Name</label>
+                        <input type="text" className="form-input premium-input" placeholder="First And Last Name" autoComplete="name" autoCapitalize="words" value={fullName} onChange={(e) => setFullName(e.target.value)} />
                       </div>
                       <div className="grid-2">
                         <div className="form-group" style={{ marginTop: 0 }}>
-                          <label className="form-label" htmlFor="ship-street">Street Address</label>
-                          <AddressAutocompleteInput id="ship-street" className="form-input premium-input" placeholder="123 Lab Street" value={street} onChange={setStreet} onSelect={(a) => { setStreet(a.street1); if (a.city) setCity(a.city); if (a.state) setState(a.state); if (a.zip) setZip(a.zip); }} />
+                          <label className="form-label">Street Address</label>
+                          <AddressAutocompleteInput className="form-input premium-input" placeholder="123 Lab Street" value={street} onChange={setStreet} onSelect={(a) => { setStreet(a.street1); if (a.city) setCity(a.city); if (a.state) setState(a.state); if (a.zip) setZip(a.zip); }} />
                         </div>
                         <div className="form-group" style={{ marginTop: 0 }}>
-                          <label className="form-label" htmlFor="ship-suite" style={{ whiteSpace: 'nowrap' }}>Suite Or Apartment</label>
-                          <input id="ship-suite" type="text" className="form-input premium-input" placeholder="Suite 404 (Optional)" autoComplete="address-line2" value={suite} onChange={(e) => setSuite(e.target.value)} />
+                          <label className="form-label" style={{ whiteSpace: 'nowrap' }}>Suite Or Apartment</label>
+                          <input type="text" className="form-input premium-input" placeholder="Suite 404 (Optional)" autoComplete="address-line2" value={suite} onChange={(e) => setSuite(e.target.value)} />
                         </div>
                       </div>
                       <div className="address-city-grid">
                         <div className="form-group" style={{ marginTop: 0 }}>
-                          <label className="form-label" htmlFor="ship-city">City</label>
-                          <input id="ship-city" type="text" className="form-input premium-input" placeholder="Science City" autoComplete="address-level2" autoCapitalize="words" required aria-required="true" value={city} onChange={(e) => setCity(e.target.value)} />
+                          <label className="form-label">City</label>
+                          <input type="text" className="form-input premium-input" placeholder="Science City" autoComplete="address-level2" autoCapitalize="words" value={city} onChange={(e) => setCity(e.target.value)} />
                         </div>
                         <div className="form-group" style={{ marginTop: 0 }}>
-                          <label className="form-label" htmlFor="ship-state">State</label>
-                          <select id="ship-state" className="form-input premium-input" autoComplete="address-level1" required aria-required="true" value={state} onChange={(e) => setState(e.target.value)}>
+                          <label className="form-label">State</label>
+                          <select className="form-input premium-input" autoComplete="address-level1" value={state} onChange={(e) => setState(e.target.value)}>
                             <option value="">Select State</option>
                             {US_STATES.map((s) => <option key={s.code} value={s.code}>{s.code} - {s.name}</option>)}
                           </select>
                         </div>
                         <div className="form-group" style={{ marginTop: 0 }}>
-                          <label className="form-label" htmlFor="ship-zip">Zip Code</label>
-                          <input id="ship-zip" type="text" className="form-input premium-input" placeholder="90210" inputMode="numeric" pattern="[0-9]*" maxLength={10} autoComplete="postal-code" required aria-required="true" value={zip} onChange={(e) => setZip(e.target.value)} />
+                          <label className="form-label">Zip Code</label>
+                          <input type="text" className="form-input premium-input" placeholder="90210" inputMode="numeric" pattern="[0-9]*" maxLength={10} autoComplete="postal-code" value={zip} onChange={(e) => setZip(e.target.value)} />
                         </div>
                       </div>
                       <div className="form-group">
-                        <label className="form-label" htmlFor="ship-phone">Phone Number (Optional)</label>
-                        <input id="ship-phone" type="tel" className="form-input premium-input" placeholder="123-456-7890 (For Shipping Updates)" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                        <label className="form-label">Phone Number</label>
+                        <input type="tel" className="form-input premium-input" placeholder="123-456-7890 (For Shipping Updates)" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
                       </div>
                       {selectedAddressId === 'new' && (
                         <label className="form-checkbox" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: 'var(--space-3)', background: 'var(--surface-2)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: 'var(--radius-md)' }}>
@@ -1341,7 +1374,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
                 {fulfillmentMethod === 'agent_pickup' && (
                   <div style={{ background: 'rgba(192, 184, 168, 0.03)', border: '1px solid rgba(192, 184, 168, 0.2)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)' }}>
-                    <h3 style={{ color: 'var(--teal)', fontSize: '0.95rem', marginBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)' }}>Agent Hand-Off Confirmation</h3>
+                    <h4 style={{ color: 'var(--teal)', fontSize: '0.95rem', marginBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)' }}>Agent Hand-Off Confirmation</h4>
                     <p style={{ fontSize: '0.85rem', color: 'var(--silver-light)', margin: 0, lineHeight: 1.6 }}>You Have Opted For Manual In-Person Pickup. No Package Shipping Fee Will Be Charged. Please Arrange Coordinates With Your Local Partner Following Order Placement.</p>
                   </div>
                 )}
@@ -1356,9 +1389,9 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             {step === 2 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
                 <div>
-                  <h2 id="payment-method-heading" style={{ color: 'var(--teal)', fontSize: '1.2rem', marginBottom: 'var(--space-4)', paddingBottom: 'var(--space-2)' }}>Billing Offline Payment Method</h2>
+                  <h3 style={{ color: 'var(--teal)', fontSize: '1.2rem', marginBottom: 'var(--space-4)', paddingBottom: 'var(--space-2)' }}>Billing Offline Payment Method</h3>
                   <p style={{ color: 'var(--silver-light)', fontSize: '0.85rem', marginBottom: 'var(--space-4)', lineHeight: 1.5 }}>Select Your Preferred Offline Channel To Finalize Cash Settlement. Our Staff Will Release Your Lab Experimentation Order Instantly Upon Verifying Receipt.</p>
-                  <div className="payment-grid" role="radiogroup" aria-labelledby="payment-method-heading">
+                  <div className="payment-grid">
                     {availablePaymentMethods.map((p) => (
                       <label key={p.id} style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', background: paymentMethod === p.id ? 'rgba(192, 184, 168, 0.06)' : 'var(--surface-2)', border: paymentMethod === p.id ? '2px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', boxShadow: paymentMethod === p.id ? 'var(--shadow-teal-sm)' : 'none', transition: 'all 0.25s ease' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
@@ -1378,7 +1411,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                   </div>
                 </div>
                 <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)' }}>
-                  <h3 style={{ color: 'var(--silver-light)', fontSize: '0.88rem', marginBottom: 'var(--space-2)' }}>Payment Process Notice</h3>
+                  <h4 style={{ color: 'var(--silver-light)', fontSize: '0.88rem', marginBottom: 'var(--space-2)' }}>Payment Process Notice</h4>
                   <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', margin: 0, lineHeight: 1.5 }}>Your Checkout Complete Order ID Will Be Displayed Following Submission. Simply Complete Payment Settlement Via The Listed Handle And Input Your Order ID In The Payment Reference.</p>
                 </div>
                 <div className="step-buttons">
@@ -1391,7 +1424,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             {step === 3 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
                 <div>
-                  <h2 style={{ color: 'var(--red)', fontSize: '1.2rem', marginBottom: 'var(--space-4)', paddingBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)' }}>Compliance Research Agreement</h2>
+                  <h3 style={{ color: 'var(--red)', fontSize: '1.2rem', marginBottom: 'var(--space-4)', paddingBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)' }}>Compliance Research Agreement</h3>
                   <p style={{ color: 'var(--silver-light)', fontSize: '0.85rem', marginBottom: 'var(--space-6)', lineHeight: 1.6 }}>Please Review And Attest To All Compliance Agreements Below. Your Strict Lab Affirmations Are Stored In Audited Database Ledgers For Mandatory Safety Protocols.</p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
                     <label className="form-checkbox" style={{ padding: 'var(--space-3)', background: 'var(--surface-2)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: 'var(--radius-md)' }}>
@@ -1409,13 +1442,13 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                   </div>
                 </div>
                 <div style={{ borderLeft: '3px solid var(--red)', background: 'var(--red-bg)', padding: 'var(--space-4)', borderRadius: '0 var(--radius-md) var(--radius-md) 0' }}>
-                  <h3 style={{ color: 'var(--red)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4, fontFamily: 'var(--font-brand)' }}>Binding Attestation</h3>
+                  <h4 style={{ color: 'var(--red)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4, fontFamily: 'var(--font-brand)' }}>Binding Attestation</h4>
                   <p style={{ color: 'var(--silver-light)', fontSize: '0.78rem', margin: 0, lineHeight: 1.5 }}>Acceptance Of These Agreements Digitally Validates Your Institutional Consent. False Audits May Result In Restrictive Ban Of Profile Access To All Catalog Inventory.</p>
                 </div>
                 <div className="step-buttons">
                   <button type="button" onClick={handlePrevStep} className="btn" style={{ minWidth: 150, background: 'rgba(255,255,255,0.05)', color: 'var(--white)' }} disabled={loading}>Back</button>
-                  <button type="submit" className="btn-neon-cyan" style={{ minWidth: 180, display: 'flex', alignItems: 'center', justifyContent: 'center' }} disabled={loading} aria-busy={loading}>
-                    {loading ? <><span aria-hidden="true" style={{ display: 'inline-block', width: 16, height: 16, border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /><span className="sr-only">Placing Order</span></> : 'Place Research Order'}
+                  <button type="submit" className="btn-neon-cyan" style={{ minWidth: 180, display: 'flex', alignItems: 'center', justifyContent: 'center' }} disabled={loading}>
+                    {loading ? <span style={{ display: 'inline-block', width: 16, height: 16, border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /> : 'Place Research Order'}
                   </button>
                 </div>
               </div>
@@ -1427,7 +1460,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
           <div className="glass-panel">
             <div style={{ padding: 'var(--space-5)' }}>
-            <h2 style={{ fontSize: '0.95rem', color: 'var(--white)', marginBottom: 'var(--space-4)', paddingBottom: 'var(--space-2)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Order Inventory</h2>
+            <h3 style={{ fontSize: '0.95rem', color: 'var(--white)', marginBottom: 'var(--space-4)', paddingBottom: 'var(--space-2)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Order Inventory</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', maxHeight: 220, overflowY: 'auto', paddingRight: 4, marginBottom: 'var(--space-4)' }}>
               {(() => {
                 const groupedCart: { isBundle: boolean, name: string, items: typeof cart }[] = [];
@@ -1501,11 +1534,11 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                   </div>
                 ) : (
                   <div className="coupon-row" style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                    <input type="text" className="form-input premium-input" placeholder="Coupon Code" aria-label="Coupon Code" aria-invalid={couponError ? true : undefined} aria-describedby={couponError ? 'coupon-error' : undefined} value={couponInput} onChange={(e) => setCouponInput(e.target.value)} style={{ margin: 0, flexGrow: 1, fontSize: '0.8rem' }} />
+                    <input type="text" className="form-input premium-input" placeholder="Coupon Code" value={couponInput} onChange={(e) => setCouponInput(e.target.value)} style={{ margin: 0, flexGrow: 1, fontSize: '0.8rem' }} />
                     <button type="button" onClick={() => applyCoupon()} disabled={couponLoading} className="btn-neon-cyan" style={{ fontSize: '0.78rem', padding: '0 var(--space-4)' }}>{couponLoading ? 'Checking' : 'Apply'}</button>
                   </div>
                 )}
-                {couponError && <p id="coupon-error" role="alert" style={{ fontSize: '0.72rem', color: 'var(--red)', margin: 'var(--space-2) 0 0' }}>{couponError}</p>}
+                {couponError && <p style={{ fontSize: '0.72rem', color: 'var(--red)', margin: 'var(--space-2) 0 0' }}>{couponError}</p>}
               </div>
             )}
 

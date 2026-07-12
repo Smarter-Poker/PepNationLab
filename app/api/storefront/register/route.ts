@@ -9,7 +9,7 @@ import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { notifyNewResearcher } from '@/lib/notify';
 import { emailConfigured, sendWelcomeEmail } from '@/lib/email';
 import { hashCode, isValidEmail, normalizeEmail, CODE_PURPOSE_SIGNUP, MAX_CODE_ATTEMPTS } from '@/lib/verification';
-import { recordServerAnalyticsEvent } from '@/lib/server-analytics';
+import { StorefrontRegisterSchema } from '@/lib/schemas/auth';
 
 /**
  * POST /api/storefront/register
@@ -41,45 +41,27 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const body = await req.json().catch(() => ({}));
-  const { agentSlug, username, password, firstName, lastName, phone, code, sessionId, visitorId } = body || {};
-  const email = normalizeEmail(body?.email);
+  const rawBody: unknown = await req.json().catch(() => ({}));
 
-  if (!agentSlug) {
-    return NextResponse.json({ error: 'Agent Storefront Is Required.' }, { status: 400 });
+  // Schema-locked body. The password rule matters most: it is now REQUIRED
+  // to be a string of 8-128 chars. The previous hand checks called
+  // `password.length`, so a non-string JSON value (e.g. a bare number)
+  // skipped both bounds entirely and went straight to auth.createUser.
+  const parsedBody = StorefrontRegisterSchema.safeParse(rawBody);
+  if (!parsedBody.success) {
+    const first = parsedBody.error.issues[0];
+    const message =
+      first?.path?.[0] === 'password'
+        ? first.message
+        : 'Username, Password, First Name, And Last Name Are Required.';
+    return NextResponse.json({ error: message }, { status: 400 });
   }
-
-  if (!username || !password || !firstName || !lastName) {
-    return NextResponse.json(
-      { error: 'Username, Password, First Name, And Last Name Are Required.' },
-      { status: 400 }
-    );
-  }
+  const { agentSlug, username, password, firstName, lastName, phone, code } = parsedBody.data;
+  const email = normalizeEmail(parsedBody.data.email);
 
   // A real email is required for all public signups.
   if (!isValidEmail(email)) {
     return NextResponse.json({ error: 'A Valid Email Address Is Required.' }, { status: 400 });
-  }
-
-  // Field length caps - prevent oversized profile inserts.
-  if (String(firstName).trim().length > 100 || String(lastName).trim().length > 100) {
-    return NextResponse.json({ error: 'Name Must Be 100 Characters Or Fewer.' }, { status: 400 });
-  }
-  if (phone && String(phone).trim().length > 30) {
-    return NextResponse.json({ error: 'Phone Number Is Too Long.' }, { status: 400 });
-  }
-
-  if (password.length < 8) {
-    return NextResponse.json(
-      { error: 'Password Must Be At Least 8 Characters.' },
-      { status: 400 }
-    );
-  }
-  if (password.length > 128) {
-    return NextResponse.json(
-      { error: 'Password Must Be 128 Characters Or Fewer.' },
-      { status: 400 }
-    );
   }
 
   const usernameClean = sanitizeUsername(username);
@@ -202,7 +184,6 @@ export async function POST(req: NextRequest) {
       phone: phone ? String(phone).trim() : null,
       role: 'researcher',
       referring_agent_id: referringAgentId,
-      acquisition_source: 'storefront',
       disclaimer_v1_accepted: false,
       is_active: true,
       updated_at: new Date().toISOString(),
@@ -222,17 +203,6 @@ export async function POST(req: NextRequest) {
     }
 
     await notifyNewResearcher(admin, referringAgentId, fullName).catch(() => { /* ignore */ });
-
-    // Server-authoritative signup analytics: joins the anonymous browse
-    // session/visitor to the conversion without storing the new user id in the
-    // event stream. Best-effort: never fails the registration.
-    await recordServerAnalyticsEvent(admin, {
-      agent_id: referringAgentId,
-      event_type: 'signup',
-      session_id: typeof sessionId === 'string' ? sessionId : null,
-      visitor_id: typeof visitorId === 'string' ? visitorId : null,
-      path: `/${String(agentSlug).slice(0, 80)}`,
-    });
 
     // Welcome email (best-effort, non-blocking). No-op if the sender is not
     // configured; only meaningful once email is live.

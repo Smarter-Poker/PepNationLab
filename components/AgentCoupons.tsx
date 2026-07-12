@@ -13,7 +13,7 @@ interface Coupon {
   code: string;
   discount_type: 'percent' | 'fixed';
   discount_value: number;
-  min_subtotal: number | null;
+  min_order_amount: number | null;
   max_uses: number | null;
   uses_count: number;
   is_active: boolean;
@@ -35,7 +35,7 @@ interface BulkGenerateOptions {
   count: number;
   discount_type: 'percent' | 'fixed';
   discount_value: number;
-  min_subtotal: string;
+  min_order_amount: string;
   max_uses: string;
   expires_at: string;
   starts_at: string;
@@ -203,7 +203,7 @@ function BulkGenerateModal({
     count: 10,
     discount_type: 'percent',
     discount_value: 10,
-    min_subtotal: '',
+    min_order_amount: '',
     max_uses: '1',
     expires_at: '',
     starts_at: '',
@@ -264,9 +264,9 @@ function BulkGenerateModal({
             className="form-input"
             type="number"
             placeholder="None"
-            value={opts.min_subtotal}
+            value={opts.min_order_amount}
             step={0.01}
-            onChange={(e) => set('min_subtotal', e.target.value)}
+            onChange={(e) => set('min_order_amount', e.target.value)}
           />
         </div>
         <div>
@@ -424,7 +424,7 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
     setCode(c.code);
     setDiscountType(c.discount_type);
     setDiscountValue(String(c.discount_value));
-    setMinSubtotal(c.min_subtotal != null ? String(c.min_subtotal) : '');
+    setMinSubtotal(c.min_order_amount != null ? String(c.min_order_amount) : '');
     setMaxUses(c.max_uses != null ? String(c.max_uses) : '');
     setExpiresAt(c.expires_at ? c.expires_at.slice(0, 16) : '');
     setStartsAt((c as any).starts_at ? (c as any).starts_at.slice(0, 16) : '');
@@ -445,13 +445,13 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
         code: code.trim().toUpperCase(),
         discount_type: discountType,
         discount_value: Number(discountValue),
-        min_subtotal: minSubtotal ? Number(minSubtotal) : null,
+        min_order_amount: minSubtotal ? Number(minSubtotal) : null,
         max_uses: maxUses ? Number(maxUses) : null,
         expires_at: expiresAt || null,
         starts_at: startsAt || null,
       };
       const url = editingId ? `/api/agent/coupons/${editingId}` : '/api/agent/coupons';
-      const method = editingId ? 'PUT' : 'POST';
+      const method = editingId ? 'PATCH' : 'POST';
       const res = await fetchJson<any>(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -472,9 +472,11 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
   const toggleActive = async (coupon: Coupon) => {
     try {
       const res = await fetchJson<any>(`/api/agent/coupons/${coupon.id}`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...coupon, is_active: !coupon.is_active }),
+        // PATCH semantics: send only the field being changed. Spreading the
+        // whole row re-submitted display fields on every toggle.
+        body: JSON.stringify({ is_active: !coupon.is_active }),
       });
       if (!res.ok) throw new Error(res.error || 'Failed To Toggle Coupon');
       toast.success(coupon.is_active ? 'Coupon Deactivated' : 'Coupon Activated');
@@ -507,7 +509,7 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
           count: opts.count,
           discount_type: opts.discount_type,
           discount_value: opts.discount_value,
-          min_subtotal: opts.min_subtotal ? Number(opts.min_subtotal) : null,
+          min_order_amount: opts.min_order_amount ? Number(opts.min_order_amount) : null,
           max_uses: opts.max_uses ? Number(opts.max_uses) : null,
           expires_at: opts.expires_at || null,
           starts_at: opts.starts_at || null,
@@ -528,7 +530,7 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
         code: c.code,
         discount_type: c.discount_type,
         discount_value: c.discount_value,
-        min_subtotal: c.min_subtotal ?? '',
+        min_order_amount: c.min_order_amount ?? '',
         max_uses: c.max_uses ?? 'Unlimited',
         uses_count: c.uses_count,
         is_active: c.is_active,
@@ -539,7 +541,7 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
         { key: 'code', label: 'Code' },
         { key: 'discount_type', label: 'Type' },
         { key: 'discount_value', label: 'Value' },
-        { key: 'min_subtotal', label: 'Min Subtotal' },
+        { key: 'min_order_amount', label: 'Min Subtotal' },
         { key: 'max_uses', label: 'Max Uses' },
         { key: 'uses_count', label: 'Uses' },
         { key: 'is_active', label: 'Active' },
@@ -650,7 +652,7 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
                       </div>
                       <span style={{ fontSize: '0.82rem', color: 'var(--silver)' }}>
                         {c.discount_type === 'percent' ? `${c.discount_value}% Off` : `$${c.discount_value.toFixed(2)} Off`}
-                        {c.min_subtotal ? ` On Orders Over $${c.min_subtotal}` : ''}
+                        {c.min_order_amount ? ` On Orders Over $${c.min_order_amount}` : ''}
                       </span>
                       {c.expires_at && (
                         <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Expires: {new Date(c.expires_at).toLocaleDateString()}</span>

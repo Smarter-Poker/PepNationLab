@@ -23,18 +23,31 @@ export type FetchJsonResult<T> =
   | { ok: true; status: number; data: T; error: null }
   | { ok: false; status: number; data: null; error: string };
 
-export interface FetchJsonOptions extends RequestInit {
+/** Minimal structural type for a zod schema -- avoids importing zod here. */
+export interface ResponseSchema<T> {
+  safeParse(data: unknown): { success: true; data: T } | { success: false; error: unknown };
+}
+
+export interface FetchJsonOptions<T = unknown> extends RequestInit {
   /** Abort the request after this many ms (default 15000). */
   timeoutMs?: number;
   /** When set, non-ok and thrown paths are reported via reportClientError. */
   errorContext?: string;
+  /**
+   * When set, the SUCCESS payload is runtime-validated against this zod
+   * schema. A 2xx body that fails validation is returned as
+   * `{ ok: false, status: 200, error: 'Unexpected Server Response.' }` --
+   * response-shape drift fails closed instead of flowing typed-but-wrong
+   * data (prices, totals, auth fields) into the UI.
+   */
+  schema?: ResponseSchema<T>;
 }
 
 export async function fetchJson<T = unknown>(
   input: string,
-  opts: FetchJsonOptions = {},
+  opts: FetchJsonOptions<T> = {},
 ): Promise<FetchJsonResult<T>> {
-  const { timeoutMs = 15000, errorContext, signal, ...init } = opts;
+  const { timeoutMs = 15000, errorContext, schema, signal, ...init } = opts;
 
   // Combine the caller's signal (if any) with a timeout signal.
   const timeoutSignal = AbortSignal.timeout(timeoutMs);
@@ -65,6 +78,21 @@ export async function fetchJson<T = unknown>(
         reportClientError(errorContext, new Error(msg), { kind: 'http', meta: { status: res.status, url: input } });
       }
       return { ok: false, status: res.status, data: null, error: msg };
+    }
+
+    if (schema) {
+      const validated = schema.safeParse(parsed);
+      if (!validated.success) {
+        const msg = 'Unexpected Server Response.';
+        if (errorContext) {
+          reportClientError(errorContext, new Error(msg), {
+            kind: 'schema',
+            meta: { status: res.status, url: input },
+          });
+        }
+        return { ok: false, status: res.status, data: null, error: msg };
+      }
+      return { ok: true, status: res.status, data: validated.data, error: null };
     }
 
     return { ok: true, status: res.status, data: parsed as T, error: null };

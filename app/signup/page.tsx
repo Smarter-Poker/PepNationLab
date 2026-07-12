@@ -1,12 +1,12 @@
 'use client';
 
+import { z } from 'zod';
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { UserPlus } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 import { useAvailability, availabilityMessage } from '@/lib/useAvailability';
-import { getAnalyticsSessionId, getAnalyticsVisitorId } from '@/lib/track';
 
 // Public Researcher Signup -- Every Account Created Here Is Linked To The
 // House Storefront (Pep Nation Research Store) Via The Storefront Register API.
@@ -191,10 +191,6 @@ function SignupForm() {
           email: email.trim(),
           phone: phone || undefined,
           code: verificationCode,
-          // Analytics funnel linkage: lets the server-side signup event join
-          // this browser's anonymous session to the conversion.
-          sessionId: getAnalyticsSessionId(),
-          visitorId: getAnalyticsVisitorId(),
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -207,8 +203,17 @@ function SignupForm() {
 
       // Sign The New Researcher In Immediately.
       // We retry up to 3 times to account for potential Supabase Auth read replica replication lag.
+      // Schema check: `username` is interpolated into the internal auth email,
+      // so it must be the sanitized string the server reports -- never an
+      // arbitrary value off an untyped response.
+      const usernameParsed = z.object({ username: z.string().regex(/^[a-z0-9_]{2,100}$/i) }).safeParse(data);
+      if (!usernameParsed.success) {
+        setError('Account Created. Please Sign In With Your Username And Password.');
+        setLoading(false);
+        return;
+      }
       const supabase = createClient();
-      const internalEmail = `${data.username}@internal.auth`;
+      const internalEmail = `${usernameParsed.data.username}@internal.auth`;
       let authError = null;
       
       for (let i = 0; i < 3; i++) {

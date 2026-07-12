@@ -4,12 +4,7 @@ import { requireAgent } from '@/lib/admin-auth';
 import { computeAgentCostForAgent, computeSubAgentBaselineCost, type AgentTier } from '@/lib/pricing';
 import { assertSameOrigin } from '@/lib/csrf';
 import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
-
-interface ManualOrderItemInput {
-  product_id?: string;
-  agent_product_id?: string;
-  quantity?: number;
-}
+import { ManualOrderInputSchema } from '@/lib/schemas/order';
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -19,8 +14,22 @@ export async function POST(req: NextRequest) {
   if (!gate.ok) return gate.response;
   const agentId = gate.user.id;
 
-  const body = await req.json().catch(() => ({}));
-  
+  const rawBody: unknown = await req.json().catch(() => ({}));
+
+  // Schema-locked body: quantities are bounded ints (1..10,000, matching
+  // checkout), paymentMethod is the shared enum, buyer/address strings are
+  // length-capped, and shippingCost must be a finite 0..1000 number. Prices
+  // are still NEVER taken from the client -- the subtotal is recomputed from
+  // the agent's catalog below.
+  const validation = ManualOrderInputSchema.safeParse(rawBody);
+  if (!validation.success) {
+    return NextResponse.json(
+      { error: 'Invalid Order Data.', details: validation.error.issues },
+      { status: 400 }
+    );
+  }
+  const body = validation.data;
+
   return withIdempotency({
     userId: agentId,
     route: '/api/agent/orders/new',
@@ -29,12 +38,7 @@ export async function POST(req: NextRequest) {
     handler: async () => {
   try {
     const supabase = createAdminClient();
-    const { buyerName, buyerEmail, street, city, state, zip, items, subtotal: clientSubtotal, shippingCost, paymentMethod, fulfillmentMethod } = body as {
-      buyerName?: string; buyerEmail?: string; street?: string; city?: string; state?: string; zip?: string;
-      items?: ManualOrderItemInput[]; subtotal?: number; shippingCost?: number; paymentMethod?: string; fulfillmentMethod?: string;
-    };
-
-    if (!Array.isArray(items) || items.length === 0) return NextResponse.json({ error: 'Order Must Contain Items.' }, { status: 400 });
+    const { buyerName, buyerEmail, street, city, state, zip, items, subtotal: clientSubtotal, shippingCost, paymentMethod, fulfillmentMethod } = body;
 
     // Agent-entered shipping for a manual order. This is agent-authenticated
     // (not a researcher-facing exploit), but a typo or bad value should never

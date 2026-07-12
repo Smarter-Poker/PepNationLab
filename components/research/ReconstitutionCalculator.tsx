@@ -9,10 +9,10 @@
  *     The Diluent Volume To Add.
  * All Math Comes From The Pure Helpers In `@/lib/compounds`.
  */
-import { useRef, useState } from 'react';
+import { parsePositiveNumber } from '@/lib/schemas/calculator';
+import { useState } from 'react';
 import Link from 'next/link';
 import { drawVolumeMl, reconstitutionVolumeMl } from '@/lib/compounds';
-import { trackResearchEvent } from '@/lib/research-track';
 
 const EXAMPLE_DRAW_MASSES_MG = [0.25, 0.5, 1, 2, 5];
 
@@ -69,22 +69,15 @@ export default function ReconstitutionCalculator({
   const [diluentMl, setDiluentMl] = useState<string>('2');
   const [targetConc, setTargetConc] = useState<string>('5');
 
-  // Usage analytics: one event per mount, on the researcher's FIRST interaction
-  // with any input (not per keystroke). Fire-and-forget, never blocks the UI.
-  const usageTrackedRef = useRef(false);
-  const markCalculatorUsed = () => {
-    if (usageTrackedRef.current) return;
-    usageTrackedRef.current = true;
-    trackResearchEvent('calculator_used', { tool: 'reconstitution' });
-  };
+  // Shared fail-closed input parsing (lib/schemas/calculator.ts): rejects
+  // NaN, Infinity, zero, and NEGATIVE entries in one place. parseFloat alone
+  // accepted a negative vial mass and produced a negative concentration.
+  const mass = parsePositiveNumber(massMg, 100_000);
+  const diluent = parsePositiveNumber(diluentMl, 1_000);
+  const target = parsePositiveNumber(targetConc, 1_000_000);
 
-  const mass = parseFloat(massMg);
-  const diluent = parseFloat(diluentMl);
-  const target = parseFloat(targetConc);
-
-  const concentration =
-    isFinite(mass) && isFinite(diluent) && diluent > 0 ? mass / diluent : null;
-  const targetVolume = reconstitutionVolumeMl(mass, target);
+  const concentration = mass != null && diluent != null ? mass / diluent : null;
+  const targetVolume = mass != null && target != null ? reconstitutionVolumeMl(mass, target) : null;
 
   const labelStyle: React.CSSProperties = {
     display: 'block',
@@ -110,7 +103,6 @@ export default function ReconstitutionCalculator({
   return (
     <div
       className="calc-container"
-      onInput={markCalculatorUsed}
       style={{
         border: '1px solid rgba(0, 229, 255, 0.2)',
         borderRadius: 16,
@@ -213,7 +205,7 @@ export default function ReconstitutionCalculator({
               </thead>
               <tbody>
                 {EXAMPLE_DRAW_MASSES_MG.map((dm) => {
-                  const vol = drawVolumeMl(mass, diluent, dm);
+                  const vol = mass != null && diluent != null ? drawVolumeMl(mass, diluent, dm) : null;
                   const units = vol != null ? vol * 100 : null;
                   const unitsDisplay = units === null ? '-'
                     : units < 0.1 ? '<0.1'

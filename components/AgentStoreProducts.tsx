@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { AgentProductPatchSchema } from '@/lib/schemas/product';
 import { toast } from 'sonner';
 import { Loader2, Plus, GripVertical, Edit2 } from 'lucide-react';
 import Image from 'next/image';
@@ -45,6 +46,23 @@ interface AgentProduct {
 }
 
 type FilterMode = 'all' | 'active' | 'hidden';
+
+/**
+ * Concrete edit-form state (previously `Partial<AgentProduct>` erased with
+ * `as any` at every read/write, which let NaN money values slip past the
+ * MAP/cost-floor guards -- all NaN comparisons are false).
+ */
+interface EditFormState {
+  id?: string;
+  custom_name?: string;
+  custom_description?: string;
+  custom_image_url?: string;
+  retail_price?: number;
+  margin_percent?: number;
+  is_visible?: boolean;
+  is_on_sale?: boolean;
+  sale_price?: number | null;
+}
 
 /**
  * Market Intel strip: benchmarks THIS agent's tier-dynamic cost and listed
@@ -114,7 +132,7 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
   const [filter, setFilter] = useState<FilterMode>('all');
   const [viewMode, setViewMode] = useState<'flat' | 'category'>('flat');
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<Partial<AgentProduct>>({});
+  const [editForm, setEditForm] = useState<EditFormState>({});
   // Raw Text While Editing The Price So Typing Is Never Reformatted Mid-Keystroke.
   const [priceText, setPriceText] = useState('');
   const [saving, setSaving] = useState(false);
@@ -210,8 +228,9 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
 
   function handleEdit(p: AgentProduct) {
     setEditingId(p.id);
-    const existingMargin = (p as any).margin_percent != null
-      ? Number((p as any).margin_percent)
+    const rowMargin = (p as AgentProduct & { margin_percent?: number | null }).margin_percent;
+    const existingMargin = rowMargin != null
+      ? Number(rowMargin)
       : p.agent_cost != null && p.agent_cost > 0 && p.retail_price > 0
         ? Math.round((p.retail_price / p.agent_cost - 1) * 100)
         : 50;
@@ -225,7 +244,7 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
       is_visible: p.is_visible,
       is_on_sale: p.is_on_sale,
       sale_price: p.sale_price,
-    } as any);
+    });
     const isBacInit = /bac\.?\s*water/i.test(p.products?.name || '');
     setPriceText(p.retail_price > 0 ? (p.retail_price / (isBacInit ? 1 : 10)).toFixed(2) : '');
   }
@@ -234,22 +253,32 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
     e.preventDefault();
     if (!editingId) return;
 
-    const listedPrice = Number((editForm as any).retail_price);
+    // Schema-lock the payload BEFORE the money guards: NaN/Infinity in any
+    // price or margin field is rejected here, so the floor comparisons below
+    // always see real numbers. Guards are written fail-closed (`!(x >= y)`)
+    // so an unexpected NaN can never sneak past a `<` check.
+    const parsedForm = AgentProductPatchSchema.safeParse({ ...editForm, id: editingId });
+    if (!parsedForm.success) {
+      toast.error('Please Enter A Valid Price And Margin Before Saving.');
+      return;
+    }
+    const listedPrice = parsedForm.data.retail_price ?? Number.NaN;
     const currentProduct = products.find(p => p.id === editingId);
     const agentCostPer10 = currentProduct?.agent_cost ?? 0;
     const minRetailPrice = currentProduct?.products?.min_retail_price ?? agentCostPer10;
     const maxMarginPercent = currentProduct?.products?.max_margin_percent ?? 300;
 
-    if (listedPrice < minRetailPrice) {
+    if (!(listedPrice >= minRetailPrice)) {
       toast.error(`Listed Price Cannot Be Below The Minimum Advertised Price ($${(minRetailPrice / (/bac\.?\s*water/i.test(currentProduct?.products?.name || "") ? 1 : 10)).toFixed(2)} / Vial).`);
       return;
     }
-    if (listedPrice < agentCostPer10) {
+    if (!(listedPrice >= agentCostPer10)) {
       toast.error(`Listed Price Cannot Be Below ${costLabel} ($${(agentCostPer10 / (/bac\.?\s*water/i.test(currentProduct?.products?.name || "") ? 1 : 10)).toFixed(2)} / Vial).`);
       return;
     }
-    
-    if (!unlimitedMargin && Number((editForm as any).margin_percent) > maxMarginPercent) {
+
+    const marginVal = parsedForm.data.margin_percent;
+    if (!unlimitedMargin && marginVal !== undefined && !(marginVal <= maxMarginPercent)) {
       toast.error(`Requested Margin Exceeds The Platform Maximum Of ${maxMarginPercent}%.`);
       return;
     }
@@ -259,7 +288,7 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
       const res = await fetch('/api/agent/products', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify(parsedForm.data),
       });
       if (!res.ok) {
         const json = await res.json();
@@ -537,8 +566,8 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
                                   setPriceText(clean);
                                   const perVial = parseFloat(clean) || 0;
                                   const stored = perVial * (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10);
-                                  const newMargin = p.agent_cost && p.agent_cost > 0 ? Math.round((stored / p.agent_cost - 1) * 100) : (editForm as any).margin_percent ?? 50;
-                                  setEditForm({ ...editForm, retail_price: stored, margin_percent: newMargin } as any);
+                                  const newMargin = p.agent_cost && p.agent_cost > 0 ? Math.round((stored / p.agent_cost - 1) * 100) : editForm.margin_percent ?? 50;
+                                  setEditForm({ ...editForm, retail_price: stored, margin_percent: newMargin });
                                 }}
                                 onKeyDown={e => { if (e.key === 'Enter') handleSave(e as any); }}
                               />
@@ -551,11 +580,11 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
                                 inputMode="numeric"
                                 className="form-input"
                                 style={{ width: 40, padding: 0, height: 20, fontSize: '0.75rem', background: 'transparent', border: 'none', color: '#00E5FF', fontWeight: 700, textAlign: 'center' }}
-                                value={(editForm as any).margin_percent ?? 50}
+                                value={editForm.margin_percent ?? 50}
                                 onChange={e => {
                                   const pct = Number(e.target.value.replace(/[^0-9-]/g, '')) || 0;
-                                  const newPrice = p.agent_cost != null && p.agent_cost > 0 ? p.agent_cost * (1 + pct / 100) : (editForm as any).retail_price;
-                                  setEditForm({ ...editForm, margin_percent: pct, retail_price: newPrice } as any);
+                                  const newPrice = p.agent_cost != null && p.agent_cost > 0 ? p.agent_cost * (1 + pct / 100) : editForm.retail_price;
+                                  setEditForm({ ...editForm, margin_percent: pct, retail_price: newPrice });
                                   setPriceText(Number(newPrice) > 0 ? (Number(newPrice) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2) : '');
                                 }}
                                 onKeyDown={e => { if (e.key === 'Enter') handleSave(e as any); }}
@@ -567,7 +596,7 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
                             </span>
                           </div>
                         </div>
-                        <MarketIntel p={p} priceOverride={Number((editForm as any).retail_price)} />
+                        <MarketIntel p={p} priceOverride={Number(editForm.retail_price)} />
                       </div>
                       <div className="agentprod-actions" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                         <button onClick={handleSave} disabled={saving} className="btn-neon-cyan" style={{ padding: '4px 12px', fontSize: '0.75rem', height: 32 }}>{saving ? 'Saving...' : 'Save'}</button>
@@ -753,8 +782,8 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
                                   setPriceText(clean);
                                   const perVial = parseFloat(clean) || 0;
                                   const stored = perVial * (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10);
-                                  const newMargin = p.agent_cost && p.agent_cost > 0 ? Math.round((stored / p.agent_cost - 1) * 100) : (editForm as any).margin_percent ?? 50;
-                                  setEditForm({ ...editForm, retail_price: stored, margin_percent: newMargin } as any);
+                                  const newMargin = p.agent_cost && p.agent_cost > 0 ? Math.round((stored / p.agent_cost - 1) * 100) : editForm.margin_percent ?? 50;
+                                  setEditForm({ ...editForm, retail_price: stored, margin_percent: newMargin });
                                 }}
                                 onKeyDown={e => { if (e.key === 'Enter') handleSave(e as any); }}
                               />
@@ -767,11 +796,11 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
                                 inputMode="numeric"
                                 className="form-input"
                                 style={{ width: 40, padding: 0, height: 20, fontSize: '0.75rem', background: 'transparent', border: 'none', color: '#00E5FF', fontWeight: 700, textAlign: 'center' }}
-                                value={(editForm as any).margin_percent ?? 50}
+                                value={editForm.margin_percent ?? 50}
                                 onChange={e => {
                                   const pct = Number(e.target.value.replace(/[^0-9-]/g, '')) || 0;
-                                  const newPrice = p.agent_cost != null && p.agent_cost > 0 ? p.agent_cost * (1 + pct / 100) : (editForm as any).retail_price;
-                                  setEditForm({ ...editForm, margin_percent: pct, retail_price: newPrice } as any);
+                                  const newPrice = p.agent_cost != null && p.agent_cost > 0 ? p.agent_cost * (1 + pct / 100) : editForm.retail_price;
+                                  setEditForm({ ...editForm, margin_percent: pct, retail_price: newPrice });
                                   setPriceText(Number(newPrice) > 0 ? (Number(newPrice) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2) : '');
                                 }}
                                 onKeyDown={e => { if (e.key === 'Enter') handleSave(e as any); }}
@@ -783,7 +812,7 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
                             </span>
                           </div>
                         </div>
-                        <MarketIntel p={p} priceOverride={Number((editForm as any).retail_price)} />
+                        <MarketIntel p={p} priceOverride={Number(editForm.retail_price)} />
                       </div>
                       <div className="agentprod-actions" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                         <button onClick={handleSave} disabled={saving} className="btn-neon-cyan" style={{ padding: '4px 12px', fontSize: '0.75rem', height: 32 }}>{saving ? 'Saving...' : 'Save'}</button>

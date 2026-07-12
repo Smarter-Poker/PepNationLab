@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit } from '@/lib/rate-limit';
+import { sanitizeStoredCart } from '@/lib/schemas/cart';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,13 +45,14 @@ export async function GET() {
     }
 
     const raw = data?.cart_state;
-    let cart: unknown = [];
-    if (Array.isArray(raw)) {
-      cart = raw;
-    } else if (typeof raw === 'string') {
-      try { cart = JSON.parse(raw); } catch { cart = []; }
+    let parsedRaw: unknown = raw;
+    if (typeof raw === 'string') {
+      try { parsedRaw = JSON.parse(raw); } catch { parsedRaw = []; }
     }
-    if (!Array.isArray(cart)) cart = [];
+    // Sanitize on the READ side too: cart_state is a JSONB round-trip of
+    // client-authored data, so a row written before validation existed (or
+    // tampered with directly) must still come back shape-safe.
+    const cart = sanitizeStoredCart(parsedRaw);
 
     return NextResponse.json({ cart, cart_updated_at: data?.cart_updated_at ?? null });
   } catch {
@@ -98,35 +100,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Cart Exceeds Maximum Item Limit (50).' }, { status: 400 });
     }
 
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    const strippedCart = cart
-      .filter((item: any) => typeof item.id === 'string' && uuidRegex.test(item.id))
-      .map((item: any) => ({
-        id: item.id,
-        // productId is the stable cross-path dedup key (may be a product id even
-        // when `id` is an agent_product id). Dropping it broke line merging and
-        // reorder dedup after a cross-device restore.
-        productId:
-          typeof item.productId === 'string' && uuidRegex.test(item.productId)
-            ? item.productId
-            : null,
-        name: String(item.name || '').slice(0, 100),
-        sku: item.sku ? String(item.sku).slice(0, 50) : null,
-        quantity: Math.max(1, Math.min(9999, Math.floor(Number(item.quantity) || 1))),
-        costPrice: Math.max(0, Number(item.costPrice) || 0),
-        retailPrice: Math.max(0, Number(item.retailPrice) || 0),
-        bulkCostPrice: item.bulkCostPrice != null ? Math.max(0, Number(item.bulkCostPrice)) : null,
-        bulkThreshold: item.bulkThreshold != null ? Math.max(1, Math.floor(Number(item.bulkThreshold))) : null,
-        weightOz: item.weightOz != null ? Math.max(0, Number(item.weightOz)) : null,
-        // bundleName drives stack grouping + the 10% stack discount; agentSelfBuy
-        // gates bulk pricing and min-qty rules at checkout. Both must survive the
-        // round-trip or a restored cart loses its bundle/agent semantics.
-        bundleName:
-          typeof item.bundleName === 'string' && item.bundleName.trim()
-            ? String(item.bundleName).slice(0, 100)
-            : null,
-        agentSelfBuy: item.agentSelfBuy === true,
-      }));
+    // Shared fail-closed sanitizer (lib/schemas/cart.ts). Identical rules on
+    // the write side (here) and the read side (GET above + the client's
+    // restore path), so the round-trip cannot drift. bundleName drives stack
+    // grouping + the 10% stack discount; agentSelfBuy gates bulk pricing and
+    // min-qty rules at checkout -- both survive the round-trip; NaN or
+    // malformed prices never do.
+    const strippedCart = sanitizeStoredCart(cart);
 
     const { error } = await supabase
       .from('profiles')

@@ -4,6 +4,7 @@ import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { computeAgentCostForAgent } from '@/lib/pricing';
 import type { AgentTier } from '@/lib/pricing';
+import { SubAgentPricingSchema } from '@/lib/schemas/product';
 
 export async function GET(req: NextRequest) {
   try {
@@ -94,15 +95,20 @@ export async function POST(req: NextRequest) {
     const supabase = createAdminClient();
     const superAgentId = gate.user.id;
 
-    const body = await req.json();
-    const { product_id, baseline_cost, bulk_baseline_cost, bulk_threshold } = body;
+    const rawBody: unknown = await req.json();
 
-    if (!product_id || typeof baseline_cost !== 'number' || baseline_cost < 0) {
+    // Schema-locked body (shared with the AgentSubAgents form). The previous
+    // `typeof baseline_cost !== 'number'` check passed NaN (typeof NaN is
+    // 'number') and NaN sails through every cost-floor comparison below --
+    // a money-critical billing baseline. finite() rejects it at the boundary.
+    const parsed = SubAgentPricingSchema.safeParse(rawBody);
+    if (!parsed.success) {
       return NextResponse.json(
         { error: 'product_id is required and baseline_cost must be a positive number or zero.' },
         { status: 400 }
       );
     }
+    const { product_id, baseline_cost, bulk_baseline_cost, bulk_threshold } = parsed.data;
 
     // Verify caller is a Super Agent
     const { data: superAgentProfile } = await supabase

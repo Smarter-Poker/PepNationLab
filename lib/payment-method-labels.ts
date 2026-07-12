@@ -24,7 +24,7 @@ export type PaymentMethodSlug =
   | 'chime'
   | 'varo';
 
-export const PAYMENT_METHOD_SLUGS: readonly PaymentMethodSlug[] = [
+export const PAYMENT_METHOD_SLUGS = [
   'zelle',
   'venmo',
   'cashapp',
