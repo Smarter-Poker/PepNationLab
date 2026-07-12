@@ -151,11 +151,10 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                 setCaPassword('');
                 setCaAccountType('prepaid');
                 setCaCreditLimit('');
-                setCaMaxAutoApprove('');
                 setCaPrepaidBalance('');
                 setCaDisplayName('');
                 setCaSlug('');
-                setCaError(null);
+                setCaError('');
                 setShowCreateModal(true);
               }}
             >
