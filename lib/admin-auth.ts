@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { getImpersonationContext } from '@/lib/impersonation';
 
 /**
  * Guards admin-only API routes.
@@ -138,7 +139,7 @@ export async function requireAgent(): Promise<
  * requireAdmin separation.
  */
 export async function requireAgentOrAdmin(): Promise<
-  | { ok: true; user: { id: string }; isAdmin: boolean }
+  | { ok: true; user: { id: string }; isAdmin: boolean; impersonating: boolean }
   | { ok: false; response: NextResponse }
 > {
   const supabase = await createClient();
@@ -166,7 +167,17 @@ export async function requireAgentOrAdmin(): Promise<
     };
   }
 
-  return { ok: true, user: { id: user.id }, isAdmin: role === 'admin' };
+  // Admin "View As": act as the impersonated agent (isAdmin=false, id=target) so
+  // house-store-vs-agent logic follows the viewed agent, not the admin.
+  if (role === 'admin') {
+    const imp = await getImpersonationContext();
+    if (imp && imp.impersonatorId === user.id &&
+        (imp.targetRole === 'agent' || imp.targetRole === 'super_agent')) {
+      return { ok: true, user: { id: imp.targetUserId }, isAdmin: false, impersonating: true };
+    }
+  }
+
+  return { ok: true, user: { id: user.id }, isAdmin: role === 'admin', impersonating: false };
 }
 
 /**
@@ -179,7 +190,7 @@ export async function requireAgentOrAdmin(): Promise<
  * Researchers using these endpoints will simply get empty result sets.
  */
 export async function requireSession(): Promise<
-  | { ok: true; user: { id: string } }
+  | { ok: true; user: { id: string }; impersonating: boolean }
   | { ok: false; response: NextResponse }
 > {
   const supabase = await createClient();
@@ -192,7 +203,16 @@ export async function requireSession(): Promise<
     };
   }
 
-  return { ok: true, user: { id: user.id } };
+  // Admin "View As": when this user has a validated active impersonation
+  // session they started, serve the impersonated target's data for the rest of
+  // the request. getImpersonationContext() returns null (a cheap cookie check)
+  // for all normal traffic, so non-impersonated requests are unaffected.
+  const imp = await getImpersonationContext();
+  if (imp && imp.impersonatorId === user.id) {
+    return { ok: true, user: { id: imp.targetUserId }, impersonating: true };
+  }
+
+  return { ok: true, user: { id: user.id }, impersonating: false };
 }
 
 /**
