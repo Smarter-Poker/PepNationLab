@@ -3786,11 +3786,51 @@ body > div.pnl-page:not(.pnl-page-with-navbar) {
     font-size: 0.82rem !important;
   }
 
+  /* 12px (0.75rem) and 13px (0.8125rem) inline sizes also fall below the
+     0.82rem legibility floor but were not covered above. React's unitless
+     fontSize: 12 serializes to "font-size:12px", so this catches both the
+     quoted and unitless forms. button is included here because several
+     dashboard action buttons carry inline 12px labels. */
+  div[style*="font-size:12px"], div[style*="font-size: 12px"],
+  div[style*="font-size:13px"], div[style*="font-size: 13px"],
+  span[style*="font-size:12px"], span[style*="font-size: 12px"],
+  span[style*="font-size:13px"], span[style*="font-size: 13px"],
+  p[style*="font-size:12px"], p[style*="font-size: 12px"],
+  p[style*="font-size:13px"], p[style*="font-size: 13px"],
+  li[style*="font-size:12px"], li[style*="font-size: 12px"],
+  li[style*="font-size:13px"], li[style*="font-size: 13px"],
+  td[style*="font-size:12px"], td[style*="font-size: 12px"],
+  td[style*="font-size:13px"], td[style*="font-size: 13px"],
+  th[style*="font-size:12px"], th[style*="font-size: 12px"],
+  th[style*="font-size:13px"], th[style*="font-size: 13px"],
+  a[style*="font-size:12px"], a[style*="font-size: 12px"],
+  a[style*="font-size:13px"], a[style*="font-size: 13px"],
+  small[style*="font-size:12px"], small[style*="font-size: 12px"],
+  small[style*="font-size:13px"], small[style*="font-size: 13px"],
+  label[style*="font-size:12px"], label[style*="font-size: 12px"],
+  label[style*="font-size:13px"], label[style*="font-size: 13px"],
+  button[style*="font-size:11px"], button[style*="font-size: 11px"],
+  button[style*="font-size:12px"], button[style*="font-size: 12px"],
+  button[style*="font-size:13px"], button[style*="font-size: 13px"] {
+    font-size: 0.82rem !important;
+  }
+
   /* Class-based legibility gap: city SEO page stat labels render at 10.4px. */
   .city-stat-label {
     font-size: 0.82rem !important;
     letter-spacing: 0.06em !important;
   }
+}
+
+/* Flash sale banner vs fixed navbar: the banner is sticky at the top of the
+   document flow, but on pages that render the fixed navbar (.pnl-navbar) or
+   the storefront header (.sf-nav) it would slide underneath them (its z-index
+   is intentionally below the navbar so it can never cover the hamburger).
+   Offset it to stick just below the header instead. On pages without either
+   header the inline top:0 applies unchanged. */
+body:has(.pnl-navbar) .flash-sale-banner,
+body:has(.sf-nav) .flash-sale-banner {
+  top: var(--nav-offset, 60px);
 }
 
 .modal-overlay,
