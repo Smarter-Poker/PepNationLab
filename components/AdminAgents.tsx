@@ -215,7 +215,8 @@ export default function AdminAgents() {
           firstName: createForm.firstName.trim(),
           lastName: createForm.lastName.trim(),
           username: createForm.username.toLowerCase().replace(/[^a-z0-9_]/g, ''),
-          slug: createForm.slug.toLowerCase().replace(/[^a-z0-9-]/g, ''),
+          slug: (createForm.slug || createForm.username).toLowerCase().replace(/[^a-z0-9-]/g, ''),
+          display_name: createForm.display_name || createForm.username,
           commission_pct: createForm.account_role === 'researcher' ? undefined : (
             caCommissionMode === 'fixed'
               ? (caCommissionPct === '' ? undefined : caCommissionPct)
@@ -1063,7 +1064,7 @@ export default function AdminAgents() {
                   onChange={e => handleCreateFormChange('username', e.target.value)}
                   placeholder="e.g. john_smith"
                   required
-                  autoComplete="off"
+                  autoComplete="new-password"
                   style={{ width: '100%' }}
                 />
                 <AvailabilityIndicator status={usernameStatus} />
@@ -1165,8 +1166,7 @@ export default function AdminAgents() {
                   className="form-input"
                   value={createForm.slug}
                   onChange={e => handleCreateFormChange('slug', e.target.value)}
-                  placeholder="e.g. john-picks"
-                  required
+                  placeholder="e.g. john-picks (Optional)"
                   style={{ width: '100%' }}
                 />
                 <AvailabilityIndicator status={slugStatus} />
@@ -1179,8 +1179,7 @@ export default function AdminAgents() {
                   className="form-input"
                   value={createForm.display_name}
                   onChange={e => handleCreateFormChange('display_name', e.target.value)}
-                  placeholder="Display Name"
-                  required
+                  placeholder="Display Name (Optional)"
                   style={{ width: '100%' }}
                 />
               </div>

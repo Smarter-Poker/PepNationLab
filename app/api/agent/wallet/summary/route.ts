@@ -79,7 +79,10 @@ export async function GET() {
     hasOpenStatement,
     nextStatementDate: nextStatementDate.toISOString(),
     forecastNext,
-    creditLimit,
+    // Only expose a live credit line to accounts explicitly set as account_type='credit'.
+    // All profiles have a credit_limit DB column (default $100k) as an internal ceiling —
+    // returning it to prepaid agents causes phantom credit-line UI to render.
+    creditLimit: isPrepaid ? null : creditLimit,
     creditUsed,
     prepaidBalance: Number(profile.prepaid_balance || 0),
     accountType: profile.account_type,

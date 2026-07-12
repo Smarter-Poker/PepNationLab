@@ -169,11 +169,11 @@ export default function InviteRedeemPage({ params }: { params: Promise<{ token: 
           </div>
           <div>
             <label style={labelStyle}>Create Password</label>
-            <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At Least 8 Characters" style={inputStyle} />
+            <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At Least 8 Characters" style={inputStyle} autoComplete="new-password" />
           </div>
           <div>
             <label style={labelStyle}>Confirm Password</label>
-            <input type="password" required value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="Re-Enter Password" style={inputStyle} />
+            <input type="password" required value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="Re-Enter Password" style={inputStyle} autoComplete="new-password" />
           </div>
         </div>
 

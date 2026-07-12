@@ -1000,7 +1000,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                   </div>
                   <div>
                     <label style={{ fontSize: '0.75rem', color: 'var(--grey-400)', display: 'block', marginBottom: 4 }}>New Password</label>
-                    <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="form-input" placeholder="Leave blank to keep current" />
+                    <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="form-input" placeholder="Leave blank to keep current" autoComplete="new-password" />
                   </div>
                   <button onClick={saveProfile} disabled={saving} className="btn btn-primary" style={{ justifyContent: 'center' }}>
                     {saving ? 'Saving...' : 'Save Changes'}

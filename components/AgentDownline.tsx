@@ -493,7 +493,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                     placeholder="Minimum 8 Characters"
                     required
                     minLength={8}
-                    autoComplete="off"
+                    autoComplete="new-password"
                   />
                 </div>
                 <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
