@@ -56,6 +56,9 @@ export async function GET(req: NextRequest) {
       // Exclude wholesale restock orders from the sales view.
       // Restocks were appearing as zero-profit 'sales' in the agent dashboard.
       .eq('is_wholesale_restock', false)
+      // Exclude cancelled orders so voided sales don't distort profit/discount totals
+      // (matches coupon-performance, redemptions, and sub-agent-rollup readers).
+      .neq('status', 'cancelled')
       .order('created_at', { ascending: false })
       .limit(2500);
 
