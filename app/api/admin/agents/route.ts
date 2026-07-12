@@ -214,6 +214,9 @@ export async function POST(req: NextRequest) {
         username: usernameClean,
         full_name: effFullName
       },
+      app_metadata: {
+        role: account_role === 'super_agent' ? 'super_agent' : account_role
+      }
     });
 
     if (authError || !authData.user) {

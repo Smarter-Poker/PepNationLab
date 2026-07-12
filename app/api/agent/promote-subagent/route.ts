@@ -329,6 +329,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // CRITICAL: Sync the role to auth.users app_metadata so the JWT reflects the new agent role.
+    const { data: userData } = await admin.auth.admin.getUserById(researcherId);
+    if (userData?.user) {
+      const newMeta = { ...userData.user.app_metadata, role: 'agent' };
+      await admin.auth.admin.updateUserById(researcherId, { app_metadata: newMeta });
+    }
+
     await admin.from('admin_audit_log').insert({
       actor_id: callerId,
       action: 'sub_agent_promote',

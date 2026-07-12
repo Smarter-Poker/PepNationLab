@@ -67,13 +67,22 @@ export async function POST(req: NextRequest) {
       upgradeUpdate.onboarding_progress = {};
     }
 
-    const { error } = await supabase
+    const { error: profileError } = await supabase
       .from('profiles')
       .update(upgradeUpdate)
       .eq('id', agentId);
 
-    if (error) {
-      return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    if (profileError) {
+      return NextResponse.json({ error: profileError.message }, { status: 500 });
+    }
+
+    // CRITICAL: Sync the role to auth.users app_metadata so the JWT reflects the upgrade.
+    // Without this, the user is treated as a super-agent in DB queries but a regular agent in RLS and API gates.
+    const { data: userData } = await supabase.auth.admin.getUserById(agentId);
+    if (userData?.user) {
+      const newRole = is_super_agent ? 'super_agent' : 'agent';
+      const newMeta = { ...userData.user.app_metadata, role: newRole };
+      await supabase.auth.admin.updateUserById(agentId, { app_metadata: newMeta });
     }
 
     await writeAuditLog(supabase, {
