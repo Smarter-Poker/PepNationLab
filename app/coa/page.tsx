@@ -6,10 +6,14 @@ import { createServiceClient } from '@/lib/supabase/server';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Verify A Certificate Of Analysis | Pep Nation Lab',
+  title: 'Verify A Certificate Of Analysis (COA) | Lot Number Lookup | Pep Nation Lab',
   description:
-    'Enter the lot number printed on a vial to view the Certificate Of Analysis for that batch. Research Use Only.',
-  robots: { index: false, follow: false },
+    'Enter the lot number printed on a vial to view the third-party Certificate Of Analysis for that batch. Verify identity and purity testing. Research Use Only.',
+  // Indexable: COA verification is a primary trust/E-E-A-T surface and a real
+  // query target. The canonical collapses ?lot= variants; per-lot certificate
+  // pages remain noindexed.
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/coa' },
 };
 
 interface CoaRow {

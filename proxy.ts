@@ -70,6 +70,8 @@ const PUBLIC_ROUTES = [
   // must be able to check its lot number and view the certificate without an
   // account. Covers /coa, /coa?lot=..., and /coa/<lot>/certificate.
   '/coa',
+  // Public Help Center hub (indexable support directory).
+  '/help',
   '/account/change-password',
   '/api/auth/resolve',
   '/api/auth/signout',
@@ -245,7 +247,9 @@ export default async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = '/signup';
     url.search = '';
-    return NextResponse.redirect(url);
+    // 308 Permanent: /register is permanently retired; consolidate crawl and
+    // link equity on /signup (matches the 308 host redirects in next.config).
+    return NextResponse.redirect(url, 308);
   }
 
   // Scheduled jobs (Vercel Cron + GitHub Actions) hit /api/cron/* and
@@ -294,7 +298,7 @@ export default async function proxy(request: NextRequest) {
     pathname.startsWith('/favicon') ||
     pathname === '/robots.txt' ||
     pathname === '/sitemap.xml' ||
-    pathname.match(/\.(png|jpg|jpeg|svg|webp|ico|gif|css|js|woff|woff2|map)$/)
+    pathname.match(/\.(png|jpg|jpeg|svg|webp|ico|gif|css|js|map|txt)$/)
   ) {
     return NextResponse.next({ request });
   }

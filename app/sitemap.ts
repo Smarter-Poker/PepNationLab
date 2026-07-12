@@ -34,6 +34,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/become-agent`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.7 },
     { url: `${BASE}/contact`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.7 },
     { url: `${BASE}/find-a-peptide`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${BASE}/coa`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE}/help`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${BASE}/peptide-101`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.8 },
     { url: `${BASE}/${DEFAULT_STORE_SLUG}`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.9 },
 

@@ -70,6 +70,7 @@ export default function FooterSection() {
                 { label: 'Compare Compounds', href: '/research/compare' },
                 { label: 'Research Areas', href: '/research/areas' },
                 { label: 'Peptides By City', href: '/peptides' },
+                { label: 'Help Center', href: '/help' },
                 { label: 'Products', href: '/research/catalog' },
                 { label: 'Agent Dashboard', href: '/dashboard' },
                 { label: 'Sign In', href: '/login' },
@@ -97,6 +98,7 @@ export default function FooterSection() {
                 { label: 'Terms Of Service', href: '/terms' },
                 { label: 'Privacy Policy', href: '/privacy' },
                 { label: 'Compliance', href: '/compliance' },
+                { label: 'Verify A COA', href: '/coa' },
               ].map(({ label, href }) => (
                 <Link key={label} href={href} style={{ fontSize: '0.85rem', color: 'var(--grey-400)', transition: 'color 0.2s' }}
                       onMouseOver={e => (e.currentTarget.style.color = 'var(--teal)')}

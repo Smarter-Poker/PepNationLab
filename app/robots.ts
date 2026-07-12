@@ -116,6 +116,9 @@ const DISALLOW = [
   '/signup',
   '/register',
   '/forgot-password',
+  '/reset-password',
+  // Proxied third-party tool (next.config.ts rewrite) - keep off the peptide index.
+  '/hub',
   '/onboarding',
   '/wallet',
   '/status',
