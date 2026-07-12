@@ -45,6 +45,8 @@ interface Props {
   trending: Item[];
   categories: string[];
   storefrontSlug: string | null;
+  /** When true the viewer is an agent using the lab journal to add from their own storefront. */
+  isAgentSelfBuy?: boolean;
 }
 
 const GOAL_MAPPINGS: Record<string, string[]> = {
@@ -117,7 +119,7 @@ function dayKey(d: Date | string | number): string {
   return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
 }
 
-export default function LabJournalClient({ favorites: initialFavorites, pastOrders, recentlyViewed: initialRecentlyViewed, bundles, catalog, trending, categories, storefrontSlug }: Props) {
+export default function LabJournalClient({ favorites: initialFavorites, pastOrders, recentlyViewed: initialRecentlyViewed, bundles, catalog, trending, categories, storefrontSlug, isAgentSelfBuy = false }: Props) {
   const [favorites, setFavorites] = useState<Item[]>(initialFavorites);
   const [recentlyViewed, setRecentlyViewed] = useState<Item[]>(initialRecentlyViewed);
   const [, startTransition] = useTransition();
@@ -1577,7 +1579,11 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
       if (existing) {
         existing.quantity += qty;
       } else {
-        const perVial = item.retail_price ?? item.base_cost ?? 0;
+        // Agent self-buy: use base_cost (cost price) so the cart reflects the
+        // wholesale price, not the storefront retail price shown to researchers.
+        const perVial = isAgentSelfBuy
+          ? (item.base_cost ?? item.retail_price ?? 0)
+          : (item.retail_price ?? item.base_cost ?? 0);
         pnlCart.items.push({
           id: item.product_id,
           name: `${item.name} ${item.unit_size ? `(${item.unit_size}${item.unit_measure || ''})` : ''}`.trim(),
@@ -1586,7 +1592,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
           retailPrice: perVial,
           costPrice: perVial,
           weightOz: 0.5,
-          agentSelfBuy: false,
+          agentSelfBuy: isAgentSelfBuy,
         });
       }
 

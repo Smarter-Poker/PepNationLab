@@ -21,13 +21,24 @@ export default async function LabJournalPage() {
     .maybeSingle();
   const referringAgentId = profile?.referring_agent_id ?? null;
   const isResearcher = profile?.role === 'researcher';
+  const isAgentSelfBuy = profile?.role === 'agent' || profile?.role === 'super_agent';
 
   let storefrontSlug: string | null = null;
   if (referringAgentId) {
+    // Researcher visiting their agent's storefront catalog.
     const { data: agentRow } = await service
       .from('agent_profiles')
       .select('slug')
       .eq('id', referringAgentId)
+      .maybeSingle();
+    storefrontSlug = agentRow?.slug ?? null;
+  } else if (isAgentSelfBuy) {
+    // Agent browsing their own lab journal — resolve their own storefront slug
+    // so items are added to the correct storefront cart at cost pricing.
+    const { data: agentRow } = await service
+      .from('agent_profiles')
+      .select('slug')
+      .eq('id', user.id)
       .maybeSingle();
     storefrontSlug = agentRow?.slug ?? null;
   }
@@ -255,7 +266,8 @@ export default async function LabJournalPage() {
             bundles={bundles}
             catalog={catalog}
             categories={categories}
-            storefrontSlug={storefrontSlug} 
+            storefrontSlug={storefrontSlug}
+            isAgentSelfBuy={isAgentSelfBuy}
           />
         </div>
       </div>
