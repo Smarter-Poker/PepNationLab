@@ -144,7 +144,20 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
             </div>
             <button
               className="btn-neon-cyan"
-              onClick={() => setShowCreateModal(true)}
+              onClick={() => {
+                setCaFirstName('');
+                setCaLastName('');
+                setCaUsername('');
+                setCaPassword('');
+                setCaAccountType('prepaid');
+                setCaCreditLimit('');
+                setCaMaxAutoApprove('');
+                setCaPrepaidBalance('');
+                setCaDisplayName('');
+                setCaSlug('');
+                setCaError(null);
+                setShowCreateModal(true);
+              }}
             >
               Create Agent Account
             </button>
@@ -187,7 +200,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                         <span style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: '#00E5FF' }}>{agent.username || (agent.email?.includes('@internal.auth') || agent.email?.includes('@pepnationlab.com') ? '' : agent.email)}</span>
                         <button
-                          onClick={() => setResetPwUser({ id: agent.id, name: agent.full_name || 'Agent', username: agent.username || agent.email })}
+                          onClick={() => { setResetPwValue(''); setResetPwUser({ id: agent.id, name: agent.full_name || 'Agent', username: agent.username || agent.email }); }}
                           style={{ fontSize: '0.7rem', color: 'var(--grey-400)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', textAlign: 'left' }}
                         >
                           Edit Password
@@ -292,8 +305,11 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                   <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Username</label>
                   <input
                     type="text"
+                    name="new_agent_username_no_autofill"
                     required
-                    autoComplete="new-password"
+                    autoComplete="off"
+                    data-lpignore="true"
+                    data-form-type="other"
                     style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                     value={caUsername}
                     onChange={e => setCaUsername(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
@@ -304,9 +320,11 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                   <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Password</label>
                   <input
                     type="password"
+                    name="new_agent_password_no_autofill"
                     required
                     minLength={8}
                     autoComplete="new-password"
+                    data-lpignore="true"
                     style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                     value={caPassword}
                     onChange={e => setCaPassword(e.target.value)}
@@ -316,28 +334,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                 
                 <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)', margin: 'var(--space-2) 0' }} />
 
-                <div>
-                  <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Storefront Name (Optional)</label>
-                  <input
-                    type="text"
-                    style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
-                    value={caDisplayName}
-                    onChange={e => setCaDisplayName(e.target.value)}
-                    placeholder={`Defaults to Username (${caUsername || '...'})`}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>URL Name (Optional)</label>
-                  <input
-                    type="text"
-                    style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
-                    value={caSlug}
-                    onChange={e => setCaSlug(e.target.value.toLowerCase().replace(/[^a-z0-9\-]/g, ''))}
-                    placeholder={`Defaults to Username (${caUsername.toLowerCase().replace(/[^a-z0-9\-]/g, '') || '...'})`}
-                  />
-                </div>
 
-                <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)', margin: 'var(--space-2) 0' }} />
 
                 <div>
                   <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Payment Model</label>

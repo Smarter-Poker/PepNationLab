@@ -383,7 +383,15 @@ export default function AdminAgents() {
         </h1>
         <button
           className="btn-neon-cyan"
-          onClick={() => setShowCreateModal(true)}
+          onClick={() => {
+            setCreateForm({
+              firstName: '', lastName: '', full_name: '',
+              username: '', password: '', tier: 'tier_3',
+              account_type: 'prepaid', credit_limit: '', max_auto_approve_limit: '', prepaid_balance: '',
+              slug: '', display_name: '', account_role: 'agent', parent_agent_id: ''
+            });
+            setShowCreateModal(true);
+          }}
           style={{ display: 'flex', alignItems: 'center', gap: 6 }}
         >
           + Create New Agent
@@ -1059,12 +1067,15 @@ export default function AdminAgents() {
                 <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Username</label>
                 <input
                   type="text"
+                  name="new_agent_username_no_autofill"
+                  autoComplete="off"
+                  data-lpignore="true"
+                  data-form-type="other"
                   className="form-input"
                   value={createForm.username}
                   onChange={e => handleCreateFormChange('username', e.target.value)}
                   placeholder="e.g. john_smith"
                   required
-                  autoComplete="new-password"
                   style={{ width: '100%' }}
                 />
                 <AvailabilityIndicator status={usernameStatus} />
@@ -1074,13 +1085,15 @@ export default function AdminAgents() {
                 <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Password</label>
                 <input
                   type="password"
+                  name="new_agent_password_no_autofill"
+                  autoComplete="new-password"
+                  data-lpignore="true"
                   className="form-input"
                   value={createForm.password}
                   onChange={e => handleCreateFormChange('password', e.target.value)}
                   placeholder="Minimum 8 Characters"
                   required
                   minLength={8}
-                  autoComplete="new-password"
                   style={{ width: '100%' }}
                 />
               </div>
@@ -1158,31 +1171,6 @@ export default function AdminAgents() {
                   </div>
                 </>
               )}
-
-              <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
-                <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Storefront URL (Slug)</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={createForm.slug}
-                  onChange={e => handleCreateFormChange('slug', e.target.value)}
-                  placeholder="e.g. john-picks (Optional)"
-                  style={{ width: '100%' }}
-                />
-                <AvailabilityIndicator status={slugStatus} />
-              </div>
-
-              <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
-                <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Display Name</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={createForm.display_name}
-                  onChange={e => handleCreateFormChange('display_name', e.target.value)}
-                  placeholder="Display Name (Optional)"
-                  style={{ width: '100%' }}
-                />
-              </div>
               </>
               )}
 
