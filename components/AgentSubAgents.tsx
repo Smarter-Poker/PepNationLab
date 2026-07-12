@@ -788,7 +788,9 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                     placeholder="Minimum 8 Characters"
                     required
                     minLength={8}
+                    name="subagent_reset_password_no_autofill"
                     autoComplete="new-password"
+                    data-lpignore="true"
                   />
                 </div>
                 <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
