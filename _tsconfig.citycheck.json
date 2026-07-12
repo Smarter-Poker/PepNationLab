@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "noEmit": true, "skipLibCheck": true, "allowImportingTsExtensions": true },
+  "include": ["lib/cities/cities-data.ts", "lib/cities/data/*.ts"]
+}

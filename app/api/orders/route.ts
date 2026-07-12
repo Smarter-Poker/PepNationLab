@@ -11,6 +11,7 @@ import { quoteCheapestForCheckout, normalizeShippingAddress } from '@/lib/shippi
 import { resolveCartIdsToProductIds } from '@/lib/cart-ids';
 import { computeLineSplit, type ItemFulfillmentSplit } from '@/lib/order-line-splits';
 import { quantityDiscountPct, isVolumeDiscountExcluded } from '@/lib/quantity-discount';
+import { validateCoupon } from '@/lib/coupons';
 import { enqueuePush, shortOrderId } from '@/lib/push-enqueue';
 import { notifyOrderPlaced, notify, notifyCouponRedeemed } from '@/lib/notify';
 import { sendOrderConfirmationEmail } from '@/lib/email';
@@ -470,6 +471,10 @@ export async function POST(request: NextRequest) {
 
     // 6. Compute Costs per Item
     let subtotal = 0;
+    // "One offer at a time" (2026-07-12 audit): tally each automatic discount at the ORDER
+    // level; flash / quantity / coupon never stack -- only the single largest applies below.
+    let flashDiscTotal = 0;
+    let qtyDiscTotal = 0;
     let totalWeightOz = 0;
     const computedItems = [];
 
@@ -600,33 +605,28 @@ export async function POST(request: NextRequest) {
         retailPrice = costPrice;
       }
 
-      // fix-57 #2: Flash sale discount applies to retail buyers, not wholesale or sub-agents.
-      // Guard matches the eligibility check at line 290 (!isSubAgent).
-      if (flashSaleDiscountPct > 0 && !isAgentSelfBuy && !isSubAgent) {
-        retailPrice = retailPrice * flashMultiplier;
-      }
-
-      // Stack discount: 10% off for items purchased as part of an individually packaged stack.
-      // Floors ensure a pricing bug upstream can't drive prices negative.
+      // Stack discount: 10% off for stack/bundle line items. This is intrinsic to how a stack
+      // product is sold (part of its base price), NOT a stackable promotional offer, so it
+      // always applies. Floors prevent an upstream bug from driving prices negative.
       if (isBundleLine) {
         retailPrice = Math.max(0, retailPrice * 0.9);
         costPrice = Math.max(0, costPrice * 0.9);
       }
 
-      // Quantity Discount: 3-4 Vials 10% Off, 5-6 Vials 15% Off, 7+ Vials 20%
-      // Off -- Per Specific Peptide (Line Quantity), Never Across Peptides.
-      // Researcher Retail Only; Stack Bundle Items Keep Their Own 10% Deal;
-      // Diluents (BAC Water, Acetic Acid) Are Excluded. Replaces The Old
-      // Small-Order Surcharge ("Dynamic Pricing") Scheme.
-      if (
-        volumeDiscountsEnabled &&
-        !isWholesalePurchase &&
-        !isBundleLine &&
-        !isVolumeDiscountExcluded(dbProduct.name)
-      ) {
-        const qtyPct = quantityDiscountPct(itemQty);
-        if (qtyPct > 0) {
-          retailPrice = Math.max(0, retailPrice * (1 - qtyPct / 100));
+      // "One offer at a time" (2026-07-12 audit): flash sale, quantity discount, and coupon
+      // NEVER stack. Keep unit_retail_price at the BASE (stack) price and tally each candidate
+      // discount at the order level; only the single largest ("best deal for the customer") is
+      // applied as the order discount below -- and every discount type becomes attributable via
+      // orders.discount_amount + discount_source (not just coupons).
+      if (!isWholesalePurchase) {
+        if (flashSaleDiscountPct > 0 && !isAgentSelfBuy && !isSubAgent) {
+          flashDiscTotal = Math.round((flashDiscTotal + retailPrice * itemQty * (flashSaleDiscountPct / 100)) * 100) / 100;
+        }
+        if (volumeDiscountsEnabled && !isBundleLine && !isVolumeDiscountExcluded(dbProduct.name)) {
+          const qtyPct = quantityDiscountPct(itemQty);
+          if (qtyPct > 0) {
+            qtyDiscTotal = Math.round((qtyDiscTotal + retailPrice * itemQty * (qtyPct / 100)) * 100) / 100;
+          }
         }
       }
 
@@ -746,8 +746,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // STEP B: COUPON REDEMPTION
+    // STEP B: BEST-DEAL DISCOUNT SELECTION ("one offer at a time")
+    // flash / quantity / coupon never stack -- the single largest discount applies. An entered
+    // coupon is validated (and, if it wins, redeemed atomically); a valid-but-smaller coupon is
+    // left unburned so the customer keeps their code and still gets the better automatic deal.
     let discountAmount = 0;
+    let discountSource: 'coupon' | 'flash' | 'quantity' | null = null;
     let appliedCouponCode: string | null = null;
     let appliedCouponId: string | null = null;
     const trimmedCouponCode = couponCode ? String(couponCode).trim().toUpperCase() : '';
@@ -760,6 +764,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const autoDisc = Math.max(flashDiscTotal, qtyDiscTotal);
+    const autoSource: 'flash' | 'quantity' | null =
+      autoDisc <= 0 ? null : (flashDiscTotal >= qtyDiscTotal ? 'flash' : 'quantity');
+
     if (trimmedCouponCode) {
       const couponAgentId = profile.referring_agent_id ?? agentProfile?.id ?? null;
       if (!couponAgentId) {
@@ -769,81 +777,43 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-      // Try the atomic 4-param RPC first (includes per-user limit in the DB).
-      // If the updated function hasn't been deployed yet, fall back to the
-      // 3-param call with an application-level per-user check.
-      let redeem: any;
-      let redeemError: any;
+      // Validate WITHOUT burning a use, so the coupon can compete with the automatic discounts.
+      // An invalid / expired / limit-reached code still fails loudly (unchanged behavior).
+      const check = await validateCoupon(serviceSupabase, {
+        code: trimmedCouponCode, agentId: couponAgentId, subtotal, userId: user.id,
+      });
+      if (!check.valid) {
+        await releaseReservedInventory();
+        return NextResponse.json({ error: check.error || 'Coupon Invalid Or Limit Reached' }, { status: 422 });
+      }
+      const couponDisc = Number(check.discount) || 0;
 
-      ({ data: redeem, error: redeemError } = await serviceSupabase
-        .rpc('redeem_coupon', {
-          p_code: trimmedCouponCode,
-          p_agent_id: couponAgentId,
-          p_order_subtotal: subtotal,
-          p_user_id: user.id
-        }));
-
-      // PostgREST returns PGRST202 / 42883 when the function signature is unknown
-      if (redeemError && /PGRST202|42883|could not find/i.test(
-        `${redeemError.code ?? ''} ${redeemError.message ?? ''}`
-      )) {
-        console.warn('redeem_coupon 4-param not available, falling back to 3-param + app-level per-user check');
-
-        // Application-level per-user limit check (non-atomic but functional)
-        const { data: couponRow } = await serviceSupabase
-          .from('coupons')
-          .select('max_uses_per_user')
-          .eq('code', trimmedCouponCode)
-          .eq('agent_id', couponAgentId)
-          .eq('is_active', true)
-          .maybeSingle();
-
-        if (couponRow?.max_uses_per_user != null) {
-          const { count } = await serviceSupabase
-            .from('orders')
-            .select('id', { count: 'exact', head: true })
-            .eq('coupon_code', trimmedCouponCode)
-            .eq('buyer_id', user.id)
-            .neq('status', 'cancelled');
-          if (count != null && count >= Number(couponRow.max_uses_per_user)) {
-            await releaseReservedInventory();
-            return NextResponse.json(
-              { error: 'You Have Already Used This Coupon The Maximum Number Of Times.' },
-              { status: 422 }
-            );
-          }
-        }
-
-        // Now call the 3-param version
-        ({ data: redeem, error: redeemError } = await serviceSupabase
+      // Coupon applies only if it is the best deal. Redeem atomically (full server-side
+      // re-validation incl. starts_at / new_customers_only + per-user cap) to burn the use.
+      if (couponDisc > 0 && couponDisc >= autoDisc) {
+        const { data: redeem, error: redeemError } = await serviceSupabase
           .rpc('redeem_coupon', {
             p_code: trimmedCouponCode,
             p_agent_id: couponAgentId,
             p_order_subtotal: subtotal,
-          }));
+            p_user_id: user.id,
+          });
+        const row = Array.isArray(redeem) ? redeem[0] : redeem;
+        if (redeemError || !row?.coupon_id) {
+          await releaseReservedInventory();
+          return NextResponse.json({ error: 'Coupon Invalid Or Limit Reached' }, { status: 422 });
+        }
+        appliedCouponId = row.coupon_id;
+        appliedCouponCode = trimmedCouponCode;
+        discountAmount = Number(row.discount_amount) || 0;
+        discountSource = 'coupon';
       }
+    }
 
-      if (redeemError) {
-        console.error('Coupon RPC Failed:', redeemError);
-        await releaseReservedInventory();
-        return NextResponse.json(
-          { error: 'Coupon Invalid Or Limit Reached' },
-          { status: 422 }
-        );
-      }
-
-      const row = Array.isArray(redeem) ? redeem[0] : redeem;
-      if (!row?.coupon_id) {
-        await releaseReservedInventory();
-        return NextResponse.json(
-          { error: 'Coupon Invalid Or Limit Reached' },
-          { status: 422 }
-        );
-      }
-
-      appliedCouponId = row.coupon_id;
-      appliedCouponCode = trimmedCouponCode;
-      discountAmount = Number(row.discount_amount) || 0;
+    // If no coupon won, apply the single best automatic discount (flash or quantity), if any.
+    if (discountSource === null && autoDisc > 0) {
+      discountAmount = autoDisc;
+      discountSource = autoSource;
     }
 
     // Roll back everything committed before the order row exists - reserved
@@ -1206,6 +1176,7 @@ export async function POST(request: NextRequest) {
         carrier: getCarrierName(actualShippingOption),
         subtotal: subtotal,
         discount_amount: discountAmount,
+        discount_source: discountSource,
         coupon_code: appliedCouponCode,
         total: total,
         // Route owns this order's inventory (reserve_inventory ran above with a

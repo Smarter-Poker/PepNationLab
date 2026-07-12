@@ -80,6 +80,12 @@ export interface DiscoveryHeroProps {
   autoSearchQuery?: string;
   /** Callback to clear the automated search query after consumption */
   onAutoSearchConsumed?: () => void;
+  /** Override for Match Me button click */
+  onMatchMeClick?: () => void;
+  /** Override for Let Us Guide You button click */
+  onLetUsGuideYouClick?: () => void;
+  /** Override for search submission */
+  onSearchSubmit?: (query: string) => void;
 }
 
 // --------------------------------------------------------------------------
@@ -97,6 +103,9 @@ export default function DiscoveryHero({
   onAlreadyKnowClicked,
   autoSearchQuery,
   onAutoSearchConsumed,
+  onMatchMeClick,
+  onLetUsGuideYouClick,
+  onSearchSubmit,
 }: DiscoveryHeroProps) {
   const router = useRouter();
   const [query, setQuery] = useState('');
@@ -360,6 +369,10 @@ export default function DiscoveryHero({
         <button
           type="button"
           onClick={() => {
+            if (onMatchMeClick) {
+              onMatchMeClick();
+              return;
+            }
             if (query.trim()) {
               void submitTypedGoal();
             } else {
@@ -383,7 +396,13 @@ export default function DiscoveryHero({
             that funnels answers into the match engine. */}
         <button
           type="button"
-          onClick={() => setWizardOpen(true)}
+          onClick={() => {
+            if (onLetUsGuideYouClick) {
+              onLetUsGuideYouClick();
+            } else {
+              setWizardOpen(true);
+            }
+          }}
           title="Let Us Guide You"
           style={{
             position: 'absolute', top: '85%', left: '52%', width: '33%', height: '8%',
@@ -418,11 +437,15 @@ export default function DiscoveryHero({
               if (e.key === 'Enter' && query.trim()) {
                 e.preventDefault();
                 addHistory(query.trim());
-                // Run the in-page AI match engine (opens the results drawer) rather
-                // than navigating away to the store grid. This makes the "Ask Us
-                // Anything" box, the Match Me button, and the guided wizard all funnel
-                // into the same match experience.
-                void submitTypedGoal();
+                if (onSearchSubmit) {
+                  onSearchSubmit(query.trim());
+                } else {
+                  // Run the in-page AI match engine (opens the results drawer) rather
+                  // than navigating away to the store grid. This makes the "Ask Us
+                  // Anything" box, the Match Me button, and the guided wizard all funnel
+                  // into the same match experience.
+                  void submitTypedGoal();
+                }
               }
             }}
             placeholder="Ask Us Anything..."
