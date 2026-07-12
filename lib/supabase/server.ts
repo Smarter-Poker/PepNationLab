@@ -1,5 +1,6 @@
 import 'server-only';
 import { createServerClient } from '@supabase/ssr';
+import type { Database } from '@/types/database.types';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { getSupabaseUrl } from '@/lib/supabase/url';
@@ -7,7 +8,7 @@ import { getSupabaseUrl } from '@/lib/supabase/url';
 export async function createClient() {
   const cookieStore = await cookies();
 
-  const client = createServerClient(
+  const client = createServerClient<Database>(
     getSupabaseUrl(),
     (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim(),
     {
@@ -47,7 +48,7 @@ export async function createClient() {
 }
 
 export async function createServiceClient() {
-  return createServerClient(
+  return createServerClient<Database>(
     getSupabaseUrl(),
     (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim(),
     {
@@ -70,7 +71,7 @@ export async function createServiceClient() {
  * NEVER expose this client to the browser.
  */
 export function createAdminClient() {
-  return createSupabaseClient(
+  return createSupabaseClient<Database>(
     getSupabaseUrl(),
     (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim(),
     {
