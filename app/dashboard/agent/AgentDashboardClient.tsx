@@ -188,6 +188,7 @@ export default function AgentDashboardClient({
   // diverge from their name via a typo (e.g. "Danimal" -> "dainimal").
   const [crUsernameDirty, setCrUsernameDirty] = useState(false);
   const [crPassword, setCrPassword] = useState('');
+  const [crContactEmail, setCrContactEmail] = useState('');
   // R36: live username availability check for the Create Researcher modal.
   // Mirrors the pattern used by the public storefront register form.
   const crUsernameCheck = useAvailability({ field: 'username', value: crUsername, minLength: 2 });
@@ -249,7 +250,7 @@ export default function AgentDashboardClient({
       const res = await fetch('/api/agent/create-researcher', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ firstName, lastName, username: crUsername, password: crPassword }),
+        body: JSON.stringify({ firstName, lastName, username: crUsername, password: crPassword, contactEmail: crContactEmail.trim() }),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -267,6 +268,7 @@ export default function AgentDashboardClient({
         setCrUsername('');
         setCrUsernameDirty(false);
         setCrPassword('');
+        setCrContactEmail('');
         setTimeout(() => { setShowCreateResearcher(false); setCrSuccess(''); }, 2000);
       }
     } catch (err: any) {
@@ -1059,6 +1061,33 @@ export default function AgentDashboardClient({
                             <span>{crUsernameMsg.text}</span>
                           </div>
                         )}
+                      </div>
+
+                      <div style={{ marginBottom: 12 }}>
+                        <label style={{
+                          display: 'block', fontSize: '0.92rem', fontWeight: 700,
+                          color: '#d0d8e4', marginBottom: 8,
+                        }}>Contact Email (Optional)</label>
+                        <input
+                          type="email"
+                          value={crContactEmail}
+                          onChange={e => setCrContactEmail(e.target.value)}
+                          placeholder="For password resets"
+                          style={{
+                            width: '100%', boxSizing: 'border-box',
+                            background: 'linear-gradient(180deg, #0a0c14 0%, #0d1018 100%)',
+                            border: '1px solid #2a3045',
+                            borderRadius: 8,
+                            padding: '13px 14px',
+                            color: '#ffffff',
+                            fontSize: '0.95rem',
+                            outline: 'none',
+                            boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.7), inset 0 1px 3px rgba(0,0,0,0.5)',
+                            caretColor: '#00C4BC',
+                          }}
+                          onFocus={e => { e.currentTarget.style.border = '1px solid #00C4BC'; }}
+                          onBlur={e => { e.currentTarget.style.border = '1px solid #2a3045'; }}
+                        />
                       </div>
 
                       <div style={{ marginBottom: 6 }}>

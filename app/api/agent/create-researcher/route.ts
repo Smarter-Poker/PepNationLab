@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const { username, password, firstName, lastName, phone } = body || {};
+  const { username, password, firstName, lastName, contactEmail } = body || {};
 
   if (!username || !password || !firstName || !lastName) {
     return NextResponse.json({ error: 'Username, Password, First Name, And Last Name Are Required.' }, { status: 400 });
@@ -134,6 +134,8 @@ export async function POST(req: NextRequest) {
   const profilePayload: Record<string, unknown> = {
     id: newUserId,
     email: null,
+    contact_email: contactEmail ? String(contactEmail).trim() : null,
+    email_verified: !!contactEmail,
     username: usernameClean,
     full_name: fullName,
     first_name: String(firstName).trim(),

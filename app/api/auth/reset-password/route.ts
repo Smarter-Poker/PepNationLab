@@ -14,6 +14,7 @@ import {
   CODE_PURPOSE_PASSWORD_RESET,
 } from '@/lib/verification';
 import { emailConfigured, sendPasswordResetCodeEmail } from '@/lib/email';
+import { recordAuthEvent } from '@/lib/auth-events';
 
 /**
  * POST /api/auth/reset-password  (STEP 1 of code-based reset)
@@ -86,6 +87,13 @@ export async function POST(req: NextRequest) {
 
       if (!insertErr) {
         await sendPasswordResetCodeEmail({ to: email, code, fullName: profile.full_name });
+        // Auth analytics (best-effort): a reset code was actually issued.
+        await recordAuthEvent({
+          event_type: 'password_reset_requested',
+          user_id: profile.id,
+          ip,
+          user_agent: req.headers.get('user-agent'),
+        });
       } else {
         console.error('[reset-password] code insert error:', insertErr);
       }

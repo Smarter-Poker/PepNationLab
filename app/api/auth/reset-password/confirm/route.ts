@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { emailConfigured, sendPasswordChangedEmail } from '@/lib/email';
+import { recordAuthEvent } from '@/lib/auth-events';
 import {
   normalizeEmail,
   isValidEmail,
@@ -103,6 +104,14 @@ export async function POST(req: NextRequest) {
 
     // Consume the code so it cannot be reused.
     await admin.from('email_verification_codes').update({ consumed: true }).eq('id', codeRow.id);
+
+    // Auth analytics (best-effort): a code-based password reset completed.
+    await recordAuthEvent({
+      event_type: 'password_reset_completed',
+      user_id: profile.id,
+      ip: getClientIp(req),
+      user_agent: req.headers.get('user-agent'),
+    });
 
     // Security alert: confirm the change to the same verified inbox that
     // received the reset code. Best-effort; never breaks the reset.

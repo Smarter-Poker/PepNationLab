@@ -4,6 +4,8 @@
 // Used By Both SiteDisclaimerGate (Route-Level Gate) And The Landing Page
 // (Click-Intercept Gate) So Acceptance Is Recorded Once Under One Key.
 
+import { getAnalyticsSessionId } from '@/lib/track';
+
 const DISCLAIMER_VERSION = process.env.NEXT_PUBLIC_DISCLAIMER_VERSION || 'v1.0';
 
 export const DISCLAIMER_STORAGE_KEY = `pnl_disclaimer_${DISCLAIMER_VERSION}`;
@@ -28,6 +30,13 @@ export function recordDisclaimerAcceptance(): void {
   fetch('/api/disclaimer-log', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ layer: 'site_entry', age_verified: true, verified_age: 21 }),
+    body: JSON.stringify({
+      layer: 'site_entry',
+      age_verified: true,
+      verified_age: 21,
+      // Ties this anonymous L1 acceptance to the browser session so it joins to
+      // the later registration (L2) row after the visitor signs up.
+      session_id: getAnalyticsSessionId(),
+    }),
   }).catch(() => { /* Logging Is Non-Blocking */ });
 }

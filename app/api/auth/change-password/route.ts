@@ -6,6 +6,7 @@ import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { emailConfigured, sendPasswordChangedEmail } from '@/lib/email';
 import { safeError } from '@/lib/api-error';
+import { recordAuthEvent } from '@/lib/auth-events';
 
 // POST /api/auth/change-password
 // Used by researchers on first login to change their temp password.
@@ -126,6 +127,15 @@ export async function POST(req: NextRequest) {
     console.error('Profile flag update error:', profileErr);
     return NextResponse.json({ error: 'Failed To Update Profile Settings.' }, { status: 500 });
   }
+
+  // Auth analytics (best-effort): a real password change occurred (not the skip
+  // path, which returns earlier).
+  await recordAuthEvent({
+    event_type: 'password_changed',
+    user_id: user.id,
+    ip: getClientIp(req),
+    user_agent: req.headers.get('user-agent'),
+  });
 
   // Security alert: notify the account's verified email that the password
   // changed. Runs via after() so it cannot slow or fail the response; a user

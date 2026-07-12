@@ -890,7 +890,8 @@ function ResearchersAdminPageInner() {
               <div className="form-group">
                 <label className="form-label">Login Username</label>
                 <input type="text" className="form-input" placeholder="E.g. john_doe (Login Handle)" value={newUsername}
-                  onChange={e => { setNewUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '')); setUsernameDirty(true); }} required autoComplete="new-password" />
+                  name="new_researcher_username_no_autofill" autoComplete="off" data-lpignore="true" data-form-type="other"
+                  onChange={e => { setNewUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '')); setUsernameDirty(true); }} required />
                 {newUsernameMsg && (
                   <p style={{ fontSize: '0.72rem', marginTop: 4, color: newUsernameMsg.color }}>
                     {newUsernameMsg.text}
@@ -901,7 +902,8 @@ function ResearchersAdminPageInner() {
               <div className="form-group">
                 <label className="form-label">Temporary Password</label>
                 <input type="password" className="form-input" placeholder="Set Initial Password" value={newPassword}
-                  onChange={e => setNewPassword(e.target.value)} required minLength={6} autoComplete="new-password" />
+                  name="new_researcher_password_no_autofill" autoComplete="new-password" data-lpignore="true"
+                  onChange={e => setNewPassword(e.target.value)} required minLength={6} />
               </div>
 
               {createRole === 'researcher' && (

@@ -28,6 +28,16 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({} as Record<string, unknown>));
     const rawLayer = String((body as { layer?: unknown }).layer ?? 'site_entry');
 
+    // Analytics session id (rolling browser session, from lib/track.ts). Wiring
+    // this closes the disclaimer-funnel identity break: an anonymous site_entry
+    // (L1) row and the later authenticated registration (L2) row now share a
+    // session id, so the funnel joins across the anon->user boundary.
+    const rawSession = (body as { session_id?: unknown }).session_id;
+    const sessionId =
+      typeof rawSession === 'string' && rawSession.length >= 8 && rawSession.length <= 80
+        ? rawSession
+        : null;
+
     // P1: Validate layer is one of the known enum values.
     if (!VALID_LAYERS.includes(rawLayer as DisclaimerLayer)) {
       return NextResponse.json({ error: 'Invalid Disclaimer Layer.' }, { status: 400 });
@@ -75,6 +85,7 @@ export async function POST(req: NextRequest) {
     const serviceSupabase = await createServiceClient();
     const { error } = await serviceSupabase.from('disclaimer_acceptances').insert({
       user_id: user?.id ?? null,
+      session_id: sessionId,
       disclaimer_version: disclaimerVersion,
       layer,
       ip_address: ip,

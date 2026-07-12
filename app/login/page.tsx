@@ -96,10 +96,28 @@ function LoginPageInner() {
       });
 
       if (authError) {
+        // Auth analytics (best-effort): failed login. The attempted identifier
+        // is hashed server-side; nothing raw is stored. Also feeds brute-force
+        // velocity monitoring.
+        fetch('/api/auth/events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ event_type: 'login_failed', identifier: raw }),
+          keepalive: true,
+        }).catch(() => {});
         setError('Invalid Username Or Password');
         setLoading(false);
         return;
       }
+
+      // Auth analytics (best-effort): successful login. user_id is stamped
+      // server-side from the freshly-established session.
+      fetch('/api/auth/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event_type: 'login' }),
+        keepalive: true,
+      }).catch(() => {});
 
       // Single-session enforcement - deferred to avoid a race condition in
       // incognito mode where the signOut RPC can race against the new session
