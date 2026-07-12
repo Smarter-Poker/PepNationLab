@@ -45,7 +45,7 @@ const SCOPE_LABELS: Record<BundleScope, string> = {
 
 function fmt(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(n) || n <= 0) return '—';
-  return `$${n.toFixed(2)}`;
+  return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 /**

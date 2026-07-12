@@ -219,7 +219,7 @@ export default function SmartStackBuilder({ catalog, onAddStackToCart }: Props) 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 'var(--space-4)', marginTop: 'auto' }}>
             <div>
               <div style={{ color: 'var(--silver)', fontSize: '0.85rem' }}>Total Stack Price</div>
-              <div style={{ color: 'var(--white)', fontSize: '1.25rem', fontWeight: 600 }}>${totalPrice.toFixed(2)}</div>
+              <div style={{ color: 'var(--white)', fontSize: '1.25rem', fontWeight: 600 }}>${totalPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
             </div>
             <button 
               disabled={selectedItems.length < 2 || (aiAnalysis && aiAnalysis.synergyScore < 50)}

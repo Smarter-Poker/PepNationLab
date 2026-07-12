@@ -52,7 +52,7 @@ export async function validateCoupon(
   ) {
     return {
       valid: false,
-      error: `A Minimum Order Of $${Number(coupon.min_order_amount).toFixed(2)} Is Required For This Coupon.`,
+      error: `A Minimum Order Of $${Number(coupon.min_order_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Is Required For This Coupon.`,
     };
   }
 

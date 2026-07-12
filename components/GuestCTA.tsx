@@ -114,7 +114,7 @@ export default function GuestCTA() {
 
   // Cart summary shown in conversion mode.
   const cartLabel = hasCart
-    ? `${effectiveCount} Item${effectiveCount === 1 ? '' : 's'} In Your Cart • $${Number(effectiveSubtotal || 0).toFixed(2)}`
+    ? `${effectiveCount} Item${effectiveCount === 1 ? '' : 's'} In Your Cart • $${Number(effectiveSubtotal || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
     : null;
 
   // Format member count with comma separator

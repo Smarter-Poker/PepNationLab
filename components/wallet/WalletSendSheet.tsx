@@ -162,7 +162,7 @@ export default function WalletSendSheet({
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json?.error || 'Failed To Send Funds.');
-      toast.success(`Sent $${amountNumber.toFixed(2)} To ${json?.recipient?.name || recipientDisplayName(selected)}.`);
+      toast.success(`Sent $${amountNumber.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} To ${json?.recipient?.name || recipientDisplayName(selected)}.`);
       onSent();
       onClose();
     } catch (err) {

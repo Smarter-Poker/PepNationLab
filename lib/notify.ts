@@ -242,7 +242,7 @@ export async function notifyCommissionPayout(
   amount: number,
   method: string,
 ) {
-  const fmt = `$${amount.toFixed(2)}`;
+  const fmt = `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   await notify(supabase, {
     userId: agentId,
     type: 'commission_earned',
@@ -263,7 +263,7 @@ export async function notifyInvoiceGenerated(
     userId: recipientId,
     type: 'invoice',
     title: `Invoice Generated: Week of ${weekStart}`,
-    body: `An invoice for $${totalOwed.toFixed(2)} has been generated for the week of ${weekStart}.`,
+    body: `An invoice for $${totalOwed.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} has been generated for the week of ${weekStart}.`,
     url: `/dashboard/agent?tab=statements`,
   });
 }
@@ -279,7 +279,7 @@ export async function notifyPaymentReminder(
     userId: recipientId,
     type: 'payment_reminder',
     title: `Payment Due: ${invoiceSubject}`,
-    body: `Reminder: Your invoice for $${amount.toFixed(2)} is overdue. Please make payment promptly.`,
+    body: `Reminder: Your invoice for $${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} is overdue. Please make payment promptly.`,
     url: `/dashboard/agent?tab=statements`,
   });
 }
@@ -295,7 +295,7 @@ export async function notifyCartReminder(
     userId: recipientId,
     type: 'cart_reminder',
     title: 'You left items in your cart',
-    body: `You have ${itemCount} item${itemCount !== 1 ? 's' : ''} waiting${cartValue > 0 ? ` ($${cartValue.toFixed(2)})` : ''}. Complete your order before inventory moves.`,
+    body: `You have ${itemCount} item${itemCount !== 1 ? 's' : ''} waiting${cartValue > 0 ? ` ($${cartValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})` : ''}. Complete your order before inventory moves.`,
     url: '/cart',
   });
 }
@@ -346,8 +346,8 @@ export async function notifyReferralReward(
       ? notify(supabase, {
           userId: referrerId,
           type: 'referral',
-          title: `Referral Reward: $${referrerAmount.toFixed(2)}`,
-          body: `You earned $${referrerAmount.toFixed(2)} in store credit for referring a new researcher.`,
+          title: `Referral Reward: $${referrerAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          body: `You earned $${referrerAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} in store credit for referring a new researcher.`,
           url: `/dashboard`,
         })
       : Promise.resolve(),
@@ -355,8 +355,8 @@ export async function notifyReferralReward(
       ? notify(supabase, {
           userId: refereeId,
           type: 'referral',
-          title: `Welcome Bonus: $${refereeAmount.toFixed(2)}`,
-          body: `You received $${refereeAmount.toFixed(2)} in store credit as a welcome bonus.`,
+          title: `Welcome Bonus: $${refereeAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          body: `You received $${refereeAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} in store credit as a welcome bonus.`,
           url: `/dashboard`,
         })
       : Promise.resolve(),
@@ -373,8 +373,8 @@ export async function notifyBalanceRecharge(
   await notify(supabase, {
     userId,
     type: 'system',
-    title: `Account Balance Updated: +$${amount.toFixed(2)}`,
-    body: description ?? `$${amount.toFixed(2)} has been added to your account balance.`,
+    title: `Account Balance Updated: +$${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+    body: description ?? `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} has been added to your account balance.`,
     url: `/dashboard/agent?tab=balance`,
   });
 }
@@ -437,7 +437,7 @@ export async function notifySubscriptionOrder(
     userId: researcherId,
     type: 'order_placed',
     title: `Auto-Replenish Order #${shortId} Created`,
-    body: `Your subscription order for $${total.toFixed(2)} has been created. Sign in to send payment.`,
+    body: `Your subscription order for $${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} has been created. Sign in to send payment.`,
     url: `/orders`,
   });
 }
@@ -516,8 +516,8 @@ export async function notifyCouponRedeemed(
   orderId: string,
   shortId: string,
 ) {
-  const discount = `$${(Number.isFinite(discountAmount) ? discountAmount : 0).toFixed(2)}`;
-  const total = `$${(Number.isFinite(orderTotal) ? orderTotal : 0).toFixed(2)}`;
+  const discount = `$${(Number.isFinite(discountAmount) ? discountAmount : 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const total = `$${(Number.isFinite(orderTotal) ? orderTotal : 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   await notify(supabase, {
     userId: agentId,
     type: 'coupon_redeemed',

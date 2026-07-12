@@ -497,6 +497,30 @@ export async function POST(request: NextRequest) {
       volumeDiscountsEnabled = agentConfig?.volume_pricing_enabled !== false;
     }
 
+    // 4c. Pre-calculate unit retail sums for custom-priced bundles in the cart
+    const cartBundleUnitRetailSum = new Map<string, number>();
+    const seenBundleProducts = new Set<string>();
+    
+    for (const cartItem of items) {
+      const dbProduct = productById.get(cartItem.id);
+      if (!dbProduct || !isValidBundleLine(cartItem.bundleName, dbProduct.id)) continue;
+      const key = cartItem.bundleName!.trim().toLowerCase();
+      if (!bundleCustomPriceByName.has(key)) continue;
+      
+      const uniqueKey = `${key}:${dbProduct.id}`;
+      if (seenBundleProducts.has(uniqueKey)) continue;
+      seenBundleProducts.add(uniqueKey);
+
+      let unitRetail = 0;
+      if (Object.prototype.hasOwnProperty.call(agentCustomRetail, dbProduct.id)) {
+        unitRetail = agentCustomRetail[dbProduct.id];
+      } else {
+        const retailMultiplier = tierMultipliers['tier_3'] ?? 10;
+        unitRetail = Number(dbProduct.base_cost) * retailMultiplier / 10;
+      }
+      cartBundleUnitRetailSum.set(key, (cartBundleUnitRetailSum.get(key) || 0) + unitRetail);
+    }
+
     // 5. Super agent baseline costs (fetched above)
     const superAgentBaselines: Record<string, { baseline_cost: number, bulk_baseline_cost: number | null, bulk_threshold: number }> = {};
     sab?.forEach((b: { product_id: string; baseline_cost: unknown; bulk_baseline_cost: number | null; bulk_threshold: number | null }) => {
@@ -651,26 +675,23 @@ export async function POST(request: NextRequest) {
         const key = (cartItem.bundleName ?? '').trim().toLowerCase();
         const customBundlePrice = bundleCustomPriceByName.get(key);
         if (customBundlePrice != null && customBundlePrice > 0) {
-          // Distribute the flat custom price proportionally across members.
-          // "Full price" for this bundle = all member retail prices (per vial).
-          // We need the bundle's full retail price to compute the share.
-          // Re-compute it from the valid members in validBundleMembers.
-          // NOTE: We don't track full prices per member here, so we use retailPrice
-          // as the "weight". The total will be resolved at cart reconciliation.
-          // Store the per-item custom price in the cart line via bundleCustomPrice
-          // (already set by the client). Accept client's bundleCustomPrice if present
-          // and reasonable (within ±10% of what server would compute).
+          const totalUnitRetail = cartBundleUnitRetailSum.get(key) || 1;
+          const bundleFactor = customBundlePrice / Math.max(totalUnitRetail, 0.01);
+          
+          // Apply the exact proportional factor derived from server-computed retail sums.
+          // Because retailPrice collapses to costPrice for wholesale buyers above,
+          // this correctly applies the equivalent % discount to their wholesale cost.
+          retailPrice = Math.max(0, retailPrice * bundleFactor);
+          costPrice = Math.max(0, costPrice * bundleFactor);
+          
+          // If the frontend supplied a bundleCustomPrice, we can trust it if it is 
+          // essentially equal to what we just computed (avoiding tiny penny rounding mismatches).
           const clientCustomPrice = typeof (cartItem as any).bundleCustomPrice === 'number'
             ? Number((cartItem as any).bundleCustomPrice)
             : null;
-          if (clientCustomPrice != null && clientCustomPrice >= 0 && clientCustomPrice <= customBundlePrice) {
+          if (clientCustomPrice != null && Math.abs(clientCustomPrice - retailPrice) <= 0.02) {
             retailPrice = Math.max(0, clientCustomPrice);
-          } else {
-            // Fall back to applying discount proportionally
-            const bundleFactor = customBundlePrice / Math.max(retailPrice, 0.01);
-            retailPrice = Math.max(0, retailPrice * Math.min(bundleFactor, 1));
           }
-          costPrice = Math.max(0, costPrice);
         } else {
           const bundleFactor = bundleDiscountFactor(cartItem.bundleName);
           retailPrice = Math.max(0, retailPrice * bundleFactor);
