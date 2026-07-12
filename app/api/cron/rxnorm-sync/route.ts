@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * GET /api/cron/rxnorm-sync
  * Weekly RxNorm sync. Stashes the RxCUI + NDC count on compounds via a

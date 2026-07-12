@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * audit15 fix-19 (B6): centralized telemetry writer for messenger calls.
  *

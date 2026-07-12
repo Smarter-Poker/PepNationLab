@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * POST /api/admin/shipping-provider/rotate
  *

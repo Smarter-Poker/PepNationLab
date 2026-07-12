@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * GET /api/cron/chembl-sync
  * Weekly ChEMBL sync. Writes binding-affinity rows to

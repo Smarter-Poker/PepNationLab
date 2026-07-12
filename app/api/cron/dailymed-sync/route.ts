@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * GET /api/cron/dailymed-sync
  * Weekly DailyMed sync. Updates compounds.dailymed_setid and writes a

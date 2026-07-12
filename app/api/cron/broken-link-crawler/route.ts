@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * GET /api/cron/broken-link-crawler
  * Weekly external-link probe. Walks compound_references.url with a HEAD

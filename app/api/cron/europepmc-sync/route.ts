@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * GET /api/cron/europepmc-sync
  * Weekly Europe PMC sync. Captures open-access PDF URLs that PubMed

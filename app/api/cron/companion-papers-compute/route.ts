@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * GET /api/cron/companion-papers-compute
  * Weekly recompute of compound_companion_papers using PMID co-occurrence

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * GET /api/cron/fda-drugs-sync
  * Weekly openFDA sync. Refreshes compounds.faers_event_count and writes

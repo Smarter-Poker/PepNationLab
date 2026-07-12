@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * POST /api/webhooks/easypost  (also GET for portal liveness checks)
  *

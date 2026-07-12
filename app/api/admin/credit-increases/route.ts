@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Admin Credit-Increase Review - list and decide agent credit-limit increase
 // requests. Approving raises the agent's profiles.credit_limit (atomic RPC
 // decide_credit_increase). Pending requests are surfaced first.

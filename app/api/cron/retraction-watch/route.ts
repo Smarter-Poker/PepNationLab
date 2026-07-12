@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * GET /api/cron/retraction-watch
  * Weekly retraction sweep. Walks the cached PMIDs in

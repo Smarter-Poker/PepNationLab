@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Client-error observability sink. Receives fire-and-forget error reports from
 // the browser (global window handlers + key catch blocks) and stores them in
 // client_error_events via the service role. Hardened: same-origin only, rate

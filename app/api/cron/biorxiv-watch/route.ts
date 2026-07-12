@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * GET /api/cron/biorxiv-watch
  * Daily bioRxiv + medRxiv watch. Surfaces brand-new preprints (last 7

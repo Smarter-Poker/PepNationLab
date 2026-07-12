@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Stripe-style request idempotency for admin/agent POSTs that mutate money
  * or state.

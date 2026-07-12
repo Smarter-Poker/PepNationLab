@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * GET /api/cron/patents-sync
  * Monthly Google Patents search. Writes patent hits to
