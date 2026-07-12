@@ -8,10 +8,8 @@
  */
 
 import { useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { FlaskConical, ShieldAlert } from 'lucide-react';
-import { RISK_META, evidenceTier } from '@/lib/compounds';
 
 export interface EvidenceGroup {
   tier: string;
@@ -94,19 +92,8 @@ export default function EvidenceSafetyTabs({
         <section role="tabpanel" id="evidence-safety-tabpanel" aria-labelledby="evidence-safety-tab-evidence">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4, 16px)' }}>
             {groups.map((g) => {
-              const tierMeta = evidenceTier(g.tier);
               return (
                 <div key={g.tier} className="glass-panel" style={{ padding: 'var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)', borderLeft: `3px solid ${g.color}` }}>
-                  <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-2, 8px)', marginBottom: 'var(--space-2, 8px)' }}>
-                    {tierMeta.badgeUrl ? (
-                      <Image src={tierMeta.badgeUrl} alt={g.label} width={200} height={200} unoptimized style={{ height: '38px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />
-                    ) : (
-                      <span style={{ fontSize: '1rem', fontWeight: 800, color: g.color }}>{g.label}</span>
-                    )}
-                    <span style={{ fontSize: '0.78rem', color: 'var(--silver, #A8B4C0)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '999px', padding: '1px 8px' }}>
-                      {g.items.length}
-                    </span>
-                  </div>
                   {g.blurb && <p style={{ fontSize: '0.85rem', color: 'var(--silver, #A8B4C0)', margin: '0 0 var(--space-3, 12px)' }}>{g.blurb}</p>}
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {g.items.map((c) => (
@@ -140,26 +127,9 @@ export default function EvidenceSafetyTabs({
             {flagged.map((c) => (
               <div key={c.slug} className="glass-panel" style={{ padding: 'var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)' }}>
                 <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                  <Link href={`/research/${c.slug}`} style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--white, #FFFFFF)', textDecoration: 'none', marginRight: 4 }}>
+                  <Link href={`/research/${c.slug}`} style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--white, #FFFFFF)', textDecoration: 'none' }}>
                     {c.name}
                   </Link>
-                  {c.riskLevel && RISK_META[c.riskLevel as "critical" | "high" | "moderate" | "low"]?.badgeUrl && (
-                    <Image src={RISK_META[c.riskLevel as "critical" | "high" | "moderate" | "low"].badgeUrl} alt={c.riskLabel || ''} width={200} height={200} unoptimized style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />
-                  )}
-                  {c.flags.map((f) => {
-                    let badgeSrc = '';
-                    if (f === 'Pro-Angiogenic') badgeSrc = '/images/badges/badge_angio_alert.png';
-                    else if (f === 'GLP-1 Class') badgeSrc = '/images/badges/badge_glp1.png';
-                    else if (f === 'Cold-Chain') badgeSrc = '/images/badges/badge_cold_chain.png';
-                    
-                    return badgeSrc ? (
-                      <Image key={f} src={badgeSrc} alt={f} width={200} height={200} unoptimized style={{ height: '32px', width: 'auto', maxWidth: 'none', borderRadius: 9999, overflow: 'hidden', objectFit: 'contain', flexShrink: 0 }} />
-                    ) : (
-                      <span key={f} style={{ fontSize: '0.72rem', color: 'var(--silver, #A8B4C0)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: '999px', padding: '2px 9px' }}>
-                        {f}
-                      </span>
-                    );
-                  })}
                 </div>
                 {c.reasons.length > 0 && (
                   <ul style={{ margin: '4px 0 0', paddingLeft: '18px', color: 'var(--silver, #A8B4C0)', fontSize: '0.85rem' }}>
