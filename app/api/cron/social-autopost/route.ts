@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { assertCronAuth } from '@/lib/cron';
 import { createServiceClient } from '@/lib/supabase/server';
+import { safeError } from '@/lib/api-error';
 import {
   dispatchPost,
   isAutopostEnabled,
@@ -102,7 +103,7 @@ export async function GET(req: Request) {
     .limit(BATCH_LIMIT);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return safeError('cron.social-autopost.load_due', error, 500, 'Failed To Load Due Posts.');
   }
 
   const results: Array<{ id: string; platform: string; outcome: string }> = [];

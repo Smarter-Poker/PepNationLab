@@ -1,27 +1,21 @@
-// Sentry edge runtime (middleware, edge API routes) configuration.
+// Sentry edge runtime (middleware/proxy.ts, edge API routes) configuration.
 //
-// We require()-with-try/catch instead of a top-level `import` so the build
-// stays green even when @sentry/nextjs is not installed locally. Without a
-// DSN the entire block is skipped.
+// Static import: the Vercel edge runtime has no CommonJS require(), so the
+// previous variable-require() hack threw unconditionally and was swallowed --
+// edge errors (including every proxy.ts auth failure) were never captured.
+// Init stays gated on the DSN so unconfigured environments are a clean no-op.
 
-const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
+import * as Sentry from '@sentry/nextjs';
+
+const dsn = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
 
 if (dsn) {
-  try {
-    const mod = '@sentry/nextjs';
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
-    const Sentry: any = require(mod);
-    if (Sentry?.init) {
-      Sentry.init({
-        dsn,
-        tracesSampleRate: 0.1,
-        environment: process.env.VERCEL_ENV || 'development',
-        enabled: true,
-      });
-    }
-  } catch {
-    // Sentry SDK not installed yet — no-op.
-  }
+  Sentry.init({
+    dsn,
+    tracesSampleRate: 0.1,
+    environment: process.env.VERCEL_ENV || 'development',
+    enabled: true,
+  });
 }
 
 export {};

@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { getSupabaseUrl } from '@/lib/supabase/url';
+import { captureError } from '@/lib/sentry';
 
 // ─── Global API Rate Limiting ────────────────────────────────────────────────
 // Edge-level backstop against scrape bots and abuse across all ~80 /api/*
@@ -318,11 +319,17 @@ export default async function proxy(request: NextRequest) {
     },
   );
   let user = null;
+  let authBackendDown = false;
   try {
     const { data } = await supabase.auth.getUser();
     user = data?.user ?? null;
   } catch (err) {
-    console.error('[proxy.ts] Failed to retrieve user session:', err);
+    // Supabase auth outage / network blip. This is NOT the same as "no
+    // session": treating it as logged-out silently 401s every user site-wide
+    // and looks like a mass logout instead of a backend incident.
+    authBackendDown = true;
+    console.error('[proxy] AUTH_BACKEND_ERROR - auth.getUser() threw:', err);
+    captureError(err, { context: 'proxy.getUser', path: pathname });
   }
 
   const redirectWithCookies = (url: URL) => {
@@ -332,6 +339,23 @@ export default async function proxy(request: NextRequest) {
     });
     return redirectResponse;
   };
+
+  if (authBackendDown) {
+    // Fail loudly and honestly: 503 (retryable) instead of a misleading 401
+    // or a redirect that wipes in-progress client state (e.g. checkout).
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json(
+        { error: 'Authentication Service Temporarily Unavailable. Please Try Again In A Moment.' },
+        { status: 503, headers: { 'Retry-After': '10' } },
+      );
+    }
+    return new NextResponse(
+      '<!DOCTYPE html><html><head><title>Temporarily Unavailable</title><meta http-equiv="refresh" content="8"></head>'
+      + '<body style="background:#050A0F;color:#D0DAE4;font-family:Inter,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center">'
+      + '<div><h1 style="color:#00C4BC">One Moment</h1><p>We Are Having Trouble Reaching The Sign-In Service.<br>This Page Will Retry Automatically.</p></div></body></html>',
+      { status: 503, headers: { 'Content-Type': 'text/html', 'Retry-After': '10' } },
+    );
+  }
 
   if (!user) {
     if (pathname.startsWith('/api/')) {
@@ -346,11 +370,43 @@ export default async function proxy(request: NextRequest) {
     return redirectWithCookies(url);
   }
 
-  const { data: profile } = await supabase
+  let { data: profile, error: profileErr } = await supabase
     .from('profiles')
     .select('is_active, role, must_change_password')
     .eq('id', user.id)
     .maybeSingle();
+
+  if (profileErr) {
+    // One retry for transient blips before deciding anything.
+    const retry = await supabase
+      .from('profiles')
+      .select('is_active, role, must_change_password')
+      .eq('id', user.id)
+      .maybeSingle();
+    profile = retry.data;
+    profileErr = retry.error;
+  }
+
+  if (profileErr) {
+    // The disabled-account (is_active) and forced-password-change gates
+    // cannot be evaluated. Previously this failed OPEN (profile came back
+    // null and every gate silently passed) -- a deactivated agent could keep
+    // operating through any profiles-read blip. Fail CLOSED with a retryable
+    // 503 and report the incident.
+    captureError(profileErr, { context: 'proxy.profile', userId: user.id, path: pathname });
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json(
+        { error: 'Service Temporarily Unavailable. Please Try Again In A Moment.' },
+        { status: 503, headers: { 'Retry-After': '10' } },
+      );
+    }
+    return new NextResponse(
+      '<!DOCTYPE html><html><head><title>Temporarily Unavailable</title><meta http-equiv="refresh" content="8"></head>'
+      + '<body style="background:#050A0F;color:#D0DAE4;font-family:Inter,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center">'
+      + '<div><h1 style="color:#00C4BC">One Moment</h1><p>We Are Having Trouble Loading Your Account.<br>This Page Will Retry Automatically.</p></div></body></html>',
+      { status: 503, headers: { 'Content-Type': 'text/html', 'Retry-After': '10' } },
+    );
+  }
 
   if (profile && profile.is_active === false) {
     await supabase.auth.signOut();
@@ -389,34 +445,6 @@ export default async function proxy(request: NextRequest) {
   }
 
   if (pathname.startsWith('/admin') && profile?.role !== 'admin') {
-    const url = request.nextUrl.clone();
-    url.pathname = '/dashboard';
-    return redirectWithCookies(url);
-  }
-
-  // Defense in depth: /api/admin is admin-only at the edge. The two fulfillment
-  // endpoints the shipping role legitimately uses are the sole exception. Every
-  // handler still calls requireAdmin / requireOrdersAccess itself, so this is a
-  // second wall closing the gap where a non-admin authenticated user could
-  // previously reach an admin route handler before its in-route guard ran.
-  // profile.role is already loaded above - no extra DB round trip.
-  if (pathname.startsWith('/api/admin')) {
-    const isFulfillmentRoute =
-      pathname === '/api/admin/orders' || pathname === '/api/admin/orders/items';
-    const allowed =
-      profile?.role === 'admin' ||
-      (isFulfillmentRoute && profile?.role === 'shipping');
-    if (!allowed) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-  }
-
-  // Defense in depth: the shipping console is for the shipping role and admins.
-  if (
-    pathname.startsWith('/shipping') &&
-    profile?.role !== 'shipping' &&
-    profile?.role !== 'admin'
-  ) {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
     return redirectWithCookies(url);

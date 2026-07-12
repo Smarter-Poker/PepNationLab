@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { buildDownlineTree } from '@/lib/downline';
+import { safeError } from '@/lib/api-error';
 
 /**
  * GET /api/admin/agents/downline?rootId=<uuid>  (Admin Only)
@@ -159,8 +160,7 @@ export async function POST(req: NextRequest) {
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', agent_id);
     if (moveErr) {
-      console.error('[admin/agents/downline] reassign_agent failed:', moveErr.message);
-      return NextResponse.json({ error: `Reassignment Failed: ${moveErr.message}` }, { status: 500 });
+      return safeError('admin.agents.downline.reassign', moveErr, 500, 'Reassignment Failed. Please Try Again Or Contact Support.');
     }
 
     await admin.from('admin_audit_log').insert({

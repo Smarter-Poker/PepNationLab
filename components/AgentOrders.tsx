@@ -150,25 +150,36 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
     setLoadingOrderId(orderId);
     try {
       const tracking = trackingNumbers[orderId] || null;
+      const idemKey = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
       const res = await fetch('/api/agent/orders/approve', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          // Lets the server's withIdempotency guard dedupe a double-click or
+          // network retry of the same approval.
+          'Idempotency-Key': idemKey,
+        },
         body: JSON.stringify({ orderId, newStatus, tracking_number: tracking }),
       });
 
+      const data = await res.json().catch(() => ({} as { error?: string; status?: string }));
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed To Transition Order.');
+        throw new Error(data.error || 'Failed To Transition Order.');
       }
 
+      // The server frequently lands on a DIFFERENT terminal status than the
+      // one requested (sub-agent approvals demote to agent_approval_pending,
+      // prepaid accounts to admin_approval_pending, failed credit charges
+      // back to admin review). Reflect the ACTUAL status, not the wish.
+      const serverStatus = (data as { status?: string }).status || newStatus;
       setOrders((prev) =>
         prev.map((o) =>
           o.id === orderId
-            ? { ...o, status: newStatus, tracking_number: tracking || o.tracking_number }
+            ? { ...o, status: serverStatus, tracking_number: tracking || o.tracking_number }
             : o
         )
       );
-      toast.success(`Order Status Shifted To ${STATUS_LABEL[newStatus] ?? newStatus.replace(/_/g, ' ').split(' ').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}`);
+      toast.success(`Order Status Shifted To ${STATUS_LABEL[serverStatus] ?? serverStatus.replace(/_/g, ' ').split(' ').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}`);
     } catch (err: any) {
       toast.error(err.message ?? 'An Error Occurred Updating Order Status.');
     } finally {
@@ -956,7 +967,6 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                       borderCollapse: 'collapse',
                     }}
                   >
-                    <caption className="sr-only">Order Line Items</caption>
                     <thead>
                       <tr
                         style={{
@@ -965,10 +975,10 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                           borderBottom: '1px solid rgba(255,255,255,0.06)',
                         }}
                       >
-                        <th scope="col" style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 600 }}>Product</th>
-                        <th scope="col" style={{ textAlign: 'center', padding: '12px 16px', fontWeight: 600 }}>Quantity</th>
-                        <th scope="col" style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 600 }}>Unit Price</th>
-                        <th scope="col" style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 600 }}>Line Total</th>
+                        <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 600 }}>Product</th>
+                        <th style={{ textAlign: 'center', padding: '12px 16px', fontWeight: 600 }}>Quantity</th>
+                        <th style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 600 }}>Unit Price</th>
+                        <th style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 600 }}>Line Total</th>
                       </tr>
                     </thead>
                     <tbody>

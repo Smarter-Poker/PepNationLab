@@ -9,6 +9,7 @@ import Image from 'next/image';
 import { toast } from 'sonner';
 import { getProductImage } from '@/lib/categoryImage';
 import DynamicAddToCartButton from '@/components/storefront/DynamicAddToCartButton';
+import { reportClientError } from '@/lib/report-client-error';
 
 // recharts (~400KB) is code-split: the default 'bundles' tab renders no charts,
 // so most Lab Journal visits never download it.
@@ -498,13 +499,17 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   }, []);
 
   const updateInventory = async (productId: string, field: string, value: any) => {
+    // Optimistic write with rollback: recon_mg/recon_ml/recon_dose feed the
+    // per-vial dose display, so silently keeping unsaved values on screen is
+    // a dosing-data integrity problem, not just a UX one.
+    const previous = inventoryData;
     const updated = { ...inventoryData };
     if (!updated[productId]) updated[productId] = { on_hand: 1, lot: '', expiration: '' };
     updated[productId] = { ...updated[productId], [field]: value };
     setInventoryData(updated);
-    
+
     try {
-      await fetch('/api/researcher/inventory', {
+      const res = await fetch('/api/researcher/inventory', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -517,7 +522,16 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
           recon_dose: updated[productId].recon_dose
         })
       });
-    } catch {}
+      if (!res.ok) {
+        setInventoryData(previous);
+        toast.error('Could Not Save Inventory Changes. Please Try Again.');
+        reportClientError('lab-journal.update-inventory', new Error(`HTTP ${res.status}`));
+      }
+    } catch (e) {
+      setInventoryData(previous);
+      toast.error('Could Not Save Inventory Changes. Please Try Again.');
+      reportClientError('lab-journal.update-inventory', e);
+    }
   };
 
   const addScheduledDose = async () => {
@@ -530,12 +544,17 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      const data = await res.json();
-      if (res.ok && data.protocol) {
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.protocol) {
         setScheduledDoses(prev => [data.protocol, ...prev]);
         setScheduleCompound(''); setScheduleAmount('');
+      } else {
+        toast.error('Could Not Save Scheduled Dose. Please Try Again.');
       }
-    } catch {}
+    } catch (e) {
+      toast.error('Could Not Save Scheduled Dose. Please Try Again.');
+      reportClientError('lab-journal.add-scheduled-dose', e);
+    }
   };
 
   const deleteScheduledDose = async (id: string) => {
@@ -544,9 +563,14 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id })
+      }).then(res => {
+        if (res.ok) setScheduledDoses(prev => prev.filter(s => s.id !== id));
+        else toast.error('Could Not Delete Scheduled Dose. Please Try Again.');
       });
-      setScheduledDoses(prev => prev.filter(s => s.id !== id));
-    } catch {}
+    } catch (e) {
+      toast.error('Could Not Delete Scheduled Dose. Please Try Again.');
+      reportClientError('lab-journal.delete-scheduled-dose', e);
+    }
   };
 
   // Compute whether a scheduled protocol is due today, based on its frequency and the
@@ -668,26 +692,40 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
 
   const activateGoal = async (id: string) => {
     try {
-      await fetch('/api/researcher/goals', {
+      const res = await fetch('/api/researcher/goals', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, is_active: true })
       });
-      setGoals(prev => prev.map(g => ({ ...g, is_active: g.id === id })));
-      toast.success('Active goal updated');
-    } catch {}
+      if (res.ok) {
+        setGoals(prev => prev.map(g => ({ ...g, is_active: g.id === id })));
+        toast.success('Active Goal Updated');
+      } else {
+        toast.error('Could Not Update Goal. Please Try Again.');
+      }
+    } catch (e) {
+      toast.error('Could Not Update Goal. Please Try Again.');
+      reportClientError('lab-journal.activate-goal', e);
+    }
   };
 
   const deleteGoal = async (id: string) => {
     try {
-      await fetch('/api/researcher/goals', {
+      const res = await fetch('/api/researcher/goals', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id })
       });
-      setGoals(prev => prev.filter(g => g.id !== id));
-      toast.success('Goal deleted');
-    } catch {}
+      if (res.ok) {
+        setGoals(prev => prev.filter(g => g.id !== id));
+        toast.success('Goal Deleted');
+      } else {
+        toast.error('Could Not Delete Goal. Please Try Again.');
+      }
+    } catch (e) {
+      toast.error('Could Not Delete Goal. Please Try Again.');
+      reportClientError('lab-journal.delete-goal', e);
+    }
   };
 
   const saveComparison = async (ids: string[]) => {
@@ -2195,7 +2233,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                         )}
                         <h3 style={{ color: 'var(--white)', paddingRight: 80 }}>{n.title || 'Journal Entry'}</h3>
                         <p style={{ color: 'var(--silver)', whiteSpace: 'pre-wrap', marginTop: 'var(--space-3)' }}>{n.note_text}</p>
-                        <div style={{ marginTop: 'var(--space-4)', fontSize: '0.75rem', color: 'var(--grey-400)', paddingTop: 'var(--space-2)' }}>
+                        <div style={{ marginTop: 'var(--space-4)', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', paddingTop: 'var(--space-2)' }}>
                           Last updated: {new Date(n.updated_at).toLocaleDateString()} at {new Date(n.updated_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                         </div>
                       </div>

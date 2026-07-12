@@ -747,6 +747,12 @@ function Reconstitution({ compounds }: { compounds: CompoundListItem[] }) {
                 Warning: Desired Target Dose <span className="calc-no-capitalize">({dMassNumeric} {unit})</span> Exceeds Total Vial Capacity <span className="calc-no-capitalize">({vMass} mg)</span>. Please Adjust Vial Mass Or Desired Target Dose.
               </div>
             )}
+
+            {drawMl !== null && isFinite(drawMl) && drawMl > syringeSize && (
+              <div style={{ color: '#FF6B6B', fontSize: 13, padding: '12px', border: '1px dashed rgba(255,107,107,0.3)', borderRadius: 6, background: 'rgba(255,107,107,0.05)', marginTop: 12, textAlign: 'center' }}>
+                Warning: This Draw <span className="calc-no-capitalize">({drawMl.toFixed(2)} mL)</span> Exceeds Your Selected <span className="calc-no-capitalize">{syringeSize} mL</span> Syringe. Use A Larger Syringe, Split The Dose Across Multiple Draws, Or Increase The Concentration By Using Less Diluent.
+              </div>
+            )}
             
             <VisualSyringe ml={drawMl} size={syringeSize} type={syringeType} onDrawMlChange={handleDrawMlChange} />
           </>

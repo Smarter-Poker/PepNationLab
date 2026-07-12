@@ -19,6 +19,8 @@ const ACKNOWLEDGMENTS = [
 type AckKey = (typeof ACKNOWLEDGMENTS)[number]['key'];
 
 import { Suspense } from 'react';
+import { fetchJson } from '@/lib/fetch-json';
+import { reportClientError } from '@/lib/report-client-error';
 
 function SignupForm() {
   const searchParams = useSearchParams();
@@ -109,15 +111,19 @@ function SignupForm() {
     setInfo('');
 
     try {
-      const res = await fetch('/api/auth/request-code', {
+      const r0 = await fetchJson<{ verification_required?: boolean; error?: string }>('/api/auth/request-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        timeoutMs: 15000,
+        errorContext: 'signup.request-code',
         body: JSON.stringify({ email: email.trim() }),
       });
-      const data = await res.json().catch(() => ({}));
+      const data = (r0.data ?? {}) as { verification_required?: boolean };
 
-      if (!res.ok) {
-        setError(data?.error || 'Could Not Start Verification. Please Try Again.');
+      if (!r0.ok) {
+        setError(r0.status === 0
+          ? 'Verification Is Taking Too Long. Please Check Your Connection And Try Again.'
+          : (r0.error || 'Could Not Start Verification. Please Try Again.'));
         setLoading(false);
         return;
       }
@@ -178,9 +184,11 @@ function SignupForm() {
     try {
       const agentSlug = capturedAgentSlug ?? DEFAULT_STORE_SLUG;
 
-      const res = await fetch('/api/storefront/register', {
+      const rr = await fetchJson<{ username: string }>('/api/storefront/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        timeoutMs: 20000,
+        errorContext: 'signup.register',
         body: JSON.stringify({
           agentSlug,
           username,
@@ -192,13 +200,15 @@ function SignupForm() {
           code: verificationCode,
         }),
       });
-      const data = await res.json().catch(() => ({}));
 
-      if (!res.ok) {
-        setError(data?.error || 'Registration Failed. Please Try Again.');
+      if (!rr.ok || !rr.data) {
+        setError(rr.status === 0
+          ? 'Registration Is Taking Too Long. Please Check Your Connection And Try Again.'
+          : (rr.error || 'Registration Failed. Please Try Again.'));
         setLoading(false);
         return;
       }
+      const data = rr.data;
 
       // Sign The New Researcher In Immediately.
       // We retry up to 3 times to account for potential Supabase Auth read replica replication lag.
@@ -217,7 +227,9 @@ function SignupForm() {
       }
 
       if (authError) {
-        setError(`Auto-login failed: ${authError.message}. Please click 'Sign In' at the top right to log in manually.`);
+        // Never surface raw Supabase auth internals to a brand-new user.
+        reportClientError('signup.auto-login', authError);
+        setError("Your Account Was Created But Automatic Sign-In Did Not Complete. Please Use Sign In At The Top Right To Log In.");
         setLoading(false);
         return;
       }
@@ -321,7 +333,7 @@ function SignupForm() {
             }}>
               <UserPlus size={20} aria-hidden="true" />
             </div>
-            <h1 className="animated-gradient-text" style={{ fontSize: '1.4rem', textAlign: 'center' }}>Create Researcher Account</h1>
+            <h2 className="animated-gradient-text" style={{ fontSize: '1.4rem', textAlign: 'center' }}>Create Researcher Account</h2>
           </div>
           <p style={{ marginBottom: 'var(--space-6)', fontSize: '0.85rem', color: 'var(--grey-400)', textAlign: 'center' }}>
             Join Pep Nation Lab For Peptide Education And Research
@@ -330,13 +342,13 @@ function SignupForm() {
 
 
           {error && (
-            <div role="alert" className="disclaimer-warning" style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-3) var(--space-4)' }}>
+            <div className="disclaimer-warning" style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-3) var(--space-4)' }}>
               <p style={{ fontSize: '0.85rem', color: 'var(--red)' }}>{error}</p>
             </div>
           )}
 
           {info && (
-            <div role="status" style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-4)', background: 'rgba(255,255,255,0.02)', border: '2px solid var(--silver-dark)', borderRadius: 8 }}>
+            <div style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-4)', background: 'rgba(255,255,255,0.02)', border: '2px solid var(--silver-dark)', borderRadius: 8 }}>
               <p style={{ fontSize: '0.9rem', color: 'var(--silver-light)', margin: 0, textAlign: 'center', lineHeight: 1.5 }}>{info}</p>
             </div>
           )}
@@ -430,11 +442,9 @@ function SignupForm() {
                 value={username} onChange={e => { setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '')); setUsernameDirty(true); }}
                 required minLength={2} maxLength={30}
                 autoComplete="username" autoCapitalize="none" spellCheck={false}
-                aria-describedby={usernameMsg ? 'username-status' : undefined}
-                aria-invalid={usernameBlocked || undefined}
               />
               {usernameMsg && (
-                <p id="username-status" role="status" style={{ fontSize: '0.72rem', marginTop: 4, color: usernameMsg.color }}>
+                <p style={{ fontSize: '0.72rem', marginTop: 4, color: usernameMsg.color }}>
                   {usernameMsg.text}
                 </p>
               )}
@@ -467,7 +477,7 @@ function SignupForm() {
               />
             </div>
 
-            <div role="group" aria-label="Required Acknowledgments" style={{ margin: 'var(--space-5) 0', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            <div style={{ margin: 'var(--space-5) 0', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
               {ACKNOWLEDGMENTS.map(a => (
                 <label key={a.key} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
                   <input
@@ -529,14 +539,14 @@ function SignupForm() {
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: 'var(--space-4)'
         }}>
           <div className="glass-panel" style={{ width: '100%', maxWidth: 460, padding: 'var(--space-6)', position: 'relative' }}>
-            <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-3)', color: 'var(--white)' }}>
+            <h3 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-3)', color: 'var(--white)' }}>
               Required Acknowledgments
-            </h2>
+            </h3>
             <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', marginBottom: 'var(--space-5)' }}>
               Before connecting your Google account to a Pep Nation Lab researcher profile, please confirm the following:
             </p>
 
-            <div role="group" aria-label="Required Acknowledgments" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', marginBottom: 'var(--space-6)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', marginBottom: 'var(--space-6)' }}>
               {ACKNOWLEDGMENTS.map(a => (
                 <label key={a.key} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
                   <input

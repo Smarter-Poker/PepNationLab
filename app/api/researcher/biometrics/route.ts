@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { safeError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -117,8 +118,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ biometric: data });
     }
   } catch (error: any) {
-    console.error('Error logging biometric:', error);
-    return NextResponse.json({ error: error.message || 'Failed to log biometric' }, { status: 400 });
+    // Intentional validation throws (thrown as plain Errors by insertRecord)
+    // stay user-visible 400s; database errors (which carry a Postgres `code`)
+    // are logged + sanitized so schema/RLS details never reach the client.
+    const isDbError = !!(error && typeof error === 'object' && 'code' in error);
+    if (!isDbError && error instanceof Error && error.message) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    return safeError('researcher.biometrics.POST', error, 500, 'Failed To Log Biometric. Please Try Again.');
   }
 }
 

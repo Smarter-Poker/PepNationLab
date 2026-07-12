@@ -189,6 +189,13 @@ try {
     silent: true,
     org: process.env.SENTRY_ORG,
     project: process.env.SENTRY_PROJECT,
+    // Required for readable stack traces: uploads source maps when
+    // SENTRY_AUTH_TOKEN is provisioned (no-op otherwise).
+    authToken: process.env.SENTRY_AUTH_TOKEN,
+    widenClientFileUpload: true,
+    // First-party route for browser events so ad blockers do not eat
+    // client-side error reports.
+    tunnelRoute: '/monitoring',
   });
 } catch {
   // Sentry not installed yet; ship without it.

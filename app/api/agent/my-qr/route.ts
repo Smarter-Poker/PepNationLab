@@ -7,6 +7,8 @@
 // so the modal can show why it failed (rather than a generic "Could Not Load QR").
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { captureError } from '@/lib/sentry';
+import { logError } from '@/lib/log';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -26,7 +28,9 @@ export async function GET(_req: Request) {
       .eq('id', user.id)
       .maybeSingle();
     if (pErr) {
-      return NextResponse.json({ error: 'profile_query_failed', message: pErr.message }, { status: 500 });
+      logError('agent.my-qr.profile_query', { userId: user.id }, pErr);
+      captureError(pErr, { context: 'agent.my-qr.profile_query', userId: user.id });
+      return NextResponse.json({ error: 'profile_query_failed', message: 'Could Not Load Your Profile. Please Try Again.' }, { status: 500 });
     }
     if (!profile) {
       return NextResponse.json({ error: 'no_profile', message: 'Your Profile Was Not Found' }, { status: 404 });
@@ -62,7 +66,9 @@ export async function GET(_req: Request) {
       .eq('id', lookupId)
       .maybeSingle();
     if (aErr) {
-      return NextResponse.json({ error: 'agent_query_failed', message: aErr.message }, { status: 500 });
+      logError('agent.my-qr.agent_query', { userId: user.id, lookupId }, aErr);
+      captureError(aErr, { context: 'agent.my-qr.agent_query', userId: user.id, lookupId });
+      return NextResponse.json({ error: 'agent_query_failed', message: 'Could Not Load The Storefront Profile. Please Try Again.' }, { status: 500 });
     }
     if (!agent) {
       return NextResponse.json({

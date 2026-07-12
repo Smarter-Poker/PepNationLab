@@ -22,6 +22,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 import { APPROVED_LABS } from '@/lib/labs';
 import { randomUUID } from 'crypto';
+import { safeError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -178,7 +179,7 @@ export async function GET(req: NextRequest) {
   if (fetchErr) {
     console.error('[rotate-coas] fetch error:', fetchErr);
     await finishCronRun(claim.id, 'failed', fetchErr.message);
-    return NextResponse.json({ error: fetchErr.message }, { status: 500 });
+    return safeError('cron.rotate-coas.fetch', fetchErr, 500, 'Rotation Fetch Failed.');
   }
 
   if (!raw || raw.length === 0) {

@@ -8,6 +8,8 @@ import { assertSameOrigin } from '@/lib/csrf';
 import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
 import { shortOrderId } from '@/lib/push-enqueue';
 import { assertChainCanTransact } from '@/lib/billing-chain';
+import { captureError } from '@/lib/sentry';
+import { logError } from '@/lib/log';
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -167,63 +169,51 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // ATOMIC CLAIM (compare-and-swap) BEFORE any money movement. Two
+    // concurrent approvals (agent on two devices, or agent + super-agent)
+    // could both pass the status read above and double-deduct the prepaid
+    // balance. The .in('status', ...) guard means exactly one request wins
+    // the transition; the loser gets a clean 409 and moves no money.
+    const finalAutoStatus = primaryProfile.account_type === 'credit' ? finalStatus : 'admin_approval_pending';
+    const updatePayload: Record<string, string> = { status: finalAutoStatus, agent_approved_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+    if (tracking_number && typeof tracking_number === 'string') updatePayload.tracking_number = tracking_number;
+
+    const { data: claimedRows, error: updateError } = await supabase
+      .from('orders')
+      .update(updatePayload)
+      .eq('id', orderId)
+      .in('status', ['pending_customer_payment', 'agent_approval_pending'])
+      .select('id');
+    if (updateError) {
+      logError('agent.orders.approve.claim_update', { orderId, agentId: primaryBilledAgentId }, updateError);
+      captureError(updateError, { context: 'agent.orders.approve.claim_update', orderId });
+      return NextResponse.json({ error: 'Failed To Update Order Status' }, { status: 500 });
+    }
+    if (!claimedRows || claimedRows.length === 0) {
+      return NextResponse.json({ error: 'Order Was Already Processed. Please Refresh To See Its Current Status.' }, { status: 409 });
+    }
+
     let prepaidDeducted = false;
     let oldBalance = 0;
     if (primaryProfile.account_type === 'prepaid') {
       oldBalance = Number(primaryProfile.prepaid_balance) || 0;
       const { data: deductSuccess, error: deductError } = await supabase.rpc('deduct_prepaid_balance', { agent_id: primaryBilledAgentId, amount: totalOwed });
-      if (deductError || !deductSuccess) return NextResponse.json({ error: 'Failed To Deduct Balance. Please Try Again.' }, { status: 500 });
-      prepaidDeducted = true;
-    }
-
-    const finalAutoStatus = primaryProfile.account_type === 'credit' ? finalStatus : 'admin_approval_pending';
-    const updatePayload: Record<string, string> = { status: finalAutoStatus, agent_approved_at: new Date().toISOString(), updated_at: new Date().toISOString() };
-    if (tracking_number && typeof tracking_number === 'string') updatePayload.tracking_number = tracking_number;
-
-    const { error: updateError } = await supabase.from('orders').update(updatePayload).eq('id', orderId);
-    if (updateError) {
-      if (prepaidDeducted) {
-        try {
-          const { data: refundOk, error: refundError } = await supabase.rpc(
-            'refund_prepaid_balance',
-            { p_agent_id: primaryBilledAgentId, p_amount: totalOwed },
-          );
-          if (refundError || !refundOk) {
-            console.error('[CRITICAL] prepaid REFUND failed after order update failed', {
-              orderId,
-              agentId: primaryBilledAgentId,
-              amount: totalOwed,
-              originalError: updateError.message,
-              refundError: refundError?.message ?? 'rpc_returned_false',
-            });
-            const auditInsert = await supabase.from('balance_transactions').insert({
-              agent_id: primaryBilledAgentId,
-              type: 'adjustment',
-              amount: 0,
-              balance_before: oldBalance,
-              balance_after: oldBalance - totalOwed,
-              description: `UNRESOLVED prepaid debit of $${totalOwed} on order ${orderId} could NOT be refunded after order update failed (${updateError.message}; refund error: ${refundError?.message ?? 'rpc_returned_false'}). Manual reconciliation required.`,
-              reference_id: orderId,
-              reference_type: 'order',
-              created_by: callerId,
-            });
-            if (auditInsert.error) {
-              console.error('[CRITICAL] UNRESOLVED-rollback audit insert ALSO failed', {
-                orderId,
-                error: auditInsert.error.message,
-              });
-            }
-          }
-        } catch (rollbackThrow: any) {
-          console.error('[CRITICAL] prepaid refund threw after order update failed', {
-            orderId,
-            agentId: primaryBilledAgentId,
-            amount: totalOwed,
-            error: rollbackThrow?.message ?? String(rollbackThrow),
-          });
+      if (deductError || !deductSuccess) {
+        // Money did not move -- release the claim so the agent can retry.
+        const { error: revertErr } = await supabase
+          .from('orders')
+          .update({ status: order.status, agent_approved_at: null as unknown as string, updated_at: new Date().toISOString() })
+          .eq('id', orderId);
+        if (revertErr) {
+          captureError(revertErr, { context: 'agent.orders.approve.claim_revert_failed', severity: 'critical', orderId, previousStatus: order.status });
         }
+        if (deductError) {
+          logError('agent.orders.approve.deduct_prepaid', { orderId, agentId: primaryBilledAgentId, amount: totalOwed }, deductError);
+          captureError(deductError, { context: 'agent.orders.approve.deduct_prepaid', orderId, agentId: primaryBilledAgentId, amount: totalOwed });
+        }
+        return NextResponse.json({ error: 'Failed To Deduct Balance. Please Try Again.' }, { status: 500 });
       }
-      return NextResponse.json({ error: 'Failed To Update Order Status' }, { status: 500 });
+      prepaidDeducted = true;
     }
 
     if (prepaidDeducted) {
@@ -237,18 +227,29 @@ export async function POST(req: NextRequest) {
         console.error('[CRITICAL] balance_transactions insert failed after prepaid deduction', {
           orderId, agentId: primaryBilledAgentId, amount: totalOwed, error: txError.message
         });
+        captureError(txError, { context: 'agent.orders.approve.ledger_insert', severity: 'critical', orderId, agentId: primaryBilledAgentId, amount: totalOwed });
       }
     }
 
+    let effectiveStatus = finalAutoStatus;
     if (finalAutoStatus === 'approved_ship' || finalAutoStatus === 'approved_pickup') {
-      try {
-        await supabase.rpc('charge_order_credit_line', { p_order_id: orderId, p_created_by: callerId });
-      } catch (creditErr) {
-        console.error('[CRITICAL] charge_order_credit_line failed - order approved but credit line not charged:', {
-          orderId,
-          agentId: primaryBilledAgentId,
-          error: creditErr instanceof Error ? creditErr.message : String(creditErr),
-        });
+      // supabase-js returns RPC failures in { error } -- it does NOT throw.
+      // The previous try/catch here never fired, so a failed credit charge
+      // silently shipped unbilled goods.
+      const { error: creditErr } = await supabase.rpc('charge_order_credit_line', { p_order_id: orderId, p_created_by: callerId });
+      if (creditErr) {
+        effectiveStatus = 'admin_approval_pending';
+        logError('agent.orders.approve.charge_order_credit_line', { orderId, agentId: primaryBilledAgentId }, creditErr);
+        captureError(creditErr, { context: 'agent.orders.approve.charge_order_credit_line', severity: 'critical', orderId, agentId: primaryBilledAgentId });
+        // Do not leave the order shippable with no billing row -- demote to
+        // manual admin review, mirroring app/api/orders/route.ts.
+        const { error: demoteErr } = await supabase
+          .from('orders')
+          .update({ status: 'admin_approval_pending', updated_at: new Date().toISOString() })
+          .eq('id', orderId);
+        if (demoteErr) {
+          captureError(demoteErr, { context: 'agent.orders.approve.charge_credit_demotion_failed', severity: 'critical', orderId });
+        }
       }
     }
 
@@ -260,12 +261,12 @@ export async function POST(req: NextRequest) {
         const fulfillmentMsg = order.fulfillment_method === 'agent_pickup' ? 'For Pickup' : 'For Shipping';
         const notifications = admins.map((admin) => ({
           user_id: admin.id,
-          title: finalAutoStatus === 'admin_approval_pending' ? 'Order Needs Admin Approval' : 'Order Auto-Approved',
-          body: finalAutoStatus === 'admin_approval_pending'
+          title: effectiveStatus === 'admin_approval_pending' ? 'Order Needs Admin Approval' : 'Order Auto-Approved',
+          body: effectiveStatus === 'admin_approval_pending'
             ? `Order #${short} ($${totalStr}) - Agent Approved (${fulfillmentMsg}). Review And Release To Fulfillment.`
             : `Order #${short} ($${totalStr}) - Agent Approved (${fulfillmentMsg}). Auto-Approved on Credit Line.`,
           type: 'system',
-          url: `/admin/orders?status=${finalAutoStatus}`,
+          url: `/admin/orders?status=${effectiveStatus}`,
         }));
         await supabase.from('notifications').insert(notifications);
       }
@@ -273,7 +274,7 @@ export async function POST(req: NextRequest) {
       console.error('Failed to notify admins of pending approval', err);
     }
 
-    return NextResponse.json({ success: true, status: finalAutoStatus });
+    return NextResponse.json({ success: true, status: effectiveStatus });
       },
     });
   } catch (error) {

@@ -305,21 +305,36 @@ async function callEasyPost<T = unknown>(opts: CallOpts): Promise<{
   };
   if (opts.body !== undefined) headers['Content-Type'] = 'application/json';
 
-  const init: RequestInit = {
-    method: opts.method,
-    headers,
-    body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
-  };
+  // Non-idempotent money calls (label buy, refund) must not be blind-retried
+  // on a NETWORK failure: the request may have been processed even though the
+  // response was lost, and a retry can buy a second label. HTTP 429/5xx
+  // retries are safe (the server told us it did not process the request... at
+  // least for 429; 5xx on buy is accepted as EasyPost marks the shipment).
+  const isMutation = opts.method !== 'GET';
+  const maxAttempts = 3;
 
   let lastError = '';
   let lastStatus = 0;
-  for (let attempt = 0; attempt < 3; attempt += 1) {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const init: RequestInit = {
+      method: opts.method,
+      headers,
+      body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+      // A hung EasyPost socket previously blocked the serverless function
+      // until the platform timeout (and could then be retried up to 3x).
+      signal: AbortSignal.timeout(10_000),
+    };
     let resp: Response;
     try {
       resp = await fetch(url.toString(), init);
     } catch (err) {
       lastError = err instanceof Error ? err.message : 'network error';
       lastStatus = 0;
+      if (isMutation) {
+        // Fail fast to the caller -- the outcome is unknown and retrying a
+        // POST (e.g. /shipments/:id/buy) risks double-purchasing.
+        return { ok: false, status: 0, error: `EasyPost network failure (not retried on ${opts.method}): ${lastError}` };
+      }
       await sleep(backoffMs(attempt));
       continue;
     }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { safeError } from '@/lib/api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -61,6 +62,6 @@ export async function POST(req: NextRequest) {
     .select('id')
     .maybeSingle();
 
-  if (error || !data) return NextResponse.json({ error: error?.message || 'Failed To Create' }, { status: 500 });
+  if (error || !data) return safeError('admin.flash-sales.create', error, 500, 'Failed To Create Flash Sale. Please Try Again.');
   return NextResponse.json({ id: data.id, success: true });
 }

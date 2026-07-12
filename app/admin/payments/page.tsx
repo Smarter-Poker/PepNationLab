@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { toast } from 'sonner';
 
 const money = (n: number) =>
@@ -54,6 +54,10 @@ export default function AdminPaymentsPage() {
       (a.full_name || '').toLowerCase().includes(q) || (a.email || '').toLowerCase().includes(q));
   }, [agents, query]);
 
+  const idemKeyRef = useRef<string>(
+    typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : String(Math.random()).slice(2),
+  );
+
   async function submit() {
     const amt = Math.round(Number(amount) * 100) / 100;
     if (!selected) { toast.error('Select An Agent'); return; }
@@ -62,7 +66,12 @@ export default function AdminPaymentsPage() {
     try {
       const res = await fetch('/api/admin/payments', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          // One key per logical payment: a network retry of the same submit
+          // can never double-credit the agent.
+          'Idempotency-Key': idemKeyRef.current,
+        },
         body: JSON.stringify({ agentId: selected.id, amount: amt, note: note.trim() || undefined }),
       });
       const j = await res.json();
@@ -74,6 +83,8 @@ export default function AdminPaymentsPage() {
         : `Applied ${money(amt)} To Account.`);
       setAmount('');
       setNote('');
+      // New key for the NEXT logical payment.
+      idemKeyRef.current = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : String(Math.random()).slice(2);
       load();
     } catch (e: any) {
       toast.error('Payment Failed: ' + (e.message || 'Unknown'));

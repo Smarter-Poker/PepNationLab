@@ -4,6 +4,7 @@ import { createServerClient } from '@supabase/ssr';
 import { createAdminClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { safeError } from '@/lib/api-error';
 
 // POST /api/auth/change-password
 // Used by researchers on first login to change their temp password.
@@ -97,8 +98,16 @@ export async function POST(req: NextRequest) {
   // to update the session cookies in the response, keeping the user logged in.
   const { error: pwError } = await supabase.auth.updateUser({ password: newPassword });
   if (pwError) {
-    console.error('Password update error:', pwError);
-    return NextResponse.json({ error: pwError.message || 'Failed To Update Password.' }, { status: 500 });
+    // Allow-list the two known-safe, user-actionable validation messages;
+    // everything else (GoTrue internals, rate-limit phrasing, session/AAL
+    // details) is replaced with a stable generic message and logged.
+    const msg = pwError.message || '';
+    const safeMsg = /different from the old password/i.test(msg)
+      ? 'Your New Password Must Be Different From Your Current Password.'
+      : /at least|weak|strength/i.test(msg)
+        ? 'Please Choose A Stronger Password And Try Again.'
+        : null;
+    return safeError('auth.change-password.updateUser', pwError, safeMsg ? 400 : 500, safeMsg ?? 'Failed To Update Password. Please Try Again.');
   }
 
   // Clear the must_change_password flag in the profiles table via the admin client.

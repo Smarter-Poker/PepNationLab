@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Key } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { safeRelativePath } from '@/lib/safe-redirect';
+import { fetchJson } from '@/lib/fetch-json';
 
 function LoginPageInner() {
   const router = useRouter();
@@ -72,18 +73,21 @@ function LoginPageInner() {
         authEmail = raw;
       } else {
         // Everyone else - resolve username -> email via server
-        const res = await fetch('/api/auth/resolve', {
+        const r = await fetchJson<{ email?: string }>('/api/auth/resolve', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          timeoutMs: 12000,
+          errorContext: 'login.resolve',
           body: JSON.stringify({ username: raw }),
         });
-        const data = await res.json();
-        if (!res.ok || !data.email) {
-          setError('Invalid Username Or Password');
+        if (!r.ok || !r.data?.email) {
+          setError(r.status === 0
+            ? 'Sign-In Is Taking Too Long. Please Check Your Connection And Try Again.'
+            : 'Invalid Username Or Password');
           setLoading(false);
           return;
         }
-        authEmail = data.email;
+        authEmail = r.data.email;
       }
 
       const { error: authError } = await supabase.auth.signInWithPassword({
@@ -183,9 +187,9 @@ function LoginPageInner() {
             }}>
               <Key size={22} aria-hidden="true" />
             </div>
-            <h2 style={{ fontSize: '1.1rem', marginBottom: 'var(--space-3)', color: 'var(--white)' }}>
+            <h3 style={{ fontSize: '1.1rem', marginBottom: 'var(--space-3)', color: 'var(--white)' }}>
               Password Reset
-            </h2>
+            </h3>
             <p style={{ fontSize: '0.9rem', color: 'var(--grey-300)', lineHeight: 1.6 }}>
               Contact Your Research Agent If You Forgot Your Password Or Need It Reset
             </p>
@@ -202,13 +206,13 @@ function LoginPageInner() {
 
       <div style={{ width: '100%', maxWidth: 420, position: 'relative' }}>
         <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-8)', boxShadow: '0 0 40px rgba(104,211,145,0.05)' }}>
-          <h1 className="animated-gradient-text" style={{ marginBottom: 'var(--space-2)', fontSize: '1.4rem', textAlign: 'center' }}>Sign In</h1>
+          <h2 className="animated-gradient-text" style={{ marginBottom: 'var(--space-2)', fontSize: '1.4rem', textAlign: 'center' }}>Sign In</h2>
           <p style={{ marginBottom: 'var(--space-6)', fontSize: '0.85rem', color: 'var(--grey-400)', textAlign: 'center' }}>
             Access Your Account
           </p>
 
           {error && (
-            <div role="alert" className="disclaimer-warning" style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-3) var(--space-4)' }}>
+            <div className="disclaimer-warning" style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-3) var(--space-4)' }}>
               <p style={{ fontSize: '0.85rem', color: 'var(--red)' }}>{error}</p>
             </div>
           )}
@@ -312,9 +316,8 @@ function LoginPageInner() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div role="status" style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--black)' }}>
-        <div aria-hidden="true" style={{ width: 40, height: 40, borderRadius: '50%', border: '2px solid var(--teal)', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
-        <span className="sr-only">Loading</span>
+      <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--black)' }}>
+        <div style={{ width: 40, height: 40, borderRadius: '50%', border: '2px solid var(--teal)', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     }>

@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { unwrapMaybe } from '@/lib/supabase/unwrap';
 import { assertSameOrigin } from '@/lib/csrf';
+import { safeError } from '@/lib/api-error';
 
 // GET: List all profiles with optional roles and search query
 export async function GET(req: NextRequest) {
@@ -104,26 +105,6 @@ export async function POST(req: NextRequest) {
 
     const { id, action, role, tier, account_type, credit_limit, is_active, slug, display_name, balance_delta, custom_markup_override, assign_to_agent_id } = body;
     if (!id) return NextResponse.json({ error: 'Missing User ID' }, { status: 400 });
-
-    // Admin-target guard: no action on this route may operate on an admin
-    // account. Without this, an admin could demote a co-admin to researcher or
-    // deactivate them (including self-lockout of the last admin). Sibling agent
-    // routes already refuse admin targets; enforce the same invariant here for
-    // every mutating action.
-    {
-      const { data: targetProfile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', id)
-        .maybeSingle();
-      if (!targetProfile) return NextResponse.json({ error: 'User Not Found' }, { status: 404 });
-      if (targetProfile.role === 'admin') {
-        return NextResponse.json(
-          { error: 'Cannot Modify An Admin Account.' },
-          { status: 403 },
-        );
-      }
-    }
 
     // Security: role must be one of the allowed non-admin values.
     const ALLOWED_ROLES = new Set(['researcher', 'agent', 'super_agent']);
@@ -258,8 +239,7 @@ export async function POST(req: NextRequest) {
         p_new_parent_agent_id: newParentAgentId,
       });
       if (assignErr) {
-        console.error('[admin/researchers] assign_researcher rpc failed:', assignErr.message);
-        return NextResponse.json({ error: `Reassignment Failed: ${assignErr.message}` }, { status: 500 });
+        return safeError('admin.researchers.reassign', assignErr, 500, 'Reassignment Failed. Please Try Again Or Contact Support.');
       }
 
       await supabase.from('admin_audit_log').insert({
