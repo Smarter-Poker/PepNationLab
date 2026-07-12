@@ -46,7 +46,7 @@ export default async function StacksPage() {
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
           { '@type': 'ListItem', position: 2, name: 'Research Library', item: 'https://pepnationlab.com/research' },
-          { '@type': 'ListItem', position: 3, name: 'stacks', item: 'https://pepnationlab.com/research/stacks' }
+          { '@type': 'ListItem', position: 3, name: 'Stacks', item: 'https://pepnationlab.com/research/stacks' }
         ]
       }
     ]
