@@ -183,6 +183,7 @@ export async function POST(req: NextRequest) {
       email: internalEmail,
       password,
       email_confirm: true,
+      app_metadata: { role: 'agent' }
     });
 
     if (authError || !authData.user) {

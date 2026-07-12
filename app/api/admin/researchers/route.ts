@@ -300,6 +300,13 @@ export async function POST(req: NextRequest) {
     const { error: profileError } = await supabase.from('profiles').update(profileUpdates).eq('id', id);
     if (profileError) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
 
+    // CRITICAL: Sync the role to auth.users app_metadata so the JWT reflects the role update.
+    const { data: userData } = await supabase.auth.admin.getUserById(id);
+    if (userData?.user) {
+      const newMeta = { ...userData.user.app_metadata, role: canonicalRole };
+      await supabase.auth.admin.updateUserById(id, { app_metadata: newMeta });
+    }
+
     await supabase.from('admin_audit_log').insert({
       actor_id: gate.userId,
       action: 'profile_role_updated',

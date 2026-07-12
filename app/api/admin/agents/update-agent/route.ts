@@ -67,6 +67,11 @@ export async function PATCH(request: NextRequest) {
     if (prepaid_balance !== undefined) updates.prepaid_balance = prepaid_balance === '' ? 0 : nonNeg(Number(prepaid_balance));
     if (max_auto_approve_limit !== undefined) updates.max_auto_approve_limit = max_auto_approve_limit === '' ? null : nonNeg(Number(max_auto_approve_limit));
 
+    // Hard-lock: If account is prepay or null, strictly nullify credit_limit to prevent phantom balances.
+    if (updates.account_type === 'prepaid' || updates.account_type === null) {
+      updates.credit_limit = null;
+    }
+
     const { error } = await supabase
       .from('profiles')
       .update(updates)

@@ -162,6 +162,7 @@ export async function POST(req: NextRequest) {
       password,
       email_confirm: true,
       user_metadata: { username: usernameClean, full_name: fullName },
+      app_metadata: { role: 'researcher' } // Storefront registration creates a researcher
     });
 
     if (authError || !authData?.user) {
