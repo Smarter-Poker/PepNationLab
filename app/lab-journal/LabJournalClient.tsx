@@ -309,16 +309,39 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     const result = await Notification.requestPermission();
     setNotifPermission(result);
     if (result === 'granted') {
-      new Notification('PepNationLab Alerts Enabled 🔔', {
+      new Notification('PepNationLab Dose Alerts Enabled', {
         body: 'You will be reminded when a protocol dose is due.',
         icon: '/icon-192.png',
       });
+      // Also register a SW push subscription so alerts work when tab is closed
+      try {
+        if ('serviceWorker' in navigator && 'PushManager' in window) {
+          const reg = await navigator.serviceWorker.ready;
+          const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+          if (vapidKey) {
+            const sub = await reg.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: vapidKey,
+            });
+            const subJson = sub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };
+            await fetch('/api/push/subscribe', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                endpoint: subJson.endpoint,
+                keys: subJson.keys,
+                deviceLabel: 'Lab Journal',
+              }),
+            }).catch(() => {});
+          }
+        }
+      } catch (_) { /* PushManager may be blocked in some browsers — local Notification is sufficient fallback */ }
     }
   }, []);
 
   const sendDoseReminder = useCallback((compoundName: string) => {
     if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-      new Notification(`⏰ Dose Due: ${compoundName}`, {
+      new Notification(`Dose Due: ${compoundName}`, {
         body: `Your protocol schedule shows ${compoundName} is due today. Log your dose in the Lab Journal.`,
         icon: '/icon-192.png',
         tag: `dose-${compoundName}`,
@@ -618,6 +641,32 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [notifPermission, scheduledDoses]);
+
+  // Schedule per-protocol timed reminders based on saved reminderTimes
+  // Fires a local Notification at the user's chosen HH:MM each day.
+  useEffect(() => {
+    if (notifPermission !== 'granted') return;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    Object.entries(reminderTimes).forEach(([protocolId, timeStr]) => {
+      if (!timeStr) return;
+      const protocol = scheduledDoses.find(s => s.id === protocolId);
+      if (!protocol) return;
+      const [hh, mm] = timeStr.split(':').map(Number);
+      if (isNaN(hh) || isNaN(mm)) return;
+      const now = new Date();
+      const fire = new Date();
+      fire.setHours(hh, mm, 0, 0);
+      // If the time has already passed today, schedule for tomorrow
+      if (fire.getTime() <= now.getTime()) fire.setDate(fire.getDate() + 1);
+      const msUntilFire = fire.getTime() - now.getTime();
+      const t = setTimeout(() => {
+        sendDoseReminder(protocol.compound_slug || protocol.compound);
+      }, msUntilFire);
+      timers.push(t);
+    });
+    return () => timers.forEach(clearTimeout);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notifPermission, reminderTimes, scheduledDoses]);
 
   const updateInventory = async (productId: string, field: string, value: any) => {
     // Optimistic write with rollback: recon_mg/recon_ml/recon_dose feed the
