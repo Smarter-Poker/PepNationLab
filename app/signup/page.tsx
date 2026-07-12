@@ -77,6 +77,11 @@ function SignupForm() {
   const rawRedirect = searchParams.get('redirect') ?? '';
   const redirectTo = /^\/(?!\/|\\)/.test(rawRedirect) ? rawRedirect : '/dashboard';
 
+  // Researcher referral code from a shared link (/signup?ref=CODE). Applied
+  // server-side after account creation; invalid codes never block signup.
+  const rawRef = searchParams.get('ref') ?? '';
+  const referralCode = /^[A-Za-z0-9_-]{2,20}$/.test(rawRef.trim()) ? rawRef.trim() : null;
+
   const allAcked = ACKNOWLEDGMENTS.every(a => acks[a.key]);
 
   async function logRegistrationDisclaimer() {
@@ -191,6 +196,7 @@ function SignupForm() {
           email: email.trim(),
           phone: phone || undefined,
           code: verificationCode,
+          referralCode: referralCode || undefined,
         }),
       });
       const data = await res.json().catch(() => ({}));

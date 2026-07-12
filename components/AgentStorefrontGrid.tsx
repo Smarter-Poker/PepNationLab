@@ -50,6 +50,7 @@ interface ProductItem {
 }
 
 import { StockBadge, computeStockState, type StockState } from './storefront/StockBadge';
+import NotifyMeButton from './NotifyMeButton';
 
 // Heavy, interaction-only storefront UI (~3.2k lines combined) split into
 // on-demand chunks so they no longer ship in the storefront's initial JS bundle.
@@ -2165,8 +2166,14 @@ export default function AgentStorefrontGrid({
                 />
 
                 {stockState.kind !== 'in_stock' && (
-                  <div style={{ position: 'absolute', bottom: 12, left: 12 }}>
+                  <div
+                    onClick={e => e.stopPropagation()}
+                    style={{ position: 'absolute', bottom: 12, left: 12, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}
+                  >
                     <StockBadge state={stockState} />
+                    {stockState.kind === 'out_of_stock' && (
+                      <NotifyMeButton productId={activeVariant.product_id} agentId={agentId} compact />
+                    )}
                   </div>
                 )}
               </div>

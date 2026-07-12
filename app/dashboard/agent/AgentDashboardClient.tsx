@@ -644,6 +644,41 @@ export default function AgentDashboardClient({
               </svg>
               Broadcast
             </Link>
+            <Link
+              href="/dashboard/agent/analytics"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--teal)', fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none', padding: '6px 14px', borderRadius: 8, border: '1px solid rgba(0,196,188,0.3)', background: 'rgba(0,196,188,0.06)' }}
+            >
+              <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+                <polyline points="16 7 22 7 22 13" />
+              </svg>
+              Storefront Analytics
+            </Link>
+            <Link
+              href="/dashboard/agent/sales-v2"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--teal)', fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none', padding: '6px 14px', borderRadius: 8, border: '1px solid rgba(0,196,188,0.3)', background: 'rgba(0,196,188,0.06)' }}
+            >
+              <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="1" x2="12" y2="23" />
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+              </svg>
+              Sales Performance
+            </Link>
+            {userProfile.is_super_agent && (
+              <Link
+                href="/dashboard/agent/super-rollup"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--teal)', fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none', padding: '6px 14px', borderRadius: 8, border: '1px solid rgba(0,196,188,0.3)', background: 'rgba(0,196,188,0.06)' }}
+              >
+                <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="5" r="3" />
+                  <circle cx="5" cy="19" r="3" />
+                  <circle cx="19" cy="19" r="3" />
+                  <line x1="12" y1="8" x2="5" y2="16" />
+                  <line x1="12" y1="8" x2="19" y2="16" />
+                </svg>
+                Downline Rollup
+              </Link>
+            )}
             {userProfile.is_super_agent && (
               <Link
                 href="/dashboard/agent/invitations"
