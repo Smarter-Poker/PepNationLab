@@ -846,13 +846,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
       return;
     }
 
-    if (isAgentSelfBuy) {
-      const belowMin = cart.find(item => item.quantity < 10);
-      if (belowMin) {
-        setError(`Agent Direct Pricing Requires A Minimum Of 10 Vials Per Item. "${belowMin.name}" Has Only ${belowMin.quantity}. Please Update Your Cart.`);
-        return;
-      }
-    }
+    // 10-vial minimum removed: agents can order any quantity from their own store.
 
     if (!meetsOverallMin) {
       setError(`This Storefront Requires A Minimum Overall Order Of ${minOverallQty} Items. Please Add More Items To Proceed.`);
