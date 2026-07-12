@@ -1,5 +1,6 @@
 import { after, NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { getEffectiveUser } from '@/lib/impersonation';
 import { CheckoutSchema } from '@/lib/schemas/order';
 import { applyBulkPrice, isTierLadderV2 } from '@/lib/pricing';
 import { assertSameOrigin } from '@/lib/csrf';
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
     const serviceSupabase = createAdminClient();
 
     // Authenticate the user session
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await getEffectiveUser(supabase);
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized. Please Sign In.' }, { status: 401 });
     }

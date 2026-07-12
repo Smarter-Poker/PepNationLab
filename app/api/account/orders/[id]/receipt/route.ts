@@ -1,6 +1,7 @@
 
 import { type NextRequest } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { getEffectiveUser } from '@/lib/impersonation';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +23,7 @@ function money(cents: number | null | undefined): string {
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getEffectiveUser(supabase);
   if (!user) return new Response('Unauthorized', { status: 401 });
 
   const service = await createServiceClient();

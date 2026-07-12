@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
+import { getEffectiveUser } from '@/lib/impersonation';
 import { assertSameOrigin } from '@/lib/csrf';
 
 export const dynamic = 'force-dynamic';
@@ -21,7 +22,7 @@ export async function DELETE(
   }
 
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getEffectiveUser(supabase);
   if (!user) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }

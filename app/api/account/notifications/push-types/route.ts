@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getEffectiveUser } from '@/lib/impersonation';
 import { assertSameOrigin } from '@/lib/csrf';
 import { PUSH_TYPE_KEYS } from '@/lib/push-prefs';
 
@@ -29,7 +30,7 @@ function shape(row: Row) {
 
 export async function GET() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getEffectiveUser(supabase);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   let row = await loadRow(supabase, user.id);
@@ -47,7 +48,7 @@ export async function PATCH(req: NextRequest) {
   if (csrf) return csrf;
 
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getEffectiveUser(supabase);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   let body: Record<string, unknown> = {};

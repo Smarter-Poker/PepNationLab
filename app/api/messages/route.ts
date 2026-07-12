@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { getEffectiveUser } from '@/lib/impersonation';
 import { assertSameOrigin } from '@/lib/csrf';
 
 /**
@@ -11,7 +12,7 @@ import { assertSameOrigin } from '@/lib/csrf';
 export async function GET(req: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await getEffectiveUser(supabase);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const service = await createServiceClient();
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await getEffectiveUser(supabase);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const service = await createServiceClient();
@@ -199,7 +200,7 @@ export async function PATCH(req: NextRequest) {
 
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await getEffectiveUser(supabase);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const service = await createServiceClient();

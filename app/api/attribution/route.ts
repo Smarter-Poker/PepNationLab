@@ -1,6 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { getEffectiveUser } from '@/lib/impersonation';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
@@ -70,7 +71,7 @@ export async function POST(req: NextRequest) {
     const supabase = await createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getEffectiveUser(supabase);
     userId = user?.id ?? null;
   } catch {
     userId = null;

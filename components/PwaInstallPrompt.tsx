@@ -7,8 +7,29 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
 }
 
-const DISMISS_KEY = 'pnl_pwa_install_dismissed';
+interface RelatedApp {
+  id?: string;
+  platform?: string;
+  url?: string;
+}
+interface NavigatorWithRelated extends Navigator {
+  getInstalledRelatedApps?: () => Promise<RelatedApp[]>;
+}
+
+const DISMISS_KEY = 'pnl_pwa_install_dismissed'; // session-only "Not Now"
+const INSTALLED_KEY = 'pnl_pwa_installed'; // persistent: we've confirmed it's installed
 const DELAY_MS = 30_000;
+
+// Is the page currently running as the installed app (standalone/full-screen)?
+function isRunningAsApp(): boolean {
+  if (typeof window === 'undefined') return false;
+  return (
+    window.matchMedia?.('(display-mode: standalone)').matches === true ||
+    window.matchMedia?.('(display-mode: window-controls-overlay)').matches === true ||
+    // iOS Safari home-screen apps
+    ('standalone' in window.navigator && (window.navigator as unknown as { standalone?: boolean }).standalone === true)
+  );
+}
 
 export default function PwaInstallPrompt() {
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
@@ -18,29 +39,63 @@ export default function PwaInstallPrompt() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Hide entirely when already installed (running as PWA).
-    const isStandalone =
-      window.matchMedia?.('(display-mode: standalone)').matches ||
-      // iOS Safari
-      ('standalone' in window.navigator && (window.navigator as unknown as { standalone?: boolean }).standalone === true);
-    if (isStandalone) return;
+    // 1) Already running as the installed app -> never prompt; remember it.
+    if (isRunningAsApp()) {
+      try { localStorage.setItem(INSTALLED_KEY, '1'); } catch { /* ignore */ }
+      return;
+    }
+    // 2) We've previously confirmed it's installed on this device/profile.
+    try { if (localStorage.getItem(INSTALLED_KEY) === '1') return; } catch { /* ignore */ }
+    // 3) Dismissed for this session.
+    try { if (sessionStorage.getItem(DISMISS_KEY) === '1') return; } catch { /* ignore */ }
 
-    // Respect the dismiss flag for the rest of the session.
-    if (sessionStorage.getItem(DISMISS_KEY) === '1') return;
+    let cancelled = false;
+    let timer = 0;
+
+    const markInstalled = () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+      setVisible(false);
+      setDeferred(null);
+      try { localStorage.setItem(INSTALLED_KEY, '1'); } catch { /* ignore */ }
+    };
 
     function onBeforeInstall(e: Event) {
+      // Chrome/Edge fire this ONLY when the app is installable and NOT already
+      // installed -- the primary "not installed" signal. Arm the timed prompt
+      // only once we have it, so the card can never show without a real install
+      // offer behind it.
       e.preventDefault();
+      if (cancelled) return;
       setDeferred(e as BeforeInstallPromptEvent);
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => { if (!cancelled) setVisible(true); }, DELAY_MS);
+    }
+
+    function onInstalled() {
+      // Installed during this session -> hide immediately, never nag again.
+      markInstalled();
     }
 
     window.addEventListener('beforeinstallprompt', onBeforeInstall);
+    window.addEventListener('appinstalled', onInstalled);
 
-    const timer = window.setTimeout(() => {
-      setVisible(true);
-    }, DELAY_MS);
+    // 4) Explicit installed-app probe (Chrome/Android). Catches the case where
+    // the PWA is installed but the browser still fired beforeinstallprompt.
+    const nav = window.navigator as NavigatorWithRelated;
+    if (typeof nav.getInstalledRelatedApps === 'function') {
+      nav.getInstalledRelatedApps()
+        .then((apps) => {
+          if (cancelled) return;
+          if (Array.isArray(apps) && apps.length > 0) markInstalled();
+        })
+        .catch(() => { /* unsupported / rejected -> rely on the other signals */ });
+    }
 
     return () => {
+      cancelled = true;
       window.removeEventListener('beforeinstallprompt', onBeforeInstall);
+      window.removeEventListener('appinstalled', onInstalled);
       window.clearTimeout(timer);
     };
   }, []);
@@ -52,7 +107,12 @@ export default function PwaInstallPrompt() {
     setBusy(true);
     try {
       await deferred.prompt();
-      await deferred.userChoice;
+      const choice = await deferred.userChoice;
+      if (choice?.outcome === 'accepted') {
+        // Never offer install again on this device/profile once accepted.
+        // (The 'appinstalled' listener also covers this; this is immediate.)
+        try { localStorage.setItem(INSTALLED_KEY, '1'); } catch { /* ignore */ }
+      }
     } catch {
       // ignore - Safari/Firefox may not implement prompt.
     } finally {

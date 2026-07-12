@@ -36,10 +36,7 @@ export default async function SuperAgentDownlinePage() {
     <div style={{ padding: 'var(--space-5)' }}>
       <div style={{ marginBottom: 'var(--space-4)', display: 'flex', gap: 'var(--space-4)' }}>
         <Link href="/dashboard/agent" style={{ color: 'var(--teal)', fontSize: '0.85rem', textDecoration: 'none' }}>
-          Back To Agent Dashboard
-        </Link>
-        <Link href="/dashboard/agent/super-rollup" style={{ color: 'var(--teal)', fontSize: '0.85rem', textDecoration: 'none' }}>
-          Super-Agent Rollup
+          &larr; Back To Agent Dashboard
         </Link>
       </div>
       <h1 className="animated-gradient-text" style={{ color: 'var(--white)', fontSize: '1.5rem', marginBottom: 'var(--space-2)' }}>

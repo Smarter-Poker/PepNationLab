@@ -11,7 +11,13 @@ export async function GET() {
     const supabase = createAdminClient();
     const agentId = gate.user.id;
 
-    // 1. Fetch the agent's slug from agent_profiles
+    // 1. Referral identifier is the agent's username (resolves across all roles
+    //    in apply_signup_referral). The referral link now goes straight to signup.
+    const { data: selfProfile } = await supabase
+      .from('profiles')
+      .select('username, referral_code')
+      .eq('id', agentId)
+      .maybeSingle();
     const { data: agentProfileData } = await supabase
       .from('agent_profiles')
       .select('slug')
@@ -19,8 +25,10 @@ export async function GET() {
       .maybeSingle();
 
     const slug = agentProfileData?.slug ?? null;
-    const referral_url = slug
-      ? `https://pepnationlab.com?ref=${slug}`
+    const referral_code = selfProfile?.username ?? selfProfile?.referral_code ?? null;
+    const base = (process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '')) || 'https://pepnationlab.com';
+    const referral_url = referral_code
+      ? `${base}/signup?ref=${encodeURIComponent(referral_code)}`
       : null;
 
     // 2. Fetch all researchers referred via this agent's storefront
@@ -42,6 +50,7 @@ export async function GET() {
     if (researcherIds.length === 0) {
       return NextResponse.json({
         referral_url,
+        referral_code,
         total_referred: 0,
         total_orders: 0,
         total_revenue: 0,
@@ -95,6 +104,7 @@ export async function GET() {
 
     return NextResponse.json({
       referral_url,
+      referral_code,
       total_referred,
       total_orders,
       total_revenue: Number(total_revenue.toFixed(2)),

@@ -3,6 +3,7 @@ export const revalidate = 0;
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { getEffectiveUser } from '@/lib/impersonation';
 import { assertSameOrigin } from '@/lib/csrf';
 
 // Researcher-facing product alert subscriptions (back-in-stock / price-drop).
@@ -15,7 +16,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 export async function GET() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getEffectiveUser(supabase);
   if (!user) return NextResponse.json({ error: 'Not Authenticated.' }, { status: 401 });
 
   const { data, error } = await supabase
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
   if (originError) return originError;
 
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getEffectiveUser(supabase);
   if (!user) return NextResponse.json({ error: 'Not Authenticated.' }, { status: 401 });
 
   let body: any;
@@ -91,7 +92,7 @@ export async function DELETE(req: NextRequest) {
   if (originError) return originError;
 
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getEffectiveUser(supabase);
   if (!user) return NextResponse.json({ error: 'Not Authenticated.' }, { status: 401 });
 
   const id = req.nextUrl.searchParams.get('id');

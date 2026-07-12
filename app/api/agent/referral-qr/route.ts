@@ -3,13 +3,16 @@ import { generateQrDataUrl } from '@/lib/qr';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const slug = searchParams.get('slug') ?? '';
+  // Prefer ?ref= (referral code / username) -> straight-to-signup link.
+  // Legacy ?slug= still supported and also points at signup for consistency.
+  const ref = (searchParams.get('ref') || searchParams.get('slug') || '').trim();
 
-  if (!slug) {
-    return NextResponse.json({ error: 'Slug Is Required' }, { status: 400 });
+  if (!ref) {
+    return NextResponse.json({ error: 'Referral Code Is Required' }, { status: 400 });
   }
 
-  const url = `https://pepnationlab.com?ref=${encodeURIComponent(slug)}`;
+  const base = (process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '')) || 'https://pepnationlab.com';
+  const url = `${base}/signup?ref=${encodeURIComponent(ref)}`;
 
   try {
     const dataUrl = await generateQrDataUrl(url);

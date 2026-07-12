@@ -166,27 +166,7 @@ export default function AgentOverview({
 
   return (
     <div className="aoc-wrap">
-      {/* Header (title only — Welcome-Back line removed per spec) + Storefront link */}
-      <div className="aoc-header">
-        <h1 className="aoc-title">Agent Action Center</h1>
-
-        {storefrontUrl ? (
-          <div className="aoc-link-pill">
-            <span className="aoc-link-url">{storefrontUrl.replace(/^https?:\/\//, '')}</span>
-            <button
-              type="button"
-              onClick={copyStorefrontLink}
-              className="aoc-copy-btn"
-              title="Copy Storefront Link"
-              aria-label="Copy Storefront Link"
-            >
-              {copiedStorefront ? <Check size={16} style={{ color: '#7BE08F' }} /> : <Copy size={16} />}
-            </button>
-          </div>
-        ) : null}
-      </div>
-
-      {/* Five equal KPI boxes */}
+      {/* Three KPI boxes */}
       <div className="aoc-kpi-grid">
         {/* 1. Today's Revenue */}
         <button type="button" className="aoc-kpi" onClick={() => onNavigate?.('Sales & Accounting')}>
@@ -196,49 +176,40 @@ export default function AgentOverview({
           <span className="aoc-kpi-footer" style={{ color: '#7BE08F' }}>Total Collected: {currency.format(totalRevenue)}</span>
         </button>
 
-        {/* 2. Needs Your Approval */}
-        <button
-          type="button"
-          className={`aoc-kpi${needsApprovalCount > 0 ? ' aoc-kpi-urgent' : ''}`}
-          onClick={() => onNavigate?.('Orders')}
-        >
-          <div className="aoc-kpi-icon" style={{ color: needsApprovalCount > 0 ? '#F6A461' : 'var(--grey-400, #8090A0)' }}><AlertCircle size={40} /></div>
-          <span className="aoc-kpi-label">Needs Your Approval</span>
-          <span className="aoc-kpi-value">{needsApprovalCount}</span>
-          <span className="aoc-kpi-footer">{activeOrdersCount} Active Orders Total</span>
-        </button>
-
-        {/* 3. Awaiting Payment */}
-        <button type="button" className="aoc-kpi" onClick={() => onNavigate?.('Orders')}>
-          <div className="aoc-kpi-icon" style={{ color: '#F6C761' }}><Hourglass size={40} /></div>
-          <span className="aoc-kpi-label">Awaiting Payment</span>
-          <span className="aoc-kpi-value">{awaitingPaymentCount}</span>
-          <span className="aoc-kpi-footer">Customer Payment Pending</span>
-        </button>
-
-        {/* 4. Active Agents & Active Researchers (combined) */}
-        <button type="button" className="aoc-kpi aoc-kpi-split" onClick={() => onNavigate?.(userProfile?.is_super_agent ? 'My Agent Accounts' : 'Researchers')}>
-          <div className="aoc-kpi-icon" style={{ color: '#61D6F6' }}><Users size={40} /></div>
-          <div className="aoc-split-row">
-            <div className="aoc-split-cell">
-              <span className="aoc-split-value">{activeAgentsCount}</span>
-              <span className="aoc-split-label">Active Agents</span>
+        {/* 2. Recent Activity (Combined) */}
+        <button type="button" className="aoc-kpi" onClick={() => onNavigate?.('Orders')} style={{ padding: '16px' }}>
+          <div className="aoc-kpi-icon" style={{ color: '#C09EF6' }}><Activity size={32} /></div>
+          <span className="aoc-kpi-label" style={{ marginBottom: '12px' }}>Recent Activity</span>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', alignItems: 'center' }}>
+            {needsApprovalCount > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#F6A461', fontSize: '0.9rem', fontWeight: 700 }}>
+                <AlertCircle size={14} /> {needsApprovalCount} Need{needsApprovalCount === 1 ? 's' : ''} Approval
+              </div>
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#F6C761', fontSize: '0.9rem', fontWeight: 700 }}>
+              <Hourglass size={14} /> {awaitingPaymentCount} Awaiting Payment
             </div>
-            <div className="aoc-split-divider" />
-            <div className="aoc-split-cell">
-              <span className="aoc-split-value">{activeResearchersCount}</span>
-              <span className="aoc-split-label">Active Researchers</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#C09EF6', fontSize: '0.9rem', fontWeight: 700 }}>
+              <Activity size={14} /> {recentCount} Recent Orders
             </div>
           </div>
-          <span className="aoc-kpi-footer">In Your Network</span>
         </button>
 
-        {/* 5. Recent Activity */}
-        <button type="button" className="aoc-kpi" onClick={() => onNavigate?.('Orders')}>
-          <div className="aoc-kpi-icon" style={{ color: '#C09EF6' }}><Activity size={40} /></div>
-          <span className="aoc-kpi-label">Recent Activity</span>
-          <span className="aoc-kpi-value">{recentCount}</span>
-          <span className="aoc-kpi-footer">{latestActivity ? `Last: ${timeAgo(latestActivity)}` : 'No Orders Yet'}</span>
+        {/* 3. Active Agents & Active Researchers (stacked) */}
+        <button type="button" className="aoc-kpi" onClick={() => onNavigate?.(userProfile?.is_super_agent ? 'My Agent Accounts' : 'Researchers')} style={{ padding: '16px' }}>
+          <div className="aoc-kpi-icon" style={{ color: '#61D6F6' }}><Users size={32} /></div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', alignItems: 'center', marginTop: '8px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+              <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--white)' }}>{activeAgentsCount}</span>
+              <span style={{ fontSize: '0.8rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Active Agents</span>
+            </div>
+            <div style={{ width: '40px', height: '1px', background: 'rgba(255,255,255,0.1)' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+              <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--white)' }}>{activeResearchersCount}</span>
+              <span style={{ fontSize: '0.8rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Active Researchers</span>
+            </div>
+          </div>
         </button>
       </div>
 

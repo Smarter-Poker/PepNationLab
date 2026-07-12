@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { createClient, createServiceClient, createAdminClient } from '@/lib/supabase/server';
+import { getEffectiveUser } from '@/lib/impersonation';
 import { assertSameOrigin } from '@/lib/csrf';
 import { sanitizeUsername, validateUsername } from '@/lib/usernames';
 
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest) {
   if (csrf) return csrf;
 
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getEffectiveUser(supabase);
   if (!user) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }

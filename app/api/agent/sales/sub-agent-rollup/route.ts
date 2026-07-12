@@ -4,6 +4,7 @@
 // through the auth-checked agent_sales_kpis RPC (which rejects service-role).
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { getEffectiveUser } from '@/lib/impersonation';
 import { parseRange } from '@/lib/sales-range';
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +12,7 @@ export const runtime = 'nodejs';
 
 export async function GET(req: Request) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getEffectiveUser(supabase);
   if (!user) return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
 
   const svc = await createServiceClient();

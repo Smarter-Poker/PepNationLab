@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import crypto from 'node:crypto';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { getEffectiveUser } from '@/lib/impersonation';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit } from '@/lib/rate-limit';
 
@@ -30,7 +31,7 @@ export async function POST(
   }
 
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getEffectiveUser(supabase);
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
   }

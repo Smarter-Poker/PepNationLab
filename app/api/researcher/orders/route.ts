@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { getEffectiveUser } from '@/lib/impersonation';
 
 // Authed money/PII route: order history includes shipping addresses and
 // payment details. Must never be cached by the browser, CDN, or any shared
@@ -10,7 +11,7 @@ const NO_STORE = { 'Cache-Control': 'private, no-store' } as const;
 /** GET: Researcher's own orders */
 export async function GET(_req: NextRequest) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getEffectiveUser(supabase);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: NO_STORE });
 
   const service = await createServiceClient();

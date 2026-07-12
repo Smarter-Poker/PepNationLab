@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { getEffectiveUser } from '@/lib/impersonation';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { assertSameOrigin } from '@/lib/csrf';
 
@@ -63,7 +64,7 @@ export async function POST(req: NextRequest) {
     // forge attribution to another user. The DB WITH CHECK policy is a backstop,
     // but we enforce it here as well.
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await getEffectiveUser(supabase);
 
     if (!user && layer !== 'site_entry') {
       return NextResponse.json({ error: 'Authentication Required.' }, { status: 401 });

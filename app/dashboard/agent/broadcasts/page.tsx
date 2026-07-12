@@ -8,7 +8,7 @@ export const metadata = {
   title: 'Broadcast To Researchers',
 };
 
-// Any agent, super-agent or admin can broadcast to their own downline.
+// Broadcast is an admin-only feature.
 export default async function AgentBroadcastPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -20,11 +20,12 @@ export default async function AgentBroadcastPage() {
     .eq('id', user.id)
     .maybeSingle();
 
-  const allowed = profile?.role === 'agent' || profile?.role === 'super_agent' || profile?.role === 'admin';
-  if (!allowed) redirect('/dashboard');
+  if (profile?.role !== 'admin') {
+    redirect('/dashboard');
+  }
 
   return (
-    <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem 1rem 3rem' }}>
+    <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '1.5rem 1rem 3rem' }}>
       <AgentBroadcast />
     </div>
   );

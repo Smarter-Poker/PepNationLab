@@ -30,6 +30,8 @@ function SignupForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
+  const [referralInput, setReferralInput] = useState('');
+  const [promoInput, setPromoInput] = useState('');
   const [acks, setAcks] = useState<Record<AckKey, boolean>>({ c1: false, c2: false, c3: false });
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -77,10 +79,17 @@ function SignupForm() {
   const rawRedirect = searchParams.get('redirect') ?? '';
   const redirectTo = /^\/(?!\/|\\)/.test(rawRedirect) ? rawRedirect : '/dashboard';
 
-  // Researcher referral code from a shared link (/signup?ref=CODE). Applied
-  // server-side after account creation; invalid codes never block signup.
-  const rawRef = searchParams.get('ref') ?? '';
-  const referralCode = /^[A-Za-z0-9_-]{2,20}$/.test(rawRef.trim()) ? rawRef.trim() : null;
+  // Referral code from a shared link/QR (/signup?ref=CODE) prefills the field
+  // but stays editable. A referral code is a referrer's username OR a researcher
+  // referral code. Applied server-side after account creation; invalid codes
+  // never block signup. An optional ?promo=CODE prefills the promo field too.
+  useEffect(() => {
+    const rawRef = (searchParams.get('ref') ?? '').trim();
+    if (rawRef && /^[A-Za-z0-9_-]{2,50}$/.test(rawRef)) setReferralInput(rawRef);
+    const rawPromo = (searchParams.get('promo') ?? '').trim();
+    if (rawPromo && /^[A-Za-z0-9_-]{2,40}$/.test(rawPromo)) setPromoInput(rawPromo);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const allAcked = ACKNOWLEDGMENTS.every(a => acks[a.key]);
 
@@ -196,7 +205,8 @@ function SignupForm() {
           email: email.trim(),
           phone: phone || undefined,
           code: verificationCode,
-          referralCode: referralCode || undefined,
+          referralCode: referralInput.trim() || undefined,
+          promoCode: promoInput.trim() || undefined,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -205,6 +215,14 @@ function SignupForm() {
         setError(data?.error || 'Registration Failed. Please Try Again.');
         setLoading(false);
         return;
+      }
+
+      // Surface a soft note if the promo code could not be applied (signup still
+      // succeeded). A successful reward is confirmed on the dashboard.
+      if (data?.promoWarning) {
+        try { sessionStorage.setItem('pnl_signup_promo_warning', String(data.promoWarning)); } catch { /* ignore */ }
+      } else if (data?.promo?.redeemed) {
+        try { sessionStorage.setItem('pnl_signup_promo_success', JSON.stringify(data.promo)); } catch { /* ignore */ }
       }
 
       // Sign The New Researcher In Immediately.
@@ -481,6 +499,34 @@ function SignupForm() {
                 value={phone} onChange={e => setPhone(e.target.value)}
                 maxLength={30} autoComplete="tel"
               />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="referralCode">Referral Code (Optional)</label>
+              <input
+                id="referralCode" type="text" className="form-input"
+                placeholder="Agent Or Researcher Username / Code"
+                value={referralInput}
+                onChange={e => setReferralInput(e.target.value.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 50))}
+                maxLength={50} autoCapitalize="none" spellCheck={false}
+              />
+              <p style={{ fontSize: '0.72rem', marginTop: 4, color: 'var(--grey-500)' }}>
+                Enter the username of the agent or researcher who referred you, or their referral code.
+              </p>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="promoCode">Promo Code (Optional)</label>
+              <input
+                id="promoCode" type="text" className="form-input"
+                placeholder="Sign-Up Promo Code"
+                value={promoInput}
+                onChange={e => setPromoInput(e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 40))}
+                maxLength={40} autoCapitalize="characters" spellCheck={false}
+              />
+              <p style={{ fontSize: '0.72rem', marginTop: 4, color: 'var(--grey-500)' }}>
+                Have a promo code? Enter it to unlock your sign-up reward.
+              </p>
             </div>
 
             <div role="group" aria-label="Required Acknowledgments" style={{ margin: 'var(--space-5) 0', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>

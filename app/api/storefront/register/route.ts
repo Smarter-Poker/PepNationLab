@@ -223,25 +223,56 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Researcher referral code (best-effort, never fails the registration).
-    // The RPC validates the code, dedupes, and applies any live promotion's
-    // reward amounts. Executed via the service client -- authenticated EXECUTE
-    // on apply_referral_code was revoked in the 2026-07-11 RPC lockdown.
+    // Signup referral code (best-effort, never fails the registration).
+    // Resolves the referrer by username OR researcher referral code across every
+    // role: researchers/sub-agents earn referral credits; agents/super-agents get
+    // the new user assigned to their downline. Service-client only (EXECUTE on
+    // apply_signup_referral is revoked from anon/authenticated).
+    let referralResult: Record<string, unknown> | null = null;
     {
       const referralCode = String(parsedBody.data.referralCode ?? '').trim();
       if (referralCode) {
         try {
-          const { data: referralId, error: refErr } = await admin.rpc('apply_referral_code', {
+          const { data: refOut, error: refErr } = await admin.rpc('apply_signup_referral', {
             p_referee_id: newUserId,
-            p_code: referralCode.slice(0, 20),
+            p_code: referralCode.slice(0, 50),
           });
-          if (!refErr && referralId) {
-            await admin
-              .from('researcher_referrals')
-              .update({ referee_email: email })
-              .eq('id', referralId as string);
+          if (!refErr && refOut && typeof refOut === 'object') {
+            referralResult = refOut as Record<string, unknown>;
+            // Record the referee email on any referral row that was created.
+            const refId = (refOut as { referral_id?: string }).referral_id;
+            if (refId) {
+              await admin
+                .from('researcher_referrals')
+                .update({ referee_email: email })
+                .eq('id', refId);
+            }
           }
-        } catch { /* invalid or duplicate code -- signup proceeds regardless */ }
+        } catch { /* invalid code -- signup proceeds regardless */ }
+      }
+    }
+
+    // Signup promo code (best-effort). Grants a first-time perk (store credit or
+    // a first-order coupon). A bad/expired code never blocks signup; the message
+    // is surfaced so the client can show a soft warning.
+    let promoResult: Record<string, unknown> | null = null;
+    let promoWarning: string | null = null;
+    {
+      const promoCode = String(parsedBody.data.promoCode ?? '').trim();
+      if (promoCode) {
+        try {
+          const { data: promoOut, error: promoErr } = await admin.rpc('redeem_signup_promo', {
+            p_user_id: newUserId,
+            p_code: promoCode.slice(0, 40),
+          });
+          if (promoErr) {
+            promoWarning = promoErr.message || 'Promo Code Could Not Be Applied.';
+          } else if (promoOut && typeof promoOut === 'object') {
+            promoResult = promoOut as Record<string, unknown>;
+          }
+        } catch (e: unknown) {
+          promoWarning = (e instanceof Error ? e.message : null) || 'Promo Code Could Not Be Applied.';
+        }
       }
     }
 
@@ -253,6 +284,9 @@ export async function POST(req: NextRequest) {
       success: true,
       userId: newUserId,
       username: usernameClean,
+      referral: referralResult,
+      promo: promoResult,
+      promoWarning,
     });
   } catch (err) {
     console.error('[storefront/register] POST error:', err);

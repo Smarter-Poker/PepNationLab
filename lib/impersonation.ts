@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 
 /**
  * Admin impersonation context.
@@ -117,4 +117,29 @@ export async function resolveEffectiveUserId(
     return { effectiveUserId: ctx.targetUserId, impersonating: true, targetUserId: ctx.targetUserId };
   }
   return { effectiveUserId: authedUserId, impersonating: false, targetUserId: null };
+}
+
+
+/**
+ * Wrap supabase.auth.getUser() so that, during a validated admin "View As"
+ * session, the returned user's id is the impersonated TARGET's id. A route can
+ * then swap a single line -- supabase.auth.getUser() -> getEffectiveUser(supabase)
+ * -- and every downstream `user.id` transparently scopes to the agent being
+ * viewed (full act-as: reads AND writes). Returns the real getUser() result
+ * unchanged for all normal (non-impersonated) traffic.
+ *
+ * Do NOT use on auth/session/security routes (password, MFA, signout,
+ * deactivate) -- those must always operate on the real signed-in admin.
+ */
+export async function getEffectiveUser(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+) {
+  const res = await supabase.auth.getUser();
+  const user = res.data.user;
+  if (!user) return res;
+  const ctx = await getImpersonationContext();
+  if (ctx && ctx.impersonatorId === user.id) {
+    return { ...res, data: { ...res.data, user: { ...user, id: ctx.targetUserId } } };
+  }
+  return res;
 }

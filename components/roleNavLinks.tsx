@@ -102,9 +102,10 @@ const ADMIN_LINKS: RoleNavLink[] = [
   { href: '/admin/flash-sales', label: 'Flash Sale', icon: <svg {...ip}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg> },
   { href: '/admin/cart-recovery', label: 'Cart Recovery', icon: <svg {...ip}><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" /></svg> },
   { href: '/admin/moderation', label: 'Moderation', icon: <svg {...ip}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg> },
-  { href: '#SHOW_QR', label: 'My QR Code', icon: ICON.qr },
+  { href: '#SHOW_QR', label: 'Referral Codes', icon: ICON.qr },
   { href: '/admin/audit', label: 'Audit Log', icon: <svg {...ip}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
   { href: '/admin/referrals', label: 'Referrals', icon: <svg {...ip}><path d="M17 11a4 4 0 1 0-8 0M3 21h18M5 21a7 7 0 0 1 14 0"/></svg> },
+  { href: '/admin/signup-promos', label: 'Signup Promos', icon: <svg {...ip}><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> },
   { href: '/admin/settings', label: 'Account Settings', icon: ICON.gear },
 ];
 
@@ -140,9 +141,16 @@ function agentLinks(isSuper: boolean, storefrontHref: string, pathname?: string)
     { href: agentTab('Coupons'), label: 'Coupons', icon: <svg {...ip}><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg> },
 
     { href: '/research/calculators', label: 'Lab Tools Calculator', icon: ICON.labTools },
-    { href: '#SHOW_QR', label: 'My QR Code', icon: ICON.qr },
+    { href: '#SHOW_QR', label: 'Referral Codes', icon: ICON.qr },
     { href: '/account', label: 'Account Settings', icon: ICON.gear }
   );
+  // Super-agents can create signup promo codes; regular agents cannot.
+  if (isSuper) {
+    links.splice(links.length - 1, 0, {
+      href: '/dashboard/agent/promos', label: 'Signup Promos',
+      icon: <svg {...ip}><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg>,
+    });
+  }
   return links;
 }
 
@@ -152,7 +160,7 @@ const SUBAGENT_LINKS: RoleNavLink[] = [
   { href: '/research/match', label: 'Find A Peptide', icon: ICON.search },
   { href: subTab('Researchers'), label: 'My Researchers', icon: ICON.people },
   { href: '/wallet', label: 'Wallet', icon: ICON.wallet },
-  { href: '#SHOW_QR', label: 'My Invite QR', icon: ICON.qr },
+  { href: '#SHOW_QR', label: 'Referral Codes', icon: ICON.qr },
   { href: subTab('Orders'), label: 'Orders', icon: ICON.orders },
   { href: subTab('Sales & Accounting'), label: 'Sales & Accounting', icon: ICON.sales },
   { href: '/messenger', label: 'Messenger', icon: ICON.messenger },

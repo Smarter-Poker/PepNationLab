@@ -12,6 +12,7 @@ interface TopResearcher {
 
 interface ReferralData {
   referral_url: string | null;
+  referral_code?: string | null;
   total_referred: number;
   total_orders: number;
   total_revenue: number;
@@ -56,7 +57,7 @@ export default function AgentReferralsClient({ agentSlug }: AgentReferralsClient
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const referralUrl = data?.referral_url ?? (agentSlug ? `https://pepnationlab.com?ref=${agentSlug}` : null);
+  const referralUrl = data?.referral_url ?? (agentSlug ? `https://pepnationlab.com/signup?ref=${agentSlug}` : null);
 
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--black)' }}>
@@ -225,7 +226,7 @@ export default function AgentReferralsClient({ agentSlug }: AgentReferralsClient
                         QR Code
                       </p>
                       <img
-                        src={`/api/agent/referral-qr?slug=${encodeURIComponent(agentSlug ?? '')}`}
+                        src={`/api/agent/referral-qr?ref=${encodeURIComponent(data?.referral_code ?? agentSlug ?? '')}`}
                         alt="Referral QR Code"
                         width={140}
                         height={140}

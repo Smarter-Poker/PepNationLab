@@ -6,6 +6,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, BarChart, Bar,
 } from 'recharts';
+import Link from 'next/link';
 import AgentOrders from './AgentOrders';
 import { createClient } from '@/lib/supabase/client';
 import AgentStatements from './AgentStatements';
@@ -498,7 +499,17 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
       `}} />
 
       {/* GLOBAL HEADER */}
-      <h2 style={{ fontSize: '1.4rem', margin: '0 0 var(--space-2) 0', fontFamily: 'var(--font-brand)' }}>Sales &amp; Accounting</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-2)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
+        <h2 style={{ fontSize: '1.4rem', margin: 0, fontFamily: 'var(--font-brand)' }}>Sales &amp; Accounting</h2>
+        <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+          <Link href="/dashboard/agent/analytics" className="btn-silver" style={{ textDecoration: 'none' }}>
+            Storefront Analytics
+          </Link>
+          <Link href="/dashboard/agent/sales-v2" className="btn-neon-cyan" style={{ textDecoration: 'none' }}>
+            Sales Performance
+          </Link>
+        </div>
+      </div>
 
       {/* ACCOUNTING / MONEY STRIP */}
       <div className="sa-capitalize-all" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-4)' }}>

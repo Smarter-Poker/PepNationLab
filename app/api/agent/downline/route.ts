@@ -3,6 +3,7 @@ export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { getEffectiveUser } from '@/lib/impersonation';
 import { assertSameOrigin } from '@/lib/csrf';
 import { buildDownlineTree, collectAgentIds } from '@/lib/downline';
 
@@ -26,7 +27,7 @@ async function requireSuperAgent(): Promise<
   | { ok: false; response: NextResponse }
 > {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getEffectiveUser(supabase);
   if (!user) {
     return { ok: false, response: NextResponse.json({ error: 'Unauthorized. Please Sign In.' }, { status: 401 }) };
   }

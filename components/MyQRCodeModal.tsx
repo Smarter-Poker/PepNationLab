@@ -23,7 +23,7 @@ import QRCodeGenerator from './QRCodeGenerator';
 
 type QRPayload = {
   url: string;
-  slug: string;
+  slug: string | null;
   displayName?: string;
   qrCodeData?: string | null;
   primaryColor?: string;
@@ -31,6 +31,10 @@ type QRPayload = {
   referCode?: string | null;
   roleLabel: string;
   description: string;
+  referralCode?: string | null;
+  signupUrl?: string | null;
+  storefrontUrl?: string | null;
+  role?: 'researcher' | 'sub_agent' | 'agent' | 'super_agent';
 };
 
 export default function MyQRCodeModal({
@@ -42,6 +46,8 @@ export default function MyQRCodeModal({
   const [err, setErr] = useState<string | null>(null);
   const [readyToClose, setReadyToClose] = useState(false);
   const lastOpenRef = useRef(false);
+  const [reward, setReward] = useState<{ isSubAgent: boolean; enabled: boolean; amount: number } | null>(null);
+  const [rewardSaving, setRewardSaving] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -67,8 +73,46 @@ export default function MyQRCodeModal({
       .then(setData)
       .catch(e => setErr(e?.message || 'Could Not Load QR'));
 
+    // Load the per-account referral reward opt-in (meaningful for sub-agents).
+    setReward(null);
+    fetch('/api/agent/referral-reward', { cache: 'no-store' })
+      .then(async r => (r.ok ? r.json() : null))
+      .then(j => { if (j && typeof j === 'object') setReward(j); })
+      .catch(() => { /* non-agent accounts simply have no reward panel */ });
+
     return () => clearTimeout(armId);
   }, [open]);
+
+  async function saveReward(nextEnabled: boolean, nextAmount: number) {
+    setRewardSaving(true);
+    try {
+      const res = await fetch('/api/agent/referral-reward', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: nextEnabled, amount: nextAmount }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) { toast.error(j?.error || 'Could Not Save'); return; }
+      setReward(prev => ({ isSubAgent: prev?.isSubAgent ?? true, enabled: !!j.enabled, amount: Number(j.amount) || 0 }));
+      toast.success('Referral Reward Updated');
+    } catch {
+      toast.error('Could Not Save');
+    } finally {
+      setRewardSaving(false);
+    }
+  }
+
+  async function copyCode(e: React.MouseEvent) {
+    e.stopPropagation();
+    const code = data?.referralCode ?? data?.referCode;
+    if (!code) return;
+    try {
+      await navigator.clipboard.writeText(String(code));
+      toast.success('Referral Code Copied');
+    } catch {
+      toast.error('Could Not Copy');
+    }
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -250,7 +294,7 @@ export default function MyQRCodeModal({
               fontFamily: 'var(--font-brand)', letterSpacing: '0.04em',
             }}
           >
-            {data?.roleLabel || 'My QR Code'}
+            {data?.roleLabel || 'Referral Codes'}
           </h2>
 
           {err && (
@@ -311,6 +355,33 @@ export default function MyQRCodeModal({
                 </div>
               </div>
 
+              {/* Referral code chip + copy */}
+              {(data.referralCode || data.referCode) && (
+                <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span style={{ fontSize: '0.7rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#8FA0B0', textAlign: 'center' }}>
+                    Your Referral Code
+                  </span>
+                  <button
+                    type="button"
+                    onClick={copyCode}
+                    title="Copy Referral Code"
+                    style={{
+                      width: '100%', cursor: 'pointer',
+                      padding: '10px 14px', borderRadius: 12,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                      background: 'linear-gradient(180deg, rgba(0,196,188,0.12) 0%, rgba(0,196,188,0.04) 100%)',
+                      border: '1px solid rgba(0,196,188,0.35)',
+                      color: '#EAF7F6', fontWeight: 800, fontSize: '1.05rem', letterSpacing: '0.05em',
+                    }}
+                  >
+                    {String(data.referralCode || data.referCode)}
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+
               {/* Description */}
               <p style={{
                 color: '#A8B4C0', fontSize: '0.88rem', lineHeight: 1.5, margin: 0,
@@ -341,6 +412,73 @@ export default function MyQRCodeModal({
                 <button type="button" onClick={shareQR} style={ghostButton}>Share</button>
                 <button type="button" onClick={copyUrl} style={ghostButton}>Copy Link</button>
               </div>
+
+              {/* Storefront link (secondary) */}
+              {data.storefrontUrl && (
+                <a
+                  href={data.storefrontUrl}
+                  onClick={(e) => e.stopPropagation()}
+                  style={{ fontSize: '0.78rem', color: '#7FD9D3', textDecoration: 'none', textAlign: 'center' }}
+                >
+                  Or share your storefront →
+                </a>
+              )}
+
+              {/* Sub-agent referral reward opt-in (default OFF / $0) */}
+              {reward?.isSubAgent && (
+                <div className="glass-panel" style={{ width: '100%', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#EAF1F6' }}>Referral Reward</span>
+                    <button
+                      type="button"
+                      disabled={rewardSaving}
+                      onClick={(e) => { e.stopPropagation(); saveReward(!reward.enabled, reward.enabled ? 0 : (reward.amount || 10)); }}
+                      style={{
+                        cursor: 'pointer', padding: '6px 12px', borderRadius: 999, border: 'none',
+                        fontWeight: 800, fontSize: '0.72rem', letterSpacing: '0.05em',
+                        color: reward.enabled ? '#04231F' : '#CBD5E1',
+                        background: reward.enabled ? 'linear-gradient(180deg,#2fe0c9,#12b3a0)' : 'rgba(255,255,255,0.08)',
+                        border: reward.enabled ? 'none' : '1px solid rgba(255,255,255,0.15)',
+                      }}
+                    >
+                      {reward.enabled ? 'ON' : 'OFF'}
+                    </button>
+                  </div>
+                  <p style={{ fontSize: '0.75rem', color: '#93A3B2', margin: 0, lineHeight: 1.4 }}>
+                    Earn store credit when someone you refer places their first qualifying order. Off by default.
+                  </p>
+                  {reward.enabled && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }} onClick={(e) => e.stopPropagation()}>
+                      <span style={{ color: '#93A3B2', fontSize: '0.85rem' }}>$</span>
+                      <input
+                        type="number" min={0} max={1000} step={1}
+                        defaultValue={reward.amount}
+                        onBlur={(e) => {
+                          const v = Math.max(0, Math.min(1000, Number(e.target.value) || 0));
+                          if (v !== reward.amount) saveReward(true, v);
+                        }}
+                        style={{
+                          flex: 1, padding: '8px 10px', borderRadius: 8,
+                          background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.15)',
+                          color: '#EAF1F6', fontSize: '0.9rem', fontWeight: 700,
+                        }}
+                      />
+                      <span style={{ color: '#93A3B2', fontSize: '0.75rem' }}>per referral</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Full referral dashboard link (agent-tier) */}
+              {(data.role === 'agent' || data.role === 'super_agent' || data.role === 'sub_agent') && (
+                <a
+                  href="/dashboard/agent/referrals"
+                  onClick={(e) => e.stopPropagation()}
+                  style={{ fontSize: '0.8rem', color: '#7FD9D3', textDecoration: 'none', textAlign: 'center', fontWeight: 600 }}
+                >
+                  Open Full Referral Dashboard →
+                </a>
+              )}
             </>
           )}
         </div>

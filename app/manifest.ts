@@ -5,6 +5,13 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'Pep Nation Lab',
     short_name: 'PNL',
     description: 'Premium Research Peptide Distribution',
+    // Stable app id + self-reference so navigator.getInstalledRelatedApps() can
+    // report whether THIS PWA is already installed on the device (used by the
+    // install prompt to avoid offering an install the user already has).
+    id: '/',
+    related_applications: [
+      { platform: 'webapp', url: 'https://pepnationlab.com/manifest.webmanifest' },
+    ],
     start_url: '/',
     display: 'standalone',
     background_color: '#0A1018',

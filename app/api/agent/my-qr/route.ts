@@ -8,6 +8,7 @@
 // so the modal can show why it failed (rather than a generic "Could Not Load QR").
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { getEffectiveUser } from '@/lib/impersonation';
 import { captureError } from '@/lib/sentry';
 import { logError } from '@/lib/log';
 
@@ -17,7 +18,7 @@ export const runtime = 'nodejs';
 export async function GET(_req: Request) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await getEffectiveUser(supabase);
     if (!user) return NextResponse.json({ error: 'unauthorized', message: 'Please Sign In' }, { status: 401 });
 
     // CRITICAL: createServiceClient is async - must be awaited.
@@ -25,7 +26,7 @@ export async function GET(_req: Request) {
 
     const { data: profile, error: pErr } = await svc
       .from('profiles')
-      .select('id, role, is_super_agent, is_sub_agent, parent_agent_id, referring_agent_id, full_name, username')
+      .select('id, role, is_super_agent, is_sub_agent, parent_agent_id, referring_agent_id, full_name, username, referral_code')
       .eq('id', user.id)
       .maybeSingle();
     if (pErr) {
@@ -37,69 +38,73 @@ export async function GET(_req: Request) {
       return NextResponse.json({ error: 'no_profile', message: 'Your Profile Was Not Found' }, { status: 404 });
     }
 
-    // Decide which agent_profile to look up:
-    //   - Sub-agents use their parent_agent_id (the super_agent who promoted them)
-    //   - Researchers use referring_agent_id
-    //   - Agents/super_agents use themselves
-    const isSub = !!profile.is_sub_agent || profile.role === 'sub_agent'; // @ts-ignore
-    const isResearcher = profile.role === 'researcher';
-    let lookupId: string | null = user.id;
-    let isInvite = false;
-    if (isSub) {
-      lookupId = profile.parent_agent_id ?? profile.referring_agent_id ?? null;
-      isInvite = true;
-    } else if (isResearcher) {
-      lookupId = profile.referring_agent_id ?? null;
-    }
+    // The QR is now a REFERRAL SIGNUP link: whoever scans it lands on the signup
+    // page with this user's referral code prefilled. Signup then applies the
+    // referral -- downline assignment for agents/super-agents/sub-agents, and
+    // referral credits for researchers (and opted-in sub-agents).
+    const isSub = !!profile.is_sub_agent;
+    const isSuper = !!profile.is_super_agent || profile.role === 'super_agent';
+    const isResearcher = profile.role === 'researcher' && !isSub && !isSuper;
 
-    if (!lookupId) {
-      return NextResponse.json({
-        error: 'no_agent',
-        message: isSub
-          ? 'Your Sub-Agent Account Is Not Linked To A Parent Agent. Contact Your Super-Agent.'
-          : 'You Do Not Have An Associated Agent Yet.',
-      }, { status: 404 });
-    }
-
-    const { data: agent, error: aErr } = await svc
-      .from('agent_profiles')
-      .select('id, slug, display_name, qr_code_data, primary_color')
-      .eq('id', lookupId)
-      .maybeSingle();
-    if (aErr) {
-      logError('agent.my-qr.agent_query', { userId: user.id, lookupId }, aErr);
-      captureError(aErr, { context: 'agent.my-qr.agent_query', userId: user.id, lookupId });
-      return NextResponse.json({ error: 'agent_query_failed', message: 'Could Not Load The Storefront Profile. Please Try Again.' }, { status: 500 });
-    }
-    if (!agent) {
-      return NextResponse.json({
-        error: 'no_agent_profile',
-        message: 'No Storefront Profile Exists For That Agent.',
-      }, { status: 404 });
-    }
-    if (!agent.slug) {
-      return NextResponse.json({
-        error: 'no_storefront_slug',
-        message: 'Storefront URL Is Not Yet Set Up. Visit Storefront Settings To Pick A URL Name.',
-      }, { status: 404 });
-    }
+    // Referral identifier: username resolves across all roles (apply_signup_referral
+    // matches username OR referral_code). Fall back to referral_code, then id.
+    const referralCode = (profile.username || profile.referral_code || user.id) as string;
 
     const baseUrl = (process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '')) || 'https://pepnationlab.com';
-    const path = isInvite ? `/${agent.slug}?ref=${user.id}` : `/${agent.slug}`;
-    const fullUrl = `${baseUrl}${path}`;
+    const signupUrl = `${baseUrl}/signup?ref=${encodeURIComponent(referralCode)}`;
+
+    // Best-effort: resolve the associated storefront (own for agents/super-agents,
+    // parent for sub-agents, referring agent for researchers) so the hub can also
+    // offer a storefront link. Never fails the referral QR if it is missing.
+    let storefrontSlug: string | null = null;
+    let storefrontUrl: string | null = null;
+    let displayName: string | null = profile.full_name ?? null;
+    let primaryColor = '#C0B8A8';
+    {
+      const lookupId = isSub
+        ? (profile.parent_agent_id ?? profile.referring_agent_id ?? null)
+        : isResearcher
+          ? (profile.referring_agent_id ?? null)
+          : user.id;
+      if (lookupId) {
+        const { data: agent, error: aErr } = await svc
+          .from('agent_profiles')
+          .select('slug, display_name, primary_color')
+          .eq('id', lookupId)
+          .maybeSingle();
+        if (aErr) {
+          logError('agent.my-qr.agent_query', { userId: user.id, lookupId }, aErr);
+        }
+        if (agent?.slug) {
+          storefrontSlug = agent.slug;
+          storefrontUrl = `${baseUrl}/${agent.slug}`;
+        }
+        if (agent?.display_name) displayName = agent.display_name;
+        if (agent?.primary_color) primaryColor = agent.primary_color;
+      }
+    }
+
+    const effectDescription = isResearcher
+      ? 'Anyone Who Signs Up With This Code Earns You Referral Credits On Their First Qualifying Order.'
+      : isSub
+        ? 'Anyone Who Signs Up With This Code Joins Your Downline. Turn On Referral Rewards In Settings To Also Earn Credits.'
+        : 'Anyone Who Signs Up With This Code Joins Your Downline And Their Orders Credit You.';
 
     return NextResponse.json({
-      url: fullUrl,
-      slug: agent.slug,
-      displayName: agent.display_name ?? null,
-      qrCodeData: agent.qr_code_data ?? null,
-      primaryColor: agent.primary_color ?? '#C0B8A8',
-      isInvite,
-      referCode: isInvite ? user.id : null,
-      roleLabel: isInvite ? 'My Invite QR' : 'My Storefront QR',
-      description: isInvite
-        ? 'Anyone Who Scans This Will Register Under You And Their Orders Will Credit You.'
-        : 'Customers Who Scan This Will Land On Your Storefront.',
+      url: signupUrl,
+      referralCode,
+      signupUrl,
+      storefrontSlug,
+      storefrontUrl,
+      slug: storefrontSlug,
+      displayName,
+      qrCodeData: null, // regenerate client-side so the QR encodes the signup link
+      primaryColor,
+      isInvite: true,
+      referCode: referralCode,
+      roleLabel: 'My Referral Code',
+      description: effectDescription,
+      role: isResearcher ? 'researcher' : isSub ? 'sub_agent' : isSuper ? 'super_agent' : 'agent',
     });
   } catch (e: any) {
     console.error('[/api/agent/my-qr] uncaught:', e?.message, e?.stack);

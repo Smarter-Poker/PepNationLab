@@ -8,6 +8,7 @@
  */
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getEffectiveUser } from '@/lib/impersonation';
 import { assertSameOrigin } from '@/lib/csrf';
 import { safeError } from '@/lib/api-error';
 
@@ -15,7 +16,7 @@ export const dynamic = 'force-dynamic';
 
 async function getUser() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getEffectiveUser(supabase);
   return { supabase, user };
 }
 

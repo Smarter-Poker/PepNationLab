@@ -94,7 +94,7 @@ export async function requireOrdersAccess(): Promise<
  * agent ownership assumption that all agent routes rely on (agent_id = callerId).
  */
 export async function requireAgent(): Promise<
-  | { ok: true; user: { id: string } }
+  | { ok: true; user: { id: string }; impersonating: boolean }
   | { ok: false; response: NextResponse }
 > {
   const supabase = await createClient();
@@ -114,6 +114,18 @@ export async function requireAgent(): Promise<
     .eq('id', user.id)
     .maybeSingle();
 
+  // Admin "View As" (product decision: FULLY act as the agent -- reads AND
+  // writes, including money). An admin never passes as an agent on their own,
+  // but WITH a validated active impersonation session on an agent/super_agent
+  // target, act as that target for the whole request.
+  if (profile?.role === 'admin') {
+    const imp = await getImpersonationContext();
+    if (imp && imp.impersonatorId === user.id &&
+        (imp.targetRole === 'agent' || imp.targetRole === 'super_agent')) {
+      return { ok: true, user: { id: imp.targetUserId }, impersonating: true };
+    }
+  }
+
   // BUG 7 fix: removed 'admin' from the allowed set. Admins are not agents and
   // must not pass agent-scoped ownership checks with a mismatched callerId.
   if (profile?.role !== 'agent' && profile?.role !== 'super_agent') {
@@ -123,7 +135,7 @@ export async function requireAgent(): Promise<
     };
   }
 
-  return { ok: true, user: { id: user.id } };
+  return { ok: true, user: { id: user.id }, impersonating: false };
 }
 
 /**

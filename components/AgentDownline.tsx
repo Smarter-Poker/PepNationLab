@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import Link from 'next/link';
 import AgentAccountDetail from '@/components/AgentAccountDetail';
 import { freshDefaultLadder, GAMIFICATION_MAX_PCT } from '@/lib/gamification';
 
@@ -142,24 +143,33 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                 Full Agent Accounts you have created. They have their own storefronts and set their own retail prices.
               </p>
             </div>
-            <button
-              className="btn-neon-cyan"
-              onClick={() => {
-                setCaFirstName('');
-                setCaLastName('');
-                setCaUsername('');
-                setCaPassword('');
-                setCaAccountType('prepaid');
-                setCaCreditLimit('');
-                setCaPrepaidBalance('');
-                setCaDisplayName('');
-                setCaSlug('');
-                setCaError('');
-                setShowCreateModal(true);
-              }}
-            >
-              Create Agent Account
-            </button>
+            <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+              <Link href="/dashboard/agent/invitations" className="btn-silver" style={{ textDecoration: 'none' }}>
+                Invite Agents
+              </Link>
+              <button
+                className="btn-neon-cyan"
+                onClick={() => {
+                  setCaFirstName('');
+                  setCaLastName('');
+                  setCaUsername('');
+                  setCaPassword('');
+                  setCaAccountType('prepaid');
+                  setCaCreditLimit('');
+                  setCaPrepaidBalance('');
+                  setCaCommissionMode('fixed');
+                  setCaCommissionPct('');
+                  setCaScaleType('default');
+                  setCaCustomSteps(freshDefaultLadder());
+                  setCaDisplayName('');
+                  setCaSlug('');
+                  setCaError('');
+                  setShowCreateModal(true);
+                }}
+              >
+                Create Agent Account
+              </button>
+            </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>

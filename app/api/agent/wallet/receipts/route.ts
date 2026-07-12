@@ -2,13 +2,14 @@
 import { NextResponse } from 'next/server';
 import { safeError } from '@/lib/api-error';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { getEffectiveUser } from '@/lib/impersonation';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function GET(req: Request) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getEffectiveUser(supabase);
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
   const { data: profile } = await supabase
