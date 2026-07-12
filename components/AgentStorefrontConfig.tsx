@@ -237,11 +237,16 @@ export default function AgentStorefrontConfig({
                       const file = e.target.files?.[0];
                       if (!file) return;
                       const supabase = createClient();
+                      // Get the current user – required so the path satisfies the
+                      // storefront-assets RLS: (storage.foldername(name))[1] = auth.uid()
+                      const { data: { user } } = await supabase.auth.getUser();
+                      if (!user) { toast.error('Not Authenticated. Please Refresh And Try Again.'); return; }
                       const ext = file.name.split('.').pop() || 'png';
-                      const path = `agent-logos/${agentId}-${Date.now()}.${ext}`;
-                      const { error: uploadError } = await supabase.storage.from('public-assets').upload(path, file, { upsert: true });
+                      // Path: {userId}/{agentId}-{timestamp}.{ext}  ← first segment = uid ✓
+                      const path = `${user.id}/${agentId}-${Date.now()}.${ext}`;
+                      const { error: uploadError } = await supabase.storage.from('storefront-assets').upload(path, file, { upsert: true });
                       if (uploadError) { toast.error('Failed To Upload Logo: ' + uploadError.message); return; }
-                      const { data: pub } = supabase.storage.from('public-assets').getPublicUrl(path);
+                      const { data: pub } = supabase.storage.from('storefront-assets').getPublicUrl(path);
                       if (pub?.publicUrl) {
                         setLogoUrl(pub.publicUrl);
                         toast.success('Logo Uploaded. Click Save To Apply.');
