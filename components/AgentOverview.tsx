@@ -244,7 +244,7 @@ export default function AgentOverview({
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onNavigate?.('Researchers'); }}
               >
                 <div className="aoc-kpi-left-small dynamic-flask">
-                  <FlaskConical stroke="url(#metalGrad)" strokeWidth={1.5} size={56} style={{ filter: 'drop-shadow(0px 3px 3px rgba(0,0,0,0.8))' }} />
+                  <FlaskConical stroke="url(#metalGrad)" strokeWidth={1.5} size={56} />
                 </div>
                 <div className="aoc-kpi-separator-small" />
                 <div className="aoc-kpi-right-row">
