@@ -114,7 +114,10 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const [storefrontCart, setStorefrontCart] = useState<Array<{
     id: string; name: string; sku: string; quantity: number;
     retailPrice: number; costPrice: number; weightOz: number;
-    bundleName?: string; bundleDiscountPercent?: number; bulkCostPrice?: number | null; bulkThreshold?: number;
+    bundleName?: string; bundleDiscountPercent?: number;
+    /** When set, this item belongs to a custom-priced bundle. Each line's share is proportional to its retail contribution. */
+    bundleCustomPrice?: number | null;
+    bulkCostPrice?: number | null; bulkThreshold?: number;
   }>>([]);
   const [storefrontLoaded, setStorefrontLoaded] = useState(false);
   const [cartSavedAt, setCartSavedAt] = useState<number | null>(null);
@@ -155,7 +158,16 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const meetsOverallMin = totalCartQty >= minOverallQty;
 
   const cartSubtotal = storefrontCart.length > 0
-    ? storefrontCart.reduce((sum, item) => sum + (item.bundleName ? item.retailPrice * (1 - (item.bundleDiscountPercent ?? 10) / 100) : item.retailPrice) * item.quantity, 0)
+    ? storefrontCart.reduce((sum, item) => {
+        let price = item.retailPrice;
+        if (item.bundleCustomPrice != null && item.bundleCustomPrice > 0) {
+          // custom-priced bundles: use stored per-vial price directly
+          price = item.bundleCustomPrice;
+        } else if (item.bundleName) {
+          price = item.retailPrice * (1 - (item.bundleDiscountPercent ?? 10) / 100);
+        }
+        return sum + price * item.quantity;
+      }, 0)
     : contextSubtotal;
 
   const agentPricingDiscount = isAgentSelfBuy && storefrontCart.length > 0

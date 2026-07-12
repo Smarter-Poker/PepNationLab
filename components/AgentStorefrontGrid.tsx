@@ -62,11 +62,15 @@ const StorefrontCompareDrawer = dynamic(() => import('./storefront/StorefrontCom
 export interface BundleConfig {
   id: string;
   name: string;
+  /** Short tagline / popular name shown as a subtitle on the bundle card */
+  tagline?: string;
   description?: string;
   image_url?: string | null;
   product_ids: string[];
   /** Optional discount applied to the summed member price at checkout. */
   discount_percent?: number;
+  /** Flat custom price override — when set, overrides discount_percent entirely */
+  custom_price?: number | null;
   /** Legacy pre-computed price; superseded by the summed member price. */
   price?: number;
 }
@@ -1961,9 +1965,11 @@ export default function AgentStorefrontGrid({
     }
     if (members.length < 2) return null;
     const fullPrice = members.reduce((sum, m) => sum + (Number(m.retail_price) || 0) / 10, 0);
-    const discountPct = Math.min(Math.max(Math.round(Number(bundle.discount_percent) || 0), 0), 90);
-    const finalPrice = Math.max(0, fullPrice * (1 - discountPct / 100));
-    return { members, fullPrice, finalPrice, discountPct };
+    // custom_price overrides discount_percent when set
+    const cp = bundle.custom_price != null && Number(bundle.custom_price) > 0 ? Number(bundle.custom_price) : null;
+    const discountPct = cp != null ? 0 : Math.min(Math.max(Math.round(Number(bundle.discount_percent) || 0), 0), 90);
+    const finalPrice = cp != null ? cp : Math.max(0, fullPrice * (1 - discountPct / 100));
+    return { members, fullPrice, finalPrice, discountPct, isCustomPrice: cp != null };
   }, [products]);
 
   const removeBundleFromCart = useCallback((bundleName: string) => {
@@ -1983,6 +1989,12 @@ export default function AgentStorefrontGrid({
           ? Number((m as any).cost_price) / 10
           : perVial;
         const sizeLabel = m.products?.unit_size ? `(${m.products.unit_size}${m.products.unit_measure || ''})` : '';
+        // For custom-priced bundles, distribute the flat price proportionally across members
+        let bundleCustomPrice: number | null = null;
+        if (resolved.isCustomPrice && resolved.fullPrice > 0) {
+          const share = perVial / resolved.fullPrice;
+          bundleCustomPrice = Math.round(resolved.finalPrice * share * 100) / 100;
+        }
         return {
           id: m.product_id,
           name: `${m.products?.name || 'Product'} ${sizeLabel}`.trim(),
@@ -1994,6 +2006,7 @@ export default function AgentStorefrontGrid({
           agentSelfBuy: isStorefrontOwner,
           bundleName: bundle.name,
           bundleDiscountPercent: resolved.discountPct,
+          ...(bundleCustomPrice != null && { bundleCustomPrice }),
         };
       });
       return [...prev, ...lines];
@@ -2025,10 +2038,14 @@ export default function AgentStorefrontGrid({
             <Image src={bundle.image_url} alt={bundle.name} fill unoptimized sizes="(max-width: 768px) 100vw, 33vw" style={{ objectFit: 'cover' }} />
           </div>
         )}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-3)', gap: 8 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: bundle.tagline ? 'var(--space-1)' : 'var(--space-3)', gap: 8 }}>
           <h4 style={{ fontFamily: 'var(--font-brand)', fontSize: '1.1rem', color: 'var(--white)', letterSpacing: '0.02em', lineHeight: 1.2 }}>{bundle.name}</h4>
           <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', padding: '4px 10px', borderRadius: 'var(--radius-full)', background: `${primaryColor}20`, border: `1px solid ${primaryColor}40`, color: primaryColor, whiteSpace: 'nowrap' }}>Bundle</span>
         </div>
+        {/* Tagline (popular name) */}
+        {bundle.tagline && (
+          <p style={{ fontSize: '0.78rem', color: 'var(--teal)', fontStyle: 'italic', marginBottom: 'var(--space-3)', lineHeight: 1.4 }}>"{bundle.tagline}"</p>
+        )}
         {bundle.description && (
           <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', lineHeight: 1.5, marginBottom: 'var(--space-3)' }}>{bundle.description}</p>
         )}
@@ -2042,12 +2059,16 @@ export default function AgentStorefrontGrid({
         </ul>
         <div style={{ marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 'var(--space-4)' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 'var(--space-3)', flexWrap: 'wrap' }}>
-            {resolved.discountPct > 0 && (
+            {/* Show crossed-out full price when there's a discount or custom price that beats it */}
+            {(resolved.discountPct > 0 || resolved.isCustomPrice) && resolved.fullPrice > resolved.finalPrice && (
               <span style={{ textDecoration: 'line-through', opacity: 0.55, color: 'var(--silver)', fontSize: '0.95rem' }}>${formatPrice(resolved.fullPrice)}</span>
             )}
             <span className="sf-product-price-nickel" style={{ fontSize: '1.3rem', fontWeight: 800, fontFamily: 'var(--font-brand)' }}>${formatPrice(resolved.finalPrice)}</span>
-            {resolved.discountPct > 0 && (
+            {resolved.discountPct > 0 && !resolved.isCustomPrice && (
               <span style={{ fontSize: '0.72rem', color: '#68D391', fontWeight: 700 }}>({resolved.discountPct}% Off)</span>
+            )}
+            {resolved.isCustomPrice && (
+              <span style={{ fontSize: '0.72rem', color: '#fbbf24', fontWeight: 700 }}>Bundle Price</span>
             )}
           </div>
           <button

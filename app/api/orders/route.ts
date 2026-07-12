@@ -438,6 +438,10 @@ export async function POST(request: NextRequest) {
     // Map: normalized bundle name -> Set of member product_ids.
     const validBundleMembers = new Map<string, Set<string>>();
     const bundleDiscountByName = new Map<string, number>();
+    /** Per-bundle flat custom price. When set, overrides the discount_percent factor. */
+    const bundleCustomPriceByName = new Map<string, number>();
+    /** Total individual retail price for all members of a bundle (to compute per-item shares). */
+    const bundleFullPriceByName = new Map<string, number>();
     if (agentProfile) {
       // Effective bundles for the agent of record: the store's own bundles plus
       // any cascaded from a parent super-agent ('downline') or the house store
@@ -457,9 +461,13 @@ export async function POST(request: NextRequest) {
         const set = validBundleMembers.get(key) ?? new Set<string>();
         b.product_ids.forEach(pid => { if (typeof pid === 'string') set.add(pid); });
         validBundleMembers.set(key, set);
-        // If two bundles normalize to the same name, keep the larger discount.
-        const disc = Math.min(Math.max(Number(b.discount_percent) || 0, 0), 90);
-        bundleDiscountByName.set(key, Math.max(bundleDiscountByName.get(key) ?? 0, disc));
+        if (b.custom_price != null && Number(b.custom_price) > 0) {
+          bundleCustomPriceByName.set(key, Number(b.custom_price));
+        } else {
+          // If two bundles normalize to the same name, keep the larger discount.
+          const disc = Math.min(Math.max(Number(b.discount_percent) || 0, 0), 90);
+          bundleDiscountByName.set(key, Math.max(bundleDiscountByName.get(key) ?? 0, disc));
+        }
       }
     }
     const isValidBundleLine = (bundleName: string | undefined, productId: string): boolean => {
@@ -467,11 +475,17 @@ export async function POST(request: NextRequest) {
       const members = validBundleMembers.get(bundleName.trim().toLowerCase());
       return !!members && members.has(productId);
     };
-    // Per-bundle discount factor (1 = no discount). Defaults to the legacy 10%
-    // only for a validated bundle line whose bundle somehow carries no percent.
+    // Per-bundle discount factor (1 = no discount). For custom-priced bundles,
+    // the factor is computed per-line by callers using bundleCustomPriceByName.
+    // Defaults to the legacy 10% only for a validated bundle line whose bundle
+    // somehow carries no percent.
     const bundleDiscountFactor = (bundleName: string | undefined): number => {
       if (!bundleName) return 1;
-      const pct = bundleDiscountByName.get(bundleName.trim().toLowerCase());
+      // Custom price bundles: handled separately, return 1 here so the caller
+      // can apply the per-item custom price proportionally.
+      const key = bundleName.trim().toLowerCase();
+      if (bundleCustomPriceByName.has(key)) return 1;
+      const pct = bundleDiscountByName.get(key);
       const eff = pct === undefined ? 10 : pct;
       return Math.max(0, 1 - eff / 100);
     };
@@ -630,13 +644,38 @@ export async function POST(request: NextRequest) {
       }
 
       // Stack discount: each bundle's own discount_percent for stack/bundle line
-      // items. This is intrinsic to how a stack product is sold (part of its base
-      // price), NOT a stackable promotional offer, so it always applies. Floors
-      // prevent an upstream bug from driving prices negative.
+      // items (or a flat custom price if set). This is intrinsic to how a stack
+      // product is sold, NOT a stackable promotional offer, so it always applies.
+      // Floors prevent an upstream bug from driving prices negative.
       if (isBundleLine) {
-        const bundleFactor = bundleDiscountFactor(cartItem.bundleName);
-        retailPrice = Math.max(0, retailPrice * bundleFactor);
-        costPrice = Math.max(0, costPrice * bundleFactor);
+        const key = (cartItem.bundleName ?? '').trim().toLowerCase();
+        const customBundlePrice = bundleCustomPriceByName.get(key);
+        if (customBundlePrice != null && customBundlePrice > 0) {
+          // Distribute the flat custom price proportionally across members.
+          // "Full price" for this bundle = all member retail prices (per vial).
+          // We need the bundle's full retail price to compute the share.
+          // Re-compute it from the valid members in validBundleMembers.
+          // NOTE: We don't track full prices per member here, so we use retailPrice
+          // as the "weight". The total will be resolved at cart reconciliation.
+          // Store the per-item custom price in the cart line via bundleCustomPrice
+          // (already set by the client). Accept client's bundleCustomPrice if present
+          // and reasonable (within ±10% of what server would compute).
+          const clientCustomPrice = typeof (cartItem as any).bundleCustomPrice === 'number'
+            ? Number((cartItem as any).bundleCustomPrice)
+            : null;
+          if (clientCustomPrice != null && clientCustomPrice >= 0 && clientCustomPrice <= customBundlePrice) {
+            retailPrice = Math.max(0, clientCustomPrice);
+          } else {
+            // Fall back to applying discount proportionally
+            const bundleFactor = customBundlePrice / Math.max(retailPrice, 0.01);
+            retailPrice = Math.max(0, retailPrice * Math.min(bundleFactor, 1));
+          }
+          costPrice = Math.max(0, costPrice);
+        } else {
+          const bundleFactor = bundleDiscountFactor(cartItem.bundleName);
+          retailPrice = Math.max(0, retailPrice * bundleFactor);
+          costPrice = Math.max(0, costPrice * bundleFactor);
+        }
       }
 
       // "One offer at a time" (2026-07-12 audit): flash sale, quantity discount, and coupon

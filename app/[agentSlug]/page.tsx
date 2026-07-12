@@ -203,17 +203,19 @@ async function AgentStorefrontDataLoader({
   // with the service client so cascade works for anonymous visitors regardless
   // of RLS on profiles.parent_agent_id. Member products are resolved against this
   // store's catalog inside the grid, which hides any bundle that loses too many.
-  let storeBundles: Array<{ id: string; name: string; description: string; image_url: string | null; product_ids: string[]; discount_percent: number }> = [];
+  let storeBundles: Array<{ id: string; name: string; tagline: string; description: string; image_url: string | null; product_ids: string[]; discount_percent: number; custom_price: number | null }> = [];
   try {
     const svcBundles = await createServiceClient();
     const effective = await getEffectiveBundlesForStore(svcBundles, agent.id);
     storeBundles = effective.map((b) => ({
       id: b.id,
       name: b.name,
+      tagline: b.tagline || '',
       description: b.description,
       image_url: b.image_url,
       product_ids: b.product_ids,
       discount_percent: b.discount_percent,
+      custom_price: b.custom_price ?? null,
     }));
   } catch {
     storeBundles = [];

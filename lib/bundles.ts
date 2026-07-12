@@ -23,10 +23,14 @@ export type BundleScope = 'self' | 'downline' | 'global';
 export interface StoredBundle {
   id: string;
   name: string;
+  /** Short marketing tagline shown below the bundle name (like a peptide popular name) */
+  tagline: string;
   description: string;
   image_url: string | null;
   product_ids: string[];
   discount_percent: number;
+  /** Flat custom price override — when set, overrides discount_percent entirely */
+  custom_price: number | null;
   is_active: boolean;
   scope: BundleScope;
   created_by: string | null;
@@ -59,10 +63,12 @@ export function normalizeBundle(raw: unknown): StoredBundle | null {
   return {
     id,
     name,
+    tagline: typeof r.tagline === 'string' ? r.tagline : '',
     description: typeof r.description === 'string' ? r.description : '',
     image_url: typeof r.image_url === 'string' && r.image_url ? r.image_url : null,
     product_ids,
     discount_percent: clampDiscount(r.discount_percent),
+    custom_price: typeof r.custom_price === 'number' && r.custom_price > 0 ? Math.round(r.custom_price * 100) / 100 : null,
     is_active: r.is_active !== false,
     scope,
     created_by: typeof r.created_by === 'string' ? r.created_by : null,

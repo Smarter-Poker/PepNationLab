@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
-import { Package, Search, Upload, Pencil, Trash2, Eye, EyeOff, Plus, X } from 'lucide-react';
+import { Package, Search, Upload, Pencil, Trash2, Eye, EyeOff, Plus, X, DollarSign, Tag, TrendingUp } from 'lucide-react';
 
 const MIN_PRODUCTS = 2;
 const MAX_PRODUCTS = 5;
@@ -15,12 +15,17 @@ type BundleScope = 'self' | 'downline' | 'global';
 interface Bundle {
   id: string;
   name: string;
+  tagline: string;
   description: string;
   image_url: string | null;
   product_ids: string[];
   discount_percent: number;
+  custom_price: number | null;
   is_active: boolean;
   scope: BundleScope;
+  // Returned by the GET endpoint (computed from agent_products prices)
+  base_cost_total?: number;
+  retail_value_total?: number;
 }
 
 interface CatalogEntry {
@@ -38,11 +43,16 @@ const SCOPE_LABELS: Record<BundleScope, string> = {
   global: 'Every Storefront',
 };
 
+function fmt(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n) || n <= 0) return '—';
+  return `$${n.toFixed(2)}`;
+}
+
 /**
  * Storefront Bundles: lets an agent, super agent, or admin group 2-5 catalog
  * products into a named, described, image-backed bundle sold at an optional
- * discount. Bundles render below the Top 10 on the storefront and cascade to
- * sub-agents (super agent) or every store (admin) based on the chosen scope.
+ * discount or flat custom price. Now includes tagline, base cost, retail value,
+ * and custom price fields.
  */
 export default function BundleManager({ agentId }: Props) {
   const [catalog, setCatalog] = useState<CatalogEntry[]>([]);
@@ -53,10 +63,12 @@ export default function BundleManager({ agentId }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState('');
+  const [tagline, setTagline] = useState('');
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [discount, setDiscount] = useState(0);
+  const [customPrice, setCustomPrice] = useState('');
   const [scope, setScope] = useState<BundleScope>('self');
   const [query, setQuery] = useState('');
   const [saving, setSaving] = useState(false);
@@ -107,18 +119,18 @@ export default function BundleManager({ agentId }: Props) {
       }
       setLoading(false);
     })();
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [agentId, loadBundles]);
 
   const resetForm = () => {
     setEditingId(null);
     setName('');
+    setTagline('');
     setDescription('');
     setImageUrl('');
     setSelectedIds([]);
     setDiscount(0);
+    setCustomPrice('');
     setScope('self');
     setQuery('');
   };
@@ -132,10 +144,12 @@ export default function BundleManager({ agentId }: Props) {
   const openEdit = (b: Bundle) => {
     setEditingId(b.id);
     setName(b.name);
+    setTagline(b.tagline || '');
     setDescription(b.description || '');
     setImageUrl(b.image_url || '');
     setSelectedIds([...b.product_ids]);
     setDiscount(b.discount_percent || 0);
+    setCustomPrice(b.custom_price != null ? String(b.custom_price) : '');
     setScope(b.scope || 'self');
     setQuery('');
     setShowForm(true);
@@ -183,16 +197,24 @@ export default function BundleManager({ agentId }: Props) {
       toast.error(`Select At Least ${MIN_PRODUCTS} Products`);
       return;
     }
+    // Validate custom price if provided
+    const cpNum = customPrice.trim() !== '' ? Number(customPrice) : null;
+    if (cpNum !== null && (!Number.isFinite(cpNum) || cpNum < 0)) {
+      toast.error('Custom Price Must Be A Positive Number');
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
         id: editingId || undefined,
         action: editingId ? 'update' : undefined,
         name: name.trim(),
+        tagline: tagline.trim(),
         description: description.trim(),
         image_url: imageUrl.trim() || null,
         product_ids: selectedIds,
         discount_percent: Math.min(Math.max(Math.round(Number(discount) || 0), 0), MAX_DISCOUNT),
+        custom_price: cpNum,
         scope,
       };
       const res = await fetch('/api/agent/bundles', {
@@ -266,7 +288,7 @@ export default function BundleManager({ agentId }: Props) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
         <div style={{ color: 'var(--silver)', fontSize: '0.85rem', lineHeight: 1.5, maxWidth: 520 }}>
-          Group 2 To {MAX_PRODUCTS} Products Into A Named Bundle With Its Own Image And Optional Discount. Bundles Appear Below The Top 10 On Your Storefront.
+          Group 2 To {MAX_PRODUCTS} Products Into A Named Bundle With Its Own Image And Optional Discount Or Custom Price. Bundles Appear Below The Top 10 On Your Storefront.
         </div>
         {!showForm && (
           <button type="button" onClick={openCreate} className="btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 38, padding: '0 16px', fontSize: '0.85rem', flexShrink: 0 }}>
@@ -289,26 +311,35 @@ export default function BundleManager({ agentId }: Props) {
             <div
               key={b.id}
               style={{
-                display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: '10px 12px',
+                display: 'flex', gap: 'var(--space-3)', padding: '12px 14px',
                 borderRadius: 'var(--radius-md)', background: 'var(--surface-2)',
                 border: '1px solid rgba(255,255,255,0.06)', opacity: b.is_active ? 1 : 0.55,
+                alignItems: 'flex-start',
               }}
             >
-              <div style={{ width: 46, height: 46, borderRadius: 8, overflow: 'hidden', flexShrink: 0, background: 'var(--surface-3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {/* Thumbnail */}
+              <div style={{ width: 50, height: 50, borderRadius: 8, overflow: 'hidden', flexShrink: 0, background: 'var(--surface-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
                 {b.image_url ? (
-                  <Image src={b.image_url} alt={b.name} width={92} height={92} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <Image src={b.image_url} alt={b.name} width={100} height={100} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
                   <Package size={18} style={{ color: 'var(--grey-500)' }} aria-hidden="true" />
                 )}
               </div>
+
+              {/* Info */}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--white)' }}>{b.name}</span>
-                  {b.discount_percent > 0 && (
+                {/* Name + badges */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 2 }}>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--white)' }}>{b.name}</span>
+                  {b.custom_price != null && b.custom_price > 0 ? (
+                    <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#fbbf24', background: 'rgba(251,191,36,0.10)', border: '1px solid rgba(251,191,36,0.35)', borderRadius: 'var(--radius-full)', padding: '1px 8px', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                      <DollarSign size={9} aria-hidden="true" />{b.custom_price.toFixed(2)} Fixed
+                    </span>
+                  ) : b.discount_percent > 0 ? (
                     <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--teal)', background: 'rgba(0,196,188,0.10)', border: '1px solid rgba(0,196,188,0.35)', borderRadius: 'var(--radius-full)', padding: '1px 8px' }}>
                       {b.discount_percent}% Off
                     </span>
-                  )}
+                  ) : null}
                   {b.scope !== 'self' && (
                     <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--silver-light)', background: 'var(--surface-3)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: 'var(--radius-full)', padding: '1px 8px' }}>
                       {SCOPE_LABELS[b.scope]}
@@ -318,11 +349,38 @@ export default function BundleManager({ agentId }: Props) {
                     <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--grey-400)' }}>Hidden</span>
                   )}
                 </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--silver)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+
+                {/* Tagline */}
+                {b.tagline && (
+                  <div style={{ fontSize: '0.78rem', color: 'var(--teal)', fontStyle: 'italic', marginBottom: 3 }}>"{b.tagline}"</div>
+                )}
+
+                {/* Products */}
+                <div style={{ fontSize: '0.75rem', color: 'var(--silver)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 6 }}>
                   {b.product_ids.map(catalogName).join(', ')}
                 </div>
+
+                {/* Pricing row */}
+                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ fontSize: '0.68rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Your Cost</span>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--silver-light)' }}>{fmt(b.base_cost_total)}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ fontSize: '0.68rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>If Bought Separately</span>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--silver-light)', textDecoration: 'line-through', opacity: 0.8 }}>{fmt(b.retail_value_total)}</span>
+                  </div>
+                  {b.custom_price != null && b.custom_price > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ fontSize: '0.68rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Bundle Price</span>
+                      <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#fbbf24' }}>{fmt(b.custom_price)}</span>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+
+              {/* Actions */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, paddingTop: 2 }}>
                 <button type="button" title={b.is_active ? 'Hide' : 'Show'} aria-label={b.is_active ? 'Hide Bundle' : 'Show Bundle'} onClick={() => toggleActive(b)} className="btn-ghost" style={{ padding: 6 }}>
                   {b.is_active ? <Eye size={16} /> : <EyeOff size={16} />}
                 </button>
@@ -348,6 +406,7 @@ export default function BundleManager({ agentId }: Props) {
             </button>
           </div>
 
+          {/* Image upload */}
           <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
             <div style={{ width: 84, height: 84, borderRadius: 10, overflow: 'hidden', flexShrink: 0, background: 'var(--surface-3)', border: '1px dashed rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
               {imageUrl ? (
@@ -370,16 +429,36 @@ export default function BundleManager({ agentId }: Props) {
             </div>
           </div>
 
+          {/* Bundle Name */}
           <div className="form-group" style={{ margin: 0 }}>
             <label className="form-label" htmlFor="bundle-name" style={{ color: 'var(--grey-400)' }}>Bundle Name</label>
             <input id="bundle-name" className="form-input" value={name} maxLength={100} onChange={(e) => setName(e.target.value)} placeholder="e.g. Recovery Research Stack" />
           </div>
 
+          {/* Tagline */}
+          <div className="form-group" style={{ margin: 0 }}>
+            <label className="form-label" htmlFor="bundle-tagline" style={{ color: 'var(--grey-400)', display: 'flex', alignItems: 'center', gap: 5 }}>
+              <Tag size={13} aria-hidden="true" />
+              Tagline / Popular Name <span style={{ fontSize: '0.72rem', color: 'var(--grey-500)' }}>(Optional)</span>
+            </label>
+            <input
+              id="bundle-tagline"
+              className="form-input"
+              value={tagline}
+              maxLength={120}
+              onChange={(e) => setTagline(e.target.value)}
+              placeholder='e.g. "The Healing Trio" — shown as a subtitle on your storefront'
+            />
+            <div style={{ fontSize: '0.72rem', color: 'var(--silver)', marginTop: 4 }}>Displayed as a catchy subtitle below the bundle name, like a peptide popular name.</div>
+          </div>
+
+          {/* Description */}
           <div className="form-group" style={{ margin: 0 }}>
             <label className="form-label" htmlFor="bundle-desc" style={{ color: 'var(--grey-400)' }}>Description (Optional)</label>
             <textarea id="bundle-desc" className="form-input" value={description} maxLength={500} onChange={(e) => setDescription(e.target.value)} placeholder="What This Bundle Is For" rows={2} style={{ resize: 'vertical' }} />
           </div>
 
+          {/* Product selection */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
               <label className="form-label" style={{ color: 'var(--grey-400)', margin: 0 }}>Products</label>
@@ -409,23 +488,71 @@ export default function BundleManager({ agentId }: Props) {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: scopeChoices.length > 1 ? '1fr 1fr' : '1fr', gap: 'var(--space-4)' }}>
+          {/* Pricing row */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+            {/* Discount % */}
             <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label" htmlFor="bundle-discount" style={{ color: 'var(--grey-400)' }}>Discount % (Optional)</label>
-              <input id="bundle-discount" type="number" min={0} max={MAX_DISCOUNT} className="form-input" value={discount} onChange={(e) => setDiscount(Number(e.target.value))} placeholder="0" />
-              <div style={{ fontSize: '0.72rem', color: 'var(--silver)', marginTop: 4 }}>Applied To The Bundle Total At Checkout.</div>
-            </div>
-            {scopeChoices.length > 1 && (
-              <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label" htmlFor="bundle-scope" style={{ color: 'var(--grey-400)' }}>Where It Shows</label>
-                <select id="bundle-scope" className="form-input" value={scope} onChange={(e) => setScope(e.target.value as BundleScope)}>
-                  {scopeChoices.map((s) => (
-                    <option key={s} value={s}>{SCOPE_LABELS[s]}</option>
-                  ))}
-                </select>
+              <label className="form-label" htmlFor="bundle-discount" style={{ color: 'var(--grey-400)', display: 'flex', alignItems: 'center', gap: 5 }}>
+                <TrendingUp size={13} aria-hidden="true" />
+                Discount % <span style={{ fontSize: '0.72rem', color: 'var(--grey-500)' }}>(Optional)</span>
+              </label>
+              <input
+                id="bundle-discount"
+                type="number"
+                min={0}
+                max={MAX_DISCOUNT}
+                className="form-input"
+                value={discount}
+                onChange={(e) => setDiscount(Number(e.target.value))}
+                placeholder="0"
+                disabled={customPrice.trim() !== '' && Number(customPrice) > 0}
+              />
+              <div style={{ fontSize: '0.72rem', color: 'var(--silver)', marginTop: 4 }}>
+                {customPrice.trim() !== '' && Number(customPrice) > 0
+                  ? 'Disabled — Custom Price Is Set'
+                  : 'Applied To The Bundle Total At Checkout.'}
               </div>
-            )}
+            </div>
+
+            {/* Custom flat price */}
+            <div className="form-group" style={{ margin: 0 }}>
+              <label className="form-label" htmlFor="bundle-custom-price" style={{ color: 'var(--grey-400)', display: 'flex', alignItems: 'center', gap: 5 }}>
+                <DollarSign size={13} aria-hidden="true" />
+                Custom Bundle Price <span style={{ fontSize: '0.72rem', color: 'var(--grey-500)' }}>(Optional)</span>
+              </label>
+              <div style={{ position: 'relative' }}>
+                <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--silver)', fontSize: '0.9rem', pointerEvents: 'none' }}>$</span>
+                <input
+                  id="bundle-custom-price"
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  className="form-input"
+                  value={customPrice}
+                  onChange={(e) => setCustomPrice(e.target.value)}
+                  placeholder="0.00"
+                  style={{ paddingLeft: 26 }}
+                />
+              </div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--silver)', marginTop: 4 }}>
+                {customPrice.trim() !== '' && Number(customPrice) > 0
+                  ? 'Overrides the discount % — charged exactly at this price.'
+                  : 'Set a flat price to override discount % entirely.'}
+              </div>
+            </div>
           </div>
+
+          {/* Scope */}
+          {scopeChoices.length > 1 && (
+            <div className="form-group" style={{ margin: 0 }}>
+              <label className="form-label" htmlFor="bundle-scope" style={{ color: 'var(--grey-400)' }}>Where It Shows</label>
+              <select id="bundle-scope" className="form-input" value={scope} onChange={(e) => setScope(e.target.value as BundleScope)}>
+                {scopeChoices.map((s) => (
+                  <option key={s} value={s}>{SCOPE_LABELS[s]}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
             <button type="button" onClick={() => { resetForm(); setShowForm(false); }} className="btn-ghost" style={{ height: 38, padding: '0 16px' }}>Cancel</button>

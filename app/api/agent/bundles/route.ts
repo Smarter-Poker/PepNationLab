@@ -64,14 +64,17 @@ function normalizeScope(requested: unknown, caller: CallerContext): { scope: Bun
 
 /** Shared validation for the create/update payloads. Returns cleaned fields or an error string. */
 function validateBundleInput(body: Record<string, unknown>):
-  | { name: string; description: string; image_url: string | null; product_ids: string[]; discount_percent: number }
+  | { name: string; tagline: string; description: string; image_url: string | null; product_ids: string[]; discount_percent: number; custom_price: number | null }
   | { error: string } {
-  const { name, description, image_url, product_ids, discount_percent } = body;
+  const { name, tagline, description, image_url, product_ids, discount_percent, custom_price } = body;
   if (typeof name !== 'string' || !name.trim()) {
     return { error: 'Bundle Name Is Required' };
   }
   if (name.trim().length > 100) {
     return { error: 'Bundle Name Too Long (Max 100 Characters)' };
+  }
+  if (tagline !== undefined && tagline !== null && (typeof tagline !== 'string' || tagline.length > 120)) {
+    return { error: 'Tagline Too Long (Max 120 Characters)' };
   }
   if (!Array.isArray(product_ids) || product_ids.length < MIN_BUNDLE_PRODUCTS) {
     return { error: `A Bundle Needs At Least ${MIN_BUNDLE_PRODUCTS} Products` };
@@ -103,12 +106,26 @@ function validateBundleInput(body: Record<string, unknown>):
       return { error: 'Bundle Image Must Be An Uploaded Image URL' };
     }
   }
+  // custom_price: optional positive number, max $99,999
+  let cleanCustomPrice: number | null = null;
+  if (custom_price !== undefined && custom_price !== null && custom_price !== '') {
+    const cp = Number(custom_price);
+    if (!Number.isFinite(cp) || cp < 0) {
+      return { error: 'Custom Price Must Be A Positive Number' };
+    }
+    if (cp > 99999) {
+      return { error: 'Custom Price Cannot Exceed $99,999' };
+    }
+    cleanCustomPrice = cp > 0 ? Math.round(cp * 100) / 100 : null;
+  }
   return {
     name: name.trim(),
+    tagline: typeof tagline === 'string' ? tagline.trim().slice(0, 120) : '',
     description: typeof description === 'string' ? description.trim() : '',
     image_url: typeof image_url === 'string' && image_url ? image_url : null,
     product_ids: cleanIds,
     discount_percent: clampDiscount(discount_percent),
+    custom_price: cleanCustomPrice,
   };
 }
 
@@ -150,8 +167,48 @@ export async function GET() {
       loadOwn(svc, gate.user.id),
       resolveCaller(svc, gate.user.id, gate.isAdmin),
     ]);
+
+    // Collect all unique product IDs across all bundles so we can return
+    // per-bundle pricing context (base cost to the agent, retail price to buyer).
+    const allProductIds = [...new Set(own.bundles.flatMap((b) => b.product_ids))];
+    let priceMap: Map<string, { base_cost: number; retail_price: number }> = new Map();
+    if (allProductIds.length > 0) {
+      const { data: apRows } = await svc
+        .from('agent_products')
+        .select('product_id, retail_price, products ( base_cost )')
+        .eq('agent_id', gate.user.id)
+        .eq('is_visible', true)
+        .in('product_id', allProductIds);
+      if (apRows) {
+        for (const row of apRows as Array<Record<string, any>>) {
+          const pid = row.product_id as string;
+          const baseCost = Number(row.products?.base_cost ?? 0);
+          const retail = Number(row.retail_price ?? 0);
+          if (pid) priceMap.set(pid, { base_cost: baseCost, retail_price: retail });
+        }
+      }
+    }
+
+    // Annotate each bundle with computed pricing totals.
+    const bundlesWithPricing = own.bundles.map((b) => {
+      let base_cost_total = 0;
+      let retail_value_total = 0;
+      for (const pid of b.product_ids) {
+        const p = priceMap.get(pid);
+        if (p) {
+          base_cost_total += p.base_cost;
+          retail_value_total += p.retail_price;
+        }
+      }
+      return {
+        ...b,
+        base_cost_total: Math.round(base_cost_total * 100) / 100,
+        retail_value_total: Math.round(retail_value_total * 100) / 100,
+      };
+    });
+
     return NextResponse.json({
-      data: own.bundles,
+      data: bundlesWithPricing,
       permissions: { canDownline: caller.canDownline, canGlobal: caller.canGlobal },
     });
   } catch {
@@ -187,10 +244,12 @@ export async function POST(req: NextRequest) {
   const newBundle: StoredBundle = {
     id: randomUUID(),
     name: fields.name,
+    tagline: fields.tagline,
     description: fields.description,
     image_url: fields.image_url,
     product_ids: fields.product_ids,
     discount_percent: fields.discount_percent,
+    custom_price: fields.custom_price,
     is_active: true,
     scope: scoped.scope,
     created_by: gate.user.id,
@@ -234,10 +293,12 @@ export async function PATCH(req: NextRequest) {
         ? {
             ...b,
             name: fields.name,
+            tagline: fields.tagline,
             description: fields.description,
             image_url: fields.image_url,
             product_ids: fields.product_ids,
             discount_percent: fields.discount_percent,
+            custom_price: fields.custom_price,
             scope: scoped.scope,
           }
         : b,

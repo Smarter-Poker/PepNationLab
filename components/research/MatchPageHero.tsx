@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import DiscoveryHero from '../storefront/StorefrontDiscovery';
-import MatchForm from './MatchForm';
 import type { Compound } from '@/lib/compounds';
 import { useRouter } from 'next/navigation';
 
