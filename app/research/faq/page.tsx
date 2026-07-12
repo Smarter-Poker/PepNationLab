@@ -83,7 +83,7 @@ export default function FaqPage() {
       <header style={{ marginBottom: 'var(--space-6, 32px)' }}>
         <h1 style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--white, #FFFFFF)', margin: 0 }}>
           <HelpCircle size={24} aria-hidden="true" style={{ verticalAlign: '-3px', marginRight: 10, color: 'var(--teal, #00C4BC)' }} />
-          Frequently Asked Questions
+          Peptide Research FAQ
         </h1>
         <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '1.05rem', marginTop: 'var(--space-2, 8px)', maxWidth: '720px' }}>
           Common Questions About Research Peptides, Handling, Storage, Safety, And How To Use This Library. Pick A

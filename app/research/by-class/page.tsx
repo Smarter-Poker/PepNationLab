@@ -52,7 +52,7 @@ export default async function ResearchByClassPage() {
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
           { '@type': 'ListItem', position: 2, name: 'Research Library', item: 'https://pepnationlab.com/research' },
-          { '@type': 'ListItem', position: 3, name: 'by class', item: 'https://pepnationlab.com/research/by-class' }
+          { '@type': 'ListItem', position: 3, name: 'By Class', item: 'https://pepnationlab.com/research/by-class' }
         ]
       }
     ]
@@ -151,7 +151,7 @@ export default async function ResearchByClassPage() {
       </nav>
       <header style={{ marginBottom: 'var(--space-5, 24px)' }}>
         <h1 style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--white, #FFFFFF)', margin: 0 }}>
-          Browse By Compound Class
+          Browse Peptides By Class
         </h1>
         <p
           style={{
