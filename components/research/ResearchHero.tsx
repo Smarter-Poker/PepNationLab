@@ -72,7 +72,7 @@ export default function ResearchHero() {
             letterSpacing: '-0.02em',
             textShadow: '0 4px 20px rgba(0,0,0,0.5)'
           }}>
-            Research Intelligence Center
+            Research Peptide Catalog
           </h1>
           <p style={{ 
             color: '#A8B4C0', 

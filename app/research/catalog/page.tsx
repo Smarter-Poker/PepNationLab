@@ -57,6 +57,12 @@ export default async function ResearchLibraryPage({
             name: 'Pep Nation Lab Research Peptide Database',
             description: 'A comprehensive database of research-grade peptides and chemical compounds for laboratory use. Includes molecular weights, sequences, and evidence tiers.',
             url: 'https://pepnationlab.com/research/catalog',
+            keywords: 'research peptides, peptide database, compound monographs, BPC-157, semaglutide, tirzepatide, evidence tiers',
+            distribution: [{
+              '@type': 'DataDownload',
+              encodingFormat: 'text/markdown',
+              contentUrl: 'https://pepnationlab.com/llms-full.txt',
+            }],
             isPartOf: { '@id': 'https://pepnationlab.com/#website' },
             license: 'https://pepnationlab.com/terms',
             isAccessibleForFree: true,
