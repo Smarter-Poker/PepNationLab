@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
-import { getEffectiveUser } from '@/lib/impersonation';
 import { resolveEffectiveUserId } from '@/lib/impersonation';
 
 export const dynamic = 'force-dynamic';
@@ -45,7 +44,7 @@ export async function GET() {
   const supabase = await createClient();
   const {
     data: { user },
-  } = await getEffectiveUser(supabase);
+  } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized. Please Sign In.' }, { status: 401, headers: NO_STORE });
   }

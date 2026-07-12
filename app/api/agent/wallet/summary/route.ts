@@ -2,7 +2,6 @@
 // Powers WalletStatusStrip and the /wallet hero card.
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
-import { getEffectiveUser } from '@/lib/impersonation';
 import { resolveEffectiveUserId } from '@/lib/impersonation';
 
 export const dynamic = 'force-dynamic';
@@ -10,7 +9,7 @@ export const runtime = 'nodejs';
 
 export async function GET() {
   const supabase = await createClient();
-  const { data: authData, error: authError } = await getEffectiveUser(supabase);
+  const { data: authData, error: authError } = await supabase.auth.getUser();
   const user = authData?.user;
   if (authError || !user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
