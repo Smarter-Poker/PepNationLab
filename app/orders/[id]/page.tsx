@@ -179,16 +179,18 @@ export default async function OrderDetailPage(
   let paymentHandles: Record<string, string> = {};
   let sellerName = 'Pep Nation Lab';
   let agentSlug: string | null = null;
+  let sellerLogoUrl: string | null = null;
   if (order.agent_id) {
     const { data: agentProfile } = await supabase
       .from('agent_profiles')
-      .select('display_name, payment_handles, slug')
+      .select('display_name, payment_handles, slug, logo_url')
       .eq('id', order.agent_id)
       .maybeSingle();
     if (agentProfile) {
       sellerName = agentProfile.display_name || sellerName;
       paymentHandles = (agentProfile.payment_handles as any) || {};
       agentSlug = (agentProfile.slug as string | null) ?? null;
+      sellerLogoUrl = (agentProfile.logo_url as string | null) ?? null;
     }
   }
 
@@ -405,6 +407,7 @@ export default async function OrderDetailPage(
                   buyerName={buyer?.full_name || 'Researcher'}
                   buyerEmail={buyer?.email || ''}
                   sellerName={sellerName}
+                  sellerLogoUrl={sellerLogoUrl}
                   paymentMethodLabel={paymentMethodLabel(order.payment_method)}
                   paymentHandle={handleForMethod}
                   trackingNumber={order.tracking_number}

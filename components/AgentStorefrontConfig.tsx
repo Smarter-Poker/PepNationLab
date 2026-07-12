@@ -236,20 +236,26 @@ export default function AgentStorefrontConfig({
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
-                      const supabase = createClient();
-                      // Get the current user – required so the path satisfies the
-                      // storefront-assets RLS: (storage.foldername(name))[1] = auth.uid()
-                      const { data: { user } } = await supabase.auth.getUser();
-                      if (!user) { toast.error('Not Authenticated. Please Refresh And Try Again.'); return; }
-                      const ext = file.name.split('.').pop() || 'png';
-                      // Path: {userId}/{agentId}-{timestamp}.{ext}  ← first segment = uid ✓
-                      const path = `${user.id}/${agentId}-${Date.now()}.${ext}`;
-                      const { error: uploadError } = await supabase.storage.from('storefront-assets').upload(path, file, { upsert: true });
-                      if (uploadError) { toast.error('Failed To Upload Logo: ' + uploadError.message); return; }
-                      const { data: pub } = supabase.storage.from('storefront-assets').getPublicUrl(path);
-                      if (pub?.publicUrl) {
-                        setLogoUrl(pub.publicUrl);
-                        toast.success('Logo Uploaded. Click Save To Apply.');
+                      // Upload via server-side route (uses service-role client,
+                      // bypassing the conflicting client-side RLS policies).
+                      const fd = new FormData();
+                      fd.append('file', file);
+                      try {
+                        const res = await fetch('/api/agent/storefront/logo-upload', {
+                          method: 'POST',
+                          body: fd,
+                        });
+                        const json = await res.json().catch(() => ({}));
+                        if (!res.ok) {
+                          toast.error('Failed To Upload Logo: ' + (json?.error ?? res.statusText));
+                          return;
+                        }
+                        setLogoUrl(json.url);
+                        // Also propagate to parent so the save payload is fresh
+                        if (onSaveSuccess) onSaveSuccess({ logo_url: json.url } as any);
+                        toast.success('Logo Uploaded Successfully.');
+                      } catch (err: any) {
+                        toast.error('Failed To Upload Logo: ' + (err?.message ?? 'Network error'));
                       }
                     }}
                   />

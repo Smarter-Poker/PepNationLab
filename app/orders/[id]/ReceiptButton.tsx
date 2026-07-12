@@ -14,6 +14,8 @@ interface ReceiptProps {
   buyerName: string;
   buyerEmail: string;
   sellerName: string;
+  /** Agent's uploaded logo URL — shown in receipt/invoice header instead of text-only branding */
+  sellerLogoUrl?: string | null;
   paymentMethodLabel: string;
   paymentHandle: string | null;
   trackingNumber: string | null;
@@ -72,12 +74,13 @@ export default function ReceiptButton(props: ReceiptProps) {
       );
     }
 
+    const brandBlock = props.sellerLogoUrl
+      ? `<img src="${esc(props.sellerLogoUrl)}" alt="${esc(props.sellerName)}" style="max-height:60px; max-width:180px; object-fit:contain; display:block;" />`
+      : `<div><h1>${esc(props.sellerName)}</h1><h2>Order Receipt</h2></div>`;
+
     const headerHtml = `
       <div class="brand">
-        <div>
-          <h1>Pep Nation Lab</h1>
-          <h2>Order Receipt</h2>
-        </div>
+        <div>${brandBlock}</div>
         <div class="meta">
           <div><strong>Order #${esc(orderShort)}</strong></div>
           <div>${esc(dateStr)}</div>
