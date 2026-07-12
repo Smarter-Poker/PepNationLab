@@ -179,6 +179,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
   const [copiedOrderId, setCopiedOrderId] = useState(false);
   const [copiedHandle, setCopiedHandle] = useState(false);
+  const [copiedAmount, setCopiedAmount] = useState(false);
   const [serverTotal, setServerTotal] = useState<number | null>(null);
   const [totalAdjusted, setTotalAdjusted] = useState(false);
 
@@ -1047,7 +1048,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                   type="button"
                   aria-label="Copy Order ID"
                   onClick={() => {
-                    navigator.clipboard.writeText(orderSuccess);
+                    navigator.clipboard.writeText(orderSuccess).catch(() => { /* clipboard unavailable */ });
                     setCopiedOrderId(true);
                     setTimeout(() => setCopiedOrderId(false), 2000);
                   }}
@@ -1063,7 +1064,24 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem' }}>
               <span style={{ color: 'var(--grey-400)', fontWeight: 600 }}>Amount Due</span>
-              <strong style={{ color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>${(serverTotal ?? grandTotal).toFixed(2)}</strong>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <strong style={{ color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>${(serverTotal ?? grandTotal).toFixed(2)}</strong>
+                {/* CRO: the amount is transcribed by hand into a payment app -
+                    a typo stalls clearance until the agent chases it. One-tap
+                    copy removes the most error-prone step at the money moment. */}
+                <button
+                  type="button"
+                  aria-label="Copy Amount Due"
+                  onClick={() => {
+                    navigator.clipboard.writeText((serverTotal ?? grandTotal).toFixed(2)).catch(() => { /* clipboard unavailable */ });
+                    setCopiedAmount(true);
+                    setTimeout(() => setCopiedAmount(false), 2000);
+                  }}
+                  style={{ background: 'none', border: 'none', color: 'var(--teal)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' }}
+                >
+                  {copiedAmount ? <Check size={16} /> : <Copy size={16} />}
+                </button>
+              </span>
             </div>
           </div>
 
@@ -1083,7 +1101,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                   type="button"
                   aria-label="Copy Payment Handle"
                   onClick={() => {
-                    navigator.clipboard.writeText(payment.handle);
+                    navigator.clipboard.writeText(payment.handle).catch(() => { /* clipboard unavailable */ });
                     setCopiedHandle(true);
                     setTimeout(() => setCopiedHandle(false), 2000);
                   }}
@@ -1121,7 +1139,14 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
       
       {!meetsOverallMin && totalCartQty > 0 && (
         <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)', color: '#fca5a5', textAlign: 'center' }}>
-          <strong>Order Minimum Not Met:</strong> This Storefront Requires An Overall Minimum Order Of {minOverallQty} Items. You Currently Have {totalCartQty} Item{totalCartQty !== 1 ? 's' : ''} In Your Cart. Please Go Back To The Store And Add More Items Before Checking Out.
+          <strong>Order Minimum Not Met:</strong> This Storefront Requires An Overall Minimum Order Of {minOverallQty} Items. You Currently Have {totalCartQty} Item{totalCartQty !== 1 ? 's' : ''} In Your Cart.
+          {/* CRO: the banner told users to go back but gave them no way to -
+              a dead-end error state at the top of the funnel. */}
+          <div style={{ marginTop: 'var(--space-3)' }}>
+            <Link href={agentSlug ? `/${agentSlug}` : '/dashboard'} className="btn" style={{ display: 'inline-block', padding: '8px 20px', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 'var(--radius-md)', color: 'var(--white)', textDecoration: 'none', fontWeight: 700, fontSize: '0.85rem' }}>
+              Return To Store To Add Items
+            </Link>
+          </div>
         </div>
       )}
 

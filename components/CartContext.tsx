@@ -71,6 +71,8 @@ interface CartContextType {
   removeFromCart: (productId: string, bundleName?: string) => void;
   updateQuantity: (productId: string, quantity: number, bundleName?: string) => void;
   clearCart: () => void;
+  /** Restore a previously snapshotted cart (Undo after Clear). */
+  restoreCart: (items: CartItem[]) => void;
   cartCount: number;
   cartSubtotal: number;
   isCartOpen: boolean;
@@ -428,6 +430,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const clearCart = () => setCart([]);
+  const restoreCart = (items: CartItem[]) => setCart(items);
 
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
   const cartSubtotal = cart.reduce((acc, item) => {
@@ -441,7 +444,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <CartContext.Provider
-      value={{ cart, addToCart, addMultipleToCart, removeFromCart, updateQuantity, clearCart, cartCount, cartSubtotal, isCartOpen, setIsCartOpen }}
+      value={{ cart, addToCart, addMultipleToCart, removeFromCart, updateQuantity, clearCart, restoreCart, cartCount, cartSubtotal, isCartOpen, setIsCartOpen }}
     >
       {children}
       <AnimatePresence>
@@ -964,6 +967,7 @@ function CartDrawer() {
     removeFromCart,
     updateQuantity,
     clearCart,
+    restoreCart,
     cartSubtotal,
     setIsCartOpen,
     addToCart,
@@ -1251,6 +1255,26 @@ function CartDrawer() {
                 <h4 style={{ color: 'var(--silver)', margin: '0 0 4px', fontSize: '0.92rem' }}>Your Cart Is Empty</h4>
                 <p style={{ fontSize: '0.76rem', color: 'var(--grey-400)', margin: 0 }}>Add Compounds To Get Started</p>
               </div>
+              {/* CRO: the empty state was a dead end - recovered-cart emails and
+                  reorder visits land here with no next step. Route back to the
+                  saved storefront when one is known, else just resume browsing. */}
+              <button
+                type="button"
+                className="btn-primary"
+                style={{ marginTop: 4, minWidth: 180 }}
+                onClick={() => {
+                  setIsCartOpen(false);
+                  try {
+                    const key = Object.keys(localStorage).find(k => k.startsWith('pnl_storefront_cart_'));
+                    const slug = key ? key.replace('pnl_storefront_cart_', '') : null;
+                    if (slug && !window.location.pathname.startsWith(`/${slug}`)) {
+                      router.push(`/${slug}`);
+                    }
+                  } catch { /* no storage - just close */ }
+                }}
+              >
+                Browse The Catalog
+              </button>
             </div>
           )}
         </div>
@@ -1277,7 +1301,18 @@ function CartDrawer() {
               />
               <DynamicCartButton
                 type="clear"
-                onClick={clearCart}
+                onClick={() => {
+                  // CRO: one irreversible tap destroyed a fully built cart.
+                  // Snapshot + Undo toast makes clearing recoverable.
+                  const snapshot = [...cart];
+                  clearCart();
+                  if (snapshot.length > 0) {
+                    toast('Cart Cleared', {
+                      action: { label: 'Undo', onClick: () => restoreCart(snapshot) },
+                      duration: 6000,
+                    });
+                  }
+                }}
               />
             </div>
           </div>

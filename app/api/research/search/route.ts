@@ -261,9 +261,17 @@ async function performSearch(
     });
   }
 
-  total = finalRows.length;
+  // Pagination: when facet filters are active we fetched a wide batch from
+  // offset 0 and filtered in JS, so slice locally and report the filtered
+  // count. When there are NO filters, the RPC already applied limit/offset
+  // (fetchLimit/fetchOffset above) - slicing again here double-offsets and
+  // returns an empty page 2+, and overwriting total hides the real count.
+  if (parsed.filters.length > 0) {
+    total = finalRows.length;
+    finalRows = finalRows.slice(offset, offset + limit);
+  }
 
-  return { finalRows: finalRows.slice(offset, offset + limit), total, parsed };
+  return { finalRows, total, parsed };
 }
 
 async function handle(req: NextRequest, q: string, limit: number, offset: number) {

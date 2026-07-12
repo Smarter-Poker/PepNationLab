@@ -53,6 +53,7 @@ interface AgentProfile {
   warehouse_address?: Record<string, any> | null;
   is_active?: boolean | null;
   volume_pricing_enabled?: boolean | null;
+  featured_products?: string[] | null;
 }
 
 interface Researcher {
