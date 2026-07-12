@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { after, NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
-import { CheckoutSchema } from '@/lib/schemas/order';
+import { z } from 'zod';
 import { applyBulkPrice, isTierLadderV2 } from '@/lib/pricing';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
@@ -13,13 +13,34 @@ import { quantityDiscountPct, isVolumeDiscountExcluded } from '@/lib/quantity-di
 import { enqueuePush, shortOrderId } from '@/lib/push-enqueue';
 import { notifyOrderPlaced, notify, notifyCouponRedeemed } from '@/lib/notify';
 import { sendOrderConfirmationEmail } from '@/lib/email';
+import { PAYMENT_METHOD_LABELS } from '@/lib/payment-method-labels';
 
 
-// CheckoutSchema lives in lib/schemas/order.ts -- the shared client/server
-// single source of truth for the checkout contract. The client
-// (app/checkout/CheckoutForm.tsx) parses the response against
-// OrderCreateResponseSchema from the same module, so request AND response
-// shapes are locked on both sides.
+const CheckoutSchema = z.object({
+  items: z.array(z.object({
+    id: z.string().uuid(),
+    quantity: z.number().int().min(1),
+    bundleName: z.string().optional()
+  })).min(1, 'Cart Cannot Be Empty.'),
+  fulfillmentMethod: z.enum(['ship', 'agent_pickup']),
+  shippingOption: z.enum(['fedex', 'usps', 'agent_pickup']).optional(),
+  paymentMethod: z.enum(['zelle', 'cashapp', 'venmo', 'apple_pay', 'apple_cash', 'paypal', 'google_wallet', 'wise', 'chime', 'varo']),
+  shippingAddress: z.object({
+    fullName: z.string().min(1),
+    street: z.string().min(1),
+    suite: z.string().optional().default(''),
+    city: z.string().min(1),
+    state: z.string().min(2),
+    zip: z.string().min(5),
+    phone: z.string().optional().default(''),
+  }).optional().nullable(),
+  couponCode: z.string().optional().nullable(),
+  idempotencyKey: z.string().uuid().optional().nullable(),
+  wholesale: z.boolean().optional(),
+
+  /** Which agent storefront initiated this checkout - used for closed-loop catalog validation */
+  agentSlug: z.string().regex(/^[a-zA-Z0-9_-]+$/).optional().nullable(),
+});
 
 export async function POST(request: NextRequest) {
   const csrf = assertSameOrigin(request);
@@ -1299,14 +1320,35 @@ export async function POST(request: NextRequest) {
     // VERIFIED contact email, to protect sender reputation / deliverability.
     if (profile?.contact_email && (profile as { email_verified?: boolean }).email_verified) {
       try {
-        const itemsSummary = computedItems.map((i: any) => `${i.quantity}x ${i.product_name}`).join(', ');
-        sendOrderConfirmationEmail({
-          to: profile.contact_email,
-          fullName: profile.full_name,
-          orderId: order.id,
-          total: Number(order.total) || 0,
-          itemsSummary,
-        }).catch(() => { /* ignore */ });
+        // Aggregate quantities by product name: computedItems carries a
+        // separate row per local/China warehouse split, which used to render
+        // the same product twice in the emailed summary.
+        const qtyByName = new Map<string, number>();
+        for (const i of computedItems as Array<{ product_name: string; quantity: number }>) {
+          qtyByName.set(i.product_name, (qtyByName.get(i.product_name) ?? 0) + (Number(i.quantity) || 0));
+        }
+        const itemsSummary = [...qtyByName.entries()].map(([n, q]) => `${q}x ${n}`).join(', ');
+        // after(): the send survives the response being flushed. A detached
+        // promise on Vercel can be killed before the provider call completes,
+        // silently losing the order confirmation.
+        after(
+          sendOrderConfirmationEmail({
+            to: profile.contact_email,
+            fullName: profile.full_name,
+            orderId: order.id,
+            total: Number(order.total) || 0,
+            itemsSummary,
+            subtotal: Number(subtotal) || null,
+            discount: Number(discountAmount) || null,
+            shippingCost: Number(shippingCost) || null,
+            // Peer-to-peer payment model: when the order awaits customer
+            // payment, tell the buyer how to pay in the one artifact that
+            // survives a closed tab -- their inbox.
+            paymentMethod: initialStatus === 'pending_customer_payment'
+              ? ((PAYMENT_METHOD_LABELS as Record<string, string>)[paymentMethod] ?? paymentMethod)
+              : null,
+          }).catch(() => { /* ignore */ })
+        );
       } catch { /* ignore */ }
     }
 
