@@ -97,7 +97,6 @@ const ADMIN_LINKS: RoleNavLink[] = [
   { href: '/admin/coupons', label: 'Coupons', icon: <svg {...ip}><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg> },
   { href: '/admin/catalog-risk', label: 'Catalog Risk', icon: <svg {...ip}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg> },
   { href: '/research/calculators', label: 'Lab Tools Calculator', icon: ICON.labTools },
-  { href: '/research/calculators#shelf-life', label: 'Reconstitution & Shelf Life', icon: ICON.clock },
   { href: '/lab-journal', label: 'Lab Journal', icon: ICON.heart },
   { href: '/admin/settings/shipping', label: 'Global Shipping Settings', icon: <svg {...ip}><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> },
   { href: '/admin/flash-sales', label: 'Flash Sale', icon: <svg {...ip}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg> },
@@ -140,10 +139,9 @@ function agentLinks(isSuper: boolean, storefrontHref: string, pathname?: string)
     { href: '/research/match', label: 'Find A Peptide', icon: ICON.search },
     { href: agentTab('Coupons'), label: 'Coupons', icon: <svg {...ip}><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg> },
 
-    { href: '/account', label: 'Account Settings', icon: ICON.gear },
     { href: '/research/calculators', label: 'Lab Tools Calculator', icon: ICON.labTools },
-    { href: '/research/calculators#shelf-life', label: 'Reconstitution & Shelf Life', icon: ICON.clock },
-    { href: '#SHOW_QR', label: 'My QR Code', icon: ICON.qr }
+    { href: '#SHOW_QR', label: 'My QR Code', icon: ICON.qr },
+    { href: '/account', label: 'Account Settings', icon: ICON.gear }
   );
   return links;
 }
@@ -159,9 +157,8 @@ const SUBAGENT_LINKS: RoleNavLink[] = [
   { href: subTab('Sales & Accounting'), label: 'Sales & Accounting', icon: ICON.sales },
   { href: '/messenger', label: 'Messenger', icon: ICON.messenger },
   { href: '/lab-journal', label: 'Lab Journal', icon: ICON.heart },
-  { href: '/account', label: 'Account Settings', icon: ICON.gear },
   { href: '/research/calculators', label: 'Lab Tools Calculator', icon: ICON.labTools },
-  { href: '/research/calculators#shelf-life', label: 'Reconstitution & Shelf Life', icon: ICON.clock },
+  { href: '/account', label: 'Account Settings', icon: ICON.gear },
 ];
 
 // Researcher (customer) menu. Their account lives entirely in the role-agnostic
@@ -185,7 +182,6 @@ function researcherLinks(storefrontHref?: string, storefrontName?: string, pathn
     { href: '/orders', label: 'Orders & Tracking', icon: ICON.orders },
     { href: '/wallet', label: 'Wallet', icon: ICON.wallet },
     { href: '/research/calculators', label: 'Lab Tools Calculator', icon: ICON.labTools },
-    { href: '/research/calculators#shelf-life', label: 'Reconstitution & Shelf Life', icon: ICON.clock },
     { href: '/account', label: 'Account Settings', icon: ICON.gear },
   );
   return links;
