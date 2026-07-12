@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 import { createAdminClient } from '@/lib/supabase/server';
+import { chicagoMidnightIso, previousCompletedWeekStartCst } from '@/lib/time-cst';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -11,13 +12,18 @@ export const runtime = 'nodejs';
  *
  * SACA Phase 7: Weekly sub-agent commission settlement cron.
  *
- * Schedule (vercel.json): 50 23 * * 0  (Sundays 23:50 UTC, 10 min before
- * the existing invoices cron at 23:59 Sunday so commission settles before
- * the weekly invoice math runs).
+ * Schedule (vercel.json): 49 5 * * 1  (Monday 05:49 UTC = Sunday 23:49 CST /
+ * Monday 00:49 CDT in America/Chicago), 10 min before the invoices cron at
+ * 59 5 * * 1 so commission settles before the weekly invoice math runs.
  *
- * The week window is the ISO week boundary in UTC:
- *   week_start = current Monday 00:00:00 UTC
- *   week_end   = week_start + 7 days
+ * The billing week is the just-COMPLETED America/Chicago week, computed with
+ * the SAME DST-safe helpers the invoices cron uses (previousCompletedWeekStartCst
+ * + chicagoMidnightIso). This matters: the cron fires early Monday in UTC, so
+ * the old "current Monday 00:00 UTC" math resolved to the week that had just
+ * STARTED (empty), leaving the completed week's ledger rows outside
+ * [week_start, week_end) so they never settled. Anchoring to the previous
+ * completed Chicago week fixes that and keeps settlement aligned with the
+ * invoice it precedes.
  *
  * For each sub-agent with at least one pending ledger row inside the
  * window, the SECDEF RPC settle_sub_agent_week handles the rest:
@@ -30,28 +36,32 @@ export const runtime = 'nodejs';
  *   - credits sub-agent's prepaid_balance by the total
  *   - writes balance_transactions + admin_audit_log rows
  */
+function addDays(dateStr: string, days: number): string {
+  const d = new Date(`${dateStr}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 export async function GET(req: NextRequest) {
   const unauth = assertCronAuth(req);
   if (unauth) return unauth;
 
-  // Compute the current ISO week window in UTC. JS getUTCDay() returns 0..6
-  // where 0 = Sunday. ISO week starts Monday, so subtract days accordingly.
+  // Settle the just-COMPLETED America/Chicago billing week, matching the
+  // invoices cron so commission settles for exactly the week being invoiced
+  // 10 minutes later. weekStartDate is a Chicago Monday (YYYY-MM-DD); the
+  // window boundaries are Chicago-midnight timestamptz, DST-safe.
   const now = new Date();
-  const dayOfWeek = now.getUTCDay(); // 0=Sun, 1=Mon, ... 6=Sat
-  const daysSinceMonday = (dayOfWeek + 6) % 7; // 0=Mon -> 0, 1=Tue -> 1, ... 0=Sun -> 6
-  const weekStart = new Date(Date.UTC(
-    now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - daysSinceMonday,
-    0, 0, 0, 0
-  ));
-  const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const weekStartDate = previousCompletedWeekStartCst(now);
+  const weekStartIso = chicagoMidnightIso(weekStartDate);
+  const weekEndIso = chicagoMidnightIso(addDays(weekStartDate, 7));
 
   // Outer idempotency gate: prevent double-settlement if cron fires twice.
   // The settle_sub_agent_week RPC also has UNIQUE(sub_agent_id, week_start)
   // as defense-in-depth, but this outer claim is the primary dedup layer.
-  const partitionKey = `${weekStart.toISOString().slice(0, 10)}`;
+  const partitionKey = weekStartDate;
   const claim = await claimCronRun('sub_agent_settle', partitionKey);
   if (!claim) {
-    return NextResponse.json({ skipped: true, reason: 'already_ran_this_week', week_start: weekStart.toISOString() });
+    return NextResponse.json({ skipped: true, reason: 'already_ran_this_week', week_start: weekStartIso });
   }
 
   const admin = createAdminClient();
@@ -69,13 +79,13 @@ export async function GET(req: NextRequest) {
       .from('sub_agent_commission_ledger')
       .select('sub_agent_id')
       .eq('status', 'pending')
-      .gte('accrued_at', weekStart.toISOString())
-      .lt('accrued_at', weekEnd.toISOString());
+      .gte('accrued_at', weekStartIso)
+      .lt('accrued_at', weekEndIso);
 
     if (fetchErr) {
       console.error('[sub-agent-settle] fetch error:', fetchErr.message);
       return NextResponse.json(
-        { ok: false, error: 'Failed To Fetch Pending Ledger Rows.', week_start: weekStart.toISOString(), week_end: weekEnd.toISOString() },
+        { ok: false, error: 'Failed To Fetch Pending Ledger Rows.', week_start: weekStartIso, week_end: weekEndIso },
         { status: 500 },
       );
     }
@@ -87,8 +97,8 @@ export async function GET(req: NextRequest) {
       try {
         const { data: settlementId, error: settleErr } = await admin.rpc('settle_sub_agent_week', {
           p_sub_agent_id: subAgentId,
-          p_week_start: weekStart.toISOString(),
-          p_week_end: weekEnd.toISOString(),
+          p_week_start: weekStartIso,
+          p_week_end: weekEndIso,
         });
 
         if (settleErr) {
@@ -120,8 +130,8 @@ export async function GET(req: NextRequest) {
         ok: false,
         error: 'Internal Server Error.',
         detail: msg.slice(0, 200),
-        week_start: weekStart.toISOString(),
-        week_end: weekEnd.toISOString(),
+        week_start: weekStartIso,
+        week_end: weekEndIso,
       },
       { status: 500 },
     );
@@ -136,7 +146,7 @@ export async function GET(req: NextRequest) {
     skipped,
     error_count: errors.length,
     errors: errors.slice(0, 20), // cap in case of bulk failure
-    week_start: weekStart.toISOString(),
-    week_end: weekEnd.toISOString(),
+    week_start: weekStartIso,
+    week_end: weekEndIso,
   });
 }
