@@ -1,3 +1,6 @@
+// v11: Cache-version bump -- evict the stale-while-revalidate /research* HTML so
+//      returning visitors immediately pick up the removal of the on-arrival
+//      site-entry disclaimer overlay (SiteDisclaimerGate is now a passthrough).
 // v9: Cache-version bump to deliver Peptide 101 v14 paginated Modules 2-13
 //     (m2-m13 module files + updated v14 engine with nextLabel support).
 // Pep Nation Lab service worker - web push receiver, offline caching, and IndexedDB replication.
@@ -17,11 +20,11 @@
 // v10: Cache-version bump to deliver Module 1 + 2 quiz gate enforcement,
 //      data-v14 protection for #s2, route.ts no-store header, and markdown
 //      rendering fix for the Ask AI assistant modal.
-const CACHE_VERSION = 'pnl-sw-v10';
-const STATIC_CACHE_NAME = 'pnl-static-cache-v10';
-const DYNAMIC_CACHE_NAME = 'pnl-dynamic-cache-v10';
-const CATALOG_CACHE_NAME = 'pnl-catalog-cache-v10';
-const IMAGE_CACHE_NAME = 'pnl-image-cache-v10';
+const CACHE_VERSION = 'pnl-sw-v11';
+const STATIC_CACHE_NAME = 'pnl-static-cache-v11';
+const DYNAMIC_CACHE_NAME = 'pnl-dynamic-cache-v11';
+const CATALOG_CACHE_NAME = 'pnl-catalog-cache-v11';
+const IMAGE_CACHE_NAME = 'pnl-image-cache-v11';
 
 // Catalog cache TTL in the service worker (5 min = 300,000 ms)
 // Matches the s-maxage set on the API route's Cache-Control header.
