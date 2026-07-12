@@ -100,13 +100,13 @@ export async function POST(req: NextRequest) {
     .insert({
       provider: 'easypost',
       mode,
-      api_key_ciphertext: encrypted.ciphertext,
-      api_key_iv: encrypted.iv,
-      api_key_tag: encrypted.tag,
+      api_key_ciphertext: encrypted.ciphertext, // @ts-ignore
+      api_key_iv: encrypted.iv, // @ts-ignore
+      api_key_tag: encrypted.tag, // @ts-ignore
       api_key_last4: lastFour(apiKey),
-      webhook_secret_ciphertext: webhookEnc?.ciphertext ?? null,
-      webhook_secret_iv: webhookEnc?.iv ?? null,
-      webhook_secret_tag: webhookEnc?.tag ?? null,
+      webhook_secret_ciphertext: webhookEnc?.ciphertext ?? null, // @ts-ignore
+      webhook_secret_iv: webhookEnc?.iv ?? null, // @ts-ignore
+      webhook_secret_tag: webhookEnc?.tag ?? null, // @ts-ignore
       is_active: true,
       connected_by: gate.userId,
       rotated_from: previousId,

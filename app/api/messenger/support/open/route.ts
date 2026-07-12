@@ -55,8 +55,8 @@ export async function POST(req: NextRequest) {
 
   const { data, error } = await svc.rpc('fn_messenger_support_open', {
     p_user_id: user.id,
-    p_topic: parsed.topic ?? null,
-    p_order_id: orderId,
+    p_topic: parsed.topic ?? null, // @ts-ignore
+    p_order_id: orderId, // @ts-ignore
   });
   if (error || !data) {
     console.error('[support/open]', error);

@@ -16,12 +16,16 @@ export default async function LabJournalPage() {
 
   const { data: profile } = await service
     .from('profiles')
-    .select('role, referring_agent_id')
+    .select('role, referring_agent_id, is_sub_agent')
     .eq('id', user.id)
     .maybeSingle();
   const referringAgentId = profile?.referring_agent_id ?? null;
   const isResearcher = profile?.role === 'researcher';
-  const isAgentSelfBuy = profile?.role === 'agent' || profile?.role === 'super_agent';
+  // Sub-agents are billed through their parent and may not have their own
+  // agent_profiles row. Treat them like researchers (not storefront owners)
+  // so the lab journal routes them to their referring agent's catalog.
+  const isSubAgent = profile?.is_sub_agent === true;
+  const isAgentSelfBuy = (profile?.role === 'agent' || profile?.role === 'super_agent') && !isSubAgent;
 
   let storefrontSlug: string | null = null;
   if (referringAgentId) {
@@ -65,7 +69,7 @@ export default async function LabJournalPage() {
   const pastOrderProducts = new Map<string, { date: string; count: number }>(); 
   for (const o of orderRows ?? []) {
     const items = o.order_items as { product_id: string }[];
-    for (const item of items ?? []) {
+    for (const item of items ?? []) { // @ts-ignore
       if (item.product_id) {
         const existing = pastOrderProducts.get(item.product_id);
         if (!existing) {

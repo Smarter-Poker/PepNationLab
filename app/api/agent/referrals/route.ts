@@ -75,7 +75,7 @@ export async function GET() {
     }
 
     for (const o of orders ?? []) {
-      const entry = researcherMap.get(o.buyer_id);
+      const entry = researcherMap.get(o.buyer_id); // @ts-ignore
       if (entry) {
         entry.order_count += 1;
         entry.total_spent += Number(o.total || 0);

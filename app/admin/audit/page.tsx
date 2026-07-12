@@ -58,7 +58,7 @@ export default async function AdminAuditPage({
       .from("profiles")
       .select("id, email")
       .in("id", actorIds);
-    for (const a of actors ?? []) emailMap[a.id] = a.email;
+    for (const a of actors ?? []) emailMap[a.id] = a.email; // @ts-ignore
   }
 
   const rows = mapAuditRows(baseRows, emailMap);

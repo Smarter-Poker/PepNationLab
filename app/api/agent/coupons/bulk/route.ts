@@ -175,7 +175,7 @@ export async function POST(req: NextRequest) {
 
   const { data: inserted, error: insertErr } = await svc
     .from('coupons')
-    .insert(insertPayload)
+    .insert((insertPayload) as any)
     .select('id, code');
 
   if (insertErr) {

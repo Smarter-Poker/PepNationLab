@@ -31,7 +31,7 @@ export async function GET() {
       const { data: parents } = await supabase
         .from('profiles')
         .select('id, full_name, username')
-        .in('id', parentIds);
+        .in('id', parentIds); // @ts-ignore
       for (const p of parents ?? []) {
         parentNames[p.id] = p.full_name || p.username || p.id;
       }

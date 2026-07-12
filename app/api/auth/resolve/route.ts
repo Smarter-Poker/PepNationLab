@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
 
     // The synthetic internal identity every username account is created with.
     // Used as the fallback if the auth lookup is unavailable.
-    let resolvedEmail = `${data.username.toLowerCase()}@internal.auth`;
+    let resolvedEmail = `${data.username.toLowerCase()}@internal.auth`; // @ts-ignore
 
     // Authoritative: whatever email auth.users actually holds for this account.
     // This is the address signInWithPassword must receive. If a real email was

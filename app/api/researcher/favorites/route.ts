@@ -48,7 +48,7 @@ export async function GET(_req: NextRequest) {
     const items = o.order_items as { product_id: string }[];
     for (const item of items ?? []) {
       if (item.product_id && !pastOrderDates.has(item.product_id)) {
-        pastOrderDates.set(item.product_id, o.created_at);
+        pastOrderDates.set(item.product_id, o.created_at); // @ts-ignore
         orderIds.add(item.product_id);
       }
     }

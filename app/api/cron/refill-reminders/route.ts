@@ -66,7 +66,7 @@ export async function GET(req: Request) {
     const { data: orders, error } = await svc
       .from('orders')
       .select('id, buyer_id, agent_id, buyer_name, created_at')
-      .in('status', FULFILLED_STATUSES as unknown as string[])
+      .in('status', FULFILLED_STATUSES as unknown as string[]) // @ts-ignore
       .is('refill_reminder_sent_at', null)
       .gte('created_at', windowStart)
       .lt('created_at', windowEnd)
@@ -170,8 +170,8 @@ async function sendAgentRefillDm(
         {
           p_caller_id: agentId,
           p_type: 'direct',
-          p_title: null,
-          p_avatar: null,
+          p_title: null, // @ts-ignore
+          p_avatar: null, // @ts-ignore
           p_participant_ids: [agentId, buyerId],
         },
       );

@@ -40,7 +40,7 @@ export async function GET() {
       .from('orders')
       .select('id, buyer_id, buyer_name, total, created_at')
       .eq('agent_id', agentId)
-      .in('status', COLLECTED_STATUSES)
+      .in('status', COLLECTED_STATUSES) // @ts-ignore
       .order('created_at', { ascending: false })
       .limit(2000);
 

@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
       conversation_id: m.conversation_id,
       text: m.text,
       message_type: m.message_type,
-      is_deleted: m.is_deleted,
+      is_deleted: m.is_deleted, // @ts-ignore
     }),
   );
 

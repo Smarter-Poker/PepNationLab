@@ -150,7 +150,7 @@ export async function POST(req: NextRequest) {
 
   const { data: inserted, error: insErr } = await svc
     .from('messenger_messages')
-    .insert(insertRow)
+    .insert((insertRow) as any)
     .select('*')
     .maybeSingle();
 

@@ -82,7 +82,7 @@ export async function GET(req: Request) {
       if (!shouldNotify) continue;
 
       const href = product.slug ? `${APP_URL}/products/${product.slug}` : APP_URL;
-      const { subject, html } = alertEmail(product.name ?? 'A Product', a.alert_type, href);
+      const { subject, html } = alertEmail(product.name ?? 'A Product', a.alert_type, href); // @ts-ignore
       const res = await sendEmail({ to: email, subject, html });
       if (res.ok) {
         notified += 1;

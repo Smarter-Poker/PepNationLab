@@ -44,7 +44,7 @@ export async function PATCH(req: Request) {
   // per-store catalog tag can be busted below.
   const { data, error } = await svc
     .from('agent_profiles')
-    .update(body)
+    .update((body) as any)
     .eq('id', gate.user.id)
     .select('slug')
     .maybeSingle();

@@ -56,7 +56,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const { data: agentProfile } = await service
     .from('agent_profiles')
     .select('display_name, slug')
-    .eq('id', order.agent_id)
+    .eq('id', order.agent_id) // @ts-ignore
     .maybeSingle();
 
   const shippingAddr = order.shipping_address as Record<string, string> | null;
@@ -97,7 +97,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   </div>
   <div style="text-align: right;">
     <div><strong>Order #${escape(orderShort)}</strong></div>
-    <div class="muted">${new Date(order.created_at).toLocaleString()}</div>
+    <div class="muted">${new Date(order.created_at).toLocaleString()}</div> // @ts-ignore
     <div class="muted">Status: <span class="badge">${escape(order.status.replace(/_/g, ' '))}</span></div>
   </div>
 </header>

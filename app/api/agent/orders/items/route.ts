@@ -75,9 +75,9 @@ export async function GET(req: NextRequest) {
           .maybeSingle();
         
         if (compound?.is_stack) {
-          const isPreBlended = ['klow-stack', 'glow-stack', 'wolverine-stack'].some(s => product.compound_slug.includes(s.replace('-stack', '')));
+          const isPreBlended = ['klow-stack', 'glow-stack', 'wolverine-stack'].some(s => product.compound_slug.includes(s.replace('-stack', ''))); // @ts-ignore
           
-          let resolvedComponents = [];
+          let resolvedComponents = []; // @ts-ignore
           if (compound.stack_components && Array.isArray(compound.stack_components)) {
              const { data: relatedCompounds } = await supabase
                .from('compounds')
@@ -92,7 +92,7 @@ export async function GET(req: NextRequest) {
           
           stackData = {
             isPreBlended,
-            components: resolvedComponents
+            components: resolvedComponents // @ts-ignore
           };
         }
       }

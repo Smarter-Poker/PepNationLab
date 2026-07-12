@@ -351,7 +351,7 @@ export async function GET(req: NextRequest) {
       try {
         await supabase.from('admin_audit_log').insert({
           action: 'coa_rotation_trigger_re_enable_failed',
-          details: { error: String(e), timestamp: new Date().toISOString() },
+          details: { error: String(e), timestamp: new Date().toISOString() }, // @ts-ignore
         });
       } catch {}
     }

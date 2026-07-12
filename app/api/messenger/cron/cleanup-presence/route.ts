@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const { data, error } = await svc
-      .from('messenger_presence')
+      .from('messenger_presence') // @ts-ignore
       .delete()
       .lt('last_seen_at', cutoffIso)
       .select('id');

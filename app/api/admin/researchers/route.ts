@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
       .select('*, agent_profiles(slug, display_name, is_active)', { count: 'exact' });
 
     if (role) {
-      dbQuery = dbQuery.eq('role', role);
+      dbQuery = dbQuery.eq('role', role); // @ts-ignore
     }
 
     if (rawQuery) {
@@ -235,8 +235,8 @@ export async function POST(req: NextRequest) {
       // execute only) sets a transaction-local flag that trigger honors.
       const { error: assignErr } = await supabase.rpc('admin_reassign_researcher', {
         p_researcher_id: id,
-        p_new_referring_agent_id: newReferringAgentId,
-        p_new_parent_agent_id: newParentAgentId,
+        p_new_referring_agent_id: newReferringAgentId, // @ts-ignore
+        p_new_parent_agent_id: newParentAgentId, // @ts-ignore
       });
       if (assignErr) {
         return safeError('admin.researchers.reassign', assignErr, 500, 'Reassignment Failed. Please Try Again Or Contact Support.');

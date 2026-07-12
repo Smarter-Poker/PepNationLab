@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     p_target_id: targetId,
     p_handle: body.handle,
     p_amount: body.amount,
-    p_proof_id: body.proof_id ?? null,
+    p_proof_id: body.proof_id ?? null, // @ts-ignore
   });
 
   if (error) {

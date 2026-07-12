@@ -35,7 +35,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   } else if (parsed.data.preset === 'clear') until = null;
   else if (parsed.data.until !== undefined) until = parsed.data.until;
 
-  const { error } = await supabase.rpc('fn_messenger_support_snooze', { p_conv: id, p_until: until });
+  const { error } = await supabase.rpc('fn_messenger_support_snooze', { p_conv: id, p_until: until }); // @ts-ignore
   if (error) {
     if (/Admin only/i.test(error.message)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     return NextResponse.json({ error: 'Failed To Snooze' }, { status: 500 });

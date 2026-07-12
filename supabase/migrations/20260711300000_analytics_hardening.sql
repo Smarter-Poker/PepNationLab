@@ -64,6 +64,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_web_vitals_metric_id
 -- raw table with a user-scoped client. Aggregate views remain available.
 
 DROP POLICY IF EXISTS storefront_events_agent_select ON public.agent_storefront_events;
+DROP POLICY IF EXISTS storefront_events_admin_select ON public.agent_storefront_events;
 CREATE POLICY storefront_events_admin_select ON public.agent_storefront_events
   FOR SELECT TO authenticated
   USING (public.is_admin());

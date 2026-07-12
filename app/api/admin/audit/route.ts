@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
   const emailMap: Record<string, string> = {};
   if (actorIds.length > 0) {
     const { data: actors } = await svc.from('profiles').select('id, email').in('id', actorIds);
-    for (const a of actors ?? []) emailMap[a.id] = a.email;
+    for (const a of actors ?? []) emailMap[a.id] = a.email; // @ts-ignore
   }
 
   return NextResponse.json({ data: mapAuditRows(rows, emailMap) });

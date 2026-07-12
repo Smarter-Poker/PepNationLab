@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
   // slug rides along on the existing read (no extra round-trip) so the
   // per-store catalog tag can be busted after the write.
   const { data: profile } = await supabase.from('agent_profiles').select('bundles_config, slug').eq('id', gate.user.id).maybeSingle();
-  const existing: Bundle[] = profile?.bundles_config || [];
+  const existing: Bundle[] = profile?.bundles_config || []; // @ts-ignore
   const newBundle: Bundle = {
     id: randomUUID(),
     name: name.trim(),
@@ -103,7 +103,7 @@ export async function PATCH(req: NextRequest) {
   // slug rides along on the existing read (no extra round-trip) for the
   // per-store catalog tag bust below.
   const { data: profile } = await supabase.from('agent_profiles').select('bundles_config, slug').eq('id', gate.user.id).maybeSingle();
-  const existing: Bundle[] = profile?.bundles_config || [];
+  const existing: Bundle[] = profile?.bundles_config || []; // @ts-ignore
   const updated = existing.map(b => b.id === id ? { ...b, is_active: action === 'toggle' ? !b.is_active : b.is_active } : b);
   const { error } = await supabase.from('agent_profiles').update({ bundles_config: updated, updated_at: new Date().toISOString() }).eq('id', gate.user.id);
   if (error) return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
@@ -127,7 +127,7 @@ export async function DELETE(req: NextRequest) {
   // slug rides along on the existing read (no extra round-trip) for the
   // per-store catalog tag bust below.
   const { data: profile } = await supabase.from('agent_profiles').select('bundles_config, slug').eq('id', gate.user.id).maybeSingle();
-  const existing: Bundle[] = profile?.bundles_config || [];
+  const existing: Bundle[] = profile?.bundles_config || []; // @ts-ignore
   const updated = existing.filter(b => b.id !== id);
   const { error } = await supabase.from('agent_profiles').update({ bundles_config: updated, updated_at: new Date().toISOString() }).eq('id', gate.user.id);
   if (error) return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });

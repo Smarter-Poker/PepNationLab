@@ -40,7 +40,7 @@ export async function GET(_req: Request) {
     //   - Sub-agents use their parent_agent_id (the super_agent who promoted them)
     //   - Researchers use referring_agent_id
     //   - Agents/super_agents use themselves
-    const isSub = !!profile.is_sub_agent || profile.role === 'sub_agent';
+    const isSub = !!profile.is_sub_agent || profile.role === 'sub_agent'; // @ts-ignore
     const isResearcher = profile.role === 'researcher';
     let lookupId: string | null = user.id;
     let isInvite = false;

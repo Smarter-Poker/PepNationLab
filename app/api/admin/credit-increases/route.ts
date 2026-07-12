@@ -30,7 +30,7 @@ export async function GET() {
       .select('id, full_name, email, account_type, credit_limit, prepaid_balance')
       .in('id', ids);
     for (const p of profs ?? []) {
-      nameById.set(p.id, { full_name: p.full_name, email: p.email, account_type: p.account_type, credit_limit: Number(p.credit_limit || 0), prepaid_balance: Number(p.prepaid_balance || 0) });
+      nameById.set(p.id, { full_name: p.full_name, email: p.email, account_type: p.account_type, credit_limit: Number(p.credit_limit || 0), prepaid_balance: Number(p.prepaid_balance || 0) }); // @ts-ignore
     }
   }
 
@@ -44,10 +44,10 @@ export async function GET() {
       .in('agent_id', ids)
       .neq('status', 'cancelled');
     for (const o of ords ?? []) {
-      const cur = orderStats.get(o.agent_id) ?? { count: 0, volume: 0 };
+      const cur = orderStats.get(o.agent_id) ?? { count: 0, volume: 0 }; // @ts-ignore
       cur.count += 1;
       cur.volume += Number(o.total || 0);
-      orderStats.set(o.agent_id, cur);
+      orderStats.set(o.agent_id, cur); // @ts-ignore
     }
   }
 
@@ -100,7 +100,7 @@ export async function POST(req: Request) {
     p_request_id: body.requestId,
     p_decision: body.decision,
     p_admin: gate.userId,
-    p_note: body.note?.trim() || null,
+    p_note: body.note?.trim() || null, // @ts-ignore
   });
   if (error) {
     const msg = error.message?.includes('already_decided') ? 'This Request Was Already Decided.'

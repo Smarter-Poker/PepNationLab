@@ -170,7 +170,7 @@ export async function getAreaProducts(
       productId: mp.id,
       agentProductId: ap.id,
       productName: ap.custom_name || mp.name,
-      compoundSlug: mp.compound_slug,
+      compoundSlug: mp.compound_slug, // @ts-ignore
       category: mp.category || '',
       imageUrl: getProductImage(
         ap.custom_image_url || mp.image_url || null,

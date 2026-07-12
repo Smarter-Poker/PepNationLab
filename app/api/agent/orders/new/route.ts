@@ -127,6 +127,9 @@ export async function POST(req: NextRequest) {
       agent_product_id: item.agent_product_id, quantity: item.quantity,
       unit_retail_price: item.unit_retail_price, unit_cost_price: item.unit_cost_price,
       unit_super_agent_cost: item.unit_super_agent_cost,
+      // Explicit false so the inventory approval trigger always deducts from global
+      // (products.inventory_count) rather than agent_inventory for manual orders.
+      fulfilled_locally: false,
     }));
 
     const { error: itemsError } = await supabase.from('order_items').insert(itemsPayload);

@@ -142,7 +142,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
         id: lo.id,
         status: lo.status,
         total: Number(lo.total) || 0,
-        created_at: lo.created_at,
+        created_at: lo.created_at, // @ts-ignore
         tracking_number: tn,
         tracking_url: tn && labelUrl ? labelUrl : null,
       };

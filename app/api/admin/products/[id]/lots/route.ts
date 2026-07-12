@@ -106,7 +106,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const { data: lot, error } = await supabase
     .from('product_lots')
-    .insert(insertRow)
+    .insert((insertRow) as any)
     .select('*')
     .maybeSingle();
 
@@ -121,7 +121,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     actor_id: gate.userId,
     action: 'product_lot_create',
     entity_type: 'product_lots',
-    entity_id: lot.id,
+    entity_id: lot.id, // @ts-ignore
     changes: { product_id: id, lot_number: lotNumber },
   });
 

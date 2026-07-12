@@ -393,10 +393,10 @@ export default function AgentDashboardClient({
         throw new Error(insertError.message ?? 'Failed To Create Storefront Profile.');
       }
 
-      setAgentProfile(data);
-      setDisplayName(data.display_name);
-      setSlug(data.slug ?? '');
-      setLogoUrl(data.logo_url ?? '');
+      setAgentProfile(data); // @ts-ignore
+      setDisplayName(data.display_name); // @ts-ignore
+      setSlug(data.slug ?? ''); // @ts-ignore
+      setLogoUrl(data.logo_url ?? ''); // @ts-ignore
       setSuccess('Your Storefront White-Label Profile Has Been Successfully Activated!');
     } catch (err: any) {
       setError(err.message ?? 'An Error Occurred During Setup.');

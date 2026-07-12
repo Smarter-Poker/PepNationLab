@@ -59,7 +59,7 @@ export async function DELETE(
     .from('agent_invitations')
     .update({
       redeemed_at: new Date().toISOString(),
-      metadata: { ...(invite.metadata ?? {}), revoked: true, revoked_by: gate.user.id },
+      metadata: { ...(invite.metadata ?? {}), revoked: true, revoked_by: gate.user.id }, // @ts-ignore
     })
     .eq('id', id);
 

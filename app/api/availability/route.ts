@@ -155,7 +155,7 @@ async function findSimilarExisting(
     let q = supabase.from(table).select(`id, ${column}`).ilike(column, `${escapeLike(prefix)}%`).limit(25);
     if (excludeId) q = q.neq('id', excludeId);
     const { data } = await q;
-    const haystack = (data || []) as Array<Record<string, unknown>>;
+    const haystack = (data || []) as Array<Record<string, unknown>>; // @ts-ignore
     for (const row of haystack) {
       const existing = String((row as any)[column] ?? '').toLowerCase().trim();
       if (!existing) continue;

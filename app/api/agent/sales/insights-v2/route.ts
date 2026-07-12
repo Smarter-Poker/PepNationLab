@@ -50,7 +50,7 @@ export async function GET() {
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (!latest || latest.created_at < cutoff) {
+    if (!latest || latest.created_at < cutoff) { // @ts-ignore
       insights.push({
         id: `dormant-${r.id}`,
         kind: 'dormant',

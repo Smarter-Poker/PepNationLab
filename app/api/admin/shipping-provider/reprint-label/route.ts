@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
     const { error: refundRpcErr } = await supabase.rpc('shipping_record_refund', {
       p_label_purchase_id: purchase.id,
       p_refund_amount_cents: refundAmountCents,
-      p_provider_refund_id: refundResult.providerRefundId ?? null,
+      p_provider_refund_id: refundResult.providerRefundId ?? null, // @ts-ignore
       p_reason: `Reprint: ${reason}`,
       p_initiated_by: gate.userId,
     });

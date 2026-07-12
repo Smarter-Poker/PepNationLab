@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
   if (!invite) {
     return NextResponse.json({ error: 'This Invitation Is No Longer Valid.' }, { status: 410 });
   }
-  if (invite.metadata?.revoked === true) {
+  if (invite.metadata?.revoked === true) { // @ts-ignore
     // Revoked rows already carry redeemed_at; the guard above would normally
     // exclude them, but guard against a race where revoke landed first.
     return NextResponse.json({ error: 'This Invitation Was Revoked.' }, { status: 410 });

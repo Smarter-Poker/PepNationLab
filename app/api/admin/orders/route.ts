@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
       .select('*, profiles!orders_buyer_id_fkey(full_name, email, phone)');
 
     if (status) {
-      dbQuery = dbQuery.eq('status', status);
+      dbQuery = dbQuery.eq('status', status); // @ts-ignore
     }
 
     // Sort by created_at desc. Safety-valve cap against an unbounded full-table

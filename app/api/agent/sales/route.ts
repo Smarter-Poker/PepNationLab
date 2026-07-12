@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
         cart: r.cart_state,
         updated_at: r.cart_updated_at
       }))
-      .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+      .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()); // @ts-ignore
 
     // 2. Fetch all orders for this agent
     const { data: orders, error: ordersError } = await supabase

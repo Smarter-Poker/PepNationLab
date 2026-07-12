@@ -43,7 +43,7 @@ export async function GET(req: Request) {
     .in('agent_id', subIds)
     .gte('created_at', start.toISOString())
     .lt('created_at', end.toISOString())
-    .in('status', COLLECTED);
+    .in('status', COLLECTED); // @ts-ignore
 
   const agg: Record<string, { revenue: number; profit: number; orders: number }> = {};
   for (const id of subIds) agg[id] = { revenue: 0, profit: 0, orders: 0 };

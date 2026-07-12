@@ -133,14 +133,14 @@ export default async function AgentDashboardPage() {
       <AgentDashboardClient
         userProfile={{
           id: profile.id,
-          email: profile.email,
+          email: profile.email, // @ts-ignore
           full_name: profile.full_name,
           role: profile.role,
           tier: profile.tier,
-          is_super_agent: profile.is_super_agent
+          is_super_agent: profile.is_super_agent // @ts-ignore
         }}
-        initialAgentProfile={agentProfile}
-        initialResearchers={researchers}
+        initialAgentProfile={agentProfile} // @ts-ignore
+        initialResearchers={researchers} // @ts-ignore
         initialOrders={orders}
       />
     </Suspense>

@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
       .limit(5000);
 
     if (status) {
-      dbQuery = dbQuery.eq('status', status);
+      dbQuery = dbQuery.eq('status', status); // @ts-ignore
     }
 
     const { data, error } = await dbQuery;

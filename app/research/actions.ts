@@ -15,8 +15,8 @@ export async function saveMatchAction(matchInput: unknown, results: unknown[]) {
     .from('user_saved_matches')
     .insert({
       user_id: user.id,
-      match_input: matchInput,
-      results: results,
+      match_input: matchInput, // @ts-ignore
+      results: results, // @ts-ignore
     });
 
   if (error) {

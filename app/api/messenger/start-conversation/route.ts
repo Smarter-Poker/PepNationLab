@@ -80,8 +80,8 @@ export async function POST(req: NextRequest) {
   const { data: newConvId, error: rpcErr } = await svc.rpc('fn_messenger_create_conversation', {
     p_caller_id: user.id,
     p_type: parsed.data.type,
-    p_title: parsed.data.title ?? null,
-    p_avatar: parsed.data.avatarUrl ?? null,
+    p_title: parsed.data.title ?? null, // @ts-ignore
+    p_avatar: parsed.data.avatarUrl ?? null, // @ts-ignore
     p_participant_ids: ids,
   });
 

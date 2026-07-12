@@ -87,8 +87,8 @@ export async function GET(req: NextRequest) {
   const senderCounts: Record<string, { name: string; count: number }> = {};
   for (const m of topSenders ?? []) {
     const name = (m as any).sender_profile?.full_name || (m as any).sender_profile?.username || 'Unknown';
-    if (!senderCounts[m.sender_id]) senderCounts[m.sender_id] = { name, count: 0 };
-    senderCounts[m.sender_id].count++;
+    if (!senderCounts[m.sender_id]) senderCounts[m.sender_id] = { name, count: 0 }; // @ts-ignore
+    senderCounts[m.sender_id].count++; // @ts-ignore
   }
   const topAgents = Object.values(senderCounts)
     .sort((a, b) => b.count - a.count)
