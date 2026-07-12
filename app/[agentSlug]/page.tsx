@@ -215,7 +215,7 @@ async function AgentStorefrontDataLoader({
         brand: { '@type': 'Brand', name: 'Pep Nation Lab' },
       };
       const description = String(pp.custom_description || pp.products?.description || '').trim();
-      if (description) node.description = description;
+      node.description = (description ? description + ' ' : '') + 'For In Vitro Laboratory Research Use Only. Not For Human Or Animal Consumption.';
       const rawImage = pp.custom_image_url || pp.products?.image_url;
       if (rawImage) {
         node.image = String(rawImage).startsWith('http')
@@ -223,18 +223,20 @@ async function AgentStorefrontDataLoader({
           : `https://pepnationlab.com${rawImage}`;
       }
       const price = Number(pp.is_on_sale ? pp.sale_price : pp.retail_price);
-      if (Number.isFinite(price) && price > 0) {
-        node.offers = {
-          '@type': 'Offer',
-          price: price.toFixed(2),
-          priceCurrency: 'USD',
-          availability:
-            (inventoryMap.get(pp.product_id) ?? 0) > 0
-              ? 'https://schema.org/InStock'
-              : 'https://schema.org/OutOfStock',
-          url: `https://pepnationlab.com/${agentSlug}`,
-        };
-      }
+      if (!Number.isFinite(price) || !(price > 0)) return null;
+      node.offers = {
+        '@type': 'Offer',
+        price: price.toFixed(2),
+        priceCurrency: 'USD',
+        availability:
+          (inventoryMap.get(pp.product_id) ?? 0) > 0
+            ? 'https://schema.org/InStock'
+            : 'https://schema.org/OutOfStock',
+        url: `https://pepnationlab.com/${agentSlug}`,
+        priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+        itemCondition: 'https://schema.org/NewCondition',
+        seller: { '@id': 'https://pepnationlab.com/#organization' },
+      };
       return node;
     })
     .filter((n): n is Record<string, unknown> => n !== null);
@@ -421,7 +423,7 @@ export async function generateMetadata({ params }: Props) {
   // agent_profiles row is only fetched once per request.
   const { data: agent } = await getAgentProfileBySlug(agentSlug);
 
-  if (!agent) return { title: 'Store Not Found | Pep Nation Lab' };
+  if (!agent) return { title: 'Store Not Found | Pep Nation Lab', robots: { index: false, follow: false } };
 
   const title = `${agent.display_name} | Pep Nation Lab`;
   const description = agent.tagline
