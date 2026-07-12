@@ -1,0 +1,7 @@
+-- Phase 1B: an agent/super-agent-created signup promo comes out of THAT agent's pocket.
+-- store_credit promos with scope='agent' now DEBIT the owning agent (prepaid first, shortfall to
+-- their credit line) and CREDIT the new user, both rows carrying counterparty_id +
+-- reference_type='signup_promo'. Platform/admin promos stay house-funded (owner_agent_id NULL).
+-- Payout value is the catalog default (P0 clamp kept). first_order_coupon promos unchanged
+-- (already billed to the referring agent's storefront via the coupon they create).
+-- Full function body is in prod; see migration 20260712160500 (P0 clamp) + this (owner debit).
