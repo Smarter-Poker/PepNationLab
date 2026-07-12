@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { after, NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { CheckoutSchema } from '@/lib/schemas/order';
 import { applyBulkPrice, isTierLadderV2 } from '@/lib/pricing';
@@ -13,8 +13,8 @@ import { quantityDiscountPct, isVolumeDiscountExcluded } from '@/lib/quantity-di
 import { enqueuePush, shortOrderId } from '@/lib/push-enqueue';
 import { notifyOrderPlaced, notify, notifyCouponRedeemed } from '@/lib/notify';
 import { sendOrderConfirmationEmail } from '@/lib/email';
-import { captureError } from '@/lib/sentry';
-import { logError } from '@/lib/log';
+import { PAYMENT_METHOD_LABELS } from '@/lib/payment-method-labels';
+
 
 // CheckoutSchema lives in lib/schemas/order.ts -- the shared client/server
 // single source of truth for the checkout contract. The client
@@ -25,13 +25,6 @@ import { logError } from '@/lib/log';
 export async function POST(request: NextRequest) {
   const csrf = assertSameOrigin(request);
   if (csrf) return csrf;
-  // Compensation state hoisted above the try so the outer catch can undo
-  // reserved inventory / coupon redemption / prepaid deduction when the route
-  // throws unexpectedly between STEP A and the order insert. Before this, a
-  // transient throw in that window permanently leaked stock, coupon uses,
-  // and prepaid money with only a console line as evidence.
-  let compensateOnThrow: (() => Promise<void>) | null = null;
-  let orderCommitted = false;
   try {
     const supabase = await createClient();
     const serviceSupabase = createAdminClient();
@@ -156,28 +149,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Consolidated agent_profiles config for the agent of record. One query
-    // covers everything this route needs from that table: slug + min-qty rules
-    // (storefront checks below), bundles_config (stack discount), and
-    // volume_pricing_enabled (quantity discounts) -- previously fetched in up
-    // to three separate round trips.
-    let agentConfig: {
-      id: string;
-      slug: string | null;
-      min_overall_qty: number | null;
-      min_order_qty: number | null;
-      bundles_config: unknown;
-      volume_pricing_enabled: boolean | null;
-    } | null = null;
-    if (agentProfile) {
-      const { data: acRow } = await serviceSupabase
-        .from('agent_profiles')
-        .select('id, slug, min_overall_qty, min_order_qty, bundles_config, volume_pricing_enabled')
-        .eq('id', agentProfile.id)
-        .maybeSingle();
-      agentConfig = acRow ?? null;
-    }
-
     // Cart item ids may be agent_product ids (mobile by-name / quick-add path via
     // CartContext, where the storefront grid is not mounted) or master product ids
     // (storefront / reorder paths). Every downstream lookup here resolves against
@@ -207,10 +178,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed To Retrieve Product Data.' }, { status: 400 });
     }
 
-    // O(1) product lookups inside the per-item loops below (replaces repeated
-    // Array.find scans; same rows, same misses).
-    const productById = new Map(dbProducts.map(p => [p.id as string, p]));
-
     // Fetch Agent Inventory if a researcher is buying
     let agentStockMap: Record<string, number> = {};
     if (agentProfile && !isAgentSelfBuy) {
@@ -230,7 +197,7 @@ export async function POST(request: NextRequest) {
     // Check for banned or deactivated products and inventory limits
     for (let idx = 0; idx < items.length; idx++) {
       const cartItem = items[idx];
-      const dbProduct = productById.get(cartItem.id);
+      const dbProduct = dbProducts.find(p => p.id === cartItem.id);
       if (!dbProduct) {
         return NextResponse.json(
           { error: `Product ID "${cartItem.id}" Is No Longer Available. Please Return To The Store And Refresh Your Cart.` },
@@ -277,29 +244,19 @@ export async function POST(request: NextRequest) {
       const visibleSet = new Set((visibleRows ?? []).map((r: any) => r.product_id as string));
       const blocked = items.find(i => !visibleSet.has(i.id));
       if (blocked) {
-        const blockedName = productById.get(blocked.id)?.name ?? blocked.id;
+        const blockedName = dbProducts?.find(p => p.id === blocked.id)?.name ?? blocked.id;
         return NextResponse.json({ error: `Product "${blockedName}" Is Not Available Through This Agent's Store.` }, { status: 403 });
       }
     }
 
     if (agentSlug) {
-      // Reuse the consolidated agent-of-record row when its slug is an exact
-      // match for the requested storefront (agent_profiles.slug is UNIQUE, so
-      // the by-slug query would return the same row). Otherwise fall back to
-      // the by-slug lookup -- e.g. an agent self-buy on a different agent's
-      // storefront, or a buyer with no agent of record.
       // Use .eq() not .ilike() -- slug is a user-supplied value; underscore in
       // .ilike() is a LIKE wildcard that could match wrong storefronts.
-      let storefrontAgent: { id: string; min_overall_qty: number | null; min_order_qty: number | null } | null =
-        agentConfig && agentConfig.slug === agentSlug ? agentConfig : null;
-      if (!storefrontAgent) {
-        const { data: slugAgent } = await serviceSupabase
-          .from('agent_profiles')
-          .select('id, min_overall_qty, min_order_qty')
-          .eq('slug', agentSlug)
-          .maybeSingle();
-        storefrontAgent = slugAgent ?? null;
-      }
+      const { data: storefrontAgent } = await serviceSupabase
+        .from('agent_profiles')
+        .select('id, min_overall_qty, min_order_qty')
+        .eq('slug', agentSlug)
+        .maybeSingle();
 
       if (!storefrontAgent) {
         return NextResponse.json({ error: 'Agent Storefront Not Found.' }, { status: 404 });
@@ -328,104 +285,71 @@ export async function POST(request: NextRequest) {
       // per-slug visible-products query since the universal guard ran first.
     }
 
-    // Wholesale / flash-sale eligibility flags (decide which pricing reads to
-    // issue below).
-    // fix-57 #2: flash sale applies to researcher retail pricing only - agent
-    // self-buys and wholesale restocks are exempt (already at wholesale tier).
+    // 1. Fetch Admin Default Multipliers
+    const { data: tiers } = await serviceSupabase.from('pricing_tiers').select('tier_name, multiplier');
+    const tierMultipliers: Record<string, number> = {};
+    tiers?.forEach(t => { tierMultipliers[t.tier_name] = Number(t.multiplier); });
+
+    // fix-57 #2: fetch active flash sale (if any). Single row max.
+    // Applied to researcher retail pricing only - agent self-buys and
+    // wholesale restocks are exempt (already at wholesale tier).
     const wholesaleExplicit = explicitWholesale === true &&
       (profile.role === 'agent' || profile.role === 'super_agent') &&
       !isSubAgent;
     const flashSaleEligible = !isAgentSelfBuy && !isSubAgent && !wholesaleExplicit;
-
-    const agentTier = agentProfile?.tier || 'tier_3';
-    const superAgentTier = superAgentProfile ? (superAgentProfile.tier || 'tier_3') : null;
-    const cartProductIds = items.map(i => i.id);
-    const nowIso = new Date().toISOString();
-
-    // 1-5. Pricing inputs. Every read below is independent of the others once
-    // the agent of record and the cart are known, so issue them as one
-    // parallel batch instead of sequential round trips: pricing_tiers, active
-    // flash sale (single row max), product_tier_overrides (agent + super tiers
-    // in ONE query, cart products only), agent_products custom retail (cart
-    // products only), super_agent_pricing baselines, and the effective-markup
-    // RPC (agent ID is constant for the entire checkout, so one call).
-    const [
-      { data: tiers },
-      { data: activeSale },
-      { data: overrideRows },
-      { data: acr },
-      { data: sab },
-      { data: markupData },
-    ] = await Promise.all([
-      serviceSupabase.from('pricing_tiers').select('tier_name, multiplier'),
-      flashSaleEligible
-        ? serviceSupabase
-            .from('flash_sales')
-            .select('discount_pct')
-            .eq('is_active', true)
-            .lte('starts_at', nowIso)
-            .gte('ends_at', nowIso)
-            .order('ends_at', { ascending: true })
-            .limit(1)
-            .maybeSingle()
-        : Promise.resolve({ data: null }),
-      serviceSupabase
-        .from('product_tier_overrides')
-        .select('tier_name, product_id, custom_multiplier')
-        .in('tier_name', superAgentTier && superAgentTier !== agentTier ? [agentTier, superAgentTier] : [agentTier])
-        .in('product_id', cartProductIds),
-      agentProfile
-        ? serviceSupabase
-            .from('agent_products')
-            .select('product_id, retail_price, is_on_sale, sale_price')
-            .eq('agent_id', agentProfile.id)
-            .in('product_id', cartProductIds)
-        : Promise.resolve({ data: null }),
-      superAgentProfile
-        ? serviceSupabase
-            .from('super_agent_pricing')
-            .select('product_id, baseline_cost, bulk_baseline_cost, bulk_threshold')
-            .eq('super_agent_id', superAgentProfile.id)
-        : Promise.resolve({ data: null }),
-      agentProfile && !agentProfile.is_sub_agent
-        ? serviceSupabase.rpc('fn_agent_effective_markup', { p_agent: agentProfile.id })
-        : Promise.resolve({ data: null }),
-    ]);
-
-    // 1. Admin default multipliers
-    const tierMultipliers: Record<string, number> = {};
-    tiers?.forEach((t: { tier_name: string; multiplier: unknown }) => { tierMultipliers[t.tier_name] = Number(t.multiplier); });
-
     let flashSaleDiscountPct = 0;
-    if (flashSaleEligible && activeSale) {
-      const d = Number(activeSale.discount_pct);
-      if (Number.isFinite(d) && d > 0 && d <= 90) {
-        flashSaleDiscountPct = d;
+    if (flashSaleEligible) {
+      const nowIso = new Date().toISOString();
+      const { data: activeSale } = await serviceSupabase
+        .from('flash_sales')
+        .select('discount_pct')
+        .eq('is_active', true)
+        .lte('starts_at', nowIso)
+        .gte('ends_at', nowIso)
+        .order('ends_at', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (activeSale) {
+        const d = Number(activeSale.discount_pct);
+        if (Number.isFinite(d) && d > 0 && d <= 90) {
+          flashSaleDiscountPct = d;
+        }
       }
     }
     const flashMultiplier = 1 - (flashSaleDiscountPct / 100);
 
     // 2. Agent profiles already resolved above.
 
-    // 3. Override rule sets: both tiers came back in the single query above;
-    // split them into the same two per-tier maps as before. Precedence is
-    // unchanged -- agent and super-agent overrides are consulted independently
-    // in the per-item loop below.
-    const agentOverrides: Record<string, number> = {};
-    const superAgentOverrides: Record<string, number> = {};
-    overrideRows?.forEach((o: { tier_name: string; product_id: string; custom_multiplier: unknown }) => {
-      if (o.tier_name === agentTier) agentOverrides[o.product_id] = Number(o.custom_multiplier);
-      if (superAgentTier !== null && o.tier_name === superAgentTier) superAgentOverrides[o.product_id] = Number(o.custom_multiplier);
-    });
+    // 3. Fetch Override Rule Sets
+    const getOverrides = async (tier: string) => {
+      const { data } = await serviceSupabase.from('product_tier_overrides').select('product_id, custom_multiplier').eq('tier_name', tier);
+      const map: Record<string, number> = {};
+      data?.forEach(o => { map[o.product_id] = Number(o.custom_multiplier); });
+      return map;
+    };
 
-    // 4. Custom retail prices (cart products only; fetched above)
-    const agentCustomRetail: Record<string, number> = {};
-    acr?.forEach((a: { product_id: string; retail_price: unknown; is_on_sale: boolean | null; sale_price: number | null }) => {
-      const rawPrice = a.is_on_sale && a.sale_price != null
-        ? Number(a.sale_price)
-        : Number(a.retail_price);
-      agentCustomRetail[a.product_id] = rawPrice / 10;
-    });
+    const agentTier = agentProfile?.tier || 'tier_3';
+    const agentOverrides = await getOverrides(agentTier);
+
+    let superAgentOverrides: Record<string, number> = {};
+    if (superAgentProfile) {
+      superAgentOverrides = await getOverrides(superAgentProfile.tier || 'tier_3');
+    }
+
+    // 4. Fetch Custom Retail Prices
+    let agentCustomRetail: Record<string, number> = {};
+    if (agentProfile) {
+      const { data: acr } = await serviceSupabase
+        .from('agent_products')
+        .select('product_id, retail_price, is_on_sale, sale_price')
+        .eq('agent_id', agentProfile.id);
+      acr?.forEach(a => {
+        const rawPrice = a.is_on_sale && a.sale_price != null
+          ? Number(a.sale_price)
+          : Number(a.retail_price);
+        agentCustomRetail[a.product_id] = rawPrice / 10;
+      });
+    }
 
     // 4a. Legitimate stack/bundle membership. The 10% bundle discount is applied
     // per line only when the client-supplied bundleName matches an ACTIVE bundle
@@ -435,7 +359,12 @@ export async function POST(request: NextRequest) {
     // Map: normalized bundle name -> Set of member product_ids.
     const validBundleMembers = new Map<string, Set<string>>();
     if (agentProfile) {
-      const bundles = Array.isArray(agentConfig?.bundles_config) ? agentConfig!.bundles_config : [];
+      const { data: bundleRow } = await serviceSupabase
+        .from('agent_profiles')
+        .select('bundles_config')
+        .eq('id', agentProfile.id)
+        .maybeSingle();
+      const bundles = Array.isArray(bundleRow?.bundles_config) ? bundleRow!.bundles_config : [];
       for (const b of bundles as Array<{ name?: string; product_ids?: string[]; is_active?: boolean }>) {
         if (!b || b.is_active === false || typeof b.name !== 'string' || !Array.isArray(b.product_ids)) continue;
         const key = b.name.trim().toLowerCase();
@@ -454,34 +383,46 @@ export async function POST(request: NextRequest) {
     // volume_pricing_enabled Toggle (Default On). Researcher Retail Only.
     let volumeDiscountsEnabled = true;
     if (agentProfile && !isAgentSelfBuy && !isSubAgent) {
-      volumeDiscountsEnabled = agentConfig?.volume_pricing_enabled !== false;
+      const { data: vpRow } = await serviceSupabase
+        .from('agent_profiles')
+        .select('volume_pricing_enabled')
+        .eq('id', agentProfile.id)
+        .maybeSingle();
+      volumeDiscountsEnabled = vpRow?.volume_pricing_enabled !== false;
     }
 
-    // 5. Super agent baseline costs (fetched above)
-    const superAgentBaselines: Record<string, { baseline_cost: number, bulk_baseline_cost: number | null, bulk_threshold: number }> = {};
-    sab?.forEach((b: { product_id: string; baseline_cost: unknown; bulk_baseline_cost: number | null; bulk_threshold: number | null }) => {
-      superAgentBaselines[b.product_id] = {
-        baseline_cost: Number(b.baseline_cost),
-        bulk_baseline_cost: b.bulk_baseline_cost !== null ? Number(b.bulk_baseline_cost) : null,
-        bulk_threshold: b.bulk_threshold ?? 100
-      };
-    });
+    // 5. Fetch Super Agent Baseline Costs
+    let superAgentBaselines: Record<string, { baseline_cost: number, bulk_baseline_cost: number | null, bulk_threshold: number }> = {};
+    if (superAgentProfile) {
+      const { data: sab } = await serviceSupabase
+        .from('super_agent_pricing')
+        .select('product_id, baseline_cost, bulk_baseline_cost, bulk_threshold')
+        .eq('super_agent_id', superAgentProfile.id);
+      sab?.forEach(b => {
+        superAgentBaselines[b.product_id] = {
+          baseline_cost: Number(b.baseline_cost),
+          bulk_baseline_cost: b.bulk_baseline_cost !== null ? Number(b.bulk_baseline_cost) : null,
+          bulk_threshold: b.bulk_threshold ?? 100
+        };
+      });
+    }
 
     // 6. Compute Costs per Item
     let subtotal = 0;
     let totalWeightOz = 0;
     const computedItems = [];
 
-    // Effective markup was fetched once in the parallel batch above (the agent
-    // ID is constant for the entire checkout); consume the result here.
+    // Hoist the effective-markup RPC out of the per-item loop -- the agent ID
+    // is constant for the entire checkout, calling it once saves N-1 round trips.
     let agentEffectiveMarkupPct = 0;
     if (agentProfile && !agentProfile.is_sub_agent) {
+      const { data: markupData } = await serviceSupabase.rpc('fn_agent_effective_markup', { p_agent: agentProfile.id });
       agentEffectiveMarkupPct = Number(markupData) || 0;
     }
 
     for (let idx = 0; idx < items.length; idx++) {
       const cartItem = items[idx];
-      const dbProduct = productById.get(cartItem.id);
+      const dbProduct = dbProducts.find(p => p.id === cartItem.id);
       if (!dbProduct) {
         return NextResponse.json(
           { error: `Product ID "${cartItem.id}" Is No Longer Available. Please Return To The Store And Refresh Your Cart.` },
@@ -693,42 +634,19 @@ export async function POST(request: NextRequest) {
     let chinaReserved = false;
 
     const releaseReservedInventory = async () => {
-      // A failed release is silent stock corruption (reserved units never
-      // return to the pool) -- it must be loud even though the caller is on
-      // an error path already.
       if (localReserved && localItems.length > 0) {
-        const { error: relErr } = await serviceSupabase.rpc('release_inventory', { p_items: localItems, p_agent_id: agentProfile?.id, p_is_agent_ship: true });
-        if (relErr) {
-          logError('orders.POST.compensation.release_inventory_local', { userId: user.id }, relErr);
-          captureError(relErr, { context: 'orders.POST.compensation.release_inventory_local', userId: user.id, items: localItems });
-        } else {
-          localReserved = false;
-        }
+        await serviceSupabase.rpc('release_inventory', { p_items: localItems, p_agent_id: agentProfile?.id, p_is_agent_ship: true });
       }
       if (chinaReserved && chinaItems.length > 0) {
-        const { error: relErr } = await serviceSupabase.rpc('release_inventory', { p_items: chinaItems, p_agent_id: null, p_is_agent_ship: false });
-        if (relErr) {
-          logError('orders.POST.compensation.release_inventory_china', { userId: user.id }, relErr);
-          captureError(relErr, { context: 'orders.POST.compensation.release_inventory_china', userId: user.id, items: chinaItems });
-        } else {
-          chinaReserved = false;
-        }
+        await serviceSupabase.rpc('release_inventory', { p_items: chinaItems, p_agent_id: null, p_is_agent_ship: false });
       }
     };
-    compensateOnThrow = releaseReservedInventory;
 
     if (fulfillmentMethod !== 'agent_pickup') {
       if (localItems.length > 0) {
         const { error: reserveErr } = await serviceSupabase.rpc('reserve_inventory', { p_items: localItems, p_agent_id: agentProfile?.id, p_is_agent_ship: true });
         if (reserveErr) {
-          // Log every failure (an unexpected RPC regression previously
-          // produced zero server-side evidence), and NEVER echo raw Postgres
-          // RAISE text to the buyer -- it can carry product UUIDs and stock
-          // internals.
-          const isStock = /Insufficient inventory/i.test(reserveErr.message);
-          logError('orders.POST.reserve_inventory_local', { userId: user.id, isStock, code: (reserveErr as { code?: string }).code }, reserveErr);
-          if (!isStock) captureError(reserveErr, { context: 'orders.POST.reserve_inventory_local', userId: user.id });
-          return NextResponse.json({ error: isStock ? 'Insufficient Local Inventory For One Or More Items. Please Reduce Quantities And Try Again.' : 'Failed To Reserve Local Inventory. Please Try Again.' }, { status: 422 });
+          return NextResponse.json({ error: /Insufficient inventory/i.test(reserveErr.message) ? reserveErr.message : 'Failed To Reserve Local Inventory. Please Try Again.' }, { status: 422 });
         }
         localReserved = true;
       }
@@ -736,10 +654,7 @@ export async function POST(request: NextRequest) {
         const { error: reserveErr } = await serviceSupabase.rpc('reserve_inventory', { p_items: chinaItems, p_agent_id: null, p_is_agent_ship: false });
         if (reserveErr) {
           await releaseReservedInventory();
-          const isStock = /Insufficient inventory/i.test(reserveErr.message);
-          logError('orders.POST.reserve_inventory_china', { userId: user.id, isStock, code: (reserveErr as { code?: string }).code }, reserveErr);
-          if (!isStock) captureError(reserveErr, { context: 'orders.POST.reserve_inventory_china', userId: user.id });
-          return NextResponse.json({ error: isStock ? 'Insufficient Inventory For One Or More Items. Please Reduce Quantities And Try Again.' : 'Failed To Reserve Global Inventory. Please Try Again.' }, { status: 422 });
+          return NextResponse.json({ error: /Insufficient inventory/i.test(reserveErr.message) ? reserveErr.message : 'Failed To Reserve Global Inventory. Please Try Again.' }, { status: 422 });
         }
         chinaReserved = true;
       }
@@ -852,15 +767,10 @@ export async function POST(request: NextRequest) {
     const rollbackPreOrder = async () => {
       await releaseReservedInventory();
       if (appliedCouponId) {
-        const { error: unredeemErr } = await serviceSupabase.rpc('unredeem_coupon', { p_coupon_id: appliedCouponId });
-        if (unredeemErr) {
-          logError('orders.POST.compensation.unredeem_coupon', { userId: user.id, couponId: appliedCouponId }, unredeemErr);
-          captureError(unredeemErr, { context: 'orders.POST.compensation.unredeem_coupon', userId: user.id, couponId: appliedCouponId });
-        }
+        await serviceSupabase.rpc('unredeem_coupon', { p_coupon_id: appliedCouponId });
         appliedCouponId = null;
       }
     };
-    compensateOnThrow = rollbackPreOrder;
 
     // Calculate shipping costs. Shipping option is derived STRICTLY from
     // fulfillmentMethod, never trusted from the client's shippingOption field:
@@ -1000,27 +910,6 @@ export async function POST(request: NextRequest) {
     let prepaidDeductedAmount = 0;
     let prepaidDeductedAgentId: string | null = null;
 
-    // A failed prepaid refund is silent money loss for the agent -- report it
-    // as loudly as anything in this file. Sets prepaidDeducted=false on
-    // success so a later compensation pass never double-refunds.
-    const refundPrepaidIfNeeded = async () => {
-      if (!(prepaidDeducted && prepaidDeductedAmount > 0 && prepaidDeductedAgentId)) return;
-      const { error: refundErr } = await serviceSupabase.rpc('refund_prepaid_balance', { p_agent_id: prepaidDeductedAgentId, p_amount: prepaidDeductedAmount });
-      if (refundErr) {
-        logError('orders.POST.compensation.refund_prepaid_balance', { userId: user.id, agentId: prepaidDeductedAgentId, amount: prepaidDeductedAmount }, refundErr);
-        captureError(refundErr, { context: 'orders.POST.compensation.refund_prepaid_balance', severity: 'critical', userId: user.id, agentId: prepaidDeductedAgentId, amount: prepaidDeductedAmount, idempotencyKey: idempotencyKey ?? null });
-      } else {
-        prepaidDeducted = false;
-      }
-    };
-
-    // Full compensation for a failed attempt: inventory, coupon, prepaid.
-    const compensateFailedAttempt = async () => {
-      await rollbackPreOrder();
-      await refundPrepaidIfNeeded();
-    };
-    compensateOnThrow = compensateFailedAttempt;
-
     const checkSuperAgentCredit = async (saProfile: any, amount: number) => {
       if (saProfile.account_type === 'prepaid') {
         const bal = Number(saProfile.prepaid_balance) || 0;
@@ -1043,22 +932,15 @@ export async function POST(request: NextRequest) {
         const { data: subAgents } = await serviceSupabase.from('profiles').select('id').eq('parent_agent_id', saProfile.id);
         const agentIds = [saProfile.id, ...(subAgents?.map((s: { id: string }) => s.id) || [])];
 
-        // Unbilled = no statement_orders link. statement_orders.statement_id is
-        // NOT NULL, so "embedded resource is empty" is exactly the set the old
-        // in-memory filter kept; push it server-side via .is(..., null) and
-        // select only the columns the in-flight sum reads (id dropped).
         const { data: approvedOrders } = await serviceSupabase
           .from('orders')
-          .select('shipping_cost, statement_orders(statement_id), order_items(quantity, unit_cost_price, unit_super_agent_cost), agent_id')
+          .select('id, shipping_cost, statement_orders(statement_id), order_items(quantity, unit_cost_price, unit_super_agent_cost), agent_id')
           .in('agent_id', agentIds)
           .eq('is_wholesale_restock', false)
-          .in('status', ['approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered'])
-          .is('statement_orders', null);
+          .in('status', ['approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered']);
 
         let inFlight = 0;
         for (const o of approvedOrders ?? []) {
-          // Belt-and-braces: the server-side .is() filter above already excludes
-          // billed orders; this guard keeps the computed sum exact regardless.
           const links = (o.statement_orders as unknown) as Array<{ statement_id: string | null }> | null;
           if (Array.isArray(links) && links.some((l) => l?.statement_id)) continue;
           const ship = Number((o as { shipping_cost?: unknown }).shipping_cost) || 0;
@@ -1190,12 +1072,7 @@ export async function POST(request: NextRequest) {
         buyer_id: user.id,
         buyer_name: (profile as any).full_name || null,
         buyer_email: user.email || null,
-        // agent_id = the storefront owner whose sales this order credits.
-        // For an agent self-buy, that IS the buyer (agentProfile.id == profile.id).
-        // Previously this was incorrectly set to superAgentProfile.id, making the
-        // order invisible in the agent's own sales dashboard. superAgentProfile is
-        // used only for pricing/billing-chain — it does NOT own the sale.
-        agent_id: isAgentSelfBuy ? agentProfile.id : (agentProfile ? agentProfile.id : null),
+        agent_id: isAgentSelfBuy ? (superAgentProfile ? superAgentProfile.id : null) : (agentProfile ? agentProfile.id : null),
         is_wholesale_restock: isWholesaleRestock,
         status: initialStatus,
         fulfillment_method: fulfillmentMethod,
@@ -1230,7 +1107,11 @@ export async function POST(request: NextRequest) {
           // This duplicate (same idempotency_key) request lost the INSERT race
           // but already re-ran reserve / redeem / prepaid-deduct above. Undo ALL
           // of THIS attempt's side effects before returning the original order.
-          await compensateFailedAttempt();
+          await releaseReservedInventory();
+          if (appliedCouponId) await serviceSupabase.rpc('unredeem_coupon', { p_coupon_id: appliedCouponId });
+          if (prepaidDeducted && prepaidDeductedAmount > 0 && prepaidDeductedAgentId) {
+            await serviceSupabase.rpc('refund_prepaid_balance', { p_agent_id: prepaidDeductedAgentId, p_amount: prepaidDeductedAmount });
+          }
           return NextResponse.json({
             success: true,
             orderId: existing.id,
@@ -1239,9 +1120,12 @@ export async function POST(request: NextRequest) {
           });
         }
       }
-      await compensateFailedAttempt();
-      logError('orders.POST.order_insert', { userId: user.id, idempotencyKey: idempotencyKey ?? null }, orderError);
-      captureError(orderError, { context: 'orders.POST.order_insert', userId: user.id, idempotencyKey: idempotencyKey ?? null });
+      await releaseReservedInventory();
+      if (appliedCouponId) await serviceSupabase.rpc('unredeem_coupon', { p_coupon_id: appliedCouponId });
+      if (prepaidDeducted && prepaidDeductedAmount > 0 && prepaidDeductedAgentId) {
+        await serviceSupabase.rpc('refund_prepaid_balance', { p_agent_id: prepaidDeductedAgentId, p_amount: prepaidDeductedAmount });
+      }
+      console.error('Database Order Write Error:', orderError);
       return NextResponse.json({ error: 'Failed To Save Order Transaction.' }, { status: 500 });
     }
 
@@ -1278,22 +1162,16 @@ export async function POST(request: NextRequest) {
       .insert(itemsToInsert);
 
     if (itemsError) {
-      logError('orders.POST.order_items_insert', { userId: user.id, orderId: order.id }, itemsError);
-      captureError(itemsError, { context: 'orders.POST.order_items_insert', userId: user.id, orderId: order.id });
-      const { error: deleteErr } = await serviceSupabase.from('orders').delete().eq('id', order.id);
-      if (deleteErr) {
-        // Orphan order row (no items). The stale-order cron will cancel it,
-        // but report it so the pattern is visible.
-        captureError(deleteErr, { context: 'orders.POST.compensation.orphan_order_delete', orderId: order.id });
+      console.error('Database Order Items Write Error:', JSON.stringify(itemsError));
+      await serviceSupabase.from('orders').delete().eq('id', order.id);
+      await releaseReservedInventory();
+      if (appliedCouponId) await serviceSupabase.rpc('unredeem_coupon', { p_coupon_id: appliedCouponId });
+      if (prepaidDeducted && prepaidDeductedAmount > 0 && prepaidDeductedAgentId) {
+        await serviceSupabase.rpc('refund_prepaid_balance', { p_agent_id: prepaidDeductedAgentId, p_amount: prepaidDeductedAmount });
       }
-      await compensateFailedAttempt();
 
       return NextResponse.json({ error: 'An Unexpected Error Occurred While Saving Order Items.' }, { status: 500 });
     }
-    // The order + items now exist: the outer catch must no longer roll back
-    // inventory/coupon/prepaid -- those belong to this order.
-    orderCommitted = true;
-    compensateOnThrow = null;
 
     if (initialStatus === 'approved_ship' || initialStatus === 'approved_pickup') {
       const { error: creditErr } = await serviceSupabase.rpc('charge_order_credit_line', { p_order_id: order.id, p_created_by: user.id });
@@ -1303,43 +1181,15 @@ export async function POST(request: NextRequest) {
         // Demote it to the manual-approval status used elsewhere in this file
         // and skip the shipping-label enqueue so nothing goes out the door until
         // a human reconciles the billing.
-        logError('orders.POST.charge_order_credit_line', { orderId: order.id, userId: user.id }, creditErr);
-        captureError(creditErr, { context: 'orders.POST.charge_order_credit_line', severity: 'critical', orderId: order.id, userId: user.id });
-        const { error: demoteErr } = await serviceSupabase
+        console.error('[CRITICAL] charge_order_credit_line Failed For Order', order.id, creditErr);
+        await serviceSupabase
           .from('orders')
           .update({ status: 'agent_approval_pending' })
           .eq('id', order.id);
-        if (demoteErr) {
-          // Double failure: the order is still approved_ship with no billing
-          // row -- unbilled goods will ship unless a human intervenes. Retry
-          // once, then escalate via Sentry + admin notification.
-          const { error: demoteRetryErr } = await serviceSupabase
-            .from('orders')
-            .update({ status: 'agent_approval_pending' })
-            .eq('id', order.id);
-          if (demoteRetryErr) {
-            captureError(demoteRetryErr, { context: 'orders.POST.charge_credit_demotion_failed', severity: 'critical', orderId: order.id });
-            try {
-              const { data: admins } = await serviceSupabase.from('profiles').select('id').eq('role', 'admin');
-              for (const a of admins ?? []) {
-                await notify(serviceSupabase, {
-                  userId: a.id,
-                  type: 'system',
-                  title: 'Billing Reconciliation Required',
-                  body: `Order ${shortOrderId(order.id)} Is Approved But Its Credit Charge Failed And Demotion Also Failed. Manual Review Required.`,
-                  url: `/admin/orders?highlight=${order.id}`,
-                });
-              }
-            } catch (notifyErr) {
-              captureError(notifyErr, { context: 'orders.POST.charge_credit_admin_notify', orderId: order.id });
-            }
-          }
-        }
       } else if (initialStatus === 'approved_ship') {
         const { error: labelErr } = await serviceSupabase.rpc('shipping_enqueue_label_job', { p_order_id: order.id });
         if (labelErr) {
-          logError('orders.POST.shipping_enqueue_label_job', { orderId: order.id }, labelErr);
-          captureError(labelErr, { context: 'orders.POST.shipping_enqueue_label_job', orderId: order.id });
+          console.error('[WARNING] shipping_enqueue_label_job Failed For Order', order.id, labelErr);
         }
       }
     }
@@ -1394,20 +1244,19 @@ export async function POST(request: NextRequest) {
       // Best-effort attribution
     }
 
-    // In-app + push notifications for new order. Each call is an independent
-    // best-effort side effect (the helpers never throw -- they swallow their
-    // own errors), so run them in parallel; allSettled keeps the same
-    // fire-and-forget tolerance as the surrounding try/catch. Buyer name comes
-    // from the profile row already loaded at the top of the route (the old
-    // refetch of profiles.full_name was redundant).
+    // In-app + push notifications for new order
     try {
       const short = shortOrderId(order.id);
-      const notificationTasks: Promise<unknown>[] = [];
       if (agentProfile && !isAgentSelfBuy) {
-        const buyerName = (profile as { full_name?: string | null }).full_name || 'A Researcher';
-        notificationTasks.push(notifyOrderPlaced(serviceSupabase, agentProfile.id, order.id, short, buyerName));
+        const { data: buyerProfile } = await serviceSupabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .maybeSingle();
+        const buyerName = buyerProfile?.full_name || 'A Researcher';
+        await notifyOrderPlaced(serviceSupabase, agentProfile.id, order.id, short, buyerName);
         if (appliedCouponCode && discountAmount > 0) {
-          notificationTasks.push(notifyCouponRedeemed(
+          await notifyCouponRedeemed(
             serviceSupabase,
             agentProfile.id,
             appliedCouponCode,
@@ -1415,9 +1264,9 @@ export async function POST(request: NextRequest) {
             Number(order.total) || 0,
             order.id,
             short,
-          ));
+          );
         }
-        notificationTasks.push(enqueuePush(serviceSupabase, {
+        await enqueuePush(serviceSupabase, {
           userId: agentProfile.id,
           title: `New Order #${short}`,
           body: `${buyerName} Placed A New Order. Tap To Review.`,
@@ -1425,16 +1274,16 @@ export async function POST(request: NextRequest) {
           event: 'order_new',
           relatedOrderId: order.id,
           tag: `new-order-${order.id}`,
-        }));
+        });
       }
-      notificationTasks.push(notify(serviceSupabase, {
+      await notify(serviceSupabase, {
         userId: user.id,
         type: 'order_placed',
         title: `Order #${short} Placed`,
         body: 'Your Order Has Been Placed. You Will Be Notified When It Is Approved.',
         url: `/orders/${order.id}`,
-      }));
-      notificationTasks.push(enqueuePush(serviceSupabase, {
+      });
+      await enqueuePush(serviceSupabase, {
         userId: user.id,
         title: `Order #${short} Placed`,
         body: 'Your Order Has Been Placed. You Will Be Notified When It Is Approved.',
@@ -1442,28 +1291,44 @@ export async function POST(request: NextRequest) {
         event: 'order_placed',
         relatedOrderId: order.id,
         tag: `order-placed-${order.id}`,
-      }));
-      await Promise.allSettled(notificationTasks);
-    } catch (notifErr) {
-      // Never propagate - notifications are best-effort. But a silent swallow
-      // here previously meant a broken notify()/enqueuePush() migration could
-      // stop ALL new-order alerts platform-wide with zero evidence.
-      logError('orders.POST.notifications', { orderId: order.id }, notifErr);
-      captureError(notifErr, { context: 'orders.POST.notifications', orderId: order.id });
+      });
+    } catch {
+      // Never propagate - notifications are best-effort
     }
 
     // Send order confirmation email (best-effort, non-blocking). Only to a
     // VERIFIED contact email, to protect sender reputation / deliverability.
     if (profile?.contact_email && (profile as { email_verified?: boolean }).email_verified) {
       try {
-        const itemsSummary = computedItems.map((i: any) => `${i.quantity}x ${i.product_name}`).join(', ');
-        sendOrderConfirmationEmail({
-          to: profile.contact_email,
-          fullName: profile.full_name,
-          orderId: order.id,
-          total: Number(order.total) || 0,
-          itemsSummary,
-        }).catch(() => { /* ignore */ });
+        // Aggregate quantities by product name: computedItems carries a
+        // separate row per local/China warehouse split, which used to render
+        // the same product twice in the emailed summary.
+        const qtyByName = new Map<string, number>();
+        for (const i of computedItems as Array<{ product_name: string; quantity: number }>) {
+          qtyByName.set(i.product_name, (qtyByName.get(i.product_name) ?? 0) + (Number(i.quantity) || 0));
+        }
+        const itemsSummary = [...qtyByName.entries()].map(([n, q]) => `${q}x ${n}`).join(', ');
+        // after(): the send survives the response being flushed. A detached
+        // promise on Vercel can be killed before the provider call completes,
+        // silently losing the order confirmation.
+        after(
+          sendOrderConfirmationEmail({
+            to: profile.contact_email,
+            fullName: profile.full_name,
+            orderId: order.id,
+            total: Number(order.total) || 0,
+            itemsSummary,
+            subtotal: Number(subtotal) || null,
+            discount: Number(discountAmount) || null,
+            shippingCost: Number(shippingCost) || null,
+            // Peer-to-peer payment model: when the order awaits customer
+            // payment, tell the buyer how to pay in the one artifact that
+            // survives a closed tab -- their inbox.
+            paymentMethod: initialStatus === 'pending_customer_payment'
+              ? ((PAYMENT_METHOD_LABELS as Record<string, string>)[paymentMethod] ?? paymentMethod)
+              : null,
+          }).catch(() => { /* ignore */ })
+        );
       } catch { /* ignore */ }
     }
 
@@ -1474,18 +1339,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    logError('orders.POST.unhandled', { orderCommitted }, error);
-    captureError(error, { context: 'orders.POST.unhandled', orderCommitted });
-    // Best-effort compensation: if the throw happened after inventory was
-    // reserved / a coupon redeemed / prepaid deducted but BEFORE the order
-    // committed, undo those side effects instead of leaking them.
-    if (!orderCommitted && compensateOnThrow) {
-      try {
-        await compensateOnThrow();
-      } catch (compErr) {
-        captureError(compErr, { context: 'orders.POST.unhandled.compensation_failed', severity: 'critical' });
-      }
-    }
+    console.error('Order API Route Caught Exception:', error);
     return NextResponse.json({ error: 'Internal Server Error Occurred.' }, { status: 500 });
   }
 }
