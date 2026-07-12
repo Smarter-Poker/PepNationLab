@@ -290,7 +290,7 @@ function VisualSyringe({ ml, size, type = 'u100', onDrawMlChange }: VisualSyring
     const rect = barrelRef.current.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const width = rect.width;
-    const relativeX = Math.min(width, Math.max(0, clickX));
+    const relativeX = Math.min(width, Math.max(0, width - clickX));
     const pct = relativeX / width;
     const newMl = pct * size;
     onDrawMlChange(newMl);
@@ -353,18 +353,19 @@ function VisualSyringe({ ml, size, type = 'u100', onDrawMlChange }: VisualSyring
                 position: 'relative', 
                 display: 'flex', 
                 alignItems: 'center', 
+                justifyContent: 'flex-end',
                 overflow: 'hidden',
                 cursor: onDrawMlChange ? 'ew-resize' : 'default',
                 touchAction: 'none',
               }}
             >
               {/* Liquid / Plunger fill */}
-              <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg, rgba(0, 229, 255, 0.3) 0%, rgba(0, 229, 255, 0.15) 100%)', borderRight: '4px solid #00E5FF', transition: isDragging ? 'none' : 'width 0.4s ease-out' }} />
+              <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg, rgba(0, 229, 255, 0.15) 0%, rgba(0, 229, 255, 0.3) 100%)', borderLeft: '4px solid #00E5FF', transition: isDragging ? 'none' : 'width 0.4s ease-out' }} />
               
               {/* Major Ticks */}
               <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'space-between', pointerEvents: 'none', padding: '0 2px' }}>
                 {Array.from({ length: tickCount + 1 }).map((_, i) => {
-                  const val = Math.round(i * (maxUnits / tickCount));
+                  const val = Math.round((tickCount - i) * (maxUnits / tickCount));
                   return (
                     <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'space-between' }}>
                       <div style={{ width: 2, height: 8, background: 'rgba(255,255,255,0.4)' }} />
