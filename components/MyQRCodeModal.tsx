@@ -48,6 +48,8 @@ export default function MyQRCodeModal({
   const lastOpenRef = useRef(false);
   const [reward, setReward] = useState<{ isSubAgent: boolean; enabled: boolean; amount: number } | null>(null);
   const [rewardSaving, setRewardSaving] = useState(false);
+  const [stats, setStats] = useState<{ total_referred: number; total_orders: number; total_revenue: number } | null>(null);
+  const [promoData, setPromoData] = useState<{ promos: Array<{ code: string; name: string; rewardLabel: string; scope: string; mine: boolean }>; canManage: boolean; manageHref: string | null } | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -80,8 +82,39 @@ export default function MyQRCodeModal({
       .then(j => { if (j && typeof j === 'object') setReward(j); })
       .catch(() => { /* non-agent accounts simply have no reward panel */ });
 
+    // Load referral performance stats (referred / orders / revenue).
+    setStats(null);
+    fetch('/api/agent/referrals', { cache: 'no-store' })
+      .then(async r => (r.ok ? r.json() : null))
+      .then(j => {
+        if (j && typeof j === 'object') {
+          setStats({
+            total_referred: Number(j.total_referred) || 0,
+            total_orders: Number(j.total_orders) || 0,
+            total_revenue: Number(j.total_revenue) || 0,
+          });
+        }
+      })
+      .catch(() => { /* no stats for this account */ });
+
+    // Load active sign-up promos this user can share (and manage, if allowed).
+    setPromoData(null);
+    fetch('/api/agent/available-promos', { cache: 'no-store' })
+      .then(async r => (r.ok ? r.json() : null))
+      .then(j => { if (j && typeof j === 'object') setPromoData(j); })
+      .catch(() => { /* promos section simply hidden */ });
+
     return () => clearTimeout(armId);
   }, [open]);
+
+  async function copyText(value: string, label: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success(`${label} Copied`);
+    } catch {
+      toast.error('Could Not Copy');
+    }
+  }
 
   async function saveReward(nextEnabled: boolean, nextAmount: number) {
     setRewardSaving(true);
@@ -422,6 +455,74 @@ export default function MyQRCodeModal({
                 >
                   Or share your storefront →
                 </a>
+              )}
+
+              {/* Referral performance stats */}
+              {stats && (
+                <div style={{ width: '100%', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                  {[
+                    { label: 'Referred', value: String(stats.total_referred) },
+                    { label: 'Orders', value: String(stats.total_orders) },
+                    { label: 'Revenue', value: `$${Math.round(stats.total_revenue).toLocaleString()}` },
+                  ].map((s) => (
+                    <div key={s.label} className="glass-panel" style={{ padding: '12px 8px', textAlign: 'center' }}>
+                      <div style={{ color: '#EAF1F6', fontWeight: 800, fontSize: '1.1rem' }}>{s.value}</div>
+                      <div style={{ color: '#8FA0B0', fontSize: '0.66rem', textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: 2 }}>{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Sign-Up Promos: shareable perks + manage shortcut */}
+              {promoData && (
+                <div className="glass-panel" style={{ width: '100%', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#EAF1F6' }}>Sign-Up Promos</span>
+                    {promoData.canManage && promoData.manageHref && (
+                      <a href={promoData.manageHref} onClick={(e) => e.stopPropagation()}
+                        style={{ fontSize: '0.75rem', color: '#7FD9D3', textDecoration: 'none', fontWeight: 700 }}>
+                        Create / Manage →
+                      </a>
+                    )}
+                  </div>
+                  {promoData.promos.length === 0 ? (
+                    <p style={{ fontSize: '0.75rem', color: '#93A3B2', margin: 0, lineHeight: 1.4 }}>
+                      {promoData.canManage
+                        ? 'No active sign-up promos yet. Create one to reward new sign-ups.'
+                        : 'No active sign-up promos right now.'}
+                    </p>
+                  ) : (
+                    <>
+                      <p style={{ fontSize: '0.72rem', color: '#93A3B2', margin: 0, lineHeight: 1.4 }}>
+                        Share a code with a new sign-up to unlock the reward.
+                      </p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {promoData.promos.map((p) => (
+                          <button
+                            key={p.code}
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); copyText(p.code, 'Promo Code'); }}
+                            title="Copy Promo Code"
+                            style={{
+                              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+                              width: '100%', cursor: 'pointer', textAlign: 'left',
+                              padding: '10px 12px', borderRadius: 10,
+                              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.12)',
+                            }}
+                          >
+                            <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+                              <span style={{ fontFamily: 'monospace', fontWeight: 800, color: '#00C4BC', letterSpacing: '0.05em' }}>{p.code}</span>
+                              <span style={{ fontSize: '0.72rem', color: '#A8B4C0' }}>{p.rewardLabel}{p.mine ? ' · Yours' : ''}</span>
+                            </span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7FD9D3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                            </svg>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
               )}
 
               {/* Sub-agent referral reward opt-in (default OFF / $0) */}
