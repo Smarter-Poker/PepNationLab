@@ -94,7 +94,7 @@ export default function HomeClient() {
         <h1>Pep Nation Lab - Wholesale Research-Grade Peptides For Qualified Researchers</h1>
         <p>
           Pep Nation Lab supplies research-grade peptides to verified researchers and scientific
-          institutions across all 50 US states. Browse a catalog of 100+ research compounds - including
+          institutions across all 50 US states. Explore a 300+ compound research library with 100+ research compounds available - including
           BPC-157, Semaglutide, Tirzepatide, TB-500, Ipamorelin, and CJC-1295 - at wholesale pricing,
           with a full research library, compound monographs, dosing calculators, and local coverage in
           hundreds of US cities. All products are strictly for in vitro laboratory research use only.
@@ -144,6 +144,10 @@ export default function HomeClient() {
               left: zone.left,
               width: zone.width,
               height: zone.height,
+              // Tap-target floor (WCAG 2.5.8 / 48dp guidance): percentage
+              // heights shrink below 24px on small phones; the transparent
+              // hit area may grow beyond the painted button.
+              minHeight: 24,
               cursor: 'pointer',
               zIndex: 10,
             }}

@@ -3,9 +3,30 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import GuestCTA from '@/components/GuestCTA';
 
+// Module titles as taught by the course engines (public/peptide-101.m*.js).
+// Server-rendered in the syllabus below so the page carries real, crawlable
+// educational text instead of an artwork-only shell.
+const CONTENT_STATIC = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s11','s12','s13','s14'];
+
+const MODULE_TITLES = [
+  'Module 1: What Is A Peptide',
+  'Module 2: Building A Peptide',
+  'Module 3: The Lock And Key',
+  'Module 4: What Peptides Are Studied For',
+  'Module 5: Handling And Storage',
+  'Module 6: Peptide Families And Categories',
+  'Module 7: Stacking And Research Protocols',
+  'Module 8: Reconstitution Calculator',
+  'Module 9: Dosing Reference',
+  'Module 10: What Peptides Are NOT',
+  'Module 11: Why Peptides Are Injected',
+  'Module 12: Safety, Purity And Sourcing',
+  'Module 13: Legality And Research Use',
+  'Module 14: Final Quiz And Certificate',
+];
+
 export default function Peptide101LandingPage() {
   const [completedModules, setCompletedModules] = useState(0);
-  const [mounted, setMounted] = useState(false);
   const [lockedToast, setLockedToast] = useState(false);
 
   useEffect(() => {
@@ -26,7 +47,6 @@ export default function Peptide101LandingPage() {
     };
 
     calculateProgress();
-    setMounted(true);
 
     // No auto-launch — users must manually click Start Learning.
 
@@ -45,8 +65,10 @@ export default function Peptide101LandingPage() {
     };
   }, []);
 
-  if (!mounted) return <div style={{ backgroundColor: '#020617', width: '100%', height: '100dvh' }}></div>;
-
+  // SSR note: no mounted gate - the server HTML must carry the state-1 artwork,
+  // real <a href> links, and the syllabus below so non-JS crawlers (GPTBot,
+  // ClaudeBot, PerplexityBot) see content and the LCP image can preload.
+  // localStorage progress corrects the artwork after hydration.
   const landingState = Math.min(completedModules + 1, 14);
   const CONTENT = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s11','s12','s13','s14'];
 
@@ -69,12 +91,12 @@ export default function Peptide101LandingPage() {
     setTimeout(() => setLockedToast(false), 2800);
   };
 
+  // Clears per-module resume state; navigation is handled by the anchor href.
   const handleModuleClick = (modId: string, index: number) => {
     try {
       localStorage.removeItem(`p101_m${index + 1}_page`);
       localStorage.removeItem(`p101_v14_cur_${modId}`);
     } catch(e) {}
-    window.location.href = `/peptide-101/course#${modId}`;
   };
 
   return (
@@ -96,23 +118,26 @@ export default function Peptide101LandingPage() {
           style={{ width: '100%', height: 'auto', display: 'block' }}
         />
 
-        <div onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})} style={{ position: 'absolute', top: '0%', left: '0%', width: '20%', height: '60px', cursor: 'pointer', zIndex: 10 }} title="Overview"></div>
-        <div onClick={() => window.location.href='/peptide-101/course#s1'} style={{ position: 'absolute', top: '0%', left: '20%', width: '20%', height: '60px', cursor: 'pointer', zIndex: 10 }} title="Roadmap"></div>
-        <div onClick={() => window.location.href='/peptide-101/course#s6'} style={{ position: 'absolute', top: '0%', left: '40%', width: '20%', height: '60px', cursor: 'pointer', zIndex: 10 }} title="Families"></div>
-        <div onClick={() => window.location.href='/peptide-101/course#s8'} style={{ position: 'absolute', top: '0%', left: '60%', width: '20%', height: '60px', cursor: 'pointer', zIndex: 10 }} title="Reconstitution"></div>
-        <div onClick={() => window.location.href='/peptide-101/course#s10'} style={{ position: 'absolute', top: '0%', left: '80%', width: '20%', height: '60px', cursor: 'pointer', zIndex: 10 }} title="Certificate"></div>
+        {/* Real anchors (crawlable + keyboard reachable) with visually-hidden
+            text - same pattern as the homepage ZONES layer. */}
+        <button type="button" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})} aria-label="Overview" style={{ position: 'absolute', top: '0%', left: '0%', width: '20%', height: '60px', cursor: 'pointer', zIndex: 10, background: 'transparent', border: 'none' }} title="Overview"></button>
+        <a href="/peptide-101/course#s1" style={{ position: 'absolute', top: '0%', left: '20%', width: '20%', height: '60px', cursor: 'pointer', zIndex: 10 }} title="Roadmap"><span className="sr-only">Course Roadmap</span></a>
+        <a href="/peptide-101/course#s6" style={{ position: 'absolute', top: '0%', left: '40%', width: '20%', height: '60px', cursor: 'pointer', zIndex: 10 }} title="Families"><span className="sr-only">Peptide Families And Categories</span></a>
+        <a href="/peptide-101/course#s8" style={{ position: 'absolute', top: '0%', left: '60%', width: '20%', height: '60px', cursor: 'pointer', zIndex: 10 }} title="Reconstitution"><span className="sr-only">Reconstitution Module</span></a>
+        <a href="/peptide-101/course#s10" style={{ position: 'absolute', top: '0%', left: '80%', width: '20%', height: '60px', cursor: 'pointer', zIndex: 10 }} title="Certificate"><span className="sr-only">Course Certificate</span></a>
 
-        <div
-          onClick={routeToNext}
+        <a
+          href={`/peptide-101/course#${completedModules < 13 ? CONTENT[completedModules] : 's15'}`}
+          onClick={(e) => { e.preventDefault(); routeToNext(); }}
           style={{ position: 'absolute', top: '28%', left: '2%', width: '58%', height: '6%', cursor: 'pointer', zIndex: 10 }}
           title={landingState === 1 ? "Start Learning" : "Continue Learning"}
-        ></div>
+        ><span className="sr-only">{landingState === 1 ? 'Start Learning' : 'Continue Learning'}</span></a>
 
-        <div
-          onClick={() => window.location.href='/peptide-101/course#glossary'}
+        <a
+          href="/peptide-101/course#glossary"
           style={{ position: 'absolute', top: '12%', left: '5%', width: '40%', height: '8%', cursor: 'pointer', zIndex: 10 }}
           title="60+ Peptides (Glossary)"
-        ></div>
+        ><span className="sr-only">60+ Peptides Glossary</span></a>
 
         {CONTENT.concat(['s15']).map((modId, index) => {
           const ROADMAP_START = 54.9;
@@ -123,15 +148,18 @@ export default function Peptide101LandingPage() {
           const isCurrent  = index === completedModules;
 
           return (
-            <div
+            <a
               key={modId}
+              href={`/peptide-101/course#${modId}`}
               onClick={() => handleModuleClick(modId, index)}
               style={{
                 position: 'absolute',
                 top: `${topPosition}%`,
                 left: '5%',
                 width: '90%',
-                height: '2%',
+                // Height matches ROADMAP_STEP so consecutive hitboxes no longer
+                // overlap (boundary taps were landing on the wrong module).
+                height: '1.84%',
                 cursor: isLocked ? 'not-allowed' : 'pointer',
                 zIndex: 10,
               }}
@@ -142,21 +170,24 @@ export default function Peptide101LandingPage() {
                   ? `Continue: Module ${index + 1}`
                   : `Review: Module ${index + 1}`
               }
-            ></div>
+            ><span className="sr-only">{MODULE_TITLES[index]}</span></a>
           );
         })}
 
-        <div
+        <button
+          type="button"
           onClick={routeToRoadmap}
-          style={{ position: 'absolute', top: '28%', left: '61%', width: '37%', height: '6%', cursor: 'pointer', zIndex: 10 }}
+          aria-label="View Roadmap"
+          style={{ position: 'absolute', top: '28%', left: '61%', width: '37%', height: '6%', cursor: 'pointer', zIndex: 10, background: 'transparent', border: 'none' }}
           title="View Roadmap"
-        ></div>
+        ></button>
 
-        <div
-          onClick={routeToNext}
+        <a
+          href={`/peptide-101/course#${completedModules < 13 ? CONTENT[completedModules] : 's15'}`}
+          onClick={(e) => { e.preventDefault(); routeToNext(); }}
           style={{ position: 'absolute', bottom: '2%', left: '3%', width: '94%', height: '6%', cursor: 'pointer', zIndex: 10 }}
           title={landingState === 1 ? "Start Learning" : "Continue To Module"}
-        ></div>
+        ><span className="sr-only">{landingState === 1 ? 'Start Learning' : 'Continue To Module'}</span></a>
 
         {lockedToast && (
           <div style={{
@@ -194,6 +225,29 @@ export default function Peptide101LandingPage() {
         )}
       </div>
     </div>
+    {/* Crawlable syllabus: /peptide-101 is an indexable, sitemap-promoted URL
+        but previously exposed zero text. This block gives search and AI
+        crawlers the actual course scope. */}
+    <section aria-label="Peptide 101 Course Syllabus" style={{ maxWidth: '1000px', margin: '0 auto', padding: '40px 20px 64px', backgroundColor: '#020617' }}>
+      <h2 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#FFFFFF', margin: '0 0 12px' }}>Peptide 101 Course Syllabus</h2>
+      <p style={{ color: '#A8B4C0', fontSize: '1rem', lineHeight: 1.7, margin: '0 0 20px', maxWidth: 760 }}>
+        Peptide 101 Is A Free, Self-Paced Research Academy Covering What Peptides Are, How They Are
+        Built And Studied, Peptide Families, Laboratory Handling, Storage, Reconstitution, Quality
+        Verification, And The Legal Framework Around Research Use. Fourteen Interactive Modules End
+        With A Final Quiz And Certificate Of Completion.
+      </p>
+      <ol style={{ color: '#A8B4C0', fontSize: '0.95rem', lineHeight: 1.9, margin: 0, paddingLeft: 22, columns: 1 }}>
+        {MODULE_TITLES.map((t, i) => (
+          <li key={t}>
+            <a href={`/peptide-101/course#${i < 13 ? CONTENT_STATIC[i] : 's15'}`} style={{ color: '#A8B4C0', textDecoration: 'none' }}>{t}</a>
+          </li>
+        ))}
+      </ol>
+      <p style={{ fontSize: '0.78rem', color: '#6B7785', marginTop: 24 }}>
+        For Laboratory Research Use Only. Course Material Restates Published Science And Is Not
+        Medical Advice, Dosing Guidance, Or An Endorsement Of Human Use.
+      </p>
+    </section>
     <GuestCTA />
     </>
   );

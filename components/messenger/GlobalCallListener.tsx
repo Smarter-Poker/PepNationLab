@@ -3,8 +3,17 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { subscribeCallSignals, unsubscribe, type CallSignalRow } from '@/lib/messenger/realtime';
-import IncomingCallScreen from './IncomingCallScreen';
-import CallOverlay from './CallOverlay';
+import dynamic from 'next/dynamic';
+
+// PERF: IncomingCallScreen and CallOverlay transitively import the full
+// LiveKit stack (~300KB transfer). Static imports welded that stack into the
+// deferred-globals chunk downloaded on EVERY page - including logged-out
+// public pages where a call can never arrive. Dynamic imports keep LiveKit in
+// its own chunk, fetched only when a call actually rings (subscriptions below
+// are already gated on an authenticated session). Tradeoff: first ring pays
+// one extra chunk fetch (~100-300ms) before the ring UI paints.
+const IncomingCallScreen = dynamic(() => import('./IncomingCallScreen'), { ssr: false });
+const CallOverlay = dynamic(() => import('./CallOverlay'), { ssr: false });
 
 /**
  * fix-40 boundary: surfaces the actual error.message so future call-subsystem
