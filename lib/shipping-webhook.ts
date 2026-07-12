@@ -33,6 +33,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { decryptSecret } from '@/lib/shipping-crypto';
 import { canTransition, type OrderStatus } from '@/lib/order-states';
 import { enqueueOrderPush } from '@/lib/push-enqueue';
+import { emailConfigured, sendOrderDeliveredEmail } from '@/lib/email';
 
 // ---------------------------------------------------------------------------
 // bytea coercion - Supabase/PostgREST can hand bytea back as a Buffer, a
@@ -269,6 +270,29 @@ export async function handleTrackerEvent(
       });
     } catch {
       /* notifications must not break webhook ack */
+    }
+
+    // Delivered email on the PRIMARY delivery path. The carrier webhook is
+    // what marks orders delivered in production; once it has transitioned the
+    // order, the admin route's delivered email is unreachable, so it must be
+    // sent from here. Verified contact email only; never breaks the ack.
+    try {
+      if (emailConfigured()) {
+        const { data: buyer } = await supabase
+          .from('profiles')
+          .select('contact_email, email_verified, full_name')
+          .eq('id', buyerId)
+          .maybeSingle();
+        if (buyer?.contact_email && buyer.email_verified) {
+          await sendOrderDeliveredEmail({
+            to: buyer.contact_email,
+            fullName: buyer.full_name,
+            orderId,
+          });
+        }
+      }
+    } catch {
+      /* email failures must not break webhook ack */
     }
   }
 

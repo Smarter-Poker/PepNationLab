@@ -1,5 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-import { maskEmail } from '@/lib/log';
 // PepNationLab transactional email.
 //
 // Provider-agnostic, ZERO-dependency sender. It talks to a transactional email
@@ -11,9 +10,17 @@ import { maskEmail } from '@/lib/log';
 //   EMAIL_PROVIDER        "resend" (default) | "none"
 //   RESEND_API_KEY        Resend API key (if EMAIL_PROVIDER=resend)
 //   EMAIL_REPLY_TO        optional, e.g. "support@pepnationlab.com"
+//   EMAIL_POSTAL_ADDRESS  optional CAN-SPAM postal address rendered in footers,
+//                         e.g. "Pep Nation Lab LLC, 123 Example St Suite 4, City, ST 00000"
 //
 // If no provider/key is configured, every send is a safe no-op that logs and
 // returns { skipped: true } -- flows never break when email is unconfigured.
+//
+// RELIABILITY: sendEmail() enforces a 10s network timeout, retries transient
+// failures (HTTP 429 + 5xx + network/timeout) with capped exponential backoff,
+// and best-effort persists every real attempt to public.email_log (service
+// role only) so failures are visible and recoverable instead of vanishing
+// into serverless stdout.
 //
 // NOTE ON GOOGLE WORKSPACE: Google is used for the mailboxes (receiving + human
 // login). For APP-SENT transactional mail we use a transactional API because
@@ -24,12 +31,20 @@ import { maskEmail } from '@/lib/log';
 // A future SMTP branch can be added here if pure Google SMTP is ever required.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { createHmac } from 'crypto';
+import { carrierInfo } from '@/lib/carrier';
+import { maskEmail } from '@/lib/log';
+
 export interface SendEmailInput {
   to: string | string[];
   subject: string;
   html: string;
   text?: string;
   replyTo?: string;
+  /** Extra SMTP headers (e.g. List-Unsubscribe for marketing sends). */
+  headers?: Record<string, string>;
+  /** Template label persisted to email_log for observability. */
+  template?: string;
 }
 
 export interface SendEmailResult {
@@ -42,6 +57,10 @@ export interface SendEmailResult {
 const FROM = process.env.EMAIL_FROM || 'Pep Nation Lab <research@pepnationlab.com>';
 const PROVIDER = (process.env.EMAIL_PROVIDER || 'resend').toLowerCase();
 const REPLY_TO = process.env.EMAIL_REPLY_TO || undefined;
+const POSTAL_ADDRESS = process.env.EMAIL_POSTAL_ADDRESS || '';
+
+const SEND_TIMEOUT_MS = 10_000;
+const MAX_ATTEMPTS = 3;
 
 /**
  * Whether a real email sender is configured and can actually deliver mail.
@@ -55,82 +74,237 @@ export function emailConfigured(): boolean {
   return false;
 }
 
+/** HTML-escape a value before interpolating it into an email body. */
+function escapeHtml(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/** Human-facing 8-char order id, matching shortOrderId() in lib/push-enqueue. */
+function shortId(id: string): string {
+  return String(id || '').slice(0, 8).toUpperCase();
+}
+
+/**
+ * Best-effort persistence of the send outcome to public.email_log (RLS
+ * deny-all; service role only). Logging must NEVER break or slow a send path,
+ * so every failure here is swallowed.
+ */
+async function logEmail(entry: {
+  recipient: string;
+  subject: string;
+  template?: string;
+  ok: boolean;
+  skipped: boolean;
+  providerId?: string;
+  error?: string;
+}): Promise<void> {
+  try {
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY || !process.env.NEXT_PUBLIC_SUPABASE_URL) return;
+    const { createAdminClient } = await import('@/lib/supabase/server');
+    const admin = createAdminClient();
+    await admin.from('email_log').insert({
+      recipient: entry.recipient.slice(0, 320),
+      subject: entry.subject.slice(0, 500),
+      template: entry.template ?? null,
+      ok: entry.ok,
+      skipped: entry.skipped,
+      provider_id: entry.providerId ?? null,
+      error: entry.error ? entry.error.slice(0, 500) : null,
+    });
+  } catch {
+    /* logging must never break sending */
+  }
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /**
  * Low-level send. Returns a result object; never throws, so callers can fire it
- * best-effort without wrapping every call in try/catch.
+ * best-effort without wrapping every call in try/catch. Timeout + retry are
+ * handled here so no caller can hang on a stalled provider or lose mail to a
+ * transient 429/5xx.
  */
 export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult> {
   const to = Array.isArray(input.to) ? input.to.filter(Boolean) : [input.to].filter(Boolean);
   if (to.length === 0) return { ok: false, error: 'no recipient' };
+  const recipient = to.join(',');
+
+  const finish = async (result: SendEmailResult): Promise<SendEmailResult> => {
+    await logEmail({
+      recipient,
+      subject: input.subject,
+      template: input.template,
+      ok: result.ok,
+      skipped: !!result.skipped,
+      providerId: result.id,
+      error: result.error,
+    });
+    return result;
+  };
+
+  // Mask recipient addresses in stdout logs (PII); the full address is only
+  // persisted to email_log, which is service-role-only.
+  const maskedRecipient = to.map(maskEmail).join(',');
 
   if (PROVIDER === 'none') {
-    console.info('[email] provider=none, skipping send to', to.map(maskEmail).join(','), '-', input.subject);
+    console.info('[email] provider=none, skipping send to', maskedRecipient, '-', input.subject);
     return { ok: true, skipped: true };
   }
 
   if (PROVIDER === 'resend') {
     const key = process.env.RESEND_API_KEY;
     if (!key) {
-      console.warn('[email] RESEND_API_KEY not set - skipping send to', to.map(maskEmail).join(','));
+      console.warn('[email] RESEND_API_KEY not set - skipping send to', maskedRecipient);
       return { ok: true, skipped: true };
     }
-    try {
-      const res = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${key}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from: FROM,
-          to,
-          subject: input.subject,
-          html: input.html,
-          text: input.text,
-          reply_to: input.replyTo || REPLY_TO,
-        }),
-      });
-      if (!res.ok) {
+
+    let lastError = 'unknown';
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        const res = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${key}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: FROM,
+            to,
+            subject: input.subject,
+            html: input.html,
+            text: input.text,
+            reply_to: input.replyTo || REPLY_TO,
+            ...(input.headers ? { headers: input.headers } : {}),
+          }),
+          // A hung provider call must never hang the parent request/cron.
+          signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
+        });
+
+        if (res.ok) {
+          const data = (await res.json().catch(() => ({}))) as { id?: string };
+          if (!data.id) console.warn('[email] resend 2xx without an id for', maskedRecipient);
+          return finish({ ok: true, id: data.id });
+        }
+
         const detail = await res.text().catch(() => '');
-        console.error('[email] resend send failed', res.status, detail.slice(0, 300));
-        return { ok: false, error: `resend ${res.status}` };
+        lastError = `resend ${res.status}`;
+        console.error(`[email] resend send failed (attempt ${attempt}/${MAX_ATTEMPTS})`, res.status, detail.slice(0, 300));
+
+        // Retry only transient failures: rate limit + provider errors.
+        const retryable = res.status === 429 || res.status >= 500;
+        if (!retryable || attempt === MAX_ATTEMPTS) return finish({ ok: false, error: lastError });
+
+        const retryAfter = Number(res.headers.get('retry-after'));
+        const delay = Number.isFinite(retryAfter) && retryAfter > 0
+          ? Math.min(retryAfter * 1000, 5000)
+          : 400 * 2 ** (attempt - 1);
+        await sleep(delay);
+      } catch (err) {
+        const timedOut = err instanceof Error && (err.name === 'TimeoutError' || err.name === 'AbortError');
+        lastError = timedOut ? 'timeout' : 'network';
+        console.error(`[email] resend send threw (attempt ${attempt}/${MAX_ATTEMPTS})`, err);
+        if (attempt === MAX_ATTEMPTS) return finish({ ok: false, error: lastError });
+        await sleep(400 * 2 ** (attempt - 1));
       }
-      const data = (await res.json().catch(() => ({}))) as { id?: string };
-      return { ok: true, id: data.id };
-    } catch (err) {
-      console.error('[email] resend send threw', err);
-      return { ok: false, error: 'network' };
     }
+    return finish({ ok: false, error: lastError });
   }
 
   console.warn('[email] unknown EMAIL_PROVIDER:', PROVIDER);
   return { ok: false, error: 'unknown provider' };
 }
 
+const SITE = (process.env.NEXT_PUBLIC_APP_URL || 'https://pepnationlab.com').replace(/\/$/, '');
+
+// ─── Unsubscribe (marketing sends only) ─────────────────────────────────────
+// Deterministic HMAC token so marketing emails can carry a one-click opt-out
+// without storing anything. Verified by /api/unsubscribe. Transactional mail
+// (orders, codes, security alerts) never carries an unsubscribe link.
+
+export function unsubscribeToken(userId: string): string {
+  const pepper =
+    process.env.EMAIL_CODE_PEPPER ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    'pnl-verification-pepper';
+  return createHmac('sha256', pepper).update(`unsub:${String(userId)}`).digest('hex').slice(0, 32);
+}
+
+export function unsubscribeUrl(userId: string): string {
+  return `${SITE}/api/unsubscribe?uid=${encodeURIComponent(userId)}&token=${unsubscribeToken(userId)}`;
+}
+
+function marketingHeaders(unsubUrl: string): Record<string, string> {
+  return {
+    'List-Unsubscribe': `<${unsubUrl}>`,
+    'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+  };
+}
+
 // ─── Shared layout ───────────────────────────────────────────────────────────
-// Minimal, brand-aligned HTML shell (dark teal/black, RUO footer). Inline styles
-// only -- email clients strip <style> and external CSS.
+// Brand-aligned HTML shell (dark teal/black, RUO footer). Table-based with a
+// full-bleed background table so Outlook desktop (Word engine) honors the dark
+// fill and the 600px width; inline styles only -- email clients strip <style>
+// and external CSS. The color-scheme meta locks the intentional dark palette
+// against Gmail/Outlook.com auto-inversion. A hidden preheader controls the
+// inbox preview snippet.
 
-function layout(bodyHtml: string): string {
+function layout(bodyHtml: string, opts?: { preheader?: string; unsubscribeUrl?: string }): string {
   const year = new Date().getFullYear();
-  return `<!doctype html><html><body style="margin:0;padding:0;background:#050A0F;">
-  <div style="max-width:560px;margin:0 auto;padding:32px 24px;font-family:Inter,Arial,sans-serif;color:#D0DAE4;">
-    <div style="font-size:18px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#00C4BC;margin-bottom:24px;">Pep Nation Lab</div>
-    ${bodyHtml}
-    <hr style="border:none;border-top:1px solid rgba(192,184,168,0.15);margin:28px 0;" />
-    <p style="font-size:11px;line-height:1.6;color:#6b7684;margin:0;">
-      All products sold on PepNationLab.com are strictly for in vitro laboratory research use only.
-      They are NOT intended for human or animal consumption, ingestion, or injection, and have not been
-      evaluated by the FDA. &copy; ${year} Pep Nation Lab LLC.
-    </p>
-  </div></body></html>`;
+  const preheader = opts?.preheader
+    ? `<div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;">${escapeHtml(opts.preheader)}</div>`
+    : '';
+  const unsub = opts?.unsubscribeUrl
+    ? `<p style="font-size:12px;line-height:1.6;color:#6B7684;margin:12px 0 0;"><a href="${opts.unsubscribeUrl}" style="color:#8B95A3;text-decoration:underline;">Unsubscribe From These Emails</a></p>`
+    : '';
+  const postal = POSTAL_ADDRESS ? ` ${escapeHtml(POSTAL_ADDRESS)}.` : '';
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="dark" />
+<meta name="supported-color-schemes" content="dark" />
+<title>Pep Nation Lab</title>
+</head>
+<body style="margin:0;padding:0;background-color:#050A0F;" bgcolor="#050A0F">
+${preheader}
+<table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#050A0F" style="background-color:#050A0F;">
+  <tr><td align="center" style="padding:32px 12px;">
+    <table role="presentation" width="600" border="0" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;">
+      <tr><td bgcolor="#050A0F" style="padding:0 12px;font-family:Inter,Arial,sans-serif;color:#D0DAE4;">
+        <div style="font-size:18px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#00C4BC;margin:0 0 24px;">Pep Nation Lab</div>
+        ${bodyHtml}
+        <hr style="border:none;border-top:1px solid #1C2430;margin:28px 0;" />
+        <p style="font-size:12px;line-height:1.6;color:#6B7684;margin:0;">
+          All products sold on PepNationLab.com are strictly for in vitro laboratory research use only.
+          They are NOT intended for human or animal consumption, ingestion, or injection, and have not been
+          evaluated by the FDA. &copy; ${year} Pep Nation Lab LLC.${postal}
+        </p>
+        ${unsub}
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>`;
 }
 
+// Bulletproof-enough button: table + bgcolor cell renders as a real button in
+// Outlook desktop (inline-anchor padding alone collapses there). 14px vertical
+// padding keeps the tap target at ~44px for mobile.
 function button(href: string, label: string): string {
-  return `<a href="${href}" style="display:inline-block;background:#00C4BC;color:#050A0F;font-weight:700;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;">${label}</a>`;
+  return `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin:0 0 12px;"><tr>
+    <td align="center" bgcolor="#00C4BC" style="background-color:#00C4BC;border-radius:8px;">
+      <a href="${href}" style="display:inline-block;padding:14px 28px;font-family:Inter,Arial,sans-serif;font-size:14px;font-weight:700;color:#050A0F;text-decoration:none;">${escapeHtml(label)}</a>
+    </td>
+  </tr></table>`;
 }
-
-const SITE = process.env.NEXT_PUBLIC_APP_URL || 'https://pepnationlab.com';
 
 // ─── Transactional templates ────────────────────────────────────────────────
 
@@ -141,9 +315,11 @@ export async function sendWelcomeEmail(params: {
   username?: string | null;
 }): Promise<SendEmailResult> {
   const name = (params.fullName || '').trim() || 'Researcher';
-  const login = params.username ? `Your login username is <strong style="color:#fff;">${params.username}</strong>.` : '';
+  const login = params.username
+    ? `Your login username is <strong style="color:#FFFFFF;">${escapeHtml(params.username)}</strong>.`
+    : '';
   const html = layout(`
-    <h1 style="font-size:20px;color:#fff;margin:0 0 12px;">Welcome, ${name}</h1>
+    <h1 style="font-size:20px;color:#FFFFFF;margin:0 0 12px;">Welcome, ${escapeHtml(name)}</h1>
     <p style="font-size:14px;line-height:1.7;margin:0 0 16px;">
       Your Pep Nation Lab researcher account is ready. ${login}
     </p>
@@ -151,39 +327,74 @@ export async function sendWelcomeEmail(params: {
       You now have access to wholesale research-grade compounds and our full research library.
     </p>
     ${button(`${SITE}/login`, 'Sign In To Your Account')}
-  `);
+  `, { preheader: 'Your Pep Nation Lab Researcher Account Is Ready' });
   return sendEmail({
     to: params.to,
     subject: 'Welcome To Pep Nation Lab',
     html,
     text: `Welcome, ${name}. Your Pep Nation Lab researcher account is ready. Sign in at ${SITE}/login`,
+    template: 'welcome',
   });
 }
 
-/** Order confirmation email. */
+/** Order confirmation email, optionally carrying a cost breakdown and payment guidance. */
 export async function sendOrderConfirmationEmail(params: {
   to: string;
   fullName?: string | null;
   orderId: string;
   total: number;
   itemsSummary?: string;
+  subtotal?: number | null;
+  discount?: number | null;
+  shippingCost?: number | null;
+  /** Payment method label when the order still awaits customer payment. */
+  paymentMethod?: string | null;
 }): Promise<SendEmailResult> {
   const name = (params.fullName || '').trim() || 'Researcher';
-  const items = params.itemsSummary ? `<p style="font-size:13px;line-height:1.7;color:#A8B4C0;margin:0 0 16px;">${params.itemsSummary}</p>` : '';
+  const short = shortId(params.orderId);
+  const money = (n: number) => `$${Number(n).toFixed(2)}`;
+  const items = params.itemsSummary
+    ? `<p style="font-size:13px;line-height:1.7;color:#A8B4C0;margin:0 0 16px;">${escapeHtml(params.itemsSummary)}</p>`
+    : '';
+  const rows: string[] = [];
+  if (params.subtotal != null && Number.isFinite(Number(params.subtotal)) && Number(params.subtotal) > 0) {
+    rows.push(`Subtotal: ${money(Number(params.subtotal))}`);
+  }
+  if (params.discount != null && Number(params.discount) > 0) {
+    rows.push(`Discount: -${money(Number(params.discount))}`);
+  }
+  if (params.shippingCost != null && Number(params.shippingCost) > 0) {
+    rows.push(`Shipping: ${money(Number(params.shippingCost))}`);
+  }
+  const breakdown = rows.length
+    ? `<p style="font-size:13px;line-height:1.7;color:#A8B4C0;margin:0 0 8px;">${rows.map(escapeHtml).join('<br />')}</p>`
+    : '';
+  const methodLabel = (params.paymentMethod || '').trim();
+  const payment = methodLabel
+    ? `<p style="font-size:14px;line-height:1.7;margin:0 0 16px;">
+        Payment Method: <strong style="color:#FFFFFF;">${escapeHtml(methodLabel)}</strong>.
+        Your Agent's Payment Handle And Instructions Are On Your Order Page.
+        Please Send ${escapeHtml(money(Number(params.total)))} And Include Order
+        <strong style="color:#FFFFFF;">#${escapeHtml(short)}</strong> In The Payment Memo So Your Payment Is Matched Quickly.
+      </p>`
+    : '';
   const html = layout(`
-    <h1 style="font-size:20px;color:#fff;margin:0 0 12px;">Order Confirmed</h1>
+    <h1 style="font-size:20px;color:#FFFFFF;margin:0 0 12px;">Order Confirmed</h1>
     <p style="font-size:14px;line-height:1.7;margin:0 0 16px;">
-      Thank you, ${name}. We have received your order <strong style="color:#fff;">#${params.orderId}</strong>.
+      Thank you, ${escapeHtml(name)}. We have received your order <strong style="color:#FFFFFF;">#${escapeHtml(short)}</strong>.
     </p>
     ${items}
-    <p style="font-size:15px;font-weight:700;color:#00C4BC;margin:0 0 24px;">Order Total: $${Number(params.total).toFixed(2)}</p>
+    ${breakdown}
+    <p style="font-size:15px;font-weight:700;color:#00C4BC;margin:0 0 16px;">Order Total: ${escapeHtml(money(Number(params.total)))}</p>
+    ${payment}
     ${button(`${SITE}/orders/${params.orderId}`, 'View Your Order')}
-  `);
+  `, { preheader: `Order #${short} Confirmed - Total ${money(Number(params.total))}` });
   return sendEmail({
     to: params.to,
-    subject: `Order Confirmed - #${params.orderId}`,
+    subject: `Order Confirmed - #${short}`,
     html,
-    text: `Thank you, ${name}. Order #${params.orderId} confirmed. Total $${Number(params.total).toFixed(2)}. View it at ${SITE}/orders/${params.orderId}`,
+    text: `Thank you, ${name}. Order #${short} confirmed.${params.itemsSummary ? ` Items: ${params.itemsSummary}.` : ''} Total ${money(Number(params.total))}.${methodLabel ? ` Payment method: ${methodLabel}. Your agent's payment handle and instructions are on your order page. Include order #${short} in the payment memo.` : ''} View it at ${SITE}/orders/${params.orderId}`,
+    template: 'order_confirmation',
   });
 }
 
@@ -195,23 +406,29 @@ export async function sendOrderShippedEmail(params: {
   trackingNumber?: string | null;
 }): Promise<SendEmailResult> {
   const name = (params.fullName || '').trim() || 'Researcher';
+  const short = shortId(params.orderId);
   const trk = (params.trackingNumber || '').trim();
+  const info = trk ? carrierInfo(trk) : { carrier: 'Unknown' as const, trackingUrl: null };
   const tracking = trk
-    ? `<p style="font-size:14px;line-height:1.7;margin:0 0 16px;">Tracking Number: <strong style="color:#fff;">${trk}</strong></p>`
+    ? `<p style="font-size:14px;line-height:1.7;margin:0 0 16px;">Tracking Number: <strong style="color:#FFFFFF;">${escapeHtml(trk)}</strong>${info.carrier !== 'Unknown' ? ` (${escapeHtml(info.carrier)})` : ''}</p>`
     : '';
+  // Direct carrier deep-link when we can detect the carrier from the number.
+  const carrierBtn = info.trackingUrl ? button(info.trackingUrl, `Track With ${info.carrier}`) : '';
   const html = layout(`
-    <h1 style="font-size:20px;color:#fff;margin:0 0 12px;">Your Order Has Shipped</h1>
+    <h1 style="font-size:20px;color:#FFFFFF;margin:0 0 12px;">Your Order Has Shipped</h1>
     <p style="font-size:14px;line-height:1.7;margin:0 0 16px;">
-      Good news, ${name}. Your order <strong style="color:#fff;">#${params.orderId}</strong> is on its way.
+      Good news, ${escapeHtml(name)}. Your order <strong style="color:#FFFFFF;">#${escapeHtml(short)}</strong> is on its way.
     </p>
     ${tracking}
+    ${carrierBtn}
     ${button(`${SITE}/orders/${params.orderId}`, 'Track Your Order')}
-  `);
+  `, { preheader: trk ? `Order #${short} Shipped - Tracking ${trk}` : `Order #${short} Shipped` });
   return sendEmail({
     to: params.to,
-    subject: `Your Order Has Shipped - #${params.orderId}`,
+    subject: `Your Order Has Shipped - #${short}`,
     html,
-    text: `Hi ${name}, your order #${params.orderId} has shipped.${trk ? ` Tracking: ${trk}.` : ''} View it at ${SITE}/orders/${params.orderId}`,
+    text: `Hi ${name}, your order #${short} has shipped.${trk ? ` Tracking: ${trk}.` : ''}${info.trackingUrl ? ` Track it: ${info.trackingUrl}` : ''} View it at ${SITE}/orders/${params.orderId}`,
+    template: 'order_shipped',
   });
 }
 
@@ -222,18 +439,72 @@ export async function sendOrderDeliveredEmail(params: {
   orderId: string;
 }): Promise<SendEmailResult> {
   const name = (params.fullName || '').trim() || 'Researcher';
+  const short = shortId(params.orderId);
   const html = layout(`
-    <h1 style="font-size:20px;color:#fff;margin:0 0 12px;">Your Order Has Been Delivered</h1>
+    <h1 style="font-size:20px;color:#FFFFFF;margin:0 0 12px;">Your Order Has Been Delivered</h1>
     <p style="font-size:14px;line-height:1.7;margin:0 0 24px;">
-      Hi ${name}, your order <strong style="color:#fff;">#${params.orderId}</strong> has been marked as delivered. Thank you for choosing Pep Nation Lab.
+      Hi ${escapeHtml(name)}, your order <strong style="color:#FFFFFF;">#${escapeHtml(short)}</strong> has been marked as delivered. Thank you for choosing Pep Nation Lab.
     </p>
     ${button(`${SITE}/orders/${params.orderId}`, 'View Your Order')}
-  `);
+  `, { preheader: `Order #${short} Delivered` });
   return sendEmail({
     to: params.to,
-    subject: `Your Order Has Been Delivered - #${params.orderId}`,
+    subject: `Your Order Has Been Delivered - #${short}`,
     html,
-    text: `Hi ${name}, your order #${params.orderId} has been delivered. View it at ${SITE}/orders/${params.orderId}`,
+    text: `Hi ${name}, your order #${short} has been delivered. View it at ${SITE}/orders/${params.orderId}`,
+    template: 'order_delivered',
+  });
+}
+
+/** Order approved notification (moved to approved_ship / approved_pickup). */
+export async function sendOrderApprovedEmail(params: {
+  to: string;
+  fullName?: string | null;
+  orderId: string;
+  pickup?: boolean;
+}): Promise<SendEmailResult> {
+  const name = (params.fullName || '').trim() || 'Researcher';
+  const short = shortId(params.orderId);
+  const line = params.pickup
+    ? 'is approved and is being prepared for agent pickup.'
+    : 'is approved and is being prepared for shipment.';
+  const html = layout(`
+    <h1 style="font-size:20px;color:#FFFFFF;margin:0 0 12px;">Your Order Is Approved</h1>
+    <p style="font-size:14px;line-height:1.7;margin:0 0 24px;">
+      Hi ${escapeHtml(name)}, your order <strong style="color:#FFFFFF;">#${escapeHtml(short)}</strong> ${line}
+    </p>
+    ${button(`${SITE}/orders/${params.orderId}`, 'View Your Order')}
+  `, { preheader: `Order #${short} Approved` });
+  return sendEmail({
+    to: params.to,
+    subject: `Your Order Is Approved - #${short}`,
+    html,
+    text: `Hi ${name}, your order #${short} ${line} View it at ${SITE}/orders/${params.orderId}`,
+    template: 'order_approved',
+  });
+}
+
+/** Order cancelled notification. */
+export async function sendOrderCancelledEmail(params: {
+  to: string;
+  fullName?: string | null;
+  orderId: string;
+}): Promise<SendEmailResult> {
+  const name = (params.fullName || '').trim() || 'Researcher';
+  const short = shortId(params.orderId);
+  const html = layout(`
+    <h1 style="font-size:20px;color:#FFFFFF;margin:0 0 12px;">Your Order Was Cancelled</h1>
+    <p style="font-size:14px;line-height:1.7;margin:0 0 24px;">
+      Hi ${escapeHtml(name)}, your order <strong style="color:#FFFFFF;">#${escapeHtml(short)}</strong> has been cancelled. If this was not expected or you have questions, please contact your agent or reply to this email.
+    </p>
+    ${button(`${SITE}/orders/${params.orderId}`, 'View Your Order')}
+  `, { preheader: `Order #${short} Cancelled` });
+  return sendEmail({
+    to: params.to,
+    subject: `Your Order Was Cancelled - #${short}`,
+    html,
+    text: `Hi ${name}, your order #${short} has been cancelled. View it at ${SITE}/orders/${params.orderId}`,
+    template: 'order_cancelled',
   });
 }
 
@@ -241,29 +512,69 @@ export async function sendOrderDeliveredEmail(params: {
  * Abandoned-cart recovery email. Mirrors the in-app step message (same subject
  * and body) so a verified researcher gets the reminder in their inbox too. The
  * caller owns dedup (one reminder-log row per step), so this only wraps the
- * step's already-composed copy and adds a CTA back to checkout.
+ * step's already-composed copy and adds a CTA back to checkout. This is a
+ * MARKETING send: when userId is provided it carries a one-click unsubscribe
+ * link + List-Unsubscribe headers (CAN-SPAM / Gmail bulk-sender rules).
  */
 export async function sendCartRecoveryEmail(params: {
   to: string;
   fullName?: string | null;
   subject: string;
   body: string;
+  userId?: string;
 }): Promise<SendEmailResult> {
   const name = (params.fullName || '').trim() || 'Researcher';
   const bodyHtml = (params.body || '')
     .split('\n')
-    .map((line) => (line.trim() ? `<p style="font-size:14px;line-height:1.7;margin:0 0 12px;">${line}</p>` : ''))
+    .map((line) => (line.trim() ? `<p style="font-size:14px;line-height:1.7;margin:0 0 12px;">${escapeHtml(line)}</p>` : ''))
     .join('');
+  const unsub = params.userId ? unsubscribeUrl(params.userId) : undefined;
   const html = layout(`
-    <h1 style="font-size:20px;color:#fff;margin:0 0 12px;">${params.subject}</h1>
-    ${bodyHtml || `<p style="font-size:14px;line-height:1.7;margin:0 0 12px;">Hi ${name}, you left items in your cart.</p>`}
+    <h1 style="font-size:20px;color:#FFFFFF;margin:0 0 12px;">${escapeHtml(params.subject)}</h1>
+    ${bodyHtml || `<p style="font-size:14px;line-height:1.7;margin:0 0 12px;">Hi ${escapeHtml(name)}, you left items in your cart.</p>`}
     ${button(`${SITE}/checkout`, 'Return To Your Cart')}
-  `);
+  `, { preheader: 'You Left Items In Your Cart', unsubscribeUrl: unsub });
   return sendEmail({
     to: params.to,
     subject: params.subject,
     html,
-    text: `${params.body}\n\nReturn to your cart: ${SITE}/checkout`,
+    text: `${params.body}\n\nReturn to your cart: ${SITE}/checkout${unsub ? `\n\nUnsubscribe: ${unsub}` : ''}`,
+    headers: unsub ? marketingHeaders(unsub) : undefined,
+    template: 'cart_recovery',
+  });
+}
+
+/**
+ * Back-in-stock / price-drop product alert. MARKETING send: branded via the
+ * shared layout, plain-text part included, one-click unsubscribe carried in
+ * both the footer and the List-Unsubscribe headers (CAN-SPAM + Gmail/Yahoo
+ * bulk-sender requirements).
+ */
+export async function sendProductAlertEmail(params: {
+  to: string;
+  userId: string;
+  productName: string;
+  kind: 'back_in_stock' | 'price_drop';
+  href: string;
+}): Promise<SendEmailResult> {
+  const heading = params.kind === 'back_in_stock' ? 'Back In Stock' : 'Price Drop';
+  const line = params.kind === 'back_in_stock'
+    ? `${params.productName} Is Back In Stock At Pep Nation Lab.`
+    : `The Price Of ${params.productName} Just Dropped At Pep Nation Lab.`;
+  const unsub = unsubscribeUrl(params.userId);
+  const html = layout(`
+    <h1 style="font-size:20px;color:#FFFFFF;margin:0 0 12px;">${escapeHtml(heading)}</h1>
+    <p style="font-size:14px;line-height:1.7;margin:0 0 20px;">${escapeHtml(line)}</p>
+    ${button(params.href, 'View Product')}
+    <p style="font-size:12px;line-height:1.6;color:#8B95A3;margin:12px 0 0;">You Are Receiving This Because You Asked To Be Notified About This Product.</p>
+  `, { preheader: line, unsubscribeUrl: unsub });
+  return sendEmail({
+    to: params.to,
+    subject: `${heading}: ${params.productName}`,
+    html,
+    text: `${line} View the product: ${params.href}\n\nYou are receiving this because you asked to be notified about this product.\nUnsubscribe: ${unsub}`,
+    headers: marketingHeaders(unsub),
+    template: 'product_alert',
   });
 }
 
@@ -273,20 +584,21 @@ export async function sendVerificationCodeEmail(params: {
   code: string;
 }): Promise<SendEmailResult> {
   const html = layout(`
-    <h1 style="font-size:20px;color:#fff;margin:0 0 12px;">Verify Your Email</h1>
+    <h1 style="font-size:20px;color:#FFFFFF;margin:0 0 12px;">Verify Your Email</h1>
     <p style="font-size:14px;line-height:1.7;margin:0 0 20px;">
       Use this code to finish creating your Pep Nation Lab account. It expires in 10 minutes.
     </p>
-    <div style="font-size:34px;font-weight:800;letter-spacing:10px;color:#00C4BC;background:#0F1923;border:1px solid rgba(0,196,188,0.3);border-radius:12px;padding:18px 0;text-align:center;margin:0 0 20px;">${params.code}</div>
-    <p style="font-size:12px;line-height:1.6;color:#8b95a3;margin:0;">
+    <div style="font-size:34px;font-weight:800;letter-spacing:10px;color:#00C4BC;background:#0F1923;border:1px solid #0A5F5B;border-radius:12px;padding:18px 0;text-align:center;margin:0 0 20px;">${escapeHtml(params.code)}</div>
+    <p style="font-size:12px;line-height:1.6;color:#8B95A3;margin:0;">
       If you did not request this, you can safely ignore this email.
     </p>
-  `);
+  `, { preheader: 'Your Verification Code Is Inside' });
   return sendEmail({
     to: params.to,
     subject: `Your Pep Nation Lab Verification Code: ${params.code}`,
     html,
     text: `Your Pep Nation Lab verification code is ${params.code}. It expires in 10 minutes.`,
+    template: 'verification_code',
   });
 }
 
@@ -298,18 +610,19 @@ export async function sendPasswordResetEmail(params: {
 }): Promise<SendEmailResult> {
   const name = (params.fullName || '').trim() || 'Researcher';
   const html = layout(`
-    <h1 style="font-size:20px;color:#fff;margin:0 0 12px;">Reset Your Password</h1>
+    <h1 style="font-size:20px;color:#FFFFFF;margin:0 0 12px;">Reset Your Password</h1>
     <p style="font-size:14px;line-height:1.7;margin:0 0 24px;">
-      Hi ${name}, we received a request to reset your Pep Nation Lab password. This link expires shortly.
+      Hi ${escapeHtml(name)}, we received a request to reset your Pep Nation Lab password. This link expires shortly.
       If you did not request this, you can safely ignore this email.
     </p>
     ${button(params.resetUrl, 'Reset Password')}
-  `);
+  `, { preheader: 'Reset Your Pep Nation Lab Password' });
   return sendEmail({
     to: params.to,
     subject: 'Reset Your Pep Nation Lab Password',
     html,
     text: `Reset your Pep Nation Lab password: ${params.resetUrl}`,
+    template: 'password_reset_link',
   });
 }
 
@@ -321,19 +634,44 @@ export async function sendPasswordResetCodeEmail(params: {
 }): Promise<SendEmailResult> {
   const name = (params.fullName || '').trim() || 'Researcher';
   const html = layout(`
-    <h1 style="font-size:20px;color:#fff;margin:0 0 12px;">Reset Your Password</h1>
+    <h1 style="font-size:20px;color:#FFFFFF;margin:0 0 12px;">Reset Your Password</h1>
     <p style="font-size:14px;line-height:1.7;margin:0 0 20px;">
-      Hi ${name}, use this code to reset your Pep Nation Lab password. It expires in 10 minutes.
+      Hi ${escapeHtml(name)}, use this code to reset your Pep Nation Lab password. It expires in 10 minutes.
     </p>
-    <div style="font-size:34px;font-weight:800;letter-spacing:10px;color:#00C4BC;background:#0F1923;border:1px solid rgba(0,196,188,0.3);border-radius:12px;padding:18px 0;text-align:center;margin:0 0 20px;">${params.code}</div>
-    <p style="font-size:12px;line-height:1.6;color:#8b95a3;margin:0;">
+    <div style="font-size:34px;font-weight:800;letter-spacing:10px;color:#00C4BC;background:#0F1923;border:1px solid #0A5F5B;border-radius:12px;padding:18px 0;text-align:center;margin:0 0 20px;">${escapeHtml(params.code)}</div>
+    <p style="font-size:12px;line-height:1.6;color:#8B95A3;margin:0;">
       If you did not request this, you can safely ignore this email. Your password will not change.
     </p>
-  `);
+  `, { preheader: 'Your Password Reset Code Is Inside' });
   return sendEmail({
     to: params.to,
     subject: `Your Pep Nation Lab Password Reset Code: ${params.code}`,
     html,
     text: `Your Pep Nation Lab password reset code is ${params.code}. It expires in 10 minutes.`,
+    template: 'password_reset_code',
+  });
+}
+
+/** Security alert: the account password was just changed. */
+export async function sendPasswordChangedEmail(params: {
+  to: string;
+  fullName?: string | null;
+}): Promise<SendEmailResult> {
+  const name = (params.fullName || '').trim() || 'Researcher';
+  const html = layout(`
+    <h1 style="font-size:20px;color:#FFFFFF;margin:0 0 12px;">Your Password Was Changed</h1>
+    <p style="font-size:14px;line-height:1.7;margin:0 0 24px;">
+      Hi ${escapeHtml(name)}, the password on your Pep Nation Lab account was just changed.
+      If you made this change, no action is needed. If you did not make this change,
+      reset your password immediately and contact your agent.
+    </p>
+    ${button(`${SITE}/forgot-password`, 'Reset Your Password')}
+  `, { preheader: 'Your Account Password Was Changed' });
+  return sendEmail({
+    to: params.to,
+    subject: 'Your Pep Nation Lab Password Was Changed',
+    html,
+    text: `Hi ${name}, the password on your Pep Nation Lab account was just changed. If this was not you, reset your password immediately at ${SITE}/forgot-password and contact your agent.`,
+    template: 'password_changed',
   });
 }
