@@ -10,9 +10,10 @@
  * All Math Comes From The Pure Helpers In `@/lib/compounds`.
  */
 import { parsePositiveNumber } from '@/lib/schemas/calculator';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { drawVolumeMl, reconstitutionVolumeMl } from '@/lib/compounds';
+import { trackResearchEvent } from '@/lib/research-track';
 
 const EXAMPLE_DRAW_MASSES_MG = [0.25, 0.5, 1, 2, 5];
 
@@ -69,6 +70,15 @@ export default function ReconstitutionCalculator({
   const [diluentMl, setDiluentMl] = useState<string>('2');
   const [targetConc, setTargetConc] = useState<string>('5');
 
+  // Usage analytics: one event per mount, on the researcher's FIRST interaction
+  // with any input (not per keystroke). Fire-and-forget, never blocks the UI.
+  const usageTrackedRef = useRef(false);
+  const markCalculatorUsed = () => {
+    if (usageTrackedRef.current) return;
+    usageTrackedRef.current = true;
+    trackResearchEvent('calculator_used', { tool: 'reconstitution' });
+  };
+
   // Shared fail-closed input parsing (lib/schemas/calculator.ts): rejects
   // NaN, Infinity, zero, and NEGATIVE entries in one place. parseFloat alone
   // accepted a negative vial mass and produced a negative concentration.
@@ -103,6 +113,7 @@ export default function ReconstitutionCalculator({
   return (
     <div
       className="calc-container"
+      onInput={markCalculatorUsed}
       style={{
         border: '1px solid rgba(0, 229, 255, 0.2)',
         borderRadius: 16,

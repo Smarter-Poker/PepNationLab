@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
-import { CheckoutSchema } from '@/lib/schemas/order';
+import { z } from 'zod';
 import { applyBulkPrice, isTierLadderV2 } from '@/lib/pricing';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
@@ -13,17 +13,51 @@ import { quantityDiscountPct, isVolumeDiscountExcluded } from '@/lib/quantity-di
 import { enqueuePush, shortOrderId } from '@/lib/push-enqueue';
 import { notifyOrderPlaced, notify, notifyCouponRedeemed } from '@/lib/notify';
 import { sendOrderConfirmationEmail } from '@/lib/email';
+import { captureError } from '@/lib/sentry';
+import { logError } from '@/lib/log';
+import { recordServerAnalyticsEvent } from '@/lib/server-analytics';
 
 
-// CheckoutSchema lives in lib/schemas/order.ts -- the shared client/server
-// single source of truth for the checkout contract. The client
-// (app/checkout/CheckoutForm.tsx) parses the response against
-// OrderCreateResponseSchema from the same module, so request AND response
-// shapes are locked on both sides.
+const CheckoutSchema = z.object({
+  items: z.array(z.object({
+    id: z.string().uuid(),
+    quantity: z.number().int().min(1),
+    bundleName: z.string().optional()
+  })).min(1, 'Cart Cannot Be Empty.'),
+  fulfillmentMethod: z.enum(['ship', 'agent_pickup']),
+  shippingOption: z.enum(['fedex', 'usps', 'agent_pickup']).optional(),
+  paymentMethod: z.enum(['zelle', 'cashapp', 'venmo', 'apple_pay', 'apple_cash', 'paypal', 'google_wallet', 'wise', 'chime', 'varo']),
+  shippingAddress: z.object({
+    fullName: z.string().min(1),
+    street: z.string().min(1),
+    suite: z.string().optional().default(''),
+    city: z.string().min(1),
+    state: z.string().min(2),
+    zip: z.string().min(5),
+    phone: z.string().optional().default(''),
+  }).optional().nullable(),
+  couponCode: z.string().optional().nullable(),
+  idempotencyKey: z.string().uuid().optional().nullable(),
+  wholesale: z.boolean().optional(),
+
+  /** Which agent storefront initiated this checkout - used for closed-loop catalog validation */
+  agentSlug: z.string().regex(/^[a-zA-Z0-9_-]+$/).optional().nullable(),
+
+  /** Analytics funnel linkage (optional, never trusted for money math). */
+  sessionId: z.string().min(8).max(80).optional().nullable(),
+  visitorId: z.string().uuid().optional().nullable(),
+});
 
 export async function POST(request: NextRequest) {
   const csrf = assertSameOrigin(request);
   if (csrf) return csrf;
+  // Compensation state hoisted above the try so the outer catch can undo
+  // reserved inventory / coupon redemption / prepaid deduction when the route
+  // throws unexpectedly between STEP A and the order insert. Before this, a
+  // transient throw in that window permanently leaked stock, coupon uses,
+  // and prepaid money with only a console line as evidence.
+  let compensateOnThrow: (() => Promise<void>) | null = null;
+  let orderCommitted = false;
   try {
     const supabase = await createClient();
     const serviceSupabase = createAdminClient();
@@ -71,6 +105,8 @@ export async function POST(request: NextRequest) {
       wholesale: explicitWholesale,
 
       agentSlug,
+      sessionId: analyticsSessionId,
+      visitorId: analyticsVisitorId,
     } = validation.data;
 
     if (fulfillmentMethod === 'ship' && !shippingAddress) {
@@ -633,19 +669,42 @@ export async function POST(request: NextRequest) {
     let chinaReserved = false;
 
     const releaseReservedInventory = async () => {
+      // A failed release is silent stock corruption (reserved units never
+      // return to the pool) -- it must be loud even though the caller is on
+      // an error path already.
       if (localReserved && localItems.length > 0) {
-        await serviceSupabase.rpc('release_inventory', { p_items: localItems, p_agent_id: agentProfile?.id, p_is_agent_ship: true });
+        const { error: relErr } = await serviceSupabase.rpc('release_inventory', { p_items: localItems, p_agent_id: agentProfile?.id, p_is_agent_ship: true });
+        if (relErr) {
+          logError('orders.POST.compensation.release_inventory_local', { userId: user.id }, relErr);
+          captureError(relErr, { context: 'orders.POST.compensation.release_inventory_local', userId: user.id, items: localItems });
+        } else {
+          localReserved = false;
+        }
       }
       if (chinaReserved && chinaItems.length > 0) {
-        await serviceSupabase.rpc('release_inventory', { p_items: chinaItems, p_agent_id: null, p_is_agent_ship: false });
+        const { error: relErr } = await serviceSupabase.rpc('release_inventory', { p_items: chinaItems, p_agent_id: null, p_is_agent_ship: false });
+        if (relErr) {
+          logError('orders.POST.compensation.release_inventory_china', { userId: user.id }, relErr);
+          captureError(relErr, { context: 'orders.POST.compensation.release_inventory_china', userId: user.id, items: chinaItems });
+        } else {
+          chinaReserved = false;
+        }
       }
     };
+    compensateOnThrow = releaseReservedInventory;
 
     if (fulfillmentMethod !== 'agent_pickup') {
       if (localItems.length > 0) {
         const { error: reserveErr } = await serviceSupabase.rpc('reserve_inventory', { p_items: localItems, p_agent_id: agentProfile?.id, p_is_agent_ship: true });
         if (reserveErr) {
-          return NextResponse.json({ error: /Insufficient inventory/i.test(reserveErr.message) ? reserveErr.message : 'Failed To Reserve Local Inventory. Please Try Again.' }, { status: 422 });
+          // Log every failure (an unexpected RPC regression previously
+          // produced zero server-side evidence), and NEVER echo raw Postgres
+          // RAISE text to the buyer -- it can carry product UUIDs and stock
+          // internals.
+          const isStock = /Insufficient inventory/i.test(reserveErr.message);
+          logError('orders.POST.reserve_inventory_local', { userId: user.id, isStock, code: (reserveErr as { code?: string }).code }, reserveErr);
+          if (!isStock) captureError(reserveErr, { context: 'orders.POST.reserve_inventory_local', userId: user.id });
+          return NextResponse.json({ error: isStock ? 'Insufficient Local Inventory For One Or More Items. Please Reduce Quantities And Try Again.' : 'Failed To Reserve Local Inventory. Please Try Again.' }, { status: 422 });
         }
         localReserved = true;
       }
@@ -653,7 +712,10 @@ export async function POST(request: NextRequest) {
         const { error: reserveErr } = await serviceSupabase.rpc('reserve_inventory', { p_items: chinaItems, p_agent_id: null, p_is_agent_ship: false });
         if (reserveErr) {
           await releaseReservedInventory();
-          return NextResponse.json({ error: /Insufficient inventory/i.test(reserveErr.message) ? reserveErr.message : 'Failed To Reserve Global Inventory. Please Try Again.' }, { status: 422 });
+          const isStock = /Insufficient inventory/i.test(reserveErr.message);
+          logError('orders.POST.reserve_inventory_china', { userId: user.id, isStock, code: (reserveErr as { code?: string }).code }, reserveErr);
+          if (!isStock) captureError(reserveErr, { context: 'orders.POST.reserve_inventory_china', userId: user.id });
+          return NextResponse.json({ error: isStock ? 'Insufficient Inventory For One Or More Items. Please Reduce Quantities And Try Again.' : 'Failed To Reserve Global Inventory. Please Try Again.' }, { status: 422 });
         }
         chinaReserved = true;
       }
@@ -766,10 +828,15 @@ export async function POST(request: NextRequest) {
     const rollbackPreOrder = async () => {
       await releaseReservedInventory();
       if (appliedCouponId) {
-        await serviceSupabase.rpc('unredeem_coupon', { p_coupon_id: appliedCouponId });
+        const { error: unredeemErr } = await serviceSupabase.rpc('unredeem_coupon', { p_coupon_id: appliedCouponId });
+        if (unredeemErr) {
+          logError('orders.POST.compensation.unredeem_coupon', { userId: user.id, couponId: appliedCouponId }, unredeemErr);
+          captureError(unredeemErr, { context: 'orders.POST.compensation.unredeem_coupon', userId: user.id, couponId: appliedCouponId });
+        }
         appliedCouponId = null;
       }
     };
+    compensateOnThrow = rollbackPreOrder;
 
     // Calculate shipping costs. Shipping option is derived STRICTLY from
     // fulfillmentMethod, never trusted from the client's shippingOption field:
@@ -908,6 +975,27 @@ export async function POST(request: NextRequest) {
     let prepaidDeducted = false;
     let prepaidDeductedAmount = 0;
     let prepaidDeductedAgentId: string | null = null;
+
+    // A failed prepaid refund is silent money loss for the agent -- report it
+    // as loudly as anything in this file. Sets prepaidDeducted=false on
+    // success so a later compensation pass never double-refunds.
+    const refundPrepaidIfNeeded = async () => {
+      if (!(prepaidDeducted && prepaidDeductedAmount > 0 && prepaidDeductedAgentId)) return;
+      const { error: refundErr } = await serviceSupabase.rpc('refund_prepaid_balance', { p_agent_id: prepaidDeductedAgentId, p_amount: prepaidDeductedAmount });
+      if (refundErr) {
+        logError('orders.POST.compensation.refund_prepaid_balance', { userId: user.id, agentId: prepaidDeductedAgentId, amount: prepaidDeductedAmount }, refundErr);
+        captureError(refundErr, { context: 'orders.POST.compensation.refund_prepaid_balance', severity: 'critical', userId: user.id, agentId: prepaidDeductedAgentId, amount: prepaidDeductedAmount, idempotencyKey: idempotencyKey ?? null });
+      } else {
+        prepaidDeducted = false;
+      }
+    };
+
+    // Full compensation for a failed attempt: inventory, coupon, prepaid.
+    const compensateFailedAttempt = async () => {
+      await rollbackPreOrder();
+      await refundPrepaidIfNeeded();
+    };
+    compensateOnThrow = compensateFailedAttempt;
 
     const checkSuperAgentCredit = async (saProfile: any, amount: number) => {
       if (saProfile.account_type === 'prepaid') {
@@ -1106,11 +1194,7 @@ export async function POST(request: NextRequest) {
           // This duplicate (same idempotency_key) request lost the INSERT race
           // but already re-ran reserve / redeem / prepaid-deduct above. Undo ALL
           // of THIS attempt's side effects before returning the original order.
-          await releaseReservedInventory();
-          if (appliedCouponId) await serviceSupabase.rpc('unredeem_coupon', { p_coupon_id: appliedCouponId });
-          if (prepaidDeducted && prepaidDeductedAmount > 0 && prepaidDeductedAgentId) {
-            await serviceSupabase.rpc('refund_prepaid_balance', { p_agent_id: prepaidDeductedAgentId, p_amount: prepaidDeductedAmount });
-          }
+          await compensateFailedAttempt();
           return NextResponse.json({
             success: true,
             orderId: existing.id,
@@ -1119,12 +1203,9 @@ export async function POST(request: NextRequest) {
           });
         }
       }
-      await releaseReservedInventory();
-      if (appliedCouponId) await serviceSupabase.rpc('unredeem_coupon', { p_coupon_id: appliedCouponId });
-      if (prepaidDeducted && prepaidDeductedAmount > 0 && prepaidDeductedAgentId) {
-        await serviceSupabase.rpc('refund_prepaid_balance', { p_agent_id: prepaidDeductedAgentId, p_amount: prepaidDeductedAmount });
-      }
-      console.error('Database Order Write Error:', orderError);
+      await compensateFailedAttempt();
+      logError('orders.POST.order_insert', { userId: user.id, idempotencyKey: idempotencyKey ?? null }, orderError);
+      captureError(orderError, { context: 'orders.POST.order_insert', userId: user.id, idempotencyKey: idempotencyKey ?? null });
       return NextResponse.json({ error: 'Failed To Save Order Transaction.' }, { status: 500 });
     }
 
@@ -1161,16 +1242,22 @@ export async function POST(request: NextRequest) {
       .insert(itemsToInsert);
 
     if (itemsError) {
-      console.error('Database Order Items Write Error:', JSON.stringify(itemsError));
-      await serviceSupabase.from('orders').delete().eq('id', order.id);
-      await releaseReservedInventory();
-      if (appliedCouponId) await serviceSupabase.rpc('unredeem_coupon', { p_coupon_id: appliedCouponId });
-      if (prepaidDeducted && prepaidDeductedAmount > 0 && prepaidDeductedAgentId) {
-        await serviceSupabase.rpc('refund_prepaid_balance', { p_agent_id: prepaidDeductedAgentId, p_amount: prepaidDeductedAmount });
+      logError('orders.POST.order_items_insert', { userId: user.id, orderId: order.id }, itemsError);
+      captureError(itemsError, { context: 'orders.POST.order_items_insert', userId: user.id, orderId: order.id });
+      const { error: deleteErr } = await serviceSupabase.from('orders').delete().eq('id', order.id);
+      if (deleteErr) {
+        // Orphan order row (no items). The stale-order cron will cancel it,
+        // but report it so the pattern is visible.
+        captureError(deleteErr, { context: 'orders.POST.compensation.orphan_order_delete', orderId: order.id });
       }
+      await compensateFailedAttempt();
 
       return NextResponse.json({ error: 'An Unexpected Error Occurred While Saving Order Items.' }, { status: 500 });
     }
+    // The order + items now exist: the outer catch must no longer roll back
+    // inventory/coupon/prepaid -- those belong to this order.
+    orderCommitted = true;
+    compensateOnThrow = null;
 
     if (initialStatus === 'approved_ship' || initialStatus === 'approved_pickup') {
       const { error: creditErr } = await serviceSupabase.rpc('charge_order_credit_line', { p_order_id: order.id, p_created_by: user.id });
@@ -1180,15 +1267,43 @@ export async function POST(request: NextRequest) {
         // Demote it to the manual-approval status used elsewhere in this file
         // and skip the shipping-label enqueue so nothing goes out the door until
         // a human reconciles the billing.
-        console.error('[CRITICAL] charge_order_credit_line Failed For Order', order.id, creditErr);
-        await serviceSupabase
+        logError('orders.POST.charge_order_credit_line', { orderId: order.id, userId: user.id }, creditErr);
+        captureError(creditErr, { context: 'orders.POST.charge_order_credit_line', severity: 'critical', orderId: order.id, userId: user.id });
+        const { error: demoteErr } = await serviceSupabase
           .from('orders')
           .update({ status: 'agent_approval_pending' })
           .eq('id', order.id);
+        if (demoteErr) {
+          // Double failure: the order is still approved_ship with no billing
+          // row -- unbilled goods will ship unless a human intervenes. Retry
+          // once, then escalate via Sentry + admin notification.
+          const { error: demoteRetryErr } = await serviceSupabase
+            .from('orders')
+            .update({ status: 'agent_approval_pending' })
+            .eq('id', order.id);
+          if (demoteRetryErr) {
+            captureError(demoteRetryErr, { context: 'orders.POST.charge_credit_demotion_failed', severity: 'critical', orderId: order.id });
+            try {
+              const { data: admins } = await serviceSupabase.from('profiles').select('id').eq('role', 'admin');
+              for (const a of admins ?? []) {
+                await notify(serviceSupabase, {
+                  userId: a.id,
+                  type: 'system',
+                  title: 'Billing Reconciliation Required',
+                  body: `Order ${shortOrderId(order.id)} Is Approved But Its Credit Charge Failed And Demotion Also Failed. Manual Review Required.`,
+                  url: `/admin/orders?highlight=${order.id}`,
+                });
+              }
+            } catch (notifyErr) {
+              captureError(notifyErr, { context: 'orders.POST.charge_credit_admin_notify', orderId: order.id });
+            }
+          }
+        }
       } else if (initialStatus === 'approved_ship') {
         const { error: labelErr } = await serviceSupabase.rpc('shipping_enqueue_label_job', { p_order_id: order.id });
         if (labelErr) {
-          console.error('[WARNING] shipping_enqueue_label_job Failed For Order', order.id, labelErr);
+          logError('orders.POST.shipping_enqueue_label_job', { orderId: order.id }, labelErr);
+          captureError(labelErr, { context: 'orders.POST.shipping_enqueue_label_job', orderId: order.id });
         }
       }
     }
@@ -1291,8 +1406,12 @@ export async function POST(request: NextRequest) {
         relatedOrderId: order.id,
         tag: `order-placed-${order.id}`,
       });
-    } catch {
-      // Never propagate - notifications are best-effort
+    } catch (notifErr) {
+      // Never propagate - notifications are best-effort. But a silent swallow
+      // here previously meant a broken notify()/enqueuePush() migration could
+      // stop ALL new-order alerts platform-wide with zero evidence.
+      logError('orders.POST.notifications', { orderId: order.id }, notifErr);
+      captureError(notifErr, { context: 'orders.POST.notifications', orderId: order.id });
     }
 
     // Send order confirmation email (best-effort, non-blocking). Only to a
@@ -1310,6 +1429,29 @@ export async function POST(request: NextRequest) {
       } catch { /* ignore */ }
     }
 
+    // Server-authoritative purchase analytics: emitted here (never client-side)
+    // with the server-computed total, deduped by a partial unique index on
+    // order_id, and skipped for idempotency replays (those return earlier).
+    // Wholesale restocks and agent self-buys are flagged so the retail funnel
+    // view excludes them. Best-effort: can never fail the order.
+    {
+      const analyticsAgentId = isAgentSelfBuy
+        ? (superAgentProfile ? superAgentProfile.id : null)
+        : (agentProfile ? agentProfile.id : null);
+      if (analyticsAgentId) {
+        await recordServerAnalyticsEvent(serviceSupabase, {
+          agent_id: analyticsAgentId,
+          event_type: 'order_complete',
+          session_id: analyticsSessionId ?? null,
+          visitor_id: analyticsVisitorId ?? null,
+          path: '/checkout',
+          order_id: order.id,
+          amount_cents: Math.round((Number(order.total) || 0) * 100),
+          is_wholesale: isWholesaleRestock || isAgentSelfBuy,
+        });
+      }
+    }
+
     return NextResponse.json({
       success: true,
       orderId: order.id,
@@ -1317,7 +1459,18 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Order API Route Caught Exception:', error);
+    logError('orders.POST.unhandled', { orderCommitted }, error);
+    captureError(error, { context: 'orders.POST.unhandled', orderCommitted });
+    // Best-effort compensation: if the throw happened after inventory was
+    // reserved / a coupon redeemed / prepaid deducted but BEFORE the order
+    // committed, undo those side effects instead of leaking them.
+    if (!orderCommitted && compensateOnThrow) {
+      try {
+        await compensateOnThrow();
+      } catch (compErr) {
+        captureError(compErr, { context: 'orders.POST.unhandled.compensation_failed', severity: 'critical' });
+      }
+    }
     return NextResponse.json({ error: 'Internal Server Error Occurred.' }, { status: 500 });
   }
 }
