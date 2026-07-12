@@ -6,6 +6,7 @@ import { useState, useRef, useEffect } from 'react';
 
 const CALCULATORS = [
   { id: 'reconstitution', label: 'Reconstitution' },
+  { id: 'shelf-life', label: 'Shelf Life Tracker' },
   { id: 'dilution', label: 'Serial Dilution' },
   { id: 'concentration', label: 'Concentration Converter' },
   { id: 'stability', label: 'Arrhenius Stability' },
@@ -17,6 +18,7 @@ const CALCULATORS = [
   { id: 'solubility', label: 'Solubility Predictor' },
   { id: 'vial-quantity', label: 'Vial Quantity Power' },
 ];
+
 
 export default function DynamicCalculatorHero({ onSelect }: { onSelect?: (id: string) => void }) {
   const [query, setQuery] = useState('');
