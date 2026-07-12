@@ -42,7 +42,7 @@ export default function AboutAreasPage() {
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
           { '@type': 'ListItem', position: 2, name: 'Research Library', item: 'https://pepnationlab.com/research' },
-          { '@type': 'ListItem', position: 3, name: 'about areas', item: 'https://pepnationlab.com/research/about-areas' }
+          { '@type': 'ListItem', position: 3, name: 'About Research Areas', item: 'https://pepnationlab.com/research/about-areas' }
         ]
       }
     ]
