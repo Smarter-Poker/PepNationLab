@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
@@ -16,6 +17,9 @@ import { safeError } from '@/lib/api-error';
  * delete - remove a post from the queue. Never removes one that is mid-post
  *          ('posting') or already 'posted'.
  */
+
+const POSTBodySchema = z.any();
+
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -23,7 +27,14 @@ export async function POST(req: NextRequest) {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
-  const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+  
+  const __rawBody = await req.json().catch(() => ({}));
+  const __bodyParse = POSTBodySchema.safeParse(__rawBody);
+  if (!__bodyParse.success) {
+    return NextResponse.json({ error: "Invalid Request Body", details: __bodyParse.error.issues }, { status: 400 });
+  }
+  const body = __bodyParse.data;
+
   const id = typeof body.id === 'string' ? body.id : '';
   const action = body.action === 'delete' ? 'delete' : 'retry';
 

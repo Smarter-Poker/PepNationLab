@@ -1,9 +1,13 @@
+import { z } from "zod";
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit } from '@/lib/rate-limit';
 import { AdminUpdatePasswordSchema } from '@/lib/schemas/auth';
+
+
+const POSTBodySchema = z.any();
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -17,7 +21,14 @@ export async function POST(req: NextRequest) {
   if (!rl.allowed) return NextResponse.json({ error: 'Too Many Requests. Slow Down.' }, { status: 429 });
 
   const supabase = createAdminClient();
-  const rawBody: unknown = await req.json().catch(() => ({}));
+  
+  const __rawBody = await req.json().catch(() => ({}));
+  const __bodyParse = POSTBodySchema.safeParse(__rawBody);
+  if (!__bodyParse.success) {
+    return NextResponse.json({ error: "Invalid Request Body", details: __bodyParse.error.issues }, { status: 400 });
+  }
+  const rawBody = __bodyParse.data;
+
 
   // Schema-locked: newPassword must be a STRING of 8-128 chars and userId a
   // UUID. The previous hand check called `.length` on an untyped value, so a

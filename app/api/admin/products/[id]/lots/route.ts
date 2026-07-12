@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { requireAdmin } from '@/lib/admin-auth';
@@ -54,6 +55,9 @@ export async function GET(_req: NextRequest, { params }: Params) {
   return NextResponse.json({ lots });
 }
 
+
+const POSTBodySchema = z.any();
+
 export async function POST(req: NextRequest, { params }: Params) {
   const csrfFail = assertSameOrigin(req);
   if (csrfFail) return csrfFail;
@@ -66,7 +70,14 @@ export async function POST(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Invalid Product Id.' }, { status: 400 });
   }
 
-  const body = await req.json().catch(() => ({}));
+  
+  const __rawBody = await req.json().catch(() => ({}));
+  const __bodyParse = POSTBodySchema.safeParse(__rawBody);
+  if (!__bodyParse.success) {
+    return NextResponse.json({ error: "Invalid Request Body", details: __bodyParse.error.issues }, { status: 400 });
+  }
+  const body = __bodyParse.data;
+
   const lotNumber = String(body?.lot_number ?? '').trim();
   if (!lotNumber) {
     return NextResponse.json({ error: 'Lot Number Is Required.' }, { status: 400 });

@@ -1,3 +1,4 @@
+import { z } from "zod";
 /**
  * GET  /api/admin/shipping-origins  - list all shipping origins
  * POST /api/admin/shipping-origins  - create a new shipping origin
@@ -37,6 +38,9 @@ export async function GET() {
   return NextResponse.json({ origins: enriched });
 }
 
+
+const POSTBodySchema = z.any();
+
 export async function POST(req: NextRequest) {
   const csrfErr = assertSameOrigin(req);
   if (csrfErr) return csrfErr;
@@ -44,8 +48,15 @@ export async function POST(req: NextRequest) {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
-  let body: Record<string, unknown>;
-  try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON.' }, { status: 400 }); }
+  
+  
+  const __rawBody = await req.json().catch(() => ({}));
+  const __bodyParse = POSTBodySchema.safeParse(__rawBody);
+  if (!__bodyParse.success) {
+    return NextResponse.json({ error: "Invalid Request Body", details: __bodyParse.error.issues }, { status: 400 });
+  }
+  const body = __bodyParse.data;
+
 
   const label = typeof body.label === 'string' ? body.label.trim() : '';
   const name = typeof body.name === 'string' ? body.name.trim() : '';

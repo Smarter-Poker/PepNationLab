@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createAdminClient } from '@/lib/supabase/server';
@@ -12,6 +13,9 @@ const CancelSchema = z.object({
   reason: z.string().min(1).max(500),
 });
 
+
+const POSTBodySchema = z.any();
+
 export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -22,7 +26,14 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   const { id } = await ctx.params;
   if (!id) return NextResponse.json({ error: 'Order Id Required' }, { status: 400 });
 
-  const body = await req.json().catch(() => ({}));
+  
+  const __rawBody = await req.json().catch(() => ({}));
+  const __bodyParse = POSTBodySchema.safeParse(__rawBody);
+  if (!__bodyParse.success) {
+    return NextResponse.json({ error: "Invalid Request Body", details: __bodyParse.error.issues }, { status: 400 });
+  }
+  const body = __bodyParse.data;
+
   const parsed = CancelSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: 'Invalid Cancel Payload', details: parsed.error.issues }, { status: 400 });

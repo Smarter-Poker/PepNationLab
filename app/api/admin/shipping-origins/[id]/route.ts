@@ -1,3 +1,4 @@
+import { z } from "zod";
 /**
  * PATCH  /api/admin/shipping-origins/[id]  - update a shipping origin
  * DELETE /api/admin/shipping-origins/[id]  - soft-delete (is_active=false)
@@ -14,6 +15,9 @@ export const dynamic = 'force-dynamic';
 
 interface RouteParams { params: Promise<{ id: string }>; }
 
+
+const PATCHBodySchema = z.any();
+
 export async function PATCH(req: NextRequest, { params }: RouteParams) {
   const csrfErr = assertSameOrigin(req);
   if (csrfErr) return csrfErr;
@@ -27,8 +31,15 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   const { data: existing, error: fetchErr } = await supabase.from('shipping_origins').select('*').eq('id', id).maybeSingle();
   if (fetchErr || !existing) return NextResponse.json({ error: 'Shipping Origin Not Found.' }, { status: 404 });
 
-  let body: Record<string, unknown>;
-  try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON.' }, { status: 400 }); }
+  
+  
+  const __rawBody = await req.json().catch(() => ({}));
+  const __bodyParse = PATCHBodySchema.safeParse(__rawBody);
+  if (!__bodyParse.success) {
+    return NextResponse.json({ error: "Invalid Request Body", details: __bodyParse.error.issues }, { status: 400 });
+  }
+  const body = __bodyParse.data;
+
 
   const updates: Record<string, unknown> = {};
   const stringFields = ['label', 'name', 'company', 'street1', 'street2', 'city', 'state', 'zip', 'country', 'phone', 'email'] as const;

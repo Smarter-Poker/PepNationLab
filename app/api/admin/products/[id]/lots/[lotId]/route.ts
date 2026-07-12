@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { requireAdmin } from '@/lib/admin-auth';
@@ -25,6 +26,9 @@ function toDateOrNull(v: unknown): string | null | undefined {
   return s;
 }
 
+
+const PATCHBodySchema = z.any();
+
 export async function PATCH(req: NextRequest, { params }: Params) {
   const csrfFail = assertSameOrigin(req);
   if (csrfFail) return csrfFail;
@@ -37,7 +41,14 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Invalid Id.' }, { status: 400 });
   }
 
-  const body = await req.json().catch(() => ({}));
+  
+  const __rawBody = await req.json().catch(() => ({}));
+  const __bodyParse = PATCHBodySchema.safeParse(__rawBody);
+  if (!__bodyParse.success) {
+    return NextResponse.json({ error: "Invalid Request Body", details: __bodyParse.error.issues }, { status: 400 });
+  }
+  const body = __bodyParse.data;
+
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
 
   if (typeof body?.lot_number === 'string') {

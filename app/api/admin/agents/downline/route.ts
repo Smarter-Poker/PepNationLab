@@ -1,3 +1,4 @@
+import { z } from "zod";
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
@@ -63,6 +64,9 @@ export async function GET(req: NextRequest) {
  * (action = 'assign_researcher'), Which Already Accepts Any Agent Or Super
  * Agent As The Target.
  */
+
+const POSTBodySchema = z.any();
+
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -71,7 +75,14 @@ export async function POST(req: NextRequest) {
 
   try {
     const admin = createAdminClient();
-    const body = await req.json().catch(() => ({}));
+    
+  const __rawBody = await req.json().catch(() => ({}));
+  const __bodyParse = POSTBodySchema.safeParse(__rawBody);
+  if (!__bodyParse.success) {
+    return NextResponse.json({ error: "Invalid Request Body", details: __bodyParse.error.issues }, { status: 400 });
+  }
+  const body = __bodyParse.data;
+
     const { action, agent_id, new_parent_id } = body as {
       action?: string;
       agent_id?: string;

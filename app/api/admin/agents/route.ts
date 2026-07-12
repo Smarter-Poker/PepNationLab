@@ -7,6 +7,7 @@ import { requireAdmin } from '@/lib/admin-auth';
 import { generateQrDataUrl } from '@/lib/qr';
 import { sanitizeUsername } from '@/lib/usernames';
 import { assertSameOrigin } from '@/lib/csrf';
+import { z } from "zod";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://pepnationlab.com';
 
@@ -37,6 +38,28 @@ export async function GET() {
 }
 
 // POST: Create a brand-new agent or researcher directly (no registration required)
+
+const POSTBodySchema = z.object({
+  firstName: z.any().optional(),
+  lastName: z.any().optional(),
+  full_name: z.any().optional(),
+  username: z.any().optional(),
+  password: z.any().optional(),
+  tier: z.any().optional(),
+  account_type: z.any().optional(),
+  credit_limit: z.any().optional(),
+  prepaid_balance: z.any().optional(),
+  slug: z.any().optional(),
+  display_name: z.any().optional(),
+  account_role: z.any().optional(),
+  parent_agent_id: z.any().optional(),
+  commission_pct: z.any().optional(),
+  commission_max_pct: z.any().optional(),
+  velocity_cap: z.any().optional(),
+  custom_commission_scale: z.any().optional(),
+  custom_markup_override: z.any().optional(),
+  max_auto_approve_limit: z.any().optional(),
+});
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -45,7 +68,13 @@ export async function POST(req: NextRequest) {
 
   try {
     const supabase = createAdminClient();
-    const body = await req.json().catch(() => ({}));
+    
+        const __rawBody = await req.json().catch(() => ({}));
+        const __bodyParse = POSTBodySchema.safeParse(__rawBody);
+        if (!__bodyParse.success) {
+          return NextResponse.json({ error: 'Invalid Request Body', details: __bodyParse.error.issues }, { status: 400 });
+        }
+        const body = __bodyParse.data;
 
     const {
       firstName,

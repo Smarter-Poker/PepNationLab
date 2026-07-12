@@ -58,7 +58,7 @@ export async function recordCallTelemetry(
       action,
       entity_type: 'messenger_call',
       entity_id: payload.call_id,
-      changes: payload,
+      changes: payload as any,
       ip_address: ipAddress ?? null,
       user_agent: userAgent ?? null,
     });

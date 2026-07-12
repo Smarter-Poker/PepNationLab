@@ -194,7 +194,7 @@ export async function persistStatement(
 
   const { data: statement, error: upsertError } = await supabase
     .from('weekly_statements')
-    .upsert(upsertPayload, { onConflict: 'agent_id,week_start' })
+    .upsert(upsertPayload as any, { onConflict: 'agent_id,week_start' })
     .select('id')
     .maybeSingle();
 

@@ -159,7 +159,7 @@ export default function GlobalCompletenessWidget() {
       setAgentProfileData(agentProfile);
       // Pre-fill warehouse draft from existing data if any
       if (agentProfile?.warehouse_address) {
-        const w = agentProfile.warehouse_address;
+        const w = agentProfile.warehouse_address as Record<string, string>;
         setWarehouseDraft({
           street1: w.street1 || '',
           street2: w.street2 || '',

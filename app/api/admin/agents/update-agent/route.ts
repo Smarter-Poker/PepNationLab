@@ -1,9 +1,13 @@
+import { z } from "zod";
 import { NextRequest, NextResponse } from 'next/server';
 import { safeError } from '@/lib/api-error';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { writeAuditLog } from '@/lib/admin-audit';
+
+
+const PATCHBodySchema = z.any();
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -16,12 +20,15 @@ export async function PATCH(request: NextRequest) {
 
     const supabase = createAdminClient();
 
-    let body: any;
-    try {
-      body = await request.json();
-    } catch {
-      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-    }
+    
+    
+  const __rawBody = await request.json().catch(() => ({}));
+  const __bodyParse = PATCHBodySchema.safeParse(__rawBody);
+  if (!__bodyParse.success) {
+    return NextResponse.json({ error: "Invalid Request Body", details: __bodyParse.error.issues }, { status: 400 });
+  }
+  const body = __bodyParse.data;
+
 
     const {
       id,

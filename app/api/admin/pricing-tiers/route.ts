@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
@@ -28,6 +29,14 @@ export async function GET() {
   }
 }
 
+
+const POSTBodySchema = z.object({
+  tier_name: z.any().optional(),
+  multiplier: z.any().optional(),
+  display_name: z.any().optional(),
+  description: z.any().optional(),
+});
+
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -37,7 +46,13 @@ export async function POST(req: NextRequest) {
 
   try {
     const supabase = createAdminClient();
-    const body = await req.json().catch(() => ({}));
+    
+  const __rawBody = await req.json().catch(() => ({}));
+  const __bodyParse = POSTBodySchema.safeParse(__rawBody);
+  if (!__bodyParse.success) {
+    return NextResponse.json({ error: "Invalid Request Body", details: __bodyParse.error.issues }, { status: 400 });
+  }
+  const body = __bodyParse.data;
 
     const { tier_name, multiplier, display_name, description } = body;
 

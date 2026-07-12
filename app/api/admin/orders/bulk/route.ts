@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
@@ -36,6 +37,9 @@ const VALID_ACTIONS: BulkAction[] = [
   'generate_labels',
 ];
 
+
+const POSTBodySchema = z.any();
+
 export async function POST(req: NextRequest) {
   const csrfFail = assertSameOrigin(req);
   if (csrfFail) return csrfFail;
@@ -43,7 +47,14 @@ export async function POST(req: NextRequest) {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
-  const body = (await req.json().catch(() => ({}))) as BulkBody;
+  
+  const __rawBody = await req.json().catch(() => ({}));
+  const __bodyParse = POSTBodySchema.safeParse(__rawBody);
+  if (!__bodyParse.success) {
+    return NextResponse.json({ error: "Invalid Request Body", details: __bodyParse.error.issues }, { status: 400 });
+  }
+  const body = __bodyParse.data;
+
   const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const ids = Array.isArray(body.ids)
     ? body.ids.filter((x): x is string => typeof x === 'string' && UUID_REGEX.test(x))

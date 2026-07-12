@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
@@ -11,6 +12,9 @@ const VALID = new Set(['established', 'emerging', 'not_suitable']);
 // pricing-tiers route pattern (CSRF same-origin check, requireAdmin gate,
 // service-role client). Keeps route_of_admin in sync and revalidates the
 // cached public compound pages so the nasal badges update immediately.
+
+const POSTBodySchema = z.any();
+
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -19,7 +23,14 @@ export async function POST(req: NextRequest) {
   if (!gate.ok) return gate.response;
 
   const supabase = await createServiceClient();
-  const body = await req.json().catch(() => ({}));
+  
+  const __rawBody = await req.json().catch(() => ({}));
+  const __bodyParse = POSTBodySchema.safeParse(__rawBody);
+  if (!__bodyParse.success) {
+    return NextResponse.json({ error: "Invalid Request Body", details: __bodyParse.error.issues }, { status: 400 });
+  }
+  const body = __bodyParse.data;
+
 
   const slug = typeof body.slug === 'string' ? body.slug.trim() : '';
   const status = typeof body.status === 'string' ? body.status.trim() : '';

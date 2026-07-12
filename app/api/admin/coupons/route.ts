@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
@@ -24,6 +25,17 @@ export async function GET() {
 }
 
 // POST: Create a new coupon (admin can create coupons for any agent)
+
+const POSTBodySchema = z.object({
+  agentId: z.any().optional(),
+  code: z.any().optional(),
+  discountType: z.any().optional(),
+  discountValue: z.any().optional(),
+  minOrderAmount: z.any().optional(),
+  maxUses: z.any().optional(),
+  expiresAt: z.any().optional(),
+});
+
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -31,7 +43,13 @@ export async function POST(req: NextRequest) {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
-  const body = await req.json().catch(() => ({}));
+  
+  const __rawBody = await req.json().catch(() => ({}));
+  const __bodyParse = POSTBodySchema.safeParse(__rawBody);
+  if (!__bodyParse.success) {
+    return NextResponse.json({ error: "Invalid Request Body", details: __bodyParse.error.issues }, { status: 400 });
+  }
+  const body = __bodyParse.data;
 
   return withIdempotency({
     userId: gate.userId,
@@ -164,6 +182,12 @@ export async function POST(req: NextRequest) {
 }
 
 // PATCH: Toggle is_active flag
+
+const PATCHBodySchema = z.object({
+  id: z.any().optional(),
+  is_active: z.any().optional(),
+});
+
 export async function PATCH(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -171,7 +195,13 @@ export async function PATCH(req: NextRequest) {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
-  const body = await req.json().catch(() => ({}));
+  
+  const __rawBody = await req.json().catch(() => ({}));
+  const __bodyParse = PATCHBodySchema.safeParse(__rawBody);
+  if (!__bodyParse.success) {
+    return NextResponse.json({ error: "Invalid Request Body", details: __bodyParse.error.issues }, { status: 400 });
+  }
+  const body = __bodyParse.data;
   const { id, is_active } = body;
 
   if (!id || typeof is_active !== 'boolean') {

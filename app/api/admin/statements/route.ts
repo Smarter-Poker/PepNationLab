@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
@@ -48,6 +49,12 @@ export async function GET(req: NextRequest) {
 }
 
 // POST: generate a statement or mark one paid
+
+const POSTBodySchema = z.object({
+  agentId: z.any().optional(),
+  weekStart: z.any().optional(),
+});
+
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -56,7 +63,13 @@ export async function POST(req: NextRequest) {
   if (!gate.ok) return gate.response;
 
   try {
-    const body = await req.json().catch(() => ({}));
+    
+  const __rawBody = await req.json().catch(() => ({}));
+  const __bodyParse = POSTBodySchema.safeParse(__rawBody);
+  if (!__bodyParse.success) {
+    return NextResponse.json({ error: "Invalid Request Body", details: __bodyParse.error.issues }, { status: 400 });
+  }
+  const body = __bodyParse.data;
     const action = body.action;
 
     return withIdempotency({

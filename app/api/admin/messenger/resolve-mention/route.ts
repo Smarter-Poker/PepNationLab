@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
@@ -13,6 +14,9 @@ export const dynamic = 'force-dynamic';
 // could never be cleared and the AdminMessengerClient's `handleMention*`
 // stubs returned 404 because no resolve route existed. This route fills the
 // gap.
+
+const POSTBodySchema = z.any();
+
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -23,7 +27,14 @@ export async function POST(req: NextRequest) {
   const limited = await messengerRateLimit('admin', gate.userId);
   if (!limited.allowed) return messengerRateLimitResponse(limited);
 
-  const body = await req.json().catch(() => ({}));
+  
+  const __rawBody = await req.json().catch(() => ({}));
+  const __bodyParse = POSTBodySchema.safeParse(__rawBody);
+  if (!__bodyParse.success) {
+    return NextResponse.json({ error: "Invalid Request Body", details: __bodyParse.error.issues }, { status: 400 });
+  }
+  const body = __bodyParse.data;
+
   const parsed = ResolveAdminMentionSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(

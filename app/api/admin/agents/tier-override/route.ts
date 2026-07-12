@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
@@ -64,6 +65,9 @@ export async function GET(req: NextRequest) {
  * locked level is also written to house_tier_level so the UI/pricing reflect it
  * immediately. When disabled, pricing reverts to volume-driven resolution.
  */
+
+const POSTBodySchema = z.any();
+
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -71,7 +75,14 @@ export async function POST(req: NextRequest) {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
-  const body = await req.json().catch(() => ({}));
+  
+  const __rawBody = await req.json().catch(() => ({}));
+  const __bodyParse = POSTBodySchema.safeParse(__rawBody);
+  if (!__bodyParse.success) {
+    return NextResponse.json({ error: "Invalid Request Body", details: __bodyParse.error.issues }, { status: 400 });
+  }
+  const body = __bodyParse.data;
+
   const agentId = typeof body.agentId === 'string' ? body.agentId : '';
   const enabled = body.enabled === true;
   const level = body.level == null ? null : Number(body.level);

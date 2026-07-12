@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { createServiceClient } from '@/lib/supabase/server';
@@ -25,6 +26,9 @@ export async function GET(_req: NextRequest) {
   return res;
 }
 
+
+const POSTBodySchema = z.any();
+
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -32,8 +36,15 @@ export async function POST(req: NextRequest) {
   const admin = await requireAdmin();
   if (!admin.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  let body: any = {};
-  try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
+  
+  
+  const __rawBody = await req.json().catch(() => ({}));
+  const __bodyParse = POSTBodySchema.safeParse(__rawBody);
+  if (!__bodyParse.success) {
+    return NextResponse.json({ error: "Invalid Request Body", details: __bodyParse.error.issues }, { status: 400 });
+  }
+  const body = __bodyParse.data;
+
 
   const name = String(body.name ?? '').trim();
   const bannerText = body.banner_text ? String(body.banner_text).trim() : null;

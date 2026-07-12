@@ -5,6 +5,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { ShippingAddressSchema } from '@/lib/schemas/common';
+import { z } from "zod";
 
 /** Fetch the tier_1 multiplier from the database (admin buys at best rate). */
 async function getTier1Multiplier(supabase: ReturnType<typeof createAdminClient>): Promise<number> {
@@ -47,6 +49,11 @@ export async function GET() {
   return NextResponse.json({ products });
 }
 
+
+const POSTBodySchema = z.object({
+  items: z.any().optional(),
+  payment_method: z.any().optional(),
+});
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -55,8 +62,19 @@ export async function POST(req: NextRequest) {
   if (!gate.ok) return gate.response;
 
   const supabase = createAdminClient();
-  const body = await req.json().catch(() => ({}));
-  const { items, payment_method = 'zelle', shipping_address } = body;
+  
+      const __rawBody = await req.json().catch(() => ({}));
+      const __bodyParse = POSTBodySchema.safeParse(__rawBody);
+      if (!__bodyParse.success) {
+        return NextResponse.json({ error: 'Invalid Request Body', details: __bodyParse.error.issues }, { status: 400 });
+      }
+      const body = __bodyParse.data;
+  const { items, payment_method = 'zelle' } = body;
+  const shipping_address_result = ShippingAddressSchema.optional().nullable().safeParse(body.shipping_address);
+  if (!shipping_address_result.success) {
+    return NextResponse.json({ error: 'Invalid Shipping Address' }, { status: 400 });
+  }
+  const shipping_address = shipping_address_result.data;
 
   if (!items || !Array.isArray(items) || items.length === 0) {
     return NextResponse.json({ error: 'No Items In Order' }, { status: 400 });

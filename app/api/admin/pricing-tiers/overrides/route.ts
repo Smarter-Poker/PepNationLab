@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { createServiceClient } from '@/lib/supabase/server';
@@ -40,6 +41,13 @@ export async function GET() {
 }
 
 // POST: create or update a product/tier override.
+
+const POSTBodySchema = z.object({
+  product_id: z.any().optional(),
+  tier_name: z.any().optional(),
+  custom_multiplier: z.any().optional(),
+});
+
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -48,7 +56,13 @@ export async function POST(req: NextRequest) {
   if (!gate.ok) return gate.response;
 
   const supabase = await createServiceClient();
-  const body = await req.json().catch(() => ({}));
+  
+  const __rawBody = await req.json().catch(() => ({}));
+  const __bodyParse = POSTBodySchema.safeParse(__rawBody);
+  if (!__bodyParse.success) {
+    return NextResponse.json({ error: "Invalid Request Body", details: __bodyParse.error.issues }, { status: 400 });
+  }
+  const body = __bodyParse.data;
   const { product_id, tier_name, custom_multiplier } = body;
 
   if (!product_id || !UUID_RE.test(product_id)) {
@@ -107,6 +121,12 @@ export async function POST(req: NextRequest) {
 }
 
 // DELETE: remove a product/tier override.
+
+const DELETEBodySchema = z.object({
+  product_id: z.any().optional(),
+  tier_name: z.any().optional(),
+});
+
 export async function DELETE(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -115,7 +135,13 @@ export async function DELETE(req: NextRequest) {
   if (!gate.ok) return gate.response;
 
   const supabase = await createServiceClient();
-  const body = await req.json().catch(() => ({}));
+  
+  const __rawBody = await req.json().catch(() => ({}));
+  const __bodyParse = DELETEBodySchema.safeParse(__rawBody);
+  if (!__bodyParse.success) {
+    return NextResponse.json({ error: "Invalid Request Body", details: __bodyParse.error.issues }, { status: 400 });
+  }
+  const body = __bodyParse.data;
   const { product_id, tier_name } = body;
 
   if (!product_id || !UUID_RE.test(product_id)) {

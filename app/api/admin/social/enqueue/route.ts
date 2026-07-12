@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
@@ -20,6 +21,9 @@ import { safeError } from '@/lib/api-error';
 const PLATFORMS = new Set<Platform>(['x', 'youtube', 'instagram', 'facebook', 'pinterest', 'tiktok']);
 const MEDIA_TYPES = new Set<MediaType>(['video', 'image', 'none']);
 
+
+const POSTBodySchema = z.any();
+
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -27,7 +31,14 @@ export async function POST(req: NextRequest) {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
-  const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+  
+  const __rawBody = await req.json().catch(() => ({}));
+  const __bodyParse = POSTBodySchema.safeParse(__rawBody);
+  if (!__bodyParse.success) {
+    return NextResponse.json({ error: "Invalid Request Body", details: __bodyParse.error.issues }, { status: 400 });
+  }
+  const body = __bodyParse.data;
+
 
   const platform = String(body.platform ?? '') as Platform;
   const caption = typeof body.caption === 'string' ? body.caption.trim() : '';

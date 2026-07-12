@@ -153,7 +153,7 @@ export async function ensureOAuthResearcherProfile(
       updates.updated_at = new Date().toISOString();
       const { error: updateErr } = await admin
         .from('profiles')
-        .update(updates)
+        .update(updates as any)
         .eq('id', user.id);
       if (updateErr) {
         result.error = `profile_update_failed: ${updateErr.message}`;

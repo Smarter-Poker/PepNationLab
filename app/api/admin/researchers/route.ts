@@ -1,3 +1,4 @@
+import { z } from "zod";
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
@@ -93,6 +94,22 @@ export async function GET(req: NextRequest) {
   }
 }
 
+
+const POSTBodySchema = z.object({
+  id: z.any().optional(),
+  action: z.any().optional(),
+  role: z.any().optional(),
+  tier: z.any().optional(),
+  account_type: z.any().optional(),
+  credit_limit: z.any().optional(),
+  is_active: z.any().optional(),
+  slug: z.any().optional(),
+  display_name: z.any().optional(),
+  balance_delta: z.any().optional(),
+  custom_markup_override: z.any().optional(),
+  assign_to_agent_id: z.any().optional(),
+});
+
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -101,7 +118,13 @@ export async function POST(req: NextRequest) {
 
   try {
     const supabase = createAdminClient();
-    const body = await req.json().catch(() => ({}));
+    
+  const __rawBody = await req.json().catch(() => ({}));
+  const __bodyParse = POSTBodySchema.safeParse(__rawBody);
+  if (!__bodyParse.success) {
+    return NextResponse.json({ error: "Invalid Request Body", details: __bodyParse.error.issues }, { status: 400 });
+  }
+  const body = __bodyParse.data;
 
     const { id, action, role, tier, account_type, credit_limit, is_active, slug, display_name, balance_delta, custom_markup_override, assign_to_agent_id } = body;
     if (!id) return NextResponse.json({ error: 'Missing User ID' }, { status: 400 });

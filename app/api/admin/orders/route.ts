@@ -1,3 +1,4 @@
+import { z } from "zod";
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
@@ -89,6 +90,14 @@ export async function GET(req: NextRequest) {
 }
 
 // POST: Process / Update an order state
+
+const POSTBodySchema = z.object({
+  id: z.any().optional(),
+  status: z.any().optional(),
+  tracking_number: z.any().optional(),
+  agent_approval_notes: z.any().optional(),
+});
+
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -98,7 +107,13 @@ export async function POST(req: NextRequest) {
 
   try {
     const supabase = createAdminClient();
-    const body = await req.json().catch(() => ({}));
+    
+  const __rawBody = await req.json().catch(() => ({}));
+  const __bodyParse = POSTBodySchema.safeParse(__rawBody);
+  if (!__bodyParse.success) {
+    return NextResponse.json({ error: "Invalid Request Body", details: __bodyParse.error.issues }, { status: 400 });
+  }
+  const body = __bodyParse.data;
 
     const {
       id,

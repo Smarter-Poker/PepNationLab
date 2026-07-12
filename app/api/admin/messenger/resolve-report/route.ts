@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
@@ -7,6 +8,9 @@ import { ResolveReportSchema } from '@/lib/messenger/schemas';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+
+const POSTBodySchema = z.any();
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -18,7 +22,14 @@ export async function POST(req: NextRequest) {
   const limited = await messengerRateLimit('admin', gate.userId);
   if (!limited.allowed) return messengerRateLimitResponse(limited);
 
-  const body = await req.json().catch(() => ({}));
+  
+  const __rawBody = await req.json().catch(() => ({}));
+  const __bodyParse = POSTBodySchema.safeParse(__rawBody);
+  if (!__bodyParse.success) {
+    return NextResponse.json({ error: "Invalid Request Body", details: __bodyParse.error.issues }, { status: 400 });
+  }
+  const body = __bodyParse.data;
+
   const parsed = ResolveReportSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: 'Invalid Body', details: parsed.error.flatten() }, { status: 400 });

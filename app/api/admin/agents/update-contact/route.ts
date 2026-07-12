@@ -1,7 +1,15 @@
+import { z } from "zod";
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+
+
+const PATCHBodySchema = z.object({
+  id: z.any().optional(),
+  email: z.any().optional(),
+  phone: z.any().optional(),
+});
 
 export async function PATCH(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -13,7 +21,13 @@ export async function PATCH(req: NextRequest) {
   const supabase = createAdminClient();
   
   try {
-    const { id, email, phone } = await req.json();
+    
+  const __rawBody = await req.json().catch(() => ({}));
+  const __bodyParse = PATCHBodySchema.safeParse(__rawBody);
+  if (!__bodyParse.success) {
+    return NextResponse.json({ error: "Invalid Request Body", details: __bodyParse.error.issues }, { status: 400 });
+  }
+  const { id, email, phone } = __bodyParse.data;
 
     if (!id) {
       return NextResponse.json({ error: 'Agent ID is required' }, { status: 400 });

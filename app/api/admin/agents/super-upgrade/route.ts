@@ -1,9 +1,16 @@
+import { z } from "zod";
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
 import { writeAuditLog } from '@/lib/admin-audit';
+
+
+const POSTBodySchema = z.object({
+  agentId: z.any().optional(),
+  is_super_agent: z.any().optional(),
+});
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -13,7 +20,13 @@ export async function POST(req: NextRequest) {
     const gate = await requireAdmin();
     if (!gate.ok) return gate.response;
 
-    const body = await req.json();
+    
+  const __rawBody = await req.json().catch(() => ({}));
+  const __bodyParse = POSTBodySchema.safeParse(__rawBody);
+  if (!__bodyParse.success) {
+    return NextResponse.json({ error: "Invalid Request Body", details: __bodyParse.error.issues }, { status: 400 });
+  }
+  const body = __bodyParse.data;
     const { agentId, is_super_agent } = body;
 
     if (!agentId || typeof is_super_agent !== 'boolean') {

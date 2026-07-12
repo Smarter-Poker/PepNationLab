@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
       agent_id: agentId, buyer_id: null, status: 'agent_approval_pending',
       fulfillment_method: fulfillment, payment_method: paymentMethod || 'zelle',
       subtotal: computedSubtotal, shipping_cost: safeShipping, total: computedTotal,
-      shipping_address: fulfillment === 'ship' ? { street, city, state, zipCode: zip, country: 'US' } : null,
+      shipping_address: fulfillment === 'ship' ? { fullName: buyerName || '', street1: street || '', city: city || '', state: state || '', zip: zip || '', country: 'US' } : null,
       buyer_name: buyerName ?? null, buyer_email: buyerEmail ?? null,
     }).select('id').maybeSingle();
 

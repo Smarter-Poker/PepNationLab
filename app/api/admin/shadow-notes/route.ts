@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
@@ -67,6 +68,9 @@ export async function GET(req: NextRequest) {
   return res;
 }
 
+
+const POSTBodySchema = z.any();
+
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -78,8 +82,15 @@ export async function POST(req: NextRequest) {
   const limited = await rateLimit({ key: 'admin_shadow_notes_post', limit: 60, windowSeconds: 60, identifier: admin.userId || ip });
   if (!limited.allowed) return NextResponse.json({ error: 'Rate Limit Exceeded' }, { status: 429 });
 
-  let body: any = {};
-  try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
+  
+  
+  const __rawBody = await req.json().catch(() => ({}));
+  const __bodyParse = POSTBodySchema.safeParse(__rawBody);
+  if (!__bodyParse.success) {
+    return NextResponse.json({ error: "Invalid Request Body", details: __bodyParse.error.issues }, { status: 400 });
+  }
+  const body = __bodyParse.data;
+
 
   const subjectId = String(body.subjectId ?? '').trim();
   const noteBody = String(body.body ?? '').trim();
