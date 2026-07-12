@@ -104,3 +104,5 @@ refactor.py
 _hardening/
 ADMIN-PANEL-HARDENING*.md
 HARDENING-REPORT*.md
+_sweep_changes.tgz
+sch.tar

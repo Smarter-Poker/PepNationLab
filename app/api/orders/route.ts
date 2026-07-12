@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
-import { z } from 'zod';
+import { CheckoutSchema } from '@/lib/schemas/order';
 import { applyBulkPrice, isTierLadderV2 } from '@/lib/pricing';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
@@ -15,38 +15,12 @@ import { notifyOrderPlaced, notify, notifyCouponRedeemed } from '@/lib/notify';
 import { sendOrderConfirmationEmail } from '@/lib/email';
 import { captureError } from '@/lib/sentry';
 import { logError } from '@/lib/log';
-import { recordServerAnalyticsEvent } from '@/lib/server-analytics';
 
-
-const CheckoutSchema = z.object({
-  items: z.array(z.object({
-    id: z.string().uuid(),
-    quantity: z.number().int().min(1),
-    bundleName: z.string().optional()
-  })).min(1, 'Cart Cannot Be Empty.'),
-  fulfillmentMethod: z.enum(['ship', 'agent_pickup']),
-  shippingOption: z.enum(['fedex', 'usps', 'agent_pickup']).optional(),
-  paymentMethod: z.enum(['zelle', 'cashapp', 'venmo', 'apple_pay', 'apple_cash', 'paypal', 'google_wallet', 'wise', 'chime', 'varo']),
-  shippingAddress: z.object({
-    fullName: z.string().min(1),
-    street: z.string().min(1),
-    suite: z.string().optional().default(''),
-    city: z.string().min(1),
-    state: z.string().min(2),
-    zip: z.string().min(5),
-    phone: z.string().optional().default(''),
-  }).optional().nullable(),
-  couponCode: z.string().optional().nullable(),
-  idempotencyKey: z.string().uuid().optional().nullable(),
-  wholesale: z.boolean().optional(),
-
-  /** Which agent storefront initiated this checkout - used for closed-loop catalog validation */
-  agentSlug: z.string().regex(/^[a-zA-Z0-9_-]+$/).optional().nullable(),
-
-  /** Analytics funnel linkage (optional, never trusted for money math). */
-  sessionId: z.string().min(8).max(80).optional().nullable(),
-  visitorId: z.string().uuid().optional().nullable(),
-});
+// CheckoutSchema lives in lib/schemas/order.ts -- the shared client/server
+// single source of truth for the checkout contract. The client
+// (app/checkout/CheckoutForm.tsx) parses the response against
+// OrderCreateResponseSchema from the same module, so request AND response
+// shapes are locked on both sides.
 
 export async function POST(request: NextRequest) {
   const csrf = assertSameOrigin(request);
@@ -105,8 +79,6 @@ export async function POST(request: NextRequest) {
       wholesale: explicitWholesale,
 
       agentSlug,
-      sessionId: analyticsSessionId,
-      visitorId: analyticsVisitorId,
     } = validation.data;
 
     if (fulfillmentMethod === 'ship' && !shippingAddress) {
@@ -1159,7 +1131,12 @@ export async function POST(request: NextRequest) {
         buyer_id: user.id,
         buyer_name: (profile as any).full_name || null,
         buyer_email: user.email || null,
-        agent_id: isAgentSelfBuy ? (superAgentProfile ? superAgentProfile.id : null) : (agentProfile ? agentProfile.id : null),
+        // agent_id = the storefront owner whose sales this order credits.
+        // For an agent self-buy, that IS the buyer (agentProfile.id == profile.id).
+        // Previously this was incorrectly set to superAgentProfile.id, making the
+        // order invisible in the agent's own sales dashboard. superAgentProfile is
+        // used only for pricing/billing-chain — it does NOT own the sale.
+        agent_id: isAgentSelfBuy ? agentProfile.id : (agentProfile ? agentProfile.id : null),
         is_wholesale_restock: isWholesaleRestock,
         status: initialStatus,
         fulfillment_method: fulfillmentMethod,
@@ -1427,29 +1404,6 @@ export async function POST(request: NextRequest) {
           itemsSummary,
         }).catch(() => { /* ignore */ });
       } catch { /* ignore */ }
-    }
-
-    // Server-authoritative purchase analytics: emitted here (never client-side)
-    // with the server-computed total, deduped by a partial unique index on
-    // order_id, and skipped for idempotency replays (those return earlier).
-    // Wholesale restocks and agent self-buys are flagged so the retail funnel
-    // view excludes them. Best-effort: can never fail the order.
-    {
-      const analyticsAgentId = isAgentSelfBuy
-        ? (superAgentProfile ? superAgentProfile.id : null)
-        : (agentProfile ? agentProfile.id : null);
-      if (analyticsAgentId) {
-        await recordServerAnalyticsEvent(serviceSupabase, {
-          agent_id: analyticsAgentId,
-          event_type: 'order_complete',
-          session_id: analyticsSessionId ?? null,
-          visitor_id: analyticsVisitorId ?? null,
-          path: '/checkout',
-          order_id: order.id,
-          amount_cents: Math.round((Number(order.total) || 0) * 100),
-          is_wholesale: isWholesaleRestock || isAgentSelfBuy,
-        });
-      }
     }
 
     return NextResponse.json({
