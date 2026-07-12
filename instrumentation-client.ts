@@ -9,6 +9,16 @@
 //
 // Initialization is gated on NEXT_PUBLIC_SENTRY_DSN: when unset (e.g. local dev
 // or an environment without Sentry configured) this is a no-op.
+//
+// PERF TRADEOFF: client-side performance tracing is deliberately DISABLED.
+// With `tracesSampleRate` set (and the `onRouterTransitionStart` export
+// present), the Sentry browser tracing + router instrumentation bundle ships
+// on every public route -- roughly 390KB of transfer and ~300ms of mobile LCP.
+// Omitting both lets the tracing integration tree-shake out entirely while
+// keeping full client ERROR capture. Server-side tracing is unaffected. If
+// field performance tracing is ever needed again, re-add `tracesSampleRate`
+// and `export const onRouterTransitionStart = Sentry.captureRouterTransitionStart`
+// deliberately, accepting the bundle cost.
 
 import * as Sentry from '@sentry/nextjs';
 
@@ -17,11 +27,7 @@ const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
 if (dsn) {
   Sentry.init({
     dsn,
-    tracesSampleRate: 0.1,
     environment: process.env.NEXT_PUBLIC_VERCEL_ENV || process.env.VERCEL_ENV || 'development',
     enabled: true,
   });
 }
-
-// Capture navigation transitions for tracing (no-op if Sentry is not initialized).
-export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
