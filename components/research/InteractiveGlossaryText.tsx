@@ -73,6 +73,10 @@ export default function InteractiveGlossaryText({ text }: Props) {
           onMouseLeave={() => setHoveredIndex(null)}
           onFocus={() => setHoveredIndex(currentIndex)}
           onBlur={() => setHoveredIndex(null)}
+          // Touch path: hover never fires on mobile and tap-to-focus is not
+          // reliable across browsers, so an explicit tap toggles the
+          // definition (second tap on the same term dismisses it).
+          onClick={() => setHoveredIndex(hoveredIndex === currentIndex ? null : currentIndex)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();

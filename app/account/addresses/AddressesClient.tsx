@@ -182,7 +182,7 @@ export default function AddressesClient({ initialAddresses }: { initialAddresses
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px,1fr))', gap: 'var(--space-3)' }}>
             <Field label="Label (Optional)" value={form.label ?? ''} onChange={(v) => setForm({ ...form, label: v })} placeholder="Home, Lab, Office" />
-            <Field label="Full Name" value={form.full_name} onChange={(v) => setForm({ ...form, full_name: v })} required />
+            <Field label="Full Name" value={form.full_name} onChange={(v) => setForm({ ...form, full_name: v })} required autoComplete="name" autoCapitalize="words" />
             <label style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
               <span style={{ color: 'var(--silver)', fontSize: '0.78rem' }}>Street Address *</span>
               <AddressAutocompleteInput
@@ -194,11 +194,11 @@ export default function AddressesClient({ initialAddresses }: { initialAddresses
                 onSelect={(a) => setForm((prev) => ({ ...prev, street1: a.street1, city: a.city || prev.city, state: a.state || prev.state, zip: a.zip || prev.zip }))}
               />
             </label>
-            <Field label="Apt / Suite (Optional)" value={form.street2 ?? ''} onChange={(v) => setForm({ ...form, street2: v })} />
-            <Field label="City" value={form.city} onChange={(v) => setForm({ ...form, city: v })} required />
-            <Field label="State" value={form.state} onChange={(v) => setForm({ ...form, state: v })} required />
-            <Field label="ZIP" value={form.zip} onChange={(v) => setForm({ ...form, zip: v })} required />
-            <Field label="Country" value={form.country} onChange={(v) => setForm({ ...form, country: v })} required />
+            <Field label="Apt / Suite (Optional)" value={form.street2 ?? ''} onChange={(v) => setForm({ ...form, street2: v })} autoComplete="address-line2" />
+            <Field label="City" value={form.city} onChange={(v) => setForm({ ...form, city: v })} required autoComplete="address-level2" autoCapitalize="words" />
+            <Field label="State" value={form.state} onChange={(v) => setForm({ ...form, state: v })} required autoComplete="address-level1" autoCapitalize="characters" />
+            <Field label="ZIP" value={form.zip} onChange={(v) => setForm({ ...form, zip: v })} required inputMode="numeric" pattern="[0-9]*" maxLength={10} autoComplete="postal-code" />
+            <Field label="Country" value={form.country} onChange={(v) => setForm({ ...form, country: v })} required autoComplete="country-name" autoCapitalize="words" />
           </div>
 
           <fieldset style={{ marginTop: 'var(--space-4)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3) var(--space-4)' }}>
@@ -274,7 +274,7 @@ export default function AddressesClient({ initialAddresses }: { initialAddresses
   );
 }
 
-function Field({ label, value, onChange, required, placeholder }: { label: string; value: string; onChange: (v: string) => void; required?: boolean; placeholder?: string; }) {
+function Field({ label, value, onChange, required, placeholder, inputMode, autoComplete, autoCapitalize, pattern, maxLength }: { label: string; value: string; onChange: (v: string) => void; required?: boolean; placeholder?: string; inputMode?: 'numeric' | 'decimal' | 'tel' | 'text'; autoComplete?: string; autoCapitalize?: string; pattern?: string; maxLength?: number; }) {
   return (
     <label style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
       <span style={{ color: 'var(--silver)', fontSize: '0.78rem' }}>{label}{required ? ' *' : ''}</span>
@@ -284,6 +284,11 @@ function Field({ label, value, onChange, required, placeholder }: { label: strin
         placeholder={placeholder}
         className="input"
         required={required}
+        inputMode={inputMode}
+        autoComplete={autoComplete}
+        autoCapitalize={autoCapitalize}
+        pattern={pattern}
+        maxLength={maxLength}
         style={{ background: 'var(--surface-2)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--white)', padding: '0.6rem 0.75rem', borderRadius: 'var(--radius-md)', fontSize: '0.9rem' }}
       />
     </label>

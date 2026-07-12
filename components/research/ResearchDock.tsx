@@ -29,9 +29,12 @@ export default function ResearchDock() {
       backdropFilter: 'blur(16px)',
       borderRight: '1px solid rgba(255, 255, 255, 0.05)',
       padding: '24px 16px',
-      height: '100vh',
+      // 100dvh (not 100vh) so iOS Safari's collapsing URL bar does not push
+      // the rail taller than the visible viewport; offset below the fixed
+      // navbar instead of sliding underneath it.
+      height: 'calc(100dvh - var(--nav-offset, 60px))',
       position: 'sticky',
-      top: 0,
+      top: 'var(--nav-offset, 60px)',
       width: '240px',
       overflowY: 'auto'
     }}>

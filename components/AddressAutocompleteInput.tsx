@@ -113,6 +113,7 @@ export default function AddressAutocompleteInput({
         disabled={disabled}
         maxLength={maxLength}
         autoComplete={autoComplete}
+        autoCapitalize="words"
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
         onFocus={() => { if (items.length > 0) setOpen(true); }}

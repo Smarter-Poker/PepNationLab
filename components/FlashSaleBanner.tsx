@@ -87,10 +87,15 @@ export default function FlashSaleBanner() {
       role="status"
       aria-live="polite"
       data-nosnippet
+      className="flash-sale-banner"
       style={{
         position: 'sticky',
         top: 0,
-        zIndex: 9999,
+        // Below the fixed navbar (z-index 200) so the banner can never cover
+        // the hamburger or back controls on mobile. On pages that render the
+        // fixed navbar, globals.css offsets the banner to stick beneath it
+        // (see the body:has(.pnl-navbar) .flash-sale-banner rule).
+        zIndex: 140,
         background: 'linear-gradient(90deg, #00C4BC 0%, #00A6A0 100%)',
         color: '#000',
         padding: '8px 16px',
