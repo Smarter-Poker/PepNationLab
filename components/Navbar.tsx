@@ -49,6 +49,7 @@ function resolveTitle(pathname: string, role: string): string {
   if (pathname === '/research' || pathname === '/research/')  return 'Research Library';
   if (pathname.startsWith('/research'))        return 'Research Library';
   if (pathname.startsWith('/research/match'))  return 'Find A Peptide';
+  if (pathname.startsWith('/find-a-peptide'))  return 'Find A Peptide';
   if (pathname.startsWith('/products'))       return 'Products';
   if (pathname.startsWith('/about'))          return 'About';
   if (pathname.startsWith('/login'))          return 'Sign In';
