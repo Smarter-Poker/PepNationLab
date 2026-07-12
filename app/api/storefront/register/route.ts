@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
   const { agentSlug, username, password, firstName, lastName, phone, code } = parsedBody.data;
-  const email = normalizeEmail(parsedBody.data.email);
+  const email = normalizeEmail(parsedBody.data.email ?? '');
 
   // A real email is required for all public signups.
   if (!isValidEmail(email)) {

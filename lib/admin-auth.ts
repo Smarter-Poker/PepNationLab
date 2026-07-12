@@ -222,7 +222,7 @@ export async function assertMfaRecent(
   const { data: aal, error: aalErr } =
     await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   const methods: Array<{ method: string; timestamp: number }> =
-    aal?.currentAuthenticationMethods ?? [];
+    (aal?.currentAuthenticationMethods as Array<{ method: string; timestamp: number }> | undefined) ?? [];
   if (aalErr || methods.length === 0) {
     return NextResponse.json(
       { error: 'Multi-Factor Authentication Required For This Action.' },
