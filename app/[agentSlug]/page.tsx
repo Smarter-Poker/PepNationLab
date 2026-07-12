@@ -9,6 +9,7 @@ import Link from 'next/link';
 import AgentStorefrontGrid from '@/components/AgentStorefrontGrid';
 import { getCompoundsBySlugs } from '@/lib/compounds-server';
 import { computeAgentCostsForAgent, type AgentTier } from '@/lib/pricing';
+import { getEffectiveBundlesForStore } from '@/lib/bundles';
 import CouponLinkCapture from '@/components/CouponLinkCapture';
 import StorefrontRenameBanner from '@/components/StorefrontRenameBanner';
 import Navbar from '@/components/Navbar';
@@ -197,6 +198,27 @@ async function AgentStorefrontDataLoader({
 
   const primaryColor = agent.primary_color ?? '#00C4BC';
 
+  // Store bundles: the store's own bundles plus any cascaded from a parent
+  // super-agent (scope 'downline') or the house store (scope 'global'). Resolved
+  // with the service client so cascade works for anonymous visitors regardless
+  // of RLS on profiles.parent_agent_id. Member products are resolved against this
+  // store's catalog inside the grid, which hides any bundle that loses too many.
+  let storeBundles: Array<{ id: string; name: string; description: string; image_url: string | null; product_ids: string[]; discount_percent: number }> = [];
+  try {
+    const svcBundles = await createServiceClient();
+    const effective = await getEffectiveBundlesForStore(svcBundles, agent.id);
+    storeBundles = effective.map((b) => ({
+      id: b.id,
+      name: b.name,
+      description: b.description,
+      image_url: b.image_url,
+      product_ids: b.product_ids,
+      discount_percent: b.discount_percent,
+    }));
+  } catch {
+    storeBundles = [];
+  }
+
   // Build schema.org/Product nodes defensively. `name` is REQUIRED by Google's
   // Product structured-data spec; when it resolved to undefined, JSON.stringify
   // dropped the key entirely and Search Console flagged "Missing field name".
@@ -259,6 +281,7 @@ async function AgentStorefrontDataLoader({
         agentSlug={agentSlug}
         initialWishlistIds={initialWishlistIds}
         agentId={agent.id}
+        bundles={storeBundles}
         coaByProductId={coaByProductId}
         volumePricingEnabled={(agent as any).volume_pricing_enabled !== false}
         isStorefrontOwner={isStorefrontOwner}

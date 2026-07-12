@@ -63,8 +63,26 @@ export interface BundleConfig {
   id: string;
   name: string;
   description?: string;
+  image_url?: string | null;
   product_ids: string[];
-  price: number;
+  /** Optional discount applied to the summed member price at checkout. */
+  discount_percent?: number;
+  /** Legacy pre-computed price; superseded by the summed member price. */
+  price?: number;
+}
+
+/** A storefront cart line as persisted to pnl_storefront_cart_<slug>. */
+interface StorefrontCartLine {
+  id: string;
+  name: string;
+  sku: string;
+  quantity: number;
+  retailPrice: number;
+  costPrice: number;
+  weightOz: number;
+  agentSelfBuy?: boolean;
+  bundleName?: string;
+  bundleDiscountPercent?: number;
 }
 
 interface Props {
@@ -740,6 +758,12 @@ export default function AgentStorefrontGrid({
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
   const [cartItems, setCartItems] = useState<Record<string, number>>({});
 
+  // Bundle lines carry a bundleName (and its discount) so checkout applies the
+  // per-bundle discount. They live alongside the flat cartItems map and are
+  // merged into the persisted storefront cart, and hydrated/persisted under
+  // pnl_bundle_cart_<slug> so an added bundle survives a page reload.
+  const [bundleCart, setBundleCart] = useState<StorefrontCartLine[]>([]);
+
   // Mirror of cartItems, read inside addToCart for the analytics decision only.
   // Using a ref keeps addToCart's useCallback identity stable (adding cartItems
   // to its deps would re-render the whole grid on every cart mutation), and the
@@ -774,6 +798,12 @@ export default function AgentStorefrontGrid({
         const parsed = JSON.parse(sfl);
         if (parsed && typeof parsed === 'object') setSavedForLater(parsed);
       }
+
+      const bc = localStorage.getItem(`pnl_bundle_cart_${agentSlug}`);
+      if (bc) {
+        const parsedBundles = JSON.parse(bc);
+        if (Array.isArray(parsedBundles)) setBundleCart(parsedBundles);
+      }
     } catch { /* ignore */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentSlug]);
@@ -782,6 +812,11 @@ export default function AgentStorefrontGrid({
     if (firstSavedSave.current) { firstSavedSave.current = false; return; }
     try { localStorage.setItem(`pnl_saved_${agentSlug}`, JSON.stringify(savedForLater)); } catch { /* ignore */ }
   }, [savedForLater, agentSlug]);
+  const firstBundleSave = useRef(true);
+  useEffect(() => {
+    if (firstBundleSave.current) { firstBundleSave.current = false; return; }
+    try { localStorage.setItem(`pnl_bundle_cart_${agentSlug}`, JSON.stringify(bundleCart)); } catch { /* ignore */ }
+  }, [bundleCart, agentSlug]);
   const saveItemForLater = (variantId: string) => {
     setCartItems(prev => {
       const qty = Number(prev[variantId]) || 0;
@@ -891,8 +926,12 @@ export default function AgentStorefrontGrid({
           };
         }).filter(Boolean);
 
+      // Merge in bundle lines (each carries its bundleName + discount) so the
+      // checkout applies the per-bundle discount to these items.
+      const combined = [...(pnlCart as StorefrontCartLine[]), ...bundleCart];
+
       localStorage.setItem(`pnl_storefront_cart_${agentSlug}`, JSON.stringify({
-        items: pnlCart,
+        items: combined,
         _savedAt: Date.now(),
       }));
 
@@ -912,7 +951,7 @@ export default function AgentStorefrontGrid({
       // Agent self-restock carts are wholesale operations, not researcher
       // funnels - keep them out of abandoned-cart recovery.
       if (isStorefrontOwner) return;
-      const syncPayload = (pnlCart as Array<Record<string, unknown>>).map(i => ({
+      const syncPayload = (combined as unknown as Array<Record<string, unknown>>).map(i => ({
         ...i,
         productId: (i as { id?: string }).id ?? null,
       }));
@@ -925,7 +964,7 @@ export default function AgentStorefrontGrid({
       }, 900);
 
     } catch { /* ignore */ }
-  }, [cartItems, agentSlug, products, isStorefrontOwner]);
+  }, [cartItems, bundleCart, agentSlug, products, isStorefrontOwner]);
 
   // Clear any pending cart-sync debounce on unmount so the timer never fires
   // against an unmounted component or a stale storefront.
@@ -1839,7 +1878,11 @@ export default function AgentStorefrontGrid({
     return grouped.filter(g => g.variants.some(v => featuredProductIds.includes(v.product_id)));
   }, [grouped, featuredProductIds]);
 
-  const showFeatured = featuredGroups.length > 0 && !searchQuery && filterCategory === 'all' && !filterArea;
+  // Featured Products has been replaced by Store Bundles. The picker no longer
+  // exists in Storefront Config, so the featured row is retired on the storefront
+  // and Research Bundles render below the Top 10 instead (see renderBundleCard).
+  void featuredGroups;
+  const showFeatured = false;
   const hasActiveFilters =
     !!deferredSearch.trim() ||
     filterCategory !== 'all' ||
@@ -1898,7 +1941,127 @@ export default function AgentStorefrontGrid({
     }
   }, [products, inventoryMap, agentSlug]);
 
-  const totalCartItems = Object.values(cartItems).reduce((sum, qty) => sum + qty, 0);
+  const totalCartItems = Object.values(cartItems).reduce((sum, qty) => sum + qty, 0)
+    + bundleCart.reduce((sum, line) => sum + (Number(line.quantity) || 0), 0);
+
+  // Resolve a bundle's members against THIS store's catalog and price it as the
+  // sum of member per-vial prices minus the bundle's discount. Returns null when
+  // fewer than 2 members are actually carried here (nothing sellable), so a
+  // cascaded/global bundle that this store does not stock is simply hidden.
+  const resolveBundle = useCallback((bundle: BundleConfig) => {
+    const seen = new Set<string>();
+    const members: ProductItem[] = [];
+    for (const pid of bundle.product_ids) {
+      const item = products.find((p) => p.product_id === pid || p.id === pid);
+      if (!item) continue;
+      const key = item.product_id || item.id;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      members.push(item);
+    }
+    if (members.length < 2) return null;
+    const fullPrice = members.reduce((sum, m) => sum + (Number(m.retail_price) || 0) / 10, 0);
+    const discountPct = Math.min(Math.max(Math.round(Number(bundle.discount_percent) || 0), 0), 90);
+    const finalPrice = Math.max(0, fullPrice * (1 - discountPct / 100));
+    return { members, fullPrice, finalPrice, discountPct };
+  }, [products]);
+
+  const removeBundleFromCart = useCallback((bundleName: string) => {
+    setBundleCart((prev) => prev.filter((l) => l.bundleName !== bundleName));
+  }, []);
+
+  const addBundleToCart = useCallback((bundle: BundleConfig) => {
+    const resolved = resolveBundle(bundle);
+    if (!resolved) { toast.error('This Bundle Is Not Available Here Right Now.'); return; }
+    let added = false;
+    setBundleCart((prev) => {
+      if (prev.some((l) => l.bundleName === bundle.name)) return prev;
+      added = true;
+      const lines: StorefrontCartLine[] = resolved.members.map((m) => {
+        const perVial = (Number(m.retail_price) || 0) / 10;
+        const costPerVial = isStorefrontOwner && (m as any).cost_price != null
+          ? Number((m as any).cost_price) / 10
+          : perVial;
+        const sizeLabel = m.products?.unit_size ? `(${m.products.unit_size}${m.products.unit_measure || ''})` : '';
+        return {
+          id: m.product_id,
+          name: `${m.products?.name || 'Product'} ${sizeLabel}`.trim(),
+          sku: m.product_id,
+          quantity: 1,
+          retailPrice: perVial,
+          costPrice: costPerVial,
+          weightOz: Number(m.products?.weight_oz) || 0.5,
+          agentSelfBuy: isStorefrontOwner,
+          bundleName: bundle.name,
+          bundleDiscountPercent: resolved.discountPct,
+        };
+      });
+      return [...prev, ...lines];
+    });
+    if (added) {
+      trackStorefrontEvent(agentSlug, 'add_to_cart', {
+        quantity: resolved.members.length,
+        amount_cents: Math.round(resolved.finalPrice * 100),
+      });
+      toast.success(`${bundle.name} Added To Cart.`);
+    } else {
+      toast.info(`${bundle.name} Is Already In Your Cart.`);
+    }
+  }, [resolveBundle, isStorefrontOwner, agentSlug]);
+
+  const renderableBundles = useMemo(
+    () => (bundles ?? []).filter((b) => resolveBundle(b) !== null),
+    [bundles, resolveBundle],
+  );
+
+  const renderBundleCard = (bundle: BundleConfig) => {
+    const resolved = resolveBundle(bundle);
+    if (!resolved) return null;
+    const inCart = bundleCart.some((l) => l.bundleName === bundle.name);
+    return (
+      <div key={bundle.id} className="sf-product-card-nickel" style={{ padding: 'var(--space-5)', display: 'flex', flexDirection: 'column' }}>
+        {bundle.image_url && (
+          <div style={{ position: 'relative', width: '100%', height: 150, borderRadius: 'var(--radius-md)', overflow: 'hidden', marginBottom: 'var(--space-4)', background: 'var(--surface-3)' }}>
+            <Image src={bundle.image_url} alt={bundle.name} fill unoptimized sizes="(max-width: 768px) 100vw, 33vw" style={{ objectFit: 'cover' }} />
+          </div>
+        )}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-3)', gap: 8 }}>
+          <h4 style={{ fontFamily: 'var(--font-brand)', fontSize: '1.1rem', color: 'var(--white)', letterSpacing: '0.02em', lineHeight: 1.2 }}>{bundle.name}</h4>
+          <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', padding: '4px 10px', borderRadius: 'var(--radius-full)', background: `${primaryColor}20`, border: `1px solid ${primaryColor}40`, color: primaryColor, whiteSpace: 'nowrap' }}>Bundle</span>
+        </div>
+        {bundle.description && (
+          <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', lineHeight: 1.5, marginBottom: 'var(--space-3)' }}>{bundle.description}</p>
+        )}
+        <ul style={{ listStyle: 'none', padding: 0, margin: 0, marginBottom: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {resolved.members.map((m) => (
+            <li key={m.id} style={{ fontSize: '0.78rem', color: 'var(--silver)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: primaryColor, flexShrink: 0 }} />
+              {m.custom_name || m.products?.name || 'Product'}
+            </li>
+          ))}
+        </ul>
+        <div style={{ marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 'var(--space-4)' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 'var(--space-3)', flexWrap: 'wrap' }}>
+            {resolved.discountPct > 0 && (
+              <span style={{ textDecoration: 'line-through', opacity: 0.55, color: 'var(--silver)', fontSize: '0.95rem' }}>${formatPrice(resolved.fullPrice)}</span>
+            )}
+            <span className="sf-product-price-nickel" style={{ fontSize: '1.3rem', fontWeight: 800, fontFamily: 'var(--font-brand)' }}>${formatPrice(resolved.finalPrice)}</span>
+            {resolved.discountPct > 0 && (
+              <span style={{ fontSize: '0.72rem', color: '#68D391', fontWeight: 700 }}>({resolved.discountPct}% Off)</span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => (inCart ? removeBundleFromCart(bundle.name) : addBundleToCart(bundle))}
+            className={inCart ? 'btn btn-outline' : 'btn-primary'}
+            style={{ width: '100%', height: 40, fontSize: '0.85rem', color: inCart ? 'var(--white)' : undefined, borderColor: inCart ? 'rgba(255,255,255,0.2)' : undefined }}
+          >
+            {inCart ? 'Remove Bundle' : 'Add Bundle To Cart'}
+          </button>
+        </div>
+      </div>
+    );
+  };
   const totalSavedItems = Object.values(savedForLater).reduce((sum, qty) => sum + Number(qty || 0), 0);
 
   const autoOpenCart = useRef(
@@ -2819,97 +2982,14 @@ export default function AgentStorefrontGrid({
         </div>
       )}
 
-      {/* Stacks Grid (displayed only under Peptide Stacks tab) */}
-      {activeCardIndex === 9 && bundles && bundles.length > 0 && (
+      {/* Peptide Stacks tab: bundles as full cards (image, discount, add-to-cart). */}
+      {activeCardIndex === 9 && renderableBundles.length > 0 && (
         <div style={{ marginTop: 0 }}>
           <h3 style={{ fontFamily: 'var(--font-brand)', fontSize: '1.05rem', color: 'var(--white)', marginBottom: 'var(--space-4)', letterSpacing: '0.03em' }}>
             Research Stacks &amp; Bundles
           </h3>
           <div className="grid-3" style={{ gap: 'var(--space-6)' }}>
-            {bundles.map((bundle) => {
-              const productNames = bundle.product_ids
-                .map((pid) => {
-                  const item = products.find((p) => p.id === pid || p.product_id === pid);
-                  return item?.products?.name || item?.custom_name || null;
-                })
-                .filter(Boolean) as string[];
-              return (
-                <div
-                  key={bundle.id}
-                  className="sf-product-card-nickel"
-                  style={{
-                    padding: 'var(--space-5)',
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-3)' }}>
-                    <h4 style={{
-                      fontFamily: 'var(--font-brand)',
-                      fontSize: '1.1rem',
-                      color: 'var(--white)',
-                      letterSpacing: '0.02em',
-                      lineHeight: 1.2,
-                    }}>
-                      {bundle.name}
-                    </h4>
-                    <span style={{
-                      fontSize: '0.65rem',
-                      fontWeight: 800,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.06em',
-                      padding: '4px 10px',
-                      borderRadius: 'var(--radius-full)',
-                      background: `${primaryColor}20`,
-                      border: `1px solid ${primaryColor}40`,
-                      color: primaryColor,
-                      whiteSpace: 'nowrap',
-                    }}>
-                      Bundle
-                    </span>
-                  </div>
-
-                  {bundle.description && (
-                    <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', lineHeight: 1.5, marginBottom: 'var(--space-3)' }}>
-                      {bundle.description}
-                    </p>
-                  )}
-
-                  {productNames.length > 0 && (
-                    <ul style={{ listStyle: 'none', padding: 0, margin: 0, marginBottom: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      {productNames.map((n) => (
-                        <li key={n} style={{ fontSize: '0.78rem', color: 'var(--silver)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: primaryColor }} />
-                          {n}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    marginTop: 'auto',
-                    borderTop: '1px solid rgba(255,255,255,0.06)',
-                    paddingTop: 'var(--space-4)',
-                  }}>
-                    <span className="sf-product-price-nickel" style={{
-                      fontSize: '1.3rem',
-                      fontWeight: 800,
-                      fontFamily: 'var(--font-brand)',
-                    }}>
-                      ${formatPrice(bundle.price)}
-                    </span>
-                    <span style={{
-                      fontSize: '0.72rem',
-                      color: 'var(--grey-400)',
-                      fontStyle: 'italic',
-                    }}>
-                      Bundle Pricing Available At Checkout
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
+            {renderableBundles.map(renderBundleCard)}
           </div>
         </div>
       )}
@@ -3073,6 +3153,21 @@ export default function AgentStorefrontGrid({
           >
             Load More Products
           </button>
+        </div>
+      )}
+
+      {/* Research Bundles: shown directly below the Top 10 on the default view. */}
+      {activeCardIndex === 1 && !deferredSearch.trim() && filterCategory === 'all' && !filterArea && renderableBundles.length > 0 && (
+        <div style={{ marginTop: 'var(--space-8)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 'var(--space-5)' }}>
+            <div style={{ background: primaryColor, padding: '6px', borderRadius: '8px', display: 'flex' }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            </div>
+            <h2 style={{ fontSize: '1.4rem', color: 'var(--white)', margin: 0, fontWeight: 700 }}>Research Bundles</h2>
+          </div>
+          <div className="grid-3" style={{ gap: 'var(--space-6)' }}>
+            {renderableBundles.map(renderBundleCard)}
+          </div>
         </div>
       )}
       </div>{/* END grid section */}
@@ -3526,7 +3621,7 @@ export default function AgentStorefrontGrid({
                     
                     try {
                       localStorage.setItem(`pnl_storefront_cart_${agentSlug}`, JSON.stringify({
-                        items: pnlCart,
+                        items: [...(pnlCart as StorefrontCartLine[]), ...bundleCart],
                         _savedAt: Date.now(),
                       }));
                       Object.keys(localStorage)

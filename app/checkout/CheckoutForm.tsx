@@ -114,7 +114,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const [storefrontCart, setStorefrontCart] = useState<Array<{
     id: string; name: string; sku: string; quantity: number;
     retailPrice: number; costPrice: number; weightOz: number;
-    bundleName?: string; bulkCostPrice?: number | null; bulkThreshold?: number;
+    bundleName?: string; bundleDiscountPercent?: number; bulkCostPrice?: number | null; bulkThreshold?: number;
   }>>([]);
   const [storefrontLoaded, setStorefrontLoaded] = useState(false);
   const [cartSavedAt, setCartSavedAt] = useState<number | null>(null);
@@ -155,13 +155,13 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const meetsOverallMin = totalCartQty >= minOverallQty;
 
   const cartSubtotal = storefrontCart.length > 0
-    ? storefrontCart.reduce((sum, item) => sum + (item.bundleName ? item.retailPrice * 0.9 : item.retailPrice) * item.quantity, 0)
+    ? storefrontCart.reduce((sum, item) => sum + (item.bundleName ? item.retailPrice * (1 - (item.bundleDiscountPercent ?? 10) / 100) : item.retailPrice) * item.quantity, 0)
     : contextSubtotal;
 
   const agentPricingDiscount = isAgentSelfBuy && storefrontCart.length > 0
     ? storefrontCart.reduce((sum, item) => {
         const retail = item.retailPrice ?? item.costPrice;
-        const discountMultiplier = item.bundleName ? 0.9 : 1;
+        const discountMultiplier = item.bundleName ? (1 - (item.bundleDiscountPercent ?? 10) / 100) : 1;
         return sum + Math.max(0, (retail * discountMultiplier) - (item.costPrice * discountMultiplier)) * item.quantity;
       }, 0)
     : 0;

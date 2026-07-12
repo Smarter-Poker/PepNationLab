@@ -7,6 +7,7 @@ import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { calculateShippingCost, getCarrierName } from '@/lib/shipping-cost';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
+import { getEffectiveBundlesForStore } from '@/lib/bundles';
 import { quoteCheapestForCheckout, normalizeShippingAddress } from '@/lib/shipping';
 import { resolveCartIdsToProductIds } from '@/lib/cart-ids';
 import { computeLineSplit, type ItemFulfillmentSplit } from '@/lib/order-line-splits';
@@ -436,20 +437,43 @@ export async function POST(request: NextRequest) {
     // string to every cart line and skim 10% off the whole order.
     // Map: normalized bundle name -> Set of member product_ids.
     const validBundleMembers = new Map<string, Set<string>>();
+    const bundleDiscountByName = new Map<string, number>();
     if (agentProfile) {
-      const bundles = Array.isArray(agentConfig?.bundles_config) ? agentConfig!.bundles_config : [];
-      for (const b of bundles as Array<{ name?: string; product_ids?: string[]; is_active?: boolean }>) {
-        if (!b || b.is_active === false || typeof b.name !== 'string' || !Array.isArray(b.product_ids)) continue;
+      // Effective bundles for the agent of record: the store's own bundles plus
+      // any cascaded from a parent super-agent ('downline') or the house store
+      // ('global'). The shared resolver keeps the authoritative checkout discount
+      // in lockstep with what renders on the storefront. A resolution failure
+      // must never break checkout -- the order just proceeds with no bundle
+      // discount.
+      let effectiveBundles: Awaited<ReturnType<typeof getEffectiveBundlesForStore>> = [];
+      try {
+        effectiveBundles = await getEffectiveBundlesForStore(serviceSupabase, agentProfile.id);
+      } catch {
+        effectiveBundles = [];
+      }
+      for (const b of effectiveBundles) {
+        if (b.is_active === false || typeof b.name !== 'string' || !Array.isArray(b.product_ids)) continue;
         const key = b.name.trim().toLowerCase();
         const set = validBundleMembers.get(key) ?? new Set<string>();
         b.product_ids.forEach(pid => { if (typeof pid === 'string') set.add(pid); });
         validBundleMembers.set(key, set);
+        // If two bundles normalize to the same name, keep the larger discount.
+        const disc = Math.min(Math.max(Number(b.discount_percent) || 0, 0), 90);
+        bundleDiscountByName.set(key, Math.max(bundleDiscountByName.get(key) ?? 0, disc));
       }
     }
     const isValidBundleLine = (bundleName: string | undefined, productId: string): boolean => {
       if (!bundleName) return false;
       const members = validBundleMembers.get(bundleName.trim().toLowerCase());
       return !!members && members.has(productId);
+    };
+    // Per-bundle discount factor (1 = no discount). Defaults to the legacy 10%
+    // only for a validated bundle line whose bundle somehow carries no percent.
+    const bundleDiscountFactor = (bundleName: string | undefined): number => {
+      if (!bundleName) return 1;
+      const pct = bundleDiscountByName.get(bundleName.trim().toLowerCase());
+      const eff = pct === undefined ? 10 : pct;
+      return Math.max(0, 1 - eff / 100);
     };
 
     // 4b. Quantity Discount Eligibility -- Honors The Storefront's
@@ -605,12 +629,14 @@ export async function POST(request: NextRequest) {
         retailPrice = costPrice;
       }
 
-      // Stack discount: 10% off for stack/bundle line items. This is intrinsic to how a stack
-      // product is sold (part of its base price), NOT a stackable promotional offer, so it
-      // always applies. Floors prevent an upstream bug from driving prices negative.
+      // Stack discount: each bundle's own discount_percent for stack/bundle line
+      // items. This is intrinsic to how a stack product is sold (part of its base
+      // price), NOT a stackable promotional offer, so it always applies. Floors
+      // prevent an upstream bug from driving prices negative.
       if (isBundleLine) {
-        retailPrice = Math.max(0, retailPrice * 0.9);
-        costPrice = Math.max(0, costPrice * 0.9);
+        const bundleFactor = bundleDiscountFactor(cartItem.bundleName);
+        retailPrice = Math.max(0, retailPrice * bundleFactor);
+        costPrice = Math.max(0, costPrice * bundleFactor);
       }
 
       // "One offer at a time" (2026-07-12 audit): flash sale, quantity discount, and coupon
@@ -1482,3 +1508,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Internal Server Error Occurred.' }, { status: 500 });
   }
 }
+

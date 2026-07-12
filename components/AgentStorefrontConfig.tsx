@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import UniqueField from '@/components/UniqueField';
 import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
-import FeaturedProductsSelector from '@/components/FeaturedProductsSelector';
+import BundleManager from '@/components/BundleManager';
 
 interface AgentStorefrontConfigProps {
   displayName: string;
@@ -66,7 +66,9 @@ export default function AgentStorefrontConfig({
   const [whCity, setWhCity] = React.useState(warehouseAddress?.city ?? '');
   const [whState, setWhState] = React.useState(warehouseAddress?.state ?? '');
   const [whZip, setWhZip] = React.useState(warehouseAddress?.zip ?? '');
-  const [selectedFeatured, setSelectedFeatured] = React.useState<string[]>(featuredProducts);
+  // Retained so the existing featured_products value is preserved on save even
+  // though the Featured Products picker has been replaced by Store Bundles.
+  const [selectedFeatured] = React.useState<string[]>(featuredProducts);
 
   const canChangeDisplayName = React.useMemo(() => {
     if (!displayNameChangedAt) return true;
@@ -309,14 +311,10 @@ export default function AgentStorefrontConfig({
         <section className="glass-panel" style={{ padding: 'var(--space-6)', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: 0, left: 0, width: 4, height: '100%', background: 'linear-gradient(180deg, #F472B6 0%, #FB7185 100%)' }} />
           <h4 style={{ fontSize: '1.1rem', color: 'var(--white)', fontWeight: 600, marginBottom: 'var(--space-5)', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F472B6" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-            Featured Products
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F472B6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            Store Bundles
           </h4>
-          <FeaturedProductsSelector 
-            agentId={agentId} 
-            initialFeaturedIds={selectedFeatured} 
-            onUpdate={setSelectedFeatured} 
-          />
+          <BundleManager agentId={agentId} />
         </section>
 
         {paymentMethodsNode && (
