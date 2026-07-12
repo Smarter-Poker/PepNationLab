@@ -184,7 +184,7 @@ export default function AgentOverview({
             {/* 1. Today's Revenue */}
             <button type="button" className="aoc-kpi-panel" onClick={() => onNavigate?.('Sales & Accounting')}>
               <div className="aoc-kpi-left">
-                <DollarSign stroke="url(#metalGrad)" strokeWidth={1.5} size={72} style={{ filter: 'drop-shadow(0px 4px 4px rgba(0,0,0,0.8))' }} />
+                <div className="metal-icon-text">$</div>
               </div>
               <div className="aoc-kpi-separator" />
               <div className="aoc-kpi-right">
@@ -479,6 +479,18 @@ export default function AgentOverview({
         }
         
         /* Metallic text styling */
+        .metal-icon-text {
+          font-family: "Times New Roman", Times, serif;
+          font-size: 80px;
+          line-height: 1;
+          font-weight: 400;
+          background: linear-gradient(180deg, #f4f5f7 0%, #d1d6dc 25%, #7a8591 50%, #96a2ae 51%, #c8d0d8 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          filter: drop-shadow(0px 4px 4px rgba(0,0,0,0.8));
+          margin-top: -6px;
+        }
+        
         .metal-text {
           background: linear-gradient(180deg, #d4d9de 0%, #a2abb3 45%, #6a7683 55%, #c8d0d8 100%);
           -webkit-background-clip: text;
