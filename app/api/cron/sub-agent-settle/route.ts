@@ -79,7 +79,10 @@ export async function GET(req: NextRequest) {
       .from('sub_agent_commission_ledger')
       .select('sub_agent_id')
       .eq('status', 'pending')
-      .gte('accrued_at', weekStartIso)
+      // No lower bound on accrued_at: settle_sub_agent_week deliberately sweeps
+      // every pending row with accrued_at < week_end (catch-up), so a commission
+      // accrued in a prior week but only approved now is still settled. Bounding
+      // the fetch to [weekStart, weekEnd) defeated that sweep.
       .lt('accrued_at', weekEndIso);
 
     if (fetchErr) {

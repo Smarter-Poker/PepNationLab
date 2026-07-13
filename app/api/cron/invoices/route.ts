@@ -128,6 +128,12 @@ export async function GET(req: Request) {
         // agent_approval_pending) so the cron never bills an order before it is
         // approved, and exclude wholesale restock self-buys (billed at checkout,
         // not via weekly invoice) - matching the manual super-agent route.
+        //
+        // Select by agent_approved_at (with a created_at fallback for legacy
+        // orders that have none) so a late-approved order created in a prior
+        // week is still billed in the week it was approved. Keying purely on
+        // created_at let an order created week N but approved week N+1 escape
+        // both invoices - the same leak lib/statements.ts was fixed for.
         const { data: orders } = await supabase
           .from('orders')
           .select('id, shipping_cost, order_items(product_id, quantity, unit_super_agent_cost, unit_cost_price)')
@@ -136,8 +142,10 @@ export async function GET(req: Request) {
           .neq('status', 'pending_customer_payment')
           .neq('status', 'agent_approval_pending')
           .neq('is_wholesale_restock', true)
-          .gte('created_at', rangeStart)
-          .lt('created_at', rangeEndExclusive);
+          .or(
+            `and(agent_approved_at.gte.${rangeStart},agent_approved_at.lt.${rangeEndExclusive}),` +
+            `and(agent_approved_at.is.null,created_at.gte.${rangeStart},created_at.lt.${rangeEndExclusive})`
+          );
 
         let totalCogs = 0;
         let totalShipping = 0;
