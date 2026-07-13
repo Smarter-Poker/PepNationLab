@@ -294,6 +294,7 @@ async function AgentStorefrontDataLoader({
         minOverallQty={agent.min_overall_qty ?? 1}
         compoundsBySlug={compoundsBySlug}
         featuredProductIds={agent.featured_products || []}
+        customBranding={(agent as any).custom_branding ?? null}
       />
     </>
   );
@@ -425,44 +426,6 @@ export default async function AgentStorefrontPage({ params, searchParams }: Prop
         </nav>
       </header>
 
-      {/* Custom branding header — shown only when the agent has configured
-          custom_branding (e.g. Savage Brands Research Store). Displays the
-          agent logo and a white-label store heading above the product grid. */}
-      {(agent as any).custom_branding?.logo_url && (
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '0.75rem',
-          padding: '2rem 1.5rem 1rem',
-          textAlign: 'center',
-        }}>
-          <img
-            src={(agent as any).custom_branding.logo_url}
-            alt={(agent as any).custom_branding.brand_name ?? agent.display_name}
-            style={{
-              width: 'auto',
-              maxWidth: 220,
-              maxHeight: 120,
-              objectFit: 'contain',
-              borderRadius: 8,
-            }}
-          />
-          {(agent as any).custom_branding.storefront_heading && (
-            <p style={{
-              color: agent.primary_color ?? '#00C4BC',
-              fontSize: '0.78rem',
-              fontWeight: 600,
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              margin: 0,
-            }}>
-              {(agent as any).custom_branding.storefront_heading}
-            </p>
-          )}
-        </div>
-      )}
 
       {/* Products */}
       <section style={{ paddingTop: 8, paddingBottom: 24, position: 'relative', minHeight: '60vh' }}>

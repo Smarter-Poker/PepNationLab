@@ -105,6 +105,8 @@ interface Props {
   minOverallQty?: number;
   compoundsBySlug?: Record<string, Compound>;
   featuredProductIds?: string[];
+  /** White-label branding: when set, replaces the hero title with the agent's store name. */
+  customBranding?: { storefront_heading?: string; logo_url?: string; brand_name?: string } | null;
 }
 
 const containerVariants: Variants = {
@@ -297,6 +299,7 @@ export default function AgentStorefrontGrid({
   inventoryMap,
   primaryColor,
   agentSlug,
+  customBranding,
   bundles = [],
   initialWishlistIds = [],
   agentId = null,
@@ -2790,6 +2793,42 @@ export default function AgentStorefrontGrid({
           sizes="(max-width: 960px) 100vw, 960px" 
           style={{ objectFit: 'cover' }} 
         />
+
+        {/* Custom-branding title overlay: covers the baked-in "PEP NATION'S RESEARCH STORE"
+            text and replaces it with the agent's own store name in the same style/position.
+            Only rendered when customBranding.storefront_heading is set. */}
+        {customBranding?.storefront_heading && (
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '13%',
+            background: '#000000',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 5,
+          }}>
+            <span style={{
+              fontFamily: '"Arial Black", "Impact", sans-serif',
+              fontSize: 'clamp(1rem, 4vw, 2.4rem)',
+              fontWeight: 900,
+              color: '#C0C8D0',
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+              textShadow: '0 2px 4px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.6)',
+              background: 'linear-gradient(180deg, #e8edf2 0%, #9aa5b0 40%, #c8d2da 70%, #8090a0 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.9))',
+            }}>
+              {customBranding.storefront_heading}
+            </span>
+          </div>
+        )}
+
         {/* Search input mapped precisely over the search input bar in the image */}
         <input
           type="text"
