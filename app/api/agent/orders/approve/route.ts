@@ -237,20 +237,9 @@ export async function POST(req: NextRequest) {
       prepaidDeducted = true;
     }
 
-    if (prepaidDeducted) {
-      const newBalance = oldBalance - totalOwed;
-      const { error: txError } = await supabase.from('balance_transactions').insert({
-        agent_id: primaryBilledAgentId, type: 'order_charge', amount: totalOwed,
-        balance_before: oldBalance, balance_after: newBalance,
-        description: `Charge for Order ${orderId}`, reference_id: orderId, reference_type: 'order', created_by: callerId
-      });
-      if (txError) {
-        console.error('[CRITICAL] balance_transactions insert failed after prepaid deduction', {
-          orderId, agentId: primaryBilledAgentId, amount: totalOwed, error: txError.message
-        });
-        captureError(txError, { context: 'agent.orders.approve.ledger_insert', severity: 'critical', orderId, agentId: primaryBilledAgentId, amount: totalOwed });
-      }
-    }
+    // The prepaid-charge ledger row is written atomically inside the
+    // deduct_prepaid_balance RPC; a second manual balance_transactions insert
+    // here double-recorded every prepaid order charge in the wallet ledger.
 
     let effectiveStatus = finalAutoStatus;
     if (finalAutoStatus === 'approved_ship' || finalAutoStatus === 'approved_pickup') {

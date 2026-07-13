@@ -159,11 +159,8 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Failed To Deduct Prepaid Balance. Please Try Again.' }, { status: 500 });
       }
       prepaidCharged = true;
-      await supabase.from('balance_transactions').insert({
-        agent_id: agentId, type: 'order_charge', amount: manualCogs,
-        balance_before: balance, balance_after: Math.round((balance - manualCogs) * 100) / 100,
-        description: `Charge For Manual Order ${newOrder.id}`, reference_id: newOrder.id, reference_type: 'order', created_by: agentId,
-      });
+      // Ledger row written atomically inside deduct_prepaid_balance; a second
+      // manual balance_transactions insert here double-recorded the charge.
     }
 
     const limit = agentProfile.max_auto_approve_limit !== undefined && agentProfile.max_auto_approve_limit !== null ? Number(agentProfile.max_auto_approve_limit) : Infinity;
