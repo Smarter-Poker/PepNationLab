@@ -15,6 +15,7 @@ import MatchEngineCards from '@/components/research/MatchEngineCards';
 import ResearchAreaCards from '@/components/research/ResearchAreaCards';
 import TrendingCarousel from '@/components/research/TrendingCarousel';
 import ResearchEcosystemMap from '@/components/research/ResearchEcosystemMap';
+import CatalogSeoContent from '@/components/research/CatalogSeoContent';
 
 export const metadata: Metadata = {
   title: 'Research Catalog | All Peptides & Compounds | Pep Nation Lab',
@@ -46,7 +47,7 @@ export default async function ResearchLibraryPage({
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#0C151D' }}>
-      
+
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -72,28 +73,30 @@ export default async function ResearchLibraryPage({
         }}
       />
 
+      <CatalogSeoContent compounds={compounds} />
+
       {/* Left Dock Navigation */}
       <div style={{ flex: '0 0 240px', display: 'none' }} className="desktop-dock">
          {/* Using CSS class for hiding on mobile if needed */}
         <ResearchDock />
       </div>
-      
+
       {/* Main Content Area */}
       <div style={{ flex: 1, padding: '0 24px', maxWidth: '1400px', margin: '0 auto', overflowX: 'hidden' }}>
-        
+
         <ResearchHero />
-        
+
         <CommandSearchBar initialQuery={q ?? ''} />
-        
+
         <MatchEngineCards />
-        
+
         <ResearchAreaCards />
-        
+
         {/* We can include Trending and Ecosystem map here, or inside ResearchBrowser. Let's put them here before the grid */}
         <TrendingCarousel compounds={compounds} />
-        
+
         <ResearchEcosystemMap />
-        
+
         <div style={{ margin: '80px 0', borderTop: '1px solid rgba(255,255,255,0.1)' }} />
 
         <Suspense fallback={<div style={{ textAlign: 'center', padding: '40px', color: 'var(--silver, #A8B4C0)' }}>Loading Intelligence Database...</div>}>
@@ -101,11 +104,11 @@ export default async function ResearchLibraryPage({
         </Suspense>
 
       </div>
-      
-      {/* Global Utilities */}
-      
 
-      
+      {/* Global Utilities */}
+
+
+
       <style>{`
         @media (min-width: 1024px) {
           .desktop-dock {
