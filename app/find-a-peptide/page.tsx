@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { getAllCompounds } from '@/lib/compounds-server';
 import MatchPageHero from '@/components/research/MatchPageHero';
+import FindAPeptideSeoContent, { FIND_A_PEPTIDE_FAQS } from '@/components/research/FindAPeptideSeoContent';
 
 export const metadata: Metadata = {
   title: 'Find A Peptide | AI Research Match Engine | Pep Nation Lab',
@@ -41,6 +42,14 @@ export default async function FindAPeptidePage() {
         publisher: { '@id': 'https://pepnationlab.com/#organization' }
       },
       {
+        '@type': 'FAQPage',
+        mainEntity: FIND_A_PEPTIDE_FAQS.map((f) => ({
+          '@type': 'Question',
+          name: f.q,
+          acceptedAnswer: { '@type': 'Answer', text: f.a },
+        })),
+      },
+      {
         '@type': 'BreadcrumbList',
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
@@ -56,6 +65,7 @@ export default async function FindAPeptidePage() {
       <div style={{ maxWidth: '1000px', margin: '0 auto', padding: 'var(--space-5, 24px) var(--space-4, 16px)' }}>
         <MatchPageHero compounds={compounds} />
       </div>
+      <FindAPeptideSeoContent />
     </>
   );
 }
