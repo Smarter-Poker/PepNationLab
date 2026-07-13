@@ -2808,21 +2808,28 @@ export default function AgentStorefrontGrid({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            gap: '16px',
             zIndex: 5,
           }}>
+            {customBranding?.logo_url && (
+              <img
+                src={customBranding.logo_url}
+                alt="Logo"
+                style={{
+                  height: '80%',
+                  width: 'auto',
+                  objectFit: 'contain',
+                  mixBlendMode: 'screen', // 100% removes the black background
+                }}
+              />
+            )}
             <span style={{
               fontFamily: '"Arial Black", "Impact", sans-serif',
-              fontSize: 'clamp(1rem, 4vw, 2.4rem)',
-              fontWeight: 900,
-              color: '#C0C8D0',
+              fontSize: 'clamp(1rem, 3.5vw, 2.2rem)',
+              fontWeight: 800,
+              color: '#B8C0C8', // Flat light grey matching the subheader
               textTransform: 'uppercase',
               letterSpacing: '0.04em',
-              textShadow: '0 2px 4px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.6)',
-              background: 'linear-gradient(180deg, #e8edf2 0%, #9aa5b0 40%, #c8d2da 70%, #8090a0 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-              filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.9))',
             }}>
               {customBranding.storefront_heading}
             </span>
