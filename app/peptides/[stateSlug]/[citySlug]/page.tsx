@@ -18,6 +18,7 @@ import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 import CityPage from './CityPage';
 import { getCityFAQs } from '@/lib/cities/city-content';
 import { getResearchAnchors } from '@/lib/cities/research-anchors';
+import { getCityWikipediaUrl } from '@/lib/cities/wikipedia-links';
 
 // ISR: regenerate each city page at most every 5 minutes so the Top 10 grid
 // tracks the live storefront catalog - admin price/name changes flow through
@@ -114,6 +115,10 @@ export default async function CityLandingPage({
   // static FEATURED_PEPTIDES list.
   const top10 = await getStoreTop10();
 
+  // Validated Wikipedia article for this city, or null when none resolves
+  // (see lib/cities/wikipedia-links.ts) - keeps the Service sameAs off dead pages.
+  const cityWikipediaUrl = getCityWikipediaUrl(`${stateSlug}/${citySlug}`, city.name, city.state);
+
   // Regional research institutions (universities, academic medical centers,
   // national labs) mapped for this metro. Emitted as schema.org `mentions`
   // entities on the WebPage node - honest entity/topical signal, not a claim
@@ -161,11 +166,10 @@ export default async function CityLandingPage({
         areaServed: {
           '@type': 'City',
           name: city.name,
-          // Entity disambiguation: ties this City node to its Wikipedia
-          // entry so search engines resolve the exact municipality.
-          sameAs: encodeURI(
-            `https://en.wikipedia.org/wiki/${city.name.replace(/ /g, '_')},_${city.state.replace(/ /g, '_')}`
-          ),
+          // Entity disambiguation: ties this City node to its validated
+          // Wikipedia article (see lib/cities/wikipedia-links.ts); omitted when
+          // no real article resolves so sameAs never points at a dead page.
+          ...(cityWikipediaUrl ? { sameAs: cityWikipediaUrl } : {}),
           containedInPlace: {
             '@type': 'State',
             name: city.state,
