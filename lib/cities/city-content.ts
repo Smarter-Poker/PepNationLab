@@ -6,7 +6,7 @@
  * - 5 intro variants selected by a per-city hash, several of which weave in
  *   real data points (population, region) so pages differ in substance, not
  *   just the city token.
- * - A pool of 12 FAQs from which 6 are deterministically selected per city;
+ * - A pool of 18 FAQs from which 6 are deterministically selected per city;
  *   two compliance-critical FAQs (shipping + RUO distinction) always appear.
  * - All copy uses "research-grade" (never "pharmaceutical-grade") to stay
  *   consistent with the platform's RUO compliance posture.
@@ -106,7 +106,7 @@ export interface FAQ {
 
 /**
  * Full FAQ pool. Two compliance-critical entries (shipping, RUO distinction)
- * are always included; four more rotate in deterministically per city so
+ * are always included; four more rotate in deterministically per city so (16 in the rotating pool)
  * neighboring pages do not carry identical FAQ sets.
  */
 function faqPool(city: City): { core: FAQ[]; rotating: FAQ[] } {
