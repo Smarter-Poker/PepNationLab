@@ -10,7 +10,7 @@
  * INSERT policy conflicts when policies from different migrations coexisted.
  */
 import { NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgentOrAdmin } from '@/lib/admin-auth';
 
 export const dynamic = 'force-dynamic';
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
   // First segment = agentId (matches existing RLS pattern too)
   const path = `${agentId}/logo-${Date.now()}.${ext}`;
 
-  const svc = await createServiceClient();
+  const svc = await createAdminClient();
 
   // Upload via service role — bypasses RLS entirely
   const bytes = await file.arrayBuffer();
