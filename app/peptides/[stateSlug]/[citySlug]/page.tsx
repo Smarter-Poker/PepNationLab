@@ -137,6 +137,7 @@ export default async function CityLandingPage({
     '@graph': [
       {
         '@type': 'BreadcrumbList',
+        '@id': `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}#breadcrumb`,
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
           { '@type': 'ListItem', position: 2, name: 'Peptides By City', item: 'https://pepnationlab.com/peptides' },
@@ -232,7 +233,10 @@ export default async function CityLandingPage({
         '@id': `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}`,
         url: `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}`,
         name: `Peptide Research In ${city.name}, ${city.stateAbbr}`,
+        inLanguage: 'en-US',
         isPartOf: { '@id': 'https://pepnationlab.com/#website' },
+        breadcrumb: { '@id': `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}#breadcrumb` },
+        mainEntity: { '@id': `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}#service` },
         publisher: { '@id': 'https://pepnationlab.com/#organization' },
         datePublished: '2026-07-01',
         dateModified: CITY_CONTENT_UPDATED.toISOString().slice(0, 10),
