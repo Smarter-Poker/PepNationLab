@@ -13,8 +13,9 @@
  */
 
 import type { City } from './cities-data';
+import { getResearchAnchors } from './research-anchors';
 
-// ─── Regional flavor labels ───────────────────────────────────────────────
+// ─── Regional flavor labels ────────────────────────────────
 const REGION_FALLBACKS: Record<string, string> = {
   illinois: 'Midwest',
   texas: 'Lone Star State',
@@ -67,7 +68,7 @@ export function getRegionArea(region: string): string {
   return /area$/i.test(region.trim()) ? region : `${region} area`;
 }
 
-// ─── Deterministic per-city hash ──────────────────────────────────────────
+// ─── Deterministic per-city hash ──────────────────────────
 function cityHash(city: City): number {
   let h = city.tier;
   for (let i = 0; i < city.slug.length; i++) h = (h * 31 + city.slug.charCodeAt(i)) >>> 0;
@@ -80,7 +81,7 @@ function formatPopulation(population: number): string {
   return `${population}`;
 }
 
-// ─── Intro variants (selected by per-city hash) ───────────────────────────
+// ─── Intro variants (selected by per-city hash) ───────────────────
 const INTRO_VARIANTS = [
   (city: City) =>
     `Pep Nation Lab is the trusted wholesale source for research-grade peptides serving researchers in ${city.name}, ${city.stateAbbr} and across the ${getRegionLabel(city)}. Our curated catalog of 100+ research-grade compounds is backed by rigorous QA and full documentation, available exclusively to qualified scientific institutions and verified researchers.`,
@@ -108,8 +109,8 @@ export function getCityIntro(city: City): string {
   return INTRO_VARIANTS[cityHash(city) % INTRO_VARIANTS.length](city);
 }
 
-// ─── FAQ generators ──────────────────────────────────────────────────────
-export interface FAQ {
+// ─── FAQ generators ──────────────────────────────────
+interface FAQ {
   question: string;
   answer: string;
 }
@@ -220,7 +221,7 @@ export function getCityFAQs(city: City): FAQ[] {
   return [...core.slice(0, 1), ...picks.slice(0, 2), core[1], ...picks.slice(2)];
 }
 
-// ─── At-a-glance facts (AEO: dense, quotable, self-contained) ─────────────
+// ─── At-a-glance facts (AEO: dense, quotable, self-contained) ─────────
 export interface CityFact {
   label: string;
   value: string;
@@ -237,6 +238,10 @@ export function getCityFacts(city: City): CityFact[] {
   if (city.zips && city.zips.length > 0) {
     facts.push({ label: 'ZIP Codes Served', value: city.zips.join(', ') });
   }
+  const anchors = getResearchAnchors(city.region);
+  if (anchors && anchors.length > 0) {
+    facts.push({ label: 'Regional Research Hubs', value: anchors.slice(0, 4).map((a) => a.name).join(', ') });
+  }
   facts.push({ label: 'Median Household Income', value: `~$${city.medianIncome.toLocaleString()}` });
   facts.push(
     { label: 'Shipping', value: `Nationwide To All 50 States, Including ${city.state}` },
@@ -248,8 +253,8 @@ export function getCityFacts(city: City): CityFact[] {
   return facts;
 }
 
-// ─── Value props ──────────────────────────────────────────────────────────
-export interface ValueProp {
+// ─── Value props ─────────────────────────────────────
+interface ValueProp {
   icon: string;  // icon key for SVG lookup map in CityPage
   title: string;
   body: string;
