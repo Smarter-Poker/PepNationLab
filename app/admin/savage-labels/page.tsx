@@ -7,10 +7,15 @@ export const metadata = {
 
 export default async function SavageLabelsPage() {
   const supabase = await createClient();
-  const { data: products } = await supabase
+  const { data: products, error } = await supabase
     .from('products')
-    .select('id, name, dose_amount, dose_unit, category_id, categories(name)')
+    .select('id, name, dose_amount, dose_unit, category_id, categories!inner(name, slug)')
+    .eq('categories.slug', 'savage-brands')
     .order('name', { ascending: true });
+
+  if (error) {
+    console.error('Supabase error fetching products:', error);
+  }
 
   return (
     <div className="flex flex-col flex-1 h-full overflow-hidden">

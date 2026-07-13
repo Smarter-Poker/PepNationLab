@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import { Download, Loader2 } from 'lucide-react';
-import { toPng } from 'html-to-image';
+import { toBlob } from 'html-to-image';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 
@@ -36,13 +36,14 @@ export function LabelGenerator({ products }: { products: any[] }) {
       
       for (const el of elementsArray) {
         const productName = el.getAttribute('data-name') || 'label';
-        const dataUrl = await toPng(el, {
+        const blob = await toBlob(el, {
           quality: 1.0,
           pixelRatio: 1,
         });
         
-        const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '');
-        zip.file(`${productName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png`, base64Data, { base64: true });
+        if (blob) {
+          zip.file(`${productName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png`, blob);
+        }
       }
 
       const content = await zip.generateAsync({ type: 'blob' });
