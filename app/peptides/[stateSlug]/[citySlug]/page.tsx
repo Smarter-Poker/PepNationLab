@@ -16,13 +16,14 @@ import { CITIES, getCity, CITY_CONTENT_UPDATED } from '@/lib/cities/cities-data'
 import { getStoreTop10 } from '@/lib/cities/top10-server';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 import CityPage from './CityPage';
+import { getCityFAQs } from '@/lib/cities/city-content';
 
 // ISR: regenerate each city page at most every 5 minutes so the Top 10 grid
 // tracks the live storefront catalog - admin price/name changes flow through
 // without a redeploy.
 export const revalidate = 300;
 
-// ─── Static params (build-time pre-rendering) ─────────────────────
+// ─── Static params (build-time pre-rendering) ─────────────────
 // Scale-ready ISR: at build we pre-render ONLY the highest-priority markets
 // (sorted by tier, then population) up to this small cap. Every other city -
 // and any city added later - is rendered on first request via ISR and cached
@@ -44,7 +45,7 @@ export async function generateStaticParams() {
     }));
 }
 
-// ─── Per-city metadata ──────────────────────────────────────────────────
+// ─── Per-city metadata ─────────────────────────────────────
 export async function generateMetadata({
   params,
 }: {
@@ -96,7 +97,7 @@ export async function generateMetadata({
   };
 }
 
-// ─── Page shell (server component) ───────────────────────────────────────
+// ─── Page shell (server component) ────────────────────────
 export default async function CityLandingPage({
   params,
 }: {
@@ -216,6 +217,15 @@ export default async function CityLandingPage({
         publisher: { '@id': 'https://pepnationlab.com/#organization' },
         datePublished: '2026-07-01',
         dateModified: CITY_CONTENT_UPDATED.toISOString().slice(0, 10),
+      },
+      {
+        '@type': 'FAQPage',
+        '@id': `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}#faq`,
+        mainEntity: getCityFAQs(city).map((f) => ({
+          '@type': 'Question',
+          name: f.question,
+          acceptedAnswer: { '@type': 'Answer', text: f.answer },
+        })),
       },
     ],
   };
