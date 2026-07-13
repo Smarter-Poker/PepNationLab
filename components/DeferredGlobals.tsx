@@ -31,6 +31,7 @@ const GlobalCallListener = dynamic(() => import('@/components/messenger/GlobalCa
 const FirstRunNotificationPrompt = dynamic(() => import('@/components/FirstRunNotificationPrompt'), { ssr: false });
 const SessionKeepalive = dynamic(() => import('@/components/messenger/SessionKeepalive'), { ssr: false });
 const WebVitalsReporter = dynamic(() => import('@/components/WebVitalsReporter'), { ssr: false });
+const ScrollLockWatchdog = dynamic(() => import('@/components/ScrollLockWatchdog'), { ssr: false });
 
 export default function DeferredGlobals() {
   return (
@@ -43,6 +44,7 @@ export default function DeferredGlobals() {
       <FirstRunNotificationPrompt />
       <SessionKeepalive />
       <WebVitalsReporter />
+      <ScrollLockWatchdog />
     </>
   );
 }

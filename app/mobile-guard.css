@@ -27,3 +27,14 @@
     top: var(--nav-offset, 60px) !important;
   }
 }
+
+/* ============================================================
+   PROGRAMMATIC-SCROLL RELIABILITY (2026-07-13)
+   globals.css sets html{scroll-behavior:smooth} globally, which makes
+   JS scrollTo/scrollIntoView calls that don't pass an explicit behavior
+   animate — and on lazy/async pages that animation gets interrupted and
+   never lands (can read scrollTop 0). Default to instant here; any code
+   that WANTS smooth still opts in explicitly via { behavior: 'smooth' },
+   which is unaffected by this rule.
+   ============================================================ */
+html { scroll-behavior: auto; }
