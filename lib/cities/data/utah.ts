@@ -23,6 +23,8 @@ const CITIES_UTAH: City[] = [
   { name: 'Layton', slug: 'layton', state: 'Utah', stateSlug: 'utah', stateAbbr: 'UT', population: 81000, medianIncome: 82000, tier: 2, region: 'Davis County', county: 'Davis', zips: ['84040', '84041'], localBlurb: 'Layton researchers between Salt Lake and Ogden rely on consistently tested research-grade peptides for their studies.' },
   { name: 'St. George', slug: 'st-george', state: 'Utah', stateSlug: 'utah', stateAbbr: 'UT', population: 100000, medianIncome: 60000, tier: 3, region: 'Greater St. George', county: 'Washington', zips: ['84770', '84790'], localBlurb: 'In sun-drenched St. George, southern Utah labs source research peptides with heat-stable packaging and verified purity.' },
   { name: 'Logan', slug: 'logan', state: 'Utah', stateSlug: 'utah', stateAbbr: 'UT', population: 52000, medianIncome: 45000, tier: 3, region: 'Cache Valley', county: 'Cache', zips: ['84321', '84341'], localBlurb: 'Logan\'s Cache Valley research scene turns to well-documented research-grade peptides for academic in-vitro work.' },
+  { name: 'Bountiful', slug: 'bountiful', state: 'Utah', stateSlug: 'utah', stateAbbr: 'UT', population: 45000, medianIncome: 82000, tier: 2, region: 'Davis County', county: 'Davis', zips: ['84010'], localBlurb: 'Bountiful is an established Davis County suburb on the benches north of Salt Lake City.' },
+  { name: 'Spanish Fork', slug: 'spanish-fork', state: 'Utah', stateSlug: 'utah', stateAbbr: 'UT', population: 42000, medianIncome: 78000, tier: 2, region: 'Utah County', county: 'Utah', zips: ['84660'], localBlurb: 'Spanish Fork is a fast-growing Utah County city in the southern Utah Valley.' },
 ];
 
 export default CITIES_UTAH;
