@@ -1,0 +1,204 @@
+'use client';
+
+import React, { useState, useRef } from 'react';
+import { Button } from '@/components/ui/button';
+import { Download, Loader2 } from 'lucide-react';
+import { toPng } from 'html-to-image';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
+
+// Colors mapped exactly to the Savage Brands prompt rules
+function getCategoryColor(categoryName: string) {
+  const normalized = categoryName?.toLowerCase() || '';
+  if (normalized.includes('weight loss')) return '#FF0000'; // Red
+  if (normalized.includes('healing') || normalized.includes('recovery')) return '#008080'; // Teal
+  if (normalized.includes('growth hormone')) return '#FFD700'; // Gold
+  if (normalized.includes('muscle')) return '#4169E1'; // Royal Blue
+  if (normalized.includes('sexual')) return '#800080'; // Purple
+  if (normalized.includes('anti-aging')) return '#B76E79'; // Rose Gold
+  if (normalized.includes('skin') || normalized.includes('hair')) return '#50C878'; // Emerald Green
+  if (normalized.includes('nootropic')) return '#C0C0C0'; // Chrome/Silver
+  if (normalized.includes('stack')) return '#FFFFFF'; // White (or specific if named)
+  return '#C0C0C0'; // Default Silver
+}
+
+export function LabelGenerator({ products }: { products: any[] }) {
+  const [isExporting, setIsExporting] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleExport = async () => {
+    if (!containerRef.current) return;
+    setIsExporting(true);
+
+    try {
+      const zip = new JSZip();
+      const labelElements = containerRef.current.querySelectorAll('.savage-label-render-target');
+      
+      const elementsArray = Array.from(labelElements) as HTMLElement[];
+      
+      for (const el of elementsArray) {
+        const productName = el.getAttribute('data-name') || 'label';
+        // At 300dpi, 1.5" x 2.5" is 450x750. 
+        // html-to-image will render at the element's actual dimensions.
+        const dataUrl = await toPng(el, {
+          quality: 1.0,
+          pixelRatio: 1, // Already sized 450x750
+        });
+        
+        // Remove 'data:image/png;base64,' prefix for JSZip
+        const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '');
+        zip.file(`${productName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png`, base64Data, { base64: true });
+      }
+
+      const content = await zip.generateAsync({ type: 'blob' });
+      saveAs(content, 'savage-brands-labels.zip');
+    } catch (error) {
+      console.error('Error generating ZIP:', error);
+      alert('Failed to export labels. Check console for details.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-medium">{products.length} Labels Available</h2>
+        <Button onClick={handleExport} disabled={isExporting}>
+          {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+          {isExporting ? 'Generating ZIP...' : 'Export All to ZIP (300dpi)'}
+        </Button>
+      </div>
+
+      <div className="text-sm text-muted-foreground mb-4">
+        Note: The labels below are scaled down for preview purposes, but will be exported at full 300dpi resolution (450x750 pixels).
+      </div>
+
+      <div 
+        ref={containerRef} 
+        className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-8"
+      >
+        {products.map((p) => {
+          const categoryName = p.categories?.name || 'Unknown';
+          const accentColor = getCategoryColor(categoryName);
+          const doseString = p.dose_amount && p.dose_unit ? `${p.dose_amount}${p.dose_unit}` : '';
+
+          return (
+            <div key={p.id} className="flex flex-col items-center gap-2">
+              <div 
+                // Scaled down visually by using transform or zoom, but actual layout size is 450x750
+                className="overflow-hidden border border-border/50 rounded shadow-md relative"
+                style={{
+                  width: '225px', // Visually half size
+                  height: '375px',
+                }}
+              >
+                <div 
+                  className="savage-label-render-target relative bg-[#111] overflow-hidden flex flex-col justify-between"
+                  data-name={p.name}
+                  style={{
+                    width: '450px',
+                    height: '750px',
+                    transform: 'scale(0.5)',
+                    transformOrigin: 'top left',
+                    // Black hex texture pattern using CSS
+                    backgroundImage: `
+                      linear-gradient(30deg, #181818 12%, transparent 12.5%, transparent 87%, #181818 87.5%, #181818),
+                      linear-gradient(150deg, #181818 12%, transparent 12.5%, transparent 87%, #181818 87.5%, #181818),
+                      linear-gradient(30deg, #181818 12%, transparent 12.5%, transparent 87%, #181818 87.5%, #181818),
+                      linear-gradient(150deg, #181818 12%, transparent 12.5%, transparent 87%, #181818 87.5%, #181818),
+                      linear-gradient(60deg, #1a1a1a 25%, transparent 25.5%, transparent 75%, #1a1a1a 75%, #1a1a1a),
+                      linear-gradient(60deg, #1a1a1a 25%, transparent 25.5%, transparent 75%, #1a1a1a 75%, #1a1a1a)
+                    `,
+                    backgroundSize: '40px 70px',
+                    backgroundPosition: '0 0, 0 0, 20px 35px, 20px 35px, 0 0, 20px 35px'
+                  }}
+                >
+                  {/* Top colored border */}
+                  <div style={{ height: '12px', width: '100%', backgroundColor: accentColor }}></div>
+
+                  {/* Claw Marks Background */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-30 pointer-events-none">
+                     <svg width="250" height="300" viewBox="0 0 250 300" style={{ transform: 'rotate(-20deg)', filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.2))' }}>
+                        <path d="M40 0 C60 100 80 200 40 300 C80 220 70 120 40 0 Z" fill={accentColor} />
+                        <path d="M125 20 C145 120 165 220 125 320 C165 240 155 140 125 20 Z" fill={accentColor} />
+                        <path d="M210 40 C230 140 250 240 210 340 C250 260 240 160 210 40 Z" fill={accentColor} />
+                     </svg>
+                  </div>
+
+                  <div className="flex-1 flex flex-col items-center justify-center relative z-10 px-8 text-center mt-[-80px]">
+                    <h1 
+                      style={{ 
+                        fontFamily: 'Impact, sans-serif', 
+                        fontSize: '72px', 
+                        lineHeight: '1',
+                        letterSpacing: '-2px',
+                        background: 'linear-gradient(to bottom, #f0f0f0, #a0a0a0, #d0d0d0)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        textShadow: '0 4px 6px rgba(0,0,0,0.8), inset 0 2px 4px rgba(255,255,255,0.4)',
+                        transform: 'skewX(-10deg)',
+                        margin: 0
+                      }}
+                    >
+                      SAVAGE
+                    </h1>
+                    <h2
+                      style={{ 
+                        fontFamily: 'Impact, sans-serif', 
+                        fontSize: '32px', 
+                        lineHeight: '1',
+                        letterSpacing: '4px',
+                        background: 'linear-gradient(to bottom, #d0d0d0, #808080)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        textShadow: '0 2px 4px rgba(0,0,0,0.8)',
+                        transform: 'skewX(-10deg)',
+                        marginTop: '-5px'
+                      }}
+                    >
+                      BRANDS
+                    </h2>
+                  </div>
+
+                  <div className="relative z-10 text-center pb-12 w-full px-6">
+                    <h3 
+                      style={{ 
+                        fontFamily: 'Arial, sans-serif', 
+                        fontWeight: '900',
+                        fontSize: p.name.length > 15 ? '36px' : '42px', 
+                        lineHeight: '1.1',
+                        color: '#E0E0E0',
+                        textShadow: '0 2px 4px rgba(0,0,0,0.9)'
+                      }}
+                      className="uppercase tracking-tighter"
+                    >
+                      {p.name}
+                    </h3>
+                    <div 
+                      style={{ 
+                        color: accentColor, 
+                        fontFamily: 'Arial, sans-serif',
+                        fontSize: '24px',
+                        fontWeight: '700',
+                        marginTop: '8px'
+                      }}
+                    >
+                      {categoryName} {doseString}
+                    </div>
+                  </div>
+
+                  {/* Bottom colored border */}
+                  <div style={{ height: '12px', width: '100%', backgroundColor: accentColor }}></div>
+                </div>
+              </div>
+              <div className="text-sm font-medium text-center truncate w-full" title={p.name}>
+                {p.name}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
