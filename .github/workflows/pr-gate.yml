@@ -31,7 +31,7 @@ jobs:
     name: Author identity gate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Every commit must be the Smarter-Poker team identity
@@ -59,7 +59,7 @@ jobs:
     name: Production build gate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
