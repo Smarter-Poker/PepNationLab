@@ -3,7 +3,7 @@
  * Template engine for generating unique, city-specific copy.
  *
  * Uniqueness strategy (doorway-page mitigation):
- * - 5 intro variants selected by a per-city hash, several of which weave in
+ * - 10 intro variants selected by a per-city hash, several of which weave in
  *   real data points (population, region) so pages differ in substance, not
  *   just the city token.
  * - A pool of 18 FAQs from which 6 are deterministically selected per city;
@@ -92,6 +92,16 @@ const INTRO_VARIANTS = [
     `Home to roughly ${formatPopulation(city.population)} residents, ${city.name}, ${city.stateAbbr} sits within the ${getRegionLabel(city)} - a region with an active independent research community. Pep Nation Lab supplies that community with batch-tested, research-grade peptides at wholesale pricing, shipped directly to verified labs with full documentation.`,
   (city: City) =>
     `From ${city.name} to the wider ${getRegionLabel(city)}, verified researchers turn to Pep Nation Lab for dependable access to research-grade peptides. Same-day fulfillment on qualifying orders, full COA documentation on every batch, and a 100+ compound catalog built for in vitro laboratory work.`,
+  (city: City) =>
+    `${city.name} anchors ${city.county ? `${city.county} County` : `the ${getRegionLabel(city)}`} and its independent research base. Pep Nation Lab ships research-grade peptides - BPC-157, TB-500, GHK-Cu and 100+ more - to verified labs here with same-day processing and full batch COAs.`,
+  (city: City) =>
+    `Verified accounts in ${city.name}, ${city.stateAbbr} draw from a 100+ compound catalog spanning metabolic, recovery, longevity, and cognitive research. Pep Nation Lab fulfills every ${getRegionArea(getRegionLabel(city))} order at wholesale pricing with independent third-party purity testing.`,
+  (city: City) =>
+    `Private and institutional labs across ${city.name} and the ${getRegionLabel(city)} rely on Pep Nation Lab for direct wholesale peptides. Each lot is HPLC- and mass-spec-verified and ships with a certificate of analysis for in vitro laboratory work.`,
+  (city: City) =>
+    `Research teams in ${city.name}, ${city.stateAbbr} choose Pep Nation Lab for lot-to-lot consistency: transparent COAs, identical purity specs, and a 100+ peptide catalog. Orders ship nationwide from one verified account with priority handling across the ${getRegionLabel(city)}.`,
+  (city: City) =>
+    `Serving ${formatPopulation(city.population)}-resident ${city.name} and the wider ${getRegionLabel(city)}, Pep Nation Lab keeps ${city.state} research teams supplied with cold-chain-handled, research-grade peptides, wholesale pricing tiers, and full lot documentation on every order.`,
 ];
 
 export function getCityIntro(city: City): string {
@@ -227,6 +237,7 @@ export function getCityFacts(city: City): CityFact[] {
   if (city.zips && city.zips.length > 0) {
     facts.push({ label: 'ZIP Codes Served', value: city.zips.join(', ') });
   }
+  facts.push({ label: 'Median Household Income', value: `~$${city.medianIncome.toLocaleString()}` });
   facts.push(
     { label: 'Shipping', value: `Nationwide To All 50 States, Including ${city.state}` },
     { label: 'Catalog', value: '100+ Research-Grade Peptides And Compounds' },

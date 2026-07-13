@@ -183,6 +183,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // set would approach the IndexNow cap and drown priority URLs.
   const compoundCityPages: MetadataRoute.Sitemap = [];
   for (const city of CITIES) {
+    // Only sitemap the indexable (tier-1/2) compound-city pages; tier-3 compound
+    // pages are noindexed, so listing them would send a contradictory signal.
+    if (city.tier > 2) continue;
     for (const compoundSlug of CITY_COMPOUND_SLUGS) {
       compoundCityPages.push({
         url: `${BASE}/peptides/${city.stateSlug}/${city.slug}/${compoundSlug}`,

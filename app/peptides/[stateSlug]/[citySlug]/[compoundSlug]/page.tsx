@@ -86,6 +86,11 @@ export async function generateMetadata({
   const compound = getCityCompound(compoundSlug);
   if (!city || !compound) return { robots: { index: false } };
 
+  // Selective indexing: index high-value tier-1/2 markets; noindex (but still
+  // follow) the tier-3 long tail so the thin compound-city pages do not dilute
+  // crawl budget or trip doorway-content heuristics.
+  const indexable = city.tier <= 2;
+
   const title = `${compound.displayName} In ${city.name}, ${city.stateAbbr} - Research-Grade Supply`;
   const description = `Buy research-grade ${compound.displayName} (${compound.popularName}) for verified researchers in ${city.name}, ${city.state}. Live wholesale pricing, batch COA documentation, fast nationwide shipping. In vitro laboratory use only.`;
   const url = `${BASE}/peptides/${stateSlug}/${citySlug}/${compoundSlug}`;
@@ -109,10 +114,10 @@ export async function generateMetadata({
       images: ['/og-card.png'],
     },
     robots: {
-      index: true,
+      index: indexable,
       follow: true,
       googleBot: {
-        index: true,
+        index: indexable,
         follow: true,
         'max-snippet': -1,
         'max-image-preview': 'large',

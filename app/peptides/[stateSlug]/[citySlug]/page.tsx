@@ -55,7 +55,9 @@ export async function generateMetadata({
   if (!city) return { robots: { index: false } };
 
   const title = `Research Peptides In ${city.name}, ${city.stateAbbr} | Pep Nation Lab`;
-  const description = `Pep Nation Lab supplies research-grade peptides to qualified researchers in ${city.name}, ${city.state}. BPC-157, Semaglutide, Tirzepatide, TB-500 & 100+ more research compounds. Wholesale pricing. Verified accounts only.`;
+  // Lead with the keyword + city + offer (SERP-visible), then append the city's
+  // unique local blurb so every meta description is genuinely distinct.
+  const description = `Research-grade peptides for verified researchers in ${city.name}, ${city.stateAbbr} - BPC-157, Semaglutide, Tirzepatide & 100+ compounds at wholesale pricing. ${city.localBlurb}`;
 
   return {
     title,
