@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Activity, Package, Clock, UserPlus, TrendingUp, Gift, Ticket,
-  AlertTriangle, Users, Wallet, RefreshCw, ChevronRight,
+  AlertTriangle, Users, Wallet, RefreshCw, ChevronRight, Download,
 } from 'lucide-react';
 
 type Category =
@@ -36,6 +36,14 @@ const CATS: { key: Category | 'all'; label: string }[] = [
   { key: 'inventory', label: 'Inventory' },
   { key: 'subagent', label: 'Sub-Agents' },
   { key: 'wallet', label: 'Wallet' },
+];
+
+const WINDOWS: { label: string; value: number | 'all' }[] = [
+  { label: '7d', value: 7 },
+  { label: '30d', value: 30 },
+  { label: '90d', value: 90 },
+  { label: '1y', value: 365 },
+  { label: 'All', value: 'all' },
 ];
 
 const ICON: Record<Category, React.ComponentType<{ size?: number; strokeWidth?: number }>> = {
@@ -71,18 +79,39 @@ function dayLabel(iso: string) {
   return d.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
 }
 
+// Build a CSV from the rows currently in view (respecting the active filter + window).
+function toCsv(rows: Item[]): string {
+  const head = ['Timestamp', 'Category', 'Title', 'Detail', 'Amount', 'Direction', 'Status'];
+  const esc = (val: unknown) => {
+    const v = val == null ? '' : String(val);
+    return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+  };
+  const lines = [head.join(',')];
+  for (const r of rows) {
+    const signed = r.amount != null && r.amount > 0
+      ? (r.emphasis === 'negative' ? -r.amount : r.amount).toFixed(2)
+      : '';
+    lines.push([
+      r.timestamp, r.category, r.title, r.subtitle || '',
+      signed, r.emphasis === 'negative' ? 'out' : (r.amount ? 'in' : ''), r.status || '',
+    ].map(esc).join(','));
+  }
+  return lines.join('\n');
+}
+
 export default function AgentActivityFeed() {
   const router = useRouter();
   const [items, setItems] = useState<Item[] | null>(null);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [filter, setFilter] = useState<Category | 'all'>('all');
+  const [days, setDays] = useState<number | 'all'>(90);
   const [err, setErr] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     setRefreshing(true); setErr(false);
     try {
-      const res = await fetch('/api/agent/activity', { cache: 'no-store' });
+      const res = await fetch(`/api/agent/activity?days=${days}`, { cache: 'no-store' });
       if (!res.ok) throw new Error();
       const json = await res.json();
       setItems(Array.isArray(json.items) ? json.items : []);
@@ -92,7 +121,7 @@ export default function AgentActivityFeed() {
     } finally {
       setRefreshing(false);
     }
-  }, []);
+  }, [days]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -112,6 +141,21 @@ export default function AgentActivityFeed() {
     return g;
   }, [visible]);
 
+  const exportCsv = useCallback(() => {
+    if (!visible.length) return;
+    const csv = toCsv(visible);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `activity-${filter}-${days === 'all' ? 'all' : days + 'd'}-${stamp}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [visible, filter, days]);
+
   return (
     <section style={{ maxWidth: 860, margin: '0 auto', width: '100%' }}>
       {/* Header */}
@@ -122,14 +166,40 @@ export default function AgentActivityFeed() {
             Recent Activity
           </h1>
         </div>
-        <button type="button" onClick={load} disabled={refreshing} className="btn-silver"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', fontSize: '0.8rem', opacity: refreshing ? 0.6 : 1 }}>
-          <RefreshCw size={14} style={{ animation: refreshing ? 'spin 1s linear infinite' : undefined }} /> Refresh
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button type="button" onClick={exportCsv} disabled={!visible.length} className="btn-silver"
+            title="Export the activity currently in view to CSV"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', fontSize: '0.8rem', opacity: visible.length ? 1 : 0.5 }}>
+            <Download size={14} /> Export CSV
+          </button>
+          <button type="button" onClick={load} disabled={refreshing} className="btn-silver"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', fontSize: '0.8rem', opacity: refreshing ? 0.6 : 1 }}>
+            <RefreshCw size={14} style={{ animation: refreshing ? 'spin 1s linear infinite' : undefined }} /> Refresh
+          </button>
+        </div>
       </div>
-      <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem', margin: '0 0 16px' }}>
+      <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem', margin: '0 0 14px' }}>
         Everything happening across your storefront — orders, payments, researchers, commissions, referrals, coupons and stock, newest first.
       </p>
+
+      {/* Time-window selector */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
+        <span style={{ color: 'var(--grey-500, #8a8f98)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>Period</span>
+        {WINDOWS.map((w) => {
+          const active = days === w.value;
+          return (
+            <button key={w.label} type="button" onClick={() => setDays(w.value)}
+              style={{
+                padding: '4px 11px', borderRadius: 8, fontSize: '0.76rem', cursor: 'pointer',
+                border: `1px solid ${active ? 'var(--silver, #c9ccd1)' : 'rgba(255,255,255,0.12)'}`,
+                background: active ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.03)',
+                color: active ? 'var(--white)' : 'var(--grey-400)', fontWeight: active ? 700 : 500,
+              }}>
+              {w.label}
+            </button>
+          );
+        })}
+      </div>
 
       {/* Filter chips */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
@@ -170,8 +240,8 @@ export default function AgentActivityFeed() {
           <h3 style={{ color: 'var(--white)', margin: '0 0 6px' }}>Nothing here yet</h3>
           <p style={{ color: 'var(--grey-500, #8a8f98)', fontSize: '0.88rem', maxWidth: 380, margin: '0 auto' }}>
             {filter === 'all'
-              ? 'As your researchers order, pay, and sign up — and as commissions and referrals settle — it will all show up here in real time.'
-              : 'No activity in this category yet. Switch to “All” to see everything.'}
+              ? 'As your researchers order, pay, and sign up — and as commissions and referrals settle — it will all show up here in real time. Try widening the period above.'
+              : 'No activity in this category for this period. Switch to “All”, or widen the period above.'}
           </p>
         </div>
       ) : (

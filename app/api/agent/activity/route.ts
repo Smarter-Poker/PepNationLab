@@ -6,7 +6,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgentOrAdmin } from '@/lib/admin-auth';
 
 /**
- * GET /api/agent/activity
+ * GET /api/agent/activity?days=90
  *
  * Unified "Recent Activity" feed for an agent / super-agent. Merges recent events
  * across every part of their business into one typed, chronological stream:
@@ -14,9 +14,11 @@ import { requireAgentOrAdmin } from '@/lib/admin-auth';
  *   - new researcher signups on their storefront
  *   - wallet + payout ledger (commissions earned, commissions/promos/referrals they funded, transfers)
  *   - coupon redemptions on their codes
- *   - low / out-of-stock inventory alerts
+ *   - low / out-of-stock inventory alerts (current state — never date-filtered)
  *   - sub-agent additions + weekly commission settlements
  *
+ * `days` bounds the event window (default 90; `all` for no window) so the feed
+ * never silently hides older activity — the caller can widen the window or export.
  * All queries are scoped to the caller's own id. Read-only.
  */
 
@@ -31,9 +33,9 @@ interface ActivityItem {
   category: Category;
   title: string;
   subtitle?: string;
-  amount?: number;
+  amount?: number;      // dollar amount when relevant
   status?: string;
-  timestamp: string;
+  timestamp: string;    // ISO
   href?: string;
   emphasis: Emphasis;
 }
@@ -41,23 +43,44 @@ interface ActivityItem {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const one = (v: any) => (Array.isArray(v) ? v[0] : v);
 
-export async function GET() {
+// Parse the ?days= window. Default 90. `all` => null (no lower bound). Clamped.
+function parseWindowDays(url: string): number | null {
+  try {
+    const raw = (new URL(url).searchParams.get('days') || '90').toLowerCase();
+    if (raw === 'all') return null;
+    const n = parseInt(raw, 10);
+    if (!isFinite(n) || n <= 0) return 90;
+    return Math.min(n, 3650);
+  } catch {
+    return 90;
+  }
+}
+
+const PER_SOURCE = 400; // generous per-source cap within the window
+const TOTAL_CAP = 1000; // merged feed cap (the window keeps this from truncating in practice)
+
+export async function GET(req: Request) {
   const gate = await requireAgentOrAdmin();
   if (!gate.ok) return gate.response;
   const agentId = gate.user.id;
   const db = createAdminClient();
+
+  const days = parseWindowDays(req.url);
+  const cutoff = days == null ? null : new Date(Date.now() - days * 86400000).toISOString();
 
   const items: ActivityItem[] = [];
   const add = (i: ActivityItem) => { if (i.timestamp) items.push(i); };
 
   // 1) Orders on this agent's storefront
   try {
-    const { data } = await db
+    let q = db
       .from('orders')
       .select('id, status, total, discount_amount, discount_source, coupon_code, created_at, is_wholesale_restock, profiles!orders_buyer_id_fkey(full_name, email)')
       .eq('agent_id', agentId)
       .order('created_at', { ascending: false })
-      .limit(50);
+      .limit(PER_SOURCE);
+    if (cutoff) q = q.gte('created_at', cutoff);
+    const { data } = await q;
     for (const o of data || []) {
       const buyer = one((o as { profiles?: unknown }).profiles) as { full_name?: string; email?: string } | null;
       const who = buyer?.full_name || buyer?.email || 'A researcher';
@@ -79,25 +102,29 @@ export async function GET() {
 
   // 2) New researchers referred to this agent
   try {
-    const { data } = await db
+    let q = db
       .from('profiles')
       .select('id, full_name, email, created_at')
       .eq('referring_agent_id', agentId)
       .eq('role', 'researcher')
       .order('created_at', { ascending: false })
-      .limit(25);
+      .limit(PER_SOURCE);
+    if (cutoff) q = q.gte('created_at', cutoff);
+    const { data } = await q;
     for (const r of data || [])
       add({ id: `res:${r.id}`, category: 'researcher', title: 'New researcher joined', subtitle: r.full_name || r.email || 'New researcher', timestamp: r.created_at as string, href: '/dashboard/agent?tab=Researchers', emphasis: 'positive' });
   } catch { /* noop */ }
 
   // 3) Wallet / payout ledger
   try {
-    const { data } = await db
+    let q = db
       .from('balance_transactions')
       .select('id, type, amount, description, reference_type, created_at')
       .eq('agent_id', agentId)
       .order('created_at', { ascending: false })
-      .limit(35);
+      .limit(PER_SOURCE);
+    if (cutoff) q = q.gte('created_at', cutoff);
+    const { data } = await q;
     for (const t of data || []) {
       const ty = String(t.type); const rt = String(t.reference_type || '');
       let category: Category = 'wallet'; let title = t.description || 'Wallet update'; let emphasis: Emphasis = 'neutral';
@@ -107,6 +134,7 @@ export async function GET() {
         if (rt === 'sub_agent_settlements') { category = 'commission'; title = 'Paid sub-agent commission'; }
         else if (rt === 'referral_reward') { category = 'referral'; title = 'Funded referral bonus'; }
         else if (rt === 'signup_promo') { category = 'referral'; title = 'Funded signup promo'; }
+        else if (rt === 'agent_credit') { category = 'wallet'; title = 'Funded agent credit'; }
         else { category = 'wallet'; title = 'Payout'; }
       }
       else if (ty === 'credit' || ty === 'bonus') { category = 'wallet'; title = ty === 'bonus' ? 'Bonus credit received' : 'Wallet credit'; emphasis = 'positive'; }
@@ -121,24 +149,26 @@ export async function GET() {
 
   // 4) Coupon redemptions on this agent's codes
   try {
-    const { data } = await db
+    let q = db
       .from('coupon_redemptions')
       .select('id, code, redeemed_at, order_id, coupons!inner(agent_id)')
       .eq('coupons.agent_id', agentId)
       .order('redeemed_at', { ascending: false })
-      .limit(25);
+      .limit(PER_SOURCE);
+    if (cutoff) q = q.gte('redeemed_at', cutoff);
+    const { data } = await q;
     for (const c of data || [])
       add({ id: `coupon:${c.id}`, category: 'coupon', title: 'Coupon redeemed', subtitle: String(c.code || ''), timestamp: c.redeemed_at as string, href: c.order_id ? `/orders/${c.order_id}` : '/dashboard/agent?tab=Coupons', emphasis: 'neutral' });
   } catch { /* noop */ }
 
-  // 5) Low / out-of-stock inventory
+  // 5) Low / out-of-stock inventory (current state — intentionally NOT date-filtered)
   try {
     const { data } = await db
       .from('agent_inventory')
       .select('id, stock_count, low_stock_threshold, updated_at, products(name)')
       .eq('agent_id', agentId)
       .order('updated_at', { ascending: false })
-      .limit(80);
+      .limit(120);
     for (const iv of data || []) {
       const stock = Number(iv.stock_count) || 0;
       const thr = iv.low_stock_threshold == null ? 5 : Number(iv.low_stock_threshold);
@@ -151,33 +181,44 @@ export async function GET() {
 
   // 6) Sub-agents: additions + weekly commission settlements
   try {
-    const { data } = await db
+    let q = db
       .from('sub_agent_settlements')
       .select('id, total_commission, orders_count, settled_at')
       .eq('parent_agent_id', agentId)
       .order('settled_at', { ascending: false })
-      .limit(15);
+      .limit(PER_SOURCE);
+    if (cutoff) q = q.gte('settled_at', cutoff);
+    const { data } = await q;
     for (const s of data || [])
       add({ id: `settle:${s.id}`, category: 'commission', title: 'Sub-agent commission settled', subtitle: `${Number(s.orders_count) || 0} orders`, amount: Number(s.total_commission) || 0, timestamp: s.settled_at as string, href: '/dashboard/agent?tab=My Sub-Agents', emphasis: 'negative' });
   } catch { /* noop */ }
   try {
-    const { data } = await db
+    let q = db
       .from('profiles')
       .select('id, full_name, email, created_at')
       .eq('parent_agent_id', agentId)
       .eq('is_sub_agent', true)
       .order('created_at', { ascending: false })
-      .limit(10);
+      .limit(PER_SOURCE);
+    if (cutoff) q = q.gte('created_at', cutoff);
+    const { data } = await q;
     for (const su of data || [])
       add({ id: `sub:${su.id}`, category: 'subagent', title: 'New sub-agent added', subtitle: su.full_name || su.email || 'Sub-agent', timestamp: su.created_at as string, href: '/dashboard/agent?tab=My Sub-Agents', emphasis: 'positive' });
   } catch { /* noop */ }
 
   const sorted = items
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-    .slice(0, 150);
+    .slice(0, TOTAL_CAP);
 
   const counts: Record<string, number> = {};
   for (const i of sorted) counts[i.category] = (counts[i.category] || 0) + 1;
 
-  return NextResponse.json({ items: sorted, counts, total: sorted.length, generatedAt: new Date().toISOString() });
+  return NextResponse.json({
+    items: sorted,
+    counts,
+    total: sorted.length,
+    window: days,            // number of days, or null for "all"
+    truncated: sorted.length >= TOTAL_CAP,
+    generatedAt: new Date().toISOString(),
+  });
 }
