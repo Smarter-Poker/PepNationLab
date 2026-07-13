@@ -23,12 +23,17 @@ const STORAGE_KEY = 'pnl_referral_agent';
 const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
 interface Props {
-  agentSlug: string;
+  // When omitted (landing page) the slug is read from ?agent in the URL.
+  agentSlug?: string;
 }
 
 export default function AgentLinkCapture({ agentSlug }: Props) {
   useEffect(() => {
-    if (!agentSlug) return;
+    let slug = agentSlug || '';
+    if (!slug) {
+      try { slug = new URLSearchParams(window.location.search).get('agent') || ''; } catch { slug = ''; }
+    }
+    if (!slug || !/^[a-z0-9-]{1,60}$/i.test(slug)) return;
     try {
       // Don't overwrite if there's already a fresh entry from a DIFFERENT agent
       // that was stored more recently than 10 minutes ago.
@@ -37,7 +42,7 @@ export default function AgentLinkCapture({ agentSlug }: Props) {
       if (raw) {
         const existing = JSON.parse(raw) as { slug?: string; savedAt?: number };
         const age = Date.now() - (existing.savedAt ?? 0);
-        if (existing.slug && existing.slug !== agentSlug && age < 10 * 60 * 1000) {
+        if (existing.slug && existing.slug !== slug && age < 10 * 60 * 1000) {
           // There's a fresh attribution to a different agent - don't overwrite.
           return;
         }
@@ -55,10 +60,10 @@ export default function AgentLinkCapture({ agentSlug }: Props) {
       if (!sa && raw) {
         try {
           const prev = JSON.parse(raw) as { slug?: string; sa?: string };
-          if (prev.slug === agentSlug && prev.sa) sa = prev.sa;
+          if (prev.slug === slug && prev.sa) sa = prev.sa;
         } catch { /* ignore */ }
       }
-      const entry: { slug: string; sa?: string; savedAt: number } = { slug: agentSlug, savedAt: Date.now() };
+      const entry: { slug: string; sa?: string; savedAt: number } = { slug, savedAt: Date.now() };
       if (sa) entry.sa = sa;
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(entry));
     } catch {

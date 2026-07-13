@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import HomeClient from './HomeClient';
 import HomeSeoContent from '@/components/HomeSeoContent';
+import AgentLinkCapture from '@/components/AgentLinkCapture';
 
 export const metadata: Metadata = {
   title: 'Pep Nation Lab | Premium Research Peptide Distribution',
@@ -50,6 +51,9 @@ export default function HomePage() {
           ]
         }) }}
       />
+      {/* Capture guest QR / sub-agent attribution carried via ?agent / ?sa
+          through the storefront guest redirect (invisible; no-op without ?agent). */}
+      <AgentLinkCapture />
       <HomeClient />
       {/* Server-rendered crawlable homepage content: gives the root domain a
           real H1, intro copy, and descriptive internal links beneath the
