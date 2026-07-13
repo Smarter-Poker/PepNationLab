@@ -1,0 +1,577 @@
+[
+  {
+    "id": "917436d8-f137-4dcc-8fc1-81e2beb334cd",
+    "name": "PT-141",
+    "slug": "pt-141-p41"
+  },
+  {
+    "id": "774d0792-8c16-4b27-b914-8907db68c70f",
+    "name": "Limitless Stack (Semax + Selank)",
+    "slug": "the-limitless-stack-semax-selank"
+  },
+  {
+    "id": "ae609171-efaf-4cd2-9255-f983e1983adf",
+    "name": "KLOW STACK (TB10+BPC10+GHK50+KPV10)",
+    "slug": "klow-tb10-bpc10-ghk50-kpv10-k80"
+  },
+  {
+    "id": "d79eb9ba-57cb-4581-bb1d-cabc8a1dae1c",
+    "name": "Oxytocin Acetate",
+    "slug": "oxytocin-acetate-ot5"
+  },
+  {
+    "id": "ad885501-b9dd-4151-8b4c-6eab5e72db71",
+    "name": "Epithalon",
+    "slug": "epithalon-et10"
+  },
+  {
+    "id": "1bae3e0e-5f5c-4f16-8d94-b6e09558ba6e",
+    "name": "BPC-157 Research Grade",
+    "slug": "bpc-157-research-grade"
+  },
+  {
+    "id": "6b96acce-8c02-4aee-b27d-ce848af709eb",
+    "name": "MT-1",
+    "slug": "mt-1-mt1"
+  },
+  {
+    "id": "19c2ec8b-34b7-45d7-84c6-4615704ecb8a",
+    "name": "The Lipolysis Stack (Lemon Bottle)",
+    "slug": "lemon-bottle-le10"
+  },
+  {
+    "id": "5f9e3544-d312-4dcc-91d0-3c528960d00d",
+    "name": "GHRP-2 Acetate",
+    "slug": "ghrp-2-acetate-g25"
+  },
+  {
+    "id": "c42fb828-4b13-431b-8141-ac539b3cfe01",
+    "name": "Tirzepatide",
+    "slug": "tirzepatide-tr5"
+  },
+  {
+    "id": "7d77bf8d-405d-4877-84f4-da566f37a06b",
+    "name": "BPC 157",
+    "slug": "bpc-157-bc10"
+  },
+  {
+    "id": "cccf8782-eeb1-4502-b9c6-930b3a1ec8dd",
+    "name": "NAD+",
+    "slug": "nad-nj100"
+  },
+  {
+    "id": "9b87a5cb-ca7d-4ef7-80f9-83c0ca2997f2",
+    "name": "LL37",
+    "slug": "ll37-375"
+  },
+  {
+    "id": "b25879ba-2416-4187-98e2-f56a5a1ebb12",
+    "name": "GHK-CU",
+    "slug": "ghk-cu-cu"
+  },
+  {
+    "id": "db2e3046-fe29-406f-92a5-1d7ca45d08f3",
+    "name": "Semaglutide",
+    "slug": "semaglutide-sm20"
+  },
+  {
+    "id": "851f2ad7-5838-40ac-9c36-c875bd5a4a51",
+    "name": "Shred Stack (Tirzepatide + AOD9604)",
+    "slug": "the-shred-stack-tirzepatide-aod9604"
+  },
+  {
+    "id": "9fe70ebd-e7dd-403c-8a92-4a7a290e076e",
+    "name": "GH Synergy Stack (CJC 5mg + IPA 5mg)",
+    "slug": "cjc-1295-without-dac-5mg-ipa-5mg-cp10"
+  },
+  {
+    "id": "1d38f719-a738-4550-aa73-33ae31e6df06",
+    "name": "Tirzepatide",
+    "slug": "tirzepatide-tr20"
+  },
+  {
+    "id": "15f4a630-d158-42e0-b9b4-4e69b22c05ad",
+    "name": "Tirzepatide",
+    "slug": "tirzepatide-tr10"
+  },
+  {
+    "id": "92b1f9cc-67df-4f96-9ff0-2de47447ff5f",
+    "name": "SS-31",
+    "slug": "ss-31-2s50"
+  },
+  {
+    "id": "4dbb42de-69a1-48e9-b5d9-24daff7f215d",
+    "name": "The Skinny Shot (Lipo-C Blend)",
+    "slug": "lipo-c-lc10"
+  },
+  {
+    "id": "5b53db2a-b865-4348-aaea-4d682f184f4d",
+    "name": "The Wolverine Stack (BPC 10mg + TB 10mg)",
+    "slug": "bpc-10mg-tb-10mg-bb20"
+  },
+  {
+    "id": "bf8f158e-f533-4cc8-9637-889a80416c9a",
+    "name": "Retatrutide",
+    "slug": "retatrutide-rt40"
+  },
+  {
+    "id": "aeedf017-3389-4ac4-b737-1e58ee6e0337",
+    "name": "Semaglutide",
+    "slug": "semaglutide-sm10"
+  },
+  {
+    "id": "5c99b33c-9efe-4e78-943b-f3d3fb59b5e7",
+    "name": "Semax",
+    "slug": "semax-xa5"
+  },
+  {
+    "id": "5f352b83-14e4-4daa-94fd-23c20b9c05a6",
+    "name": "SNAP-8",
+    "slug": "snap-8-np810"
+  },
+  {
+    "id": "a0fceeca-4dbc-475f-9836-f0a533fbc87a",
+    "name": "Tirzepatide",
+    "slug": "tirzepatide-tr70"
+  },
+  {
+    "id": "2ffc8403-f749-4594-9f42-ae329f3335d7",
+    "name": "CJC-1295 Without DAC",
+    "slug": "cjc-1295-without-dac-cnd10"
+  },
+  {
+    "id": "78092737-09a1-4522-9ee3-951730867f8d",
+    "name": "GHRP-2 Acetate",
+    "slug": "ghrp-2-acetate-g210"
+  },
+  {
+    "id": "e60bc2a0-d75b-4b13-bc5e-78a25c1bdf4b",
+    "name": "GHRP-6 Acetate",
+    "slug": "ghrp-6-acetate-g610"
+  },
+  {
+    "id": "c28383e2-019c-4b5b-8e6a-6a8bfa4ba41f",
+    "name": "Hexarelin Acetate",
+    "slug": "hexarelin-acetate-hx5"
+  },
+  {
+    "id": "f8928cf5-47f6-47f5-8a53-f14cf1cf46f8",
+    "name": "MOTS-C",
+    "slug": "mots-c-ms40"
+  },
+  {
+    "id": "b17960db-bae8-4520-89e6-313d8533a2f1",
+    "name": "BPC 157",
+    "slug": "bpc-157-bc5"
+  },
+  {
+    "id": "95760952-ee0e-4a2b-bb0a-8000387b9969",
+    "name": "TB500 (Thymosin B4 Acetate)",
+    "slug": "tb500-thymosin-b4-acetate-bt5"
+  },
+  {
+    "id": "e2b9ca02-6603-45c7-a131-97a1f7c2888f",
+    "name": "Selank",
+    "slug": "selank-sk5"
+  },
+  {
+    "id": "c2176b53-69da-41ed-9aa3-73c2a9a04e21",
+    "name": "Retatrutide",
+    "slug": "retatrutide-rt20"
+  },
+  {
+    "id": "4e7e3df6-92be-449e-b17d-0a02f1328291",
+    "name": "5-Amino-1MQ",
+    "slug": "5-amino-1mq-5am"
+  },
+  {
+    "id": "8f8cd1bc-b33e-4eb6-82e0-bd4dc6cdc244",
+    "name": "Selank",
+    "slug": "selank-sk10"
+  },
+  {
+    "id": "ea769cfb-bd9f-4a9e-9d88-acf9fa42aca8",
+    "name": "BAC Water",
+    "slug": "bac-water-ba10"
+  },
+  {
+    "id": "a8ad241d-466b-473c-a9e4-357ba7e1f16c",
+    "name": "IGF-1LR3",
+    "slug": "igf-1lr3-ig01"
+  },
+  {
+    "id": "deff6452-8ff2-4f47-ab5e-6cebc8d7e83a",
+    "name": "CJC-1295 With DAC",
+    "slug": "cjc-1295-with-dac-cd5"
+  },
+  {
+    "id": "c62d3d86-ed81-4d75-bd1c-d8a18615bd58",
+    "name": "CJC-1295 Without DAC",
+    "slug": "cjc-1295-without-dac-cnd5"
+  },
+  {
+    "id": "909edce3-8495-4c8d-8106-b9210224d5cf",
+    "name": "GHRP-6 Acetate",
+    "slug": "ghrp-6-acetate-g65"
+  },
+  {
+    "id": "06375937-e6d4-4f6d-a7da-9e4b7d741c0d",
+    "name": "Sermorelin Acetate",
+    "slug": "sermorelin-acetate-smo10"
+  },
+  {
+    "id": "47f91023-2545-4ab9-ac0e-de339310dfdb",
+    "name": "Semaglutide",
+    "slug": "semaglutide-sm30"
+  },
+  {
+    "id": "d7a62468-7e07-472e-9fb1-9ad4cbd70527",
+    "name": "Tirzepatide",
+    "slug": "tirzepatide-tr30"
+  },
+  {
+    "id": "f8ddf181-a95b-4f2f-bbfe-fc169b708638",
+    "name": "Semaglutide",
+    "slug": "semaglutide-sm15"
+  },
+  {
+    "id": "8e37339e-c096-497a-8ad9-2e02190c1fa0",
+    "name": "The Appetite Crusher Stack (Cagrilintide 5mg + Semaglutide 5mg)",
+    "slug": "cagrilintide-5mg-semaglutide-5mg-cs10"
+  },
+  {
+    "id": "2aafdc87-35ed-42ff-92a5-3bac2abbda13",
+    "name": "KissPeptin-10",
+    "slug": "kisspeptin-10-ks5"
+  },
+  {
+    "id": "85b2a3ec-afc2-46ad-9d8a-716343b50f5c",
+    "name": "AHK-CU",
+    "slug": "ahk-cu-au"
+  },
+  {
+    "id": "245a4e66-c5f6-408f-bdc3-96b9553d6ada",
+    "name": "ARA290 (Cibinetide)",
+    "slug": "ara290-cibinetide-ra10"
+  },
+  {
+    "id": "1ea40073-1072-4bc3-a041-8406a7db0bf2",
+    "name": "Tesamorelin",
+    "slug": "tesamorelin-tsm5"
+  },
+  {
+    "id": "79213ebf-442f-43d0-b799-71f78e9257a6",
+    "name": "KissPeptin-10",
+    "slug": "kisspeptin-10-ks10"
+  },
+  {
+    "id": "a6e60e68-f903-44d1-95df-709a3cd74089",
+    "name": "Tirzepatide",
+    "slug": "tirzepatide-tr60"
+  },
+  {
+    "id": "74ece2c4-036d-41f1-9936-bb24a8e3724d",
+    "name": "Tirzepatide",
+    "slug": "tirzepatide-tr90"
+  },
+  {
+    "id": "e3c51d0f-2e70-4577-922d-152708ea0b27",
+    "name": "Tirzepatide",
+    "slug": "tirzepatide-tr120"
+  },
+  {
+    "id": "393e736c-7a1d-4747-a6be-e04af51ed013",
+    "name": "FOXO4-DRI",
+    "slug": "foxo4-dri-f410"
+  },
+  {
+    "id": "ff9f1cdd-5ad1-435f-9707-c21997979b14",
+    "name": "Melatonin",
+    "slug": "melatonin-mt10"
+  },
+  {
+    "id": "7ecae016-c3cb-4bad-914a-1f887c2aff2d",
+    "name": "Tirzepatide",
+    "slug": "tirzepatide-tr50"
+  },
+  {
+    "id": "324bde33-72c3-40b8-86f6-6742a657d12a",
+    "name": "Thymosin Alpha-1",
+    "slug": "thymosin-alpha-1-ta10"
+  },
+  {
+    "id": "40a6d898-29dd-43f2-86ba-1b6383556e13",
+    "name": "AHK-CU",
+    "slug": "ahk-cu-au100"
+  },
+  {
+    "id": "f475f9a0-a2af-420d-af61-7fb5ec2b5eb8",
+    "name": "Ipamorelin",
+    "slug": "ipamorelin-ip5"
+  },
+  {
+    "id": "81847593-061b-4bd0-8b3d-4cde8ca56aba",
+    "name": "GHK-CU",
+    "slug": "ghk-cu-cu100"
+  },
+  {
+    "id": "cd20f65e-6856-4794-996f-8b2122f6e770",
+    "name": "AOD9604",
+    "slug": "aod9604-5ad"
+  },
+  {
+    "id": "02fabd01-e909-4c1b-b709-ae7b1e4a74b3",
+    "name": "Retatrutide",
+    "slug": "retatrutide-rt5"
+  },
+  {
+    "id": "517e60c7-9073-4488-b414-8bbdd4038725",
+    "name": "Retatrutide",
+    "slug": "retatrutide-rt30"
+  },
+  {
+    "id": "d069c66e-2983-4b2d-ab8d-842f9559f1d2",
+    "name": "Acetic Acid 0.6%",
+    "slug": "acetic-acid-0-6-aa10"
+  },
+  {
+    "id": "5ffc39c5-ae11-4dd6-a8cf-608cb019e706",
+    "name": "Glutathione",
+    "slug": "glutathione-gtt"
+  },
+  {
+    "id": "af2c7609-f0ce-4742-a773-29293f03fcc0",
+    "name": "NAD+",
+    "slug": "nad-nj1000"
+  },
+  {
+    "id": "f51f5cd5-4c04-4d7d-87f2-275053c319fe",
+    "name": "KPV",
+    "slug": "kpv-kp10"
+  },
+  {
+    "id": "d987f98d-bc4d-4fa6-b29d-cee75fe55f69",
+    "name": "B12",
+    "slug": "b12-b12"
+  },
+  {
+    "id": "0c0c847d-96b4-4ea4-99a0-b92fc7d3c1ce",
+    "name": "Cerebrolysin",
+    "slug": "cerebrolysin-cbl60"
+  },
+  {
+    "id": "384289c1-d498-4b36-a81e-07e29aa77b34",
+    "name": "Tesamorelin",
+    "slug": "tesamorelin-tsm10"
+  },
+  {
+    "id": "9442a0fa-4c3f-4edd-8a44-558cfa8b6a32",
+    "name": "The Wolverine Stack (BPC 5mg + TB 5mg)",
+    "slug": "bpc-5mg-tb-5mg-bb10"
+  },
+  {
+    "id": "b94d9c2b-3a4c-4780-8873-f59cae5b11cc",
+    "name": "Pinealon",
+    "slug": "pinealon-pn10"
+  },
+  {
+    "id": "3a594843-d659-4066-9df6-a41c12c21d14",
+    "name": "DSIP",
+    "slug": "dsip-ds5"
+  },
+  {
+    "id": "84a34f6f-2676-428b-85ac-86e18dcb0da9",
+    "name": "DSIP",
+    "slug": "dsip-ds10"
+  },
+  {
+    "id": "a6e6b0bd-fe07-4cc7-a84e-7db6c7344696",
+    "name": "Semax",
+    "slug": "semax-xa10"
+  },
+  {
+    "id": "d2101b9e-be6c-4a69-b0de-b365bd59f1d9",
+    "name": "Thymosin Alpha-1",
+    "slug": "thymosin-alpha-1-ta5"
+  },
+  {
+    "id": "255e56a7-c219-407a-af7c-495c51325027",
+    "name": "Oxytocin Acetate",
+    "slug": "oxytocin-acetate-ot10"
+  },
+  {
+    "id": "f7b1ab0d-dfc0-424a-9b85-07f2e65d28e0",
+    "name": "Epithalon",
+    "slug": "epithalon-et50"
+  },
+  {
+    "id": "e0a5b759-d0c7-4ce7-865b-0656d214d382",
+    "name": "SS-31",
+    "slug": "ss-31-2s10"
+  },
+  {
+    "id": "021ec36a-f2c8-4e9f-9991-55561c7c76b2",
+    "name": "NAD+",
+    "slug": "nad-nj500"
+  },
+  {
+    "id": "8c54c758-52d1-418c-960d-92d316014c97",
+    "name": "IGF-1LR3",
+    "slug": "igf-1lr3-ig1"
+  },
+  {
+    "id": "89d2fe07-246e-4942-834e-add445031aa4",
+    "name": "Sermorelin Acetate",
+    "slug": "sermorelin-acetate-smo5"
+  },
+  {
+    "id": "d5e8b4c6-aa2c-46e8-ad9d-a2cfb1162591",
+    "name": "Tesamorelin",
+    "slug": "tesamorelin-tsm20"
+  },
+  {
+    "id": "70b2da60-cba4-40d5-82da-ca50eb9b3656",
+    "name": "HCG",
+    "slug": "hcg-g10k"
+  },
+  {
+    "id": "e51fe224-d138-4f07-83bb-a4779218582e",
+    "name": "AOD9604",
+    "slug": "aod9604-10ad"
+  },
+  {
+    "id": "144cfad6-fe3c-43f7-936f-f9e81b8236f7",
+    "name": "Semaglutide",
+    "slug": "semaglutide-sm5"
+  },
+  {
+    "id": "72037eea-f9c4-4cf6-b4d3-878bd5a6fdab",
+    "name": "Tirzepatide",
+    "slug": "tirzepatide-tr80"
+  },
+  {
+    "id": "85a930cd-8b31-4569-b753-a3ae69e71ee7",
+    "name": "Tirzepatide",
+    "slug": "tirzepatide-tr100"
+  },
+  {
+    "id": "86e6e2c9-4564-4b83-9497-61e145edb11b",
+    "name": "5-Amino-1MQ",
+    "slug": "5-amino-1mq-50am"
+  },
+  {
+    "id": "98583b20-3968-4dbb-92f3-92b42c77928d",
+    "name": "Survodutide",
+    "slug": "survodutide-sur10"
+  },
+  {
+    "id": "383b7466-77f4-44e0-9e2a-d753fa54d513",
+    "name": "HMG",
+    "slug": "hmg-g75"
+  },
+  {
+    "id": "55c0d491-46e1-4a0b-a1fd-b6c1aecc8919",
+    "name": "VIP",
+    "slug": "vip-vp10"
+  },
+  {
+    "id": "cee4aefe-b2c8-4efe-903d-6f66d2e04905",
+    "name": "Follistatin",
+    "slug": "follistatin-fn1"
+  },
+  {
+    "id": "7bbd8476-ab97-411b-821d-3bdad260c144",
+    "name": "Glow Stack (TB10 + BPC10 + GHK50)",
+    "slug": "glow-tb10-bpc10-ghk50-bbg70"
+  },
+  {
+    "id": "617ff56f-a01e-4994-989d-f2849da2e0d1",
+    "name": "The Furnace Stack (L-Carnitine Blend)",
+    "slug": "l-carnitine-lc600"
+  },
+  {
+    "id": "b192cfa3-ec81-460d-9bf2-97ef16c2b54f",
+    "name": "Cagrilintide",
+    "slug": "cagrilintide-cgl10"
+  },
+  {
+    "id": "dc0e164e-3946-4864-b032-97f45a05bc83",
+    "name": "MOTS-C",
+    "slug": "mots-c-ms10"
+  },
+  {
+    "id": "05e9c4c9-4a80-4432-89c1-ffacc9b89715",
+    "name": "Retatrutide",
+    "slug": "retatrutide-rt15"
+  },
+  {
+    "id": "23c72b2a-c88e-4271-a8bd-49b0f860c32d",
+    "name": "TB500 (Thymosin B4 Acetate)",
+    "slug": "tb500-thymosin-b4-acetate-bt10"
+  },
+  {
+    "id": "7d3ab49b-8774-430b-a340-9e76981c352a",
+    "name": "BAC Water",
+    "slug": "bac-water-ba3"
+  },
+  {
+    "id": "cb7cdc39-39c1-44f9-92e4-8bd3fd7488a1",
+    "name": "The Furnace Stack (L-Carnitine Blend)",
+    "slug": "l-carnitine-blend-multi-ingredient-lc216"
+  },
+  {
+    "id": "c47c8aa1-886a-4f7c-bf22-ed4182bda426",
+    "name": "AICAR",
+    "slug": "aicar-ar50"
+  },
+  {
+    "id": "80ab0b9f-0bda-43d9-9d51-89ae94ab17cc",
+    "name": "Retatrutide",
+    "slug": "retatrutide-rt10"
+  },
+  {
+    "id": "ae5d510a-f900-4345-ab9a-933a7f153178",
+    "name": "Tirzepatide",
+    "slug": "tirzepatide-tr40"
+  },
+  {
+    "id": "061c1743-0fe5-4e43-bdad-3537e0716a64",
+    "name": "Thymalin",
+    "slug": "thymalin-ty10"
+  },
+  {
+    "id": "ff643470-a6dc-4466-a463-7b083e7f0788",
+    "name": "HGH Fragment 176-191",
+    "slug": "hgh-fragment-176-191-fr5"
+  },
+  {
+    "id": "eb0389ea-c99a-464c-9cdf-f6d578668532",
+    "name": "Cagrilintide",
+    "slug": "cagrilintide-cgl5"
+  },
+  {
+    "id": "3d9d5093-ad2e-4448-8747-752aaaa8113a",
+    "name": "Ipamorelin",
+    "slug": "ipamorelin-ip10"
+  },
+  {
+    "id": "ccd3d75f-eeac-41d2-8ecd-2f9613d93601",
+    "name": "HCG",
+    "slug": "hcg-g5k"
+  },
+  {
+    "id": "c109b67d-7ad5-4711-80ba-9607f8344413",
+    "name": "Retatrutide",
+    "slug": "retatrutide-rt60"
+  },
+  {
+    "id": "43ba028a-8d83-40ce-bb81-79dba16508c8",
+    "name": "Retatrutide",
+    "slug": "retatrutide-rt50"
+  },
+  {
+    "id": "a0018c2a-cab3-48b0-8c72-cfa198d14e5d",
+    "name": "Tirzepatide",
+    "slug": "tirzepatide-tr15"
+  }
+]
