@@ -907,17 +907,27 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   const saveSymptom = async () => {
     if (!symptomName) return;
     setSymptomSaving(true);
+    const prevName = symptomName, prevSeverity = symptomSeverity, prevNote = symptomNote;
+    const newSymptom = { id: Date.now().toString(), symptom_name: prevName, severity: prevSeverity, notes: prevNote, logged_at: new Date().toISOString() };
+    setSymptoms(prev => [newSymptom, ...prev]);
+    setSymptomName('');
+    setSymptomSeverity(5);
+    setSymptomNote('');
     try {
-      const newSymptom = { id: Date.now().toString(), symptom_name: symptomName, severity: symptomSeverity, notes: symptomNote, logged_at: new Date().toISOString() };
-      setSymptoms(prev => [newSymptom, ...prev]);
-      setSymptomName('');
-      setSymptomSeverity(5);
-      setSymptomNote('');
-      await fetch('/api/researcher/symptoms', {
+      const res = await fetch('/api/researcher/symptoms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symptom_name: symptomName, severity: symptomSeverity, notes: symptomNote }),
-      }).catch(() => {});
+        body: JSON.stringify({ symptom_name: prevName, severity: prevSeverity, notes: prevNote }),
+      });
+      if (!res.ok) throw new Error('save failed');
+    } catch {
+      // Roll back the optimistic insert and restore the inputs so the researcher
+      // is not misled into thinking a symptom was saved when it was not.
+      setSymptoms(prev => prev.filter(s => s.id !== newSymptom.id));
+      setSymptomName(prevName);
+      setSymptomSeverity(prevSeverity);
+      setSymptomNote(prevNote);
+      alert('Could Not Save Your Symptom. Please Try Again.');
     } finally {
       setSymptomSaving(false);
     }

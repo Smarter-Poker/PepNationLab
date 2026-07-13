@@ -25,7 +25,7 @@ export default function FooterSection() {
         {/* Top row */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
+          gridTemplateColumns: 'repeat(5, 1fr)',
           gap: 'var(--space-8)',
           marginBottom: 'var(--space-10)'
         }}>
@@ -74,6 +74,35 @@ export default function FooterSection() {
                 { label: 'Products', href: '/research/catalog' },
                 { label: 'Agent Dashboard', href: '/dashboard' },
                 { label: 'Sign In', href: '/login' },
+              ].map(({ label, href }) => (
+                <Link key={label} href={href} style={{ fontSize: '0.85rem', color: 'var(--grey-400)', transition: 'color 0.2s' }}
+                      onMouseOver={e => (e.currentTarget.style.color = 'var(--teal)')}
+                      onMouseOut={e => (e.currentTarget.style.color = 'var(--grey-400)')}>{label}
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Coverage */}
+          <div>
+            <h6 style={{
+              color: 'var(--silver-light)',
+              marginBottom: 'var(--space-4)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              fontSize: '0.75rem'
+            }}>Coverage</h6>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+              {[
+                { label: 'Texas Peptides', href: '/peptides/texas' },
+                { label: 'California Peptides', href: '/peptides/california' },
+                { label: 'Florida Peptides', href: '/peptides/florida' },
+                { label: 'Illinois Peptides', href: '/peptides/illinois' },
+                { label: 'New York Peptides', href: '/peptides/new-york' },
+                { label: 'Pennsylvania Peptides', href: '/peptides/pennsylvania' },
+                { label: 'Ohio Peptides', href: '/peptides/ohio' },
+                { label: 'Georgia Peptides', href: '/peptides/georgia' },
+                { label: 'Nationwide Directory', href: '/peptides' },
               ].map(({ label, href }) => (
                 <Link key={label} href={href} style={{ fontSize: '0.85rem', color: 'var(--grey-400)', transition: 'color 0.2s' }}
                       onMouseOver={e => (e.currentTarget.style.color = 'var(--teal)')}

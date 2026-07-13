@@ -794,6 +794,12 @@ const CITIES_FLORIDA: City[] = [
     zips: ['34606', '34608', '34609'],
     localBlurb: 'A large Hernando County community north of Tampa Bay with a substantial retiree healthcare market.',
   },
+  { name: 'Margate', slug: 'margate', state: 'Florida', stateSlug: 'florida', stateAbbr: 'FL', population: 58000, medianIncome: 55000, tier: 3, region: 'South Florida', county: 'Broward', zips: ['33063', '33068'], localBlurb: 'Margate laboratories value our stability testing and full COA documentation on every compound lot.' },
+  { name: 'Oakland Park', slug: 'oakland-park', state: 'Florida', stateSlug: 'florida', stateAbbr: 'FL', population: 44000, medianIncome: 58000, tier: 3, region: 'South Florida', county: 'Broward', zips: ['33309', '33334'], localBlurb: 'Oakland Park laboratories choose our lot-traceable peptides for longevity and recovery studies.' },
+  { name: 'North Lauderdale', slug: 'north-lauderdale', state: 'Florida', stateSlug: 'florida', stateAbbr: 'FL', population: 44000, medianIncome: 52000, tier: 3, region: 'South Florida', county: 'Broward', zips: ['33068'], localBlurb: 'North Lauderdale research teams trust our documented, lot-traceable compounds and third-party analysis.' },
+  { name: 'Hallandale Beach', slug: 'hallandale-beach', state: 'Florida', stateSlug: 'florida', stateAbbr: 'FL', population: 41000, medianIncome: 55000, tier: 3, region: 'South Florida', county: 'Broward', zips: ['33009'], localBlurb: 'Hallandale Beach research professionals select our high-purity peptides with full lot documentation.' },
+  { name: 'Dania Beach', slug: 'dania-beach', state: 'Florida', stateSlug: 'florida', stateAbbr: 'FL', population: 32000, medianIncome: 55000, tier: 3, region: 'South Florida', county: 'Broward', zips: ['33004'], localBlurb: 'Dania Beach laboratories choose our high-purity peptides for metabolic and recovery studies.' },
+  { name: 'Riviera Beach', slug: 'riviera-beach', state: 'Florida', stateSlug: 'florida', stateAbbr: 'FL', population: 37000, medianIncome: 52000, tier: 3, region: 'South Florida', county: 'Palm Beach', zips: ['33404'], localBlurb: 'Riviera Beach research teams trust our documented compounds and comprehensive certificates of analysis.' },
 ];
 
 export default CITIES_FLORIDA;

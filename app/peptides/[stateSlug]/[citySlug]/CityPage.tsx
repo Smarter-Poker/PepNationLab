@@ -313,11 +313,11 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
 
             {/* CTAs — custom PNG buttons */}
             <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap', marginBottom: 'var(--space-10)', alignItems: 'center' }}>
-              <Link href="/research" className="city-btn-link">
-                <Image src="/images/buttons/btn-access.png" alt="Access The Lab" width={280} height={56} className="city-btn-img" style={{ width: 'auto', height: 84 }} />
+              <Link href="/research" className="btn btn-neon-cyan btn-lg">
+                Access The Lab
               </Link>
-              <Link href={`/${DEFAULT_STORE_SLUG}`} className="city-btn-link">
-                <Image src="/images/buttons/btn-browse.png" alt="Browse Catalog" width={280} height={56} className="city-btn-img" style={{ width: 'auto', height: 84 }} />
+              <Link href={`/${DEFAULT_STORE_SLUG}`} className="btn btn-secondary btn-lg">
+                Browse Catalog
               </Link>
             </div>
 
@@ -439,8 +439,8 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
 
             {/* See full catalog CTA */}
             <div style={{ textAlign: 'center', marginTop: 'var(--space-12)' }}>
-              <Link href={`/${DEFAULT_STORE_SLUG}`} className="city-btn-link">
-                <Image src="/images/buttons/btn-browse-full.png" alt="Browse Full Research Catalog" width={420} height={56} className="city-btn-img" style={{ width: 'auto', height: 84 }} />
+              <Link href={`/${DEFAULT_STORE_SLUG}`} className="btn btn-primary btn-xl">
+                Browse Full Research Catalog
               </Link>
             </div>
           </div>
@@ -565,8 +565,8 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
                 </p>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', alignItems: 'center' }}>
-                <Link href="/become-agent" className="city-btn-link">
-                  <Image src="/images/buttons/btn-agent.png" alt="Become An Agent" width={280} height={56} className="city-btn-img" style={{ width: 'auto', height: 84 }} />
+                <Link href="/become-agent" className="btn btn-neon-cyan btn-lg">
+                  Become An Agent
                 </Link>
                 <Link href="/login" style={{ fontSize: '0.8rem', color: 'var(--grey-500)', textDecoration: 'underline', textUnderlineOffset: 3, textAlign: 'center' }}>
                   Already An Agent? Sign In
@@ -639,11 +639,11 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
             </p>
 
             <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'center', flexWrap: 'wrap', alignItems: 'center' }}>
-              <Link href="/research" className="city-btn-link">
-                <Image src="/images/buttons/btn-access.png" alt="Access The Lab" width={280} height={56} className="city-btn-img" style={{ width: 'auto', height: 84 }} />
+              <Link href="/research" className="btn btn-neon-cyan btn-lg">
+                Access The Lab
               </Link>
-              <Link href={`/${DEFAULT_STORE_SLUG}`} className="city-btn-link">
-                <Image src="/images/buttons/btn-browse-full.png" alt="Browse Full Catalog" width={420} height={56} className="city-btn-img" style={{ width: 'auto', height: 84 }} />
+              <Link href={`/${DEFAULT_STORE_SLUG}`} className="btn btn-primary btn-lg">
+                Browse Full Catalog
               </Link>
             </div>
 

@@ -1412,9 +1412,9 @@ function StabilitySection() {
             : ea.trim() !== '' && Number(ea) === 0
             ? 'Activation Energy Cannot Be Zero - Temperature Has No Effect At Ea=0.'
             : <><strong style={{ fontSize: 22, color: '#00E5FF' }}>{days.toFixed(1)} Days</strong> <span style={{ fontSize: 13, color: '#A8B4C0' }}>predicted shelf life at {tTo}°F</span>
-              {days < 1 && <div style={{ color: '#FC8181', fontSize: 13, marginTop: 6 }}>⚠ Less than 1 day — this compound degrades rapidly at this temperature.</div>}
-              {days >= 1 && days < 7 && <div style={{ color: '#F6AD55', fontSize: 13, marginTop: 6 }}>⚡ Short window — use promptly and return to proper storage immediately.</div>}
-              {days >= 7 && <div style={{ color: '#68D391', fontSize: 13, marginTop: 6 }}>✓ Reasonable stability window at this temperature.</div>}
+              {days < 1 && <div style={{ color: '#FC8181', fontSize: 13, marginTop: 6 }}>Less than 1 day — this compound degrades rapidly at this temperature.</div>}
+              {days >= 1 && days < 7 && <div style={{ color: '#F6AD55', fontSize: 13, marginTop: 6 }}>Short window — use promptly and return to proper storage immediately.</div>}
+              {days >= 7 && <div style={{ color: '#68D391', fontSize: 13, marginTop: 6 }}>Reasonable stability window at this temperature.</div>}
             </>
           }
         </div>
@@ -1708,11 +1708,11 @@ function CostSection() {
               <div style={{ ...resultStyle, background: 'rgba(104,211,145,0.05)', border: '1px solid #68D391', color: '#E2E8F0', fontSize: 14 }}>
                 {outA.dollarsPerDose < outB.dollarsPerDose ? (
                   <span>
-                    ✓ <strong>Option A</strong> Is More Cost-Effective. Saves <strong style={{ color: '#68D391' }} className="calc-no-capitalize">${(outB.dollarsPerDose - outA.dollarsPerDose).toFixed(2)}</strong> Per Dose (<strong style={{ color: '#68D391' }} className="calc-no-capitalize">{((1 - outA.dollarsPerDose / outB.dollarsPerDose) * 100).toFixed(1)}%</strong> Savings).
+                    <strong>Option A</strong> Is More Cost-Effective. Saves <strong style={{ color: '#68D391' }} className="calc-no-capitalize">${(outB.dollarsPerDose - outA.dollarsPerDose).toFixed(2)}</strong> Per Dose (<strong style={{ color: '#68D391' }} className="calc-no-capitalize">{((1 - outA.dollarsPerDose / outB.dollarsPerDose) * 100).toFixed(1)}%</strong> Savings).
                   </span>
                 ) : outB.dollarsPerDose < outA.dollarsPerDose ? (
                   <span>
-                    ✓ <strong>Option B</strong> Is More Cost-Effective. Saves <strong style={{ color: '#68D391' }} className="calc-no-capitalize">${(outA.dollarsPerDose - outB.dollarsPerDose).toFixed(2)}</strong> Per Dose (<strong style={{ color: '#68D391' }} className="calc-no-capitalize">{((1 - outB.dollarsPerDose / outA.dollarsPerDose) * 100).toFixed(1)}%</strong> Savings).
+                    <strong>Option B</strong> Is More Cost-Effective. Saves <strong style={{ color: '#68D391' }} className="calc-no-capitalize">${(outA.dollarsPerDose - outB.dollarsPerDose).toFixed(2)}</strong> Per Dose (<strong style={{ color: '#68D391' }} className="calc-no-capitalize">{((1 - outB.dollarsPerDose / outA.dollarsPerDose) * 100).toFixed(1)}%</strong> Savings).
                   </span>
                 ) : (
                   <span>Both Options Yield Identical Cost-Per-Dose Metrics.</span>

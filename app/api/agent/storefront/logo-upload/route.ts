@@ -9,7 +9,7 @@
  * This replaces the previous browser-side upload which was hitting RLS
  * INSERT policy conflicts when policies from different migrations coexisted.
  */
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgentOrAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
@@ -20,7 +20,7 @@ export const runtime = 'nodejs';
 // Allow up to 8 MB images
 export const maxDuration = 30;
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
 
