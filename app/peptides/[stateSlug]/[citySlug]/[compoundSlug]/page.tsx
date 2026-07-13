@@ -182,6 +182,7 @@ export default async function CompoundCityPage({
   const productNode: Record<string, unknown> | null = hasOffer
     ? {
         '@type': 'Product',
+        '@id': `${pageUrl}#product`,
         name: `${compound.displayName} - Research Grade`,
         description: `Research-grade ${compound.displayName} (${compound.popularName}) for qualified researchers in ${city.name}, ${city.state}. In vitro laboratory use only.`,
         brand: { '@id': `${BASE}/#organization` },
@@ -227,6 +228,7 @@ export default async function CompoundCityPage({
     '@graph': [
       {
         '@type': 'BreadcrumbList',
+        '@id': `${pageUrl}#breadcrumb`,
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: BASE },
           { '@type': 'ListItem', position: 2, name: 'Peptides By City', item: `${BASE}/peptides` },
@@ -238,6 +240,7 @@ export default async function CompoundCityPage({
       ...(productNode ? [productNode] : []),
       {
         '@type': 'FAQPage',
+        '@id': `${pageUrl}#faq`,
         mainEntity: faqs.map((f) => ({
           '@type': 'Question',
           name: f.question,
@@ -249,7 +252,10 @@ export default async function CompoundCityPage({
         '@id': pageUrl,
         url: pageUrl,
         name: `${compound.displayName} In ${city.name}, ${city.stateAbbr}`,
+        inLanguage: 'en-US',
         isPartOf: { '@id': `${BASE}/#website` },
+        breadcrumb: { '@id': `${pageUrl}#breadcrumb` },
+        ...(productNode ? { mainEntity: { '@id': `${pageUrl}#product` } } : {}),
         publisher: { '@id': `${BASE}/#organization` },
         datePublished: '2026-07-10',
         dateModified: CITY_CONTENT_UPDATED.toISOString().slice(0, 10),
