@@ -294,7 +294,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     <div style={{ minHeight: '100dvh', background: 'var(--black)' }}>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
       />
 
       {/* Server-rendered SEO content: emits the core compound prose into the
