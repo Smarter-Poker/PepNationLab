@@ -133,6 +133,8 @@ export async function PATCH(req: NextRequest) {
     // Cost floor: base_cost (COGS) for the admin house store, tier-derived
     // cost for agents. All price/margin guardrails below key off this value.
     let agentCostPer10 = 0;
+    // Per-agent exemption from the retail margin ceiling (top sellers, e.g. Savage Brands).
+    let marginCapExempt = false;
     if (gate.isAdmin) {
       const rawBase = (check.products as any)?.base_cost;
       agentCostPer10 = rawBase != null ? Number(rawBase) : 0;
@@ -145,6 +147,14 @@ export async function PATCH(req: NextRequest) {
       if (profData?.tier) {
         agentCostPer10 = await computeAgentCostForAgent(supabase, check.product_id, gate.user.id, profData.tier as AgentTier);
       }
+      // Isolated, fail-safe read of the margin-cap exemption so a schema or
+      // query issue here can never disturb core tier/cost resolution above.
+      const { data: exemptRow } = await supabase
+        .from('profiles')
+        .select('margin_cap_exempt')
+        .eq('id', gate.user.id)
+        .maybeSingle();
+      marginCapExempt = Boolean((exemptRow as { margin_cap_exempt?: boolean } | null)?.margin_cap_exempt);
     }
 
     let resolvedRetailPrice: number | undefined;
@@ -184,7 +194,7 @@ export async function PATCH(req: NextRequest) {
     // It does NOT apply to the admin house store: the admin's cost basis is
     // raw COGS (base_cost), so healthy retail prices are naturally far above
     // 300% of cost.
-    if (!gate.isAdmin && resolvedMarginPercent !== undefined && resolvedMarginPercent > maxMargin) {
+    if (!gate.isAdmin && !marginCapExempt && resolvedMarginPercent !== undefined && resolvedMarginPercent > maxMargin) {
       return NextResponse.json(
         {
           error: `Requested margin (${resolvedMarginPercent}%) exceeds the platform maximum of ${maxMargin}%.`,

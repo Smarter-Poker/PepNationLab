@@ -80,6 +80,9 @@ export async function POST(req: NextRequest) {
 
     const { data: profData } = await supabase.from('profiles').select('tier').eq('id', agentId).maybeSingle();
     const tier = (profData?.tier as AgentTier | null) ?? 'tier_3';
+    // Isolated, fail-safe read of the margin-cap exemption (top sellers, e.g. Savage Brands).
+    const { data: exemptRow } = await supabase.from('profiles').select('margin_cap_exempt').eq('id', agentId).maybeSingle();
+    const marginCapExempt = Boolean((exemptRow as { margin_cap_exempt?: boolean } | null)?.margin_cap_exempt);
 
     // Resolve the agent's pricing context once and price the whole catalog in
     // memory - previously this issued 2-3 queries per product.
@@ -111,7 +114,7 @@ export async function POST(req: NextRequest) {
 
       // Margin ceiling applies to agents only; the admin's cost basis is
       // raw COGS so the ceiling would wrongly block normal retail pricing.
-      if (!gate.isAdmin && marginPercent > maxMargin) {
+      if (!gate.isAdmin && !marginCapExempt && marginPercent > maxMargin) {
         continue; // Skip if it exceeds ceiling (or we could reject, but skipping allows the rest to update)
       }
 
