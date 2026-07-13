@@ -15,7 +15,7 @@
 import type { City } from './cities-data';
 import { getResearchAnchors } from './research-anchors';
 
-// ─── Regional flavor labels ────────────────────────────────
+// --- Regional flavor labels --------------------------------
 const REGION_FALLBACKS: Record<string, string> = {
   illinois: 'Midwest',
   texas: 'Lone Star State',
@@ -68,7 +68,7 @@ export function getRegionArea(region: string): string {
   return /area$/i.test(region.trim()) ? region : `${region} area`;
 }
 
-// ─── Deterministic per-city hash ──────────────────────────
+// --- Deterministic per-city hash --------------------------
 function cityHash(city: City): number {
   let h = city.tier;
   for (let i = 0; i < city.slug.length; i++) h = (h * 31 + city.slug.charCodeAt(i)) >>> 0;
@@ -81,7 +81,7 @@ function formatPopulation(population: number): string {
   return `${population}`;
 }
 
-// ─── Intro variants (selected by per-city hash) ───────────────────
+// --- Intro variants (selected by per-city hash) -------------------
 const INTRO_VARIANTS = [
   (city: City) =>
     `Pep Nation Lab is the trusted wholesale source for research-grade peptides serving researchers in ${city.name}, ${city.stateAbbr} and across the ${getRegionLabel(city)}. Our curated catalog of 100+ research-grade compounds is backed by rigorous QA and full documentation, available exclusively to qualified scientific institutions and verified researchers.`,
@@ -109,7 +109,7 @@ export function getCityIntro(city: City): string {
   return INTRO_VARIANTS[cityHash(city) % INTRO_VARIANTS.length](city);
 }
 
-// ─── FAQ generators ──────────────────────────────────
+// --- FAQ generators ----------------------------------
 interface FAQ {
   question: string;
   answer: string;
@@ -202,6 +202,37 @@ function faqPool(city: City): { core: FAQ[]; rotating: FAQ[] } {
   };
 }
 
+// Tier-1 markets get several additional, genuinely city-specific FAQs on top
+// of the shared pool - deeper visible content plus a richer FAQPage surface.
+// Distinct from the rotating pool (no HPLC/COA/storage overlap): research
+// ecosystem, regional coverage, onboarding, and long-study supply continuity.
+function tier1ExtraFAQs(city: City): FAQ[] {
+  const region = getRegionLabel(city);
+  const area = getRegionArea(region);
+  const anchors = getResearchAnchors(city.region);
+  const anchorPhrase =
+    anchors && anchors.length > 0
+      ? ` such as ${anchors.slice(0, 3).map((a) => a.name).join(', ')}`
+      : '';
+  return [
+    {
+      question: `What makes ${city.name} a strong hub for peptide research?`,
+      answer: `${city.name} pairs a research base of roughly ${formatPopulation(city.population)} residents in the ${area} with proximity to established institutions${anchorPhrase}. Pep Nation Lab supplies verified researchers across this ecosystem as an independent distributor, not as an affiliate of any named institution.`,
+    },
+    {
+      question: `Does Pep Nation Lab serve labs across the ${area}, not just ${city.name}?`,
+      answer: `Yes. ${city.name} accounts anchor coverage that extends across the surrounding ${area}. Verified researchers in nearby ${city.state} cities order from the same 100+ compound catalog at the same wholesale tiers, with nationwide shipping and identical batch documentation on every lot.`,
+    },
+    {
+      question: `How does a new ${city.name} research institution open a verified account?`,
+      answer: `Institutions and independent investigators in ${city.name} create an account at PepNationLab.com and complete identity and credential verification. Once approved, the account unlocks the full catalog at wholesale pricing with fast shipping to ${city.stateAbbr}, without a lengthy onboarding delay.`,
+    },
+    {
+      question: `Can Pep Nation Lab support long-running studies in ${city.name} with consistent supply?`,
+      answer: `Yes. For longitudinal or repeat research in ${city.name}, Pep Nation Lab maintains lot-to-lot consistency and continuously restocks the core catalog, so ${city.state} researchers can source the same compounds at the same specifications across a multi-phase study, each shipment backed by its own certificate of analysis.`,
+    },
+  ];
+}
 export function getCityFAQs(city: City): FAQ[] {
   const { core, rotating } = faqPool(city);
   const h = cityHash(city);
@@ -218,10 +249,11 @@ export function getCityFAQs(city: City): FAQ[] {
     }
     i += step;
   }
-  return [...core.slice(0, 1), ...picks.slice(0, 2), core[1], ...picks.slice(2)];
+  const base = [...core.slice(0, 1), ...picks.slice(0, 2), core[1], ...picks.slice(2)];
+  return city.tier === 1 ? [...base, ...tier1ExtraFAQs(city)] : base;
 }
 
-// ─── At-a-glance facts (AEO: dense, quotable, self-contained) ─────────
+// --- At-a-glance facts (AEO: dense, quotable, self-contained) ---------
 export interface CityFact {
   label: string;
   value: string;
@@ -253,7 +285,7 @@ export function getCityFacts(city: City): CityFact[] {
   return facts;
 }
 
-// ─── Value props ─────────────────────────────────────
+// --- Value props -------------------------------------
 interface ValueProp {
   icon: string;  // icon key for SVG lookup map in CityPage
   title: string;
