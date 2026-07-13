@@ -85,6 +85,13 @@ const CITIES_PENNSYLVANIA: City[] = [
   { name: 'Pottsville', slug: 'pottsville', state: 'Pennsylvania', stateSlug: 'pennsylvania', stateAbbr: 'PA', population: 13000, medianIncome: 40000, tier: 3, region: 'Coal Region', county: 'Schuylkill', zips: ['17901'], localBlurb: 'Pottsville, home to the Yuengling brewery, is the Schuylkill County seat in the anthracite Coal Region.' },
   { name: 'Sunbury', slug: 'sunbury', state: 'Pennsylvania', stateSlug: 'pennsylvania', stateAbbr: 'PA', population: 9000, medianIncome: 40000, tier: 3, region: 'Central Pennsylvania', county: 'Northumberland', zips: ['17801'], localBlurb: 'Sunbury is a Susquehanna River city and the Northumberland County seat in central Pennsylvania.' },
   { name: 'Springfield', slug: 'springfield-pa', state: 'Pennsylvania', stateSlug: 'pennsylvania', stateAbbr: 'PA', population: 24000, medianIncome: 98000, tier: 2, region: 'Main Line', county: 'Delaware', zips: ['19064'], localBlurb: 'Springfield is an affluent residential township in Delaware County near the Main Line.' },
+
+
+
+  { name: 'Meadville', slug: 'meadville', state: 'Pennsylvania', stateSlug: 'pennsylvania', stateAbbr: 'PA', population: 13000, medianIncome: 45000, tier: 3, region: 'Northwest Pennsylvania', county: 'Crawford', zips: ['16335'], localBlurb: 'Meadville is the Crawford County seat in northwestern Pennsylvania, home to Allegheny College.' },
+  { name: 'Latrobe', slug: 'latrobe', state: 'Pennsylvania', stateSlug: 'pennsylvania', stateAbbr: 'PA', population: 8000, medianIncome: 55000, tier: 3, region: 'Greater Pittsburgh', county: 'Westmoreland', zips: ['15650'], localBlurb: 'Latrobe is a Westmoreland County city east of Pittsburgh, birthplace of Arnold Palmer and Fred Rogers.' },
+  { name: 'Uniontown', slug: 'uniontown', state: 'Pennsylvania', stateSlug: 'pennsylvania', stateAbbr: 'PA', population: 9500, medianIncome: 42000, tier: 3, region: 'Southwestern Pennsylvania', county: 'Fayette', zips: ['15401'], localBlurb: 'Uniontown is the Fayette County seat in the Laurel Highlands of southwestern Pennsylvania.' },
+  { name: 'Punxsutawney', slug: 'punxsutawney', state: 'Pennsylvania', stateSlug: 'pennsylvania', stateAbbr: 'PA', population: 5500, medianIncome: 45000, tier: 3, region: 'Western Pennsylvania', county: 'Jefferson', zips: ['15767'], localBlurb: 'Punxsutawney is a Jefferson County borough famed for its Groundhog Day celebration in western Pennsylvania.' },
 ];
 
 export default CITIES_PENNSYLVANIA;

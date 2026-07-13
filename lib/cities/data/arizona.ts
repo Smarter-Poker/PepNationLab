@@ -49,6 +49,11 @@ const CITIES_ARIZONA: City[] = [
   { name: 'Nogales', slug: 'nogales', state: 'Arizona', stateSlug: 'arizona', stateAbbr: 'AZ', population: 20000, medianIncome: 38000, tier: 3, region: 'Southern Arizona', county: 'Santa Cruz', zips: ['85621'], localBlurb: 'Nogales is a border city and the Santa Cruz County seat on the Mexican frontier.' },
 
   { name: 'San Tan Valley', slug: 'san-tan-valley', state: 'Arizona', stateSlug: 'arizona', stateAbbr: 'AZ', population: 100000, medianIncome: 78000, tier: 3, region: 'Greater Phoenix', county: 'Pinal', zips: ['85140', '85143'], localBlurb: 'San Tan Valley is a fast-growing Pinal County community in the southeast Phoenix metro.' },
+
+  { name: 'San Luis', slug: 'san-luis', state: 'Arizona', stateSlug: 'arizona', stateAbbr: 'AZ', population: 37000, medianIncome: 45000, tier: 3, region: 'Southwestern Arizona', county: 'Yuma', zips: ['85349'], localBlurb: 'San Luis is a Yuma County border city on the Mexican frontier in Arizona\'s southwest corner.' },
+  { name: 'Cottonwood', slug: 'cottonwood', state: 'Arizona', stateSlug: 'arizona', stateAbbr: 'AZ', population: 12000, medianIncome: 55000, tier: 3, region: 'Verde Valley', county: 'Yavapai', zips: ['86326'], localBlurb: 'Cottonwood is a Verde Valley city in Yavapai County near Sedona and the Verde wine country.' },
+  { name: 'Chino Valley', slug: 'chino-valley', state: 'Arizona', stateSlug: 'arizona', stateAbbr: 'AZ', population: 13000, medianIncome: 62000, tier: 3, region: 'Northern Arizona', county: 'Yavapai', zips: ['86323'], localBlurb: 'Chino Valley is a Yavapai County town in the central Arizona highlands north of Prescott.' },
+  { name: 'Camp Verde', slug: 'camp-verde', state: 'Arizona', stateSlug: 'arizona', stateAbbr: 'AZ', population: 12000, medianIncome: 52000, tier: 3, region: 'Verde Valley', county: 'Yavapai', zips: ['86322'], localBlurb: 'Camp Verde is the Yavapai County seat of the Verde Valley in central Arizona.' },
 ];
 
 export default CITIES_ARIZONA;
