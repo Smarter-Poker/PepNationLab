@@ -106,3 +106,7 @@ ADMIN-PANEL-HARDENING*.md
 HARDENING-REPORT*.md
 _sweep_changes.tgz
 sch.tar
+
+# Cowork city-page data-generation helper scripts (run-once; never part of the app build)
+_*.mjs
+_tsc_*.json
