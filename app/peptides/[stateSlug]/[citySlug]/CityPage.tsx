@@ -364,9 +364,9 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
           <div className="container" style={{ position: 'relative', zIndex: 2 }}>
             {/* Section header */}
             <div style={{ marginBottom: 'clamp(40px, 5vw, 64px)' }}>
-              <h3 style={{ color: 'var(--teal)', fontSize: '1rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 'var(--space-2)' }}>
+              <div style={{ color: 'var(--teal)', fontSize: '1rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 'var(--space-2)' }}>
                 Research Catalog
-              </h3>
+              </div>
               <h2 style={{ color: 'var(--white)', fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 800, letterSpacing: '-0.025em', marginBottom: 'var(--space-3)', maxWidth: 640 }}>
                 Top 10 Research Compounds Near{' '}
                 <span style={{ color: 'var(--teal)' }}>{city.name}</span>
@@ -503,9 +503,9 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
 
           <div className="container" style={{ position: 'relative', zIndex: 2 }}>
             <div style={{ textAlign: 'center', marginBottom: 'clamp(40px, 5vw, 64px)' }}>
-              <h3 style={{ color: 'var(--grey-300)', fontSize: '1rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 'var(--space-2)' }}>
+              <div style={{ color: 'var(--grey-300)', fontSize: '1rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 'var(--space-2)' }}>
                 Why Researchers Choose Us
-              </h3>
+              </div>
               <h2 style={{ color: 'var(--white)', fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 800, letterSpacing: '-0.025em', marginBottom: 'var(--space-3)' }}>
                 The {region}&apos;s Trusted Source For{' '}
                 <span style={{ color: 'var(--teal)' }}>Research Peptides</span>
@@ -554,9 +554,9 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
           <div className="container" style={{ position: 'relative', zIndex: 2 }}>
             <div style={{ background: 'linear-gradient(135deg, rgba(0,196,188,0.06) 0%, rgba(0,0,0,0) 60%)', border: 'var(--border-teal)', borderRadius: 'var(--radius-2xl)', padding: 'clamp(28px, 4vw, 52px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--space-8)' }}>
               <div style={{ maxWidth: 520 }}>
-                <h3 style={{ color: 'var(--teal)', fontSize: '1rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 'var(--space-2)' }}>
+                <div style={{ color: 'var(--teal)', fontSize: '1rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 'var(--space-2)' }}>
                   {region} Agent Network
-                </h3>
+                </div>
                 <h2 style={{ color: 'var(--white)', fontSize: 'clamp(1.5rem, 3vw, 2.2rem)', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 'var(--space-4)' }}>
                   Serve Researchers In<br />
                   <span style={{ color: '#d4cdbb' }}>{city.name}</span>
@@ -588,9 +588,9 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
 
           <div className="container" style={{ position: 'relative', zIndex: 2, maxWidth: 780, margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: 'clamp(40px, 5vw, 56px)' }}>
-              <h3 style={{ color: 'var(--grey-300)', fontSize: '1rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 'var(--space-2)' }}>
+              <div style={{ color: 'var(--grey-300)', fontSize: '1rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 'var(--space-2)' }}>
                 Common Questions
-              </h3>
+              </div>
               <h2 style={{ color: 'var(--white)', fontSize: 'clamp(1.8rem, 4vw, 2.6rem)', fontWeight: 800, letterSpacing: '-0.025em', marginBottom: 'var(--space-3)' }}>
                 Peptide Research In{' '}
                 <span style={{ color: 'var(--teal)' }}>{city.name}, {city.stateAbbr}</span>
@@ -677,7 +677,11 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
             targeting "peptides near me {city}" queries. Adds content only. */}
         <NearMeSection city={city} stateSlug={stateSlug} region={region} />
 
+        <CountyStrip city={city} />
+
         <NearbyStrip stateSlug={stateSlug} currentCitySlug={citySlug} stateName={city.state} region={city.region} />
+
+        {city.tier === 1 && <MajorMarketsStrip currentCitySlug={citySlug} />}
 
         {/* TIER-1 DEEP NARRATIVE - long-form, per-city-unique body copy; renders
             only on tier-1 markets (getCityNarrative returns null otherwise). */}
@@ -790,9 +794,9 @@ function NearMeSection({ city, stateSlug, region }: { city: City; stateSlug: str
   return (
     <section aria-label={`Peptides Near Me - ${city.name} Area`} style={{ padding: 'clamp(48px, 6vw, 80px) 0', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
       <div className="container">
-        <h3 style={{ color: 'var(--teal)', fontSize: '1rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 'var(--space-2)' }}>
+        <div style={{ color: 'var(--teal)', fontSize: '1rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 'var(--space-2)' }}>
           Local Research Coverage
-        </h3>
+        </div>
         <h2 style={{ color: 'var(--white)', fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)', fontWeight: 800, letterSpacing: '-0.025em', marginBottom: 'var(--space-3)' }}>
           Peptides Near Me - <span style={{ color: 'var(--teal)' }}>{city.name} Area</span>
         </h2>
@@ -810,6 +814,64 @@ function NearMeSection({ city, stateSlug, region }: { city: City; stateSlug: str
                   {c.county} County
                 </span>
               )}
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// --- County-level clusters ----------------------------------------------------
+// Links to other cities in the exact same county to strengthen local silos.
+function CountyStrip({ city }: { city: City }) {
+  if (!city.county) return null;
+  
+  const countyCities = CITIES
+    .filter((c) => c.stateSlug === city.stateSlug && c.county === city.county && c.slug !== city.slug)
+    .sort((a, b) => b.population - a.population)
+    .slice(0, 15);
+
+  if (countyCities.length === 0) return null;
+
+  return (
+    <section style={{ padding: 'var(--space-10) 0', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+      <div className="container">
+        <p style={{ fontSize: '0.7rem', color: 'var(--grey-600)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 'var(--space-4)' }}>
+          Research Supply In {city.county} County, {city.stateAbbr}
+        </p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+          {countyCities.map((c) => (
+            <Link key={`${c.stateSlug}-${c.slug}`} href={`/peptides/${c.stateSlug}/${c.slug}`} className="city-pill" style={{ padding: '5px 14px', fontSize: '0.78rem', color: 'var(--grey-500)', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 'var(--radius-full)', textDecoration: 'none', transition: 'all 0.2s' }}>
+              {c.name}
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// --- Major Markets (Tier-1) ---------------------------------------------------
+// Links top tier-1 markets nationwide for tier-1 ↔ tier-1 mesh.
+function MajorMarketsStrip({ currentCitySlug }: { currentCitySlug: string }) {
+  const majorMarkets = CITIES
+    .filter((c) => c.tier === 1 && c.slug !== currentCitySlug)
+    .sort((a, b) => b.population - a.population)
+    .slice(0, 15);
+
+  if (majorMarkets.length === 0) return null;
+
+  return (
+    <section style={{ padding: 'var(--space-10) 0', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+      <div className="container">
+        <p style={{ fontSize: '0.7rem', color: 'var(--grey-600)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 'var(--space-4)' }}>
+          Major US Research Hubs
+        </p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+          {majorMarkets.map((c) => (
+            <Link key={`${c.stateSlug}-${c.slug}`} href={`/peptides/${c.stateSlug}/${c.slug}`} className="city-pill" style={{ padding: '5px 14px', fontSize: '0.78rem', color: 'var(--grey-500)', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 'var(--radius-full)', textDecoration: 'none', transition: 'all 0.2s' }}>
+              {c.name}, {c.stateAbbr}
             </Link>
           ))}
         </div>
