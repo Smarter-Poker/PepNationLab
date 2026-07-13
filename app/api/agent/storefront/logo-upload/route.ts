@@ -12,6 +12,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgentOrAdmin } from '@/lib/admin-auth';
+import { assertSameOrigin } from '@/lib/csrf';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -20,6 +21,9 @@ export const runtime = 'nodejs';
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
   const gate = await requireAgentOrAdmin();
   if (!gate.ok) return gate.response;
 
@@ -65,7 +69,7 @@ export async function POST(req: Request) {
 
   if (uploadError) {
     console.error('[logo-upload] storage error:', uploadError);
-    return NextResponse.json({ error: 'Storage upload failed: ' + uploadError.message }, { status: 500 });
+    return NextResponse.json({ error: 'Storage Upload Failed. Please Try Again.' }, { status: 500 });
   }
 
   const { data: pub } = svc.storage.from('storefront-assets').getPublicUrl(path);
@@ -79,7 +83,7 @@ export async function POST(req: Request) {
 
   if (dbError) {
     console.error('[logo-upload] db write error:', dbError);
-    return NextResponse.json({ error: 'Uploaded but failed to save URL: ' + dbError.message }, { status: 500 });
+    return NextResponse.json({ error: 'Upload Saved But Could Not Update Your Storefront. Please Try Again.' }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true, url: publicUrl });
