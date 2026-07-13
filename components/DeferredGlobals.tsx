@@ -27,7 +27,6 @@ const StaleBrowserBanner = dynamic(() => import('@/components/StaleBrowserBanner
 const OAuthErrorRedirect = dynamic(() => import('@/components/OAuthErrorRedirect'), { ssr: false });
 const ImpersonationBanner = dynamic(() => import('@/components/ImpersonationBanner'), { ssr: false });
 const PwaInstallPrompt = dynamic(() => import('@/components/PwaInstallPrompt'), { ssr: false });
-const PWAEnforcer = dynamic(() => import('@/components/PWAEnforcer'), { ssr: false });
 const GlobalCallListener = dynamic(() => import('@/components/messenger/GlobalCallListener'), { ssr: false });
 const FirstRunNotificationPrompt = dynamic(() => import('@/components/FirstRunNotificationPrompt'), { ssr: false });
 const SessionKeepalive = dynamic(() => import('@/components/messenger/SessionKeepalive'), { ssr: false });
@@ -40,7 +39,6 @@ export default function DeferredGlobals() {
       <OAuthErrorRedirect />
       <ImpersonationBanner />
       <PwaInstallPrompt />
-      <PWAEnforcer />
       <GlobalCallListener />
       <FirstRunNotificationPrompt />
       <SessionKeepalive />
