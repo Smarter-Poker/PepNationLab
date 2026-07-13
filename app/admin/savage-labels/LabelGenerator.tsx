@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { Button } from '@/components/ui/button';
 import { Download, Loader2 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import JSZip from 'jszip';
@@ -64,10 +63,14 @@ export function LabelGenerator({ products }: { products: any[] }) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-medium">{products.length} Labels Available</h2>
-        <Button onClick={handleExport} disabled={isExporting}>
+        <button 
+          onClick={handleExport} 
+          disabled={isExporting}
+          className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-10 py-2 px-4 bg-blue-600 text-white"
+        >
           {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
           {isExporting ? 'Generating ZIP...' : 'Export All to ZIP (300dpi)'}
-        </Button>
+        </button>
       </div>
 
       <div className="text-sm text-muted-foreground mb-4">

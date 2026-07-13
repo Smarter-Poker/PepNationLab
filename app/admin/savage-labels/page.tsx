@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import { LabelGenerator } from './LabelGenerator';
 
 export const metadata = {
@@ -6,7 +6,7 @@ export const metadata = {
 };
 
 export default async function SavageLabelsPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: products } = await supabase
     .from('products')
     .select('id, name, dose_amount, dose_unit, category_id, categories(name)')
