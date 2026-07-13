@@ -3,6 +3,10 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { CITIES, getStatesSlugs, getCitiesByState, getStateName, CITY_CONTENT_UPDATED } from '@/lib/cities/cities-data';
 
+// ISR: regenerate hourly so per-state city counts/lists reflect data changes
+// between full deploys (individual city pages already use ISR).
+export const revalidate = 3600;
+
 // ─── Static params ───────────────────────────────────────────────────────────
 export async function generateStaticParams() {
   return getStatesSlugs().map((stateSlug) => ({ stateSlug }));
