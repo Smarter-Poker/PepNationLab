@@ -648,7 +648,7 @@ const CITIES_ILLINOIS: City[] = [
     name: 'Waukegan', slug: 'waukegan', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
     population: 87000, medianIncome: 60000, tier: 2, region: 'Chicagoland area', county: 'Lake',
     zips: ['60085', '60087'],
-    localBlurb: 'Supporting the scientific community near the Lake County medical and bioscience corridor, Pep Nation Lab delivers third-party tested research peptides to Waukegan. Whether conducting trials near the harbor district or inland labs, researchers trust our verifiable COAs and consistent wholesale pricing.'
+    localBlurb: 'Waukegan is the Lake County seat, a Lake Michigan harbor city midway between Chicago and Milwaukee.'
   },
   {
     name: 'DeKalb', slug: 'dekalb', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
@@ -684,7 +684,7 @@ const CITIES_ILLINOIS: City[] = [
     name: 'Macomb', slug: 'macomb', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
     population: 15000, medianIncome: 35000, tier: 3, region: 'Western Illinois', county: 'McDonough',
     zips: ['61455'],
-    localBlurb: 'Serving the academic and scientific communities of McDonough County, Pep Nation Lab is Macomb’s reliable supplier for research-grade peptides. We streamline procurement for Western Illinois University labs and private clinics conducting localized cellular receptor studies.'
+    localBlurb: 'Macomb is home to Western Illinois University, the hub of McDonough County in west-central Illinois.'
   },
   {
     name: 'Alton', slug: 'alton', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
@@ -708,7 +708,7 @@ const CITIES_ILLINOIS: City[] = [
     name: 'Mount Vernon', slug: 'mount-vernon', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
     population: 14000, medianIncome: 48000, tier: 3, region: 'Southern Illinois', county: 'Jefferson',
     zips: ['62864'],
-    localBlurb: 'Situated at the crossroads of Southern Illinois, Mount Vernon is a strategic center for regional healthcare and bio-research. Pep Nation Lab equips Jefferson County facilities with research-grade peptides, guaranteeing fast logistics and uncompromising batch purity.'
+    localBlurb: 'Mount Vernon is a Southern Illinois crossroads city at the junction of I-57 and I-64, the Jefferson County seat.'
   },
   {
     name: 'Effingham', slug: 'effingham', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
