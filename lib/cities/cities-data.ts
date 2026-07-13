@@ -141,7 +141,7 @@ export const CITIES: City[] = [
  * use `new Date()` for lastmod - stamping every build teaches crawlers to
  * ignore the signal.
  */
-export const CITY_CONTENT_UPDATED = new Date('2026-07-11');
+export const CITY_CONTENT_UPDATED = new Date('2026-07-13');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
