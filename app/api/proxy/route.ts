@@ -337,7 +337,7 @@ export async function GET(request: NextRequest) {
                     <div class="meta">${escapeHtml(authors)}<br>${escapeHtml(journal)}</div>
                     <div class="abstract">${escapeHtml(abstract)}</div>
                     <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; text-align: center;">
-                      <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" style="color: #00C4BC; text-decoration: none; font-weight: bold;">View Original on PubMed</a>
+                      <a href="/api/proxy?url=${encodeURIComponent(url)}" rel="noopener noreferrer" style="color: #00C4BC; text-decoration: none; font-weight: bold;">View Original on PubMed</a>
                     </div>
                   </div>
                 </body></html>
@@ -359,7 +359,7 @@ export async function GET(request: NextRequest) {
             <h2>Article Unavailable</h2>
             <p style="color: #A8B4C0; font-size: 14px;">The publisher returned a ${escapeHtml(String(finalResponse.status))} error.</p>
             <p style="color: #A8B4C0; font-size: 14px;">This usually happens when the publisher actively blocks proxy requests.</p>
-            <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 15px; background: #00C4BC; color: #000; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-weight: bold;">Open in New Tab</a>
+            <a href="/api/proxy?url=${encodeURIComponent(url)}" rel="noopener noreferrer" style="display: inline-block; margin-top: 15px; background: #00C4BC; color: #000; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-weight: bold;">Reload Source</a>
           </div>
         </body></html>
       `;
