@@ -26,6 +26,7 @@ import { evidenceTier } from '@/lib/compounds';
 import { getCompoundStoreCards } from '@/lib/cities/compound-store';
 import type { CompoundStoreCard } from '@/lib/cities/compound-store';
 import { getRegionLabel, getRegionArea } from '@/lib/cities/city-content';
+import { getResearchAnchors } from '@/lib/cities/research-anchors';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 
 // ISR: regenerate at most every 5 minutes so the live price card tracks the
@@ -204,6 +205,23 @@ export default async function CompoundCityPage({
       : `${BASE}${card.image}`;
   }
 
+  // Regional research institutions for this metro, emitted as schema.org
+  // `mentions` on the WebPage node - honest entity/topical context for the
+  // local research audience. Empty when the region is not mapped.
+  const _anchors = getResearchAnchors(city.region);
+  const researchMentions = _anchors
+    ? _anchors.map((a) => ({
+        '@type':
+          a.kind === 'University'
+            ? 'CollegeOrUniversity'
+            : a.kind === 'Medical Center'
+              ? 'MedicalOrganization'
+              : a.kind === 'National Lab' || a.kind === 'Research Institute'
+                ? 'ResearchOrganization'
+                : 'Organization',
+        name: a.name,
+      }))
+    : [];
   const jsonLd = {
     '@context': 'https://schema.org',
     '@graph': [
@@ -236,6 +254,7 @@ export default async function CompoundCityPage({
         datePublished: '2026-07-10',
         dateModified: CITY_CONTENT_UPDATED.toISOString().slice(0, 10),
         about: { '@type': 'Thing', name: compound.displayName, sameAs: monographUrl },
+        ...(researchMentions.length > 0 ? { mentions: researchMentions } : {}),
       },
     ],
   };
