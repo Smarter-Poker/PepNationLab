@@ -1646,7 +1646,7 @@ function CostSection() {
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12, marginBottom: 12 }}>
                     <div style={{ padding: 12, background: 'rgba(0,229,255,0.05)', borderRadius: 8, border: '1px solid rgba(0,229,255,0.15)' }}>
                       <div style={{ color: '#9CA3AF', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Cost / Dose</div>
-                      <div style={{ color: '#00E5FF', fontSize: 22, fontWeight: 800 }}>${outA.dollarsPerDose.toFixed(2)}</div>
+                      <div style={{ color: '#00E5FF', fontSize: 22, fontWeight: 800 }}>${outA.dollarsPerDose.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
                     </div>
                     <div style={{ padding: 12, background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)' }}>
                       <div style={{ color: '#9CA3AF', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Doses / Vial</div>
@@ -1661,13 +1661,13 @@ function CostSection() {
                     {outA.monthlyCostUsd && (
                       <div style={{ padding: 12, background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)' }}>
                         <div style={{ color: '#9CA3AF', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Est. Monthly</div>
-                        <div style={{ color: '#68D391', fontSize: 22, fontWeight: 800 }}>${outA.monthlyCostUsd.toFixed(2)}</div>
+                        <div style={{ color: '#68D391', fontSize: 22, fontWeight: 800 }}>${outA.monthlyCostUsd.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
                       </div>
                     )}
                     {outA.annualCostUsd && (
                       <div style={{ padding: 12, background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)' }}>
                         <div style={{ color: '#9CA3AF', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Est. Annual</div>
-                        <div style={{ color: '#68D391', fontSize: 22, fontWeight: 800 }}>${outA.annualCostUsd.toFixed(2)}</div>
+                        <div style={{ color: '#68D391', fontSize: 22, fontWeight: 800 }}>${outA.annualCostUsd.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
                       </div>
                     )}
                   </div>
@@ -1682,10 +1682,10 @@ function CostSection() {
                 <div style={{ color: '#00E5FF', fontWeight: 'bold', fontSize: 13, marginBottom: 8 }}>OPTION A RESULTS</div>
                 {outA ? (
                   <div style={{ fontSize: 13, textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <div>Cost/Dose: <strong className="calc-no-capitalize">${outA.dollarsPerDose.toFixed(2)}</strong></div>
+                    <div>Cost/Dose: <strong className="calc-no-capitalize">${outA.dollarsPerDose.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></div>
                     <div>Doses/Vial: <strong className="calc-no-capitalize">{outA.dosesPerVial.toFixed(1)}</strong></div>
-                    <div>Monthly: <strong className="calc-no-capitalize">${outA.monthlyCostUsd?.toFixed(2)}</strong></div>
-                    <div>Annual: <strong className="calc-no-capitalize">${outA.annualCostUsd?.toFixed(2)}</strong></div>
+                    <div>Monthly: <strong className="calc-no-capitalize">${outA.monthlyCostUsd?.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></div>
+                    <div>Annual: <strong className="calc-no-capitalize">${outA.annualCostUsd?.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></div>
                   </div>
                 ) : 'Invalid Inputs'}
               </div>
@@ -1695,10 +1695,10 @@ function CostSection() {
                 <div style={{ color: '#F6AD55', fontWeight: 'bold', fontSize: 13, marginBottom: 8 }}>OPTION B RESULTS</div>
                 {outB ? (
                   <div style={{ fontSize: 13, textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <div>Cost/Dose: <strong className="calc-no-capitalize">${outB.dollarsPerDose.toFixed(2)}</strong></div>
+                    <div>Cost/Dose: <strong className="calc-no-capitalize">${outB.dollarsPerDose.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></div>
                     <div>Doses/Vial: <strong className="calc-no-capitalize">{outB.dosesPerVial.toFixed(1)}</strong></div>
-                    <div>Monthly: <strong className="calc-no-capitalize">${outB.monthlyCostUsd?.toFixed(2)}</strong></div>
-                    <div>Annual: <strong className="calc-no-capitalize">${outB.annualCostUsd?.toFixed(2)}</strong></div>
+                    <div>Monthly: <strong className="calc-no-capitalize">${outB.monthlyCostUsd?.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></div>
+                    <div>Annual: <strong className="calc-no-capitalize">${outB.annualCostUsd?.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></div>
                   </div>
                 ) : 'Invalid Inputs'}
               </div>
@@ -1730,13 +1730,13 @@ function CostSection() {
 Vial Mass: ${massA} MG
 Dose Amount: ${doseA} ${unitA}
 Dosing Frequency: ${frequency} doses/week
-Cost Per Dose: $${outA.dollarsPerDose.toFixed(2)}
-Monthly Projected Cost: $${outA.monthlyCostUsd?.toFixed(2) ?? 'N/A'}
-Annual Projected Cost: $${outA.annualCostUsd?.toFixed(2) ?? 'N/A'}`
+Cost Per Dose: $${outA.dollarsPerDose.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+Monthly Projected Cost: $${outA.monthlyCostUsd?.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) ?? 'N/A'}
+Annual Projected Cost: $${outA.annualCostUsd?.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) ?? 'N/A'}`
               : `Option A: Price $${priceA}, Mass ${massA} MG, Dose ${doseA} ${unitA}
 Option B: Price $${priceB}, Mass ${massB} MG, Dose ${doseB} ${unitB}
-Option A Cost Per Dose: $${outA.dollarsPerDose.toFixed(2)}
-Option B Cost Per Dose: $${outB?.dollarsPerDose.toFixed(2) ?? 'N/A'}
+Option A Cost Per Dose: $${outA.dollarsPerDose.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+Option B Cost Per Dose: $${outB?.dollarsPerDose.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) ?? 'N/A'}
 Projected Winner: ${outB ? (outA.dollarsPerDose < outB.dollarsPerDose ? 'Option A' : 'Option B') : 'Option A'}`}
           />
         )}
@@ -2698,9 +2698,9 @@ function SppsSection() {
         <div style={resultStyle}>
           {!out ? 'Enter A Valid Sequence.' : (
             <>
-              <div>Total Synthesizer Cost: <strong className="calc-no-capitalize">${out.totalUsd.toFixed(2)}</strong></div>
+              <div>Total Synthesizer Cost: <strong className="calc-no-capitalize">${out.totalUsd.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></div>
               <div style={{ color: '#00E5FF', marginTop: 6, fontSize: 18 }}>
-                Cost Per Recovered Mg: <strong className="calc-no-capitalize">${out.costPerRecoveredMg.toFixed(2)}</strong>
+                Cost Per Recovered Mg: <strong className="calc-no-capitalize">${out.costPerRecoveredMg.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>
                 <span style={{ display: 'block', fontSize: 12, color: '#A8B4C0', marginTop: 4, fontWeight: 'normal' }}>
                   Assuming ~<span className="calc-no-capitalize">{out.recoveredMg.toFixed(1)} mg</span> Final Pure Peptide Recovered.
                 </span>
@@ -2713,7 +2713,7 @@ function SppsSection() {
                   return (
                     <div 
                       key={b.label} 
-                      title={`${b.label}: $${b.costUsd.toFixed(2)}`} 
+                      title={`${b.label}: $${b.costUsd.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`} 
                       style={{ width: `${pct}%`, height: '100%', background: costColors[idx % costColors.length] }} 
                     />
                   );
@@ -2727,7 +2727,7 @@ function SppsSection() {
                       <span style={{ width: 8, height: 8, borderRadius: '50%', background: costColors[idx % costColors.length] }} />
                       <span className="calc-no-capitalize">{b.label}</span>
                     </span>
-                    <span className="calc-no-capitalize">${b.costUsd.toFixed(2)}</span>
+                    <span className="calc-no-capitalize">${b.costUsd.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                   </div>
                 ))}
               </div>
@@ -2741,9 +2741,9 @@ function SppsSection() {
             noteText={`Scale: ${scale} mmol
 Sequence Length: ${cleanSppsSeq.length} AA
 Coupling Chemistry: ${chemistry === 'DIC/Oxyma' ? 'DIC/Oxyma (Standard)' : chemistry === 'HATU/DIEA' ? 'HATU/DIEA (Premium)' : 'HBTU/DIEA'}
-Total Estimated Cost: $${out.totalUsd.toFixed(2)}
+Total Estimated Cost: $${out.totalUsd.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
 Cost Breakdown:
-${out.breakdown.map(b => `- ${b.label}: $${b.costUsd.toFixed(2)}`).join('\n')}`}
+${out.breakdown.map(b => `- ${b.label}: $${b.costUsd.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`).join('\n')}`}
           />
         )}
 
