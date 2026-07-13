@@ -19,6 +19,7 @@ import AgentLinkCapture from '@/components/AgentLinkCapture';
 
 interface Props {
   params: Promise<{ agentSlug: string }>;
+  searchParams?: Promise<{ sa?: string }>;
 }
 
 // Request-scoped memo: both the page body and generateMetadata resolve the
@@ -274,7 +275,7 @@ async function AgentStorefrontDataLoader({
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
       />
       <AgentStorefrontGrid
         products={productsWithCost as any}
@@ -297,8 +298,9 @@ async function AgentStorefrontDataLoader({
   );
 }
 
-export default async function AgentStorefrontPage({ params }: Props) {
+export default async function AgentStorefrontPage({ params, searchParams }: Props) {
   const { agentSlug } = await params;
+  const { sa: rawSa } = searchParams ? await searchParams : {};
   const supabase = await createClient();
 
   const { data: agent, error } = await getAgentProfileBySlug(agentSlug);
@@ -321,7 +323,14 @@ export default async function AgentStorefrontPage({ params }: Props) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user && agentSlug !== DEFAULT_STORE_SLUG) {
-    redirect('/');
+    // Preserve QR / sub-agent attribution across the guest bounce to the
+    // landing: carry the storefront slug (and any ?sa sub-agent id) so the
+    // landing AgentLinkCapture records it for signup credit. Without this the
+    // guest redirect dropped all attribution and agents/sub-agents lost the
+    // referral + commission credit their storefront links are meant to earn.
+    const refParams = new URLSearchParams({ agent: agentSlug });
+    if (rawSa && /^[0-9a-f-]{36}$/i.test(rawSa)) refParams.set('sa', rawSa);
+    redirect(`/?${refParams.toString()}`);
   }
 
   if (agent.is_active === false) {
