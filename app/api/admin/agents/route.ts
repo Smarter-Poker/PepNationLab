@@ -7,6 +7,7 @@ import { requireAdmin } from '@/lib/admin-auth';
 import { generateQrDataUrl } from '@/lib/qr';
 import { sanitizeUsername } from '@/lib/usernames';
 import { assertSameOrigin } from '@/lib/csrf';
+import { seedStorefrontFromHousePrices } from '@/lib/seed-storefront';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://pepnationlab.com';
 
@@ -313,24 +314,10 @@ export async function POST(req: NextRequest) {
       }
 
       try {
-        const { data: rookieTier } = await supabase.from('house_tiers').select('markup').eq('level', 3).maybeSingle();
-        const rookieMultiplier = rookieTier?.markup != null ? 1 + Number(rookieTier.markup) : 3.50;
-        if (!rookieMultiplier) {
-          console.warn('[admin/agents] house_tiers rookie level not found; skipping catalog seed');
-        } else {
-          const { data: products } = await supabase.from('products').select('id, base_cost').eq('is_active', true);
-          if (products && products.length > 0) {
-            const agentProductsToInsert = products.map((p) => ({
-              agent_id: userId,
-              product_id: p.id,
-              retail_price: Math.round((Number(p.base_cost) * rookieMultiplier) * 100) / 100,
-              margin_percent: 50,
-              is_visible: true,
-              sort_order: 0,
-            }));
-            await supabase.from('agent_products').insert(agentProductsToInsert);
-          }
-        }
+        // Seed the new storefront with the HOUSE (admin) store's retail prices as
+        // the default "set price"; falls back to rookie house-tier pricing for any
+        // product the house store has not priced. Agent can change prices later.
+        await seedStorefrontFromHousePrices(supabase, userId);
       } catch (provisionErr) {
         console.error('[admin/agents] agent product provisioning failed (non-fatal):', provisionErr);
       }

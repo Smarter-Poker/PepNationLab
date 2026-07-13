@@ -6,6 +6,7 @@ import { assertSameOrigin } from '@/lib/csrf';
 import { notifyPromotedToAgent, notifyPromotionSuccess } from '@/lib/notify';
 import { generateQrDataUrl } from '@/lib/qr';
 import { verifyCommissionSafeguard } from '@/lib/pricing';
+import { seedStorefrontFromHousePrices } from '@/lib/seed-storefront';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://pepnationlab.com';
 
@@ -72,28 +73,9 @@ async function provisionAgentStorefront(
       .eq('agent_id', agentId);
 
     if (!prodCount) {
-      const { data: rookieTier } = await admin
-        .from('house_tiers')
-        .select('markup')
-        .eq('level', 3)
-        .maybeSingle();
-      const { data: products } = await admin
-        .from('products')
-        .select('id, base_cost')
-        .eq('is_active', true);
-
-      if (rookieTier && products && products.length > 0) {
-        const rookieMultiplier = 1 + Number(rookieTier.markup);
-        const rows = products.map((p) => ({
-          agent_id: agentId,
-          product_id: p.id,
-          retail_price: Math.round(Number(p.base_cost) * rookieMultiplier * 100) / 100,
-          margin_percent: 50,
-          is_visible: true,
-          sort_order: 0,
-        }));
-        await admin.from('agent_products').insert(rows);
-      }
+      // Seed the promoted agent's catalog from the HOUSE (admin) store's retail
+      // prices (default "set price"); falls back to rookie pricing per product.
+      await seedStorefrontFromHousePrices(admin, agentId);
     }
   } catch (provErr) {
     console.error('[promote-subagent] storefront provisioning failed:', provErr);

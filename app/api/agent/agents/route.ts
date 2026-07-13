@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { seedStorefrontFromHousePrices } from '@/lib/seed-storefront';
 
 /**
  * GET /api/agent/agents
@@ -261,26 +262,10 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      // Seed at Rookie pricing (house_tiers level 3) - most conservative starting point.
-      // V2 engine is live; use house_tiers directly instead of pricing_tiers.
-      const { data: rookieTier } = await supabase.from('house_tiers').select('markup').eq('level', 3).maybeSingle();
-      const { data: products } = await supabase.from('products').select('id, base_cost').eq('is_active', true);
-      
-      if (rookieTier && products && products.length > 0) {
-        const rookieMultiplier = 1 + Number(rookieTier.markup);
-        const agentProductsToInsert = products.map((p) => {
-          const retailPrice = Math.round((Number(p.base_cost) * rookieMultiplier) * 100) / 100;
-          return {
-            agent_id: userId,
-            product_id: p.id,
-            retail_price: retailPrice,
-            margin_percent: 50,
-            is_visible: true,
-            sort_order: 0
-          };
-        });
-        await supabase.from('agent_products').insert(agentProductsToInsert);
-      }
+      // Seed the new storefront with the HOUSE (admin) store's retail prices as
+      // the default "set price"; falls back to rookie house-tier pricing for any
+      // product the house store has not priced. Agent can change prices later.
+      await seedStorefrontFromHousePrices(supabase, userId);
     } catch (provisionErr) {
       console.error('Failed to auto-provision agent products:', provisionErr);
     }
