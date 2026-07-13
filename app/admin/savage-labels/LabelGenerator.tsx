@@ -6,19 +6,18 @@ import { toPng } from 'html-to-image';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 
-// Colors mapped exactly to the Savage Brands prompt rules
 function getCategoryColor(categoryName: string) {
   const normalized = categoryName?.toLowerCase() || '';
-  if (normalized.includes('weight loss')) return '#FF0000'; // Red
-  if (normalized.includes('healing') || normalized.includes('recovery')) return '#008080'; // Teal
-  if (normalized.includes('growth hormone')) return '#FFD700'; // Gold
-  if (normalized.includes('muscle')) return '#4169E1'; // Royal Blue
-  if (normalized.includes('sexual')) return '#800080'; // Purple
-  if (normalized.includes('anti-aging')) return '#B76E79'; // Rose Gold
-  if (normalized.includes('skin') || normalized.includes('hair')) return '#50C878'; // Emerald Green
-  if (normalized.includes('nootropic')) return '#C0C0C0'; // Chrome/Silver
-  if (normalized.includes('stack')) return '#FFFFFF'; // White (or specific if named)
-  return '#C0C0C0'; // Default Silver
+  if (normalized.includes('weight loss')) return '#FF0000';
+  if (normalized.includes('healing') || normalized.includes('recovery')) return '#008080';
+  if (normalized.includes('growth hormone')) return '#FFD700';
+  if (normalized.includes('muscle')) return '#4169E1';
+  if (normalized.includes('sexual')) return '#800080';
+  if (normalized.includes('anti-aging')) return '#B76E79';
+  if (normalized.includes('skin') || normalized.includes('hair')) return '#50C878';
+  if (normalized.includes('nootropic')) return '#C0C0C0';
+  if (normalized.includes('stack')) return '#FFFFFF';
+  return '#C0C0C0';
 }
 
 export function LabelGenerator({ products }: { products: any[] }) {
@@ -37,14 +36,11 @@ export function LabelGenerator({ products }: { products: any[] }) {
       
       for (const el of elementsArray) {
         const productName = el.getAttribute('data-name') || 'label';
-        // At 300dpi, 1.5" x 2.5" is 450x750. 
-        // html-to-image will render at the element's actual dimensions.
         const dataUrl = await toPng(el, {
           quality: 1.0,
-          pixelRatio: 1, // Already sized 450x750
+          pixelRatio: 1,
         });
         
-        // Remove 'data:image/png;base64,' prefix for JSZip
         const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '');
         zip.file(`${productName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png`, base64Data, { base64: true });
       }
@@ -89,12 +85,8 @@ export function LabelGenerator({ products }: { products: any[] }) {
           return (
             <div key={p.id} className="flex flex-col items-center gap-2">
               <div 
-                // Scaled down visually by using transform or zoom, but actual layout size is 450x750
                 className="overflow-hidden border border-border/50 rounded shadow-md relative"
-                style={{
-                  width: '225px', // Visually half size
-                  height: '375px',
-                }}
+                style={{ width: '225px', height: '375px' }}
               >
                 <div 
                   className="savage-label-render-target relative bg-[#111] overflow-hidden flex flex-col justify-between"
@@ -104,7 +96,6 @@ export function LabelGenerator({ products }: { products: any[] }) {
                     height: '750px',
                     transform: 'scale(0.5)',
                     transformOrigin: 'top left',
-                    // Black hex texture pattern using CSS
                     backgroundImage: `
                       linear-gradient(30deg, #181818 12%, transparent 12.5%, transparent 87%, #181818 87.5%, #181818),
                       linear-gradient(150deg, #181818 12%, transparent 12.5%, transparent 87%, #181818 87.5%, #181818),
@@ -117,10 +108,8 @@ export function LabelGenerator({ products }: { products: any[] }) {
                     backgroundPosition: '0 0, 0 0, 20px 35px, 20px 35px, 0 0, 20px 35px'
                   }}
                 >
-                  {/* Top colored border */}
                   <div style={{ height: '12px', width: '100%', backgroundColor: accentColor }}></div>
 
-                  {/* Claw Marks Background */}
                   <div className="absolute inset-0 flex items-center justify-center opacity-30 pointer-events-none">
                      <svg width="250" height="300" viewBox="0 0 250 300" style={{ transform: 'rotate(-20deg)', filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.2))' }}>
                         <path d="M40 0 C60 100 80 200 40 300 C80 220 70 120 40 0 Z" fill={accentColor} />
@@ -183,7 +172,7 @@ export function LabelGenerator({ products }: { products: any[] }) {
                         color: accentColor, 
                         fontFamily: 'Arial, sans-serif',
                         fontSize: '24px',
-                        fontWeight: '700',
+                        fontWeight: 700,
                         marginTop: '8px'
                       }}
                     >
@@ -191,7 +180,6 @@ export function LabelGenerator({ products }: { products: any[] }) {
                     </div>
                   </div>
 
-                  {/* Bottom colored border */}
                   <div style={{ height: '12px', width: '100%', backgroundColor: accentColor }}></div>
                 </div>
               </div>
