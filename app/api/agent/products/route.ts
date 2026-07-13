@@ -35,6 +35,7 @@ export async function GET(req: NextRequest) {
         custom_image_url, retail_price, margin_percent, is_visible, is_on_sale, sale_price, sort_order,
         products (name, description, image_url, category, in_stock, inventory_count,
                  unit_size, unit_measure, base_cost,
+                 max_retail_price,
                  market_avg_price, market_low_price, market_high_price)
       `)
       .eq('agent_id', agentId)
@@ -76,6 +77,7 @@ export async function GET(req: NextRequest) {
         products: safeProducts,
         agent_cost: baseCost > 0 ? agentCost : null,
         agent_tier: tier,
+        max_retail_price: (ap.products as any)?.max_retail_price ?? null,
       };
     });
 
@@ -120,7 +122,7 @@ export async function PATCH(req: NextRequest) {
       .from('agent_products')
       .select(`
         id, retail_price, margin_percent, product_id, agent_id, sale_price, is_on_sale,
-        products ( min_retail_price, max_margin_percent, base_cost )
+        products ( min_retail_price, max_margin_percent, max_retail_price, base_cost )
       `)
       .eq('id', id)
       .eq('agent_id', gate.user.id)
@@ -171,6 +173,10 @@ export async function PATCH(req: NextRequest) {
 
     const minRetailPrice = Number((check.products as any)?.min_retail_price || agentCostPer10);
     const maxMargin = Number((check.products as any)?.max_margin_percent || 300);
+    // Admin store price = the hard price ceiling for all agents.
+    const maxRetailPrice: number | null = (check.products as any)?.max_retail_price != null
+      ? Number((check.products as any).max_retail_price)
+      : null;
 
     if (resolvedRetailPrice !== undefined && resolvedRetailPrice < minRetailPrice) {
       return NextResponse.json(
@@ -185,6 +191,17 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json(
         {
           error: `Listed price ($${(resolvedRetailPrice / 10).toFixed(2)}/vial) cannot be below your cost ($${(agentCostPer10 / 10).toFixed(2)}/vial).`,
+        },
+        { status: 422 }
+      );
+    }
+
+    // Maximum price ceiling: agents may never exceed the admin store price.
+    // Admins are exempt — they ARE the source of truth for max_retail_price.
+    if (!gate.isAdmin && maxRetailPrice !== null && resolvedRetailPrice !== undefined && resolvedRetailPrice > maxRetailPrice) {
+      return NextResponse.json(
+        {
+          error: `Listed price ($${(resolvedRetailPrice / 10).toFixed(2)}/vial) exceeds the maximum allowed price ($${(maxRetailPrice / 10).toFixed(2)}/vial). Agents may not price above the admin store rate.`,
         },
         { status: 422 }
       );
@@ -235,6 +252,16 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json(
           {
             error: `Sale price ($${(activeSalePrice / 10).toFixed(2)}/vial) cannot be below your cost ($${(agentCostPer10 / 10).toFixed(2)}/vial).`,
+          },
+          { status: 422 }
+        );
+      }
+
+      // Sale price ceiling — cannot exceed admin store max either.
+      if (!gate.isAdmin && maxRetailPrice !== null && activeSalePrice > maxRetailPrice) {
+        return NextResponse.json(
+          {
+            error: `Sale price ($${(activeSalePrice / 10).toFixed(2)}/vial) exceeds the maximum allowed price ($${(maxRetailPrice / 10).toFixed(2)}/vial).`,
           },
           { status: 422 }
         );

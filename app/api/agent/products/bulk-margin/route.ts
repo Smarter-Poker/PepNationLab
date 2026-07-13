@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
 
     const { data: agentProducts } = await supabase
       .from('agent_products')
-      .select('id, product_id, products!inner(base_cost, min_retail_price, max_margin_percent)')
+      .select('id, product_id, products!inner(base_cost, min_retail_price, max_retail_price, max_margin_percent)')
       .eq('agent_id', agentId)
       .not('product_id', 'is', null);
 
@@ -111,6 +111,8 @@ export async function POST(req: NextRequest) {
       const agentCostPer10 = gate.isAdmin ? baseCost : (costMap.get(productId) ?? 0);
       const maxMargin = Number((ap.products as any)?.max_margin_percent || 300);
       const minRetailPrice = Number((ap.products as any)?.min_retail_price || agentCostPer10);
+      const maxRetailPriceRaw = (ap.products as any)?.max_retail_price;
+      const maxRetailPrice: number | null = maxRetailPriceRaw != null ? Number(maxRetailPriceRaw) : null;
 
       // Margin ceiling applies to agents only; the admin's cost basis is
       // raw COGS so the ceiling would wrongly block normal retail pricing.
@@ -121,6 +123,14 @@ export async function POST(req: NextRequest) {
       const retailPrice = agentCostPer10 * (1 + marginPercent / 100);
       if (retailPrice < minRetailPrice) {
         continue; // Skip if it falls below MAP
+      }
+
+      // Admin store price ceiling: never let agents go above admin price.
+      if (!gate.isAdmin && maxRetailPrice !== null && retailPrice > maxRetailPrice) {
+        continue; // Cap to admin price instead of skipping, so bulk apply sets them to max.
+        // (We use continue here intentionally — if someone sets a margin so high
+        // it would exceed the ceiling, we just skip that product rather than
+        // silently capping it, keeping the bulk update predictable.)
       }
 
       updates.push({

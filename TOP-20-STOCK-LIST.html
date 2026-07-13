@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PepNationLab — Top 20 Stock-In List</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#2d3748;--text:#e6edf3;--muted:#8b98a9;--accent:#4fd1c5;--accent2:#f6ad55;--green:#68d391;--red:#fc8181;--blue:#63b3ed;--purple:#b794f4;--pink:#f687b3;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;line-height:1.55;}
+  .wrap{max-width:1120px;margin:0 auto;padding:24px 20px 80px;}
+  header{padding:28px 0 18px;border-bottom:1px solid var(--border);margin-bottom:18px;}
+  header h1{font-size:26px;letter-spacing:.3px;}
+  header h1 span{color:var(--accent);}
+  header p{color:var(--muted);margin-top:6px;font-size:14px;}
+  h2{font-size:21px;margin:30px 0 6px;}
+  h2 .tag{font-size:11px;vertical-align:middle;background:var(--panel2);border:1px solid var(--border);color:var(--accent2);border-radius:10px;padding:2px 9px;margin-left:8px;font-weight:700;letter-spacing:.5px;}
+  .sub{color:var(--muted);font-size:14px;margin-bottom:16px;}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:14px;}
+  .card h3{font-size:15px;margin-bottom:8px;color:var(--accent);}
+  .card h3.gold{color:var(--accent2);}
+  .card h3.warn{color:var(--red);}
+  .card p{font-size:14px;color:#c9d4e0;margin-bottom:8px;}
+  .card p:last-child{margin-bottom:0;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin:6px 0;}
+  th{text-align:left;color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;padding:9px 8px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);}
+  td{padding:10px 8px;border-bottom:1px solid #232c3b;color:#c9d4e0;vertical-align:top;}
+  tr:last-child td{border-bottom:none;}
+  .rank{font-weight:800;color:var(--accent);font-size:16px;width:34px;}
+  .nm{font-weight:700;color:#fff;}
+  .nm small{display:block;color:var(--muted);font-weight:400;font-size:12px;margin-top:2px;}
+  .stackrow td{background:#15211d;}
+  .stackrow .nm{color:var(--green);}
+  .pill{display:inline-block;font-size:10.5px;font-weight:700;border-radius:9px;padding:2px 8px;letter-spacing:.3px;white-space:nowrap;}
+  .heat-hi{background:#4a1d1d;color:var(--red);}
+  .heat-el{background:#3d2f14;color:var(--accent2);}
+  .heat-lo{background:#123528;color:var(--green);}
+  .depth-deep{background:#0e2f3a;color:var(--accent);}
+  .depth-med{background:#1d2540;color:var(--blue);}
+  .depth-light{background:#2a2540;color:var(--purple);}
+  .cat{font-size:12px;color:var(--muted);}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:var(--muted);margin:4px 0 4px;}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  code{background:var(--panel2);padding:1px 6px;border-radius:5px;font-size:12.5px;color:var(--accent2);}
+  .footer-note{color:var(--muted);font-size:12px;margin-top:30px;text-align:center;}
+  .kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:14px 0;}
+  @media(max-width:760px){.kpi{grid-template-columns:repeat(2,1fr);}table{font-size:12px;}}
+  .kpi .box{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 14px;}
+  .kpi .n{font-size:20px;font-weight:800;color:var(--accent);}
+  .kpi .l{font-size:11.5px;color:var(--muted);margin-top:2px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>🧊 PepNationLab <span>Top 20 Stock-In List</span></h1>
+  <p>What to hold in physical inventory (ready-to-ship) instead of drop-shipping · Ranked by real buy-intent · Built July 13, 2026 from 2025–26 market data cross-referenced against your live catalog · All items Research Use Only</p>
+</header>
+
+<div class="card">
+  <h3 class="gold">How To Read This</h3>
+  <p>Ranked by likelihood a launch-week customer buys it right away (search demand + vendor bestseller lists + community popularity), blending single peptides and pre-made stacks into one list. Stacks are highlighted green. "Size" columns are the exact vial strengths already in your catalog. "Your Cost" is base_cost from your products table (retail auto-calculates by tier). "Stock Depth" is how heavy to buy on day one. "Heat" is regulatory risk — weigh depth against it.</p>
+  <div class="legend">
+    <span><span class="pill depth-deep">DEEP</span> buy heavy — core turnover</span>
+    <span><span class="pill depth-med">MEDIUM</span> steady mover</span>
+    <span><span class="pill depth-light">LIGHT</span> a few units, avoid stockout</span>
+    <span><span class="pill heat-hi">HIGH HEAT</span> GLP-1 enforcement risk</span>
+    <span><span class="pill heat-el">ELEVATED</span> on FDA radar</span>
+    <span><span class="pill heat-lo">LOWER</span> safest to stock deep</span>
+  </div>
+</div>
+
+<div class="kpi">
+  <div class="box"><div class="n">GLP-1 = ~20x</div><div class="l">Search demand vs. top recovery peptide — the volume engine</div></div>
+  <div class="box"><div class="n">Recovery = #2</div><div class="l">BPC/TB/Wolverine — highest volume at LOWER risk</div></div>
+  <div class="box"><div class="n">8 stacks</div><div class="l">All of your catalog blends covered below</div></div>
+  <div class="box"><div class="n">Wolverine</div><div class="l">The #1 blend across every vendor — stock deepest</div></div>
+</div>
+
+<h2>The Ranked Top 20 <span class="tag">PEPTIDES + STACKS</span></h2>
+<p class="sub">Green rows are stacks. Sizes shown are your catalog's vial strengths; buy the highlighted "lead sizes" heaviest.</p>
+
+<div class="card" style="overflow-x:auto;">
+<table>
+<tr><th>#</th><th>Product</th><th>Category / Use (RUO)</th><th>Sizes You Carry</th><th>Lead Sizes To Stock</th><th>Your Cost</th><th>Depth</th><th>Heat</th></tr>
+
+<tr><td class="rank">1</td><td class="nm">Tirzepatide <small>GLP-1 dual agonist</small></td><td class="cat">Metabolic / weight research</td><td>5·10·15·20·30·40·60·70·80·90·100·120 mg</td><td>10mg, 15mg, 30mg</td><td>$40–293</td><td><span class="pill depth-deep">DEEP</span></td><td><span class="pill heat-hi">HIGH</span></td></tr>
+
+<tr><td class="rank">2</td><td class="nm">Semaglutide <small>GLP-1 agonist</small></td><td class="cat">Metabolic / weight research</td><td>5·10·15·20·30 mg</td><td>5mg, 10mg</td><td>$36–92</td><td><span class="pill depth-deep">DEEP</span></td><td><span class="pill heat-hi">HIGH</span></td></tr>
+
+<tr class="stackrow"><td class="rank">3</td><td class="nm">Wolverine Stack <small>BPC-157 + TB-500</small></td><td class="cat">Recovery / healing — #1 blend</td><td>5+5 mg · 10+10 mg</td><td>Both — 10+10 leads</td><td>$114 / $193</td><td><span class="pill depth-deep">DEEP</span></td><td><span class="pill heat-el">ELEVATED</span></td></tr>
+
+<tr><td class="rank">4</td><td class="nm">BPC-157 <small>body protection compound</small></td><td class="cat">Recovery / healing — #1 single</td><td>5 mg · 10 mg <span style="color:var(--muted)">(+ research-grade)</span></td><td>5mg, 10mg</td><td>$38 / $66</td><td><span class="pill depth-deep">DEEP</span></td><td><span class="pill heat-el">ELEVATED</span></td></tr>
+
+<tr><td class="rank">5</td><td class="nm">Retatrutide <small>triple-G agonist ("Reta")</small></td><td class="cat">Metabolic / weight research — fastest riser</td><td>5·10·15·20·30·40·50·60 mg</td><td>10mg, 20mg</td><td>$65–301</td><td><span class="pill depth-med">MEDIUM</span></td><td><span class="pill heat-hi">HIGH</span></td></tr>
+
+<tr><td class="rank">6</td><td class="nm">TB-500 <small>Thymosin Beta-4</small></td><td class="cat">Recovery / healing</td><td>5 mg · 10 mg</td><td>5mg, 10mg</td><td>$78 / $149</td><td><span class="pill depth-deep">DEEP</span></td><td><span class="pill heat-lo">LOWER</span></td></tr>
+
+<tr class="stackrow"><td class="rank">7</td><td class="nm">GH Synergy Stack <small>CJC-1295 + Ipamorelin</small></td><td class="cat">GH secretagogue — #2 blend</td><td>5+5 mg</td><td>5+5 mg</td><td>$188</td><td><span class="pill depth-deep">DEEP</span></td><td><span class="pill heat-lo">LOWER</span></td></tr>
+
+<tr class="stackrow"><td class="rank">8</td><td class="nm">Glow Stack <small>TB-500 + BPC-157 + GHK-Cu</small></td><td class="cat">Skin + healing — flagship anti-aging blend</td><td>10+10+50 mg</td><td>Single SKU</td><td>$192</td><td><span class="pill depth-deep">DEEP</span></td><td><span class="pill heat-el">ELEVATED</span></td></tr>
+
+<tr><td class="rank">9</td><td class="nm">GHK-Cu <small>copper tripeptide</small></td><td class="cat">Skin / cosmetic + longevity — top cosmetic single</td><td>50 mg · 100 mg</td><td>50mg</td><td>$31 / $56</td><td><span class="pill depth-med">MEDIUM</span></td><td><span class="pill heat-lo">LOWER</span></td></tr>
+
+<tr><td class="rank">10</td><td class="nm">Ipamorelin <small>GH secretagogue</small></td><td class="cat">GH secretagogue — best-selling GHS single</td><td>5 mg · 10 mg</td><td>5mg, 10mg</td><td>$39 / $66</td><td><span class="pill depth-med">MEDIUM</span></td><td><span class="pill heat-lo">LOWER</span></td></tr>
+
+<tr><td class="rank">11</td><td class="nm">CJC-1295 No-DAC <small>mod GRF 1-29</small></td><td class="cat">GH secretagogue — pairs with Ipamorelin</td><td>5 mg · 10 mg <span style="color:var(--muted)">(+ DAC 5mg)</span></td><td>5mg, 10mg</td><td>$81 / $143</td><td><span class="pill depth-med">MEDIUM</span></td><td><span class="pill heat-lo">LOWER</span></td></tr>
+
+<tr class="stackrow"><td class="rank">12</td><td class="nm">KLOW Stack <small>KPV + GHK-Cu + BPC-157 + TB-500</small></td><td class="cat">Skin + healing + anti-inflammatory (Glow + KPV)</td><td>10+50+10+10 mg</td><td>Single SKU</td><td>$215</td><td><span class="pill depth-med">MEDIUM</span></td><td><span class="pill heat-el">ELEVATED</span></td></tr>
+
+<tr class="stackrow"><td class="rank">13</td><td class="nm">Appetite Crusher (CagriSema) <small>Cagrilintide + Semaglutide</small></td><td class="cat">Metabolic co-stack</td><td>5+5 mg</td><td>5+5 mg</td><td>$150</td><td><span class="pill depth-med">MEDIUM</span></td><td><span class="pill heat-hi">HIGH</span></td></tr>
+
+<tr><td class="rank">14</td><td class="nm">Cagrilintide <small>amylin analog</small></td><td class="cat">Metabolic research — rising GLP co-stack</td><td>5 mg · 10 mg</td><td>5mg</td><td>$115 / $217</td><td><span class="pill depth-light">LIGHT</span></td><td><span class="pill heat-el">ELEVATED</span></td></tr>
+
+<tr><td class="rank">15</td><td class="nm">Tesamorelin <small>GHRH analog</small></td><td class="cat">GH / visceral-fat research</td><td>5 mg · 10 mg · 20 mg</td><td>10mg</td><td>$98–325</td><td><span class="pill depth-med">MEDIUM</span></td><td><span class="pill heat-lo">LOWER</span></td></tr>
+
+<tr><td class="rank">16</td><td class="nm">Sermorelin <small>GRF 1-29</small></td><td class="cat">GH secretagogue — <b>lowest-heat GLP-adjacent</b></td><td>5 mg · 10 mg</td><td>5mg, 10mg</td><td>$68 / $128</td><td><span class="pill depth-med">MEDIUM</span></td><td><span class="pill heat-lo">LOWER</span></td></tr>
+
+<tr><td class="rank">17</td><td class="nm">MOTS-c <small>mitochondrial peptide</small></td><td class="cat">Metabolic / mitochondrial research</td><td>10 mg · 40 mg</td><td>10mg</td><td>$65 / $220</td><td><span class="pill depth-light">LIGHT</span></td><td><span class="pill heat-lo">LOWER</span></td></tr>
+
+<tr><td class="rank">18</td><td class="nm">NAD+ <small>injectable</small></td><td class="cat">Longevity / energy research</td><td>100 · 500 · 1000 mg</td><td>500mg</td><td>$39–147</td><td><span class="pill depth-light">LIGHT</span></td><td><span class="pill heat-lo">LOWER</span></td></tr>
+
+<tr><td class="rank">19</td><td class="nm">PT-141 <small>Bremelanotide</small></td><td class="cat">Sexual-health research</td><td>10 mg</td><td>10mg</td><td>$64</td><td><span class="pill depth-light">LIGHT</span></td><td><span class="pill heat-el">ELEVATED</span></td></tr>
+
+<tr><td class="rank">20</td><td class="nm">Semax <small>+ sister SKU Selank</small></td><td class="cat">Nootropic / cognitive research</td><td>5 mg · 10 mg <span style="color:var(--muted)">(Selank 5·10)</span></td><td>10mg each</td><td>$51 / $76</td><td><span class="pill depth-light">LIGHT</span></td><td><span class="pill heat-lo">LOWER</span></td></tr>
+
+</table>
+</div>
+
+<h2>All 8 Catalog Stacks — Full Coverage <span class="tag">NONE MISSED</span></h2>
+<p class="sub">You asked for every stack. Five are in the Top 20 above; here are all eight in one place with components and sizes, so nothing gets left off the buy sheet. Stacks convert well because they remove decision friction and carry a built-in bundle discount — feature them on the storefront home.</p>
+
+<div class="card" style="overflow-x:auto;">
+<table>
+<tr><th>Stack</th><th>Components</th><th>Category (RUO)</th><th>Size</th><th>Your Cost</th><th>Priority</th></tr>
+<tr class="stackrow"><td class="nm">Wolverine</td><td>BPC-157 + TB-500</td><td>Recovery / healing</td><td>5+5 · 10+10 mg</td><td>$114 / $193</td><td><span class="pill depth-deep">STOCK DEEPEST</span></td></tr>
+<tr class="stackrow"><td class="nm">GH Synergy</td><td>CJC-1295 (No-DAC) + Ipamorelin</td><td>GH secretagogue</td><td>5+5 mg</td><td>$188</td><td><span class="pill depth-deep">DEEP</span></td></tr>
+<tr class="stackrow"><td class="nm">Glow</td><td>TB-500 + BPC-157 + GHK-Cu</td><td>Skin + healing</td><td>10+10+50 mg</td><td>$192</td><td><span class="pill depth-deep">DEEP</span></td></tr>
+<tr class="stackrow"><td class="nm">KLOW</td><td>KPV + GHK-Cu + BPC-157 + TB-500</td><td>Skin + healing + anti-inflammatory</td><td>10+50+10+10 mg</td><td>$215</td><td><span class="pill depth-med">MEDIUM</span></td></tr>
+<tr class="stackrow"><td class="nm">Appetite Crusher (CagriSema)</td><td>Cagrilintide + Semaglutide</td><td>Metabolic co-stack</td><td>5+5 mg</td><td>$150</td><td><span class="pill depth-med">MEDIUM (high heat)</span></td></tr>
+<tr class="stackrow"><td class="nm">The Furnace</td><td>L-Carnitine blend</td><td>Fat-loss / energy research</td><td>600 mg blend</td><td>$41</td><td><span class="pill depth-med">MEDIUM — cheap, easy add-on</span></td></tr>
+<tr class="stackrow"><td class="nm">The Lipolysis (Lemon Bottle)</td><td>Riboflavin / Bromelain / Lecithin</td><td>Lipolytic research blend</td><td>10 mL</td><td>$74</td><td><span class="pill depth-light">LIGHT</span></td></tr>
+<tr class="stackrow"><td class="nm">The Skinny Shot (Lipo-C)</td><td>MIC + B-vitamin lipotropic</td><td>Lipotropic research blend</td><td>10 mL</td><td>$65</td><td><span class="pill depth-light">LIGHT</span></td></tr>
+</table>
+</div>
+
+<h2>Buy Strategy <span class="tag">HOW MUCH OF EACH</span></h2>
+<div class="card">
+  <h3 class="gold">The 3-bucket first order</h3>
+  <p><b>Bucket 1 — Volume engine (highest turn, highest risk):</b> Tirzepatide + Semaglutide, in their lead sizes (Tirz 10/15/30, Sema 5/10). These will be a large share of your revenue. Size to your compliance comfort — they turn fast, so you won't sit on them, but they carry the enforcement risk in the Heat column. Retatrutide one tier lighter (investigational = highest legal exposure).</p>
+  <p><b>Bucket 2 — Safe core (stock DEEP, sleep easy):</b> Wolverine, BPC-157, TB-500, GH Synergy, Glow, GHK-Cu, Ipamorelin, CJC-1295, Sermorelin, Tesamorelin. High demand, low regulatory heat — this is the backbone that keeps orders shipping same-day without legal worry.</p>
+  <p><b>Bucket 3 — Basket-fillers (LIGHT, a few units each):</b> KLOW, Cagrilintide, MOTS-c, NAD+, PT-141, Semax/Selank, KPV, plus the Furnace/Lipolysis/Skinny-Shot blends. Don't overbuy — they complete carts and prevent "out of stock" but move slowly. KPV and BAC water/acetic acid are cheap, high-attach add-ons — never let those or bac water run out (every injectable order needs reconstitution supplies).</p>
+</div>
+
+<div class="card">
+  <h3>Don't forget the consumables</h3>
+  <p>Every peptide order needs <b>Bacteriostatic Water</b> (you carry 3mL + 10mL) and some need <b>Acetic Acid 0.6%</b>. These are near-100% attach items and pennies to stock — running out of BAC water blocks a customer from using anything they bought. Stock these <b>DEEP</b>; they're the razor-blades to your razors.</p>
+</div>
+
+<div class="card">
+  <h3 class="warn">Regulatory heat — size inventory accordingly</h3>
+  <p><b>Highest heat (GLP-1 analogs):</b> Semaglutide + Tirzepatide drew 50+ FDA warning letters to sellers in 2025; Retatrutide is investigational and cannot be compounded at all. The demand is real and so is enforcement — keep strict Research Use Only labeling, never imply human use, and size depth to your risk appetite rather than pure demand.</p>
+  <p><b>Elevated:</b> BPC-157 (direct FDA warning-letter activity), PT-141, and any GLP-containing stack (Glow/KLOW contain BPC; CagriSema contains semaglutide).</p>
+  <p><b>Lower heat — your safe volume:</b> TB-500, GHK-Cu, Ipamorelin, CJC-1295, Sermorelin (still compoundable), Tesamorelin, MOTS-c, Semax, Selank, Epithalon, NAD+. Lean into these for confident deep stocking and lead your marketing with the recovery/anti-aging story rather than the GLP-1 one.</p>
+</div>
+
+<div class="footer-note">PepNationLab · Top 20 Stock-In List · All products for laboratory research use only · Costs = your base_cost; retail auto-calculates by pricing tier</div>
+</div>
+</body>
+</html>
