@@ -47,6 +47,8 @@ const CITIES_ARIZONA: City[] = [
   { name: 'Payson', slug: 'payson', state: 'Arizona', stateSlug: 'arizona', stateAbbr: 'AZ', population: 16000, medianIncome: 48000, tier: 3, region: 'Central Arizona', county: 'Gila', zips: ['85541'], localBlurb: 'Payson is a Mogollon Rim mountain town at the geographic center of Arizona.' },
   { name: 'Show Low', slug: 'show-low', state: 'Arizona', stateSlug: 'arizona', stateAbbr: 'AZ', population: 12000, medianIncome: 48000, tier: 3, region: 'Eastern Arizona', county: 'Navajo', zips: ['85901'], localBlurb: 'Show Low is a White Mountains resort town in Navajo County in eastern Arizona.' },
   { name: 'Nogales', slug: 'nogales', state: 'Arizona', stateSlug: 'arizona', stateAbbr: 'AZ', population: 20000, medianIncome: 38000, tier: 3, region: 'Southern Arizona', county: 'Santa Cruz', zips: ['85621'], localBlurb: 'Nogales is a border city and the Santa Cruz County seat on the Mexican frontier.' },
+
+  { name: 'San Tan Valley', slug: 'san-tan-valley', state: 'Arizona', stateSlug: 'arizona', stateAbbr: 'AZ', population: 100000, medianIncome: 78000, tier: 3, region: 'Greater Phoenix', county: 'Pinal', zips: ['85140', '85143'], localBlurb: 'San Tan Valley is a fast-growing Pinal County community in the southeast Phoenix metro.' },
 ];
 
 export default CITIES_ARIZONA;
