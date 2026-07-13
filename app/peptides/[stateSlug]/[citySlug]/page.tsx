@@ -17,13 +17,14 @@ import { getStoreTop10 } from '@/lib/cities/top10-server';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 import CityPage from './CityPage';
 import { getCityFAQs } from '@/lib/cities/city-content';
+import { getResearchAnchors } from '@/lib/cities/research-anchors';
 
 // ISR: regenerate each city page at most every 5 minutes so the Top 10 grid
 // tracks the live storefront catalog - admin price/name changes flow through
 // without a redeploy.
 export const revalidate = 300;
 
-// ─── Static params (build-time pre-rendering) ─────────────────
+// ─── Static params (build-time pre-rendering) ─────────────────────
 // Scale-ready ISR: at build we pre-render ONLY the highest-priority markets
 // (sorted by tier, then population) up to this small cap. Every other city -
 // and any city added later - is rendered on first request via ISR and cached
@@ -45,7 +46,7 @@ export async function generateStaticParams() {
     }));
 }
 
-// ─── Per-city metadata ─────────────────────────────────────
+// ─── Per-city metadata ──────────────────────────────────────────────────
 export async function generateMetadata({
   params,
 }: {
@@ -97,7 +98,7 @@ export async function generateMetadata({
   };
 }
 
-// ─── Page shell (server component) ────────────────────────
+// ─── Page shell (server component) ───────────────────────────────────────
 export default async function CityLandingPage({
   params,
 }: {
@@ -113,6 +114,24 @@ export default async function CityLandingPage({
   // static FEATURED_PEPTIDES list.
   const top10 = await getStoreTop10();
 
+  // Regional research institutions (universities, academic medical centers,
+  // national labs) mapped for this metro. Emitted as schema.org `mentions`
+  // entities on the WebPage node - honest entity/topical signal, not a claim
+  // of affiliation. Empty array when the region is not mapped.
+  const _anchors = getResearchAnchors(city.region);
+  const researchMentions = _anchors
+    ? _anchors.map((a) => ({
+        '@type':
+          a.kind === 'University'
+            ? 'CollegeOrUniversity'
+            : a.kind === 'Medical Center'
+              ? 'MedicalOrganization'
+              : a.kind === 'National Lab' || a.kind === 'Research Institute'
+                ? 'ResearchOrganization'
+                : 'Organization',
+        name: a.name,
+      }))
+    : [];
   const jsonLd = {
     '@context': 'https://schema.org',
     '@graph': [
@@ -217,6 +236,7 @@ export default async function CityLandingPage({
         publisher: { '@id': 'https://pepnationlab.com/#organization' },
         datePublished: '2026-07-01',
         dateModified: CITY_CONTENT_UPDATED.toISOString().slice(0, 10),
+        ...(researchMentions.length > 0 ? { mentions: researchMentions } : {}),
       },
       {
         '@type': 'FAQPage',
