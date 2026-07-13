@@ -642,7 +642,7 @@ const CITIES_ILLINOIS: City[] = [
     name: 'Cicero', slug: 'cicero', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
     population: 80000, medianIncome: 55000, tier: 2, region: 'Chicagoland area', county: 'Cook',
     zips: ['60804'],
-    localBlurb: 'From the historic architecture along Cermak Road to the vibrant industrial parks, Pep Nation Lab provides Cicero research professionals with rapid access to 99%+ pure research peptides. Our secure fulfillment network ensures next-day processing for critical in vitro studies across Cook County.'
+    localBlurb: 'Cicero is a densely populated Cook County town on Chicago\'s western border in Chicagoland.'
   },
   {
     name: 'Waukegan', slug: 'waukegan', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
@@ -654,31 +654,31 @@ const CITIES_ILLINOIS: City[] = [
     name: 'DeKalb', slug: 'dekalb', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
     population: 40000, medianIncome: 45000, tier: 3, region: 'Northern Illinois', county: 'DeKalb',
     zips: ['60115'],
-    localBlurb: 'Home to major academic and agricultural research institutions, DeKalb relies on Pep Nation Lab for premium analytical compounds. We supply Northern Illinois University affiliates and independent investigators with strictly regulated, high-purity peptides for advanced structural and binding assays.'
+    localBlurb: 'DeKalb is home to Northern Illinois University in DeKalb County of northern Illinois.'
   },
   {
     name: 'Urbana', slug: 'urbana', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
     population: 38000, medianIncome: 50000, tier: 3, region: 'Central Illinois', county: 'Champaign',
     zips: ['61801', '61802'],
-    localBlurb: 'As a global hub for scientific innovation and home to leading research parks, Urbana demands uncompromising quality. Pep Nation Lab provides Urbana researchers with lyophilized, synthesis-verified peptides perfectly suited for the rigorous analytical environments of the Silicon Prairie.'
+    localBlurb: 'Urbana is home, with Champaign, to the University of Illinois flagship campus in central Illinois.'
   },
   {
     name: 'Quincy', slug: 'quincy', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
     population: 40000, medianIncome: 52000, tier: 3, region: 'Central Illinois', county: 'Adams',
     zips: ['62301'],
-    localBlurb: 'Serving the "Gem City" and the broader Tri-State area, Pep Nation Lab is Quincy’s premier source for research peptides. We offer fast, discreet shipping along the Mississippi corridor, equipping local scientific teams with the reference materials needed for complex cellular research.'
+    localBlurb: 'Quincy is a historic Mississippi River city and the Adams County seat in western Illinois, the Gem City.'
   },
   {
     name: 'Rock Island', slug: 'rock-island', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
     population: 37000, medianIncome: 50000, tier: 3, region: 'Quad Cities', county: 'Rock Island',
     zips: ['61201'],
-    localBlurb: 'Nestled in the Quad Cities, Rock Island’s clinical and environmental researchers trust Pep Nation Lab for domestic, USA-verified compounds. From the Arsenal district to Augustana’s academic labs, we provide BPC-157, TB-500, and more with guaranteed mass spectroscopy reports.'
+    localBlurb: 'Rock Island is one of the Quad Cities on the Mississippi River, home to the Rock Island Arsenal.'
   },
   {
     name: 'Carbondale', slug: 'carbondale', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
     population: 21000, medianIncome: 30000, tier: 3, region: 'Southern Illinois', county: 'Jackson',
     zips: ['62901'],
-    localBlurb: 'As the educational and medical center of Little Egypt, Carbondale is a key hub for physiological research. Pep Nation Lab supplies investigators across the SIU corridor with premium research peptides, backed by transparent NMR testing for demanding in vitro applications.'
+    localBlurb: 'Carbondale is home to Southern Illinois University in Jackson County of southern Illinois.'
   },
   {
     name: 'Macomb', slug: 'macomb', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
@@ -690,19 +690,19 @@ const CITIES_ILLINOIS: City[] = [
     name: 'Alton', slug: 'alton', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
     population: 25000, medianIncome: 45000, tier: 3, region: 'Metro East', county: 'Madison',
     zips: ['62002'],
-    localBlurb: 'Located along the historic Mississippi River bluffs, Alton’s medical and research facilities depend on Pep Nation Lab for fast, secure compound delivery. We provide the Riverbend region with third-party tested peptides designed explicitly for high-precision analytical research.'
+    localBlurb: 'Alton is a historic Mississippi River city in the Metro East across from St. Louis in Madison County.'
   },
   {
     name: 'Galesburg', slug: 'galesburg', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
     population: 30000, medianIncome: 40000, tier: 3, region: 'Western Illinois', county: 'Knox',
     zips: ['61401'],
-    localBlurb: 'From the Knox College campus to the thriving local medical districts, Galesburg researchers choose Pep Nation Lab for unparalleled peptide purity. Our strict US-based fulfillment ensures your lab receives stable, properly stored compounds ready for immediate reconstitution.'
+    localBlurb: 'Galesburg is a western Illinois railroad city home to Knox College in Knox County.'
   },
   {
     name: 'Marion', slug: 'marion', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
     population: 16000, medianIncome: 45000, tier: 3, region: 'Southern Illinois', county: 'Williamson',
     zips: ['62959'],
-    localBlurb: 'As the retail and medical hub of Southern Illinois, Marion’s scientific investigators require dependable access to research chemicals. Pep Nation Lab offers Marion labs wholesale access to Semaglutide, Tirzepatide, and other peptides with verifiable certificates of analysis.'
+    localBlurb: 'Marion is a southern Illinois regional hub and the Williamson County seat near Carbondale.'
   },
   {
     name: 'Mount Vernon', slug: 'mount-vernon', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
@@ -714,7 +714,7 @@ const CITIES_ILLINOIS: City[] = [
     name: 'Effingham', slug: 'effingham', state: 'Illinois', stateSlug: 'illinois', stateAbbr: 'IL',
     population: 12000, medianIncome: 55000, tier: 3, region: 'Central Illinois', county: 'Effingham',
     zips: ['62401'],
-    localBlurb: 'Known as the Crossroads of Opportunity, Effingham’s growing clinical research footprint relies on Pep Nation Lab. We supply specialized research peptides to local investigators, providing the crucial raw materials needed for advanced metabolic and regenerative tissue assays.'
+    localBlurb: 'Effingham is a central Illinois crossroads city at the junction of I-57 and I-70, the Effingham County seat.'
   },
 ];
 
