@@ -490,39 +490,61 @@ function NotificationsStep({ onDone }: { onDone: () => void }) {
     setBusy(false);
   };
 
+  const skipStep = async () => {
+    // Let the agent proceed even though notifications are blocked.
+    // The step stays marked incomplete in their checklist as a reminder to fix it later.
+    setBusy(true);
+    try { await onDone(); } finally { setBusy(false); }
+  };
+
   return (
     <div>
       <StepIntro icon={BellRing} title="Turn On Notifications"
         blurb="Notifications Let You Know The Moment You Get A New Order Or Payment. Follow The Steps For Your Device Below. This Step Finishes Only Once Notifications Are Actually On." />
 
       {blocked ? (
-        <GuidePanel heading="Notifications Are Blocked -- How To Unblock" icon={RotateCw} steps={unblockSteps} />
-      ) : (
-        <GuidePanel heading={heading} icon={Smartphone} steps={steps} />
-      )}
-
-      <KeyCallout>
-        The Most Important Part: When Your Device Asks For Permission, You Must Choose <strong style={{ color: 'var(--white)' }}>Allow</strong>. If You Pick Block Or Don&apos;t Allow, Notifications Stay Off.
-      </KeyCallout>
-
-      {supported === false ? (
         <>
-          <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', lineHeight: 1.5 }}>
-            This Browser Tab Cannot Receive Notifications Yet. Add Pep Nation To Your Home Screen Using The Steps Above, Open It From The Icon, Then Tap Re-Check.
-          </p>
-          <button type="button" className="btn btn-secondary" onClick={recheck} disabled={busy}
-            style={{ width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 'var(--space-3, 12px)' }}>
-            {busy ? <Loader2 size={16} className="spin" /> : <RotateCw size={16} />} I Have Done This, Re-Check
+          <GuidePanel heading="Notifications Are Blocked -- How To Unblock" icon={RotateCw} steps={unblockSteps} />
+          <KeyCallout>
+            The Most Important Part: When Your Device Asks For Permission, You Must Choose <strong style={{ color: 'var(--white)' }}>Allow</strong>. If You Pick Block Or Don&apos;t Allow, Notifications Stay Off.
+          </KeyCallout>
+          <ErrorLine msg={err} />
+          <PrimaryButton onClick={enableAndContinue} busy={busy}>Try Again — Turn On Notifications</PrimaryButton>
+          <button type="button" onClick={recheck} disabled={busy}
+            style={{ width: '100%', marginTop: 10, background: 'transparent', border: 'none', color: 'var(--grey-400)', cursor: 'pointer', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            <RotateCw size={13} /> I Unblocked It In Settings — Re-Check
+          </button>
+          <button type="button" onClick={skipStep} disabled={busy}
+            style={{ width: '100%', marginTop: 8, background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: 'var(--grey-500)', cursor: 'pointer', fontSize: '0.75rem', padding: '8px 0', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            Skip For Now — I&apos;ll Enable Notifications Later
           </button>
         </>
       ) : (
         <>
-          <ErrorLine msg={err} />
-          <PrimaryButton onClick={enableAndContinue} busy={busy}>Turn On Notifications</PrimaryButton>
-          <button type="button" onClick={recheck} disabled={busy}
-            style={{ width: '100%', marginTop: 10, background: 'transparent', border: 'none', color: 'var(--grey-400)', cursor: 'pointer', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-            <RotateCw size={13} /> Already Turned Them On? Re-Check
-          </button>
+          <KeyCallout>
+            The Most Important Part: When Your Device Asks For Permission, You Must Choose <strong style={{ color: 'var(--white)' }}>Allow</strong>. If You Pick Block Or Don&apos;t Allow, Notifications Stay Off.
+          </KeyCallout>
+          <GuidePanel heading={heading} icon={Smartphone} steps={steps} />
+          {supported === false ? (
+            <>
+              <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', lineHeight: 1.5 }}>
+                This Browser Tab Cannot Receive Notifications Yet. Add Pep Nation To Your Home Screen Using The Steps Above, Open It From The Icon, Then Tap Re-Check.
+              </p>
+              <button type="button" className="btn btn-secondary" onClick={recheck} disabled={busy}
+                style={{ width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 'var(--space-3, 12px)' }}>
+                {busy ? <Loader2 size={16} className="spin" /> : <RotateCw size={16} />} I Have Done This, Re-Check
+              </button>
+            </>
+          ) : (
+            <>
+              <ErrorLine msg={err} />
+              <PrimaryButton onClick={enableAndContinue} busy={busy}>Turn On Notifications</PrimaryButton>
+              <button type="button" onClick={recheck} disabled={busy}
+                style={{ width: '100%', marginTop: 10, background: 'transparent', border: 'none', color: 'var(--grey-400)', cursor: 'pointer', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <RotateCw size={13} /> Already Turned Them On? Re-Check
+              </button>
+            </>
+          )}
         </>
       )}
     </div>
