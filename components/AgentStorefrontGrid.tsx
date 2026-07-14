@@ -62,15 +62,11 @@ const StorefrontCompareDrawer = dynamic(() => import('./storefront/StorefrontCom
 export interface BundleConfig {
   id: string;
   name: string;
-  /** Short tagline / popular name shown as a subtitle on the bundle card */
-  tagline?: string;
   description?: string;
   image_url?: string | null;
   product_ids: string[];
   /** Optional discount applied to the summed member price at checkout. */
   discount_percent?: number;
-  /** Flat custom price override — when set, overrides discount_percent entirely */
-  custom_price?: number | null;
   /** Legacy pre-computed price; superseded by the summed member price. */
   price?: number;
 }
@@ -105,8 +101,6 @@ interface Props {
   minOverallQty?: number;
   compoundsBySlug?: Record<string, Compound>;
   featuredProductIds?: string[];
-  /** White-label branding: when set, replaces the hero title with the agent's store name. */
-  customBranding?: { storefront_heading?: string; logo_url?: string; brand_name?: string } | null;
 }
 
 const containerVariants: Variants = {
@@ -159,7 +153,6 @@ const POPULAR_ORDER: string[] = [
   'KPV',
   'Semax',
   'Selank',
-  'KissPeptin-10',
 ];
 
 const CARD_MAPPINGS = [
@@ -186,7 +179,7 @@ function fuzzyMatch(query: string, text: string): boolean {
 }
 
 function formatPrice(price: number): string {
-  return (Number(price) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return price.toFixed(2);
 }
 
 import { highlightText, splitProductName, getEditDistance } from '@/lib/storefront-helpers';
@@ -300,7 +293,6 @@ export default function AgentStorefrontGrid({
   inventoryMap,
   primaryColor,
   agentSlug,
-  customBranding,
   bundles = [],
   initialWishlistIds = [],
   agentId = null,
@@ -1969,11 +1961,9 @@ export default function AgentStorefrontGrid({
     }
     if (members.length < 2) return null;
     const fullPrice = members.reduce((sum, m) => sum + (Number(m.retail_price) || 0) / 10, 0);
-    // custom_price overrides discount_percent when set
-    const cp = bundle.custom_price != null && Number(bundle.custom_price) > 0 ? Number(bundle.custom_price) : null;
-    const discountPct = cp != null ? 0 : Math.min(Math.max(Math.round(Number(bundle.discount_percent) || 0), 0), 90);
-    const finalPrice = cp != null ? cp : Math.max(0, fullPrice * (1 - discountPct / 100));
-    return { members, fullPrice, finalPrice, discountPct, isCustomPrice: cp != null };
+    const discountPct = Math.min(Math.max(Math.round(Number(bundle.discount_percent) || 0), 0), 90);
+    const finalPrice = Math.max(0, fullPrice * (1 - discountPct / 100));
+    return { members, fullPrice, finalPrice, discountPct };
   }, [products]);
 
   const removeBundleFromCart = useCallback((bundleName: string) => {
@@ -1993,12 +1983,6 @@ export default function AgentStorefrontGrid({
           ? Number((m as any).cost_price) / 10
           : perVial;
         const sizeLabel = m.products?.unit_size ? `(${m.products.unit_size}${m.products.unit_measure || ''})` : '';
-        // For custom-priced bundles, distribute the flat price proportionally across members
-        let bundleCustomPrice: number | null = null;
-        if (resolved.isCustomPrice && resolved.fullPrice > 0) {
-          const share = perVial / resolved.fullPrice;
-          bundleCustomPrice = Math.round(resolved.finalPrice * share * 100) / 100;
-        }
         return {
           id: m.product_id,
           name: `${m.products?.name || 'Product'} ${sizeLabel}`.trim(),
@@ -2010,7 +1994,6 @@ export default function AgentStorefrontGrid({
           agentSelfBuy: isStorefrontOwner,
           bundleName: bundle.name,
           bundleDiscountPercent: resolved.discountPct,
-          ...(bundleCustomPrice != null && { bundleCustomPrice }),
         };
       });
       return [...prev, ...lines];
@@ -2042,14 +2025,10 @@ export default function AgentStorefrontGrid({
             <Image src={bundle.image_url} alt={bundle.name} fill unoptimized sizes="(max-width: 768px) 100vw, 33vw" style={{ objectFit: 'cover' }} />
           </div>
         )}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: bundle.tagline ? 'var(--space-1)' : 'var(--space-3)', gap: 8 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-3)', gap: 8 }}>
           <h4 style={{ fontFamily: 'var(--font-brand)', fontSize: '1.1rem', color: 'var(--white)', letterSpacing: '0.02em', lineHeight: 1.2 }}>{bundle.name}</h4>
           <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', padding: '4px 10px', borderRadius: 'var(--radius-full)', background: `${primaryColor}20`, border: `1px solid ${primaryColor}40`, color: primaryColor, whiteSpace: 'nowrap' }}>Bundle</span>
         </div>
-        {/* Tagline (popular name) */}
-        {bundle.tagline && (
-          <p style={{ fontSize: '0.78rem', color: 'var(--teal)', fontStyle: 'italic', marginBottom: 'var(--space-3)', lineHeight: 1.4 }}>"{bundle.tagline}"</p>
-        )}
         {bundle.description && (
           <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', lineHeight: 1.5, marginBottom: 'var(--space-3)' }}>{bundle.description}</p>
         )}
@@ -2063,16 +2042,12 @@ export default function AgentStorefrontGrid({
         </ul>
         <div style={{ marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 'var(--space-4)' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 'var(--space-3)', flexWrap: 'wrap' }}>
-            {/* Show crossed-out full price when there's a discount or custom price that beats it */}
-            {(resolved.discountPct > 0 || resolved.isCustomPrice) && resolved.fullPrice > resolved.finalPrice && (
+            {resolved.discountPct > 0 && (
               <span style={{ textDecoration: 'line-through', opacity: 0.55, color: 'var(--silver)', fontSize: '0.95rem' }}>${formatPrice(resolved.fullPrice)}</span>
             )}
             <span className="sf-product-price-nickel" style={{ fontSize: '1.3rem', fontWeight: 800, fontFamily: 'var(--font-brand)' }}>${formatPrice(resolved.finalPrice)}</span>
-            {resolved.discountPct > 0 && !resolved.isCustomPrice && (
+            {resolved.discountPct > 0 && (
               <span style={{ fontSize: '0.72rem', color: '#68D391', fontWeight: 700 }}>({resolved.discountPct}% Off)</span>
-            )}
-            {resolved.isCustomPrice && (
-              <span style={{ fontSize: '0.72rem', color: '#fbbf24', fontWeight: 700 }}>Bundle Price</span>
             )}
           </div>
           <button
@@ -2482,27 +2457,28 @@ export default function AgentStorefrontGrid({
                     const displayOriginalPrice = isBW ? perVialOriginal * 10 : perVialOriginal;
                     const displaySizeText = isBW ? `10x ${size}${measure} Vials` : `${size}${measure} Vials`;
 
+                    const _comparePrice = _showMarketAvg ? _marketAvgDisplay : (isOnSale ? displayOriginalPrice : 0);
+                    const _hasCompare = _comparePrice > displayPrice;
+                    const _youSave = _hasCompare ? _comparePrice - displayPrice : 0;
                     return (
-                      <>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                          {isOnSale && (
-                            <span style={{ fontSize: '0.95rem', color: 'var(--grey-500)', textDecoration: 'line-through', fontWeight: 600 }}>
-                              ${formatPrice(displayOriginalPrice)}
-                            </span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
+                        <div style={{ display: 'flex', alignItems: 'stretch', justifyContent: _hasCompare ? 'space-between' : 'center', gap: 12 }}>
+                          {_hasCompare && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'flex-start', justifyContent: 'center', border: '1px solid rgba(0,196,188,0.35)', borderRadius: 10, padding: '8px 12px', background: 'rgba(0,196,188,0.06)' }}>
+                              <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)', letterSpacing: '0.01em', whiteSpace: 'nowrap' }}>YOU SAVE ${_youSave.toFixed(2)}</span>
+                              <span style={{ fontSize: '0.6rem', color: 'var(--grey-500)', fontWeight: 700, letterSpacing: '0.1em' }}>MSRP</span>
+                              <span style={{ fontSize: '0.92rem', color: 'var(--grey-500)', textDecoration: 'line-through', fontWeight: 700 }}>${_comparePrice.toFixed(2)}</span>
+                            </div>
                           )}
-                          {_showMarketAvg && (
-                            <span style={{ fontSize: '0.95rem', color: 'var(--grey-500)', textDecoration: 'line-through', fontWeight: 600 }}>
-                              ${formatPrice(_marketAvgDisplay)}
-                            </span>
-                          )}
-                          <span className="sf-product-price-nickel" style={{
-                            fontSize: '1.2rem', fontWeight: 800,
-                            fontFamily: 'var(--font-brand)',
-                          }}>
-                            {displaySizeText} &nbsp;${formatPrice(displayPrice)}
-                          </span>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: _hasCompare ? 'flex-end' : 'center', justifyContent: 'center' }}>
+                            <span style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--teal)', letterSpacing: '0.06em' }}>WHOLESALE PRICE</span>
+                            <span className="sf-product-price-nickel" style={{ fontSize: '1.7rem', fontWeight: 800, fontFamily: 'var(--font-brand)', lineHeight: 1 }}>${displayPrice.toFixed(2)}</span>
+                          </div>
                         </div>
-                      </>
+                        <div style={{ display: 'flex', justifyContent: 'center' }}>
+                          <span style={{ fontSize: '0.72rem', color: 'var(--silver-light)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 'var(--radius-full)', padding: '3px 14px', fontWeight: 600, whiteSpace: 'nowrap' }}>{displaySizeText}</span>
+                        </div>
+                      </div>
                     );
                   })()}
                 </div>
@@ -2794,49 +2770,6 @@ export default function AgentStorefrontGrid({
           sizes="(max-width: 960px) 100vw, 960px" 
           style={{ objectFit: 'cover' }} 
         />
-
-        {/* Custom-branding title overlay: covers the baked-in "PEP NATION'S RESEARCH STORE"
-            text and replaces it with the agent's own store name in the same style/position.
-            Only rendered when customBranding.storefront_heading is set. */}
-        {customBranding?.storefront_heading && (
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '13%',
-            background: '#000000',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '16px',
-            zIndex: 5,
-          }}>
-            {customBranding?.logo_url && (
-              <img
-                src={customBranding.logo_url}
-                alt="Logo"
-                style={{
-                  height: '80%',
-                  width: 'auto',
-                  objectFit: 'contain',
-                  mixBlendMode: 'screen', // 100% removes the black background
-                }}
-              />
-            )}
-            <span style={{
-              fontFamily: '"Arial Black", "Impact", sans-serif',
-              fontSize: 'clamp(1rem, 3.5vw, 2.2rem)',
-              fontWeight: 800,
-              color: '#B8C0C8', // Flat light grey matching the subheader
-              textTransform: 'uppercase',
-              letterSpacing: '0.04em',
-            }}>
-              {customBranding.storefront_heading}
-            </span>
-          </div>
-        )}
-
         {/* Search input mapped precisely over the search input bar in the image */}
         <input
           type="text"
@@ -3606,16 +3539,16 @@ export default function AgentStorefrontGrid({
                         <span style={{ color: 'var(--white)', fontWeight: 800, fontSize: '1.25rem', letterSpacing: '0.01em' }}>
                           {saved > 0.004 && (
                             <span style={{ textDecoration: 'line-through', color: 'var(--grey-400)', fontWeight: 600, fontSize: '0.9rem', marginRight: 8 }}>
-                              ${formatPrice(flatTotal)}
+                              ${flatTotal.toFixed(2)}
                             </span>
                           )}
-                          ${formatPrice(discTotal)}
+                          ${discTotal.toFixed(2)}
                         </span>
                       </div>
                       {saved > 0.004 && (
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#68D391', fontWeight: 700, marginBottom: 4 }}>
                           <span>Quantity Discounts Applied</span>
-                          <span>You Save ${formatPrice(saved)}</span>
+                          <span>You Save ${saved.toFixed(2)}</span>
                         </div>
                       )}
                       {totalCartItems > 0 && totalCartItems < overallMin && (
@@ -3646,7 +3579,7 @@ export default function AgentStorefrontGrid({
                     }}>
                       {remaining <= 0
                         ? 'Your Order Qualifies For Free Shipping'
-                        : `Add $${formatPrice(remaining)} More To Unlock Free Shipping On Orders $100+`}
+                        : `Add $${remaining.toFixed(2)} More To Unlock Free Shipping On Orders $100+`}
                     </div>
                   );
                 })()}
@@ -3806,7 +3739,7 @@ export default function AgentStorefrontGrid({
                       {toTitleCase(detailProduct.name)}
                     </div>
                     <div style={{ fontSize: '0.8rem', color: primaryColor, fontWeight: 800, fontFamily: 'var(--font-brand)' }}>
-                      ${formatPrice(stickyPer)} Per Vial{stickyQty > 1 ? ` - ${stickyQty} Selected` : ''}
+                      ${stickyPer.toFixed(2)} Per Vial{stickyQty > 1 ? ` - ${stickyQty} Selected` : ''}
                     </div>
                   </div>
                   <DynamicAddToCartButton
@@ -4065,18 +3998,12 @@ export default function AgentStorefrontGrid({
                   const getUnitPrice = (q: number) => {
 
                     const t = tiers.find(t => q >= t.min && q <= t.max);
-                    // Keep the per-vial price EXACT here. Charm pack prices (e.g. $74.97)
-                    // do not divide into a clean per-vial cent, so rounding the unit BEFORE
-                    // multiplying inflated the shown total ($7.497 -> $7.50 -> $75.00 for a
-                    // $74.97 pack, while the cart correctly charged $74.97). Round only the
-                    // final line total below so the displayed total matches what is charged.
-                    const mult = t ? 1 + t.pct / 100 : 1;
-                    return basePrice * mult;
+                    return t ? parseFloat((basePrice * (1 + t.pct / 100)).toFixed(2)) : basePrice;
                   };
 
                   const displayQty = qty > 0 ? qty : 1;
                   const unitPrice = getUnitPrice(displayQty);
-                  const lineTotal = Math.round(unitPrice * displayQty * 100) / 100;
+                  const lineTotal = unitPrice * displayQty;
 
                   return (
                     <div style={{ marginBottom: 'var(--space-6)' }}>
@@ -4190,8 +4117,8 @@ export default function AgentStorefrontGrid({
                                 </div>
                               )}
                               <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, whiteSpace: 'nowrap' }}>
-                                <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>${formatPrice(unitPrice)} × {qty} =</span>
-                                <span style={{ fontSize: '1.4rem', fontWeight: 800, color: primaryColor, fontFamily: 'var(--font-brand)' }}>${formatPrice(lineTotal)}</span>
+                                <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>${unitPrice.toFixed(2)} × {qty} =</span>
+                                <span style={{ fontSize: '1.4rem', fontWeight: 800, color: primaryColor, fontFamily: 'var(--font-brand)' }}>${lineTotal.toFixed(2)}</span>
                               </div>
                             </div>
                             <DynamicAddToCartButton
@@ -4227,7 +4154,7 @@ export default function AgentStorefrontGrid({
                                   {t.pct === 0 && tiers.length > 1 && <span style={{ color: 'var(--grey-400)', marginLeft: 8, fontSize: '0.75rem' }}>Standard</span>}
                                 </span>
                                 <span style={{ fontSize: '0.95rem', fontWeight: 700, fontFamily: 'var(--font-brand)', color: isActive ? primaryColor : 'var(--grey-300)' }}>
-                                  ${formatPrice(tierPrice)}/ea
+                                  ${tierPrice.toFixed(2)}/ea
                                 </span>
                               </div>
                             );
@@ -4325,7 +4252,7 @@ export default function AgentStorefrontGrid({
                                   {tier.min}+ Vials <span style={{ color: '#68D391', marginLeft: 8, fontSize: '0.9rem', fontWeight: 700 }}>{tier.pct}% Off</span>
                                 </span>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                  <span style={{ fontSize: '0.9rem', fontWeight: 700, fontFamily: 'var(--font-brand)', color: 'var(--grey-300)' }}>${formatPrice(dp)} / Vial</span>
+                                  <span style={{ fontSize: '0.9rem', fontWeight: 700, fontFamily: 'var(--font-brand)', color: 'var(--grey-300)' }}>${dp.toFixed(2)} / Vial</span>
                                   <button
                                     type="button"
                                     aria-label={`Add ${tier.min} Vials To Cart`}
