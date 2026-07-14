@@ -1,0 +1,19 @@
+/* ============================================================
+   CHECKOUT-SCOPED FIXES (imported by app/checkout/page.tsx)
+   ------------------------------------------------------------
+   Coupon entry row: the Apply button's label must NEVER wrap or
+   stack ("App / ly"), no matter how narrow the order-summary
+   column gets. The input shrinks instead (min-width: 0 lets a
+   flex item shrink below its intrinsic width). The <=768px
+   mobile override in CheckoutForm (flex-direction: column,
+   full-width button) still applies and is unaffected.
+   ============================================================ */
+
+.coupon-row input {
+  min-width: 0;
+}
+
+.coupon-row button {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
