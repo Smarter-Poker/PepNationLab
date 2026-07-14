@@ -50,7 +50,9 @@ export async function POST(req: NextRequest) {
     code, name, reward_key: rewardKey, reward_value: rewardValue,
     scope: 'platform', owner_agent_id: null,
     is_active: body?.is_active !== false,
-    max_uses: Number.isFinite(Number(body?.max_uses)) && Number(body?.max_uses) >= 0 ? Math.trunc(Number(body.max_uses)) : null,
+    // 0 means "unlimited" -- store NULL. A literal 0 would satisfy
+    // uses_count >= max_uses immediately and block every redemption.
+    max_uses: Number.isFinite(Number(body?.max_uses)) && Number(body?.max_uses) >= 1 ? Math.trunc(Number(body.max_uses)) : null,
     starts_at: body?.starts_at ? new Date(body.starts_at).toISOString() : new Date().toISOString(),
     ends_at: body?.ends_at ? new Date(body.ends_at).toISOString() : null,
     created_by: gate.userId,
@@ -77,7 +79,11 @@ export async function PATCH(req: NextRequest) {
   const patch: Record<string, any> = {};
   if (body.name !== undefined) patch.name = sanitizePromoName(body.name);
   if (body.is_active !== undefined) patch.is_active = !!body.is_active;
-  if (body.max_uses !== undefined) patch.max_uses = body.max_uses === null || body.max_uses === '' ? null : Math.max(0, Math.trunc(Number(body.max_uses) || 0));
+  // 0 / blank / null all mean "unlimited" -- store NULL (0 would block every redemption).
+  if (body.max_uses !== undefined) {
+    const n = Math.trunc(Number(body.max_uses) || 0);
+    patch.max_uses = body.max_uses === null || body.max_uses === '' || n < 1 ? null : n;
+  }
   if (body.ends_at !== undefined) patch.ends_at = body.ends_at ? new Date(body.ends_at).toISOString() : null;
   if (Object.keys(patch).length === 0) return NextResponse.json({ error: 'Nothing To Update.' }, { status: 400 });
 
@@ -97,5 +103,5 @@ export async function DELETE(req: NextRequest) {
   const supabase = createAdminClient();
   const { error } = await supabase.from('signup_promo_codes').delete().eq('id', id);
   if (error) return NextResponse.json({ error: 'Could Not Delete The Promo Code.' }, { status: 500 });
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ success: true });
 }
