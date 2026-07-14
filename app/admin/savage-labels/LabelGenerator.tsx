@@ -112,7 +112,7 @@ export function LabelGenerator({ products }: { products: any[] }) {
                   <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '18px', backgroundColor: accentColor, zIndex: 10 }} />
                   
                   <img 
-                    src={p.image ? `/images/savage-brands-flattened/${p.image.replace('.jpg', '.png')}` : ''} 
+                    src={p.image ? `/images/savage-brands-flattened/${p.image.split('/').pop()?.replace('.jpg', '.png')}` : ''} 
                     alt={p.name}
                     style={{
                       height: '300px',

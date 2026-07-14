@@ -16,8 +16,9 @@ export default async function SavageLabelsPage() {
   const { data: agentProducts, error } = await supabase
     .from('agent_products')
     .select(`
+      custom_image_url,
       product:product_id (
-        id, name, category, unit_size, unit_measure
+        id, name, category, unit_size, unit_measure, image_url
       )
     `)
     .eq('agent_id', agent?.id);
@@ -26,7 +27,13 @@ export default async function SavageLabelsPage() {
     console.error('Supabase error fetching products:', error);
   }
 
-  const products = (agentProducts?.map(ap => ap.product).filter(Boolean) || []).sort((a: any, b: any) => a.name.localeCompare(b.name));
+  const products = (agentProducts?.map((ap: any) => {
+    if (!ap.product) return null;
+    return {
+      ...ap.product,
+      image: ap.custom_image_url || ap.product.image_url || ''
+    };
+  }).filter(Boolean) || []).sort((a: any, b: any) => a.name.localeCompare(b.name));
 
   return (
     <div className="flex flex-col flex-1 h-full overflow-hidden">
