@@ -9,6 +9,7 @@
   },
   "crons": [
     { "path": "/api/cron/abandoned-cart-recovery", "schedule": "0 */6 * * *" },
+    { "path": "/api/cron/lifecycle-nudges", "schedule": "0 16 * * *" },
     { "path": "/api/cron/cancel-stale-pending", "schedule": "45 3 * * *" },
     { "path": "/api/cron/coupons-expire", "schedule": "15 4 * * *" },
     { "path": "/api/cron/idempotency-sweep", "schedule": "30 3 * * *" },
