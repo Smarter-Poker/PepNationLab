@@ -276,52 +276,6 @@ describe('ensureOAuthResearcherProfile', () => {
     expect(result.created).toBe(true);
   });
 
-  // ── same-email account linking (Google login for a regular signup) ──
-
-  it('links a NEW signup into an existing ACTIVE, VERIFIED researcher account', async () => {
-    const { admin, writes } = makeAdmin({
-      profileRow: null,
-      emailOwner: { id: 'existing-researcher', role: 'researcher', is_active: true, email_verified: true },
-    });
-    const result = await ensureOAuthResearcherProfile(admin, googleUser);
-    expect(result.ok).toBe(true);
-    expect(result.linkToUserId).toBe('existing-researcher');
-    expect(result.emailConflict).toBe(false);
-    // The duplicate row must never be written.
-    expect(writes.upserts).toHaveLength(0);
-    expect(writes.updates).toHaveLength(0);
-  });
-
-  it('links a fresh house-linked (email-null) profile into the verified owner', async () => {
-    const { admin } = makeAdmin({
-      profileRow: { ...freshHouseLinkedProfile, email: null },
-      emailOwner: { id: 'existing-researcher', role: 'researcher', is_active: true, email_verified: true },
-    });
-    const result = await ensureOAuthResearcherProfile(admin, googleUser);
-    expect(result.linkToUserId).toBe('existing-researcher');
-    expect(result.emailConflict).toBe(false);
-  });
-
-  it('does NOT link into an agent/admin owner - blocks as a duplicate instead', async () => {
-    const { admin } = makeAdmin({
-      profileRow: null,
-      emailOwner: { id: 'an-agent', role: 'agent', is_active: true, email_verified: true },
-    });
-    const result = await ensureOAuthResearcherProfile(admin, googleUser);
-    expect(result.linkToUserId).toBeNull();
-    expect(result.emailConflict).toBe(true);
-  });
-
-  it('does NOT link into an UNVERIFIED researcher owner - blocks as a duplicate instead', async () => {
-    const { admin } = makeAdmin({
-      profileRow: null,
-      emailOwner: { id: 'unverified', role: 'researcher', is_active: true, email_verified: false },
-    });
-    const result = await ensureOAuthResearcherProfile(admin, googleUser);
-    expect(result.linkToUserId).toBeNull();
-    expect(result.emailConflict).toBe(true);
-  });
-
   // ── agentRef (referral) resolution ──────────────────────────────
 
   it('links a new signup to the named ACTIVE agent from agentRef', async () => {

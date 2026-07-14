@@ -11,6 +11,8 @@ interface EmailTemplate {
   subject_override: string | null;
   body_override: string | null;
   available_vars: string[];
+  default_subject: string;
+  default_body: string;
   updated_at: string | null;
 }
 
@@ -178,7 +180,7 @@ function TemplateCard({
             type="text"
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
-            placeholder="Leave blank to use the built-in default subject…"
+            placeholder={template.default_subject || 'Leave blank to use the built-in default subject…'}
             style={{
               width: '100%',
               background: '#040D16',
@@ -202,7 +204,9 @@ function TemplateCard({
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            placeholder={`Write your custom message here. Use placeholders like {name}, {order}, etc.\nEach line becomes a paragraph. Buttons, totals, and the footer are auto-inserted.`}
+            placeholder={template.default_body
+              ? `Default: "${template.default_body}"\n\nUse placeholders like {name}, {order}, etc. Each line = one paragraph. Structural elements are auto-inserted.`
+              : 'Write your custom message here. Each line becomes a paragraph. Buttons, totals, and the footer are auto-inserted.'}
             rows={5}
             style={{
               width: '100%',
