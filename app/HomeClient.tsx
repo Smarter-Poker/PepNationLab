@@ -134,6 +134,14 @@ export default function HomeClient() {
           priority
           fetchPriority="high"
           quality={40}
+          // Slow-mobile / SMS-launch: the tap zones below are positioned over
+          // this artwork, so on a weak connection the above-the-fold nav would
+          // be an invisible blank until the optimized image arrives. An inline
+          // ~200-byte LQIP (8x14 WebP derived from the artwork itself) paints a
+          // recognizable blurred preview immediately at FCP, so the layout and
+          // where-to-tap are visible from the first frame. Zero extra request.
+          placeholder="blur"
+          blurDataURL="data:image/webp;base64,UklGRmYAAABXRUJQVlA4IFoAAADwAQCdASoIAA4AAwBSJZACdAYsjkQqUwAA/vXtohMfCrMd0H9GOtFJCx/IHpXBGBsFAcIgwsMVBmp8ZtuTTKGp0nAp/SjpN+0+hb6GMfx4WyrfBPjlQ1PxVgA="
           // Mobile LCP: the artwork is a 941px-wide source, so at 100vw a
           // DPR-3 phone pulls the full-width candidate (~941px x 1672px).
           // Capping the slot at 250 CSS px on small screens selects the 750w
