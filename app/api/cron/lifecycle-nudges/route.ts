@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
+import { requireAdmin } from '@/lib/admin-auth';
 import { emailConfigured, sendWelcomeEmail, sendFirstOrderPromoEmail } from '@/lib/email';
 import { enqueuePush } from '@/lib/push-enqueue';
 import { notify } from '@/lib/notify';
@@ -32,7 +33,21 @@ const PROMO_CODE = 'FIRST20';
 export async function GET(req: Request) {
   const unauth = assertCronAuth(req);
   if (unauth) return unauth;
+  return runLifecycleNudges();
+}
 
+/**
+ * Manual trigger for the owner: POST with an ADMIN session runs the same
+ * sweep on demand (e.g. right after launching a promo), without needing the
+ * Vercel CRON_SECRET. Same daily claim applies, so it can never double-send.
+ */
+export async function POST() {
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate.response;
+  return runLifecycleNudges();
+}
+
+async function runLifecycleNudges(): Promise<NextResponse> {
   const partitionKey = new Date().toISOString().slice(0, 10);
   const claim = await claimCronRun('lifecycle_nudges', partitionKey);
   if (!claim) {
@@ -48,7 +63,9 @@ export async function GET(req: Request) {
       .from('profiles')
       .select('id, full_name, first_name, username, email, contact_email, email_verified, email_opt_out, referring_agent_id, created_at, is_active')
       .eq('role', 'researcher')
-      .neq('is_active', false)
+      // Treat a NULL is_active as active: `.neq(false)` would silently drop
+      // NULL rows (SQL three-valued logic), excluding legacy profiles.
+      .or('is_active.is.null,is_active.eq.true')
       .limit(1000);
 
     if (fetchErr) {

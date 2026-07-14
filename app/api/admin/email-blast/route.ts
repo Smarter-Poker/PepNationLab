@@ -60,7 +60,9 @@ async function resolveAudience(
   let query = supabase
     .from('profiles')
     .select('id, full_name, first_name, username, email, contact_email, email_verified, email_opt_out, referring_agent_id, role')
-    .neq('is_active', false)
+    // Treat a NULL is_active as active: `.neq(false)` would silently drop
+    // NULL rows (SQL three-valued logic), excluding legacy profiles.
+    .or('is_active.is.null,is_active.eq.true')
     .limit(5000);
 
   if (audience === 'agents_all') {
