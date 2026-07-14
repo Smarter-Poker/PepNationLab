@@ -68,6 +68,16 @@ export async function GET(req: NextRequest) {
 
     const ensured = await ensureOAuthResearcherProfile(admin, user, agentRef, subAgentRef);
 
+    if (ensured.emailConflict) {
+      // The Google email already belongs to another account. Block this second
+      // account: remove the just-created OAuth user, end the session, and send
+      // the person to log in with their existing account.
+      try { await admin.auth.admin.deleteUser(user.id); } catch { /* best effort */ }
+      await supabase.auth.signOut();
+      loginUrl.searchParams.set('error', 'account_exists');
+      return NextResponse.redirect(loginUrl);
+    }
+
     if (ensured.disabled) {
       await supabase.auth.signOut();
       loginUrl.searchParams.set('error', 'account_disabled');

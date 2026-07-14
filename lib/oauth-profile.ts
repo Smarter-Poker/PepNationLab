@@ -16,6 +16,14 @@ export interface EnsureProfileResult {
   created: boolean;
   linkedHouseStore: boolean;
   username: string | null;
+  /**
+   * True When This Is A BRAND-NEW OAuth Account Whose Google Email Already
+   * Belongs To Another Profile (The enforce_unique_account_email Trigger
+   * Would Reject The Row). The Caller Deletes The Just-Created Auth User And
+   * Sends The Person To Log In With Their Existing Account. NEVER Set For An
+   * Existing Profile - Established Accounts Must Not Be Deleted.
+   */
+  emailConflict: boolean;
   error?: string;
 }
 
@@ -41,10 +49,25 @@ export interface EnsureProfileResult {
  *      The Top-Level agentRef Callback Param): Resolves To That Agent When
  *      The Slug Exists AND The Agent's Account Is Active; Otherwise Falls
  *      Back To The House Store. Signup Is Never Blocked By A Bad Slug.
+ *      CRITICAL: The trg_00_ensure_researcher_house_agent DB Trigger House-
+ *      Links Every New Researcher Row The Moment handle_new_user Creates It,
+ *      So By The Time The OAuth Callback Runs The Profile Is ALREADY House-
+ *      Linked. A House Link On A Profile Created Within The Last 15 Minutes
+ *      Is Therefore Treated As The Trigger Default (Upgradeable To The Named
+ *      Agent), While Any Older Referral - House Or Named - Is NEVER Changed.
  *   7. subAgentId (QR ?sa= Capture, Forwarded As subAgentRef): Credited Only
  *      When It Is A Real Sub-Agent Of The Resolved Referring Agent, Matching
  *      POST /api/storefront/register Exactly.
  */
+
+/**
+ * How Long After Profile Creation A House-Store Referral Still Counts As The
+ * DB Trigger's Placeholder (Upgradeable By agentRef) Rather Than A Settled
+ * Attribution. Generous Enough For The Google Round-Trip, Short Enough That
+ * Established House Researchers Can Never Be Poached Via A Stale ?ref= Link.
+ */
+const FRESH_SIGNUP_WINDOW_MS = 15 * 60 * 1000;
+
 export async function ensureOAuthResearcherProfile(
   admin: AdminClient,
   user: OAuthUserLike,
@@ -57,6 +80,7 @@ export async function ensureOAuthResearcherProfile(
     created: false,
     linkedHouseStore: false,
     username: null,
+    emailConflict: false,
   };
 
   try {
@@ -71,7 +95,7 @@ export async function ensureOAuthResearcherProfile(
     // INACTIVE - the same gate POST /api/storefront/register applies, so a
     // deactivated storefront can never keep collecting new researchers through
     // a stale QR code or share link.
-    let referringAgentId: string | null = houseStore?.id ?? null;
+    let namedAgentId: string | null = null;
     if (agentSlug && /^[a-z0-9_-]{2,80}$/i.test(agentSlug)) {
       const { data: namedAgent } = await admin
         .from('agent_profiles')
@@ -87,10 +111,11 @@ export async function ensureOAuthResearcherProfile(
           .eq('id', namedAgent.id)
           .maybeSingle();
         if (agentAccount?.is_active === true) {
-          referringAgentId = namedAgent.id;
+          namedAgentId = namedAgent.id;
         }
       }
     }
+    const referringAgentId: string | null = namedAgentId ?? houseStore?.id ?? null;
 
     // Optional sub-agent attribution (QR ?sa= capture, forwarded through the
     // OAuth round-trip as subAgentRef). Only honored when the id is a real
@@ -115,7 +140,7 @@ export async function ensureOAuthResearcherProfile(
 
     const { data: profile } = await admin
       .from('profiles')
-      .select('id, role, username, referring_agent_id, referring_sub_agent_id, is_active, email, full_name, first_name, last_name, avatar_url')
+      .select('id, role, username, referring_agent_id, referring_sub_agent_id, is_active, email, full_name, first_name, last_name, avatar_url, created_at')
       .eq('id', user.id)
       .maybeSingle();
 
@@ -134,7 +159,32 @@ export async function ensureOAuthResearcherProfile(
     const realEmail =
       user.email && !user.email.endsWith('@internal.auth') ? user.email : null;
 
+    // Duplicate-Email Probe: mirrors the enforce_unique_account_email DB
+    // trigger (effective email = contact_email || email, case-insensitive).
+    // Only queried when we would actually WRITE the email (new profile or
+    // email backfill) so routine sign-ins cost nothing extra.
+    let emailOwnedElsewhere = false;
+    if (realEmail && (!profile || !profile.email)) {
+      const pat = realEmail.replace(/([%_\\])/g, '\\$1');
+      const { data: emailOwner } = await admin
+        .from('profiles')
+        .select('id')
+        .or(`email.ilike.${pat},contact_email.ilike.${pat}`)
+        .neq('id', user.id)
+        .limit(1)
+        .maybeSingle();
+      emailOwnedElsewhere = !!emailOwner;
+    }
+
     if (!profile) {
+      if (emailOwnedElsewhere) {
+        // Brand-New OAuth Account, But The Google Email Already Belongs To An
+        // Existing Account. Report It - The Callback Deletes The Just-Created
+        // Auth User And Redirects To Login (error=account_exists).
+        result.emailConflict = true;
+        result.ok = true;
+        return result;
+      }
       // SELF-HEAL: The Trigger Did Not Create A Row. Build The Full Profile.
       const username = await deriveUniqueUsername(admin, user);
       const firstName = metaName ? metaName.split(' ')[0] : null;
@@ -159,6 +209,13 @@ export async function ensureOAuthResearcherProfile(
       }, { onConflict: 'id' });
 
       if (insertErr) {
+        // Fallback: the unique-email trigger rejected the row in the race
+        // window between the probe above and this insert.
+        if (insertErr.code === '23505' && /email/i.test(insertErr.message ?? '')) {
+          result.emailConflict = true;
+          result.ok = true;
+          return result;
+        }
         result.error = `self_heal_insert_failed: ${insertErr.message}`;
         return result;
       }
@@ -177,9 +234,24 @@ export async function ensureOAuthResearcherProfile(
 
     const updates: Record<string, unknown> = {};
 
+    // Referral assignment. Two cases may set it:
+    //   (a) No referral at all (defensive - trg_00_ensure_researcher_house_agent
+    //       normally house-links every researcher row at insert).
+    //   (b) FRESH-SIGNUP UPGRADE: the row was created moments ago by
+    //       handle_new_user and immediately house-linked by the DB trigger.
+    //       Without this branch the agentRef captured on /signup could NEVER
+    //       take effect for Google signups - the house link would already
+    //       exist and the never-overwrite guard would block it. A house link
+    //       older than FRESH_SIGNUP_WINDOW_MS is settled attribution and is
+    //       never touched; a NAMED agent referral is never touched at any age.
+    const houseId = houseStore?.id ?? null;
+    const createdAtMs = profile.created_at ? Date.parse(String(profile.created_at)) : NaN;
+    const isFreshSignup =
+      Number.isFinite(createdAtMs) && Date.now() - createdAtMs < FRESH_SIGNUP_WINDOW_MS;
+    const trustsTriggerHouseLink =
+      profile.referring_agent_id === houseId && isFreshSignup;
+
     if (!profile.referring_agent_id && referringAgentId) {
-      // Only set referring agent if the profile has none yet.
-      // For new OAuth signups the agentSlug-resolved id takes priority over house store.
       updates.referring_agent_id = referringAgentId;
       // Sub-agent attribution travels WITH the referral: it is only ever set
       // on the same write that establishes referring_agent_id, so an existing
@@ -187,7 +259,13 @@ export async function ensureOAuthResearcherProfile(
       if (referringSubAgentId && !profile.referring_sub_agent_id) {
         updates.referring_sub_agent_id = referringSubAgentId;
       }
-      result.linkedHouseStore = referringAgentId === (houseStore?.id ?? null);
+      result.linkedHouseStore = referringAgentId === houseId;
+    } else if (trustsTriggerHouseLink && namedAgentId && namedAgentId !== houseId) {
+      updates.referring_agent_id = namedAgentId;
+      if (referringSubAgentId && !profile.referring_sub_agent_id) {
+        updates.referring_sub_agent_id = referringSubAgentId;
+      }
+      result.linkedHouseStore = false;
     }
 
     if (!profile.username) {
@@ -198,7 +276,10 @@ export async function ensureOAuthResearcherProfile(
     // Backfill Identity Data The OAuth Provider Already Gave Us. Existing
     // Non-Null Values Are NEVER Overwritten - This Only Fills Gaps So Users
     // Are Not Asked For Information We Already Captured At Sign-In.
-    if (!profile.email && realEmail) {
+    // Skip The Email Backfill When Another Account Owns This Address - The
+    // Unique-Email Trigger Would Reject The Whole Update (And An EXISTING
+    // Account Must Never Be Flagged emailConflict, Which Deletes The User).
+    if (!profile.email && realEmail && !emailOwnedElsewhere) {
       updates.email = realEmail;
     }
     if (!profile.full_name && metaName) {
