@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { UserPlus } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
+import { buildOAuthCallbackUrl } from '@/lib/oauth-callback-url';
 import { useAvailability, availabilityMessage } from '@/lib/useAvailability';
 
 // Public Researcher Signup -- Every Account Created Here Is Linked To The
@@ -288,26 +289,26 @@ function SignupForm() {
     setShowAgentRefStep(false);
     try {
       const supabase = createClient();
-      // Pass redirect through the OAuth callback, plus registration ack flag.
-      // ack is a top-level param (not encoded inside redirect) so the server
-      // can read it directly via url.searchParams.get('ack').
-      // If we know the referring agent, encode their slug into the callback URL
-      // so the server can link the new user to them after Google returns.
-      // We encode it into the /auth/callback URL itself (not inside the inner redirect)
-      // so it survives the OAuth round-trip as a top-level query param.
+      // The callback URL contract (redirect + ack + agentRef + subAgentRef as
+      // TOP-LEVEL params - never nested inside redirect) lives in
+      // lib/oauth-callback-url.ts and is round-trip tested. If we know the
+      // referring agent, their slug rides along so the server can link the new
+      // researcher after Google returns; the QR sub-agent capture is only
+      // forwarded when the agent being linked is the captured one.
       const resolvedAgent = agentSlug ?? capturedAgentSlug ?? null;
-      const agentParam = resolvedAgent
-        ? `&agentRef=${encodeURIComponent(resolvedAgent)}`
-        : '';
+      const callbackUrl = buildOAuthCallbackUrl({
+        origin: window.location.origin,
+        redirect: redirectTo,
+        ack: 'registration',
+        agentRef: resolvedAgent,
+        subAgentRef:
+          resolvedAgent && resolvedAgent === capturedAgentSlug ? capturedSubAgentId : null,
+      });
 
-      // ack=registration is also a top-level param so the callback can read it
-      // with url.searchParams.get('ack'). Encoding it inside the redirect URL
-      // (as the old code did) caused it to be unreachable because it was nested
-      // inside the URL-encoded redirect value.
       const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}&ack=registration${agentParam}`,
+          redirectTo: callbackUrl,
           // Force Google to show the account chooser instead of silently
           // reusing the last authorized account.
           queryParams: { prompt: 'select_account' },
