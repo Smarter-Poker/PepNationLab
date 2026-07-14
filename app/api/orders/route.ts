@@ -12,7 +12,7 @@ import { quoteCheapestForCheckout, normalizeShippingAddress } from '@/lib/shippi
 import { resolveCartIdsToProductIds } from '@/lib/cart-ids';
 import { computeLineSplit, type ItemFulfillmentSplit } from '@/lib/order-line-splits';
 import { quantityDiscountPct, isVolumeDiscountExcluded } from '@/lib/quantity-discount';
-import { validateCoupon } from '@/lib/coupons';
+import { resolveCheckoutCoupon, getHouseAgentId } from '@/lib/coupons';
 import { enqueuePush, shortOrderId } from '@/lib/push-enqueue';
 import { notifyOrderPlaced, notify, notifyCouponRedeemed } from '@/lib/notify';
 import { sendOrderConfirmationEmail } from '@/lib/email';
@@ -855,7 +855,10 @@ export async function POST(request: NextRequest) {
       autoDisc <= 0 ? null : (flashDiscTotal >= qtyDiscTotal ? 'flash' : 'quantity');
 
     if (trimmedCouponCode) {
-      const couponAgentId = profile.referring_agent_id ?? agentProfile?.id ?? null;
+      // Buyers with no referring agent (the admin's own account, legacy
+      // accounts) fall back to the house storefront so house coupons work.
+      const couponAgentId = profile.referring_agent_id ?? agentProfile?.id
+        ?? (await getHouseAgentId(serviceSupabase));
       if (!couponAgentId) {
         await releaseReservedInventory();
         return NextResponse.json(
@@ -863,15 +866,19 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-      // Validate WITHOUT burning a use, so the coupon can compete with the automatic discounts.
+      // Validate WITHOUT burning a coupon use, so the coupon can compete with the
+      // automatic discounts. Also translates platform signup promo codes (e.g.
+      // FIRST20) into the buyer's personal first-order coupon; `check.code` is
+      // the coupon actually applied and MUST be used for redeem + order rows.
       // An invalid / expired / limit-reached code still fails loudly (unchanged behavior).
-      const check = await validateCoupon(serviceSupabase, {
+      const check = await resolveCheckoutCoupon(serviceSupabase, {
         code: trimmedCouponCode, agentId: couponAgentId, subtotal, userId: user.id,
       });
       if (!check.valid) {
         await releaseReservedInventory();
         return NextResponse.json({ error: check.error || 'Coupon Invalid Or Limit Reached' }, { status: 422 });
       }
+      const resolvedCouponCode = check.code || trimmedCouponCode;
       const couponDisc = Number(check.discount) || 0;
 
       // Coupon applies only if it is the best deal. Redeem atomically (full server-side
@@ -879,7 +886,7 @@ export async function POST(request: NextRequest) {
       if (couponDisc > 0 && couponDisc >= autoDisc) {
         const { data: redeem, error: redeemError } = await serviceSupabase
           .rpc('redeem_coupon', {
-            p_code: trimmedCouponCode,
+            p_code: resolvedCouponCode,
             p_agent_id: couponAgentId,
             p_order_subtotal: subtotal,
             p_user_id: user.id,
@@ -890,7 +897,7 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: 'Coupon Invalid Or Limit Reached' }, { status: 422 });
         }
         appliedCouponId = row.coupon_id;
-        appliedCouponCode = trimmedCouponCode;
+        appliedCouponCode = resolvedCouponCode;
         discountAmount = Number(row.discount_amount) || 0;
         discountSource = 'coupon';
       }
