@@ -20,15 +20,20 @@ import { getSupabaseUrl } from '@/lib/supabase/url';
  *                                     ensureOAuthResearcherProfile() Rebuilds A
  *                                     Complete House-Linked Researcher Profile
  *                                     Capturing The Provider Email And Avatar.
- *   7. oauth_identity_backfill      - Existing Profiles With Missing Email,
+ *   7. agent_referral_resolution    - The agentRef Param Captured On /signup
+ *                                     Links A Fresh Profile To The Named
+ *                                     ACTIVE Agent (Not The House Store), And
+ *                                     A Second Run Can Never Overwrite An
+ *                                     Existing Referral.
+ *   8. oauth_identity_backfill      - Existing Profiles With Missing Email,
  *                                     Name, Or Avatar Get Them Backfilled From
  *                                     The Provider On The Next Sign-In.
- *   8. registration_ack_logged      - The OAuth Registration Disclaimer Ack
+ *   9. registration_ack_logged      - The OAuth Registration Disclaimer Ack
  *                                     Persists To disclaimer_acceptances.
- *   9. resolve_username             - /api/auth/resolve Maps Username -> Auth Email.
- *  10. password_login               - signInWithPassword Succeeds Against The
+ *  10. resolve_username             - /api/auth/resolve Maps Username -> Auth Email.
+ *  11. password_login               - signInWithPassword Succeeds Against The
  *                                     Real Auth Server (Anon Key Token Grant).
- *  11. cleanup                      - The Probe Account Is Always Removed.
+ *  12. cleanup                      - The Probe Account Is Always Removed.
  */
 
 export type CanaryStep = { name: string; ok: boolean; detail?: string };
@@ -136,7 +141,56 @@ export async function runAuthFlowCanary(origin: string): Promise<CanaryResult> {
     });
     if (!healOk) throw new Error('oauth_self_heal_failed');
 
-    // 7. OAuth Identity Backfill: Blank The Captured Identity Fields, Run The
+    // 7. Agent Referral Resolution: The Exact Code Path A Google Signup With
+    //    An agentRef Callback Param Takes. Clears The Probe's Referral, Runs
+    //    The Callback Logic With A Real ACTIVE Agent's Slug, And Verifies The
+    //    Profile Links To That Agent - Then Runs Again With The House Slug To
+    //    Prove An Existing Referral Is Never Overwritten.
+    let refAgent: { id: string; slug: string } | null = null;
+    const { data: candidateAgents } = await admin
+      .from('agent_profiles')
+      .select('id, slug')
+      .neq('slug', DEFAULT_STORE_SLUG)
+      .limit(5);
+    for (const a of candidateAgents ?? []) {
+      const { data: acct } = await admin
+        .from('profiles').select('is_active').eq('id', a.id).maybeSingle();
+      if (acct?.is_active === true) { refAgent = a; break; }
+    }
+    if (refAgent) {
+      await admin.from('profiles').update({ referring_agent_id: null }).eq('id', probeUserId);
+      const linked = await ensureOAuthResearcherProfile(admin, {
+        id: probeUserId,
+        email: externalEmail,
+        user_metadata: { full_name: 'Auth Diagnostic', avatar_url: probeAvatar },
+      }, refAgent.slug);
+      const { data: linkedRow } = await admin
+        .from('profiles').select('referring_agent_id').eq('id', probeUserId).maybeSingle();
+      const linkOk = linked.ok && linkedRow?.referring_agent_id === refAgent.id;
+
+      const again = await ensureOAuthResearcherProfile(admin, {
+        id: probeUserId,
+        email: externalEmail,
+        user_metadata: { full_name: 'Auth Diagnostic', avatar_url: probeAvatar },
+      }, DEFAULT_STORE_SLUG);
+      const { data: afterRow } = await admin
+        .from('profiles').select('referring_agent_id').eq('id', probeUserId).maybeSingle();
+      const keepOk = again.ok && afterRow?.referring_agent_id === refAgent.id;
+
+      steps.push({
+        name: 'agent_referral_resolution',
+        ok: linkOk && keepOk,
+        detail: linkOk && keepOk
+          ? `slug=${refAgent.slug}`
+          : JSON.stringify({ linkOk, keepOk, got: linkedRow?.referring_agent_id ?? null }),
+      });
+      if (!(linkOk && keepOk)) throw new Error('agent_referral_resolution_failed');
+    } else {
+      // No secondary agent exists in this environment - nothing to resolve.
+      steps.push({ name: 'agent_referral_resolution', ok: true, detail: 'skipped_no_secondary_agent' });
+    }
+
+    // 8. OAuth Identity Backfill: Blank The Captured Identity Fields, Run The
     //    Callback Logic Again (Existing-Profile Path), And Verify They Are
     //    Restored Without Touching Anything Else.
     await admin.from('profiles')
@@ -163,7 +217,7 @@ export async function runAuthFlowCanary(origin: string): Promise<CanaryResult> {
     });
     if (!backfillOk) throw new Error('oauth_identity_backfill_failed');
 
-    // 8. Registration Ack Persists (Idempotent).
+    // 9. Registration Ack Persists (Idempotent).
     const ackOk1 = await logOAuthRegistrationAck(admin, probeUserId, '127.0.0.1', 'auth-flow-canary');
     const ackOk2 = await logOAuthRegistrationAck(admin, probeUserId, '127.0.0.1', 'auth-flow-canary');
     const { data: ackRows } = await admin
@@ -175,7 +229,7 @@ export async function runAuthFlowCanary(origin: string): Promise<CanaryResult> {
     steps.push({ name: 'registration_ack_logged', ok: ackOk, detail: `rows=${ackRows?.length ?? 0}` });
     if (!ackOk) throw new Error('registration_ack_failed');
 
-    // 9. Username Resolve (The Same Contract The Login Page Depends On).
+    // 10. Username Resolve (The Same Contract The Login Page Depends On).
     //    Fix The Username To The Known Probe Value First.
     await admin.from('profiles').update({ username }).eq('id', probeUserId);
     const resolveRes = await fetch(new URL('/api/auth/resolve', origin), {
@@ -189,7 +243,7 @@ export async function runAuthFlowCanary(origin: string): Promise<CanaryResult> {
     steps.push({ name: 'resolve_username', ok: resolveOk, detail: resolved?.email });
     if (!resolveOk) throw new Error('resolve_failed');
 
-    // 10. Real Password Login Against The Auth Server.
+    // 11. Real Password Login Against The Auth Server.
     const tokenRes = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
       method: 'POST',
       headers: { apikey: anonKey, 'Content-Type': 'application/json' },
