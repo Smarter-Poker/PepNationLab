@@ -31,6 +31,8 @@ interface Bundle {
 interface CatalogEntry {
   productId: string;
   name: string;
+  baseCost: number;
+  retailPrice: number;
 }
 
 interface Props {
@@ -100,7 +102,7 @@ export default function BundleManager({ agentId }: Props) {
       const [catRes] = await Promise.all([
         supabase
           .from('agent_products')
-          .select('product_id, custom_name, is_visible, products ( name )')
+          .select('product_id, custom_name, is_visible, retail_price, is_on_sale, sale_price, products ( name, base_cost )')
           .eq('agent_id', agentId)
           .eq('is_visible', true),
         loadBundles(),
@@ -112,7 +114,14 @@ export default function BundleManager({ agentId }: Props) {
         for (const row of catRes.data as Array<Record<string, any>>) {
           if (!row.product_id || seen.has(row.product_id)) continue;
           seen.add(row.product_id);
-          entries.push({ productId: row.product_id, name: row.custom_name || row.products?.name || 'Unnamed Product' });
+          const baseCost = row.products?.base_cost || 0;
+          const retailPrice = row.is_on_sale && row.sale_price ? row.sale_price : (row.retail_price || 0);
+          entries.push({ 
+            productId: row.product_id, 
+            name: row.custom_name || row.products?.name || 'Unnamed Product',
+            baseCost,
+            retailPrice
+          });
         }
         entries.sort((a, b) => a.name.localeCompare(b.name));
         setCatalog(entries);
@@ -487,6 +496,40 @@ export default function BundleManager({ agentId }: Props) {
               )}
             </div>
           </div>
+
+          {/* Bundle Pricing Summary */}
+          {(() => {
+            const selectedProducts = selectedIds.map(id => catalog.find(c => c.productId === id)).filter(Boolean);
+            if (selectedProducts.length > 0) {
+              const totalBase = selectedProducts.reduce((sum, p) => sum + (p?.baseCost || 0), 0);
+              const totalRetail = selectedProducts.reduce((sum, p) => sum + (p?.retailPrice || 0), 0);
+              return (
+                <div style={{ 
+                  backgroundColor: 'var(--surface-3)', 
+                  padding: '12px 16px', 
+                  borderRadius: 'var(--radius-md)', 
+                  border: '1px solid rgba(255,255,255,0.06)', 
+                  marginBottom: '16px',
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center' 
+                }}>
+                  <div style={{ fontSize: '0.82rem', color: 'var(--silver)', fontWeight: 500 }}>
+                    Selected Products Value
+                  </div>
+                  <div style={{ textAlign: 'right', display: 'flex', gap: '20px' }}>
+                    <div style={{ fontSize: '0.82rem', color: 'var(--silver-light)' }}>
+                      Base Cost: <span style={{ fontWeight: 600, color: 'var(--white)' }}>${totalBase.toFixed(2)}</span>
+                    </div>
+                    <div style={{ fontSize: '0.82rem', color: 'var(--teal)' }}>
+                      Retail Value: <span style={{ fontWeight: 700 }}>${totalRetail.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })()}
 
           {/* Pricing row */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
