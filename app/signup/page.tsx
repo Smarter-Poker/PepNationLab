@@ -289,13 +289,8 @@ function SignupForm() {
     try {
       const supabase = createClient();
       // Pass redirect through the OAuth callback, plus registration ack flag.
-      // Use & when redirectTo already carries a query (e.g. /checkout?agent=slug),
-      // otherwise the double ? would corrupt the query and drop the ack flag.
-      const ackSep = redirectTo.includes('?') ? '&' : '?';
-      const callbackRedirect = redirectTo !== '/dashboard'
-        ? `${redirectTo}${ackSep}ack=registration`
-        : '/dashboard?ack=registration';
-
+      // ack is a top-level param (not encoded inside redirect) so the server
+      // can read it directly via url.searchParams.get('ack').
       // If we know the referring agent, encode their slug into the callback URL
       // so the server can link the new user to them after Google returns.
       // We encode it into the /auth/callback URL itself (not inside the inner redirect)
@@ -305,10 +300,14 @@ function SignupForm() {
         ? `&agentRef=${encodeURIComponent(resolvedAgent)}`
         : '';
 
+      // ack=registration is also a top-level param so the callback can read it
+      // with url.searchParams.get('ack'). Encoding it inside the redirect URL
+      // (as the old code did) caused it to be unreachable because it was nested
+      // inside the URL-encoded redirect value.
       const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(callbackRedirect)}${agentParam}`,
+          redirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}&ack=registration${agentParam}`,
           // Force Google to show the account chooser instead of silently
           // reusing the last authorized account.
           queryParams: { prompt: 'select_account' },
