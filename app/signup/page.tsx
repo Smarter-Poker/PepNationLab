@@ -621,7 +621,13 @@ function SignupForm() {
           background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: 'var(--space-4)'
         }}>
-          <div className="glass-panel" style={{ width: '100%', maxWidth: 460, padding: 'var(--space-6)', position: 'relative' }}>
+          {/* Thick brushed-nickel frame around the modal */}
+          <div style={{
+            width: '100%', maxWidth: 474, padding: 7, borderRadius: 18,
+            background: 'repeating-linear-gradient(105deg, rgba(255,255,255,0.09) 0px, rgba(255,255,255,0.09) 1px, rgba(0,0,0,0.05) 2px, rgba(0,0,0,0) 3px), linear-gradient(145deg, #e8e6e3 0%, #b3b0ac 18%, #d6d3ce 34%, #8f8c88 52%, #cfccc7 70%, #a19e9a 86%, #e2e0dd 100%)',
+            boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.55), inset 0 -1px 2px rgba(0,0,0,0.45), 0 14px 48px rgba(0,0,0,0.7)',
+          }}>
+          <div className="glass-panel" style={{ width: '100%', padding: 'var(--space-6)', position: 'relative', borderRadius: 12, background: 'rgba(10, 12, 15, 0.97)' }}>
 
             {/* ── STEP 1: Acknowledgment Checkboxes ── */}
             {!showAgentRefStep && (
@@ -700,7 +706,7 @@ function SignupForm() {
                   </h2>
                   <p style={{ fontSize: '0.83rem', color: 'var(--grey-400)', lineHeight: 1.5 }}>
                     Enter your agent&apos;s username to get linked to their store.<br />
-                    <span style={{ fontSize: '0.78rem', color: 'var(--grey-500)' }}>This is optional — you can skip it.</span>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--grey-500)' }}>This is optional. You can skip it.</span>
                   </p>
                 </div>
 
@@ -712,7 +718,6 @@ function SignupForm() {
                     id="googleAgentRef"
                     type="text"
                     className="form-input"
-                    placeholder="e.g. savagebrands"
                     value={googleReferralInput}
                     onChange={e => setGoogleReferralInput(e.target.value.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 50))}
                     maxLength={50}
@@ -722,7 +727,7 @@ function SignupForm() {
                     style={{ width: '100%' }}
                   />
                   <p style={{ fontSize: '0.72rem', marginTop: 6, color: 'var(--grey-500)' }}>
-                    Not sure? Leave it blank and tap Skip — you can update this later from your account settings.
+                    Not sure? Leave it blank and tap Skip. You can update this later from your account settings.
                   </p>
                 </div>
 
@@ -758,6 +763,7 @@ function SignupForm() {
               </>
             )}
 
+          </div>
           </div>
         </div>
       )}
