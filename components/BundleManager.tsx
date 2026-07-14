@@ -521,10 +521,10 @@ export default function BundleManager({ agentId }: Props) {
                   </div>
                   <div style={{ textAlign: 'right', display: 'flex', gap: '20px' }}>
                     <div style={{ fontSize: '0.82rem', color: 'var(--silver-light)' }}>
-                      Your Cost: <span style={{ fontWeight: 600, color: 'var(--white)' }}>${totalBase.toFixed(2)}</span>
+                      Base Cost: <span style={{ fontWeight: 600, color: 'var(--white)' }}>${totalBase.toFixed(2)}</span>
                     </div>
                     <div style={{ fontSize: '0.82rem', color: 'var(--teal)' }}>
-                      Retail Value: <span style={{ fontWeight: 700 }}>${totalRetail.toFixed(2)}</span>
+                      Listed Price: <span style={{ fontWeight: 700 }}>${totalRetail.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
