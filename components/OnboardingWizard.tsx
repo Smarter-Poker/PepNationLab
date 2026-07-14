@@ -268,8 +268,15 @@ function Shell({ children, pct, role, stepNumber, totalSteps }: {
           </div>
         </div>
 
-        <div className="glass-panel" style={{ padding: 'var(--space-6, 24px)', borderRadius: 16 }}>
-          {children}
+        <div style={{
+          padding: 4,
+          borderRadius: 20,
+          background: 'linear-gradient(145deg, #8a8a8a 0%, #c8c8c8 20%, #5a5a5a 40%, #b0b0b0 55%, #787878 70%, #d0d0d0 85%, #6e6e6e 100%)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -1px 0 rgba(0,0,0,0.4), 0 4px 24px rgba(0,0,0,0.6), 0 1px 3px rgba(0,0,0,0.8)'
+        }}>
+          <div className="glass-panel" style={{ padding: 'var(--space-6, 24px)', borderRadius: 16 }}>
+            {children}
+          </div>
         </div>
       </div>
       <style>{`@keyframes pnlspin{to{transform:rotate(360deg)}}.spin{animation:pnlspin 0.9s linear infinite}`}</style>
@@ -509,13 +516,23 @@ function NotificationsStep({ onDone }: { onDone: () => void }) {
             The Most Important Part: When Your Device Asks For Permission, You Must Choose <strong style={{ color: 'var(--white)' }}>Allow</strong>. If You Pick Block Or Don&apos;t Allow, Notifications Stay Off.
           </KeyCallout>
           <ErrorLine msg={err} />
-          <PrimaryButton onClick={enableAndContinue} busy={busy}>Try Again — Turn On Notifications</PrimaryButton>
+          <PrimaryButton onClick={enableAndContinue} busy={busy}>Try Again. Turn On Notifications</PrimaryButton>
           <button type="button" onClick={recheck} disabled={busy}
             style={{ width: '100%', marginTop: 10, background: 'transparent', border: 'none', color: 'var(--grey-400)', cursor: 'pointer', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
             <RotateCw size={13} /> I Unblocked It In Settings — Re-Check
           </button>
           <button type="button" onClick={skipStep} disabled={busy}
-            style={{ width: '100%', marginTop: 8, background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: 'var(--grey-500)', cursor: 'pointer', fontSize: '0.75rem', padding: '8px 0', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            style={{
+              width: '100%', marginTop: 10, borderRadius: 10, cursor: 'pointer',
+              fontSize: '0.82rem', fontWeight: 700, padding: '11px 0',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+              background: 'linear-gradient(145deg, #5a5a5a 0%, #8c8c8c 30%, #4a4a4a 55%, #787878 80%, #525252 100%)',
+              border: '1px solid rgba(180,180,180,0.25)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(0,0,0,0.3), 0 2px 6px rgba(0,0,0,0.4)',
+              color: '#d8d8d8',
+              letterSpacing: '0.02em',
+              opacity: busy ? 0.5 : 1,
+            }}>
             Skip For Now — I&apos;ll Enable Notifications Later
           </button>
         </>
