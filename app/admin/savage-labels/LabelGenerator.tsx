@@ -71,12 +71,12 @@ export function LabelGenerator({ products }: { products: any[] }) {
       </div>
 
       <div className="text-sm text-muted-foreground mb-4">
-        Note: The labels below are scaled down for preview purposes, but will be exported at full 300dpi resolution (450x750 pixels).
+        Note: The labels below are scaled down for preview purposes, but will be exported at full 300dpi resolution (788x300 pixels, exactly 2-5/8" x 1").
       </div>
 
       <div 
         ref={containerRef} 
-        className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-8"
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
       >
         {products.map((p) => {
           const categoryName = p.category || 'Unknown';
@@ -87,14 +87,14 @@ export function LabelGenerator({ products }: { products: any[] }) {
             <div key={p.id} className="flex flex-col items-center gap-2">
               <div 
                 className="overflow-hidden border border-border/50 rounded shadow-md relative"
-                style={{ width: '225px', height: '375px' }}
+                style={{ width: '394px', height: '150px' }}
               >
                 <div 
                   className="savage-label-render-target relative bg-[#111] overflow-hidden flex flex-col justify-between"
                   data-name={p.name}
                   style={{
-                    width: '450px',
-                    height: '750px',
+                    width: '788px',
+                    height: '300px',
                     transform: 'scale(0.5)',
                     transformOrigin: 'top left',
                     backgroundImage: `
@@ -119,50 +119,51 @@ export function LabelGenerator({ products }: { products: any[] }) {
                      </svg>
                   </div>
 
-                  <div className="flex-1 flex flex-col items-center justify-center relative z-10 px-8 text-center mt-[-80px]">
-                    <h1 
-                      style={{ 
-                        fontFamily: 'Impact, sans-serif', 
-                        fontSize: '72px', 
-                        lineHeight: '1',
-                        letterSpacing: '-2px',
-                        background: 'linear-gradient(to bottom, #f0f0f0, #a0a0a0, #d0d0d0)',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        textShadow: '0 4px 6px rgba(0,0,0,0.8), inset 0 2px 4px rgba(255,255,255,0.4)',
-                        transform: 'skewX(-10deg)',
-                        margin: 0
-                      }}
-                    >
-                      SAVAGE
-                    </h1>
-                    <h2
-                      style={{ 
-                        fontFamily: 'Impact, sans-serif', 
-                        fontSize: '32px', 
-                        lineHeight: '1',
-                        letterSpacing: '4px',
-                        background: 'linear-gradient(to bottom, #d0d0d0, #808080)',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        textShadow: '0 2px 4px rgba(0,0,0,0.8)',
-                        transform: 'skewX(-10deg)',
-                        marginTop: '-5px'
-                      }}
-                    >
-                      BRANDS
-                    </h2>
-                  </div>
+                  <div className="flex-1 flex flex-col items-center justify-center relative z-10 px-8 text-center">
+                    <div className="flex flex-col items-center justify-center mb-1">
+                      <h1 
+                        style={{ 
+                          fontFamily: 'Impact, sans-serif', 
+                          fontSize: '64px', 
+                          lineHeight: '1',
+                          letterSpacing: '-2px',
+                          background: 'linear-gradient(to bottom, #f0f0f0, #a0a0a0, #d0d0d0)',
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                          textShadow: '0 4px 6px rgba(0,0,0,0.8), inset 0 2px 4px rgba(255,255,255,0.4)',
+                          transform: 'skewX(-10deg)',
+                          margin: 0
+                        }}
+                      >
+                        SAVAGE
+                      </h1>
+                      <h2
+                        style={{ 
+                          fontFamily: 'Impact, sans-serif', 
+                          fontSize: '28px', 
+                          lineHeight: '1',
+                          letterSpacing: '4px',
+                          background: 'linear-gradient(to bottom, #d0d0d0, #808080)',
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                          textShadow: '0 2px 4px rgba(0,0,0,0.8)',
+                          transform: 'skewX(-10deg)',
+                          marginTop: '-4px'
+                        }}
+                      >
+                        BRANDS
+                      </h2>
+                    </div>
 
-                  <div className="relative z-10 text-center pb-12 w-full px-6">
                     <h3 
                       style={{ 
                         fontFamily: 'Arial, sans-serif', 
                         fontWeight: '900',
-                        fontSize: p.name.length > 15 ? '36px' : '42px', 
+                        fontSize: p.name.length > 25 ? '32px' : '44px', 
                         lineHeight: '1.1',
                         color: '#E0E0E0',
-                        textShadow: '0 2px 4px rgba(0,0,0,0.9)'
+                        textShadow: '0 2px 4px rgba(0,0,0,0.9)',
+                        margin: '6px 0 0 0'
                       }}
                       className="uppercase tracking-tighter"
                     >
@@ -172,9 +173,9 @@ export function LabelGenerator({ products }: { products: any[] }) {
                       style={{ 
                         color: accentColor, 
                         fontFamily: 'Arial, sans-serif',
-                        fontSize: '24px',
+                        fontSize: '22px',
                         fontWeight: 700,
-                        marginTop: '8px'
+                        marginTop: '4px'
                       }}
                     >
                       {categoryName} {doseString}
