@@ -37,11 +37,19 @@ export interface EnsureProfileResult {
  *   5. Missing Identity Data (Email, Name, Avatar): Backfill From The OAuth
  *      Provider On Every Sign-In. Existing Non-Null Values Are NEVER
  *      Overwritten - Users Are Simply Not Asked For Data We Already Have.
+ *   6. agentSlug (From The /signup Referral Step Or A QR Scan, Forwarded As
+ *      The Top-Level agentRef Callback Param): Resolves To That Agent When
+ *      The Slug Exists AND The Agent's Account Is Active; Otherwise Falls
+ *      Back To The House Store. Signup Is Never Blocked By A Bad Slug.
+ *   7. subAgentId (QR ?sa= Capture, Forwarded As subAgentRef): Credited Only
+ *      When It Is A Real Sub-Agent Of The Resolved Referring Agent, Matching
+ *      POST /api/storefront/register Exactly.
  */
 export async function ensureOAuthResearcherProfile(
   admin: AdminClient,
   user: OAuthUserLike,
   agentSlug?: string,
+  subAgentId?: string,
 ): Promise<EnsureProfileResult> {
   const result: EnsureProfileResult = {
     ok: false,
@@ -59,7 +67,10 @@ export async function ensureOAuthResearcherProfile(
       .maybeSingle();
 
     // If the user provided a referral agent slug (from QR code or manual entry),
-    // look up that agent. Fall back to house store if not found or invalid.
+    // look up that agent. Fall back to house store if not found, invalid, or
+    // INACTIVE - the same gate POST /api/storefront/register applies, so a
+    // deactivated storefront can never keep collecting new researchers through
+    // a stale QR code or share link.
     let referringAgentId: string | null = houseStore?.id ?? null;
     if (agentSlug && /^[a-z0-9_-]{2,80}$/i.test(agentSlug)) {
       const { data: namedAgent } = await admin
@@ -68,13 +79,43 @@ export async function ensureOAuthResearcherProfile(
         .eq('slug', agentSlug.toLowerCase())
         .maybeSingle();
       if (namedAgent?.id) {
-        referringAgentId = namedAgent.id;
+        // Activity gate mirrors /api/storefront/register: the agent's ACCOUNT
+        // row (profiles.is_active) controls whether they accept new signups.
+        const { data: agentAccount } = await admin
+          .from('profiles')
+          .select('id, is_active')
+          .eq('id', namedAgent.id)
+          .maybeSingle();
+        if (agentAccount?.is_active === true) {
+          referringAgentId = namedAgent.id;
+        }
+      }
+    }
+
+    // Optional sub-agent attribution (QR ?sa= capture, forwarded through the
+    // OAuth round-trip as subAgentRef). Only honored when the id is a real
+    // sub-agent whose parent is the resolved referring agent - the exact
+    // validation POST /api/storefront/register performs - so a forged or
+    // stale id can never misattribute a signup.
+    let referringSubAgentId: string | null = null;
+    if (
+      subAgentId &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(subAgentId) &&
+      referringAgentId
+    ) {
+      const { data: subAgent } = await admin
+        .from('profiles')
+        .select('id, is_sub_agent, parent_agent_id')
+        .eq('id', subAgentId)
+        .maybeSingle();
+      if (subAgent && subAgent.is_sub_agent && subAgent.parent_agent_id === referringAgentId) {
+        referringSubAgentId = subAgentId;
       }
     }
 
     const { data: profile } = await admin
       .from('profiles')
-      .select('id, role, username, referring_agent_id, is_active, email, full_name, first_name, last_name, avatar_url')
+      .select('id, role, username, referring_agent_id, referring_sub_agent_id, is_active, email, full_name, first_name, last_name, avatar_url')
       .eq('id', user.id)
       .maybeSingle();
 
@@ -111,6 +152,7 @@ export async function ensureOAuthResearcherProfile(
         avatar_url: metaAvatar,
         role: 'researcher',
         referring_agent_id: referringAgentId,
+        referring_sub_agent_id: referringSubAgentId,
         disclaimer_v1_accepted: false,
         is_active: true,
         updated_at: new Date().toISOString(),
@@ -139,6 +181,12 @@ export async function ensureOAuthResearcherProfile(
       // Only set referring agent if the profile has none yet.
       // For new OAuth signups the agentSlug-resolved id takes priority over house store.
       updates.referring_agent_id = referringAgentId;
+      // Sub-agent attribution travels WITH the referral: it is only ever set
+      // on the same write that establishes referring_agent_id, so an existing
+      // account's attribution can never be reassigned afterward.
+      if (referringSubAgentId && !profile.referring_sub_agent_id) {
+        updates.referring_sub_agent_id = referringSubAgentId;
+      }
       result.linkedHouseStore = referringAgentId === (houseStore?.id ?? null);
     }
 
