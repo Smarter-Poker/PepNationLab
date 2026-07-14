@@ -4,6 +4,7 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { ensureOAuthResearcherProfile, logOAuthRegistrationAck } from '@/lib/oauth-profile';
+import { notifyNewResearcher } from '@/lib/notify';
 import { getClientIp } from '@/lib/rate-limit';
 import { safeRelativePath } from '@/lib/safe-redirect';
 
@@ -87,6 +88,32 @@ export async function GET(req: NextRequest) {
     if (!ensured.ok) {
       // Session Is Still Valid - Log Loudly For Follow-Up, Never Strand The User.
       console.error('[auth/callback] ensureOAuthResearcherProfile failed:', ensured.error);
+    }
+
+    // Notify the agent that a new researcher signed up under their storefront.
+    // The regular signup + agent-created paths already do this via
+    // notifyNewResearcher; the Google OAuth path previously notified no one, so
+    // agents/super-agents never heard about self-serve Google signups. Fires
+    // only for a brand-new account (ensured.created) and reads the FINAL
+    // referring_agent_id (after ensureOAuthResearcherProfile's house-link +
+    // fresh-referral upgrade). Best-effort: never blocks the sign-in.
+    if (ensured.created) {
+      try {
+        const { data: newProfile } = await admin
+          .from('profiles')
+          .select('referring_agent_id, full_name')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (newProfile?.referring_agent_id && newProfile.referring_agent_id !== user.id) {
+          await notifyNewResearcher(
+            admin,
+            newProfile.referring_agent_id,
+            newProfile.full_name || 'A New Researcher',
+          );
+        }
+      } catch (e) {
+        console.error('[auth/callback] new-researcher notify failed (non-fatal):', e);
+      }
     }
 
     // Persist The Registration Acknowledgment Collected On /signup Before The
