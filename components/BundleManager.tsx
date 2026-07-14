@@ -184,19 +184,27 @@ export default function BundleManager({ agentId }: Props) {
   const handleUpload = async (file: File) => {
     setUploading(true);
     try {
-      const supabase = createClient();
-      const ext = file.name.split('.').pop() || 'png';
-      const path = `bundle-images/${agentId}-${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from('public-assets').upload(path, file, { upsert: true });
-      if (error) {
-        toast.error('Failed To Upload Image: ' + error.message);
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const res = await fetch('/api/agent/bundles/upload-image', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      const json = await res.json().catch(() => ({}));
+      
+      if (!res.ok) {
+        toast.error('Failed To Upload Image: ' + (json.error || res.statusText));
         return;
       }
-      const { data: pub } = supabase.storage.from('public-assets').getPublicUrl(path);
-      if (pub?.publicUrl) {
-        setImageUrl(pub.publicUrl);
+      
+      if (json.url) {
+        setImageUrl(json.url);
         toast.success('Image Uploaded');
       }
+    } catch (err: any) {
+      toast.error('Upload Error: ' + err.message);
     } finally {
       setUploading(false);
     }
