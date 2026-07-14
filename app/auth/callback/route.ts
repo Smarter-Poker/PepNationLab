@@ -4,6 +4,7 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { ensureOAuthResearcherProfile, logOAuthRegistrationAck } from '@/lib/oauth-profile';
+import { notifyNewResearcher } from '@/lib/notify';
 import { getClientIp } from '@/lib/rate-limit';
 import { safeRelativePath } from '@/lib/safe-redirect';
 
@@ -78,6 +79,39 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
+    if (ensured.linkToUserId) {
+      // The Google email belongs to an existing, verified researcher account.
+      // Log the person into THAT account (mint its session on this response)
+      // and delete this duplicate OAuth user. ANY failure falls back to the
+      // safe duplicate block so a user is never stranded or mis-linked.
+      try {
+        const { data: existingAuth } = await admin.auth.admin.getUserById(ensured.linkToUserId);
+        const existingEmail = existingAuth?.user?.email;
+        if (!existingEmail) throw new Error('existing account has no auth email');
+        const { data: linkGen, error: genErr } = await admin.auth.admin.generateLink({
+          type: 'magiclink',
+          email: existingEmail,
+        });
+        const tokenHash = linkGen?.properties?.hashed_token;
+        if (genErr || !tokenHash) throw new Error(genErr?.message || 'link_generation_failed');
+        const { error: verifyErr } = await supabase.auth.verifyOtp({
+          type: 'magiclink',
+          token_hash: tokenHash,
+        });
+        if (verifyErr) throw new Error(verifyErr.message);
+        // The session now belongs to the existing account; drop the duplicate
+        // OAuth user (cascades its email-null placeholder profile).
+        try { await admin.auth.admin.deleteUser(user.id); } catch { /* best effort */ }
+        return NextResponse.redirect(new URL(redirectTo, url.origin));
+      } catch (linkErr) {
+        console.error('[auth/callback] account link failed; blocking as duplicate:', linkErr);
+        try { await admin.auth.admin.deleteUser(user.id); } catch { /* best effort */ }
+        await supabase.auth.signOut();
+        loginUrl.searchParams.set('error', 'account_exists');
+        return NextResponse.redirect(loginUrl);
+      }
+    }
+
     if (ensured.disabled) {
       await supabase.auth.signOut();
       loginUrl.searchParams.set('error', 'account_disabled');
@@ -87,6 +121,32 @@ export async function GET(req: NextRequest) {
     if (!ensured.ok) {
       // Session Is Still Valid - Log Loudly For Follow-Up, Never Strand The User.
       console.error('[auth/callback] ensureOAuthResearcherProfile failed:', ensured.error);
+    }
+
+    // Notify the agent that a new researcher signed up under their storefront.
+    // The regular signup + agent-created paths already do this via
+    // notifyNewResearcher; the Google OAuth path previously notified no one, so
+    // agents/super-agents never heard about self-serve Google signups. Fires
+    // only for a brand-new account (ensured.created) and reads the FINAL
+    // referring_agent_id (after ensureOAuthResearcherProfile's house-link +
+    // fresh-referral upgrade). Best-effort: never blocks the sign-in.
+    if (ensured.created) {
+      try {
+        const { data: newProfile } = await admin
+          .from('profiles')
+          .select('referring_agent_id, full_name')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (newProfile?.referring_agent_id && newProfile.referring_agent_id !== user.id) {
+          await notifyNewResearcher(
+            admin,
+            newProfile.referring_agent_id,
+            newProfile.full_name || 'A New Researcher',
+          );
+        }
+      } catch (e) {
+        console.error('[auth/callback] new-researcher notify failed (non-fatal):', e);
+      }
     }
 
     // Persist The Registration Acknowledgment Collected On /signup Before The

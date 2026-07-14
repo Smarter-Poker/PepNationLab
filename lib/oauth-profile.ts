@@ -24,6 +24,14 @@ export interface EnsureProfileResult {
    * Existing Profile - Established Accounts Must Not Be Deleted.
    */
   emailConflict: boolean;
+  /**
+   * When set, this Google sign-in's email belongs to an existing ACTIVE,
+   * email-verified researcher account (id given here). The callback logs the
+   * person into THAT account and deletes this just-created OAuth user, so no
+   * duplicate is ever persisted. Agent/admin, inactive, or unverified owners
+   * fall back to emailConflict (block) instead of being auto-linked.
+   */
+  linkToUserId: string | null;
   error?: string;
 }
 
@@ -53,8 +61,9 @@ export interface EnsureProfileResult {
  *      Links Every New Researcher Row The Moment handle_new_user Creates It,
  *      So By The Time The OAuth Callback Runs The Profile Is ALREADY House-
  *      Linked. A House Link On A Profile Created Within The Last 15 Minutes
- *      Is Therefore Treated As The Trigger Default (Upgradeable To The Named
- *      Agent), While Any Older Referral - House Or Named - Is NEVER Changed.
+ *      Is Therefore Treated As The Trigger Default And Upgraded To The Named
+ *      Agent Via The Sanctioned oauth_link_fresh_referral RPC, While Any
+ *      Older Referral - House Or Named - Is NEVER Changed.
  *   7. subAgentId (QR ?sa= Capture, Forwarded As subAgentRef): Credited Only
  *      When It Is A Real Sub-Agent Of The Resolved Referring Agent, Matching
  *      POST /api/storefront/register Exactly.
@@ -65,8 +74,16 @@ export interface EnsureProfileResult {
  * DB Trigger's Placeholder (Upgradeable By agentRef) Rather Than A Settled
  * Attribution. Generous Enough For The Google Round-Trip, Short Enough That
  * Established House Researchers Can Never Be Poached Via A Stale ?ref= Link.
+ * The Same Window Is Enforced Inside The oauth_link_fresh_referral RPC.
  */
 const FRESH_SIGNUP_WINDOW_MS = 15 * 60 * 1000;
+
+interface EmailOwner {
+  id: string;
+  role?: string | null;
+  is_active?: boolean | null;
+  email_verified?: boolean | null;
+}
 
 export async function ensureOAuthResearcherProfile(
   admin: AdminClient,
@@ -81,6 +98,7 @@ export async function ensureOAuthResearcherProfile(
     linkedHouseStore: false,
     username: null,
     emailConflict: false,
+    linkToUserId: null,
   };
 
   try {
@@ -163,24 +181,43 @@ export async function ensureOAuthResearcherProfile(
     // trigger (effective email = contact_email || email, case-insensitive).
     // Only queried when we would actually WRITE the email (new profile or
     // email backfill) so routine sign-ins cost nothing extra.
-    let emailOwnedElsewhere = false;
+    let emailOwner: EmailOwner | null = null;
     if (realEmail && (!profile || !profile.email)) {
       const pat = realEmail.replace(/([%_\\])/g, '\\$1');
-      const { data: emailOwner } = await admin
+      const { data } = await admin
         .from('profiles')
-        .select('id')
+        .select('id, role, is_active, email_verified')
         .or(`email.ilike.${pat},contact_email.ilike.${pat}`)
         .neq('id', user.id)
         .limit(1)
         .maybeSingle();
-      emailOwnedElsewhere = !!emailOwner;
+      emailOwner = (data as unknown as EmailOwner | null) ?? null;
     }
+    const emailOwnedElsewhere = !!emailOwner;
+    // A Google sign-in may be LINKED into the existing account only when that
+    // account is an ACTIVE, EMAIL-VERIFIED researcher. Google already proved
+    // the person controls this address; we still refuse to auto-link into an
+    // agent/admin account or an unverified/inactive one - those fall back to
+    // the emailConflict block below.
+    const canLinkToExisting =
+      !!emailOwner &&
+      emailOwner.id !== user.id &&
+      emailOwner.role === 'researcher' &&
+      emailOwner.is_active === true &&
+      emailOwner.email_verified === true;
 
     if (!profile) {
       if (emailOwnedElsewhere) {
-        // Brand-New OAuth Account, But The Google Email Already Belongs To An
-        // Existing Account. Report It - The Callback Deletes The Just-Created
-        // Auth User And Redirects To Login (error=account_exists).
+        // The Google Email Already Belongs To An Existing Account.
+        if (canLinkToExisting) {
+          // Log The Person Into Their Existing Verified Researcher Account:
+          // The Callback Mints That Account's Session And Deletes This User.
+          result.linkToUserId = emailOwner!.id;
+          result.ok = true;
+          return result;
+        }
+        // Otherwise Block: The Callback Deletes The Just-Created Auth User And
+        // Redirects To Login (error=account_exists).
         result.emailConflict = true;
         result.ok = true;
         return result;
@@ -232,6 +269,17 @@ export async function ensureOAuthResearcherProfile(
       return result;
     }
 
+    // This brand-new OAuth row's Google email is owned by another verified
+    // researcher account: link into that account rather than finishing setup
+    // on this duplicate row (the callback mints the existing session and
+    // deletes this OAuth user). Runs before any referral write so nothing is
+    // mutated on a row we are about to discard.
+    if (canLinkToExisting) {
+      result.linkToUserId = emailOwner!.id;
+      result.ok = true;
+      return result;
+    }
+
     const updates: Record<string, unknown> = {};
 
     // Referral assignment. Two cases may set it:
@@ -261,11 +309,21 @@ export async function ensureOAuthResearcherProfile(
       }
       result.linkedHouseStore = referringAgentId === houseId;
     } else if (trustsTriggerHouseLink && namedAgentId && namedAgentId !== houseId) {
-      updates.referring_agent_id = namedAgentId;
-      if (referringSubAgentId && !profile.referring_sub_agent_id) {
-        updates.referring_sub_agent_id = referringSubAgentId;
+      // The enforce_researcher_agent_binding DB guard forbids changing a
+      // non-null referral through a plain UPDATE. oauth_link_fresh_referral
+      // is the sanctioned, service-role-only RPC: it re-checks the fresh-
+      // signup window AND the house-placeholder state inside the database,
+      // so no app bug can ever widen this into referral poaching.
+      const { data: upgraded, error: rpcErr } = await admin.rpc('oauth_link_fresh_referral', {
+        p_user_id: user.id,
+        p_agent_id: namedAgentId,
+        p_sub_agent_id: referringSubAgentId,
+      });
+      if (rpcErr) {
+        // Non-fatal: the account stays house-linked; never block a signup.
+        console.error('[oauth-profile] fresh referral upgrade failed:', rpcErr.message);
       }
-      result.linkedHouseStore = false;
+      result.linkedHouseStore = upgraded !== true;
     }
 
     if (!profile.username) {

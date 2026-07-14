@@ -22,6 +22,7 @@ DROP POLICY IF EXISTS "Public storefront assets"           ON storage.objects;
 -- ── Recreate clean single-policy set ─────────────────────────
 
 -- Anyone can read (bucket is public, but this makes RLS explicit)
+DROP POLICY IF EXISTS "storefront_assets_select" ON storage.objects;
 CREATE POLICY "storefront_assets_select"
 ON storage.objects FOR SELECT
 USING (bucket_id = 'storefront-assets');
@@ -32,6 +33,7 @@ USING (bucket_id = 'storefront-assets');
 -- the service-role key which bypasses this entirely, but the
 -- policy is here as a belt-and-suspenders safety net for any
 -- future direct browser uploads.
+DROP POLICY IF EXISTS "storefront_assets_insert" ON storage.objects;
 CREATE POLICY "storefront_assets_insert"
 ON storage.objects FOR INSERT
 WITH CHECK (
@@ -47,6 +49,7 @@ WITH CHECK (
 );
 
 -- Owners (or admins) can update their own files
+DROP POLICY IF EXISTS "storefront_assets_update" ON storage.objects;
 CREATE POLICY "storefront_assets_update"
 ON storage.objects FOR UPDATE
 USING (
@@ -58,6 +61,7 @@ USING (
 );
 
 -- Owners (or admins) can delete their own files
+DROP POLICY IF EXISTS "storefront_assets_delete" ON storage.objects;
 CREATE POLICY "storefront_assets_delete"
 ON storage.objects FOR DELETE
 USING (

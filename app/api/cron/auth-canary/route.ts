@@ -25,7 +25,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, skipped: true, reason: 'already ran today' });
   }
 
-  const result = await runAuthFlowCanary(req.nextUrl.origin);
+  // Vercel invokes crons on the DEPLOYMENT URL, where a self-fetch of
+  // /api/auth/resolve hits Vercel deployment protection (401 HTML) and made
+  // every scheduled run fail at resolve_username. Probe the canonical site
+  // origin instead (same pattern as lib/email.ts).
+  const origin = (process.env.NEXT_PUBLIC_APP_URL || 'https://pepnationlab.com').replace(/\/$/, '');
+  const result = await runAuthFlowCanary(origin);
 
   const failing = result.steps.filter((s) => !s.ok).map((s) => `${s.name}${s.detail ? `: ${s.detail}` : ''}`);
   await finishCronRun(
