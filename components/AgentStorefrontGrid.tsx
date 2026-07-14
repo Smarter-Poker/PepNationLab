@@ -101,6 +101,9 @@ interface Props {
   minOverallQty?: number;
   compoundsBySlug?: Record<string, Compound>;
   featuredProductIds?: string[];
+  /** Accepted for compatibility with the storefront branding wiring; rendering
+   *  of custom branding is owned by that feature, not the pricing/bundle grid. */
+  customBranding?: Record<string, unknown> | null;
 }
 
 const containerVariants: Variants = {
@@ -2464,14 +2467,16 @@ export default function AgentStorefrontGrid({
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
                         <div style={{ display: 'flex', alignItems: 'stretch', justifyContent: _hasCompare ? 'space-between' : 'center', gap: 12 }}>
                           {_hasCompare && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'flex-start', justifyContent: 'center', border: '1px solid rgba(0,196,188,0.35)', borderRadius: 10, padding: '8px 12px', background: 'rgba(0,196,188,0.06)' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(0,196,188,0.35)', borderRadius: 10, padding: '8px 14px', background: 'rgba(0,196,188,0.06)' }}>
                               <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)', letterSpacing: '0.01em', whiteSpace: 'nowrap' }}>YOU SAVE ${_youSave.toFixed(2)}</span>
-                              <span style={{ fontSize: '0.6rem', color: 'var(--grey-500)', fontWeight: 700, letterSpacing: '0.1em' }}>MSRP</span>
-                              <span style={{ fontSize: '0.92rem', color: 'var(--grey-500)', textDecoration: 'line-through', fontWeight: 700 }}>${_comparePrice.toFixed(2)}</span>
+                              <span style={{ display: 'flex', alignItems: 'baseline', gap: 5, whiteSpace: 'nowrap' }}>
+                                <span style={{ fontSize: '0.62rem', color: 'var(--grey-500)', fontWeight: 700, letterSpacing: '0.06em' }}>MSRP</span>
+                                <span style={{ fontSize: '0.92rem', color: 'var(--grey-500)', textDecoration: 'line-through', fontWeight: 700 }}>${_comparePrice.toFixed(2)}</span>
+                              </span>
                             </div>
                           )}
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: _hasCompare ? 'flex-end' : 'center', justifyContent: 'center' }}>
-                            <span style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--teal)', letterSpacing: '0.06em' }}>WHOLESALE PRICE</span>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'center', justifyContent: 'center' }}>
+                            <span style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--teal)', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>WHOLESALE PRICE</span>
                             <span className="sf-product-price-nickel" style={{ fontSize: '1.7rem', fontWeight: 800, fontFamily: 'var(--font-brand)', lineHeight: 1 }}>${displayPrice.toFixed(2)}</span>
                           </div>
                         </div>
