@@ -159,7 +159,7 @@ const POPULAR_ORDER: string[] = [
   'KPV',
   'Semax',
   'Selank',
-  'PT-141',
+  'KissPeptin-10',
 ];
 
 const CARD_MAPPINGS = [
