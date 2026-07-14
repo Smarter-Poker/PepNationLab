@@ -74,7 +74,11 @@ function SignupForm() {
         const parsed = JSON.parse(stored) as { slug?: string; sa?: string; savedAt?: number };
         const age = Date.now() - (parsed.savedAt ?? 0);
         if (parsed.slug && age < 30 * 24 * 60 * 60 * 1000) {
-          setCapturedAgentSlug(parsed.slug);
+          // The house storefront is the default destination anyway - a stored
+          // house slug carries no referral information, and treating it as a
+          // capture would silently SKIP the "Who Referred You?" step for
+          // anyone who ever browsed the house store. Only NAMED agents count.
+          if (parsed.slug !== DEFAULT_STORE_SLUG) setCapturedAgentSlug(parsed.slug);
           if (parsed.sa && /^[0-9a-f-]{36}$/i.test(parsed.sa)) setCapturedSubAgentId(parsed.sa);
         }
       }
