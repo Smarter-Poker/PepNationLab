@@ -141,11 +141,13 @@ export async function runAuthFlowCanary(origin: string): Promise<CanaryResult> {
     });
     if (!healOk) throw new Error('oauth_self_heal_failed');
 
-    // 7. Agent Referral Resolution: The Exact Code Path A Google Signup With
-    //    An agentRef Callback Param Takes. Clears The Probe's Referral, Runs
-    //    The Callback Logic With A Real ACTIVE Agent's Slug, And Verifies The
-    //    Profile Links To That Agent - Then Runs Again With The House Slug To
-    //    Prove An Existing Referral Is Never Overwritten.
+    // 7. Agent Referral Resolution: The Exact Sequence A Real Google Signup
+    //    With An agentRef Callback Param Goes Through. The Probe Profile Was
+    //    Just (Re)Created And Immediately House-Linked By The
+    //    trg_00_ensure_researcher_house_agent DB Trigger - Exactly Like A
+    //    Brand-New OAuth Account When The Callback Runs. ensure() Must
+    //    Upgrade That Fresh House Link To The Named ACTIVE Agent, And A
+    //    Second Run (Stale House Ref) Must NOT Move It Again.
     let refAgent: { id: string; slug: string } | null = null;
     const { data: candidateAgents } = await admin
       .from('agent_profiles')
@@ -158,7 +160,6 @@ export async function runAuthFlowCanary(origin: string): Promise<CanaryResult> {
       if (acct?.is_active === true) { refAgent = a; break; }
     }
     if (refAgent) {
-      await admin.from('profiles').update({ referring_agent_id: null }).eq('id', probeUserId);
       const linked = await ensureOAuthResearcherProfile(admin, {
         id: probeUserId,
         email: externalEmail,
@@ -168,6 +169,8 @@ export async function runAuthFlowCanary(origin: string): Promise<CanaryResult> {
         .from('profiles').select('referring_agent_id').eq('id', probeUserId).maybeSingle();
       const linkOk = linked.ok && linkedRow?.referring_agent_id === refAgent.id;
 
+      // Never-Overwrite: A Later Sign-In Carrying The House Slug (Stale Link)
+      // Must Not Move The Established Named-Agent Referral.
       const again = await ensureOAuthResearcherProfile(admin, {
         id: probeUserId,
         email: externalEmail,
