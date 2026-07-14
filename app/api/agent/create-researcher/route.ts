@@ -110,6 +110,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'That Username Is Already Taken' }, { status: 400 });
   }
 
+  // One email = one account: reject if this email already belongs to another
+  // account (authoritatively enforced by the DB trigger; checked here for a
+  // clear message before creating an auth user).
+  if (contactEmail && String(contactEmail).trim()) {
+    const { data: emailTaken } = await admin.rpc('account_email_exists', { p_email: String(contactEmail).trim() });
+    if (emailTaken === true) {
+      return NextResponse.json(
+        { error: 'An Account Already Exists For This Email.' },
+        { status: 409 }
+      );
+    }
+  }
+
   const internalEmail = `${usernameClean}@internal.auth`;
 
   const fullName = `${String(firstName).trim()} ${String(lastName).trim()}`;

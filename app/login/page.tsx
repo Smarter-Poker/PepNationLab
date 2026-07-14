@@ -18,6 +18,7 @@ function LoginPageInner() {
     const err = searchParams.get('error');
     if (err === 'oauth_failed') return 'Google Sign-In Failed. Please Try Again Or Use Your Username.';
     if (err === 'account_disabled') return 'Your Account Has Been Disabled. Contact Your Administrator.';
+    if (err === 'account_exists') return 'An Account Already Exists For This Email. Please Log In With Your Username And Password Instead Of Google.';
     return '';
   });
   const [showForgotPopup, setShowForgotPopup] = useState(false);

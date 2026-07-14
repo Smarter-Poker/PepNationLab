@@ -128,6 +128,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'That Username Is Already Taken.' }, { status: 400 });
     }
 
+    // One email = one account. Block a second signup (e.g. under a different
+    // agent) with an email already in use. The DB trigger enforce_unique_account_email
+    // is the authoritative guard; this returns a clear message first.
+    const { data: emailTaken } = await admin.rpc('account_email_exists', { p_email: email });
+    if (emailTaken === true) {
+      return NextResponse.json(
+        { error: 'An Account Already Exists For This Email. Please Log In Instead.' },
+        { status: 409 }
+      );
+    }
+
     // ── Email verification ──────────────────────────────────────────────────
     // When the email sender is configured, a valid single-use code (issued by
     // /api/auth/request-code) is required and the email is marked verified.
