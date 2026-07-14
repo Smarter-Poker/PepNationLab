@@ -98,27 +98,29 @@ export default function BundleManager({ agentId }: Props) {
   useEffect(() => {
     let active = true;
     (async () => {
-      const supabase = createClient();
       const [catRes] = await Promise.all([
-        supabase
-          .from('agent_products')
-          .select('product_id, custom_name, is_visible, retail_price, is_on_sale, sale_price, products ( name, base_cost )')
-          .eq('agent_id', agentId)
-          .eq('is_visible', true),
+        fetch('/api/agent/products').then(res => res.ok ? res.json() : { data: [] }).catch(() => ({ data: [] })),
         loadBundles(),
       ]);
       if (!active) return;
-      if (!catRes.error && catRes.data) {
+      if (catRes && catRes.data) {
         const seen = new Set<string>();
         const entries: CatalogEntry[] = [];
-        for (const row of catRes.data as Array<Record<string, any>>) {
-          if (!row.product_id || seen.has(row.product_id)) continue;
+        for (const row of catRes.data) {
+          if (!row.product_id || seen.has(row.product_id) || !row.is_visible) continue;
           seen.add(row.product_id);
-          const baseCost = row.products?.base_cost || 0;
-          const retailPrice = row.is_on_sale && row.sale_price ? row.sale_price : (row.retail_price || 0);
+          
+          const productName = row.custom_name || row.products?.name || 'Unnamed Product';
+          const isBacWater = /bac\.?\s*water/i.test(row.products?.name || '');
+          const divFactor = isBacWater ? 1 : 10;
+          
+          const baseCost = row.agent_cost != null && row.agent_cost > 0 ? row.agent_cost / divFactor : 0;
+          const retailPriceRaw = row.is_on_sale && row.sale_price ? row.sale_price : (row.retail_price || 0);
+          const retailPrice = retailPriceRaw > 0 ? retailPriceRaw / divFactor : 0;
+
           entries.push({ 
             productId: row.product_id, 
-            name: row.custom_name || row.products?.name || 'Unnamed Product',
+            name: productName,
             baseCost,
             retailPrice
           });
@@ -519,7 +521,7 @@ export default function BundleManager({ agentId }: Props) {
                   </div>
                   <div style={{ textAlign: 'right', display: 'flex', gap: '20px' }}>
                     <div style={{ fontSize: '0.82rem', color: 'var(--silver-light)' }}>
-                      Base Cost: <span style={{ fontWeight: 600, color: 'var(--white)' }}>${totalBase.toFixed(2)}</span>
+                      Your Cost: <span style={{ fontWeight: 600, color: 'var(--white)' }}>${totalBase.toFixed(2)}</span>
                     </div>
                     <div style={{ fontSize: '0.82rem', color: 'var(--teal)' }}>
                       Retail Value: <span style={{ fontWeight: 700 }}>${totalRetail.toFixed(2)}</span>
