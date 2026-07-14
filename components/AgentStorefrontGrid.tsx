@@ -159,6 +159,7 @@ const POPULAR_ORDER: string[] = [
   'KPV',
   'Semax',
   'Selank',
+  'PT-141',
 ];
 
 const CARD_MAPPINGS = [
