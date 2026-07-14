@@ -101,91 +101,34 @@ export function LabelGenerator({ products }: { products: any[] }) {
                     height: '300px',
                     transform: 'scale(0.5)',
                     transformOrigin: 'top left',
-                    backgroundColor: '#161616', // Solid dark gray/black texture, no hex pattern
+                    backgroundColor: '#111111',
                     display: 'flex',
                     flexDirection: 'column',
-                    justifyContent: 'space-between'
+                    justifyContent: 'center',
+                    alignItems: 'center'
                   }}
                 >
-                  {/* Top Border */}
-                  <div style={{ width: '100%', height: '18px', backgroundColor: accentColor, boxShadow: '0 2px 4px rgba(0,0,0,0.5)' }} />
-
-                  {/* Main content box */}
-                  <div 
+                  {/* Top Red Border (extends all the way around) */}
+                  <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '18px', backgroundColor: accentColor, zIndex: 10 }} />
+                  
+                  {/* Dewarped 3D Render Image */}
+                  <img 
+                    src={`/images/savage-brands-flattened/${p.image.replace('.jpg', '.png')}`} 
+                    alt={p.name}
                     style={{
+                      height: '300px',
+                      width: 'auto',
+                      objectFit: 'cover',
                       position: 'relative',
-                      zIndex: 10,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flex: 1,
-                      width: '100%',
-                      padding: '10px 20px',
+                      zIndex: 5
                     }}
-                  >
-                    {/* Real Savage Brands Logo Image */}
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 20 }}>
-                      <img 
-                        src="/images/savage-brands/savage-logo.png" 
-                        alt="Savage Brands Logo" 
-                        style={{
-                          width: '320px',
-                          height: 'auto',
-                          objectFit: 'contain',
-                          filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.8))'
-                        }}
-                        onError={(e) => {
-                          // Fallback styling if image isn't saved yet
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    </div>
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
 
-                    {/* Bottom Content Container */}
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', width: '100%', position: 'relative', zIndex: 20 }}>
-                      {/* Product Name */}
-                      <h3 
-                        style={{ 
-                          fontFamily: 'Impact, "Arial Black", sans-serif', 
-                          fontWeight: 900,
-                          fontSize: cleanName.length > 20 ? '36px' : '44px', 
-                          lineHeight: '1',
-                          background: 'linear-gradient(to bottom, #ffffff 0%, #d0d0d0 40%, #707070 100%)',
-                          WebkitBackgroundClip: 'text',
-                          WebkitTextFillColor: 'transparent',
-                          filter: 'drop-shadow(0 3px 3px rgba(0,0,0,0.9))',
-                          margin: '0 0 10px 0',
-                          textTransform: 'uppercase',
-                          textAlign: 'center',
-                          padding: '0 10px',
-                          transform: 'scaleY(1.5) scaleX(0.85)',
-                          letterSpacing: '1px'
-                        }}
-                      >
-                        {cleanName}
-                      </h3>
-                      
-                      {/* Subtitle / Category / Dose */}
-                      <div 
-                        style={{ 
-                          color: accentColor, 
-                          fontFamily: 'Arial, sans-serif',
-                          fontSize: '22px',
-                          fontWeight: 700,
-                          lineHeight: '1',
-                          textAlign: 'center',
-                          textTransform: 'none',
-                          letterSpacing: '0px'
-                        }}
-                      >
-                        {(subtitle || categoryName).replace(/ & Metabolism/i, '').replace(/ \& Metabolism/i, '')} {doseString.toUpperCase()}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Bottom Border */}
-                  <div style={{ width: '100%', height: '18px', backgroundColor: accentColor, boxShadow: '0 -2px 4px rgba(0,0,0,0.5)' }} />
+                  {/* Bottom Red Border (extends all the way around) */}
+                  <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '18px', backgroundColor: accentColor, zIndex: 10 }} />
                 </div>
               </div>
               <div className="text-sm font-medium text-center truncate w-full" title={p.name}>
