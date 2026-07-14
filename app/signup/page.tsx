@@ -627,9 +627,7 @@ function SignupForm() {
             background: 'repeating-linear-gradient(105deg, rgba(255,255,255,0.09) 0px, rgba(255,255,255,0.09) 1px, rgba(0,0,0,0.05) 2px, rgba(0,0,0,0) 3px), linear-gradient(145deg, #e8e6e3 0%, #b3b0ac 18%, #d6d3ce 34%, #8f8c88 52%, #cfccc7 70%, #a19e9a 86%, #e2e0dd 100%)',
             boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.55), inset 0 -1px 2px rgba(0,0,0,0.45), 0 14px 48px rgba(0,0,0,0.7)',
           }}>
-          {/* Solid dark panel (NOT glass-panel: its !important translucent bg
-              + backdrop blur would smear the nickel frame into the interior) */}
-          <div style={{ width: '100%', padding: 'var(--space-6)', position: 'relative', borderRadius: 12, background: '#0c1118', border: '1px solid rgba(255,255,255,0.08)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)' }}>
+          <div className="glass-panel" style={{ width: '100%', padding: 'var(--space-6)', position: 'relative', borderRadius: 12, background: 'rgba(10, 12, 15, 0.97)' }}>
 
             {/* ── STEP 1: Acknowledgment Checkboxes ── */}
             {!showAgentRefStep && (

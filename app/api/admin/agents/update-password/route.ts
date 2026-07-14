@@ -46,7 +46,8 @@ export async function POST(req: NextRequest) {
 
   const { error } = await supabase.auth.admin.updateUserById(userId, { password: newPassword });
   if (error) {
-    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    console.error('[admin/update-password] Supabase auth error:', error.message, error);
+    return NextResponse.json({ error: error.message || 'An unexpected error occurred.' }, { status: 500 });
   }
 
   // Set must_change_password to true so they are forced to change it on their next login.
