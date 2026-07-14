@@ -110,7 +110,10 @@ export default function BundleManager({ agentId }: Props) {
           if (!row.product_id || seen.has(row.product_id) || !row.is_visible) continue;
           seen.add(row.product_id);
           
-          const productName = row.custom_name || row.products?.name || 'Unnamed Product';
+          const baseName = row.custom_name || row.products?.name || 'Unnamed Product';
+          const sizeLabel = row.products?.unit_size && row.products?.unit_measure ? ` ${row.products.unit_size}${row.products.unit_measure}` : '';
+          const productName = `${baseName}${sizeLabel}`;
+          
           const isBacWater = /bac\.?\s*water/i.test(row.products?.name || '');
           const divFactor = isBacWater ? 1 : 10;
           
@@ -374,12 +377,16 @@ export default function BundleManager({ agentId }: Props) {
                 {/* Pricing row */}
                 <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span style={{ fontSize: '0.68rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Your Cost</span>
-                    <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--silver-light)' }}>{fmt(b.base_cost_total)}</span>
+                    <span style={{ fontSize: '0.68rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Base Cost</span>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--silver-light)' }}>
+                      {fmt(b.product_ids.reduce((sum, pid) => sum + (catalog.find(c => c.productId === pid)?.baseCost || 0), 0))}
+                    </span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span style={{ fontSize: '0.68rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>If Bought Separately</span>
-                    <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--silver-light)', textDecoration: 'line-through', opacity: 0.8 }}>{fmt(b.retail_value_total)}</span>
+                    <span style={{ fontSize: '0.68rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Listed Price</span>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--silver-light)', textDecoration: 'line-through', opacity: 0.8 }}>
+                      {fmt(b.product_ids.reduce((sum, pid) => sum + (catalog.find(c => c.productId === pid)?.retailPrice || 0), 0))}
+                    </span>
                   </div>
                   {b.custom_price != null && b.custom_price > 0 && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
