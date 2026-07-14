@@ -109,20 +109,31 @@ export function LabelGenerator({ products }: { products: any[] }) {
                     backgroundPosition: '0 0, 0 0, 20px 35px, 20px 35px, 0 0, 20px 35px'
                   }}
                 >
-                  <div className="flex-1 flex flex-col items-center justify-center relative z-10 w-full h-full py-4">
-                    
+                  {/* Main centered box with thin colored border representing the front face */}
+                  <div 
+                    className="relative z-10 flex flex-col items-center justify-between"
+                    style={{
+                      width: '320px',
+                      height: '270px',
+                      border: `3px solid ${accentColor}`,
+                      borderRadius: '2px',
+                      padding: '12px 0 8px 0',
+                      boxShadow: 'inset 0 0 20px rgba(0,0,0,0.8)'
+                    }}
+                  >
                     {/* Top Text: SAVAGE BRANDS */}
-                    <div className="flex flex-col items-center justify-center mb-1">
+                    <div className="flex flex-col items-center justify-center leading-none relative z-20">
                       <h1 
                         style={{ 
-                          fontFamily: 'Impact, sans-serif', 
-                          fontSize: '76px', 
+                          fontFamily: '"Arial Black", "Helvetica Neue", sans-serif', 
+                          fontSize: '48px', 
+                          fontWeight: 900,
                           lineHeight: '0.9',
                           letterSpacing: '1px',
-                          background: 'linear-gradient(to bottom, #ffffff, #d0d0d0, #909090)',
+                          background: 'linear-gradient(to bottom, #ffffff 0%, #d0d0d0 40%, #707070 100%)',
                           WebkitBackgroundClip: 'text',
                           WebkitTextFillColor: 'transparent',
-                          transform: 'skewX(-10deg)',
+                          filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.8))',
                           margin: 0
                         }}
                       >
@@ -130,61 +141,82 @@ export function LabelGenerator({ products }: { products: any[] }) {
                       </h1>
                       <h2
                         style={{ 
-                          fontFamily: 'Impact, sans-serif', 
-                          fontSize: '32px', 
+                          fontFamily: '"Arial Black", "Helvetica Neue", sans-serif', 
+                          fontSize: '48px', 
+                          fontWeight: 900,
                           lineHeight: '0.9',
-                          letterSpacing: '6px',
-                          background: 'linear-gradient(to bottom, #c0c0c0, #707070)',
+                          letterSpacing: '1px',
+                          background: 'linear-gradient(to bottom, #ffffff 0%, #d0d0d0 40%, #707070 100%)',
                           WebkitBackgroundClip: 'text',
                           WebkitTextFillColor: 'transparent',
-                          transform: 'skewX(-10deg)',
-                          margin: 0
+                          filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.8))',
+                          margin: 0,
+                          marginTop: '-4px'
                         }}
                       >
                         BRANDS
                       </h2>
                     </div>
 
-                    {/* Claws Logo */}
-                    <div className="flex items-center justify-center my-3" style={{ height: '80px' }}>
-                       <svg width="75" height="80" viewBox="0 0 250 300" style={{ transform: 'rotate(10deg)', filter: `drop-shadow(0 0 8px ${accentColor}80)` }}>
-                          <path d="M40 0 C60 100 80 200 40 300 C80 220 70 120 40 0 Z" fill={accentColor} />
-                          <path d="M125 20 C145 120 165 220 125 320 C165 240 155 140 125 20 Z" fill={accentColor} />
-                          <path d="M210 40 C230 140 250 240 210 340 C250 260 240 160 210 40 Z" fill={accentColor} />
+                    {/* Claws Logo - Positioned absolutely to overlap */}
+                    <div 
+                      className="absolute"
+                      style={{ 
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        width: '200px',
+                        height: '140px',
+                        zIndex: 10,
+                        opacity: 0.95
+                      }}
+                    >
+                       <svg width="100%" height="100%" viewBox="0 0 250 300" style={{ transform: 'rotate(25deg)', filter: `drop-shadow(0 4px 6px rgba(0,0,0,0.6))` }}>
+                          <path d="M20 20 C40 120 70 240 20 340 C70 260 60 140 20 20 Z" fill={accentColor} />
+                          <path d="M85 0 C105 100 135 220 85 320 C135 240 125 120 85 0 Z" fill={accentColor} />
+                          <path d="M150 30 C170 130 200 250 150 350 C200 270 190 150 150 30 Z" fill={accentColor} />
+                          <path d="M215 50 C235 150 265 270 215 370 C265 290 255 170 215 50 Z" fill={accentColor} />
                        </svg>
                     </div>
 
-                    {/* Product Name */}
-                    <h3 
-                      style={{ 
-                        fontFamily: 'Arial, sans-serif', 
-                        fontWeight: '900',
-                        fontSize: p.name.length > 20 ? '24px' : '32px', 
-                        lineHeight: '1.1',
-                        color: '#ffffff',
-                        textShadow: '0 2px 4px rgba(0,0,0,0.8)',
-                        margin: '0',
-                        textTransform: 'uppercase'
-                      }}
-                      className="text-center px-4"
-                    >
-                      {p.name}
-                    </h3>
-                    
-                    {/* Category & Dose */}
-                    <div 
-                      style={{ 
-                        color: accentColor, 
-                        fontFamily: 'Arial, sans-serif',
-                        fontSize: '16px',
-                        fontWeight: 700,
-                        marginTop: '4px',
-                        textTransform: 'capitalize'
-                      }}
-                    >
-                      {categoryName} {doseString}
+                    {/* Bottom Content Container */}
+                    <div className="flex flex-col items-center justify-end w-full relative z-20">
+                      {/* Product Name */}
+                      <h3 
+                        style={{ 
+                          fontFamily: '"Arial Black", "Helvetica Neue", sans-serif', 
+                          fontWeight: 900,
+                          fontSize: p.name.length > 20 ? '20px' : '28px', 
+                          lineHeight: '1',
+                          background: 'linear-gradient(to bottom, #ffffff 0%, #c0c0c0 50%, #808080 100%)',
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                          filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.8))',
+                          margin: '0 0 6px 0',
+                          textTransform: 'uppercase',
+                          textAlign: 'center',
+                          padding: '0 10px'
+                        }}
+                      >
+                        {p.name}
+                      </h3>
+                      
+                      {/* Category & Dose */}
+                      <div 
+                        style={{ 
+                          color: '#e0e0e0', 
+                          fontFamily: 'Arial, sans-serif',
+                          fontSize: '14px',
+                          fontWeight: 400,
+                          lineHeight: '1.2',
+                          textAlign: 'center'
+                        }}
+                      >
+                        {categoryName}
+                        <br/>
+                        <span style={{ fontSize: '18px', fontWeight: 600 }}>{doseString}</span>
+                      </div>
                     </div>
-
                   </div>
                 </div>
               </div>
