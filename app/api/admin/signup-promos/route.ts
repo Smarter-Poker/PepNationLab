@@ -103,5 +103,5 @@ export async function DELETE(req: NextRequest) {
   const supabase = createAdminClient();
   const { error } = await supabase.from('signup_promo_codes').delete().eq('id', id);
   if (error) return NextResponse.json({ error: 'Could Not Delete The Promo Code.' }, { status: 500 });
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ ok: true });
 }
