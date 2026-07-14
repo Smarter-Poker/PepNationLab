@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
   // Upload via service role — bypasses RLS entirely
   const bytes = await file.arrayBuffer();
   const { error: uploadError } = await svc.storage
-    .from('public-assets')
+    .from('storefront-assets')
     .upload(path, bytes, {
       contentType: file.type,
       upsert: true,
@@ -58,6 +58,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Storage Upload Failed. Please Try Again.' }, { status: 500 });
   }
 
-  const { data: pub } = svc.storage.from('public-assets').getPublicUrl(path);
+  const { data: pub } = svc.storage.from('storefront-assets').getPublicUrl(path);
   return NextResponse.json({ url: pub.publicUrl });
 }
