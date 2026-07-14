@@ -124,68 +124,23 @@ export function LabelGenerator({ products }: { products: any[] }) {
                       padding: '10px 20px',
                     }}
                   >
-                    {/* Claws Logo - Positioned absolutely to overlap SAVAGE BRANDS */}
-                    <div 
-                      style={{ 
-                        position: 'absolute',
-                        top: '40%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        width: '260px',
-                        height: '180px',
-                        zIndex: 5,
-                        opacity: 0.95
-                      }}
-                    >
-                       <svg width="100%" height="100%" viewBox="0 0 250 300" style={{ transform: 'rotate(20deg)', filter: `drop-shadow(0 4px 6px rgba(0,0,0,0.6))` }}>
-                          <path d="M20 20 C40 120 70 240 20 340 C70 260 60 140 20 20 Z" fill={accentColor} />
-                          <path d="M85 0 C105 100 135 220 85 320 C135 240 125 120 85 0 Z" fill={accentColor} />
-                          <path d="M150 30 C170 130 200 250 150 350 C200 270 190 150 150 30 Z" fill={accentColor} />
-                          <path d="M215 50 C235 150 265 270 215 370 C265 290 255 170 215 50 Z" fill={accentColor} />
-                       </svg>
-                    </div>
-
-                    {/* Top Text: SAVAGE BRANDS */}
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', lineHeight: '0.9', position: 'relative', zIndex: 20 }}>
-                      <h1 
-                        style={{ 
-                          fontFamily: 'Impact, "Arial Black", sans-serif', 
-                          fontSize: '68px', 
-                          fontWeight: 900,
-                          lineHeight: '0.9',
-                          letterSpacing: '1px',
-                          background: 'linear-gradient(to bottom, #ffffff 0%, #c0c0c0 40%, #606060 100%)',
-                          WebkitBackgroundClip: 'text',
-                          WebkitTextFillColor: 'transparent',
-                          filter: 'drop-shadow(0 3px 3px rgba(0,0,0,0.9))',
-                          margin: 0,
-                          transform: 'skewX(-15deg) scaleY(1.2)'
+                    {/* Real Savage Brands Logo Image */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 20 }}>
+                      <img 
+                        src="/images/savage-brands/savage-logo.png" 
+                        alt="Savage Brands Logo" 
+                        style={{
+                          width: '320px',
+                          height: 'auto',
+                          objectFit: 'contain',
+                          filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.8))'
                         }}
-                      >
-                        SAVAGE
-                      </h1>
-                      <h2
-                        style={{ 
-                          fontFamily: 'Impact, "Arial Black", sans-serif', 
-                          fontSize: '56px', 
-                          fontWeight: 900,
-                          lineHeight: '0.9',
-                          letterSpacing: '1px',
-                          background: 'linear-gradient(to bottom, #ffffff 0%, #c0c0c0 40%, #606060 100%)',
-                          WebkitBackgroundClip: 'text',
-                          WebkitTextFillColor: 'transparent',
-                          filter: 'drop-shadow(0 3px 3px rgba(0,0,0,0.9))',
-                          margin: 0,
-                          marginTop: '4px',
-                          transform: 'skewX(-15deg) scaleY(1.2)'
+                        onError={(e) => {
+                          // Fallback styling if image isn't saved yet
+                          e.currentTarget.style.display = 'none';
                         }}
-                      >
-                        BRANDS
-                      </h2>
+                      />
                     </div>
-
-                    {/* Spacer between logo and product */}
-                    <div style={{ height: '35px' }} />
 
                     {/* Bottom Content Container */}
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', width: '100%', position: 'relative', zIndex: 20 }}>
