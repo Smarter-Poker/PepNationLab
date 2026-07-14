@@ -109,28 +109,19 @@ export function LabelGenerator({ products }: { products: any[] }) {
                     backgroundPosition: '0 0, 0 0, 20px 35px, 20px 35px, 0 0, 20px 35px'
                   }}
                 >
-                  <div style={{ height: '12px', width: '100%', backgroundColor: accentColor }}></div>
-
-                  <div className="absolute inset-0 flex items-center justify-center opacity-30 pointer-events-none">
-                     <svg width="250" height="300" viewBox="0 0 250 300" style={{ transform: 'rotate(-20deg)', filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.2))' }}>
-                        <path d="M40 0 C60 100 80 200 40 300 C80 220 70 120 40 0 Z" fill={accentColor} />
-                        <path d="M125 20 C145 120 165 220 125 320 C165 240 155 140 125 20 Z" fill={accentColor} />
-                        <path d="M210 40 C230 140 250 240 210 340 C250 260 240 160 210 40 Z" fill={accentColor} />
-                     </svg>
-                  </div>
-
-                  <div className="flex-1 flex flex-col items-center justify-center relative z-10 px-8 text-center">
+                  <div className="flex-1 flex flex-col items-center justify-center relative z-10 w-full h-full py-4">
+                    
+                    {/* Top Text: SAVAGE BRANDS */}
                     <div className="flex flex-col items-center justify-center mb-1">
                       <h1 
                         style={{ 
                           fontFamily: 'Impact, sans-serif', 
-                          fontSize: '64px', 
-                          lineHeight: '1',
-                          letterSpacing: '-2px',
-                          background: 'linear-gradient(to bottom, #f0f0f0, #a0a0a0, #d0d0d0)',
+                          fontSize: '76px', 
+                          lineHeight: '0.9',
+                          letterSpacing: '1px',
+                          background: 'linear-gradient(to bottom, #ffffff, #d0d0d0, #909090)',
                           WebkitBackgroundClip: 'text',
                           WebkitTextFillColor: 'transparent',
-                          textShadow: '0 4px 6px rgba(0,0,0,0.8), inset 0 2px 4px rgba(255,255,255,0.4)',
                           transform: 'skewX(-10deg)',
                           margin: 0
                         }}
@@ -140,49 +131,61 @@ export function LabelGenerator({ products }: { products: any[] }) {
                       <h2
                         style={{ 
                           fontFamily: 'Impact, sans-serif', 
-                          fontSize: '28px', 
-                          lineHeight: '1',
-                          letterSpacing: '4px',
-                          background: 'linear-gradient(to bottom, #d0d0d0, #808080)',
+                          fontSize: '32px', 
+                          lineHeight: '0.9',
+                          letterSpacing: '6px',
+                          background: 'linear-gradient(to bottom, #c0c0c0, #707070)',
                           WebkitBackgroundClip: 'text',
                           WebkitTextFillColor: 'transparent',
-                          textShadow: '0 2px 4px rgba(0,0,0,0.8)',
                           transform: 'skewX(-10deg)',
-                          marginTop: '-4px'
+                          margin: 0
                         }}
                       >
                         BRANDS
                       </h2>
                     </div>
 
+                    {/* Claws Logo */}
+                    <div className="flex items-center justify-center my-3" style={{ height: '80px' }}>
+                       <svg width="75" height="80" viewBox="0 0 250 300" style={{ transform: 'rotate(10deg)', filter: `drop-shadow(0 0 8px ${accentColor}80)` }}>
+                          <path d="M40 0 C60 100 80 200 40 300 C80 220 70 120 40 0 Z" fill={accentColor} />
+                          <path d="M125 20 C145 120 165 220 125 320 C165 240 155 140 125 20 Z" fill={accentColor} />
+                          <path d="M210 40 C230 140 250 240 210 340 C250 260 240 160 210 40 Z" fill={accentColor} />
+                       </svg>
+                    </div>
+
+                    {/* Product Name */}
                     <h3 
                       style={{ 
                         fontFamily: 'Arial, sans-serif', 
                         fontWeight: '900',
-                        fontSize: p.name.length > 25 ? '32px' : '44px', 
+                        fontSize: p.name.length > 20 ? '24px' : '32px', 
                         lineHeight: '1.1',
-                        color: '#E0E0E0',
-                        textShadow: '0 2px 4px rgba(0,0,0,0.9)',
-                        margin: '6px 0 0 0'
+                        color: '#ffffff',
+                        textShadow: '0 2px 4px rgba(0,0,0,0.8)',
+                        margin: '0',
+                        textTransform: 'uppercase'
                       }}
-                      className="uppercase tracking-tighter"
+                      className="text-center px-4"
                     >
                       {p.name}
                     </h3>
+                    
+                    {/* Category & Dose */}
                     <div 
                       style={{ 
                         color: accentColor, 
                         fontFamily: 'Arial, sans-serif',
-                        fontSize: '22px',
+                        fontSize: '16px',
                         fontWeight: 700,
-                        marginTop: '4px'
+                        marginTop: '4px',
+                        textTransform: 'capitalize'
                       }}
                     >
                       {categoryName} {doseString}
                     </div>
-                  </div>
 
-                  <div style={{ height: '12px', width: '100%', backgroundColor: accentColor }}></div>
+                  </div>
                 </div>
               </div>
               <div className="text-sm font-medium text-center truncate w-full" title={p.name}>
