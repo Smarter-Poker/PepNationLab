@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { notify } from '@/lib/notify';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -105,6 +106,22 @@ export async function POST(req: NextRequest) {
     });
   } catch {
     // Audit failure shouldn't block the reparent
+  }
+
+  // Push + in-app notify to the new parent that an agent was added to their
+  // downline (manual admin move). Root moves (parent = null) notify no one,
+  // and the acting admin is never notified about their own action.
+  if (parentAgentId && parentAgentId !== admin.userId) {
+    try {
+      const agentName = agent.full_name || 'An Agent';
+      await notify(svc, {
+        userId: parentAgentId,
+        type: 'new_researcher',
+        title: `New Agent In Your Downline: ${agentName}`,
+        body: `${agentName} was added to your downline.`,
+        url: '/dashboard/agent',
+      });
+    } catch { /* non-fatal - never block the reparent on a notification */ }
   }
 
   return NextResponse.json({ success: true });

@@ -124,29 +124,46 @@ export async function GET(req: NextRequest) {
     }
 
     // Notify the agent that a new researcher signed up under their storefront.
-    // The regular signup + agent-created paths already do this via
-    // notifyNewResearcher; the Google OAuth path previously notified no one, so
-    // agents/super-agents never heard about self-serve Google signups. Fires
-    // only for a brand-new account (ensured.created) and reads the FINAL
-    // referring_agent_id (after ensureOAuthResearcherProfile's house-link +
-    // fresh-referral upgrade). Best-effort: never blocks the sign-in.
-    if (ensured.created) {
-      try {
-        const { data: newProfile } = await admin
-          .from('profiles')
-          .select('referring_agent_id, full_name')
-          .eq('id', user.id)
+    // IMPORTANT: this must NOT be gated on ensured.created alone - for a real
+    // Google signup the profile row is created by the handle_new_user DB
+    // trigger BEFORE this callback runs, so ensureOAuthResearcherProfile takes
+    // the existing-profile path and `created` stays false (it is only true in
+    // the rare self-heal case; that gate silently suppressed EVERY real signup
+    // notification). Treat any account whose profile row is under 15 minutes
+    // old as a fresh signup, and dedup via the notifications table so a quick
+    // sign-out/sign-in never double-pings the agent. Best-effort: never blocks
+    // the sign-in.
+    try {
+      const { data: newProfile } = await admin
+        .from('profiles')
+        .select('referring_agent_id, full_name, username, created_at')
+        .eq('id', user.id)
+        .maybeSingle();
+      const createdAtMs = newProfile?.created_at ? Date.parse(String(newProfile.created_at)) : NaN;
+      const isFreshAccount =
+        ensured.created ||
+        (Number.isFinite(createdAtMs) && Date.now() - createdAtMs < 15 * 60 * 1000);
+      if (
+        isFreshAccount &&
+        newProfile?.referring_agent_id &&
+        newProfile.referring_agent_id !== user.id
+      ) {
+        const researcherName = newProfile.full_name || newProfile.username || 'A New Researcher';
+        const { data: already } = await admin
+          .from('notifications')
+          .select('id')
+          .eq('user_id', newProfile.referring_agent_id)
+          .eq('type', 'new_researcher')
+          .eq('title', `New Researcher: ${researcherName}`)
+          .gte('created_at', new Date(Date.now() - 15 * 60 * 1000).toISOString())
+          .limit(1)
           .maybeSingle();
-        if (newProfile?.referring_agent_id && newProfile.referring_agent_id !== user.id) {
-          await notifyNewResearcher(
-            admin,
-            newProfile.referring_agent_id,
-            newProfile.full_name || 'A New Researcher',
-          );
+        if (!already) {
+          await notifyNewResearcher(admin, newProfile.referring_agent_id, researcherName);
         }
-      } catch (e) {
-        console.error('[auth/callback] new-researcher notify failed (non-fatal):', e);
       }
+    } catch (e) {
+      console.error('[auth/callback] new-researcher notify failed (non-fatal):', e);
     }
 
     // Persist The Registration Acknowledgment Collected On /signup Before The
