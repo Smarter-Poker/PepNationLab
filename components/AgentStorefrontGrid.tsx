@@ -4064,12 +4064,18 @@ export default function AgentStorefrontGrid({
                   const getUnitPrice = (q: number) => {
 
                     const t = tiers.find(t => q >= t.min && q <= t.max);
-                    return t ? parseFloat((basePrice * (1 + t.pct / 100)).toFixed(2)) : basePrice;
+                    // Keep the per-vial price EXACT here. Charm pack prices (e.g. $74.97)
+                    // do not divide into a clean per-vial cent, so rounding the unit BEFORE
+                    // multiplying inflated the shown total ($7.497 -> $7.50 -> $75.00 for a
+                    // $74.97 pack, while the cart correctly charged $74.97). Round only the
+                    // final line total below so the displayed total matches what is charged.
+                    const mult = t ? 1 + t.pct / 100 : 1;
+                    return basePrice * mult;
                   };
 
                   const displayQty = qty > 0 ? qty : 1;
                   const unitPrice = getUnitPrice(displayQty);
-                  const lineTotal = unitPrice * displayQty;
+                  const lineTotal = Math.round(unitPrice * displayQty * 100) / 100;
 
                   return (
                     <div style={{ marginBottom: 'var(--space-6)' }}>
