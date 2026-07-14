@@ -79,9 +79,9 @@ export function LabelGenerator({ products }: { products: any[] }) {
         className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-8"
       >
         {products.map((p) => {
-          const categoryName = p.categories?.name || 'Unknown';
+          const categoryName = p.category || 'Unknown';
           const accentColor = getCategoryColor(categoryName);
-          const doseString = p.dose_amount && p.dose_unit ? `${p.dose_amount}${p.dose_unit}` : '';
+          const doseString = p.unit_size && p.unit_measure ? `${p.unit_size}${p.unit_measure}` : '';
 
           return (
             <div key={p.id} className="flex flex-col items-center gap-2">
