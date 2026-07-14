@@ -36,6 +36,9 @@ function SignupForm() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showGoogleModal, setShowGoogleModal] = useState(false);
+  // Step 2 of the Google modal: agent referral capture
+  const [showAgentRefStep, setShowAgentRefStep] = useState(false);
+  const [googleReferralInput, setGoogleReferralInput] = useState('');
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   // Two-step flow: 'form' collects details; 'code' collects the 6-digit email
@@ -278,10 +281,11 @@ function SignupForm() {
     }
   }
 
-  async function proceedWithGoogle() {
+  async function proceedWithGoogle(agentSlug?: string) {
     setGoogleLoading(true);
     setError('');
     setShowGoogleModal(false);
+    setShowAgentRefStep(false);
     try {
       const supabase = createClient();
       // Pass redirect through the OAuth callback, plus registration ack flag.
@@ -292,10 +296,19 @@ function SignupForm() {
         ? `${redirectTo}${ackSep}ack=registration`
         : '/dashboard?ack=registration';
 
+      // If we know the referring agent, encode their slug into the callback URL
+      // so the server can link the new user to them after Google returns.
+      // We encode it into the /auth/callback URL itself (not inside the inner redirect)
+      // so it survives the OAuth round-trip as a top-level query param.
+      const resolvedAgent = agentSlug ?? capturedAgentSlug ?? null;
+      const agentParam = resolvedAgent
+        ? `&agentRef=${encodeURIComponent(resolvedAgent)}`
+        : '';
+
       const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(callbackRedirect)}`,
+          redirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(callbackRedirect)}${agentParam}`,
           // Force Google to show the account chooser instead of silently
           // reusing the last authorized account.
           queryParams: { prompt: 'select_account' },
@@ -322,10 +335,21 @@ function SignupForm() {
   function handleGoogleSignup() {
     if (googleLoading) return;
     if (!allAcked) {
+      // Show the acknowledgment modal (Step 1)
       setShowGoogleModal(true);
+      setShowAgentRefStep(false);
       return;
     }
-    proceedWithGoogle();
+    // Acks already checked — go straight to referral step (or skip if agent is known)
+    if (capturedAgentSlug) {
+      // Agent already captured from QR code scan — skip referral step entirely
+      proceedWithGoogle(capturedAgentSlug);
+    } else {
+      // Pre-fill googleReferralInput from ?ref= URL param if present
+      if (referralInput && !googleReferralInput) setGoogleReferralInput(referralInput);
+      setShowGoogleModal(true);
+      setShowAgentRefStep(true);
+    }
   }
 
   // Build the "Sign In" link so if the user switches to login, redirect is preserved
@@ -594,54 +618,142 @@ function SignupForm() {
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: 'var(--space-4)'
         }}>
           <div className="glass-panel" style={{ width: '100%', maxWidth: 460, padding: 'var(--space-6)', position: 'relative' }}>
-            <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-3)', color: 'var(--white)' }}>
-              Required Acknowledgments
-            </h2>
-            <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', marginBottom: 'var(--space-5)' }}>
-              Before connecting your Google account to a Pep Nation Lab researcher profile, please confirm the following:
-            </p>
 
-            <div role="group" aria-label="Required Acknowledgments" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', marginBottom: 'var(--space-6)' }}>
-              {ACKNOWLEDGMENTS.map(a => (
-                <label key={a.key} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
+            {/* ── STEP 1: Acknowledgment Checkboxes ── */}
+            {!showAgentRefStep && (
+              <>
+                <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-3)', color: 'var(--white)' }}>
+                  Required Acknowledgments
+                </h2>
+                <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', marginBottom: 'var(--space-5)' }}>
+                  Before connecting your Google account to a Pep Nation Lab researcher profile, please confirm the following:
+                </p>
+
+                <div role="group" aria-label="Required Acknowledgments" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', marginBottom: 'var(--space-6)' }}>
+                  {ACKNOWLEDGMENTS.map(a => (
+                    <label key={a.key} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={acks[a.key]}
+                        onChange={e => setAcks(prev => ({ ...prev, [a.key]: e.target.checked }))}
+                        style={{ marginTop: 3, accentColor: 'var(--teal)', flexShrink: 0 }}
+                      />
+                      <span style={{ fontSize: '0.78rem', color: 'var(--grey-300)', lineHeight: 1.5 }}>
+                        {a.key === 'c3' ? (
+                          <>
+                            I Have Read And Accept The <a href="/terms" target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: 'var(--teal)', textDecoration: 'underline' }}>Terms Of Service</a>, <a href="/privacy" target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: 'var(--teal)', textDecoration: 'underline' }}>Privacy Policy</a>, And <a href="/compliance" target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: 'var(--teal)', textDecoration: 'underline' }}>Research-Only Compliance Requirements</a>.
+                          </>
+                        ) : (
+                          a.text
+                        )}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+
+                <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={() => setShowGoogleModal(false)}
+                    style={{ flex: 1, justifyContent: 'center' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    disabled={!allAcked || googleLoading}
+                    onClick={() => {
+                      // After acks: if agent already known from QR, skip referral step
+                      if (capturedAgentSlug) {
+                        proceedWithGoogle(capturedAgentSlug);
+                      } else {
+                        // Pre-fill from ?ref= if present
+                        if (referralInput && !googleReferralInput) setGoogleReferralInput(referralInput);
+                        setShowAgentRefStep(true);
+                      }
+                    }}
+                    style={{ flex: 2, justifyContent: 'center' }}
+                  >
+                    {googleLoading ? 'Redirecting...' : 'Confirm & Continue'}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* ── STEP 2: Agent Referral Capture ── */}
+            {showAgentRefStep && (
+              <>
+                <div style={{ textAlign: 'center', marginBottom: 'var(--space-4)' }}>
+                  {/* Step indicator */}
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 'var(--space-4)' }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--teal)', opacity: 0.4 }} />
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--teal)' }} />
+                  </div>
+                  <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)', color: 'var(--white)' }}>
+                    Who Referred You?
+                  </h2>
+                  <p style={{ fontSize: '0.83rem', color: 'var(--grey-400)', lineHeight: 1.5 }}>
+                    Enter your agent&apos;s username to get linked to their store.<br />
+                    <span style={{ fontSize: '0.78rem', color: 'var(--grey-500)' }}>This is optional — you can skip it.</span>
+                  </p>
+                </div>
+
+                <div style={{ marginBottom: 'var(--space-5)' }}>
+                  <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 6, fontWeight: 600 }}>
+                    Agent Username
+                  </label>
                   <input
-                    type="checkbox"
-                    checked={acks[a.key]}
-                    onChange={e => setAcks(prev => ({ ...prev, [a.key]: e.target.checked }))}
-                    style={{ marginTop: 3, accentColor: 'var(--teal)', flexShrink: 0 }}
+                    id="googleAgentRef"
+                    type="text"
+                    className="form-input"
+                    placeholder="e.g. savagebrands"
+                    value={googleReferralInput}
+                    onChange={e => setGoogleReferralInput(e.target.value.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 50))}
+                    maxLength={50}
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    autoFocus
+                    style={{ width: '100%' }}
                   />
-                  <span style={{ fontSize: '0.78rem', color: 'var(--grey-300)', lineHeight: 1.5 }}>
-                    {a.key === 'c3' ? (
-                      <>
-                        I Have Read And Accept The <a href="/terms" target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: 'var(--teal)', textDecoration: 'underline' }}>Terms Of Service</a>, <a href="/privacy" target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: 'var(--teal)', textDecoration: 'underline' }}>Privacy Policy</a>, And <a href="/compliance" target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: 'var(--teal)', textDecoration: 'underline' }}>Research-Only Compliance Requirements</a>.
-                      </>
-                    ) : (
-                      a.text
-                    )}
-                  </span>
-                </label>
-              ))}
-            </div>
+                  <p style={{ fontSize: '0.72rem', marginTop: 6, color: 'var(--grey-500)' }}>
+                    Not sure? Leave it blank and tap Skip — you can update this later from your account settings.
+                  </p>
+                </div>
 
-            <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={() => setShowGoogleModal(false)}
-                style={{ flex: 1, justifyContent: 'center' }}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                disabled={!allAcked || googleLoading}
-                onClick={proceedWithGoogle}
-                style={{ flex: 2, justifyContent: 'center' }}
-              >
-                {googleLoading ? 'Redirecting...' : 'Confirm & Continue'}
-              </button>
-            </div>
+                <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    disabled={googleLoading}
+                    onClick={() => proceedWithGoogle(undefined)}
+                    style={{ flex: 1, justifyContent: 'center' }}
+                  >
+                    Skip
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    disabled={googleLoading}
+                    onClick={() => proceedWithGoogle(googleReferralInput.trim() || undefined)}
+                    style={{ flex: 2, justifyContent: 'center' }}
+                  >
+                    {googleLoading ? 'Redirecting...' : 'Continue With Google →'}
+                  </button>
+                </div>
+
+                {/* Back link */}
+                <button
+                  type="button"
+                  onClick={() => setShowAgentRefStep(false)}
+                  style={{ display: 'block', width: '100%', textAlign: 'center', marginTop: 'var(--space-3)', background: 'none', border: 'none', color: 'var(--grey-500)', fontSize: '0.78rem', cursor: 'pointer' }}
+                >
+                  ← Back
+                </button>
+              </>
+            )}
+
           </div>
         </div>
       )}

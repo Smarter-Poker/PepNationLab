@@ -22,6 +22,10 @@ export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const code = url.searchParams.get('code');
   const ack = url.searchParams.get('ack');
+  // agentRef is set by the signup page when the user entered an agent username
+  // or arrived via a QR code scan. It travels as a top-level callback param so
+  // it survives the OAuth round-trip independently of the inner redirect URL.
+  const agentRef = url.searchParams.get('agentRef') ?? undefined;
   // Prevent Open Redirect: same-origin relative paths only; also strips embedded
   // control characters that browsers collapse into scheme-relative navigation.
   const redirectTo = safeRelativePath(url.searchParams.get('redirect'));
@@ -58,7 +62,7 @@ export async function GET(req: NextRequest) {
   try {
     const admin = createAdminClient();
 
-    const ensured = await ensureOAuthResearcherProfile(admin, user);
+    const ensured = await ensureOAuthResearcherProfile(admin, user, agentRef);
 
     if (ensured.disabled) {
       await supabase.auth.signOut();

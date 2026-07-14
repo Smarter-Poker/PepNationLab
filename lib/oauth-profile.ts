@@ -41,6 +41,7 @@ export interface EnsureProfileResult {
 export async function ensureOAuthResearcherProfile(
   admin: AdminClient,
   user: OAuthUserLike,
+  agentSlug?: string,
 ): Promise<EnsureProfileResult> {
   const result: EnsureProfileResult = {
     ok: false,
@@ -56,6 +57,20 @@ export async function ensureOAuthResearcherProfile(
       .select('id')
       .eq('slug', DEFAULT_STORE_SLUG)
       .maybeSingle();
+
+    // If the user provided a referral agent slug (from QR code or manual entry),
+    // look up that agent. Fall back to house store if not found or invalid.
+    let referringAgentId: string | null = houseStore?.id ?? null;
+    if (agentSlug && /^[a-z0-9_-]{2,80}$/i.test(agentSlug)) {
+      const { data: namedAgent } = await admin
+        .from('agent_profiles')
+        .select('id')
+        .eq('slug', agentSlug.toLowerCase())
+        .maybeSingle();
+      if (namedAgent?.id) {
+        referringAgentId = namedAgent.id;
+      }
+    }
 
     const { data: profile } = await admin
       .from('profiles')
@@ -95,7 +110,7 @@ export async function ensureOAuthResearcherProfile(
         last_name: lastName,
         avatar_url: metaAvatar,
         role: 'researcher',
-        referring_agent_id: houseStore?.id ?? null,
+        referring_agent_id: referringAgentId,
         disclaimer_v1_accepted: false,
         is_active: true,
         updated_at: new Date().toISOString(),
@@ -106,7 +121,7 @@ export async function ensureOAuthResearcherProfile(
         return result;
       }
       result.created = true;
-      result.linkedHouseStore = !!houseStore?.id;
+      result.linkedHouseStore = referringAgentId === (houseStore?.id ?? null);
       result.username = username;
       result.ok = true;
       return result;
@@ -120,9 +135,11 @@ export async function ensureOAuthResearcherProfile(
 
     const updates: Record<string, unknown> = {};
 
-    if (!profile.referring_agent_id && profile.role === 'researcher' && houseStore?.id) {
-      updates.referring_agent_id = houseStore.id;
-      result.linkedHouseStore = true;
+    if (!profile.referring_agent_id && referringAgentId) {
+      // Only set referring agent if the profile has none yet.
+      // For new OAuth signups the agentSlug-resolved id takes priority over house store.
+      updates.referring_agent_id = referringAgentId;
+      result.linkedHouseStore = referringAgentId === (houseStore?.id ?? null);
     }
 
     if (!profile.username) {
