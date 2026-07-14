@@ -119,14 +119,15 @@ export async function validateCoupon(
 
 /**
  * Checkout-facing resolution: first try the code as a regular agent coupon;
- * if it doesn't exist, try it as a platform signup promo (e.g. FIRST20).
+ * if it doesn't exist, try it as a signup promo (e.g. FIRST20).
  *
- * Signup promos advertised publicly (flyers, landing page) get typed into the
- * CHECKOUT coupon box even though they live in signup_promo_codes, not
- * coupons. When that happens for a "first order coupon" promo we redeem the
- * promo on the spot (one per account, enforced by redeem_signup_promo), which
- * mints the buyer's personal WELCOME-XXXX coupon, and we apply THAT coupon.
- * Re-entering the promo code later resolves back to the same personal coupon.
+ * Promo codes are UNIVERSAL: redeemable at signup or at checkout. A
+ * first-order-coupon promo entered at checkout is redeemed on the spot
+ * (one per account, enforced by redeem_signup_promo), which mints the
+ * buyer's personal WELCOME-XXXX coupon, and THAT coupon is applied.
+ * Re-entering the promo code later resolves back to the same personal
+ * coupon. A store-credit promo entered at checkout is also redeemed on the
+ * spot -- the credit lands on the account wallet and the shopper is told so.
  *
  * The returned `code` is the coupon actually applied (may differ from the
  * entered promo code) -- callers must use it for redeem_coupon and order rows.
@@ -171,12 +172,13 @@ export async function resolveCheckoutCoupon(
     return { valid: false, error: 'A Signup Promo Has Already Been Applied To This Account.' };
   }
 
-  if (cat?.grant_kind !== 'first_order_coupon') {
-    // Store-credit promos are granted at signup, not at checkout.
-    return { valid: false, error: 'That Promo Code Is Applied During Signup, Not At Checkout.' };
+  if (cat?.grant_kind !== 'first_order_coupon' && cat?.grant_kind !== 'store_credit') {
+    return { valid: false, error: NOT_FOUND_ERROR };
   }
 
-  // Redeem now: mints the personal first-order coupon for this account.
+  // Promo codes are universal: redeemable at signup OR at checkout.
+  // Redeeming here grants the reward on the spot -- a personal first-order
+  // coupon, or store credit added to the account's wallet.
   const { data: out, error: promoErr } = await supabase.rpc('redeem_signup_promo', {
     p_user_id: opts.userId,
     p_code: code,
@@ -184,6 +186,15 @@ export async function resolveCheckoutCoupon(
   if (promoErr) {
     return { valid: false, error: promoErr.message || NOT_FOUND_ERROR };
   }
+
+  if (cat.grant_kind === 'store_credit') {
+    const credit = Number((out as { reward_value?: unknown } | null)?.reward_value) || 0;
+    return {
+      valid: false,
+      error: `Promo Redeemed: $${credit.toFixed(2)} Store Credit Was Added To Your Account Balance. Store Credit Applies To Your Balance Rather Than This Order's Total.`,
+    };
+  }
+
   const grantedCode = (out as { coupon_code?: string } | null)?.coupon_code;
   if (!grantedCode) return { valid: false, error: NOT_FOUND_ERROR };
 
