@@ -14,6 +14,8 @@ interface MockOptions {
   agents?: Record<string, { id: string }>;
   /** profile id -> profiles row for agent-account / sub-agent lookups. */
   accounts?: Record<string, Record<string, unknown>>;
+  /** Row returned by the duplicate-email probe (another account owns the email). */
+  emailOwner?: Record<string, unknown> | null;
 }
 
 /**
@@ -59,6 +61,22 @@ function makeAdmin(opts: MockOptions = {}) {
                 },
               };
             },
+            // Duplicate-email probe: .or(...).neq(...).limit(1).maybeSingle()
+            or(_filter: string) {
+              return {
+                neq(_k: string, _v: unknown) {
+                  return {
+                    limit(_n: number) {
+                      return {
+                        async maybeSingle() {
+                          return { data: opts.emailOwner ?? null };
+                        },
+                      };
+                    },
+                  };
+                },
+              };
+            },
           };
         },
         async upsert(row: Record<string, unknown>) {
@@ -101,6 +119,13 @@ const existingUnreferredProfile = {
   first_name: 'Jane',
   last_name: 'Doe',
   avatar_url: 'https://lh3.googleusercontent.com/a/photo=s96-c',
+  created_at: new Date().toISOString(), // fresh signup unless a test overrides
+};
+
+/** A profile the trg_00 DB trigger just house-linked (the real OAuth-signup state). */
+const freshHouseLinkedProfile = {
+  ...existingUnreferredProfile,
+  referring_agent_id: HOUSE_ID,
 };
 
 describe('ensureOAuthResearcherProfile', () => {
@@ -207,6 +232,40 @@ describe('ensureOAuthResearcherProfile', () => {
     expect(writes.upserts[0].avatar_url).toBeNull();
   });
 
+  // ── duplicate Google email (emailConflict) ────────────────────────────
+
+  it('flags emailConflict for a NEW account whose email belongs to another profile', async () => {
+    const { admin, writes } = makeAdmin({
+      profileRow: null,
+      emailOwner: { id: 'other-user' },
+    });
+    const result = await ensureOAuthResearcherProfile(admin, googleUser);
+    expect(result.ok).toBe(true);
+    expect(result.emailConflict).toBe(true);
+    // Nothing may be written for the conflicting account.
+    expect(writes.upserts).toHaveLength(0);
+    expect(writes.updates).toHaveLength(0);
+  });
+
+  it('NEVER flags emailConflict for an existing profile - skips the backfill instead', async () => {
+    const { admin, writes } = makeAdmin({
+      profileRow: { ...freshHouseLinkedProfile, email: null },
+      emailOwner: { id: 'other-user' },
+    });
+    const result = await ensureOAuthResearcherProfile(admin, googleUser);
+    expect(result.ok).toBe(true);
+    expect(result.emailConflict).toBe(false);
+    // No update should carry the conflicting email.
+    for (const u of writes.updates) expect(u.email).toBeUndefined();
+  });
+
+  it('does not flag emailConflict when the email is unclaimed', async () => {
+    const { admin } = makeAdmin();
+    const result = await ensureOAuthResearcherProfile(admin, googleUser);
+    expect(result.emailConflict).toBe(false);
+    expect(result.created).toBe(true);
+  });
+
   // ── agentRef (referral) resolution ────────────────────────────────────
 
   it('links a new signup to the named ACTIVE agent from agentRef', async () => {
@@ -268,7 +327,36 @@ describe('ensureOAuthResearcherProfile', () => {
     expect(writes.updates[0].referring_agent_id).toBe(AGENT_ID);
   });
 
-  it('NEVER overwrites an existing referral, even when agentRef is present', async () => {
+  // The real Google-signup state: handle_new_user inserts the profile and the
+  // trg_00_ensure_researcher_house_agent DB trigger house-links it BEFORE the
+  // OAuth callback ever runs. agentRef must still win on a fresh signup.
+  it('upgrades a FRESH house-linked profile (DB trigger default) to the named agent', async () => {
+    const { admin, writes } = makeAdmin({
+      profileRow: freshHouseLinkedProfile,
+      agents: { savagebrands: { id: AGENT_ID } },
+      accounts: { [AGENT_ID]: { id: AGENT_ID, is_active: true } },
+    });
+    const result = await ensureOAuthResearcherProfile(admin, googleUser, 'savagebrands');
+    expect(result.ok).toBe(true);
+    expect(writes.updates).toHaveLength(1);
+    expect(writes.updates[0].referring_agent_id).toBe(AGENT_ID);
+  });
+
+  it('does NOT upgrade a house link older than the fresh-signup window', async () => {
+    const { admin, writes } = makeAdmin({
+      profileRow: {
+        ...freshHouseLinkedProfile,
+        created_at: new Date(Date.now() - 60 * 60 * 1000).toISOString(), // 1h old
+      },
+      agents: { savagebrands: { id: AGENT_ID } },
+      accounts: { [AGENT_ID]: { id: AGENT_ID, is_active: true } },
+    });
+    const result = await ensureOAuthResearcherProfile(admin, googleUser, 'savagebrands');
+    expect(result.ok).toBe(true);
+    expect(writes.updates).toHaveLength(0);
+  });
+
+  it('NEVER reassigns a named-agent referral, even fresh and with agentRef present', async () => {
     const { admin, writes } = makeAdmin({
       profileRow: { ...existingUnreferredProfile, referring_agent_id: 'original-agent-id' },
       agents: { savagebrands: { id: AGENT_ID } },
@@ -279,7 +367,31 @@ describe('ensureOAuthResearcherProfile', () => {
     expect(writes.updates).toHaveLength(0);
   });
 
+  it('house slug on a named-linked profile changes nothing (stale-link sign-in)', async () => {
+    const { admin, writes } = makeAdmin({
+      profileRow: { ...existingUnreferredProfile, referring_agent_id: AGENT_ID },
+    });
+    const result = await ensureOAuthResearcherProfile(admin, googleUser, DEFAULT_STORE_SLUG);
+    expect(result.ok).toBe(true);
+    expect(writes.updates).toHaveLength(0);
+  });
+
   // ── subAgentRef (QR ?sa= capture) attribution ─────────────────────────
+
+  it('credits the sub-agent when upgrading a fresh house-linked profile', async () => {
+    const { admin, writes } = makeAdmin({
+      profileRow: freshHouseLinkedProfile,
+      agents: { savagebrands: { id: AGENT_ID } },
+      accounts: {
+        [AGENT_ID]: { id: AGENT_ID, is_active: true },
+        [SUB_AGENT_ID]: { id: SUB_AGENT_ID, is_sub_agent: true, parent_agent_id: AGENT_ID },
+      },
+    });
+    await ensureOAuthResearcherProfile(admin, googleUser, 'savagebrands', SUB_AGENT_ID);
+    expect(writes.updates).toHaveLength(1);
+    expect(writes.updates[0].referring_agent_id).toBe(AGENT_ID);
+    expect(writes.updates[0].referring_sub_agent_id).toBe(SUB_AGENT_ID);
+  });
 
   it('credits a valid sub-agent of the referring agent', async () => {
     const { admin, writes } = makeAdmin({
