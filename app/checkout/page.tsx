@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import CheckoutForm from './CheckoutForm';
+import './checkout.css';
 
 export const dynamic = 'force-dynamic';
 
