@@ -53,8 +53,9 @@ export interface EnsureProfileResult {
  *      Links Every New Researcher Row The Moment handle_new_user Creates It,
  *      So By The Time The OAuth Callback Runs The Profile Is ALREADY House-
  *      Linked. A House Link On A Profile Created Within The Last 15 Minutes
- *      Is Therefore Treated As The Trigger Default (Upgradeable To The Named
- *      Agent), While Any Older Referral - House Or Named - Is NEVER Changed.
+ *      Is Therefore Treated As The Trigger Default And Upgraded To The Named
+ *      Agent Via The Sanctioned oauth_link_fresh_referral RPC, While Any
+ *      Older Referral - House Or Named - Is NEVER Changed.
  *   7. subAgentId (QR ?sa= Capture, Forwarded As subAgentRef): Credited Only
  *      When It Is A Real Sub-Agent Of The Resolved Referring Agent, Matching
  *      POST /api/storefront/register Exactly.
@@ -65,6 +66,7 @@ export interface EnsureProfileResult {
  * DB Trigger's Placeholder (Upgradeable By agentRef) Rather Than A Settled
  * Attribution. Generous Enough For The Google Round-Trip, Short Enough That
  * Established House Researchers Can Never Be Poached Via A Stale ?ref= Link.
+ * The Same Window Is Enforced Inside The oauth_link_fresh_referral RPC.
  */
 const FRESH_SIGNUP_WINDOW_MS = 15 * 60 * 1000;
 
@@ -261,11 +263,21 @@ export async function ensureOAuthResearcherProfile(
       }
       result.linkedHouseStore = referringAgentId === houseId;
     } else if (trustsTriggerHouseLink && namedAgentId && namedAgentId !== houseId) {
-      updates.referring_agent_id = namedAgentId;
-      if (referringSubAgentId && !profile.referring_sub_agent_id) {
-        updates.referring_sub_agent_id = referringSubAgentId;
+      // The enforce_researcher_agent_binding DB guard forbids changing a
+      // non-null referral through a plain UPDATE. oauth_link_fresh_referral
+      // is the sanctioned, service-role-only RPC: it re-checks the fresh-
+      // signup window AND the house-placeholder state inside the database,
+      // so no app bug can ever widen this into referral poaching.
+      const { data: upgraded, error: rpcErr } = await admin.rpc('oauth_link_fresh_referral', {
+        p_user_id: user.id,
+        p_agent_id: namedAgentId,
+        p_sub_agent_id: referringSubAgentId,
+      });
+      if (rpcErr) {
+        // Non-fatal: the account stays house-linked; never block a signup.
+        console.error('[oauth-profile] fresh referral upgrade failed:', rpcErr.message);
       }
-      result.linkedHouseStore = false;
+      result.linkedHouseStore = upgraded !== true;
     }
 
     if (!profile.username) {
