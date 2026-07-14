@@ -82,6 +82,10 @@ export function LabelGenerator({ products }: { products: any[] }) {
           const categoryName = p.category || 'Unknown';
           const accentColor = getCategoryColor(categoryName);
           const doseString = p.unit_size && p.unit_measure ? `${p.unit_size}${p.unit_measure}` : '';
+          
+          const cleanName = p.name.replace(/\s*\(.*?\)\s*/g, '').trim();
+          const subtitleMatch = p.name.match(/\((.*?)\)/);
+          const subtitle = subtitleMatch ? subtitleMatch[1] : '';
 
           return (
             <div key={p.id} className="flex flex-col items-center gap-2">
@@ -109,16 +113,15 @@ export function LabelGenerator({ products }: { products: any[] }) {
                     backgroundPosition: '0 0, 0 0, 20px 35px, 20px 35px, 0 0, 20px 35px'
                   }}
                 >
-                  {/* Main centered box with thin colored border representing the front face */}
+                  {/* Top Border */}
+                  <div style={{ width: '100%', height: '12px', backgroundColor: accentColor, boxShadow: '0 2px 4px rgba(0,0,0,0.5)' }} />
+
+                  {/* Main content box */}
                   <div 
-                    className="relative z-10 flex flex-col items-center justify-between"
+                    className="relative z-10 flex flex-col items-center justify-between flex-1"
                     style={{
-                      width: '320px',
-                      height: '270px',
-                      border: `3px solid ${accentColor}`,
-                      borderRadius: '2px',
-                      padding: '12px 0 8px 0',
-                      boxShadow: 'inset 0 0 20px rgba(0,0,0,0.8)'
+                      width: '100%',
+                      padding: '16px 20px',
                     }}
                   >
                     {/* Top Text: SAVAGE BRANDS */}
@@ -126,23 +129,7 @@ export function LabelGenerator({ products }: { products: any[] }) {
                       <h1 
                         style={{ 
                           fontFamily: '"Arial Black", "Helvetica Neue", sans-serif', 
-                          fontSize: '48px', 
-                          fontWeight: 900,
-                          lineHeight: '0.9',
-                          letterSpacing: '1px',
-                          background: 'linear-gradient(to bottom, #ffffff 0%, #d0d0d0 40%, #707070 100%)',
-                          WebkitBackgroundClip: 'text',
-                          WebkitTextFillColor: 'transparent',
-                          filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.8))',
-                          margin: 0
-                        }}
-                      >
-                        SAVAGE
-                      </h1>
-                      <h2
-                        style={{ 
-                          fontFamily: '"Arial Black", "Helvetica Neue", sans-serif', 
-                          fontSize: '48px', 
+                          fontSize: '52px', 
                           fontWeight: 900,
                           lineHeight: '0.9',
                           letterSpacing: '1px',
@@ -151,7 +138,25 @@ export function LabelGenerator({ products }: { products: any[] }) {
                           WebkitTextFillColor: 'transparent',
                           filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.8))',
                           margin: 0,
-                          marginTop: '-4px'
+                          transform: 'scaleY(1.1)'
+                        }}
+                      >
+                        SAVAGE
+                      </h1>
+                      <h2
+                        style={{ 
+                          fontFamily: '"Arial Black", "Helvetica Neue", sans-serif', 
+                          fontSize: '46px', 
+                          fontWeight: 900,
+                          lineHeight: '0.9',
+                          letterSpacing: '1px',
+                          background: 'linear-gradient(to bottom, #ffffff 0%, #d0d0d0 40%, #707070 100%)',
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                          filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.8))',
+                          margin: 0,
+                          marginTop: '2px',
+                          transform: 'scaleY(1.1)'
                         }}
                       >
                         BRANDS
@@ -165,8 +170,8 @@ export function LabelGenerator({ products }: { products: any[] }) {
                         top: '50%',
                         left: '50%',
                         transform: 'translate(-50%, -50%)',
-                        width: '200px',
-                        height: '140px',
+                        width: '220px',
+                        height: '150px',
                         zIndex: 10,
                         opacity: 0.95
                       }}
@@ -186,7 +191,7 @@ export function LabelGenerator({ products }: { products: any[] }) {
                         style={{ 
                           fontFamily: '"Arial Black", "Helvetica Neue", sans-serif', 
                           fontWeight: 900,
-                          fontSize: p.name.length > 20 ? '20px' : '28px', 
+                          fontSize: cleanName.length > 20 ? '24px' : '32px', 
                           lineHeight: '1',
                           background: 'linear-gradient(to bottom, #ffffff 0%, #c0c0c0 50%, #808080 100%)',
                           WebkitBackgroundClip: 'text',
@@ -195,13 +200,14 @@ export function LabelGenerator({ products }: { products: any[] }) {
                           margin: '0 0 6px 0',
                           textTransform: 'uppercase',
                           textAlign: 'center',
-                          padding: '0 10px'
+                          padding: '0 10px',
+                          transform: 'scaleY(1.1)'
                         }}
                       >
-                        {p.name}
+                        {cleanName}
                       </h3>
                       
-                      {/* Category & Dose */}
+                      {/* Subtitle / Category / Dose */}
                       <div 
                         style={{ 
                           color: '#e0e0e0', 
@@ -212,12 +218,17 @@ export function LabelGenerator({ products }: { products: any[] }) {
                           textAlign: 'center'
                         }}
                       >
-                        {categoryName}
+                        <span style={{ color: accentColor, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                          {subtitle || categoryName}
+                        </span>
                         <br/>
                         <span style={{ fontSize: '18px', fontWeight: 600 }}>{doseString}</span>
                       </div>
                     </div>
                   </div>
+
+                  {/* Bottom Border */}
+                  <div style={{ width: '100%', height: '12px', backgroundColor: accentColor, boxShadow: '0 -2px 4px rgba(0,0,0,0.5)' }} />
                 </div>
               </div>
               <div className="text-sm font-medium text-center truncate w-full" title={p.name}>
