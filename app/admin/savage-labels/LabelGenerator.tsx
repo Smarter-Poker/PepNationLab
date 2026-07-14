@@ -114,94 +114,103 @@ export function LabelGenerator({ products }: { products: any[] }) {
                   }}
                 >
                   {/* Top Border */}
-                  <div style={{ width: '100%', height: '12px', backgroundColor: accentColor, boxShadow: '0 2px 4px rgba(0,0,0,0.5)' }} />
+                  <div style={{ width: '100%', height: '15px', backgroundColor: accentColor, boxShadow: '0 2px 4px rgba(0,0,0,0.5)' }} />
 
                   {/* Main content box */}
                   <div 
-                    className="relative z-10 flex flex-col items-center justify-between flex-1"
                     style={{
+                      position: 'relative',
+                      zIndex: 10,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flex: 1,
                       width: '100%',
-                      padding: '16px 20px',
+                      padding: '10px 20px',
                     }}
                   >
+                    {/* Claws Logo - Positioned absolutely to overlap SAVAGE BRANDS */}
+                    <div 
+                      style={{ 
+                        position: 'absolute',
+                        top: '40%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        width: '260px',
+                        height: '180px',
+                        zIndex: 5,
+                        opacity: 0.95
+                      }}
+                    >
+                       <svg width="100%" height="100%" viewBox="0 0 250 300" style={{ transform: 'rotate(20deg)', filter: `drop-shadow(0 4px 6px rgba(0,0,0,0.6))` }}>
+                          <path d="M20 20 C40 120 70 240 20 340 C70 260 60 140 20 20 Z" fill={accentColor} />
+                          <path d="M85 0 C105 100 135 220 85 320 C135 240 125 120 85 0 Z" fill={accentColor} />
+                          <path d="M150 30 C170 130 200 250 150 350 C200 270 190 150 150 30 Z" fill={accentColor} />
+                       </svg>
+                    </div>
+
                     {/* Top Text: SAVAGE BRANDS */}
-                    <div className="flex flex-col items-center justify-center leading-none relative z-20">
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', lineHeight: '0.9', position: 'relative', zIndex: 20 }}>
                       <h1 
                         style={{ 
-                          fontFamily: '"Arial Black", "Helvetica Neue", sans-serif', 
-                          fontSize: '52px', 
+                          fontFamily: 'Impact, "Arial Black", sans-serif', 
+                          fontSize: '64px', 
                           fontWeight: 900,
                           lineHeight: '0.9',
-                          letterSpacing: '1px',
+                          letterSpacing: '2px',
                           background: 'linear-gradient(to bottom, #ffffff 0%, #d0d0d0 40%, #707070 100%)',
                           WebkitBackgroundClip: 'text',
                           WebkitTextFillColor: 'transparent',
-                          filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.8))',
+                          filter: 'drop-shadow(0 3px 3px rgba(0,0,0,0.9))',
                           margin: 0,
-                          transform: 'scaleY(1.1)'
+                          transform: 'skewX(-10deg) scaleY(1.1)'
                         }}
                       >
                         SAVAGE
                       </h1>
                       <h2
                         style={{ 
-                          fontFamily: '"Arial Black", "Helvetica Neue", sans-serif', 
-                          fontSize: '46px', 
+                          fontFamily: 'Impact, "Arial Black", sans-serif', 
+                          fontSize: '54px', 
                           fontWeight: 900,
                           lineHeight: '0.9',
-                          letterSpacing: '1px',
+                          letterSpacing: '2px',
                           background: 'linear-gradient(to bottom, #ffffff 0%, #d0d0d0 40%, #707070 100%)',
                           WebkitBackgroundClip: 'text',
                           WebkitTextFillColor: 'transparent',
-                          filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.8))',
+                          filter: 'drop-shadow(0 3px 3px rgba(0,0,0,0.9))',
                           margin: 0,
                           marginTop: '2px',
-                          transform: 'scaleY(1.1)'
+                          transform: 'skewX(-10deg) scaleY(1.1)'
                         }}
                       >
                         BRANDS
                       </h2>
                     </div>
 
-                    {/* Claws Logo - Positioned absolutely to overlap */}
-                    <div 
-                      className="absolute"
-                      style={{ 
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        width: '220px',
-                        height: '150px',
-                        zIndex: 10,
-                        opacity: 0.95
-                      }}
-                    >
-                       <svg width="100%" height="100%" viewBox="0 0 250 300" style={{ transform: 'rotate(25deg)', filter: `drop-shadow(0 4px 6px rgba(0,0,0,0.6))` }}>
-                          <path d="M20 20 C40 120 70 240 20 340 C70 260 60 140 20 20 Z" fill={accentColor} />
-                          <path d="M85 0 C105 100 135 220 85 320 C135 240 125 120 85 0 Z" fill={accentColor} />
-                          <path d="M150 30 C170 130 200 250 150 350 C200 270 190 150 150 30 Z" fill={accentColor} />
-                          <path d="M215 50 C235 150 265 270 215 370 C265 290 255 170 215 50 Z" fill={accentColor} />
-                       </svg>
-                    </div>
+                    {/* Spacer between logo and product */}
+                    <div style={{ height: '35px' }} />
 
                     {/* Bottom Content Container */}
-                    <div className="flex flex-col items-center justify-end w-full relative z-20">
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', width: '100%', position: 'relative', zIndex: 20 }}>
                       {/* Product Name */}
                       <h3 
                         style={{ 
-                          fontFamily: '"Arial Black", "Helvetica Neue", sans-serif', 
+                          fontFamily: 'Impact, "Arial Black", sans-serif', 
                           fontWeight: 900,
-                          fontSize: cleanName.length > 20 ? '24px' : '32px', 
+                          fontSize: cleanName.length > 20 ? '36px' : '44px', 
                           lineHeight: '1',
-                          background: 'linear-gradient(to bottom, #ffffff 0%, #c0c0c0 50%, #808080 100%)',
+                          background: 'linear-gradient(to bottom, #ffffff 0%, #e0e0e0 40%, #909090 100%)',
                           WebkitBackgroundClip: 'text',
                           WebkitTextFillColor: 'transparent',
-                          filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.8))',
-                          margin: '0 0 6px 0',
+                          filter: 'drop-shadow(0 3px 3px rgba(0,0,0,0.9))',
+                          margin: '0 0 8px 0',
                           textTransform: 'uppercase',
                           textAlign: 'center',
                           padding: '0 10px',
-                          transform: 'scaleY(1.1)'
+                          transform: 'scaleY(1.4)',
+                          letterSpacing: '1px'
                         }}
                       >
                         {cleanName}
@@ -210,25 +219,23 @@ export function LabelGenerator({ products }: { products: any[] }) {
                       {/* Subtitle / Category / Dose */}
                       <div 
                         style={{ 
-                          color: '#e0e0e0', 
+                          color: accentColor, 
                           fontFamily: 'Arial, sans-serif',
-                          fontSize: '14px',
-                          fontWeight: 400,
+                          fontSize: '20px',
+                          fontWeight: 800,
                           lineHeight: '1.2',
-                          textAlign: 'center'
+                          textAlign: 'center',
+                          textTransform: 'uppercase',
+                          letterSpacing: '1px'
                         }}
                       >
-                        <span style={{ color: accentColor, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>
-                          {subtitle || categoryName}
-                        </span>
-                        <br/>
-                        <span style={{ fontSize: '18px', fontWeight: 600 }}>{doseString}</span>
+                        {subtitle || categoryName} <span style={{ fontSize: '24px', fontWeight: 900 }}>{doseString}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Bottom Border */}
-                  <div style={{ width: '100%', height: '12px', backgroundColor: accentColor, boxShadow: '0 -2px 4px rgba(0,0,0,0.5)' }} />
+                  <div style={{ width: '100%', height: '15px', backgroundColor: accentColor, boxShadow: '0 -2px 4px rgba(0,0,0,0.5)' }} />
                 </div>
               </div>
               <div className="text-sm font-medium text-center truncate w-full" title={p.name}>
