@@ -12,6 +12,7 @@ import { emailConfigured, sendWelcomeEmail } from '@/lib/email';
 import { hashCode, isValidEmail, normalizeEmail, CODE_PURPOSE_SIGNUP, MAX_CODE_ATTEMPTS } from '@/lib/verification';
 import { StorefrontRegisterSchema } from '@/lib/schemas/auth';
 import { recordServerAnalyticsEvent } from '@/lib/server-analytics';
+import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 
 /**
  * POST /api/storefront/register
@@ -139,7 +140,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ── Email verification ──────────────────────────────────────────────────
+    // ── Email verification ────────────────────────────────────────────────────────
     // When the email sender is configured, a valid single-use code (issued by
     // /api/auth/request-code) is required and the email is marked verified.
     // When it is NOT configured yet, the account is still created with the email
@@ -305,8 +306,16 @@ export async function POST(req: NextRequest) {
     }
 
     // Welcome email (best-effort, non-blocking). No-op if the sender is not
-    // configured; only meaningful once email is live.
-    sendWelcomeEmail({ to: email, fullName, username: usernameClean }).catch(() => { /* ignore */ });
+    // configured; only meaningful once email is live. House-store signups get
+    // the extended welcome carrying the first-order promo code (owner rule
+    // 2026-07-14); agent-storefront signups keep the plain welcome so house
+    // marketing never lands on an agent's customer uninvited.
+    sendWelcomeEmail({
+      to: email,
+      fullName,
+      username: usernameClean,
+      promoCode: agentSlug === DEFAULT_STORE_SLUG ? 'FIRST20' : undefined,
+    }).catch(() => { /* ignore */ });
 
     return NextResponse.json({
       success: true,
