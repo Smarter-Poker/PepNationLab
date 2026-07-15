@@ -157,8 +157,7 @@ export async function POST(req: NextRequest) {
       agentSelfBuy,
     };
 
-    const isBacWater = (product.name || '').toLowerCase().includes('bac') || (product.compound_slug || '') === 'bacteriostatic-water';
-    const quantity = isBacWater ? 10 : 1;
+    const quantity = 1;
 
     return NextResponse.json({ item, quantity });
 
