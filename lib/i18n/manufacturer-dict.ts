@@ -106,6 +106,7 @@ export const MDICT: Record<string, Entry> = {
   // Order statuses
   status_pending_customer_payment: { en: 'Awaiting Customer Payment', 'zh-CN': '等待客户付款', 'zh-TW': '等待客戶付款' },
   status_agent_approval_pending: { en: 'Awaiting Your Approval', 'zh-CN': '等待您审批', 'zh-TW': '等待您審批' },
+  status_admin_approval_pending: { en: 'Awaiting Admin Approval', 'zh-CN': '待管理员审批', 'zh-TW': '待管理員審批' },
   status_approved_ship: { en: 'Approved - Ship It', 'zh-CN': '已批准，请发货', 'zh-TW': '已批准，請發貨' },
   status_approved_pickup: { en: 'Approved - Pickup', 'zh-CN': '已批准，自取', 'zh-TW': '已批准，自取' },
   status_in_fulfillment: { en: 'In Fulfillment', 'zh-CN': '配货中', 'zh-TW': '配貨中' },
@@ -160,6 +161,10 @@ export const MDICT: Record<string, Entry> = {
   login_loading: { en: 'Signing In', 'zh-CN': '登录中', 'zh-TW': '登入中' },
   login_forgot: { en: 'Forgot Password?', 'zh-CN': '忘记密码？', 'zh-TW': '忘記密碼？' },
   login_invalid: { en: 'Invalid Username Or Password', 'zh-CN': '用户名或密码错误', 'zh-TW': '用戶名或密碼錯誤' },
+  login_google: { en: 'Continue With Google', 'zh-CN': '使用 Google 登录', 'zh-TW': '使用 Google 登入' },
+  login_google_redirect: { en: 'Redirecting To Google', 'zh-CN': '正在跳转至 Google', 'zh-TW': '正在跳轉至 Google' },
+  login_google_unavailable: { en: 'Google Sign-In Is Not Available Right Now. Please Use Your Username.', 'zh-CN': 'Google 登录暂不可用，请使用用户名登录。', 'zh-TW': 'Google 登入暫不可用，請使用用戶名登入。' },
+  login_generic_error: { en: 'Something Went Wrong. Please Try Again.', 'zh-CN': '出错了，请重试。', 'zh-TW': '出錯了，請重試。' },
   login_subtitle: { en: 'Access Your Account', 'zh-CN': '访问您的账户', 'zh-TW': '訪問您的帳戶' },
   login_or_username: { en: 'Or Sign In With A Username', 'zh-CN': '或使用用户名登录', 'zh-TW': '或使用用戶名登入' },
   login_username_label: { en: 'Username', 'zh-CN': '用户名', 'zh-TW': '用戶名' },
