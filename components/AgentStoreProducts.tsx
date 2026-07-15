@@ -127,6 +127,7 @@ function MarketIntel({ p, priceOverride }: { p: AgentProduct; priceOverride?: nu
 
 export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', unlimitedMargin = false }: { agentId: string; costLabel?: string; unlimitedMargin?: boolean }) {
   const [products, setProducts] = useState<AgentProduct[]>([]);
+  const [bundles, setBundles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState<FilterMode>('all');
@@ -158,6 +159,9 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
     setLoading(true);
     setError('');
     try {
+      fetch('/api/agent/bundles/effective').then(r => r.json()).then(d => {
+        if (d.data) setBundles(d.data);
+      }).catch(e => console.error("Error fetching bundles", e));
       const res = await fetch('/api/agent/products');
       const json = await res.json();
       if (res.ok) {
@@ -467,6 +471,68 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
       {error && (
         <div className="glass-panel" style={{ border: '1px solid rgba(229,62,62,0.3)', padding: 'var(--space-3)', fontSize: '0.85rem', color: '#FC8181' }}>
           {error}
+        </div>
+      )}
+
+      
+      {/* Bundles Section */}
+      {bundles.length > 0 && (
+        <div className="glass-panel">
+          <div style={{ padding: 'var(--space-4) var(--space-5)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            <h4 style={{ fontSize: '1rem', color: '#00E5FF', margin: 0, fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Bundles</h4>
+            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.82rem', margin: '4px 0 0' }}>
+              These are your active bundle offers. Bundles are managed in the Bundle Manager.
+            </p>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', background: 'rgba(255,255,255,0.05)' }}>
+            {bundles.map(b => {
+              const bCost = b.base_cost_total || 0;
+              const bListRaw = b.custom_price != null ? b.custom_price : ((b.retail_value_total || 0) * (1 - (b.discount_percent || 0) / 100));
+              const bList = Math.round(bListRaw * 100) / 100;
+              const profit = bList - bCost;
+              const margin = bList > 0 ? (profit / bCost) * 100 : 0;
+              return (
+                <div key={b.id} className="glass-panel" style={{ padding: 'var(--space-4) var(--space-5)', margin: 0, borderRadius: 0, borderLeft: 'none', borderRight: 'none' }}>
+                  <div className="agentprod-card" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+                    <div style={{ width: 80, height: 80, borderRadius: 8, background: 'rgba(0,196,188,0.1)', border: '1px solid rgba(0,196,188,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#00E5FF', fontWeight: 800, fontSize: '0.8rem', textAlign: 'center', padding: 4 }}>
+                      BUNDLE
+                    </div>
+                    <div className="agentprod-info" style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff' }}>{b.name}</span>
+                        <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', padding: '2px 6px', borderRadius: '4px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>Bundle</span>
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', marginBottom: 4 }}>
+                        {b.product_ids.length} Products Included
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Cost:</span>
+                          <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>${bCost.toFixed(2)}</span>
+                        </div>
+                        <div style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.2)' }}>&rarr;</div>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Listed Price:</span>
+                          <span style={{ fontSize: '0.9rem', color: '#00E5FF', fontWeight: 700 }}>
+                            ${bList.toFixed(2)}
+                            {b.custom_price != null && <span style={{ fontSize: '0.65rem', marginLeft: 4, background: 'rgba(255,255,255,0.1)', padding: '2px 4px', borderRadius: 2 }}>Fixed</span>}
+                          </span>
+                        </div>
+                        {bCost > 0 && bList > 0 && (
+                          <div style={{ marginLeft: 8, padding: '2px 6px', background: 'rgba(0,196,188,0.1)', borderRadius: 4, border: '1px solid rgba(0,196,188,0.3)' }}>
+                            <span style={{ fontSize: '0.7rem', color: '#00E5FF', fontWeight: 700 }}>+{Math.round(margin)}% Margin</span>
+                          </div>
+                        )}
+                        <div style={{ marginLeft: 8, padding: '2px 6px', background: profit >= 0 ? 'rgba(104,211,145,0.1)' : 'rgba(229,62,62,0.1)', borderRadius: 4, border: profit >= 0 ? '1px solid rgba(104,211,145,0.3)' : '1px solid rgba(229,62,62,0.3)' }}>
+                          <span style={{ fontSize: '0.7rem', color: profit >= 0 ? '#68D391' : '#FC8181', fontWeight: 700 }}>${profit.toFixed(2)} Profit</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 

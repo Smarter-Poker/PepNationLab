@@ -16,9 +16,24 @@ interface NavigatorWithRelated extends Navigator {
   getInstalledRelatedApps?: () => Promise<RelatedApp[]>;
 }
 
-const DISMISS_KEY = 'pnl_pwa_install_dismissed'; // session-only "Not Now"
+const DISMISS_KEY = 'pnl_pwa_install_dismissed_at'; // persistent "Not Now" timestamp
 const INSTALLED_KEY = 'pnl_pwa_installed'; // persistent: we've confirmed it's installed
 const DELAY_MS = 30_000;
+// After "Not Now", stay quiet for this long before the banner is eligible
+// again. Persisted in localStorage so it survives closing the tab -- the old
+// sessionStorage flag re-armed on every fresh visit, which read as "keeps
+// popping up over and over" even after dismissing.
+const DISMISS_COOLDOWN_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
+
+// True if a "Not Now" was recorded within the cooldown window.
+function dismissedRecently(): boolean {
+  try {
+    const at = Number(localStorage.getItem(DISMISS_KEY) || 0);
+    return at > 0 && Date.now() - at < DISMISS_COOLDOWN_MS;
+  } catch {
+    return false;
+  }
+}
 
 // Is the page currently running as the installed app (standalone/full-screen)?
 function isRunningAsApp(): boolean {
@@ -46,8 +61,8 @@ export default function PwaInstallPrompt() {
     }
     // 2) We've previously confirmed it's installed on this device/profile.
     try { if (localStorage.getItem(INSTALLED_KEY) === '1') return; } catch { /* ignore */ }
-    // 3) Dismissed for this session.
-    try { if (sessionStorage.getItem(DISMISS_KEY) === '1') return; } catch { /* ignore */ }
+    // 3) Dismissed recently (persists across visits, not just the session).
+    if (dismissedRecently()) return;
 
     let cancelled = false;
     let timer = 0;
@@ -119,13 +134,14 @@ export default function PwaInstallPrompt() {
       setBusy(false);
       setVisible(false);
       setDeferred(null);
-      try { sessionStorage.setItem(DISMISS_KEY, '1'); } catch { /* ignore */ }
+      try { localStorage.setItem(DISMISS_KEY, String(Date.now())); } catch { /* ignore */ }
     }
   }
 
   function handleDismiss() {
     setVisible(false);
-    try { sessionStorage.setItem(DISMISS_KEY, '1'); } catch { /* ignore */ }
+    setDeferred(null);
+    try { localStorage.setItem(DISMISS_KEY, String(Date.now())); } catch { /* ignore */ }
   }
 
   return (

@@ -216,6 +216,23 @@ export async function GET() {
   }
 }
 
+async function computeMemberSum(svc: Awaited<ReturnType<typeof createServiceClient>>, agentId: string, productIds: string[]): Promise<number> {
+  if (!productIds.length) return 0;
+  const { data: rows } = await svc
+    .from('agent_products')
+    .select('retail_price')
+    .eq('agent_id', agentId)
+    .in('product_id', productIds)
+    .eq('is_visible', true);
+  let sum = 0;
+  if (rows) {
+    for (const r of rows) {
+      sum += (Number(r.retail_price) || 0) / 10;
+    }
+  }
+  return sum;
+}
+
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -241,6 +258,16 @@ export async function POST(req: NextRequest) {
   if (bundles.length >= 50) {
     return NextResponse.json({ error: 'Bundle Limit Reached (50 Per Store)' }, { status: 400 });
   }
+
+  // Snapshot the current member sum if custom_price was omitted, so it never drifts.
+  let finalCustomPrice = fields.custom_price;
+  if (finalCustomPrice === null || finalCustomPrice <= 0) {
+    const sum = await computeMemberSum(svc, gate.user.id, fields.product_ids);
+    const discount = fields.discount_percent;
+    const discounted = Math.max(0, sum * (1 - discount / 100));
+    finalCustomPrice = Math.round(discounted * 100) / 100;
+  }
+
   const newBundle: StoredBundle = {
     id: randomUUID(),
     name: fields.name,
@@ -249,7 +276,7 @@ export async function POST(req: NextRequest) {
     image_url: fields.image_url,
     product_ids: fields.product_ids,
     discount_percent: fields.discount_percent,
-    custom_price: fields.custom_price,
+    custom_price: finalCustomPrice,
     is_active: true,
     scope: scoped.scope,
     created_by: gate.user.id,
@@ -288,6 +315,15 @@ export async function PATCH(req: NextRequest) {
     if ('error' in fields) return NextResponse.json({ error: fields.error }, { status: 400 });
     const scoped = normalizeScope(body.scope ?? bundles[idx].scope, caller);
     if ('error' in scoped) return NextResponse.json({ error: scoped.error }, { status: 403 });
+
+    let finalCustomPrice = fields.custom_price;
+    if (finalCustomPrice === null || finalCustomPrice <= 0) {
+      const sum = await computeMemberSum(svc, gate.user.id, fields.product_ids);
+      const discount = fields.discount_percent;
+      const discounted = Math.max(0, sum * (1 - discount / 100));
+      finalCustomPrice = Math.round(discounted * 100) / 100;
+    }
+
     updated = bundles.map((b) =>
       b.id === id
         ? {
@@ -298,7 +334,7 @@ export async function PATCH(req: NextRequest) {
             image_url: fields.image_url,
             product_ids: fields.product_ids,
             discount_percent: fields.discount_percent,
-            custom_price: fields.custom_price,
+            custom_price: finalCustomPrice,
             scope: scoped.scope,
           }
         : b,

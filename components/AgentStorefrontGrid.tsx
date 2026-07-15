@@ -69,6 +69,9 @@ export interface BundleConfig {
   discount_percent?: number;
   /** Legacy pre-computed price; superseded by the summed member price. */
   price?: number;
+  /** Flat fixed price set by the store owner. When >0 it LOCKS the bundle price:
+   *  it overrides the summed member price so the price never drifts. */
+  custom_price?: number | null;
 }
 
 /** A storefront cart line as persisted to pnl_storefront_cart_<slug>. */
@@ -1965,7 +1968,13 @@ export default function AgentStorefrontGrid({
     if (members.length < 2) return null;
     const fullPrice = members.reduce((sum, m) => sum + (Number(m.retail_price) || 0) / 10, 0);
     const discountPct = Math.min(Math.max(Math.round(Number(bundle.discount_percent) || 0), 0), 90);
-    const finalPrice = Math.max(0, fullPrice * (1 - discountPct / 100));
+    // A stored custom_price is a FIXED price the store owner set. It must never
+    // drift with member product prices, so when present it overrides the summed
+    // member price entirely -- on the card, in the cart, and at checkout.
+    const hasCustomPrice = typeof bundle.custom_price === 'number' && bundle.custom_price > 0;
+    const finalPrice = hasCustomPrice
+      ? Math.round((bundle.custom_price as number) * 100) / 100
+      : Math.max(0, fullPrice * (1 - discountPct / 100));
     return { members, fullPrice, finalPrice, discountPct };
   }, [products]);
 
@@ -1980,6 +1989,10 @@ export default function AgentStorefrontGrid({
     setBundleCart((prev) => {
       if (prev.some((l) => l.bundleName === bundle.name)) return prev;
       added = true;
+      // Distribute the bundle's effective price (fixed custom price, or the
+      // discounted member sum) proportionally across the member lines so the
+      // cart + checkout subtotal always equals the price shown on the card.
+      const bundleFactor = resolved.fullPrice > 0 ? resolved.finalPrice / resolved.fullPrice : 1;
       const lines: StorefrontCartLine[] = resolved.members.map((m) => {
         const perVial = (Number(m.retail_price) || 0) / 10;
         const costPerVial = isStorefrontOwner && (m as any).cost_price != null
@@ -1991,12 +2004,12 @@ export default function AgentStorefrontGrid({
           name: `${m.products?.name || 'Product'} ${sizeLabel}`.trim(),
           sku: m.product_id,
           quantity: 1,
-          retailPrice: perVial,
-          costPrice: costPerVial,
+          retailPrice: perVial * bundleFactor,
+          costPrice: costPerVial * bundleFactor,
           weightOz: Number(m.products?.weight_oz) || 0.5,
           agentSelfBuy: isStorefrontOwner,
           bundleName: bundle.name,
-          bundleDiscountPercent: resolved.discountPct,
+          bundleDiscountPercent: 0,
         };
       });
       return [...prev, ...lines];

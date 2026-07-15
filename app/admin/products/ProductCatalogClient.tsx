@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, Fragment } from "react";
+import { useState, useMemo, Fragment, useEffect } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
@@ -128,6 +128,13 @@ export default function ProductCatalogClient({
   const [bulkEffectiveAt, setBulkEffectiveAt] = useState("");
   const [bulkSubmitting, setBulkSubmitting] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [bundles, setBundles] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch('/api/agent/bundles/effective').then(r => r.json()).then(d => {
+      if (d.data) setBundles(d.data);
+    }).catch(e => console.error("Error fetching bundles", e));
+  }, []);
 
   const grouped = useMemo(() => groupByName(products), [products]);
 
@@ -870,6 +877,72 @@ export default function ProductCatalogClient({
           </table>
         </div>
       </div>
+      {/* Bundles Section */}
+      {bundles.length > 0 && (
+        <div style={{ marginTop: 'var(--space-8)' }}>
+          <div style={{ marginBottom: 'var(--space-4)' }}>
+            <h3 style={{ fontSize: '1.2rem', color: 'var(--teal)', margin: 0, fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Bundles</h3>
+            <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem', margin: '4px 0 0' }}>
+              Active bundle offers created by agents.
+            </p>
+          </div>
+          <div className="table-container">
+            <table className="data-table" style={{ width: '100%' }}>
+              <thead>
+                <tr>
+                  <th style={{ width: 40 }}></th>
+                  <th>Bundle Name</th>
+                  <th>Cost</th>
+                  <th>List Price</th>
+                  <th>Profit</th>
+                  <th style={{ width: 80 }}>Margin</th>
+                </tr>
+              </thead>
+              <tbody>
+                {bundles.map(b => {
+                  const bCost = b.base_cost_total || 0;
+                  const bListRaw = b.custom_price != null ? b.custom_price : ((b.retail_value_total || 0) * (1 - (b.discount_percent || 0) / 100));
+                  const bList = Math.round(bListRaw * 100) / 100;
+                  const profit = bList - bCost;
+                  const margin = bList > 0 ? (profit / bCost) * 100 : 0;
+                  return (
+                    <tr key={b.id} className="table-row-hover">
+                      <td style={{ padding: 'var(--space-3)' }}>
+                        <div style={{ background: 'rgba(0,196,188,0.1)', border: '1px solid rgba(0,196,188,0.3)', color: '#00E5FF', fontSize: '0.6rem', fontWeight: 800, padding: '2px 4px', borderRadius: 4, textAlign: 'center' }}>
+                          BUNDLE
+                        </div>
+                      </td>
+                      <td style={{ padding: 'var(--space-3)' }}>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#fff' }}>{b.name}</div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--grey-400)' }}>{b.product_ids.length} Products Included</div>
+                      </td>
+                      <td style={{ padding: 'var(--space-3)', fontSize: '0.85rem', fontFamily: 'var(--font-brand)', color: 'var(--grey-200)' }}>
+                        ${bCost.toFixed(2)}
+                      </td>
+                      <td style={{ padding: 'var(--space-3)', fontSize: '0.85rem', fontFamily: 'var(--font-brand)', color: 'var(--teal)' }}>
+                        ${bList.toFixed(2)}
+                        {b.custom_price != null && <span style={{ fontSize: '0.65rem', marginLeft: 6, background: 'rgba(255,255,255,0.1)', padding: '2px 4px', borderRadius: 2 }}>Fixed</span>}
+                      </td>
+                      <td style={{ padding: 'var(--space-3)', fontSize: '0.85rem', fontFamily: 'var(--font-brand)', color: profit >= 0 ? 'var(--teal)' : 'var(--red)' }}>
+                        ${profit.toFixed(2)}
+                      </td>
+                      <td style={{ padding: 'var(--space-3)' }}>
+                        {bCost > 0 && bList > 0 && (
+                          <span className="badge badge-teal" style={{ fontSize: '0.7rem' }}>
+                            +{Math.round(margin)}%
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+
 
       {showBulkModal && (
         <BulkImportModal onClose={() => setShowBulkModal(false)} />
