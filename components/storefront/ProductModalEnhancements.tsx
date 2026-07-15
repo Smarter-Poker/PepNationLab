@@ -1184,7 +1184,7 @@ export default function ProductModalEnhancements({
                   key={s.key}
                   supply={s.group!}
                   primaryColor={primaryColor}
-                  onAdd={() => onAddVariantToCart(s.group!.defaultVariantId, s.key === 'bac_water' ? 10 : 1)}
+                  onAdd={() => onAddVariantToCart(s.group!.defaultVariantId, 1)}
                   onOpen={() => onOpenProductByName(s.group!.name)}
                 />
               ))}
