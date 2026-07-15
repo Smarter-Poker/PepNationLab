@@ -28,7 +28,7 @@ export default async function SavageLabelsPage() {
         id, name, slug, category, unit_size, unit_measure, image_url
       )
     `)
-    .eq('agent_id', 'a8c7db76-58bf-49f9-aa09-1cdb71dbce19');
+    .eq('agent_id', agent?.id);
 
   if (prodError || agentError) {
     console.error('Error fetching products:', prodError || agentError);
