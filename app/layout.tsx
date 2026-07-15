@@ -19,6 +19,10 @@ import UtmCapture from "@/components/UtmCapture";
 // page's initial JS bundle. Each renders null until an event/condition fires,
 // so deferring them causes no layout shift. See components/DeferredGlobals.tsx.
 import DeferredGlobals from "@/components/DeferredGlobals";
+// Trilingual runtime layer: swaps recognized static UI text to zh-CN/zh-TW
+// when the user picked Chinese (manufacturer accounts). Renders null; dynamic
+// data and images pass through untouched. See components/UiTranslator.tsx.
+import UiTranslator from "@/components/UiTranslator";
 // A11y: app-wide reduced-motion support for framer-motion (WCAG 2.2.2/2.3.3).
 import MotionProvider from "@/components/MotionProvider";
 // Real-user measurement: Vercel Speed Insights (Core Web Vitals field data)
@@ -243,6 +247,10 @@ export default function RootLayout({
           {/* All non-critical global widgets, loaded in their own async chunks
               after hydration instead of in every page's initial bundle. */}
           <DeferredGlobals />
+          {/* Trilingual runtime layer (manufacturer accounts): translates
+              recognized static UI text when Chinese is selected. Dynamic data
+              and images pass through untouched. */}
+          <UiTranslator />
           <Script src="/sw-register.js" strategy="afterInteractive" />
           {/* Real-user field measurement. Render null; scripts load after
               hydration, so no layout or LCP impact. */}
