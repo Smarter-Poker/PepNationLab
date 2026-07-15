@@ -14,12 +14,12 @@
 // Key: lowercase product name (trimmed). Add new entries here as images are generated.
 const PRODUCT_IMAGE_MAP: Record<string, string> = {
   // ── Custom Stacks ───────────────────────────────────────────────────────────
-  'appetite crusher':                         '/images/products/cagrilintide-sema.png',
+  'appetite crusher':                         '/images/products/cagrisema-combo.png',
   'furnace stack':                            '/images/products/l-carnitine-blend.png',
   'skinny shot':                              '/images/products/lipo-c.png',
   'lipolysis stack':                          '/images/products/lemon-bottle.png',
   'gh synergy':                               '/images/products/cjc-1295-ipa.png',
-  'wolverine stack':                          '/images/products/wolverine-stack.png',
+  'wolverine stack':                          '/images/products/bpc-tb-combo.png',
   'shred stack':                              '/images/products/shred-stack.png',
   'limitless stack':                          '/images/products/limitless-stack.png',
   
@@ -49,10 +49,10 @@ const PRODUCT_IMAGE_MAP: Record<string, string> = {
   '5 amino 1mq':                              '/images/products/5-amino-1mq.png',
   'lipo-c':                                   '/images/products/lipo-c.png',
   'lipo c':                                   '/images/products/lipo-c.png',
-  'cagrilintide and semaglutide':             '/images/products/cagrilintide-sema.png',
-  'cagri / sema':                             '/images/products/cagrilintide-sema.png',
-  'cagri sema':                               '/images/products/cagrilintide-sema.png',
-  'cagri+sema':                               '/images/products/cagrilintide-sema.png',
+  'cagrilintide and semaglutide':             '/images/products/cagrisema-combo.png',
+  'cagri / sema':                             '/images/products/cagrisema-combo.png',
+  'cagri sema':                               '/images/products/cagrisema-combo.png',
+  'cagri+sema':                               '/images/products/cagrisema-combo.png',
 
   // ── Healing & Recovery - TEAL cap ───────────────────────────────────────────
   'bpc-157':                                  '/images/products/bpc-157.png',
@@ -63,11 +63,11 @@ const PRODUCT_IMAGE_MAP: Record<string, string> = {
   'tb500':                                    '/images/products/tb-500.png',
   'thymosin beta 4 acetate':                  '/images/products/tb-500.png',
   'thymosin beta-4':                          '/images/products/tb-500.png',
-  'bpc 10mg + tb 10mg':                       '/images/products/bpc-tb-blend.png',
-  'bpc-157 and tb-500':                       '/images/products/bpc-tb-blend.png',
-  'bpc10 + tb10':                             '/images/products/bpc-tb-blend.png',
-  'bpc/tb':                                   '/images/products/bpc-tb-blend.png',
-  'bpc + tb':                                 '/images/products/bpc-tb-blend.png',
+  'bpc 10mg + tb 10mg':                       '/images/products/bpc-tb-combo.png',
+  'bpc-157 and tb-500':                       '/images/products/bpc-tb-combo.png',
+  'bpc10 + tb10':                             '/images/products/bpc-tb-combo.png',
+  'bpc/tb':                                   '/images/products/bpc-tb-combo.png',
+  'bpc + tb':                                 '/images/products/bpc-tb-combo.png',
   'kpv':                                      '/images/products/kpv.png',
   'thymosin alpha-1':                         '/images/products/thymosin-alpha-1.png',
   'thymosin alpha 1':                         '/images/products/thymosin-alpha-1.png',
