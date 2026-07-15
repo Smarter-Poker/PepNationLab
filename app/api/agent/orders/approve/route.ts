@@ -39,14 +39,15 @@ export async function POST(req: NextRequest) {
 
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .select('*, order_items(product_id, product_name, quantity, unit_cost_price, unit_super_agent_cost, fulfilled_locally), profiles!orders_agent_id_fkey(parent_agent_id)')
+      .select('*, order_items(product_id, product_name, quantity, unit_cost_price, unit_super_agent_cost, fulfilled_locally), profiles!orders_agent_id_fkey(parent_agent_id, is_manufacturer)')
       .eq('id', orderId)
       .maybeSingle();
 
     if (orderError || !order) return NextResponse.json({ error: 'Order Not Found' }, { status: 404 });
 
-    const orderAgentProfile = pickOne<{ parent_agent_id: string | null }>(order.profiles);
+    const orderAgentProfile = pickOne<{ parent_agent_id: string | null; is_manufacturer: boolean | null }>(order.profiles);
     const orderAgentParentId = orderAgentProfile?.parent_agent_id ?? null;
+    const orderAgentIsManufacturer = orderAgentProfile?.is_manufacturer === true;
 
     if (order.agent_id !== callerId && orderAgentParentId !== callerId) {
       return NextResponse.json({ error: 'Unauthorized To Modify This Order' }, { status: 403 });
@@ -90,6 +91,40 @@ export async function POST(req: NextRequest) {
       const { error: updateError } = await supabase.from('orders').update(updatePayload).eq('id', orderId);
       if (updateError) return NextResponse.json({ error: 'Failed To Forward Order To Super Agent' }, { status: 500 });
       return NextResponse.json({ success: true, status: finalStatus });
+    }
+
+    // MANUFACTURER ORDERS (2026-07-15): the store owner IS the factory/supplier.
+    // They are never charged COGS or shipping to approve their own order -- the
+    // researcher pays them directly and they remit the platform's commission via
+    // manufacturer_ledger (recorded at checkout). Their stock is factory /
+    // China-fulfilled and is not tracked in agent_inventory, so the on-hand
+    // availability check and the prepaid/credit billing below do not apply.
+    // Approving simply confirms fulfillment and moves the order to
+    // approved_ship / approved_pickup. The manufacturer adds their own carrier
+    // tracking via tracking_number; no platform (EasyPost) label is enqueued.
+    if (orderAgentIsManufacturer) {
+      const manuFinal = order.fulfillment_method === 'agent_pickup' ? 'approved_pickup' : 'approved_ship';
+      const manuPayload: Record<string, string> = {
+        status: manuFinal,
+        agent_approved_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      if (tracking_number && typeof tracking_number === 'string') manuPayload.tracking_number = tracking_number;
+      const { data: manuClaimed, error: manuErr } = await supabase
+        .from('orders')
+        .update(manuPayload)
+        .eq('id', orderId)
+        .in('status', ['pending_customer_payment', 'agent_approval_pending'])
+        .select('id');
+      if (manuErr) {
+        logError('agent.orders.approve.manufacturer_claim', { orderId, agentId: order.agent_id }, manuErr);
+        captureError(manuErr, { context: 'agent.orders.approve.manufacturer_claim', orderId });
+        return NextResponse.json({ error: 'Failed To Update Order Status' }, { status: 500 });
+      }
+      if (!manuClaimed || manuClaimed.length === 0) {
+        return NextResponse.json({ error: 'Order Was Already Processed. Please Refresh To See Its Current Status.' }, { status: 409 });
+      }
+      return NextResponse.json({ success: true, status: manuFinal });
     }
 
     const primaryBilledAgentId = orderAgentParentId || order.agent_id;
