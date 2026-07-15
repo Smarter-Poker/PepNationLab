@@ -94,40 +94,144 @@ export function LabelGenerator({ products }: { products: any[] }) {
                 style={{ width: '394px', height: '150px' }}
               >
                 <div 
-                  className="savage-label-render-target relative overflow-hidden"
+                  className="savage-label-render-target relative overflow-hidden flex"
                   data-name={p.name}
                   style={{
                     width: '788px',
                     height: '300px',
                     transform: 'scale(0.5)',
                     transformOrigin: 'top left',
-                    backgroundColor: '#111111',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    alignItems: 'center'
+                    backgroundColor: '#050505',
+                    fontFamily: '"Arial Black", Impact, "Helvetica Neue", sans-serif'
                   }}
                 >
-                  {/* Top Red Border (extends all the way around) */}
-                  <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '18px', backgroundColor: accentColor, zIndex: 10 }} />
-                  
-                  <img 
-                    src={p.image ? `/images/savage-brands-flattened/${p.image.split('/').pop()?.replace('.jpg', '.png')}` : ''} 
-                    alt={p.name}
-                    style={{
-                      height: '300px',
-                      width: 'auto',
-                      objectFit: 'cover',
-                      position: 'relative',
-                      zIndex: 5
-                    }}
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
+                  {/* Left Side: Logo Area */}
+                  <div style={{ 
+                    width: '320px', 
+                    height: '100%', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    paddingTop: '20px'
+                  }}>
+                    <img 
+                      src="/logo-savage.png" 
+                      alt="Savage Brands" 
+                      style={{ 
+                        width: '180px', 
+                        height: '180px', 
+                        objectFit: 'contain', 
+                        marginBottom: '10px' 
+                      }}
+                      onError={(e) => { 
+                        // Fallback to text if logo image is missing
+                        e.currentTarget.style.display = 'none'; 
+                        const parent = e.currentTarget.parentElement;
+                        if (parent) {
+                          const fallback = document.createElement('div');
+                          fallback.innerHTML = 'SAVAGE<br/>BRANDS';
+                          fallback.style.cssText = 'color: #fff; font-size: 40px; text-align: center; line-height: 1.1; margin-bottom: 20px; text-transform: uppercase;';
+                          parent.insertBefore(fallback, parent.firstChild);
+                        }
+                      }}
+                    />
+                    <div style={{
+                      fontSize: '36px',
+                      fontWeight: '900',
+                      fontFamily: '"Arial Black", Impact, sans-serif',
+                      textTransform: 'uppercase',
+                      background: 'linear-gradient(to bottom, #f5f5f5 0%, #a0a0a0 45%, #606060 50%, #b3b3b3 60%, #e0e0e0 100%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      filter: 'drop-shadow(2px 2px 2px rgba(0,0,0,1))',
+                      letterSpacing: '-1px'
+                    }}>
+                      Savage Brands
+                    </div>
+                  </div>
 
-                  {/* Bottom Red Border (extends all the way around) */}
-                  <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '18px', backgroundColor: accentColor, zIndex: 10 }} />
+                  {/* Right Side: Text Area */}
+                  <div style={{ 
+                    flex: 1, 
+                    height: '100%', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    paddingTop: '35px', 
+                    paddingRight: '30px' 
+                  }}>
+                    
+                    {/* Silver Horizontal Line */}
+                    <div style={{ 
+                      width: '100%', 
+                      height: '6px', 
+                      background: 'linear-gradient(to bottom, #ffffff 0%, #b3b3b3 50%, #666666 100%)',
+                      marginBottom: '10px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.8)'
+                    }} />
+
+                    {/* Product Name (e.g. BPC-157) */}
+                    <div style={{
+                      fontSize: cleanName.length > 8 ? '80px' : '110px',
+                      fontWeight: '900',
+                      lineHeight: '1',
+                      textTransform: 'uppercase',
+                      background: 'linear-gradient(to bottom, #ffffff 0%, #d4d4d4 40%, #808080 50%, #c0c0c0 60%, #ffffff 100%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      WebkitTextStroke: '1px #333',
+                      filter: 'drop-shadow(2px 4px 6px rgba(0,0,0,0.9))',
+                      letterSpacing: '-2px',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    }}>
+                      {cleanName}
+                    </div>
+
+                    {/* RESEARCH COMPOUND subtitle */}
+                    <div style={{
+                      fontSize: '34px',
+                      fontWeight: '800',
+                      color: '#c0c0c0',
+                      fontFamily: '"Arial Black", Impact, sans-serif',
+                      textTransform: 'uppercase',
+                      letterSpacing: '1px',
+                      marginTop: '0px',
+                      background: 'linear-gradient(to bottom, #e0e0e0 0%, #999999 100%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                    }}>
+                      Research Compound
+                    </div>
+
+                    {/* Bottom Color Bar with Dosage */}
+                    <div style={{
+                      marginTop: 'auto',
+                      marginBottom: '35px',
+                      width: '100%',
+                      backgroundColor: accentColor,
+                      padding: '12px 0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 4px 8px rgba(0,0,0,0.5)'
+                    }}>
+                      <div style={{ 
+                        color: '#000000', 
+                        fontSize: '32px', 
+                        fontFamily: '"Helvetica Neue", Arial, sans-serif',
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '8px' 
+                      }}>
+                        {doseString && <span style={{ fontWeight: '900' }}>{doseString}</span>}
+                        {doseString && <span style={{ fontWeight: '500' }}>-</span>}
+                        <span style={{ fontWeight: '500' }}>Research Compound</span>
+                      </div>
+                    </div>
+
+                  </div>
                 </div>
               </div>
               <div className="text-sm font-medium text-center truncate w-full" title={p.name}>
