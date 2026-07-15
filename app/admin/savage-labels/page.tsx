@@ -13,40 +13,53 @@ export default async function SavageLabelsPage() {
     .ilike('username', '%savage%')
     .single();
 
-  const { data: agentProducts, error } = await supabase
+  // Fetch all products (for Pep Nation view)
+  const { data: allProducts, error: prodError } = await supabase
+    .from('products')
+    .select('id, name, slug, category, unit_size, unit_measure, image_url')
+    .order('name');
+
+  // Fetch Savage Brands custom products
+  const { data: agentProducts, error: agentError } = await supabase
     .from('agent_products')
     .select(`
       custom_image_url,
       product:product_id (
-        id, name, category, unit_size, unit_measure, image_url
+        id, name, slug, category, unit_size, unit_measure, image_url
       )
     `)
-    .eq('agent_id', agent?.id);
+    .eq('agent_id', 'a8c7db76-58bf-49f9-aa09-1cdb71dbce19');
 
-  if (error) {
-    console.error('Supabase error fetching products:', error);
+  if (prodError || agentError) {
+    console.error('Error fetching products:', prodError || agentError);
+    return <div>Error loading labels.</div>;
   }
 
-  const products = (agentProducts?.map((ap: any) => {
-    if (!ap.product) return null;
-    return {
-      ...ap.product,
-      image: ap.custom_image_url || ap.product.image_url || ''
-    };
-  }).filter(Boolean) || []).sort((a: any, b: any) => a.name.localeCompare(b.name));
+  // Use agentProducts for Savage, or fallback to all products
+  // We will pass allProducts to LabelGenerator to let it handle both.
+  const mappedSavage = agentProducts?.map((ap: any) => ({
+    ...ap.product,
+    image: ap.custom_image_url || ap.product.image_url
+  })) || [];
+
+  const mappedAll = allProducts?.map((p: any) => ({
+    ...p,
+    image: p.image_url
+  })) || [];
 
   return (
     <div className="flex flex-col flex-1 h-full overflow-hidden">
-      <div className="flex-none bg-background border-b px-6 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Savage Brands Labels</h1>
-          <p className="text-muted-foreground">
-            Print-ready templates for 1.5" x 2.5" vials (300dpi).
-          </p>
+      <div className="flex-1 overflow-y-auto p-4 md:p-8">
+        <div className="max-w-7xl mx-auto space-y-8">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Printable Labels</h1>
+            <p className="text-muted-foreground">
+              Generate 300dpi labels for Pep Nation and Savage Brands.
+            </p>
+          </div>
+          
+          <LabelGenerator savageProducts={mappedSavage} pepProducts={mappedAll} />
         </div>
-      </div>
-      <div className="flex-1 overflow-auto p-6">
-        <LabelGenerator products={products || []} />
       </div>
     </div>
   );

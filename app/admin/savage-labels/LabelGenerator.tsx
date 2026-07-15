@@ -20,9 +20,12 @@ function getCategoryColor(categoryName: string) {
   return '#C0C0C0';
 }
 
-export function LabelGenerator({ products }: { products: any[] }) {
+export function LabelGenerator({ savageProducts, pepProducts }: { savageProducts: any[], pepProducts: any[] }) {
   const [isExporting, setIsExporting] = useState(false);
+  const [brand, setBrand] = useState<'savage' | 'pepnation'>('savage');
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const products = brand === 'savage' ? savageProducts : pepProducts;
 
   const handleExport = async () => {
     if (!containerRef.current) return;
@@ -30,24 +33,21 @@ export function LabelGenerator({ products }: { products: any[] }) {
 
     try {
       const zip = new JSZip();
-      const labelElements = containerRef.current.querySelectorAll('.savage-label-render-target');
+      const images = containerRef.current.querySelectorAll('img.label-image');
       
-      const elementsArray = Array.from(labelElements) as HTMLElement[];
-      
-      for (const el of elementsArray) {
-        const productName = el.getAttribute('data-name') || 'label';
-        const blob = await toBlob(el, {
-          quality: 1.0,
-          pixelRatio: 1,
-        });
+      for (const img of Array.from(images) as HTMLImageElement[]) {
+        const productName = img.getAttribute('data-name') || 'label';
         
-        if (blob) {
+        // Fetch the image blob
+        const response = await fetch(img.src);
+        if (response.ok) {
+          const blob = await response.blob();
           zip.file(`${productName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png`, blob);
         }
       }
 
       const content = await zip.generateAsync({ type: 'blob' });
-      saveAs(content, 'savage-brands-labels.zip');
+      saveAs(content, `${brand}-brands-labels.zip`);
     } catch (error) {
       console.error('Error generating ZIP:', error);
       alert('Failed to export labels. Check console for details.');
@@ -59,7 +59,17 @@ export function LabelGenerator({ products }: { products: any[] }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-medium">{products.length} Labels Available</h2>
+        <div className="flex items-center gap-4">
+          <h2 className="text-lg font-medium">{products.length} Labels Available</h2>
+          <select 
+            value={brand} 
+            onChange={(e) => setBrand(e.target.value as 'savage' | 'pepnation')}
+            className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus:ring-ring flex h-10 w-[200px] items-center justify-between rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <option value="savage">Savage Brands</option>
+            <option value="pepnation">Pep Nation</option>
+          </select>
+        </div>
         <button 
           onClick={handleExport} 
           disabled={isExporting}
@@ -71,7 +81,7 @@ export function LabelGenerator({ products }: { products: any[] }) {
       </div>
 
       <div className="text-sm text-muted-foreground mb-4">
-        Note: The labels below are scaled down for preview purposes, but will be exported at full 300dpi resolution (788x300 pixels, exactly 2-5/8" x 1").
+        Note: The labels below are exactly matched to the template image you provided. They are rendered at 1024x512 pixels natively.
       </div>
 
       <div 
@@ -79,160 +89,33 @@ export function LabelGenerator({ products }: { products: any[] }) {
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
       >
         {products.map((p) => {
-          const categoryName = p.category || 'Unknown';
-          const accentColor = getCategoryColor(categoryName);
-          const doseString = p.unit_size && p.unit_measure ? `${p.unit_size}${p.unit_measure}` : '';
-          
-          const cleanName = p.name.replace(/\s*\(.*?\)\s*/g, '').trim();
-          const subtitleMatch = p.name.match(/\((.*?)\)/);
-          const subtitle = subtitleMatch ? subtitleMatch[1] : '';
+          const folder = brand === 'savage' ? 'savage-brands-flattened' : 'pep-nation-flattened';
+          const slug = p.slug || p.name.replace(/\s+/g, '-').toLowerCase();
+          const safeSlug = slug.replace(/\//g, '_').replace(/ /g, '_');
+          const imageUrl = `/images/${folder}/${safeSlug}.png`;
 
           return (
             <div key={p.id} className="flex flex-col items-center gap-2">
               <div 
-                className="overflow-hidden border border-border/50 rounded shadow-md relative"
-                style={{ width: '394px', height: '150px' }}
+                className="overflow-hidden border border-border/50 rounded shadow-md relative bg-black flex items-center justify-center"
+                style={{ width: '394px', height: '197px' }}
               >
-                <div 
-                  className="savage-label-render-target relative overflow-hidden flex"
+                <img 
+                  src={imageUrl} 
+                  alt={p.name}
                   data-name={p.name}
+                  className="label-image"
                   style={{
-                    width: '788px',
-                    height: '300px',
-                    transform: 'scale(0.5)',
-                    transformOrigin: 'top left',
-                    backgroundColor: '#050505',
-                    fontFamily: '"Arial Black", Impact, "Helvetica Neue", sans-serif'
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain'
                   }}
-                >
-                  {/* Left Side: Logo Area */}
-                  <div style={{ 
-                    width: '320px', 
-                    height: '100%', 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    paddingTop: '20px'
-                  }}>
-                    <img 
-                      src="/logo-savage.png" 
-                      alt="Savage Brands" 
-                      style={{ 
-                        width: '180px', 
-                        height: '180px', 
-                        objectFit: 'contain', 
-                        marginBottom: '10px' 
-                      }}
-                      onError={(e) => { 
-                        // Fallback to text if logo image is missing
-                        e.currentTarget.style.display = 'none'; 
-                        const parent = e.currentTarget.parentElement;
-                        if (parent) {
-                          const fallback = document.createElement('div');
-                          fallback.innerHTML = 'SAVAGE<br/>BRANDS';
-                          fallback.style.cssText = 'color: #fff; font-size: 40px; text-align: center; line-height: 1.1; margin-bottom: 20px; text-transform: uppercase;';
-                          parent.insertBefore(fallback, parent.firstChild);
-                        }
-                      }}
-                    />
-                    <div style={{
-                      fontSize: '36px',
-                      fontWeight: '900',
-                      fontFamily: '"Arial Black", Impact, sans-serif',
-                      textTransform: 'uppercase',
-                      background: 'linear-gradient(to bottom, #f5f5f5 0%, #a0a0a0 45%, #606060 50%, #b3b3b3 60%, #e0e0e0 100%)',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                      filter: 'drop-shadow(2px 2px 2px rgba(0,0,0,1))',
-                      letterSpacing: '-1px'
-                    }}>
-                      Savage Brands
-                    </div>
-                  </div>
-
-                  {/* Right Side: Text Area */}
-                  <div style={{ 
-                    flex: 1, 
-                    height: '100%', 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    paddingTop: '35px', 
-                    paddingRight: '30px' 
-                  }}>
-                    
-                    {/* Silver Horizontal Line */}
-                    <div style={{ 
-                      width: '100%', 
-                      height: '6px', 
-                      background: 'linear-gradient(to bottom, #ffffff 0%, #b3b3b3 50%, #666666 100%)',
-                      marginBottom: '10px',
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.8)'
-                    }} />
-
-                    {/* Product Name (e.g. BPC-157) */}
-                    <div style={{
-                      fontSize: cleanName.length > 8 ? '80px' : '110px',
-                      fontWeight: '900',
-                      lineHeight: '1',
-                      textTransform: 'uppercase',
-                      background: 'linear-gradient(to bottom, #ffffff 0%, #d4d4d4 40%, #808080 50%, #c0c0c0 60%, #ffffff 100%)',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                      WebkitTextStroke: '1px #333',
-                      filter: 'drop-shadow(2px 4px 6px rgba(0,0,0,0.9))',
-                      letterSpacing: '-2px',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis'
-                    }}>
-                      {cleanName}
-                    </div>
-
-                    {/* RESEARCH COMPOUND subtitle */}
-                    <div style={{
-                      fontSize: '34px',
-                      fontWeight: '800',
-                      color: '#c0c0c0',
-                      fontFamily: '"Arial Black", Impact, sans-serif',
-                      textTransform: 'uppercase',
-                      letterSpacing: '1px',
-                      marginTop: '0px',
-                      background: 'linear-gradient(to bottom, #e0e0e0 0%, #999999 100%)',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                    }}>
-                      Research Compound
-                    </div>
-
-                    {/* Bottom Color Bar with Dosage */}
-                    <div style={{
-                      marginTop: 'auto',
-                      marginBottom: '35px',
-                      width: '100%',
-                      backgroundColor: accentColor,
-                      padding: '12px 0',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      boxShadow: '0 4px 8px rgba(0,0,0,0.5)'
-                    }}>
-                      <div style={{ 
-                        color: '#000000', 
-                        fontSize: '32px', 
-                        fontFamily: '"Helvetica Neue", Arial, sans-serif',
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '8px' 
-                      }}>
-                        {doseString && <span style={{ fontWeight: '900' }}>{doseString}</span>}
-                        {doseString && <span style={{ fontWeight: '500' }}>-</span>}
-                        <span style={{ fontWeight: '500' }}>Research Compound</span>
-                      </div>
-                    </div>
-
-                  </div>
-                </div>
+                  onError={(e) => {
+                    // Hide if image doesn't exist yet
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.parentElement!.innerHTML = '<span class="text-xs text-muted-foreground">Generating...</span>';
+                  }}
+                />
               </div>
               <div className="text-sm font-medium text-center truncate w-full" title={p.name}>
                 {p.name}
