@@ -15,6 +15,10 @@ import { useModalA11y } from '@/lib/useModalA11y';
 import GlobalCompletenessWidget from '@/components/GlobalCompletenessWidget';
 import { toast } from 'sonner';
 import { triggerInstall, isRunningAsApp, isKnownInstalled, subscribeInstallState } from '@/lib/pwaInstall';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { isLocale } from '@/lib/i18n';
+import { SUPPORTED_LOCALES, LOCALE_LABELS, type Locale } from '@/lib/i18n/manufacturer-dict';
+import { navLabel } from '@/lib/i18n/nav-dict';
 
 function resolveTitle(pathname: string, role: string): string {
   if (pathname === '/')               return 'Pep Nation Lab';
@@ -132,7 +136,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
-  const [profile, setProfile] = useState<{ full_name?: string | null; role?: string; referring_agent_id?: string | null; is_super_agent?: boolean | null; is_sub_agent?: boolean | null } | null>(null);
+  const [profile, setProfile] = useState<{ full_name?: string | null; role?: string; referring_agent_id?: string | null; is_super_agent?: boolean | null; is_sub_agent?: boolean | null; is_manufacturer?: boolean | null } | null>(null);
   const [agentSlug, setAgentSlug] = useState<string | null>(null);
   const [agentName, setAgentName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -140,6 +144,10 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
   // Whether to surface the manual "Download Pep Nation App" menu item: only
   // when NOT already installed (or running as the app) on this device.
   const [canOfferInstall, setCanOfferInstall] = useState(false);
+  // Drawer language (Phase 1 of the trilingual agent surface). Shares the
+  // manufacturer dashboard's localStorage key so one choice follows the user
+  // across every surface.
+  const [locale, setLocaleState] = useState<Locale>('en');
 
   const activeAgentSlug = propAgentSlug || agentSlug;
 
@@ -161,6 +169,25 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
     : 'Dashboard';
 
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem('pnl_locale');
+      if (isLocale(stored)) setLocaleState(stored);
+    } catch { /* storage unavailable - stay on the initial locale */ }
+  }, []);
+
+  const setLocale = (l: Locale) => {
+    setLocaleState(l);
+    try { window.localStorage.setItem('pnl_locale', l); } catch { /* ignore */ }
+    // Best-effort account sync; the endpoint returns a harmless 403 for
+    // non-manufacturer accounts.
+    fetch('/api/manufacturer/locale', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ locale: l }),
+    }).catch(() => { /* localStorage already holds the choice */ });
+  };
 
   // A11y: focus trap + Escape close + focus restore while the drawer is open
   // (WCAG 2.1.2, 2.4.3).
@@ -230,9 +257,11 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
     // Extracted to avoid duplicating this logic between getSession and onAuthStateChange.
     const fetchUserProfile = async (userId: string) => {
       try {
-        const { data } = await supabase
+        // Untyped handle: is_manufacturer postdates the checked-in generated
+        // Database types (same pattern as the server clients).
+        const { data } = await (supabase as unknown as SupabaseClient)
           .from('profiles')
-          .select('full_name, role, referring_agent_id, is_super_agent, is_sub_agent')
+          .select('full_name, role, referring_agent_id, is_super_agent, is_sub_agent, is_manufacturer')
           .eq('id', userId)
           .maybeSingle();
         if (data) {
@@ -525,7 +554,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
                 {displayName}
               </div>
               <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>
-                {role.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                {navLabel(role.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '), locale)}
               </div>
             </div>
           </div>
@@ -534,15 +563,15 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
         <nav aria-label="Menu" style={{ flex: 1, padding: 'var(--space-3) 0' }}>
           {roleLinks ? (
             roleLinks.map((l) => (
-              <DrawerLink key={`${l.href}-${l.label}`} href={l.href} label={l.label} onClick={() => handleMenuClick(l.href)} icon={l.icon} />
+              <DrawerLink key={`${l.href}-${l.label}`} href={l.href} label={navLabel(l.label, locale)} onClick={() => handleMenuClick(l.href)} icon={l.icon} />
             ))
           ) : (
             <>
-              <DrawerLink href={dashLink} label="Home" onClick={closeDrawer}
+              <DrawerLink href={dashLink} label={navLabel('Home', locale)} onClick={closeDrawer}
                 icon={<svg {...IP}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>}
               />
               {role !== 'researcher' && (
-                <DrawerLink href="/products" label="Products" onClick={closeDrawer}
+                <DrawerLink href="/products" label={navLabel('Products', locale)} onClick={closeDrawer}
                   icon={<svg {...IP}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>}
                 />
               )}
@@ -551,24 +580,24 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
                   icon={<svg {...IP}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>}
                 />
               )}
-              <DrawerLink href="/about" label="About" onClick={closeDrawer}
+              <DrawerLink href="/about" label={navLabel('About', locale)} onClick={closeDrawer}
                 icon={<svg {...IP}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>}
               />
               {user && (
                 <>
                   <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: 'var(--space-2) 0' }} />
-                  <DrawerLink href={dashLink} label={dashLabel} onClick={closeDrawer}
+                  <DrawerLink href={dashLink} label={navLabel(dashLabel, locale)} onClick={closeDrawer}
                     icon={<svg {...IP}><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>}
                   />
                   {!isMessenger && (
-                    <DrawerLink href="/messenger" label="Messenger" onClick={closeDrawer}
+                    <DrawerLink href="/messenger" label={navLabel('Messenger', locale)} onClick={closeDrawer}
                       icon={<svg {...IP}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>}
                     />
                   )}
-                  <DrawerLink href="/account" label="Account Settings" onClick={closeDrawer}
+                  <DrawerLink href="/account" label={navLabel('Account Settings', locale)} onClick={closeDrawer}
                     icon={<svg {...IP}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>}
                   />
-                  <DrawerLink href="/research/calculators" label="Lab Tools Calculator" onClick={closeDrawer}
+                  <DrawerLink href="/research/calculators" label={navLabel('Lab Tools Calculator', locale)} onClick={closeDrawer}
                     icon={<svg {...IP}><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>}
                   />
                 </>
@@ -579,18 +608,48 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
           {user && (
             <>
               <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: 'var(--space-2) 0' }} />
+              {(profile as { is_manufacturer?: boolean | null })?.is_manufacturer === true && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)', padding: '10px var(--space-5)' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                    {navLabel('Language', locale)}
+                  </span>
+                  <div role="group" aria-label="Language" style={{ display: 'inline-flex', gap: 2, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 999, padding: 2 }}>
+                    {SUPPORTED_LOCALES.map((l) => (
+                      <button
+                        key={l}
+                        type="button"
+                        onClick={() => setLocale(l)}
+                        aria-pressed={l === locale}
+                        style={{
+                          border: 'none',
+                          cursor: 'pointer',
+                          borderRadius: 999,
+                          padding: '3px 9px',
+                          fontSize: '0.68rem',
+                          fontWeight: 700,
+                          background: l === locale ? 'var(--teal)' : 'transparent',
+                          color: l === locale ? '#04221F' : 'var(--silver)',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {LOCALE_LABELS[l]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               {(role === 'admin' || role.includes('agent')) && (
                 <DrawerLink
                   href={role === 'admin' ? '/admin/advertising' : '/advertising'}
-                  label="Advertising Hub"
+                  label={navLabel('Advertising Hub', locale)}
                   onClick={closeDrawer}
                   icon={<svg {...IP}><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>}
                 />
               )}
-              <DrawerLink href="/account/help" label="Help & Support" onClick={closeDrawer}
+              <DrawerLink href="/account/help" label={navLabel('Help & Support', locale)} onClick={closeDrawer}
                 icon={<svg {...IP}><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/><line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/><line x1="14.83" y1="9.17" x2="19.07" y2="4.93"/><line x1="4.93" y1="19.07" x2="9.17" y2="14.83"/></svg>}
               />
-              <DrawerLink href="/peptide-101" label="Peptide 101" onClick={closeDrawer}
+              <DrawerLink href="/peptide-101" label={navLabel('Peptide 101', locale)} onClick={closeDrawer}
                 icon={<svg {...IP}><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>}
               />
               {canOfferInstall && (
@@ -616,7 +675,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
                   <span style={{ display: 'inline-flex', opacity: 0.7 }}>
                     <svg {...IP}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                   </span>
-                  Download Pep Nation App
+                  {navLabel('Download Pep Nation App', locale)}
                 </button>
               )}
               <button
@@ -638,7 +697,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
                 }}
               >
                 <svg {...IP} stroke="var(--red)"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                Sign Out
+                {navLabel('Sign Out', locale)}
               </button>
             </>
           )}
@@ -646,7 +705,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
           {!user && !loading && (
             <>
               <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: 'var(--space-2) 0' }} />
-              <DrawerLink href="/login" label="Sign In" onClick={closeDrawer}
+              <DrawerLink href="/login" label={navLabel('Sign In', locale)} onClick={closeDrawer}
                 icon={<svg {...IP}><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>}
               />
             </>
@@ -673,7 +732,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
               {displayName ? displayName.charAt(0).toUpperCase() : '?'}
             </div>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: '0.65rem', color: 'var(--grey-400)', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 2 }}>Logged In As</div>
+              <div style={{ fontSize: '0.65rem', color: 'var(--grey-400)', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 2 }}>{navLabel('Logged In As', locale)}</div>
               <div style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName || 'User'}</div>
             </div>
           </div>
