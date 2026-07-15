@@ -490,13 +490,19 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
               const bListRaw = b.custom_price != null ? b.custom_price : ((b.retail_value_total || 0) * (1 - (b.discount_percent || 0) / 100));
               const bList = Math.round(bListRaw * 100) / 100;
               const profit = bList - bCost;
-              const margin = bList > 0 ? (profit / bList) * 100 : 0;
+              const margin = bCost > 0 ? (profit / bCost) * 100 : 0;
               return (
                 <div key={b.id} className="glass-panel" style={{ padding: 'var(--space-4) var(--space-5)', margin: 0, borderRadius: 0, borderLeft: 'none', borderRight: 'none' }}>
                   <div className="agentprod-card" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-                    <div style={{ width: 80, height: 80, borderRadius: 8, background: 'rgba(0,196,188,0.1)', border: '1px solid rgba(0,196,188,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#00E5FF', fontWeight: 800, fontSize: '0.8rem', textAlign: 'center', padding: 4 }}>
-                      BUNDLE
-                    </div>
+                    {b.image_url ? (
+                      <div style={{ width: 80, height: 80, borderRadius: 8, flexShrink: 0, overflow: 'hidden', position: 'relative' }}>
+                        <Image src={b.image_url} alt={b.name} fill style={{ objectFit: 'cover' }} />
+                      </div>
+                    ) : (
+                      <div style={{ width: 80, height: 80, borderRadius: 8, background: 'rgba(0,196,188,0.1)', border: '1px solid rgba(0,196,188,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#00E5FF', fontWeight: 800, fontSize: '0.8rem', textAlign: 'center', padding: 4 }}>
+                        BUNDLE
+                      </div>
+                    )}
                     <div className="agentprod-info" style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                         <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff' }}>{b.name}</span>

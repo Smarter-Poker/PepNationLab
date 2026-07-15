@@ -904,13 +904,19 @@ export default function ProductCatalogClient({
                   const bListRaw = b.custom_price != null ? b.custom_price : ((b.retail_value_total || 0) * (1 - (b.discount_percent || 0) / 100));
                   const bList = Math.round(bListRaw * 100) / 100;
                   const profit = bList - bCost;
-                  const margin = bList > 0 ? (profit / bList) * 100 : 0;
+                  const margin = bCost > 0 ? (profit / bCost) * 100 : 0;
                   return (
                     <tr key={b.id} className="table-row-hover">
                       <td style={{ padding: 'var(--space-3)' }}>
-                        <div style={{ background: 'rgba(0,196,188,0.1)', border: '1px solid rgba(0,196,188,0.3)', color: '#00E5FF', fontSize: '0.6rem', fontWeight: 800, padding: '2px 4px', borderRadius: 4, textAlign: 'center' }}>
-                          BUNDLE
-                        </div>
+                        {b.image_url ? (
+                          <div style={{ width: 40, height: 40, borderRadius: 4, overflow: 'hidden', position: 'relative' }}>
+                            <img src={b.image_url} alt={b.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          </div>
+                        ) : (
+                          <div style={{ background: 'rgba(0,196,188,0.1)', border: '1px solid rgba(0,196,188,0.3)', color: '#00E5FF', fontSize: '0.6rem', fontWeight: 800, padding: '2px 4px', borderRadius: 4, textAlign: 'center' }}>
+                            BUNDLE
+                          </div>
+                        )}
                       </td>
                       <td style={{ padding: 'var(--space-3)' }}>
                         <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#fff' }}>{b.name}</div>
