@@ -1175,7 +1175,6 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
         {[{ num: 1, label: 'Fulfillment' }, { num: 2, label: 'Billing' }, { num: 3, label: 'Compliance' }].map((s) => (
           <div key={s.num} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
             <div style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontFamily: 'var(--font-brand)', fontSize: '0.88rem', background: step === s.num ? 'var(--teal)' : step > s.num ? 'rgba(192, 184, 168, 0.15)' : 'var(--surface-3)', color: step === s.num ? '#fff' : step > s.num ? 'var(--teal)' : 'var(--silver-dark)', border: step >= s.num ? '1px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)', boxShadow: step === s.num ? 'var(--shadow-teal-sm)' : 'none', transition: 'all 0.3s ease' }}>{s.num}</div>
-            <span style={{ fontSize: '0.85rem', fontWeight: 600, fontFamily: 'var(--font-brand)', color: step === s.num ? 'var(--teal)' : step > s.num ? 'var(--white)' : 'var(--silver-dark)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{s.label}</span>
             {s.num < 3 && <div style={{ width: 40, height: 1, background: step > s.num ? 'var(--teal)' : 'rgba(255, 255, 255, 0.1)', margin: '0 8px' }} />}
           </div>
         ))}
@@ -1443,18 +1442,18 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 });
                 return groupedCart.map((group, groupIndex) => {
                   if (group.isBundle) {
-                    const bundleSubtotal = group.items.reduce((acc, item) => { const bulkEligible = !isAgentSelfBuy && item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold; const activePrice = bulkEligible ? (item.bulkCostPrice as number) : item.costPrice; return acc + (activePrice * 0.9) * item.quantity; }, 0);
+                    const bundleSubtotal = group.items.reduce((acc, item) => { const bulkEligible = !isAgentSelfBuy && item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold; const activePrice = bulkEligible ? (item.bulkCostPrice as number) : item.costPrice; return acc + activePrice * item.quantity; }, 0);
                     return (
                       <div key={`bundle-${group.name}-${groupIndex}`} style={{ background: 'rgba(0,196,188, 0.03)', border: '1px solid rgba(0,196,188, 0.2)', borderRadius: 8, padding: '10px', display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 6 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(0,196,188,0.1)', paddingBottom: 6, marginBottom: 4 }}>
                           <div>
                             <h3 style={{ fontSize: '0.85rem', margin: 0, fontFamily: 'var(--font-brand)', color: '#00C4BC' }}>{group.name}</h3>
-                            <div style={{ fontSize: '0.65rem', color: '#2DD4BF', marginTop: 2, fontWeight: 700 }}>Stack Discount (10% Off) Applied</div>
+                            <div style={{ fontSize: '0.65rem', color: '#2DD4BF', marginTop: 2, fontWeight: 700 }}>Bundle Price Applied</div>
                             <div style={{ fontSize: '0.65rem', color: 'var(--grey-400)', marginTop: 4, fontStyle: 'italic', maxWidth: '90%' }}>Note: This peptide stack is not all inside one vial, it is individually packaged as the vials listed below.</div>
                           </div>
                           <div style={{ fontSize: '0.85rem', color: '#00C4BC', fontWeight: 800 }}>${bundleSubtotal.toFixed(2)}</div>
                         </div>
-                        {group.items.map(item => { const bulkEligible = !isAgentSelfBuy && item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold; const activePrice = bulkEligible ? (item.bulkCostPrice as number) : item.costPrice; return (<div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', alignItems: 'flex-start', paddingLeft: 6 }}><div style={{ flexGrow: 1, paddingRight: 'var(--space-3)' }}><span style={{ color: 'var(--silver-light)', fontWeight: 500 }}>&#x21B3; {toTitleCase(item.name)}</span><div style={{ color: 'var(--grey-400)', fontSize: '0.72rem' }}>Qty: {item.quantity}</div></div><div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}><div style={{ color: 'var(--grey-500)', fontSize: '0.70rem', textDecoration: 'line-through' }}>${(activePrice * item.quantity).toFixed(2)}</div><strong style={{ color: '#00C4BC' }}>${((activePrice * 0.9) * item.quantity).toFixed(2)}</strong></div></div>); })}
+                        {group.items.map(item => { const bulkEligible = !isAgentSelfBuy && item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold; const activePrice = bulkEligible ? (item.bulkCostPrice as number) : item.costPrice; return (<div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', alignItems: 'flex-start', paddingLeft: 6 }}><div style={{ flexGrow: 1, paddingRight: 'var(--space-3)' }}><span style={{ color: 'var(--silver-light)', fontWeight: 500 }}>&#x21B3; {toTitleCase(item.name)}</span><div style={{ color: 'var(--grey-400)', fontSize: '0.72rem' }}>Qty: {item.quantity}</div></div><div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}><strong style={{ color: '#00C4BC' }}>${(activePrice * item.quantity).toFixed(2)}</strong></div></div>); })}
                       </div>
                     );
                   }
