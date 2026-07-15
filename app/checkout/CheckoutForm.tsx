@@ -585,10 +585,10 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     return sum;
   }, 0);
 
-  const requiredBacWaterVials = bacPeptideVials > 0 ? Math.ceil(bacPeptideVials / 10) * 10 : 0;
+  const requiredBacWaterVials = bacPeptideVials > 0 ? bacPeptideVials : 0;
   const neededBacWaterVials = Math.max(0, requiredBacWaterVials - currentBacWaterVials);
 
-  const requiredAceticAcidVials = aceticPeptideVials > 0 ? Math.ceil(aceticPeptideVials / 10) * 10 : 0;
+  const requiredAceticAcidVials = aceticPeptideVials > 0 ? aceticPeptideVials : 0;
   const neededAceticAcidVials = Math.max(0, requiredAceticAcidVials - currentAceticAcidVials);
 
   const handleAddBacWater = () => {

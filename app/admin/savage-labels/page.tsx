@@ -13,27 +13,33 @@ export default async function SavageLabelsPage() {
     .ilike('username', '%savage%')
     .single();
 
-  const { data: agentProducts, error } = await supabase
+  const { data: allProducts, error: prodError } = await supabase
+    .from('products')
+    .select('id, name, category, unit_size, unit_measure, image_url')
+    .order('name');
+
+  const { data: agentProducts, error: agentError } = await supabase
     .from('agent_products')
     .select(`
-      custom_image_url,
-      product:product_id (
-        id, name, category, unit_size, unit_measure, image_url
-      )
+      product_id,
+      custom_image_url
     `)
     .eq('agent_id', agent?.id);
 
-  if (error) {
-    console.error('Supabase error fetching products:', error);
+  if (prodError || agentError) {
+    console.error('Supabase error fetching products:', prodError || agentError);
   }
 
-  const products = (agentProducts?.map((ap: any) => {
-    if (!ap.product) return null;
+  const savageOverrides = new Map(
+    (agentProducts || []).map((ap: any) => [ap.product_id, ap.custom_image_url])
+  );
+
+  const products = (allProducts || []).map((p: any) => {
     return {
-      ...ap.product,
-      image: ap.custom_image_url || ap.product.image_url || ''
+      ...p,
+      image: savageOverrides.get(p.id) || p.image_url || ''
     };
-  }).filter(Boolean) || []).sort((a: any, b: any) => a.name.localeCompare(b.name));
+  });
 
   return (
     <div className="flex flex-col flex-1 h-full overflow-hidden">

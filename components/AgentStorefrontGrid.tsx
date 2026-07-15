@@ -2101,7 +2101,7 @@ export default function AgentStorefrontGrid({
             (a, b) =>
               parseFloat(a.products?.unit_size || '0') - parseFloat(b.products?.unit_size || '0')
           )[0] || matches[0];
-      const addQty = isBacWaterItem(pick.products?.name, pick.products?.compound_slug) ? 10 : 1;
+      const addQty = 1;
       setCartItems((prev) => ({ ...prev, [pick.id]: (prev[pick.id] || 0) + addQty }));
       setShowCartFloat(true);
       toast.success(`${pick.products?.name || name} Added To Cart.`);
