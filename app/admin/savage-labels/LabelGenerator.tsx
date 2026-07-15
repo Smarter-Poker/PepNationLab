@@ -22,7 +22,6 @@ function getCategoryColor(categoryName: string) {
 
 export function LabelGenerator({ products }: { products: any[] }) {
   const [isExporting, setIsExporting] = useState(false);
-  const [brand, setBrand] = useState<'savage' | 'pepnation'>('savage');
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleExport = async () => {
@@ -43,12 +42,12 @@ export function LabelGenerator({ products }: { products: any[] }) {
         });
         
         if (blob) {
-          zip.file(`${brand}-${productName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png`, blob);
+          zip.file(`${productName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png`, blob);
         }
       }
 
       const content = await zip.generateAsync({ type: 'blob' });
-      saveAs(content, `${brand}-labels.zip`);
+      saveAs(content, 'savage-brands-labels.zip');
     } catch (error) {
       console.error('Error generating ZIP:', error);
       alert('Failed to export labels. Check console for details.');
@@ -57,29 +56,17 @@ export function LabelGenerator({ products }: { products: any[] }) {
     }
   };
 
-  const logoSrc = brand === 'savage' ? '/images/logo-savage.jpg' : '/logo.jpg';
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <h2 className="text-lg font-medium">{products.length} Labels Available</h2>
-          <select 
-            value={brand} 
-            onChange={(e) => setBrand(e.target.value as any)}
-            className="border border-input bg-background rounded-md px-3 py-1.5 text-sm font-medium"
-          >
-            <option value="savage">Savage Brands Labels</option>
-            <option value="pepnation">Pep Nation Labels</option>
-          </select>
-        </div>
+        <h2 className="text-lg font-medium">{products.length} Labels Available</h2>
         <button 
           onClick={handleExport} 
           disabled={isExporting}
-          className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background hover:bg-primary/90 h-10 py-2 px-4 bg-blue-600 text-white"
+          className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-10 py-2 px-4 bg-blue-600 text-white"
         >
           {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-          {isExporting ? 'Generating ZIP...' : `Export ${brand === 'savage' ? 'Savage Brands' : 'Pep Nation'} to ZIP`}
+          {isExporting ? 'Generating ZIP...' : 'Export All to ZIP (300dpi)'}
         </button>
       </div>
 
@@ -97,6 +84,8 @@ export function LabelGenerator({ products }: { products: any[] }) {
           const doseString = p.unit_size && p.unit_measure ? `${p.unit_size}${p.unit_measure}` : '';
           
           const cleanName = p.name.replace(/\s*\(.*?\)\s*/g, '').trim();
+          const subtitleMatch = p.name.match(/\((.*?)\)/);
+          const subtitle = subtitleMatch ? subtitleMatch[1] : '';
 
           return (
             <div key={p.id} className="flex flex-col items-center gap-2">
@@ -113,34 +102,53 @@ export function LabelGenerator({ products }: { products: any[] }) {
                     transform: 'scale(0.5)',
                     transformOrigin: 'top left',
                     backgroundColor: '#050505',
-                    fontFamily: '"Arial Black", Impact, "Helvetica Neue", sans-serif',
-                    borderTop: `12px solid ${accentColor}`,
-                    borderBottom: `12px solid ${accentColor}`,
-                    boxSizing: 'border-box'
+                    fontFamily: '"Arial Black", Impact, "Helvetica Neue", sans-serif'
                   }}
                 >
                   {/* Left Side: Logo Area */}
                   <div style={{ 
-                    width: '330px', 
+                    width: '320px', 
                     height: '100%', 
                     display: 'flex', 
                     flexDirection: 'column', 
                     alignItems: 'center', 
                     justifyContent: 'center',
-                    padding: '20px'
+                    paddingTop: '20px'
                   }}>
                     <img 
-                      src={logoSrc} 
-                      alt="Brand Logo" 
+                      src="/logo-savage.png" 
+                      alt="Savage Brands" 
                       style={{ 
-                        width: '100%', 
-                        height: '100%', 
-                        objectFit: 'contain'
+                        width: '180px', 
+                        height: '180px', 
+                        objectFit: 'contain', 
+                        marginBottom: '10px' 
                       }}
                       onError={(e) => { 
+                        // Fallback to text if logo image is missing
                         e.currentTarget.style.display = 'none'; 
+                        const parent = e.currentTarget.parentElement;
+                        if (parent) {
+                          const fallback = document.createElement('div');
+                          fallback.innerHTML = 'SAVAGE<br/>BRANDS';
+                          fallback.style.cssText = 'color: #fff; font-size: 40px; text-align: center; line-height: 1.1; margin-bottom: 20px; text-transform: uppercase;';
+                          parent.insertBefore(fallback, parent.firstChild);
+                        }
                       }}
                     />
+                    <div style={{
+                      fontSize: '36px',
+                      fontWeight: '900',
+                      fontFamily: '"Arial Black", Impact, sans-serif',
+                      textTransform: 'uppercase',
+                      background: 'linear-gradient(to bottom, #f5f5f5 0%, #a0a0a0 45%, #606060 50%, #b3b3b3 60%, #e0e0e0 100%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      filter: 'drop-shadow(2px 2px 2px rgba(0,0,0,1))',
+                      letterSpacing: '-1px'
+                    }}>
+                      Savage Brands
+                    </div>
                   </div>
 
                   {/* Right Side: Text Area */}
@@ -149,62 +157,65 @@ export function LabelGenerator({ products }: { products: any[] }) {
                     height: '100%', 
                     display: 'flex', 
                     flexDirection: 'column', 
-                    justifyContent: 'center',
-                    paddingTop: '20px'
+                    paddingTop: '35px', 
+                    paddingRight: '30px' 
                   }}>
                     
-                    <div style={{ paddingRight: '30px' }}>
-                      {/* Silver Horizontal Line */}
-                      <div style={{ 
-                        width: '100%', 
-                        height: '4px', 
-                        background: 'linear-gradient(to right, #ffffff 0%, #a0a0a0 50%, #ffffff 100%)',
-                        marginBottom: '8px',
-                        boxShadow: '0 1px 2px rgba(0,0,0,0.8)'
-                      }} />
+                    {/* Silver Horizontal Line */}
+                    <div style={{ 
+                      width: '100%', 
+                      height: '6px', 
+                      background: 'linear-gradient(to bottom, #ffffff 0%, #b3b3b3 50%, #666666 100%)',
+                      marginBottom: '10px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.8)'
+                    }} />
 
-                      {/* Product Name (e.g. BPC-157) */}
-                      <div style={{
-                        fontSize: cleanName.length > 8 ? '85px' : '110px',
-                        fontWeight: '900',
-                        lineHeight: '1.1',
-                        textTransform: 'uppercase',
-                        background: 'linear-gradient(to bottom, #ffffff 0%, #d4d4d4 40%, #808080 50%, #c0c0c0 60%, #ffffff 100%)',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        filter: 'drop-shadow(2px 4px 6px rgba(0,0,0,0.9))',
-                        letterSpacing: '-1px',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis'
-                      }}>
-                        {cleanName}
-                      </div>
+                    {/* Product Name (e.g. BPC-157) */}
+                    <div style={{
+                      fontSize: cleanName.length > 8 ? '80px' : '110px',
+                      fontWeight: '900',
+                      lineHeight: '1',
+                      textTransform: 'uppercase',
+                      background: 'linear-gradient(to bottom, #ffffff 0%, #d4d4d4 40%, #808080 50%, #c0c0c0 60%, #ffffff 100%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      WebkitTextStroke: '1px #333',
+                      filter: 'drop-shadow(2px 4px 6px rgba(0,0,0,0.9))',
+                      letterSpacing: '-2px',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    }}>
+                      {cleanName}
+                    </div>
 
-                      {/* RESEARCH COMPOUND subtitle */}
-                      <div style={{
-                        fontSize: '38px',
-                        fontWeight: '800',
-                        color: '#a3a3a3',
-                        fontFamily: '"Arial Black", Impact, sans-serif',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0px',
-                        marginTop: '0px',
-                        marginBottom: '20px'
-                      }}>
-                        RESEARCH COMPOUND
-                      </div>
+                    {/* RESEARCH COMPOUND subtitle */}
+                    <div style={{
+                      fontSize: '34px',
+                      fontWeight: '800',
+                      color: '#c0c0c0',
+                      fontFamily: '"Arial Black", Impact, sans-serif',
+                      textTransform: 'uppercase',
+                      letterSpacing: '1px',
+                      marginTop: '0px',
+                      background: 'linear-gradient(to bottom, #e0e0e0 0%, #999999 100%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                    }}>
+                      Research Compound
                     </div>
 
                     {/* Bottom Color Bar with Dosage */}
                     <div style={{
+                      marginTop: 'auto',
+                      marginBottom: '35px',
                       width: '100%',
                       backgroundColor: accentColor,
                       padding: '12px 0',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      marginLeft: '-10px'
+                      boxShadow: '0 4px 8px rgba(0,0,0,0.5)'
                     }}>
                       <div style={{ 
                         color: '#000000', 
