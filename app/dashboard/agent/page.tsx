@@ -43,11 +43,10 @@ export default async function AgentDashboardPage() {
     redirect('/dashboard/sub-agent');
   }
 
-  // Manufacturer accounts have their own dedicated (translated) dashboard --
-  // the agent dashboard's tier/commission mechanics do not apply to them.
-  if ((profile as { is_manufacturer?: boolean | null }).is_manufacturer === true) {
-    redirect('/dashboard/manufacturer');
-  }
+  // Manufacturer accounts (is_manufacturer = true) use this exact dashboard -
+  // full super-agent feature parity per owner request 2026-07-15. Manufacturer
+  // pricing/ledger behavior lives in DB triggers keyed on the flag, so no UI
+  // branch is needed here.
 
   // 4. Fetch agent storefront profile. Shipping is platform-managed - there
   // are no per-agent shipping API keys.

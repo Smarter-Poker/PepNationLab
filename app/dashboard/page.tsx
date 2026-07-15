@@ -27,11 +27,10 @@ export default async function DashboardPage({
   if (role === 'admin') redirect('/admin');
   if (role === 'shipping') redirect('/shipping');
 
-  // Manufacturer accounts get their own dashboard (fully translated,
-  // commission-based) -- never the agent dashboard or the onboarding wizard.
-  if ((profile as { is_manufacturer?: boolean | null })?.is_manufacturer === true) {
-    redirect('/dashboard/manufacturer');
-  }
+  // Manufacturer accounts (is_manufacturer = true) intentionally flow through
+  // the SAME routing as agents/super agents below - full feature parity per
+  // owner request 2026-07-15. Their pricing/ledger differences live in DB
+  // triggers; the legacy /dashboard/manufacturer page stays reachable by URL.
 
   // Onboarding gate: new + promoted agent-type accounts must finish the guided
   // setup wizard before reaching any dashboard. Admins/shipping above are
