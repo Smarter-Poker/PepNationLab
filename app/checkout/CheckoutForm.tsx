@@ -65,6 +65,8 @@ interface CheckoutFormProps {
   minOrderQty?: number;
   /** Per-Peptide Quantity Discounts (3+/5+/7+ Vials) -- Mirrors The Server */
   volumeDiscountsEnabled?: boolean;
+  /** Manufacturer store: items trade in multiples of 10, no coupons ever. */
+  manufacturerStore?: boolean;
 }
 
 interface SavedAddress {
@@ -89,11 +91,11 @@ interface ActiveFlashSale {
   ends_at: string;
 }
 
-export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, agentSlug, agentPaymentHandles, minOverallQty = 1, minOrderQty = 1, volumeDiscountsEnabled = true }: CheckoutFormProps) {
+export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, agentSlug, agentPaymentHandles, minOverallQty = 1, minOrderQty = 1, volumeDiscountsEnabled = true, manufacturerStore = false }: CheckoutFormProps) {
   const isAgentByRole = userProfile.role === 'agent' || userProfile.role === 'super_agent';
   const isSubAgent = userProfile.is_sub_agent === true;
   const isAgentSelfBuy = isAgentByRole && !isSubAgent;
-  const couponDisabled = isAgentSelfBuy || isSubAgent;
+  const couponDisabled = isAgentSelfBuy || isSubAgent || manufacturerStore;
 
   const availablePaymentMethods = (
     agentPaymentHandles &&
@@ -795,6 +797,13 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
         setError(`This Storefront Requires A Minimum Of ${minOrderQty} Per Peptide. "${violatingItem.name}" Has Only ${violatingItem.quantity}.`);
         return;
       }
+      if (manufacturerStore) {
+        const offStep = cart.find(item => item.quantity < 10 || item.quantity % 10 !== 0);
+        if (offStep) {
+          setError(`This Store Sells In Multiples Of 10. "${offStep.name}" Has ${offStep.quantity} - Please Adjust To 10, 20, 30, And So On.`);
+          return;
+        }
+      }
       if (fulfillmentMethod === 'ship') {
         if (!fullName.trim() || !street.trim() || !city.trim() || !state.trim() || !zip.trim()) {
           setError('All Shipping Fields Are Required For Delivery.');
@@ -868,6 +877,13 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     if (violatingItem) {
       setError(`This Storefront Requires A Minimum Of ${minOrderQty} Per Peptide. "${violatingItem.name}" Has Only ${violatingItem.quantity}.`);
       return;
+    }
+    if (manufacturerStore) {
+      const offStep = cart.find(item => item.quantity < 10 || item.quantity % 10 !== 0);
+      if (offStep) {
+        setError(`This Store Sells In Multiples Of 10. "${offStep.name}" Has ${offStep.quantity} - Please Adjust To 10, 20, 30, And So On.`);
+        return;
+      }
     }
     const overLimit = cart.find(item => item.quantity > 10_000);
     if (overLimit) {

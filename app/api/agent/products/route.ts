@@ -11,6 +11,11 @@ import { parseJsonBody } from '@/lib/schemas/http';
 // agent_id = caller id, so an admin passing through only ever touches the
 // house store's own rows. The admin's cost basis is base_cost (COGS), not a
 // tier-multiplied agent cost.
+//
+// MANUFACTURER STORES (2026-07-15): a profile with is_manufacturer = true has
+// UNRESTRICTED pricing -- no MAP floor, no cost floor, no admin-price ceiling,
+// no margin cap. Their cost basis is their own private
+// agent_products.manufacturer_cost (per 10-pack), which they may edit here.
 
 export async function GET(req: NextRequest) {
   const gate = await requireAgentOrAdmin();
@@ -22,17 +27,19 @@ export async function GET(req: NextRequest) {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('tier')
+      .select('tier, is_manufacturer')
       .eq('id', agentId)
       .maybeSingle();
 
     const tier = ((profile?.tier as AgentTier | null) ?? 'tier_3') as AgentTier;
+    const isManufacturer = Boolean((profile as { is_manufacturer?: boolean | null } | null)?.is_manufacturer);
 
     const { data, error } = await supabase
       .from('agent_products')
       .select(`
         id, agent_id, product_id, custom_name, custom_description,
         custom_image_url, retail_price, margin_percent, is_visible, is_on_sale, sale_price, sort_order,
+        manufacturer_cost,
         products (name, description, image_url, category, in_stock, inventory_count,
                  unit_size, unit_measure, base_cost,
                  max_retail_price,
@@ -49,10 +56,12 @@ export async function GET(req: NextRequest) {
 
     // Resolve the agent's pricing context once and price the whole catalog in
     // memory - previously this issued 2-3 queries per agent product.
+    // Manufacturers have no tier-derived cost: their cost basis is their own
+    // manufacturer_cost column, surfaced per row below.
     const pricedProducts = rows
       .filter(ap => ap.product_id && (ap.products as any)?.base_cost != null && Number((ap.products as any).base_cost) > 0)
       .map(ap => ({ id: ap.product_id as string, base_cost: Number((ap.products as any).base_cost) }));
-    const costMap = gate.isAdmin
+    const costMap = (gate.isAdmin || isManufacturer)
       ? new Map<string, number>()
       : await computeAgentCostsForAgent(supabase, agentId, tier, pricedProducts);
 
@@ -63,10 +72,15 @@ export async function GET(req: NextRequest) {
         : 0;
 
       // Admin cost basis is base_cost (true COGS on the house store); agents
-      // get their tier-multiplied / custom-scaled cost.
-      let agentCost = 0;
-      if (baseCost > 0) {
-         agentCost = gate.isAdmin ? baseCost : (costMap.get(productId) ?? 0);
+      // get their tier-multiplied / custom-scaled cost; manufacturers get
+      // their own entered production cost (may be null until they set it).
+      let agentCost: number | null = 0;
+      if (isManufacturer) {
+        agentCost = (ap as { manufacturer_cost?: number | null }).manufacturer_cost != null
+          ? Number((ap as { manufacturer_cost?: number | null }).manufacturer_cost)
+          : null;
+      } else if (baseCost > 0) {
+        agentCost = gate.isAdmin ? baseCost : (costMap.get(productId) ?? 0);
       }
 
       const { base_cost: _stripped, ...safeProducts } = (ap.products as any) ?? {};
@@ -75,8 +89,9 @@ export async function GET(req: NextRequest) {
       return {
         ...ap,
         products: safeProducts,
-        agent_cost: baseCost > 0 ? agentCost : null,
+        agent_cost: isManufacturer ? agentCost : (baseCost > 0 ? agentCost : null),
         agent_tier: tier,
+        is_manufacturer: isManufacturer,
         max_retail_price: (ap.products as any)?.max_retail_price ?? null,
       };
     });
@@ -96,11 +111,11 @@ export async function PATCH(req: NextRequest) {
   if (!gate.ok) return gate.response;
 
   // Schema-locked body: money fields (retail_price, sale_price,
-  // margin_percent) are rejected at the boundary if they are NaN, Infinity,
-  // strings, or negative. Previously a NaN sale_price sailed through the
-  // MAP/cost-floor guards below (NaN comparisons are always false) and was
-  // written raw to agent_products.sale_price -- a column checkout pricing
-  // reads directly.
+  // margin_percent, manufacturer_cost) are rejected at the boundary if they
+  // are NaN, Infinity, strings, or negative. Previously a NaN sale_price
+  // sailed through the MAP/cost-floor guards below (NaN comparisons are
+  // always false) and was written raw to agent_products.sale_price -- a
+  // column checkout pricing reads directly.
   const parsed = await parseJsonBody(req, AgentProductPatchSchema);
   if (!parsed.ok) return parsed.response;
   const {
@@ -113,6 +128,7 @@ export async function PATCH(req: NextRequest) {
     is_visible,
     is_on_sale,
     sale_price,
+    manufacturer_cost,
   } = parsed.data;
 
   try {
@@ -137,26 +153,22 @@ export async function PATCH(req: NextRequest) {
     let agentCostPer10 = 0;
     // Per-agent exemption from the retail margin ceiling (top sellers, e.g. Savage Brands).
     let marginCapExempt = false;
+    // Manufacturer stores: zero pricing restrictions of any kind.
+    let isManufacturer = false;
     if (gate.isAdmin) {
       const rawBase = (check.products as any)?.base_cost;
       agentCostPer10 = rawBase != null ? Number(rawBase) : 0;
     } else {
       const { data: profData } = await supabase
         .from('profiles')
-        .select('tier')
+        .select('tier, margin_cap_exempt, is_manufacturer')
         .eq('id', gate.user.id)
         .maybeSingle();
-      if (profData?.tier) {
+      isManufacturer = Boolean((profData as { is_manufacturer?: boolean | null } | null)?.is_manufacturer);
+      marginCapExempt = Boolean((profData as { margin_cap_exempt?: boolean } | null)?.margin_cap_exempt);
+      if (!isManufacturer && profData?.tier) {
         agentCostPer10 = await computeAgentCostForAgent(supabase, check.product_id, gate.user.id, profData.tier as AgentTier);
       }
-      // Isolated, fail-safe read of the margin-cap exemption so a schema or
-      // query issue here can never disturb core tier/cost resolution above.
-      const { data: exemptRow } = await supabase
-        .from('profiles')
-        .select('margin_cap_exempt')
-        .eq('id', gate.user.id)
-        .maybeSingle();
-      marginCapExempt = Boolean((exemptRow as { margin_cap_exempt?: boolean } | null)?.margin_cap_exempt);
     }
 
     let resolvedRetailPrice: number | undefined;
@@ -178,49 +190,55 @@ export async function PATCH(req: NextRequest) {
       ? Number((check.products as any).max_retail_price)
       : null;
 
-    if (resolvedRetailPrice !== undefined && resolvedRetailPrice < minRetailPrice) {
-      return NextResponse.json(
-        {
-          error: `Listed price ($${(resolvedRetailPrice / 10).toFixed(2)}/vial) cannot be below the Minimum Advertised Price ($${(minRetailPrice / 10).toFixed(2)}/vial).`,
-        },
-        { status: 422 }
-      );
+    // ── Pricing guardrails ─────────────────────────────────────────────
+    // Manufacturers are EXEMPT from every floor, ceiling, and margin cap:
+    // they set any price in either direction. (The DB-level ceiling trigger
+    // has the same manufacturer bypass.)
+    if (!isManufacturer) {
+      if (resolvedRetailPrice !== undefined && resolvedRetailPrice < minRetailPrice) {
+        return NextResponse.json(
+          {
+            error: `Listed price ($${(resolvedRetailPrice / 10).toFixed(2)}/vial) cannot be below the Minimum Advertised Price ($${(minRetailPrice / 10).toFixed(2)}/vial).`,
+          },
+          { status: 422 }
+        );
+      }
+
+      if (resolvedRetailPrice !== undefined && resolvedRetailPrice < agentCostPer10) {
+        return NextResponse.json(
+          {
+            error: `Listed price ($${(resolvedRetailPrice / 10).toFixed(2)}/vial) cannot be below your cost ($${(agentCostPer10 / 10).toFixed(2)}/vial).`,
+          },
+          { status: 422 }
+        );
+      }
+
+      // Maximum price ceiling: agents may never exceed the admin store price.
+      // Admins are exempt — they ARE the source of truth for max_retail_price.
+      if (!gate.isAdmin && maxRetailPrice !== null && resolvedRetailPrice !== undefined && resolvedRetailPrice > maxRetailPrice) {
+        return NextResponse.json(
+          {
+            error: `Listed price ($${(resolvedRetailPrice / 10).toFixed(2)}/vial) exceeds the maximum allowed price ($${(maxRetailPrice / 10).toFixed(2)}/vial). Agents may not price above the admin store rate.`,
+          },
+          { status: 422 }
+        );
+      }
+
+      // The margin ceiling protects the marketplace from agent price gouging.
+      // It does NOT apply to the admin house store: the admin's cost basis is
+      // raw COGS (base_cost), so healthy retail prices are naturally far above
+      // 300% of cost.
+      if (!gate.isAdmin && !marginCapExempt && resolvedMarginPercent !== undefined && resolvedMarginPercent > maxMargin) {
+        return NextResponse.json(
+          {
+            error: `Requested margin (${resolvedMarginPercent}%) exceeds the platform maximum of ${maxMargin}%.`,
+          },
+          { status: 422 }
+        );
+      }
     }
 
-    if (resolvedRetailPrice !== undefined && resolvedRetailPrice < agentCostPer10) {
-      return NextResponse.json(
-        {
-          error: `Listed price ($${(resolvedRetailPrice / 10).toFixed(2)}/vial) cannot be below your cost ($${(agentCostPer10 / 10).toFixed(2)}/vial).`,
-        },
-        { status: 422 }
-      );
-    }
-
-    // Maximum price ceiling: agents may never exceed the admin store price.
-    // Admins are exempt — they ARE the source of truth for max_retail_price.
-    if (!gate.isAdmin && maxRetailPrice !== null && resolvedRetailPrice !== undefined && resolvedRetailPrice > maxRetailPrice) {
-      return NextResponse.json(
-        {
-          error: `Listed price ($${(resolvedRetailPrice / 10).toFixed(2)}/vial) exceeds the maximum allowed price ($${(maxRetailPrice / 10).toFixed(2)}/vial). Agents may not price above the admin store rate.`,
-        },
-        { status: 422 }
-      );
-    }
-
-    // The margin ceiling protects the marketplace from agent price gouging.
-    // It does NOT apply to the admin house store: the admin's cost basis is
-    // raw COGS (base_cost), so healthy retail prices are naturally far above
-    // 300% of cost.
-    if (!gate.isAdmin && !marginCapExempt && resolvedMarginPercent !== undefined && resolvedMarginPercent > maxMargin) {
-      return NextResponse.json(
-        {
-          error: `Requested margin (${resolvedMarginPercent}%) exceeds the platform maximum of ${maxMargin}%.`,
-        },
-        { status: 422 }
-      );
-    }
-
-    if (retail_price !== undefined && Number.isFinite(Number(retail_price)) && agentCostPer10 > 0) {
+    if (!isManufacturer && retail_price !== undefined && Number.isFinite(Number(retail_price)) && agentCostPer10 > 0) {
       resolvedMarginPercent = Math.round((resolvedRetailPrice! / agentCostPer10 - 1) * 100 * 100) / 100;
     }
 
@@ -238,7 +256,7 @@ export async function PATCH(req: NextRequest) {
         { status: 422 }
       );
     }
-    if (activeIsOnSale || salePriceBeingSet) {
+    if (!isManufacturer && (activeIsOnSale || salePriceBeingSet)) {
       if (!(activeSalePrice >= minRetailPrice)) {
         return NextResponse.json(
           {
@@ -269,7 +287,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     const checkRetailPrice = activeIsOnSale ? activeSalePrice : (resolvedRetailPrice !== undefined ? resolvedRetailPrice : Number(check.retail_price));
-    if (checkRetailPrice > 0 && agentCostPer10 > 0) {
+    if (!isManufacturer && checkRetailPrice > 0 && agentCostPer10 > 0) {
       const newMarginPct = ((checkRetailPrice - agentCostPer10) / checkRetailPrice) * 100;
 
       const { data: subAgents } = await supabase
@@ -328,6 +346,18 @@ export async function PATCH(req: NextRequest) {
       sale_price: sale_price !== undefined ? (sale_price ?? null) : undefined,
       updated_at: new Date().toISOString(),
     };
+
+    // manufacturer_cost is the manufacturer's own private production cost per
+    // 10-pack (profit display input). Only a manufacturer may write it.
+    if (manufacturer_cost !== undefined) {
+      if (!isManufacturer) {
+        return NextResponse.json(
+          { error: 'Only Manufacturer Accounts Can Set A Manufacturer Cost.' },
+          { status: 403 }
+        );
+      }
+      updatePayload.manufacturer_cost = manufacturer_cost ?? null;
+    }
 
     Object.keys(updatePayload).forEach(k => updatePayload[k] === undefined && delete updatePayload[k]);
 

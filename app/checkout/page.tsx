@@ -66,12 +66,13 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
   let minOverallQty = 1;
   let minOrderQty = 1;
   let volumeDiscountsEnabled = true;
+  let manufacturerStore = false;
   try {
 
     if (agentSlug) {
       const { data: ap } = await supabase
         .from('agent_profiles')
-        .select('payment_handles, min_overall_qty, min_order_qty, volume_pricing_enabled')
+        .select('payment_handles, min_overall_qty, min_order_qty, volume_pricing_enabled, is_manufacturer_store')
         .eq('slug', agentSlug)
         .maybeSingle();
       if (ap?.payment_handles) {
@@ -90,10 +91,13 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
       if ((ap as { volume_pricing_enabled?: boolean | null } | null)?.volume_pricing_enabled === false) {
         volumeDiscountsEnabled = false;
       }
+      if ((ap as { is_manufacturer_store?: boolean | null } | null)?.is_manufacturer_store === true) {
+        manufacturerStore = true;
+      }
     } else if (profile.referring_agent_id) {
       const { data: ap } = await supabase
         .from('agent_profiles')
-        .select('payment_handles, min_overall_qty, min_order_qty, volume_pricing_enabled')
+        .select('payment_handles, min_overall_qty, min_order_qty, volume_pricing_enabled, is_manufacturer_store')
         .eq('id', profile.referring_agent_id)
         .maybeSingle();
       if (ap?.payment_handles) {
@@ -112,9 +116,17 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
       if ((ap as { volume_pricing_enabled?: boolean | null } | null)?.volume_pricing_enabled === false) {
         volumeDiscountsEnabled = false;
       }
+      if ((ap as { is_manufacturer_store?: boolean | null } | null)?.is_manufacturer_store === true) {
+        manufacturerStore = true;
+      }
     }
   } catch {
     // Non-blocking - checkout still works without agent handles
+  }
+
+  // Manufacturer stores never run quantity discounts, whatever the column says.
+  if (manufacturerStore) {
+    volumeDiscountsEnabled = false;
   }
 
   return (
@@ -127,6 +139,7 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
       minOverallQty={minOverallQty}
       minOrderQty={minOrderQty}
       volumeDiscountsEnabled={volumeDiscountsEnabled}
+      manufacturerStore={manufacturerStore}
     />
   );
 }

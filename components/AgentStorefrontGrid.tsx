@@ -98,6 +98,8 @@ interface Props {
   agentId?: string | null;
   coaByProductId?: Record<string, string>;
   volumePricingEnabled?: boolean;
+  /** Manufacturer store: every product trades in 10-vial packs, storewide. */
+  manufacturerStore?: boolean;
   isStorefrontOwner?: boolean;
   viewerTier?: string;
   minOrderQty?: number;
@@ -304,6 +306,7 @@ export default function AgentStorefrontGrid({
   agentId = null,
   coaByProductId,
   volumePricingEnabled,
+  manufacturerStore = false,
   isStorefrontOwner,
   viewerTier,
   minOrderQty = 1,
@@ -858,6 +861,9 @@ export default function AgentStorefrontGrid({
   const overallMin  = minOverallQty ?? 1;
   // Bac. water is sold only in 10-packs (increments of 10), storewide.
   const isBacWaterItem = (name: string | null | undefined, slug: string | null | undefined) => slug === 'bac-water' || /bac\.?\s*water/i.test(name || '');
+  // Manufacturer stores trade EVERYTHING in 10-vial packs, storewide -- the
+  // same mechanics Bac. Water already uses (10-pack pricing, steps of 10).
+  const packOf10 = (name: string | null | undefined, slug: string | null | undefined) => manufacturerStore === true || isBacWaterItem(name, slug);
 
   // Track the most recently viewed product for recommendations context
   const lastViewedProductId = useRef<string | null>(null);
@@ -1927,13 +1933,17 @@ export default function AgentStorefrontGrid({
     // single source of truth for whether the item is actually added.
     const wasCapped = maxQty !== Infinity && (cartItemsRef.current[variantId] || 0) >= maxQty;
 
+    // Pack items (Bac. Water, and every product on a manufacturer store)
+    // add in steps of 10 vials; everything else steps by 1.
+    const addStep = packOf10(item.products?.name, item.products?.compound_slug) ? 10 : 1;
+
     setCartItems(prev => {
       const currentQty = prev[variantId] || 0;
-      if (maxQty !== Infinity && currentQty >= maxQty) {
+      if (maxQty !== Infinity && currentQty + addStep > maxQty) {
         toast.error(`Maximum Available Stock (${maxQty}) Reached.`);
         return prev;
       }
-      return { ...prev, [variantId]: currentQty + 1 };
+      return { ...prev, [variantId]: currentQty + addStep };
     });
 
     // Funnel step: the add_to_cart event the agent analytics view counts. Before
@@ -1941,7 +1951,7 @@ export default function AgentStorefrontGrid({
     if (!wasCapped) {
       trackStorefrontEvent(agentSlug, 'add_to_cart', {
         product_id: item.product_id,
-        quantity: 1,
+        quantity: addStep,
         amount_cents: Number.isFinite(Number(item.retail_price)) ? Math.round(Number(item.retail_price) * 100) : undefined,
       });
     }
@@ -2465,7 +2475,7 @@ export default function AgentStorefrontGrid({
                     const perVialDisplay = isOnSale ? (defaultV as any).sale_price / 10 : perVialBase;
                     const perVialOriginal = perVialBase;
                     
-                    const isBW = isBacWaterItem(group.name, defaultV.products?.compound_slug);
+                    const isBW = packOf10(group.name, defaultV.products?.compound_slug);
                     const displayPrice = isBW ? perVialDisplay * 10 : perVialDisplay;
                       const _marketAvgVial = Number((defaultV as any).products?.market_avg_price) || 0;
                       const _marketAvgDisplay = isBW ? _marketAvgVial * 10 : _marketAvgVial;
@@ -3275,9 +3285,10 @@ export default function AgentStorefrontGrid({
                   );
                   const perVial = item.retail_price / 10;
                   // Bac. water sells in fixed 10-packs; show it as packs (10x), not loose vials.
-                  const isBW = isBacWaterItem(item.products?.name, item.products?.compound_slug);
+                  const isBWReal = isBacWaterItem(item.products?.name, item.products?.compound_slug);
+                  const isBW = packOf10(item.products?.name, item.products?.compound_slug);
                   const packSize = 10;
-                  const lineName = isBW ? 'Bac. Water 10x 10ml Vials' : `${name}${size ? ` (${size})` : ''}`;
+                  const lineName = isBWReal ? 'Bac. Water 10x 10ml Vials' : isBW ? `${name}${size ? ` (${size})` : ''} - 10 Pack` : `${name}${size ? ` (${size})` : ''}`;
                   const unitPrice = isBW ? perVial * packSize : perVial;
                   const displayCount = isBW ? Math.round(qty / packSize) : qty;
                   return (
@@ -3990,7 +4001,7 @@ export default function AgentStorefrontGrid({
                   const selectedVId = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
                   const activeV = detailProduct.variants.find(v => v.id === selectedVId) || detailProduct.variants[0];
                   const qty = pendingQty;
-                  const isBW = isBacWaterItem(detailProduct.name, detailProduct.compoundSlug);
+                  const isBW = packOf10(detailProduct.name, detailProduct.compoundSlug);
                   const step = isBW ? 10 : selfBuyStep;
                   const minQ = isBW ? 10 : selfBuyMin;
                   const rawPrice = (activeV as any).is_on_sale && (activeV as any).sale_price

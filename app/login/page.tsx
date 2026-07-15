@@ -6,8 +6,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Key } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { safeRelativePath } from '@/lib/safe-redirect';
+import { LanguageProvider, LanguageToggle, useI18n } from '@/lib/i18n';
 
 function LoginPageInner() {
+  const { t } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [identifier, setIdentifier] = useState('');
@@ -84,7 +86,7 @@ function LoginPageInner() {
         // supabase.auth.signInWithPassword, so it must be a real string.
         const parsed = AuthResolveResponseSchema.safeParse(rawData);
         if (!res.ok || !parsed.success) {
-          setError('Invalid Username Or Password');
+          setError(t('login_invalid'));
           setLoading(false);
           return;
         }
@@ -106,7 +108,7 @@ function LoginPageInner() {
           body: JSON.stringify({ event_type: 'login_failed', identifier: raw }),
           keepalive: true,
         }).catch(() => {});
-        setError('Invalid Username Or Password');
+        setError(t('login_invalid'));
         setLoading(false);
         return;
       }
@@ -207,17 +209,17 @@ function LoginPageInner() {
               <Key size={22} aria-hidden="true" />
             </div>
             <h2 style={{ fontSize: '1.1rem', marginBottom: 'var(--space-3)', color: 'var(--white)' }}>
-              Password Reset
+              {t('login_reset_title')}
             </h2>
             <p style={{ fontSize: '0.9rem', color: 'var(--grey-300)', lineHeight: 1.6 }}>
-              Contact Your Research Agent If You Forgot Your Password Or Need It Reset
+              {t('login_reset_body')}
             </p>
             <button
               onClick={() => setShowForgotPopup(false)}
               className="btn btn-primary"
               style={{ marginTop: 'var(--space-6)', width: '100%', justifyContent: 'center' }}
             >
-              Got It
+              {t('got_it')}
             </button>
           </div>
         </div>
@@ -225,9 +227,12 @@ function LoginPageInner() {
 
       <div style={{ width: '100%', maxWidth: 420, position: 'relative' }}>
         <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-8)', boxShadow: '0 0 40px rgba(104,211,145,0.05)' }}>
-          <h1 className="animated-gradient-text" style={{ marginBottom: 'var(--space-2)', fontSize: '1.4rem', textAlign: 'center' }}>Sign In</h1>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--space-4)' }}>
+            <LanguageToggle compact />
+          </div>
+          <h1 className="animated-gradient-text" style={{ marginBottom: 'var(--space-2)', fontSize: '1.4rem', textAlign: 'center' }}>{t('login_button')}</h1>
           <p style={{ marginBottom: 'var(--space-6)', fontSize: '0.85rem', color: 'var(--grey-400)', textAlign: 'center' }}>
-            Access Your Account
+            {t('login_subtitle')}
           </p>
 
           {error && (
@@ -256,18 +261,18 @@ function LoginPageInner() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-5)' }}>
             <div style={{ flex: 1, height: 1, background: 'rgba(168,180,192,0.2)' }} />
-            <span style={{ fontSize: '0.75rem', color: 'var(--grey-500)' }}>Or Sign In With A Username</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--grey-500)' }}>{t('login_or_username')}</span>
             <div style={{ flex: 1, height: 1, background: 'rgba(168,180,192,0.2)' }} />
           </div>
 
           <form onSubmit={handleLogin}>
             <div className="form-group stagger-fade-in stagger-1">
-              <label className="form-label" htmlFor="identifier">Username</label>
+              <label className="form-label" htmlFor="identifier">{t('login_username_label')}</label>
               <input
                 id="identifier"
                 type="text"
                 className="form-input"
-                placeholder="Enter Your Username"
+                placeholder={t('login_username_placeholder')}
                 value={identifier}
                 onChange={e => setIdentifier(e.target.value)}
                 required
@@ -278,7 +283,7 @@ function LoginPageInner() {
             </div>
 
             <div className="form-group stagger-fade-in stagger-2">
-              <label className="form-label" htmlFor="password">Password</label>
+              <label className="form-label" htmlFor="password">{t('login_password')}</label>
               <input
                 id="password"
                 type="password"
@@ -296,7 +301,7 @@ function LoginPageInner() {
                 href="/forgot-password"
                 style={{ fontSize: '0.8rem', color: 'var(--teal)', textDecoration: 'none' }}
               >
-                Forgot Password?
+                {t('login_forgot')}
               </a>
             </div>
 
@@ -307,7 +312,7 @@ function LoginPageInner() {
                 style={{ width: '100%', maxWidth: 300, justifyContent: 'center' }}
                 disabled={loading || !identifier || !password}
               >
-                {loading ? 'Authenticating...' : 'Sign In To Laboratory'}
+                {loading ? `${t('login_authenticating')}...` : t('login_button_lab')}
               </button>
             </div>
           </form>
@@ -318,14 +323,14 @@ function LoginPageInner() {
             textAlign: 'center'
           }}>
             <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>
-              Don&apos;t Have An Account?{' '}
-              <a href="/signup" style={{ color: 'var(--teal)' }}>Create Account</a>
+              {t('login_no_account')}{' '}
+              <a href="/signup" style={{ color: 'var(--teal)' }}>{t('login_create_account')}</a>
             </p>
           </div>
         </div>
 
         <p style={{ marginTop: 'var(--space-4)', textAlign: 'center', fontSize: '0.75rem', color: 'var(--grey-600)' }}>
-          For Qualified Researchers Only. Research Use Only.
+          {t('login_ruo_footer')}
         </p>
       </div>
     </div>
@@ -334,6 +339,7 @@ function LoginPageInner() {
 
 export default function LoginPage() {
   return (
+    <LanguageProvider>
     <Suspense fallback={
       <div role="status" style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--black)' }}>
         <div aria-hidden="true" style={{ width: 40, height: 40, borderRadius: '50%', border: '2px solid var(--teal)', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
@@ -343,5 +349,6 @@ export default function LoginPage() {
     }>
       <LoginPageInner />
     </Suspense>
+    </LanguageProvider>
   );
 }

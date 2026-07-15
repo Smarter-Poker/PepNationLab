@@ -18,7 +18,7 @@ export default async function AgentDashboardPage() {
   // 2. Fetch user profile
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, email, full_name, role, tier, is_super_agent, is_sub_agent')
+    .select('id, email, full_name, role, tier, is_super_agent, is_sub_agent, is_manufacturer')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -41,6 +41,12 @@ export default async function AgentDashboardPage() {
   // /dashboard/page.tsx redirect that landed in Round 4.
   if ((profile as { is_sub_agent?: boolean | null }).is_sub_agent === true) {
     redirect('/dashboard/sub-agent');
+  }
+
+  // Manufacturer accounts have their own dedicated (translated) dashboard --
+  // the agent dashboard's tier/commission mechanics do not apply to them.
+  if ((profile as { is_manufacturer?: boolean | null }).is_manufacturer === true) {
+    redirect('/dashboard/manufacturer');
   }
 
   // 4. Fetch agent storefront profile. Shipping is platform-managed - there

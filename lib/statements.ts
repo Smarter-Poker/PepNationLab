@@ -31,12 +31,16 @@ export async function computeStatement(
 
   const { data: agent, error: agentError } = await supabase
     .from('profiles')
-    .select('tier, is_super_agent, parent_agent_id, account_type')
+    .select('tier, is_super_agent, parent_agent_id, account_type, is_manufacturer')
     .eq('id', agentId)
     .maybeSingle();
 
   if (agentError || !agent) {
     return { ok: false, error: 'Agent Profile Not Found.' };
+  }
+
+  if ((agent as { is_manufacturer?: boolean | null }).is_manufacturer === true) {
+    return { ok: false, error: 'Manufacturer accounts settle through the manufacturer commission ledger, not COGS statements.' };
   }
 
   if (agent.account_type === 'prepaid') {

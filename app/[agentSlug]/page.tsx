@@ -43,6 +43,7 @@ const getAgentProfileBySlug = cache(async (agentSlug: string) => {
       qr_code_data,
       is_active,
       volume_pricing_enabled,
+      is_manufacturer_store,
       min_order_qty,
       min_overall_qty,
       storefront_renamed_at,
@@ -112,6 +113,7 @@ async function AgentStorefrontDataLoader({
   const products = productsResult.data;
 
   const isStorefrontOwner = !!user && userProfile?.id === agent.id;
+  const isManufacturerStore = (agent as { is_manufacturer_store?: boolean | null }).is_manufacturer_store === true;
 
   // -- Run independent queries in parallel - saves ~2 sequential round-trips --
   const productIds = (products ?? [])
@@ -169,7 +171,9 @@ async function AgentStorefrontDataLoader({
 
   let productsWithCost: Array<Record<string, unknown>> =
     (products ?? []) as unknown as Array<Record<string, unknown>>;
-  if (isStorefrontOwner && (products?.length ?? 0) > 0) {
+  // Manufacturer owners have no tier-derived cost -- their private cost lives
+  // on agent_products.manufacturer_cost and renders on their own dashboard.
+  if (isStorefrontOwner && !isManufacturerStore && (products?.length ?? 0) > 0) {
     const svc = await createServiceClient();
     const ownerTier = ((userProfile as { tier?: AgentTier } | null)?.tier ?? 'tier_3') as AgentTier;
     // Resolve the owner's pricing context once and price the whole catalog in
@@ -287,7 +291,8 @@ async function AgentStorefrontDataLoader({
         agentId={agent.id}
         bundles={storeBundles}
         coaByProductId={coaByProductId}
-        volumePricingEnabled={(agent as any).volume_pricing_enabled !== false}
+        volumePricingEnabled={isManufacturerStore ? false : (agent as any).volume_pricing_enabled !== false}
+        manufacturerStore={isManufacturerStore}
         isStorefrontOwner={isStorefrontOwner}
         viewerTier={(userProfile as any)?.tier ?? 'tier_3'}
         minOrderQty={agent.min_order_qty ?? 1}

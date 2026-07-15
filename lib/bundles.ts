@@ -123,11 +123,17 @@ export async function getEffectiveBundlesForStore(
     readBundlesConfig(supabase, 'id', storeAgentId),
     supabase
       .from('profiles')
-      .select('parent_agent_id')
+      .select('parent_agent_id, is_manufacturer')
       .eq('id', storeAgentId)
       .maybeSingle(),
     readBundlesConfig(supabase, 'slug', DEFAULT_STORE_SLUG),
   ]);
+
+  // Manufacturer stores carry no bundles at all: their prices are their own
+  // and house 'global' bundle discounts must never cascade onto them.
+  if ((ownerProfileRes as { data: { is_manufacturer?: boolean | null } | null })?.data?.is_manufacturer === true) {
+    return [];
+  }
 
   const parentId = (ownerProfileRes as { data: { parent_agent_id?: string | null } | null })
     ?.data?.parent_agent_id;

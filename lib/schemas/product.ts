@@ -72,6 +72,8 @@ export const AgentProductPatchSchema = z.object({
   is_visible: z.boolean().optional(),
   is_on_sale: z.boolean().optional(),
   sale_price: moneyAmount.nullable().optional(),
+  /** Manufacturer accounts only: their private production cost per 10-pack. */
+  manufacturer_cost: moneyAmount.nullable().optional(),
 });
 export type AgentProductPatchInput = z.infer<typeof AgentProductPatchSchema>;
 

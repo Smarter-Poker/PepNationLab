@@ -193,6 +193,43 @@ export async function requireAgentOrAdmin(): Promise<
 }
 
 /**
+ * Guards manufacturer-only API routes (/api/manufacturer/*). A manufacturer
+ * is an agent-type profile with is_manufacturer = true: the factory's own
+ * store. Every manufacturer route scopes its queries to the caller's id, so
+ * nothing here may pass an admin or ordinary agent through.
+ */
+export async function requireManufacturer(): Promise<
+  | { ok: true; user: { id: string } }
+  | { ok: false; response: NextResponse }
+> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+    };
+  }
+
+  const service = await createServiceClient();
+  const { data: profile } = await service
+    .from('profiles')
+    .select('role, is_manufacturer, is_active')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (!profile || profile.is_manufacturer !== true || profile.is_active === false) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: 'Forbidden. Manufacturer Access Required.' }, { status: 403 }),
+    };
+  }
+
+  return { ok: true, user: { id: user.id } };
+}
+
+/**
  * Guards API routes that need ANY signed-in user (researcher / agent /
  * super_agent / admin). Returns the same { ok, user: { id }, response }
  * shape used by requireAgent so existing callers can swap freely.

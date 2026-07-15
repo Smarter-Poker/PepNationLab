@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
     // Get researcher profile (full_name added for buyer_name on order insert)
     const { data: profile, error: profileError } = await serviceSupabase
       .from('profiles')
-      .select('id, full_name, contact_email, email_verified, referring_agent_id, role, tier, parent_agent_id, account_type, prepaid_balance, credit_limit, max_auto_approve_limit, auto_approve_orders, is_sub_agent, referring_sub_agent_id')
+      .select('id, full_name, contact_email, email_verified, referring_agent_id, role, tier, parent_agent_id, account_type, prepaid_balance, credit_limit, max_auto_approve_limit, auto_approve_orders, is_sub_agent, referring_sub_agent_id, is_manufacturer, manufacturer_commission_pct')
       .eq('id', user.id)
       .maybeSingle();
 
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
         superAgentProfile = sap;
       }
     } else if (profile.referring_agent_id) {
-      const { data: ap } = await serviceSupabase.from('profiles').select('id, role, tier, parent_agent_id, auto_approve_orders, account_type, max_auto_approve_limit, is_sub_agent, referring_sub_agent_id').eq('id', profile.referring_agent_id).maybeSingle();
+      const { data: ap } = await serviceSupabase.from('profiles').select('id, role, tier, parent_agent_id, auto_approve_orders, account_type, max_auto_approve_limit, is_sub_agent, referring_sub_agent_id, is_manufacturer, manufacturer_commission_pct').eq('id', profile.referring_agent_id).maybeSingle();
       agentProfile = ap;
       if (ap && ap.parent_agent_id) {
         const { data: sap } = await serviceSupabase.from('profiles').select('id, tier, account_type, prepaid_balance, credit_limit, max_auto_approve_limit, auto_approve_orders').eq('id', ap.parent_agent_id).maybeSingle();
@@ -155,6 +155,26 @@ export async function POST(request: NextRequest) {
     if (isSubAgent && !agentProfile) {
       return NextResponse.json(
         { error: 'Sub-Agent Account Configuration Error. Please Contact Your Parent Agent.' },
+        { status: 403 }
+      );
+    }
+
+    // MANUFACTURER STORES (2026-07-15): the agent of record is the factory
+    // itself. Their store trades on its own rules -- every line in multiples
+    // of 10, no coupons/promos/automatic discounts, pricing unrestricted, and
+    // the platform keeps manufacturer_commission_pct of the product subtotal
+    // (recorded in manufacturer_ledger after the order commits).
+    const isManufacturerStore = Boolean(
+      (agentProfile as { is_manufacturer?: boolean | null } | null)?.is_manufacturer
+    );
+    const manufacturerCommissionPct = isManufacturerStore
+      ? Math.min(Math.max(Number((agentProfile as { manufacturer_commission_pct?: unknown } | null)?.manufacturer_commission_pct ?? 10) || 10, 0), 100)
+      : 0;
+
+    // Manufacturers supply the inventory -- they never buy through the platform.
+    if (isManufacturerStore && (isAgentSelfBuy || explicitWholesale === true)) {
+      return NextResponse.json(
+        { error: 'Manufacturer Accounts Supply Inventory And Do Not Purchase Through The Platform.' },
         { status: 403 }
       );
     }
@@ -254,6 +274,14 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      // Manufacturer stores trade in 10-vial multiples only -- no singles.
+      if (isManufacturerStore && (qty < 10 || qty % 10 !== 0)) {
+        return NextResponse.json(
+          { error: `"${dbProduct.name}" Is Sold In Multiples Of 10 On This Store. Please Set The Quantity To 10, 20, 30, And So On.` },
+          { status: 400 }
+        );
+      }
+
       // China/global ships infinitely, so a checkout never blocks on stock
       // availability. Agent LOCAL stock is the only finite inventory and is
       // still enforced precisely by reserve_inventory() below (it caps localQty
@@ -338,7 +366,7 @@ export async function POST(request: NextRequest) {
     const wholesaleExplicit = explicitWholesale === true &&
       (profile.role === 'agent' || profile.role === 'super_agent') &&
       !isSubAgent;
-    const flashSaleEligible = !isAgentSelfBuy && !isSubAgent && !wholesaleExplicit;
+    const flashSaleEligible = !isAgentSelfBuy && !isSubAgent && !wholesaleExplicit && !isManufacturerStore;
 
     const agentTier = agentProfile?.tier || 'tier_3';
     const superAgentTier = superAgentProfile ? (superAgentProfile.tier || 'tier_3') : null;
@@ -442,7 +470,7 @@ export async function POST(request: NextRequest) {
     const bundleCustomPriceByName = new Map<string, number>();
     /** Total individual retail price for all members of a bundle (to compute per-item shares). */
     const bundleFullPriceByName = new Map<string, number>();
-    if (agentProfile) {
+    if (agentProfile && !isManufacturerStore) {
       // Effective bundles for the agent of record: the store's own bundles plus
       // any cascaded from a parent super-agent ('downline') or the house store
       // ('global'). The shared resolver keeps the authoritative checkout discount
@@ -495,6 +523,9 @@ export async function POST(request: NextRequest) {
     let volumeDiscountsEnabled = true;
     if (agentProfile && !isAgentSelfBuy && !isSubAgent) {
       volumeDiscountsEnabled = agentConfig?.volume_pricing_enabled !== false;
+    }
+    if (isManufacturerStore) {
+      volumeDiscountsEnabled = false;
     }
 
     // 4c. Pre-calculate unit retail sums for custom-priced bundles in the cart
@@ -598,7 +629,13 @@ export async function POST(request: NextRequest) {
       const isWholesalePurchase = isAgentSelfBuy || isSubAgent;
 
       if (agentProfile) {
-        if (superAgentProfile) {
+        if (isManufacturerStore) {
+          // The platform's take per vial is the commission slice of the
+          // manufacturer's own retail price. Recorded as unit_cost_price so
+          // order snapshots carry the split; the authoritative per-order split
+          // lives in manufacturer_ledger (written after the insert below).
+          costPrice = Math.round(retailPrice * (manufacturerCommissionPct / 100) * 100) / 100;
+        } else if (superAgentProfile) {
           // Fix 7: removed ?? 1.7 hardcoded fallback
           const saMultiplier = superAgentOverrides[dbProduct.id] ?? tierMultipliers[superAgentProfile.tier || 'tier_3'];
           // A missing pricing_tiers row must NOT silently collapse cost to $0
@@ -846,6 +883,16 @@ export async function POST(request: NextRequest) {
       await releaseReservedInventory();
       return NextResponse.json(
         { error: 'Coupon Codes Cannot Be Applied To Agent Or Sub-Agent Self-Buy Orders.' },
+        { status: 403 }
+      );
+    }
+
+    // Manufacturer stores: prices are the manufacturer's own -- no coupons or
+    // promo codes ever apply (a discount would come out of their split).
+    if (isManufacturerStore && trimmedCouponCode) {
+      await releaseReservedInventory();
+      return NextResponse.json(
+        { error: 'Coupons And Promo Codes Are Not Available On This Store.' },
         { status: 403 }
       );
     }
@@ -1359,6 +1406,36 @@ export async function POST(request: NextRequest) {
     // inventory/coupon/prepaid -- those belong to this order.
     orderCommitted = true;
     compensateOnThrow = null;
+
+    // MANUFACTURER LEDGER: one row per order on a manufacturer store. The
+    // commission base is the PRODUCT subtotal minus discounts -- shipping is
+    // excluded and passes through to the manufacturer in full.
+    if (isManufacturerStore && agentProfile) {
+      try {
+        const commissionBase = Math.max(0, Math.round((subtotal - discountAmount) * 100) / 100);
+        const platformCommission = Math.round(commissionBase * (manufacturerCommissionPct / 100) * 100) / 100;
+        const manufacturerNet = Math.round((commissionBase - platformCommission) * 100) / 100;
+        const { error: ledgerErr } = await serviceSupabase
+          .from('manufacturer_ledger')
+          .insert({
+            order_id: order.id,
+            manufacturer_id: agentProfile.id,
+            product_subtotal: subtotal,
+            discount_amount: discountAmount,
+            commission_base: commissionBase,
+            commission_pct: manufacturerCommissionPct,
+            platform_commission: platformCommission,
+            manufacturer_net: manufacturerNet,
+            shipping_collected: shippingCost,
+          });
+        if (ledgerErr) {
+          logError('orders.POST.manufacturer_ledger_insert', { orderId: order.id, agentId: agentProfile.id }, ledgerErr);
+          captureError(ledgerErr, { context: 'orders.POST.manufacturer_ledger_insert', severity: 'critical', orderId: order.id, agentId: agentProfile.id });
+        }
+      } catch (ledgerCatch) {
+        captureError(ledgerCatch, { context: 'orders.POST.manufacturer_ledger_insert_threw', severity: 'critical', orderId: order.id });
+      }
+    }
 
     if (initialStatus === 'approved_ship' || initialStatus === 'approved_pickup') {
       const { error: creditErr } = await serviceSupabase.rpc('charge_order_credit_line', { p_order_id: order.id, p_created_by: user.id });
