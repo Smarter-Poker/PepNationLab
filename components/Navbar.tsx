@@ -579,6 +579,14 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
           {user && (
             <>
               <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: 'var(--space-2) 0' }} />
+              {(role === 'admin' || role.includes('agent')) && (
+                <DrawerLink
+                  href={role === 'admin' ? '/admin/advertising' : '/advertising'}
+                  label="Advertising Hub"
+                  onClick={closeDrawer}
+                  icon={<svg {...IP}><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>}
+                />
+              )}
               <DrawerLink href="/account/help" label="Help & Support" onClick={closeDrawer}
                 icon={<svg {...IP}><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/><line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/><line x1="14.83" y1="9.17" x2="19.07" y2="4.93"/><line x1="4.93" y1="19.07" x2="9.17" y2="14.83"/></svg>}
               />
