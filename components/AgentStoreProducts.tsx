@@ -490,7 +490,7 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
               const bListRaw = b.custom_price != null ? b.custom_price : ((b.retail_value_total || 0) * (1 - (b.discount_percent || 0) / 100));
               const bList = Math.round(bListRaw * 100) / 100;
               const profit = bList - bCost;
-              const margin = bList > 0 ? (profit / bCost) * 100 : 0;
+              const margin = bList > 0 ? (profit / bList) * 100 : 0;
               return (
                 <div key={b.id} className="glass-panel" style={{ padding: 'var(--space-4) var(--space-5)', margin: 0, borderRadius: 0, borderLeft: 'none', borderRight: 'none' }}>
                   <div className="agentprod-card" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>

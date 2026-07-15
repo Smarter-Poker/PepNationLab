@@ -904,7 +904,7 @@ export default function ProductCatalogClient({
                   const bListRaw = b.custom_price != null ? b.custom_price : ((b.retail_value_total || 0) * (1 - (b.discount_percent || 0) / 100));
                   const bList = Math.round(bListRaw * 100) / 100;
                   const profit = bList - bCost;
-                  const margin = bList > 0 ? (profit / bCost) * 100 : 0;
+                  const margin = bList > 0 ? (profit / bList) * 100 : 0;
                   return (
                     <tr key={b.id} className="table-row-hover">
                       <td style={{ padding: 'var(--space-3)' }}>

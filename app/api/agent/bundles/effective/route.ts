@@ -39,8 +39,12 @@ export async function GET() {
       for (const pid of b.product_ids) {
         const p = priceMap.get(pid);
         if (p) {
-          base_cost_total += p.base_cost;
-          retail_value_total += p.retail_price;
+          // DB prices are per-10-vial pack; a bundle holds ONE vial of each member,
+          // so divide by 10 for the true per-vial cost/retail (same /10 convention
+          // used throughout the catalog). NOTE: assumes non-BAC members (bundles are
+          // peptide stacks). If a bundle ever includes BAC water, treat it as /1.
+          base_cost_total += p.base_cost / 10;
+          retail_value_total += p.retail_price / 10;
         }
       }
       return {

@@ -1175,6 +1175,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
         {[{ num: 1, label: 'Fulfillment' }, { num: 2, label: 'Billing' }, { num: 3, label: 'Compliance' }].map((s) => (
           <div key={s.num} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
             <div style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontFamily: 'var(--font-brand)', fontSize: '0.88rem', background: step === s.num ? 'var(--teal)' : step > s.num ? 'rgba(192, 184, 168, 0.15)' : 'var(--surface-3)', color: step === s.num ? '#fff' : step > s.num ? 'var(--teal)' : 'var(--silver-dark)', border: step >= s.num ? '1px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)', boxShadow: step === s.num ? 'var(--shadow-teal-sm)' : 'none', transition: 'all 0.3s ease' }}>{s.num}</div>
+            <span>{s.label}</span>
             {s.num < 3 && <div style={{ width: 40, height: 1, background: step > s.num ? 'var(--teal)' : 'rgba(255, 255, 255, 0.1)', margin: '0 8px' }} />}
           </div>
         ))}
