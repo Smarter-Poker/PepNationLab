@@ -109,6 +109,7 @@ export async function POST(req: NextRequest) {
       commission_max_pct,
       velocity_cap,
       custom_commission_scale,
+      locale,
     } = body;
 
     if (!full_name || !username || !password || !account_type || !slug || !display_name) {
@@ -219,6 +220,9 @@ export async function POST(req: NextRequest) {
       velocity_cap: velCap,
       commission_ladder_config: Array.isArray(custom_commission_scale) ? custom_commission_scale : undefined,
       custom_markup_override: defaultAgentMarkupOverride,
+      // New agent's default UI language (English / Simplified / Traditional)
+      // chosen on the create form; seeded into their session on first login.
+      locale: ['en', 'zh-CN', 'zh-TW'].includes(locale) ? locale : 'en',
     };
 
     const { error: profileError } = await supabase.from('profiles').upsert(profileData);
