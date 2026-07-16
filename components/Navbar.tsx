@@ -136,7 +136,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
-  const [profile, setProfile] = useState<{ full_name?: string | null; role?: string; referring_agent_id?: string | null; is_super_agent?: boolean | null; is_sub_agent?: boolean | null; is_manufacturer?: boolean | null } | null>(null);
+  const [profile, setProfile] = useState<{ full_name?: string | null; role?: string; referring_agent_id?: string | null; is_super_agent?: boolean | null; is_sub_agent?: boolean | null; is_manufacturer?: boolean | null; locale?: string | null } | null>(null);
   const [agentSlug, setAgentSlug] = useState<string | null>(null);
   const [agentName, setAgentName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -261,11 +261,23 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
         // Database types (same pattern as the server clients).
         const { data } = await (supabase as unknown as SupabaseClient)
           .from('profiles')
-          .select('full_name, role, referring_agent_id, is_super_agent, is_sub_agent, is_manufacturer')
+          .select('full_name, role, referring_agent_id, is_super_agent, is_sub_agent, is_manufacturer, locale')
           .eq('id', userId)
           .maybeSingle();
         if (data) {
           setProfile(data);
+          // First login on a new device has no saved locale; seed it from the
+          // account's stored preference (chosen at creation) so the user opens
+          // in their language. An explicit localStorage choice always wins.
+          try {
+            const savedLocale = window.localStorage.getItem('pnl_locale');
+            const accountLocale = (data as { locale?: string | null }).locale;
+            if (!isLocale(savedLocale) && isLocale(accountLocale)) {
+              window.localStorage.setItem('pnl_locale', accountLocale);
+              setLocaleState(accountLocale);
+              window.dispatchEvent(new CustomEvent('pnl-locale-changed', { detail: accountLocale }));
+            }
+          } catch { /* storage unavailable - stay on the initial locale */ }
           if (data.role === 'researcher' && data.referring_agent_id) {
             const { data: ap } = await supabase
               .from('agent_profiles')
@@ -608,7 +620,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
           {user && (
             <>
               <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: 'var(--space-2) 0' }} />
-              {(profile as { is_manufacturer?: boolean | null })?.is_manufacturer === true && (
+              {((profile as { is_manufacturer?: boolean | null })?.is_manufacturer === true || locale !== 'en') && (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)', padding: '10px var(--space-5)' }}>
                   <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                     {navLabel('Language', locale)}
