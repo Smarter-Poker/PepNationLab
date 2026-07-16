@@ -88,6 +88,7 @@ export async function POST(req: NextRequest) {
       custom_commission_scale,
       custom_markup_override,
       max_auto_approve_limit,
+      locale,
     } = body;
 
     // Allowlist the caller-supplied account_role. Without this, account_role is
@@ -248,6 +249,9 @@ export async function POST(req: NextRequest) {
       created_by_agent_id: gate.userId,
       created_by_role: 'admin',
       updated_at: new Date().toISOString(),
+      // New account's default UI language (English / Simplified / Traditional),
+      // chosen on the creation form. Seeded into their session on first login.
+      locale: ['en', 'zh-CN', 'zh-TW'].includes(locale) ? locale : 'en',
     };
 
     if (isResearcher) {
