@@ -13,6 +13,10 @@
  */
 
 import { MDICT, type Locale } from '@/lib/i18n/manufacturer-dict';
+import { EXTRACTED_A } from '@/lib/i18n/ui-extracted-a';
+import { EXTRACTED_B } from '@/lib/i18n/ui-extracted-b';
+import { EXTRACTED_C } from '@/lib/i18n/ui-extracted-c';
+import { EXTRACTED_D } from '@/lib/i18n/ui-extracted-d';
 
 type ZhLocale = 'zh-CN' | 'zh-TW';
 type Entry = { 'zh-CN': string; 'zh-TW': string };
@@ -178,6 +182,14 @@ function buildDict(): Record<string, Entry> {
     const en = entry.en.trim();
     if (en && !dict[en]) {
       dict[en] = { 'zh-CN': entry['zh-CN'], 'zh-TW': entry['zh-TW'] };
+    }
+  }
+  // Extracted agent-surface strings fill coverage (Orders, Store Products,
+  // Sales, Sub-Agents, Coupons, Inventory, Bundles, CRM, Storefront Config,
+  // wallet, messaging, QR, dashboard shell). Curated entries still win below.
+  for (const part of [EXTRACTED_A, EXTRACTED_B, EXTRACTED_C, EXTRACTED_D]) {
+    for (const [en, entry] of Object.entries(part)) {
+      dict[en] = entry;
     }
   }
   // Curated entries win over derived ones on conflict.
