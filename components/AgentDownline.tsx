@@ -34,6 +34,8 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
   const [showGamificationInfo, setShowGamificationInfo] = useState(false);
   const [caLoading, setCaLoading] = useState(false);
   const [caError, setCaError] = useState('');
+  // Default UI language for the new agent (English / Simplified / Traditional).
+  const [caLocale, setCaLocale] = useState('en');
 
   // Reset Password State
   const [resetPwUser, setResetPwUser] = useState<{ id: string; name: string; username: string } | null>(null);
@@ -86,6 +88,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
           account_type: caAccountType,
           credit_limit: caAccountType === 'credit' ? caCreditLimit : undefined,
           prepaid_balance: caAccountType === 'prepaid' ? caPrepaidBalance : undefined,
+          locale: caLocale,
           // Commission structure. Fixed -> flat rate (cap == base). Gamified
           // (Default or Custom) -> persist the concrete 3-level ladder so the
           // order-time engine and the UI always agree. base = Rookie (entry)
@@ -119,6 +122,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
       setCaCommissionPct('');
       setCaScaleType('default');
       setCaCustomSteps(freshDefaultLadder());
+      setCaLocale('en');
       fetchData();
     } catch (err: any) {
       setCaError(err.message);
@@ -340,7 +344,21 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                     placeholder="Minimum 8 characters"
                   />
                 </div>
-                
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Account Language</label>
+                  <select
+                    style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
+                    value={caLocale}
+                    onChange={e => setCaLocale(e.target.value)}
+                  >
+                    <option value="en">English</option>
+                    <option value="zh-CN">简体中文 (Simplified Chinese)</option>
+                    <option value="zh-TW">繁體中文 (Traditional Chinese)</option>
+                  </select>
+                  <p style={{ marginTop: '6px', color: 'var(--grey-400)', fontSize: '0.75rem' }}>Sets The Language This Account Sees When They Log In.</p>
+                </div>
+
                 <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)', margin: 'var(--space-2) 0' }} />
 
 
@@ -539,7 +557,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
               <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem', marginBottom: 'var(--space-4)' }}>
                 {caScaleType === 'custom' ? 'Customize The 3 Levels Of Gamification For This Agent.' : 'The Default House Scale - Starts At 20% And Rises To A 40% Maximum. Read Only.'}
               </p>
-              
+
               <div style={{ border: '1px solid rgba(0,196,188,0.35)', borderRadius: 10, overflow: 'hidden', marginBottom: 'var(--space-4)' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.6fr 0.8fr 1fr', background: 'rgba(0,196,188,0.12)', padding: '12px', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--teal)' }}>
                   <span>Level</span>
@@ -547,17 +565,17 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                   <span style={{ textAlign: 'center' }}>Bonus</span>
                   <span style={{ textAlign: 'right' }}>Commission</span>
                 </div>
-                
+
                 {caCustomSteps.map((step, idx) => {
                   const isEditable = caScaleType === 'custom';
                   const min = step.min_volume;
                   const max = idx < 2 ? caCustomSteps[idx+1].min_volume - 0.01 : null;
-                  
+
                   // For the bonus column
                   const baseRate = caCustomSteps[0].bonus_pct;
                   const delta = step.bonus_pct - baseRate;
                   const bonusText = idx === 0 ? 'Base' : `+${delta.toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:2})}%`;
-                  
+
                   return (
                     <div
                       key={idx}
@@ -571,7 +589,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                       <span style={{ color: 'var(--white)', fontWeight: 600 }}>
                         {step.level}. {step.name}
                       </span>
-                      
+
                       <span style={{ color: 'var(--silver)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                         {isEditable && idx > 0 ? (
                           <>
@@ -597,11 +615,11 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                           </span>
                         )}
                       </span>
-                      
+
                       <span style={{ textAlign: 'center', color: idx === 0 ? 'var(--grey-500)' : '#00FF9D', fontWeight: 700 }}>
                         {bonusText}
                       </span>
-                      
+
                       <span style={{ textAlign: 'right', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
                         {isEditable ? (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
