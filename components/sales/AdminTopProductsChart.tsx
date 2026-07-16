@@ -26,9 +26,18 @@ const fmt = (cents: number) =>
     maximumFractionDigits: 0,
   }).format((Number(cents) || 0) / 100);
 
+// PepNationLab brand palette — teal, green, silver family only
 const COLORS = [
-  '#00C4BC', '#2ed573', '#C0B8A8', '#ffa502', '#ff6b81',
-  '#70a1ff', '#eccc68', '#a29bfe', '#fd79a8', '#55efc4',
+  '#00C4BC', // teal primary
+  '#2ed573', // profit green
+  '#C0B8A8', // silver
+  '#009990', // deep teal
+  '#22b85c', // dark green
+  '#a8a098', // warm silver
+  '#007a74', // darker teal
+  '#1a9e4e', // darker green
+  '#8a8278', // warm grey
+  '#005f5a', // deep teal
 ];
 
 export default function AdminTopProductsChart({ products }: { products: Product[] }) {

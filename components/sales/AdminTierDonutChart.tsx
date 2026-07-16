@@ -10,11 +10,12 @@ interface TierEntry {
   orders: number;
 }
 
+// PepNationLab brand palette — teal / green / silver family only
 const COLORS: Record<string, string> = {
-  tier_1: '#00C4BC',
-  tier_2: '#2ed573',
-  tier_3: '#ffa502',
-  direct: '#C0B8A8',
+  tier_1: '#00C4BC', // teal
+  tier_2: '#2ed573', // green
+  tier_3: '#C0B8A8', // silver
+  direct: '#7B8794', // grey
 };
 
 const fmt = (cents: number) =>
