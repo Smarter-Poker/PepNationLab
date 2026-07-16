@@ -21,7 +21,10 @@ export async function GET(req: NextRequest) {
 
     const { data: orders, error } = await supabase
       .from('orders')
-      .select('total, discount_amount, shipping_cost, status, created_at')
+      .select(`
+        total, status, created_at,
+        order_items ( quantity, unit_cost_price, products ( base_cost ) )
+      `)
       .gte('created_at', start.toISOString())
       .lt('created_at', end.toISOString())
       .neq('status', 'cancelled')
@@ -37,10 +40,18 @@ export async function GET(req: NextRequest) {
       if (!day) continue;
       if (!byDay[day]) byDay[day] = { revenue: 0, profit: 0, orders: 0 };
       const total = Number(o.total || 0);
-      const discount = Number(o.discount_amount || 0);
-      const shipping = Number(o.shipping_cost || 0);
       byDay[day].revenue += total;
-      byDay[day].profit += total - discount - shipping;
+
+      let houseProfit = 0;
+      for (const item of ((o as any).order_items || [])) {
+         const qty = Number(item.quantity || 1);
+         const ucp = Number(item.unit_cost_price || 0);
+         const baseCostPer10 = Number(item.products?.base_cost || 0);
+         const baseCostPerVial = baseCostPer10 / 10;
+         houseProfit += (ucp - baseCostPerVial) * qty;
+      }
+      
+      byDay[day].profit += houseProfit;
       byDay[day].orders += 1;
     }
 

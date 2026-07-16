@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
         quantity,
         unit_retail_price,
         unit_cost_price,
+        products ( base_cost ),
         orders!inner(created_at, status)
       `)
       .neq('orders.status', 'cancelled')
@@ -36,15 +37,21 @@ export async function GET(req: NextRequest) {
     if (error) throw error;
 
     // Aggregate by product_name
-    const map: Record<string, { revenue: number; cogs: number; units: number }> = {};
+    const map: Record<string, { revenue: number; cogs: number; houseProfit: number; units: number }> = {};
     for (const item of data ?? []) {
       const name = item.product_name ?? 'Unknown';
-      if (!map[name]) map[name] = { revenue: 0, cogs: 0, units: 0 };
+      if (!map[name]) map[name] = { revenue: 0, cogs: 0, houseProfit: 0, units: 0 };
       const qty = Number(item.quantity || 1);
       const retail = Number(item.unit_retail_price || 0);
-      const cost = Number(item.unit_cost_price || 0);
+      const ucp = Number(item.unit_cost_price || 0);
+      const baseCostPer10 = Number((item.products as any)?.base_cost || 0);
+      const baseCostPerVial = baseCostPer10 / 10;
+      
+      const houseProfit = (ucp - baseCostPerVial) * qty;
+
       map[name].revenue += retail * qty;
-      map[name].cogs += cost * qty;
+      map[name].cogs += baseCostPerVial * qty;
+      map[name].houseProfit += houseProfit;
       map[name].units += qty;
     }
 
@@ -53,7 +60,7 @@ export async function GET(req: NextRequest) {
         name,
         revenue_cents: Math.round(v.revenue * 100),
         cogs_cents: Math.round(v.cogs * 100),
-        profit_cents: Math.round((v.revenue - v.cogs) * 100),
+        profit_cents: Math.round(v.houseProfit * 100),
         units: v.units,
       }))
       .sort((a, b) => b.revenue_cents - a.revenue_cents)

@@ -24,7 +24,10 @@ export async function GET(req: NextRequest) {
     async function fetchPeriod(from: Date, to: Date) {
       const { data: orders, error } = await supabase
         .from('orders')
-        .select('id, total, discount_amount, shipping_cost, status, agent_id, created_at')
+        .select(`
+          id, total, status, agent_id, created_at,
+          order_items ( quantity, unit_cost_price, products ( base_cost ) )
+        `)
         .gte('created_at', from.toISOString())
         .lt('created_at', to.toISOString())
         .limit(100000);
@@ -43,10 +46,18 @@ export async function GET(req: NextRequest) {
 
       for (const o of live) {
         const total = Number(o.total || 0);
-        const discount = Number(o.discount_amount || 0);
-        const shipping = Number(o.shipping_cost || 0);
         revenue += total;
-        profit += total - discount - shipping;
+
+        let houseProfit = 0;
+        for (const item of ((o as any).order_items || [])) {
+           const qty = Number(item.quantity || 1);
+           const ucp = Number(item.unit_cost_price || 0);
+           const baseCostPer10 = Number(item.products?.base_cost || 0);
+           const baseCostPerVial = baseCostPer10 / 10;
+           houseProfit += (ucp - baseCostPerVial) * qty;
+        }
+        profit += houseProfit;
+
         if (o.agent_id) {
           agentRevenue += total;
           agentSet.add(o.agent_id);
