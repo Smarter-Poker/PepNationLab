@@ -105,6 +105,7 @@ export default function AdminAgents() {
     display_name: '',
     account_role: 'agent',
     parent_agent_id: '',
+    locale: 'en',
   });
   const [isCreating, setIsCreating] = useState(false);
 
@@ -271,6 +272,7 @@ export default function AdminAgents() {
         display_name: '',
         account_role: 'agent',
         parent_agent_id: '',
+        locale: 'en',
       });
       setCaCommissionMode('fixed');
       setCaCommissionPct('');
@@ -1113,6 +1115,21 @@ export default function AdminAgents() {
                   minLength={8}
                   style={{ width: '100%' }}
                 />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
+                <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Account Language</label>
+                <select
+                  className="form-input"
+                  value={createForm.locale}
+                  onChange={e => handleCreateFormChange('locale', e.target.value)}
+                  style={{ width: '100%' }}
+                >
+                  <option value="en">English</option>
+                  <option value="zh-CN">简体中文 (Simplified Chinese)</option>
+                  <option value="zh-TW">繁體中文 (Traditional Chinese)</option>
+                </select>
+                <p style={{ fontSize: '12px', color: 'var(--grey-400)', marginTop: 'var(--space-1)' }}>Sets The Language This Account Sees When They Log In.</p>
               </div>
 
               {createForm.account_role !== 'researcher' && (
