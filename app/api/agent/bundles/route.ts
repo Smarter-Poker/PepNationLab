@@ -330,7 +330,7 @@ export async function PATCH(req: NextRequest) {
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const { id, action } = body as { id?: unknown; action?: unknown };
   if (typeof id !== 'string' || !id) return NextResponse.json({ error: 'Bundle ID Required' }, { status: 400 });
-  const VALID_ACTIONS = ['toggle', 'update'] as const;
+  const VALID_ACTIONS = ['toggle', 'update', 'update_price'] as const;
   if (typeof action !== 'string' || !(VALID_ACTIONS as readonly string[]).includes(action)) {
     return NextResponse.json({ error: `Invalid Action. Must Be One Of: ${VALID_ACTIONS.join(', ')}` }, { status: 400 });
   }
@@ -344,6 +344,18 @@ export async function PATCH(req: NextRequest) {
   let updated: StoredBundle[];
   if (action === 'toggle') {
     updated = bundles.map((b) => (b.id === id ? { ...b, is_active: !b.is_active } : b));
+  } else if (action === 'update_price') {
+    // Lightweight price-only update — no full re-validation of bundle fields.
+    const rawPrice = body.custom_price;
+    const newPrice = rawPrice === null || rawPrice === '' ? null : Number(rawPrice);
+    if (newPrice !== null && (!Number.isFinite(newPrice) || newPrice < 0)) {
+      return NextResponse.json({ error: 'Bundle Price Must Be A Positive Number' }, { status: 400 });
+    }
+    if (newPrice !== null && newPrice > 99999) {
+      return NextResponse.json({ error: 'Bundle Price Cannot Exceed $99,999' }, { status: 400 });
+    }
+    const cleanPrice = newPrice !== null && newPrice > 0 ? Math.round(newPrice * 100) / 100 : null;
+    updated = bundles.map((b) => (b.id === id ? { ...b, custom_price: cleanPrice } : b));
   } else {
     const fields = validateBundleInput(body);
     if ('error' in fields) return NextResponse.json({ error: fields.error }, { status: 400 });

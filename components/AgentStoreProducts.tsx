@@ -144,6 +144,12 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
   const [search, setSearch] = useState('');
   const [isMobile, setIsMobile] = useState(false);
 
+  // Bundle inline price editing state
+  const [editingBundleId, setEditingBundleId] = useState<string | null>(null);
+  const [bundlePriceText, setBundlePriceText] = useState('');
+  const [bundleSaving, setBundleSaving] = useState(false);
+
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const mq = window.matchMedia('(max-width: 768px)');
@@ -330,6 +336,53 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
     }
   }
 
+  async function handleBundlePriceSave(bundle: any) {
+    const newPrice = parseFloat(bundlePriceText);
+    if (!Number.isFinite(newPrice) || newPrice <= 0) {
+      toast.error('Please Enter A Valid Bundle Price');
+      return;
+    }
+    if (newPrice > 99999) {
+      toast.error('Bundle Price Cannot Exceed $99,999');
+      return;
+    }
+    // Soft cost-floor guard: warn if below agent cost but don't hard-block
+    // (bundles may span products with different cost bases).
+    const bCost = bundle.base_cost_total || 0;
+    if (bCost > 0 && newPrice < bCost) {
+      toast.error(`Bundle Price ($${newPrice.toFixed(2)}) Cannot Be Below Your Cost ($${bCost.toFixed(2)})`);
+      return;
+    }
+    setBundleSaving(true);
+    try {
+      const res = await fetch('/api/agent/bundles', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: bundle.id, action: 'update_price', custom_price: newPrice }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(json.error || 'Failed To Save Bundle Price');
+        return;
+      }
+      // Optimistically update the bundles list
+      setBundles((prev: any[]) =>
+        prev.map((b: any) =>
+          b.id === bundle.id ? { ...b, custom_price: Math.round(newPrice * 100) / 100 } : b,
+        ),
+      );
+      setEditingBundleId(null);
+      setBundlePriceText('');
+      toast.success('Bundle Price Updated');
+    } catch (err: any) {
+      toast.error(err.message || 'An Error Occurred');
+    } finally {
+      setBundleSaving(false);
+    }
+  }
+
+
+
   function toggleCategory(cat: string) {
     setExpandedCategories(prev => {
       const next = new Set(prev);
@@ -481,19 +534,29 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
           <div style={{ padding: 'var(--space-4) var(--space-5)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
             <h4 style={{ fontSize: '1rem', color: '#00E5FF', margin: 0, fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Bundles</h4>
             <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.82rem', margin: '4px 0 0' }}>
-              These are your active bundle offers. Bundles are managed in the Bundle Manager.
+              These Are Your Active Bundle Offers. Bundles Are Managed In The Bundle Manager.
             </p>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', background: 'rgba(255,255,255,0.05)' }}>
-            {bundles.map(b => {
+            {bundles.map((b: any) => {
               const bCost = b.base_cost_total || 0;
-              const bListRaw = b.custom_price != null ? b.custom_price : ((b.retail_value_total || 0) * (1 - (b.discount_percent || 0) / 100));
+              const bRetailSeparate = b.retail_value_total || 0; // full price if bought individually
+              const bListRaw = b.custom_price != null ? b.custom_price : (bRetailSeparate * (1 - (b.discount_percent || 0) / 100));
               const bList = Math.round(bListRaw * 100) / 100;
               const profit = bList - bCost;
               const margin = bCost > 0 ? (profit / bCost) * 100 : 0;
+              const savings = bRetailSeparate > 0 ? bRetailSeparate - bList : 0;
+              const isEditingBundle = editingBundleId === b.id;
+
+              // Live preview values during edit
+              const editPrice = parseFloat(bundlePriceText) || 0;
+              const editProfit = isEditingBundle && editPrice > 0 ? editPrice - bCost : profit;
+              const editMargin = isEditingBundle && editPrice > 0 && bCost > 0 ? (editProfit / bCost) * 100 : margin;
+
               return (
                 <div key={b.id} className="glass-panel" style={{ padding: 'var(--space-4) var(--space-5)', margin: 0, borderRadius: 0, borderLeft: 'none', borderRight: 'none' }}>
                   <div className="agentprod-card" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+                    {/* Thumbnail */}
                     {b.image_url ? (
                       <div style={{ width: 80, height: 80, borderRadius: 8, flexShrink: 0, overflow: 'hidden', position: 'relative' }}>
                         <Image src={b.image_url} alt={b.name} fill style={{ objectFit: 'cover' }} />
@@ -503,37 +566,124 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
                         BUNDLE
                       </div>
                     )}
+
                     <div className="agentprod-info" style={{ flex: 1, minWidth: 0 }}>
+                      {/* Name + badge */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                         <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff' }}>{b.name}</span>
                         <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', padding: '2px 6px', borderRadius: '4px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>Bundle</span>
                       </div>
-                      <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', marginBottom: 4 }}>
-                        {b.product_ids.length} Products Included
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Cost:</span>
-                          <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>${bCost.toFixed(2)}</span>
-                        </div>
-                        <div style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.2)' }}>&rarr;</div>
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Listed Price:</span>
-                          <span style={{ fontSize: '0.9rem', color: '#00E5FF', fontWeight: 700 }}>
-                            ${bList.toFixed(2)}
-                            {b.custom_price != null && <span style={{ fontSize: '0.65rem', marginLeft: 4, background: 'rgba(255,255,255,0.1)', padding: '2px 4px', borderRadius: 2 }}>Fixed</span>}
+
+                      {/* Products count + "if bought separately" */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)' }}>
+                          {b.product_ids.length} Products Included
+                        </span>
+                        {bRetailSeparate > 0 && (
+                          <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.35)', padding: '1px 8px', borderRadius: 4, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                            If Bought Separately: <span style={{ color: 'rgba(255,255,255,0.55)', fontWeight: 700, textDecoration: 'line-through' }}>${bRetailSeparate.toFixed(2)}</span>
+                            {savings > 0 && <span style={{ color: '#68D391', fontWeight: 700, marginLeft: 6 }}>Save ${savings.toFixed(2)}</span>}
                           </span>
-                        </div>
-                        {bCost > 0 && bList > 0 && (
-                          <div style={{ marginLeft: 8, padding: '2px 6px', background: 'rgba(0,196,188,0.1)', borderRadius: 4, border: '1px solid rgba(0,196,188,0.3)' }}>
-                            <span style={{ fontSize: '0.7rem', color: '#00E5FF', fontWeight: 700 }}>+{Math.round(margin)}% Margin</span>
-                          </div>
                         )}
-                        <div style={{ marginLeft: 8, padding: '2px 6px', background: profit >= 0 ? 'rgba(104,211,145,0.1)' : 'rgba(229,62,62,0.1)', borderRadius: 4, border: profit >= 0 ? '1px solid rgba(104,211,145,0.3)' : '1px solid rgba(229,62,62,0.3)' }}>
-                          <span style={{ fontSize: '0.7rem', color: profit >= 0 ? '#68D391' : '#FC8181', fontWeight: 700 }}>${profit.toFixed(2)} Profit</span>
-                        </div>
                       </div>
+
+                      {/* Pricing row — static or edit mode */}
+                      {isEditingBundle ? (
+                        /* ── EDIT MODE ── */
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          {/* Cost (read-only) */}
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>{costLabel}:</span>
+                            <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>${bCost.toFixed(2)}</span>
+                          </div>
+                          <div style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.2)' }}>&rarr;</div>
+                          {/* Price input */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ position: 'relative' }}>
+                              <span style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: '#00E5FF', fontWeight: 700, fontSize: '0.85rem', pointerEvents: 'none' }}>$</span>
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                autoFocus
+                                className="form-input"
+                                style={{ width: 90, padding: '4px 4px 4px 18px', height: 30, fontSize: '0.9rem', background: 'var(--bg-metal-dark)', border: '1px solid #00E5FF', boxShadow: '0 0 5px rgba(0,229,255,0.3)', color: '#fff' }}
+                                value={bundlePriceText}
+                                onChange={e => {
+                                  let clean = e.target.value.replace(/[^0-9.]/g, '');
+                                  const dot = clean.indexOf('.');
+                                  if (dot !== -1) {
+                                    clean = clean.slice(0, dot + 1) + clean.slice(dot + 1).replace(/\./g, '');
+                                    clean = clean.slice(0, dot + 3);
+                                  }
+                                  setBundlePriceText(clean);
+                                }}
+                                onKeyDown={e => { if (e.key === 'Enter') handleBundlePriceSave(b); if (e.key === 'Escape') { setEditingBundleId(null); setBundlePriceText(''); } }}
+                              />
+                            </div>
+                            {/* Live margin + profit preview */}
+                            {editPrice > 0 && bCost > 0 && (
+                              <>
+                                <div style={{ padding: '2px 7px', background: 'rgba(0,229,255,0.1)', borderRadius: 4, border: '1px solid rgba(0,229,255,0.3)' }}>
+                                  <span style={{ fontSize: '0.7rem', color: '#00E5FF', fontWeight: 700 }}>+{Math.round(editMargin)}% Margin</span>
+                                </div>
+                                <div style={{ padding: '2px 7px', background: editProfit >= 0 ? 'rgba(104,211,145,0.1)' : 'rgba(229,62,62,0.1)', borderRadius: 4, border: editProfit >= 0 ? '1px solid rgba(104,211,145,0.3)' : '1px solid rgba(229,62,62,0.3)' }}>
+                                  <span style={{ fontSize: '0.7rem', color: editProfit >= 0 ? '#68D391' : '#FC8181', fontWeight: 700 }}>${editProfit.toFixed(2)} Profit</span>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        /* ── VIEW MODE ── */
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          {/* Cost */}
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>{costLabel}:</span>
+                            <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>${bCost.toFixed(2)}</span>
+                          </div>
+                          <div style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.2)' }}>&rarr;</div>
+                          {/* Listed Price — clickable like individual peptides */}
+                          <div
+                            style={{ display: 'flex', flexDirection: 'column', cursor: 'pointer', padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)', transition: 'all 0.2s' }}
+                            onClick={() => { setEditingBundleId(b.id); setBundlePriceText(bList.toFixed(2)); }}
+                            title="Click to edit bundle price"
+                            onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(0,229,255,0.3)'; }}
+                            onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; }}
+                          >
+                            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}>
+                              Listed Price <Edit2 size={10} color="#00E5FF" />
+                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <span style={{ fontSize: '1.05rem', color: '#00E5FF', fontWeight: 800 }}>
+                                ${bList.toFixed(2)}
+                                {b.custom_price != null && <span style={{ fontSize: '0.65rem', marginLeft: 5, fontWeight: 500, color: 'rgba(255,255,255,0.4)' }}>Fixed</span>}
+                              </span>
+                            </div>
+                          </div>
+                          {/* Margin + Profit badges */}
+                          {bCost > 0 && bList > 0 && (
+                            <div style={{ padding: '2px 7px', background: 'rgba(0,196,188,0.1)', borderRadius: 4, border: '1px solid rgba(0,196,188,0.3)' }}>
+                              <span style={{ fontSize: '0.7rem', color: '#00E5FF', fontWeight: 700 }}>+{Math.round(margin)}% Margin</span>
+                            </div>
+                          )}
+                          <div style={{ padding: '2px 7px', background: profit >= 0 ? 'rgba(104,211,145,0.1)' : 'rgba(229,62,62,0.1)', borderRadius: 4, border: profit >= 0 ? '1px solid rgba(104,211,145,0.3)' : '1px solid rgba(229,62,62,0.3)' }}>
+                            <span style={{ fontSize: '0.7rem', color: profit >= 0 ? '#68D391' : '#FC8181', fontWeight: 700 }}>${profit.toFixed(2)} Profit</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
+
+                    {/* Save / Cancel actions (edit mode) */}
+                    {isEditingBundle && (
+                      <div className="agentprod-actions" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                        <button onClick={() => handleBundlePriceSave(b)} disabled={bundleSaving} className="btn-neon-cyan" style={{ padding: '4px 12px', fontSize: '0.75rem', height: 32 }}>
+                          {bundleSaving ? 'Saving...' : 'Save'}
+                        </button>
+                        <button onClick={() => { setEditingBundleId(null); setBundlePriceText(''); }} className="btn-silver" style={{ padding: '4px 12px', fontSize: '0.75rem', height: 32 }}>
+                          Cancel
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -541,6 +691,8 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
           </div>
         </div>
       )}
+
+
 
       {/* Catalog View Controls */}
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--space-4)' }}>
