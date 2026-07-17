@@ -1207,7 +1207,15 @@ export async function POST(request: NextRequest) {
     const isUserCredit = (profile.account_type === 'credit' || profile.auto_approve_orders === true) && (total <= limit);
     const autoApproveStatus = fulfillmentMethod === 'agent_pickup' ? 'approved_pickup' : 'approved_ship';
 
-    if (isWholesaleRestock) {
+    // Manufacturer stores: the factory fulfils every order by hand (China-shipped
+    // with its own carrier tracking) and is NEVER billed COGS, so its orders always
+    // wait for the manufacturer's explicit approval. Never auto-approve and never
+    // route through the super-agent credit/prepaid billing below -- that path would
+    // wrongly bill the manufacturer their own commission and skip their review.
+    // Mirrors the manufacturer bypass in /api/agent/orders/approve.
+    if (isManufacturerStore) {
+      initialStatus = 'agent_approval_pending';
+    } else if (isWholesaleRestock) {
       if (profile.role === 'super_agent') {
         if (isUserCredit) {
           const res = await checkSuperAgentCredit(profile, total);
