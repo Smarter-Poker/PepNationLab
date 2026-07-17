@@ -594,7 +594,13 @@ export default function DiscoveryHero({
         onClose={() => setWizardOpen(false)}
         onSubmit={(s) => {
           setWizardOpen(false);
-          const goal = `${labelForArea(s.area)} Research`;
+          // The match engine keys goal relevance on the research_area KEY
+          // (c.research_areas.includes(goal) / GOAL_KEYWORDS[goal]). Passing a
+          // display label like "Healing & Recovery Research" matched no key and
+          // every compound failed the relevance gate -> "zero peptides match".
+          // s.area IS the research_area key; the human-readable summary is the
+          // second arg (buildGoalFromWizard), so the drawer copy is unaffected.
+          const goal = s.area;
           void runMatch(
             { goal, evidenceComfort: s.comfort, preference: s.preference, budget: s.budget },
             buildGoalFromWizard(s),
