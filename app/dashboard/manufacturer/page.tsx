@@ -20,11 +20,11 @@ export default async function ManufacturerDashboardPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, role, is_manufacturer, is_active, locale')
+    .select('id, role, is_manufacturer, is_admin_account, is_active, locale')
     .eq('id', user.id)
     .maybeSingle();
 
-  if (!profile || profile.is_manufacturer !== true || profile.is_active === false) {
+  if (!profile || (!profile.is_manufacturer && !profile.is_admin_account) || profile.is_active === false) {
     redirect('/dashboard');
   }
 

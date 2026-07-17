@@ -68,6 +68,8 @@ interface Overview {
     slug: string | null;
     displayName: string | null;
     storeActive: boolean;
+    isAdminAccount: boolean;
+    isManufacturer: boolean;
   };
   products: MfrProduct[];
   orders: MfrOrder[];
@@ -352,10 +354,10 @@ export default function ManufacturerDashboardClient() {
       }}>
         <div style={{ minWidth: 0 }}>
           <h1 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: 'var(--teal, #00C4BC)' }}>
-            {t('manufacturer_dashboard')}
+            {data?.profile?.isAdminAccount && !data?.profile?.isManufacturer ? 'Network Admin Dashboard' : t('manufacturer_dashboard')}
           </h1>
           <div style={{ fontSize: '0.8rem', color: 'var(--silver, #A8B4C0)', marginTop: 2 }}>
-            {t('welcome')}, {data?.profile.displayName || data?.profile.username || ''}
+            {data?.profile?.isAdminAccount && !data?.profile?.isManufacturer ? 'Manage your network and agents' : `${t('welcome')}, ${data?.profile?.displayName || data?.profile?.username || ''}`}
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
@@ -383,7 +385,9 @@ export default function ManufacturerDashboardClient() {
 
       {/* Tabs */}
       <nav style={{ display: 'flex', gap: 6, padding: '14px 20px 0', flexWrap: 'wrap' }}>
-        {(['products', 'orders', 'earnings', 'network', 'settings'] as Tab[]).map(k => (
+        {(['products', 'orders', 'earnings', 'network', 'settings'] as Tab[])
+          .filter(k => !(k === 'earnings' && data?.profile?.isAdminAccount && !data?.profile?.isManufacturer))
+          .map(k => (
           <button
             key={k}
             type="button"
@@ -758,6 +762,8 @@ export default function ManufacturerDashboardClient() {
                 </div>
               ))}
             </div>
+
+
 
             {/* Create agent button / form */}
             <div style={card}>

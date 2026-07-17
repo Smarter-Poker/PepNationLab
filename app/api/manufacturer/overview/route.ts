@@ -26,7 +26,7 @@ export async function GET() {
     const [profileRes, storeRes, productsRes, ordersRes, ledgerRes] = await Promise.all([
       supabase
         .from('profiles')
-        .select('username, full_name, locale, manufacturer_commission_pct')
+        .select('username, full_name, locale, manufacturer_commission_pct, is_manufacturer, is_admin_account')
         .eq('id', manufacturerId)
         .maybeSingle(),
       supabase
@@ -66,7 +66,7 @@ export async function GET() {
         return p && p.is_active !== false && p.is_banned !== true;
       })
       .map((ap) => {
-        const p = (ap.products as Record<string, unknown>) ?? {};
+        const p = (ap.products as any as Record<string, unknown>) ?? {};
         return {
           id: ap.id as string,
           productId: ap.product_id as string,
@@ -135,6 +135,8 @@ export async function GET() {
         slug: (storeRes.data?.slug as string | null) ?? null,
         displayName: (storeRes.data?.display_name as string | null) ?? null,
         storeActive: storeRes.data?.is_active !== false,
+        isAdminAccount: profileRes.data.is_admin_account === true,
+        isManufacturer: profileRes.data.is_manufacturer === true,
       },
       products,
       orders,

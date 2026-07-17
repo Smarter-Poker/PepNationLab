@@ -684,9 +684,9 @@ export default function AdminAgents() {
                     View Downlines
                   </button>
 
-                  {/* Assign to Manufacturer — only shown for super agents */}
+                  {/* Assign to Parent — only shown for super agents */}
                   {agent.is_super_agent && (() => {
-                    const manufacturers = agents.filter((a: any) => a.is_manufacturer);
+                    const validParents = agents.filter((a: any) => a.is_manufacturer || a.is_admin_account);
                     const currentParent = agent.parent_agent_id
                       ? agents.find((a: any) => a.id === agent.parent_agent_id)
                       : null;
@@ -711,21 +711,21 @@ export default function AdminAgents() {
                             padding: 12, minWidth: 240, boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
                             display: 'flex', flexDirection: 'column', gap: 8,
                           }}>
-                            <div style={{ fontSize: '0.72rem', color: 'var(--silver)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Assign To Manufacturer</div>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--silver)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Assign Parent Admin</div>
                             <select
                               value={assignParentValue}
                               onChange={e => setAssignParentValue(e.target.value)}
                               style={{ background: '#1D2D3E', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, color: 'var(--white)', padding: '6px 8px', fontSize: '0.82rem' }}
                             >
                               <option value="">— Root Level (No Parent) —</option>
-                              {manufacturers.map((m: any) => (
+                              {validParents.map((m: any) => (
                                 <option key={m.id} value={m.id}>
                                   {m.full_name || m.username}{m.username ? ` (@${m.username})` : ''}
                                 </option>
                               ))}
                             </select>
-                            {manufacturers.length === 0 && (
-                              <div style={{ fontSize: '0.74rem', color: 'var(--grey-400)', fontStyle: 'italic' }}>No manufacturers found in the system.</div>
+                            {validParents.length === 0 && (
+                              <div style={{ fontSize: '0.74rem', color: 'var(--grey-400)', fontStyle: 'italic' }}>No eligible parent accounts found in the system.</div>
                             )}
                             <div style={{ display: 'flex', gap: 6 }}>
                               <button
@@ -746,7 +746,7 @@ export default function AdminAgents() {
                                     if (!res.ok) {
                                       toast.error(json.error || 'Failed to assign parent');
                                     } else {
-                                      toast.success(assignParentValue ? 'Agent assigned to manufacturer' : 'Agent moved to root level');
+                                      toast.success(assignParentValue ? 'Agent assigned to parent network' : 'Agent moved to root level');
                                       setAssigningParentFor(null);
                                       fetchAgents();
                                     }

@@ -352,6 +352,9 @@ export default function AgentStorefrontGrid({
       setFilterArea('');
       setFilterCategory('all');
       setSearchQuery('');
+      setDetailProduct(null);
+      setSelectedBundle(null);
+      setReturnToBundle(null);
       try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch {}
     }
   }, []);
@@ -736,6 +739,25 @@ export default function AgentStorefrontGrid({
     else setDetailHistory([]);
   };
   const [selectedBundle, setSelectedBundle] = useState<BundleConfig | null>(null);
+  const [returnToBundle, setReturnToBundle] = useState<BundleConfig | null>(null);
+
+  const handleBundleItemClick = (productId: string) => {
+    // Find the grouped product that has this product variant
+    const grp = grouped.find(g => g.variants.some(v => v.product_id === productId));
+    if (grp) {
+      setReturnToBundle(selectedBundle);
+      setSelectedBundle(null);
+      setDetailProduct(grp);
+    }
+  };
+
+  const handleDetailProductBack = () => {
+    setDetailProduct(null);
+    if (returnToBundle) {
+      setSelectedBundle(returnToBundle);
+      setReturnToBundle(null);
+    }
+  };
   const [showEli5, setShowEli5] = useState(false);
 
   useEffect(() => {
@@ -1008,7 +1030,7 @@ export default function AgentStorefrontGrid({
         amount_cents: Number.isFinite(Number(variant.retail_price)) ? Math.round(Number(variant.retail_price) * qty * 100) : undefined,
       });
     }
-    setDetailProduct(null);
+    handleDetailProductBack();
     setShowBulkPricing(false);
     setPendingQty(selfBuyMin);
     setShowCartFloat(true);
@@ -3734,7 +3756,7 @@ export default function AgentStorefrontGrid({
               background: 'linear-gradient(180deg, #131b24 78%, rgba(19,27,36,0))',
             }}>
               <button
-                onClick={() => setDetailProduct(null)}
+                onClick={handleDetailProductBack}
                 aria-label="Back"
                 style={{
                   width: 34, height: 34, minWidth: 34, minHeight: 34,
@@ -4733,11 +4755,20 @@ export default function AgentStorefrontGrid({
                       const size = m.products?.unit_size ? `${m.products.unit_size}${m.products.unit_measure || ''}` : '';
                       const perVial = (Number(m.retail_price) || 0) / 10;
                       return (
-                        <div key={m.id} style={{
-                          display: 'flex', alignItems: 'center', gap: 14,
-                          background: 'rgba(255,255,255,0.04)', borderRadius: 10,
-                          padding: '10px 14px', border: '1px solid rgba(255,255,255,0.07)',
-                        }}>
+                        <div
+                          key={m.id}
+                          className="hover-lift"
+                          onClick={() => handleBundleItemClick(m.product_id)}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleBundleItemClick(m.product_id); }}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 14,
+                            background: 'rgba(255,255,255,0.04)', borderRadius: 10,
+                            padding: '10px 14px', border: '1px solid rgba(255,255,255,0.07)',
+                            cursor: 'pointer',
+                          }}
+                        >
                           <Image
                             src={img}
                             alt={name}

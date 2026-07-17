@@ -215,11 +215,11 @@ export async function requireManufacturer(): Promise<
   const service = await createServiceClient();
   const { data: profile } = await service
     .from('profiles')
-    .select('role, is_manufacturer, is_active')
+    .select('role, is_manufacturer, is_admin_account, is_active')
     .eq('id', user.id)
     .maybeSingle();
 
-  if (!profile || profile.is_manufacturer !== true || profile.is_active === false) {
+  if (!profile || (!profile.is_manufacturer && !profile.is_admin_account) || profile.is_active === false) {
     return {
       ok: false,
       response: NextResponse.json({ error: 'Forbidden. Manufacturer Access Required.' }, { status: 403 }),

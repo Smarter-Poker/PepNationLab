@@ -320,28 +320,6 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
     }
   }
 
-  async function handleBulkAdjust(marginOverride?: number) {
-    const margin = marginOverride !== undefined ? marginOverride : parseFloat(bulkMargin);
-    if (isNaN(margin) || margin < 0) {
-      toast.error('Please Enter A Valid Margin Percentage');
-      return;
-    }
-    setBulkSaving(true);
-    try {
-      const res = await fetch('/api/agent/products/bulk-margin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ marginPercent: margin }),
-      });
-      if (!res.ok) throw new Error('Failed To Apply');
-      await fetchProducts();
-    } catch (err: any) {
-      toast.error(err.message || 'An Error Occurred');
-    } finally {
-      setBulkSaving(false);
-    }
-  }
-
   async function handleBundlePriceSave(bundle: any) {
     const newPrice = parseFloat(bundlePriceText);
     if (!Number.isFinite(newPrice) || newPrice <= 0) {

@@ -17,7 +17,7 @@ export default async function DashboardPage({
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, role, tier, prepaid_balance, credit_limit, account_type, disclaimer_v1_accepted, phone, referring_agent_id, username, is_sub_agent, is_super_agent, is_manufacturer, onboarding_completed_at')
+    .select('full_name, role, tier, prepaid_balance, credit_limit, account_type, disclaimer_v1_accepted, phone, referring_agent_id, username, is_sub_agent, is_super_agent, is_manufacturer, is_admin_account, onboarding_completed_at')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -45,6 +45,12 @@ export default async function DashboardPage({
       redirect('/onboarding');
     }
   }
+  // Admin Accounts get the Manufacturer dashboard which contains the Network tools
+  // (managing super agents, network orders, recruiting).
+  if ((profile as { is_admin_account?: boolean | null })?.is_admin_account === true) {
+    redirect('/dashboard/manufacturer');
+  }
+
   // SACA: sub-agents have role='agent' + is_sub_agent=true. They get their
   // own dashboard at /dashboard/sub-agent - NEVER the full agent dashboard,
   // which would expose storefront config they don't own and order management
