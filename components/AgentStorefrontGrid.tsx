@@ -1986,7 +1986,13 @@ export default function AgentStorefrontGrid({
     const finalPrice = hasCustomPrice
       ? Math.round((bundle.custom_price as number) * 100) / 100
       : Math.max(0, fullPrice * (1 - discountPct / 100));
-    return { members, fullPrice, finalPrice, discountPct };
+    // Effective discount for display: always derived from the actual price delta
+    // so custom-priced bundles show the real savings % rather than a stale
+    // discount_percent value that the custom price has since superseded.
+    const effectiveDiscountPct = fullPrice > 0 && finalPrice < fullPrice
+      ? Math.round(((fullPrice - finalPrice) / fullPrice) * 100)
+      : 0;
+    return { members, fullPrice, finalPrice, discountPct: effectiveDiscountPct };
   }, [products]);
 
   const removeBundleFromCart = useCallback((bundleName: string) => {
