@@ -18,6 +18,7 @@ export interface RawProduct {
   unit_size: string | null;
   unit_measure: string | null;
   inventory_count: number;
+  image_url: string | null;
 }
 
 interface GroupedProduct {
@@ -913,9 +914,21 @@ export default function ProductCatalogClient({
                             <img src={b.image_url} alt={b.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           </div>
                         ) : (
-                          <div style={{ background: 'rgba(0,196,188,0.1)', border: '1px solid rgba(0,196,188,0.3)', color: '#00E5FF', fontSize: '0.6rem', fontWeight: 800, padding: '2px 4px', borderRadius: 4, textAlign: 'center' }}>
-                            BUNDLE
-                          </div>
+                          (() => {
+                            const firstProd = products.find(p => p.id === b.product_ids[0]);
+                            if (firstProd?.image_url) {
+                              return (
+                                <div style={{ width: 40, height: 40, borderRadius: 4, overflow: 'hidden', position: 'relative' }}>
+                                  <img src={firstProd.image_url} alt={b.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                </div>
+                              );
+                            }
+                            return (
+                              <div style={{ background: 'rgba(0,196,188,0.1)', border: '1px solid rgba(0,196,188,0.3)', color: '#00E5FF', fontSize: '0.6rem', fontWeight: 800, padding: '2px 4px', borderRadius: 4, textAlign: 'center' }}>
+                                BUNDLE
+                              </div>
+                            );
+                          })()
                         )}
                       </td>
                       <td style={{ padding: 'var(--space-3)' }}>

@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
         .from('orders')
         .select(`
           id, total, status, agent_id, created_at,
-          order_items ( quantity, unit_cost_price, products ( base_cost ) )
+          order_items ( quantity, unit_cost_price, unit_retail_price, products ( base_cost ) )
         `)
         .gte('created_at', from.toISOString())
         .lt('created_at', to.toISOString())
@@ -52,9 +52,15 @@ export async function GET(req: NextRequest) {
         for (const item of ((o as any).order_items || [])) {
            const qty = Number(item.quantity || 1);
            const ucp = Number(item.unit_cost_price || 0);
+           const urp = Number(item.unit_retail_price || 0);
            const baseCostPer10 = Number(item.products?.base_cost || 0);
            const baseCostPerVial = baseCostPer10 / 10;
-           houseProfit += (ucp - baseCostPerVial) * qty;
+           
+           if (o.agent_id) {
+             houseProfit += (ucp - baseCostPerVial) * qty;
+           } else {
+             houseProfit += (urp - baseCostPerVial) * qty;
+           }
         }
         profit += houseProfit;
 

@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
         unit_retail_price,
         unit_cost_price,
         products ( base_cost ),
-        orders!inner(created_at, status)
+        orders!inner(created_at, status, agent_id)
       `)
       .neq('orders.status', 'cancelled')
       .gte('orders.created_at', start.toISOString())
@@ -47,9 +47,12 @@ export async function GET(req: NextRequest) {
       const baseCostPer10 = Number((item.products as any)?.base_cost || 0);
       const baseCostPerVial = baseCostPer10 / 10;
       
-      const houseProfit = (ucp - baseCostPerVial) * qty;
+      const isAgentOrder = !!(item.orders as any)?.agent_id;
+      const houseProfit = isAgentOrder 
+        ? (ucp - baseCostPerVial) * qty 
+        : (retail - baseCostPerVial) * qty;
 
-      map[name].revenue += retail * qty;
+      map[name].revenue += isAgentOrder ? (ucp * qty) : (retail * qty);
       map[name].cogs += baseCostPerVial * qty;
       map[name].houseProfit += houseProfit;
       map[name].units += qty;
