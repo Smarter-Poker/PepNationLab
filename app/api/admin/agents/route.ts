@@ -31,7 +31,7 @@ export async function GET() {
       .from('profiles')
       .select(
         'id, created_at, full_name, first_name, last_name, username, email, phone, role, tier, ' +
-        'account_type, credit_limit, prepaid_balance, is_active, is_super_agent, is_sub_agent, ' +
+        'account_type, credit_limit, prepaid_balance, is_active, is_super_agent, is_sub_agent, is_manufacturer, ' +
         'parent_agent_id, auto_approve_orders, provisioned_password, last_sign_in_at, ' +
         'agent_profiles(slug, is_active)'
       )

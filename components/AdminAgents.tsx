@@ -89,6 +89,11 @@ export default function AdminAgents() {
 
   const [togglingTrust, setTogglingTrust] = useState<string | null>(null);
 
+  // Assign-to-manufacturer inline control
+  const [assigningParentFor, setAssigningParentFor] = useState<string | null>(null);
+  const [assignParentValue, setAssignParentValue] = useState<string>('');
+  const [assignParentSaving, setAssignParentSaving] = useState(false);
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createForm, setCreateForm] = useState({
     firstName: '',
@@ -674,6 +679,94 @@ export default function AdminAgents() {
                   >
                     View Downlines
                   </button>
+
+                  {/* Assign to Manufacturer — only shown for super agents */}
+                  {agent.is_super_agent && (() => {
+                    const manufacturers = agents.filter((a: any) => a.is_manufacturer);
+                    const currentParent = agent.parent_agent_id
+                      ? agents.find((a: any) => a.id === agent.parent_agent_id)
+                      : null;
+                    const isOpen = assigningParentFor === agent.id;
+                    return (
+                      <div style={{ position: 'relative' }}>
+                        <button
+                          className="btn-silver"
+                          style={{ padding: '6px 12px', fontSize: '0.8rem', borderColor: 'rgba(0,196,188,0.4)', color: 'var(--teal)' }}
+                          onClick={() => {
+                            if (isOpen) { setAssigningParentFor(null); return; }
+                            setAssigningParentFor(agent.id);
+                            setAssignParentValue(agent.parent_agent_id ?? '');
+                          }}
+                        >
+                          ↳ {currentParent ? `Under: ${currentParent.full_name || currentParent.username}` : 'Assign Parent'}
+                        </button>
+                        {isOpen && (
+                          <div style={{
+                            position: 'absolute', right: 0, top: '100%', marginTop: 4, zIndex: 999,
+                            background: '#0F1923', border: '1px solid rgba(0,196,188,0.3)', borderRadius: 10,
+                            padding: 12, minWidth: 240, boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+                            display: 'flex', flexDirection: 'column', gap: 8,
+                          }}>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--silver)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Assign To Manufacturer</div>
+                            <select
+                              value={assignParentValue}
+                              onChange={e => setAssignParentValue(e.target.value)}
+                              style={{ background: '#1D2D3E', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, color: 'var(--white)', padding: '6px 8px', fontSize: '0.82rem' }}
+                            >
+                              <option value="">— Root Level (No Parent) —</option>
+                              {manufacturers.map((m: any) => (
+                                <option key={m.id} value={m.id}>
+                                  {m.full_name || m.username}{m.username ? ` (@${m.username})` : ''}
+                                </option>
+                              ))}
+                            </select>
+                            {manufacturers.length === 0 && (
+                              <div style={{ fontSize: '0.74rem', color: 'var(--grey-400)', fontStyle: 'italic' }}>No manufacturers found in the system.</div>
+                            )}
+                            <div style={{ display: 'flex', gap: 6 }}>
+                              <button
+                                disabled={assignParentSaving}
+                                style={{ flex: 1, padding: '6px 10px', fontSize: '0.78rem', fontWeight: 700, background: 'var(--teal)', color: '#04221F', border: 'none', borderRadius: 6, cursor: 'pointer', opacity: assignParentSaving ? 0.5 : 1 }}
+                                onClick={async () => {
+                                  setAssignParentSaving(true);
+                                  try {
+                                    const res = await fetch('/api/admin/agents/reparent', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({
+                                        agentId: agent.id,
+                                        parentAgentId: assignParentValue || null,
+                                      }),
+                                    });
+                                    const json = await res.json();
+                                    if (!res.ok) {
+                                      toast.error(json.error || 'Failed to assign parent');
+                                    } else {
+                                      toast.success(assignParentValue ? 'Agent assigned to manufacturer' : 'Agent moved to root level');
+                                      setAssigningParentFor(null);
+                                      fetchAgents();
+                                    }
+                                  } catch {
+                                    toast.error('Network error — please try again');
+                                  } finally {
+                                    setAssignParentSaving(false);
+                                  }
+                                }}
+                              >
+                                {assignParentSaving ? 'Saving...' : 'Confirm'}
+                              </button>
+                              <button
+                                style={{ padding: '6px 10px', fontSize: '0.78rem', background: 'rgba(255,255,255,0.05)', color: 'var(--silver)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, cursor: 'pointer' }}
+                                onClick={() => setAssigningParentFor(null)}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
 
               </div>

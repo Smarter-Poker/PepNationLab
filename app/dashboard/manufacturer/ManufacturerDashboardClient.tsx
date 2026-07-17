@@ -136,6 +136,18 @@ export default function ManufacturerDashboardClient() {
   const [nCommission, setNCommission] = useState('10');
   const [nSuperAgent, setNSuperAgent] = useState(false);
 
+  // Network sub-tab
+  const [networkSubTab, setNetworkSubTab] = useState<'agents' | 'orders' | 'recruit'>('agents');
+  // Network orders
+  const [networkOrders, setNetworkOrders] = useState<any[]>([]);
+  const [networkOrderAgentMap, setNetworkOrderAgentMap] = useState<Record<string, string>>({});
+  const [networkOrdersLoading, setNetworkOrdersLoading] = useState(false);
+  const [networkOrdersLoaded, setNetworkOrdersLoaded] = useState(false);
+  const [networkOrdersError, setNetworkOrdersError] = useState<string | null>(null);
+  // Recruit / QR
+  const [networkQr, setNetworkQr] = useState<string | null>(null);
+  const [networkQrLoaded, setNetworkQrLoaded] = useState(false);
+
   const load = useCallback(async () => {
     setLoadError(false);
     try {
@@ -689,6 +701,42 @@ export default function ManufacturerDashboardClient() {
         {tab === 'network' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
 
+            {/* Network sub-tabs */}
+            <div style={{ display: 'flex', gap: 4, padding: '0 2px' }}>
+              {(['agents', 'orders', 'recruit'] as const).map(st => (
+                <button
+                  key={st}
+                  type="button"
+                  onClick={() => {
+                    setNetworkSubTab(st);
+                    if (st === 'orders' && !networkOrdersLoaded && !networkOrdersLoading) {
+                      setNetworkOrdersLoading(true);
+                      fetch('/api/manufacturer/network-orders', { cache: 'no-store' })
+                        .then(r => r.json())
+                        .then(j => { setNetworkOrders(j.orders ?? []); setNetworkOrderAgentMap(j.agentMap ?? {}); setNetworkOrdersLoaded(true); setNetworkOrdersLoading(false); })
+                        .catch(() => { setNetworkOrdersError('Failed to load orders'); setNetworkOrdersLoading(false); });
+                    }
+                    if (st === 'recruit' && !networkQrLoaded) {
+                      fetch('/api/agent/my-qr', { cache: 'no-store' })
+                        .then(r => r.json())
+                        .then(j => { setNetworkQr(j.qrDataUrl ?? null); setNetworkQrLoaded(true); })
+                        .catch(() => setNetworkQrLoaded(true));
+                    }
+                  }}
+                  style={{
+                    padding: '7px 16px', fontSize: '0.8rem', fontWeight: 700, borderRadius: 8, border: 'none',
+                    cursor: 'pointer',
+                    background: networkSubTab === st ? 'rgba(0,196,188,0.15)' : 'transparent',
+                    color: networkSubTab === st ? 'var(--teal, #00C4BC)' : 'var(--silver, #A8B4C0)',
+                    borderBottom: networkSubTab === st ? '2px solid var(--teal, #00C4BC)' : '2px solid transparent',
+                  }}
+                >
+                  {st === 'agents' ? '👥 My Agents' : st === 'orders' ? '📦 Network Orders' : '🔗 Recruit'}
+                </button>
+              ))}
+            </div>
+            {networkSubTab === 'agents' && (<>
+
             {/* Stats bar */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
               {[{
@@ -929,6 +977,152 @@ export default function ManufacturerDashboardClient() {
                 </div>
               )}
             </div>
+            </>)}
+
+            {/* ── Network: Orders ── */}
+            {networkSubTab === 'orders' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div style={card}>
+                  <div style={{ fontWeight: 800, fontSize: '0.95rem', marginBottom: 14 }}>Network Orders — All Agents</div>
+                  {networkOrdersLoading && <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.85rem' }}>Loading orders...</div>}
+                  {networkOrdersError && <div style={{ color: '#E53E3E', fontSize: '0.85rem' }}>{networkOrdersError}</div>}
+                  {!networkOrdersLoading && !networkOrdersError && networkOrders.length === 0 && networkOrdersLoaded && (
+                    <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.85rem', textAlign: 'center', padding: '24px 0' }}>No orders found from your agents yet.</div>
+                  )}
+                  {networkOrders.length > 0 && (
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                            {['Date', 'Agent', 'Customer', 'Status', 'Total'].map(h => (
+                              <th key={h} style={{ textAlign: 'left', padding: '8px 10px', color: 'var(--silver, #A8B4C0)', fontWeight: 700, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {networkOrders.map((o: any) => (
+                            <tr key={o.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                              <td style={{ padding: '9px 10px', color: 'var(--silver, #A8B4C0)', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
+                                {new Date(o.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </td>
+                              <td style={{ padding: '9px 10px', fontWeight: 600, color: 'var(--white, #FFFFFF)' }}>
+                                {networkOrderAgentMap[o.agent_id] || o.agent_id?.split('-')[0]}
+                              </td>
+                              <td style={{ padding: '9px 10px', color: 'var(--silver, #A8B4C0)' }}>{o.buyer_name || '—'}</td>
+                              <td style={{ padding: '9px 10px' }}>
+                                <span style={{ fontSize: '0.68rem', padding: '2px 8px', borderRadius: 999, fontWeight: 700,
+                                  background: o.status === 'shipped' || o.status === 'delivered' ? 'rgba(0,196,188,0.1)' : o.status === 'cancelled' ? 'rgba(229,62,62,0.1)' : 'rgba(168,180,192,0.1)',
+                                  color: o.status === 'shipped' || o.status === 'delivered' ? 'var(--teal, #00C4BC)' : o.status === 'cancelled' ? '#E53E3E' : 'var(--silver, #A8B4C0)'
+                                }}>
+                                  {o.status}
+                                </span>
+                              </td>
+                              <td style={{ padding: '9px 10px', fontWeight: 700, color: 'var(--teal, #00C4BC)' }}>${Number(o.total || 0).toFixed(2)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* Network orders summary */}
+                {networkOrders.length > 0 && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
+                    {[{
+                      label: 'Total Orders', value: networkOrders.length,
+                    }, {
+                      label: 'Total Revenue',
+                      value: `$${networkOrders.reduce((s: number, o: any) => s + Number(o.total || 0), 0).toFixed(2)}`,
+                    }, {
+                      label: 'Pending',
+                      value: networkOrders.filter((o: any) => o.status === 'pending' || o.status === 'processing').length,
+                    }, {
+                      label: 'Shipped',
+                      value: networkOrders.filter((o: any) => o.status === 'shipped' || o.status === 'delivered').length,
+                    }].map(stat => (
+                      <div key={stat.label} style={{ ...card, textAlign: 'center', padding: '12px' }}>
+                        <div style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--teal, #00C4BC)', fontFamily: 'monospace' }}>{stat.value}</div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--silver, #A8B4C0)', marginTop: 2 }}>{stat.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Network: Recruit ── */}
+            {networkSubTab === 'recruit' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div style={card}>
+                  <div style={{ fontWeight: 800, fontSize: '0.95rem', marginBottom: 14 }}>Recruit New Agents</div>
+                  <p style={{ margin: '0 0 16px', fontSize: '0.84rem', color: 'var(--silver, #A8B4C0)', lineHeight: 1.6 }}>
+                    Share your storefront link or QR code to recruit agents under your brand. Any agent who signs up through your link will be connected to your network.
+                  </p>
+
+                  {/* Storefront link */}
+                  {data?.profile.slug && (
+                    <div style={{ marginBottom: 18 }}>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--silver, #A8B4C0)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Your Storefront Link</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <code style={{ background: '#1D2D3E', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '8px 12px', fontSize: '0.9rem', color: 'var(--teal, #00C4BC)', fontWeight: 700, flex: 1, minWidth: 200 }}>
+                          pepnationlab.com/{data.profile.slug}
+                        </code>
+                        <button
+                          type="button"
+                          style={{ ...btnGhost, padding: '8px 14px', fontSize: '0.8rem' }}
+                          onClick={() => { navigator.clipboard.writeText(`https://pepnationlab.com/${data!.profile.slug}`).catch(() => {}); }}
+                        >
+                          Copy
+                        </button>
+                        <a
+                          href={`/${data.profile.slug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ ...btnGhost, padding: '8px 14px', fontSize: '0.8rem', textDecoration: 'none', display: 'inline-flex' }}
+                        >
+                          Open ↗
+                        </a>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* QR Code */}
+                  <div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--silver, #A8B4C0)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>QR Code</div>
+                    {!networkQrLoaded && <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.82rem' }}>Loading QR code...</div>}
+                    {networkQrLoaded && networkQr ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 10 }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={networkQr} alt="Your QR code" style={{ width: 180, height: 180, borderRadius: 10, background: 'white', padding: 8 }} />
+                        <a
+                          href={networkQr}
+                          download="savage-brands-qr.png"
+                          style={{ ...btnGhost, padding: '7px 14px', fontSize: '0.78rem', textDecoration: 'none', display: 'inline-flex' }}
+                        >
+                          ↓ Download QR
+                        </a>
+                      </div>
+                    ) : networkQrLoaded ? (
+                      <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.82rem' }}>QR code not available. Contact admin.</div>
+                    ) : null}
+                  </div>
+                </div>
+
+                {/* Quick-create agent shortcut */}
+                <div style={card}>
+                  <div style={{ fontWeight: 800, fontSize: '0.95rem', marginBottom: 8 }}>Quick Create Agent</div>
+                  <p style={{ margin: '0 0 12px', fontSize: '0.82rem', color: 'var(--silver, #A8B4C0)' }}>Prefer to set up an agent directly? Switch to the Agents tab and click "+ New Agent".</p>
+                  <button
+                    type="button"
+                    style={{ ...btnPrimary, padding: '8px 16px', fontSize: '0.82rem' }}
+                    onClick={() => { setNetworkSubTab('agents'); setShowCreateForm(true); }}
+                  >
+                    Go to Create Agent Form
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>

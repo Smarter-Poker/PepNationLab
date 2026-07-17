@@ -180,11 +180,13 @@ export async function GET() {
     let priceMap: Map<string, { agent_cost: number; retail_price: number }> = new Map();
     if (allProductIds.length > 0) {
       // Fetch per-product DB rows (retail_price per 10-pack, base_cost per 10-pack).
+      // NOTE: intentionally NOT filtering by is_visible — a hidden individual product
+      // still has a real cost and retail value that must count toward the bundle totals.
+      // Filtering it out would silently underreport cost for bundles containing hidden members.
       const { data: apRows } = await svc
         .from('agent_products')
         .select('product_id, retail_price, products ( base_cost )')
         .eq('agent_id', gate.user.id)
-        .eq('is_visible', true)
         .in('product_id', allProductIds);
 
       if (apRows) {
@@ -256,8 +258,9 @@ async function computeMemberSum(svc: Awaited<ReturnType<typeof createServiceClie
     .from('agent_products')
     .select('retail_price')
     .eq('agent_id', agentId)
-    .in('product_id', productIds)
-    .eq('is_visible', true);
+    .in('product_id', productIds);
+  // NOTE: intentionally no is_visible filter — hidden bundle members still carry
+  // real retail prices that must be included when auto-computing the bundle price.
   let sum = 0;
   if (rows) {
     for (const r of rows) {
@@ -266,6 +269,7 @@ async function computeMemberSum(svc: Awaited<ReturnType<typeof createServiceClie
   }
   return sum;
 }
+
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
