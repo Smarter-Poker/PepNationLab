@@ -735,6 +735,7 @@ export default function AgentStorefrontGrid({
     if (p) setDetailHistory([p]);
     else setDetailHistory([]);
   };
+  const [selectedBundle, setSelectedBundle] = useState<BundleConfig | null>(null);
   const [showEli5, setShowEli5] = useState(false);
 
   useEffect(() => {
@@ -2045,7 +2046,16 @@ export default function AgentStorefrontGrid({
     if (!resolved) return null;
     const inCart = bundleCart.some((l) => l.bundleName === bundle.name);
     return (
-      <div key={bundle.id} className="sf-product-card-nickel" style={{ padding: 'var(--space-5)', display: 'flex', flexDirection: 'column' }}>
+      <div
+        key={bundle.id}
+        className="sf-product-card-nickel"
+        style={{ padding: 'var(--space-5)', display: 'flex', flexDirection: 'column', cursor: 'pointer' }}
+        onClick={() => setSelectedBundle(bundle)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelectedBundle(bundle); }}
+        aria-label={`View ${bundle.name} details`}
+      >
         {bundle.image_url && (
           <div style={{ position: 'relative', width: '100%', height: 150, borderRadius: 'var(--radius-md)', overflow: 'hidden', marginBottom: 'var(--space-4)', background: 'var(--surface-3)' }}>
             <Image src={bundle.image_url} alt={bundle.name} fill unoptimized sizes="(max-width: 768px) 100vw, 33vw" style={{ objectFit: 'cover' }} />
@@ -2078,7 +2088,7 @@ export default function AgentStorefrontGrid({
           </div>
           <button
             type="button"
-            onClick={() => (inCart ? removeBundleFromCart(bundle.name) : addBundleToCart(bundle))}
+            onClick={(e) => { e.stopPropagation(); inCart ? removeBundleFromCart(bundle.name) : addBundleToCart(bundle); }}
             className={inCart ? 'btn btn-outline' : 'btn-primary'}
             style={{ width: '100%', height: 40, fontSize: '0.85rem', color: inCart ? 'var(--white)' : undefined, borderColor: inCart ? 'rgba(255,255,255,0.2)' : undefined }}
           >
@@ -4580,6 +4590,208 @@ export default function AgentStorefrontGrid({
         onClose={() => setGuestModalFeature(null)}
         featureLabel={guestModalFeature ?? 'This Feature'}
       />
+
+      {/* Bundle detail modal — same sheet pattern as the product detail view */}
+      {selectedBundle && mounted && (() => {
+        const resolved = resolveBundle(selectedBundle);
+        if (!resolved) return null;
+        const inCart = bundleCart.some((l) => l.bundleName === selectedBundle.name);
+        return createPortal(
+          <div
+            className="sf-modal-overlay"
+            onClick={() => setSelectedBundle(null)}
+            style={{ zIndex: 999998 }}
+          >
+            <div
+              className="sf-modal-sheet"
+              onClick={(e) => e.stopPropagation()}
+              style={{ maxWidth: 560, margin: '0 auto' }}
+            >
+              {/* Back bar */}
+              <div style={{
+                display: 'flex', alignItems: 'center', padding: '14px 18px 10px',
+                background: 'linear-gradient(180deg, #131b24 78%, rgba(19,27,36,0))',
+                position: 'sticky', top: 0, zIndex: 10,
+              }}>
+                <button
+                  onClick={() => setSelectedBundle(null)}
+                  aria-label="Close bundle"
+                  style={{
+                    width: 34, height: 34, minWidth: 34, minHeight: 34,
+                    borderRadius: '50%', padding: 0,
+                    background: 'linear-gradient(180deg, #2b3744 0%, #1b242e 100%)',
+                    border: '1px solid rgba(190,200,210,0.30)',
+                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18), 0 3px 9px rgba(0,0,0,0.5)',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', boxSizing: 'border-box', flexShrink: 0,
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
+                </button>
+                <div style={{ flex: 1 }} />
+                <div style={{ width: 44, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.20)' }} aria-hidden="true" />
+                <div style={{ flex: 1 }} />
+              </div>
+
+              {/* Sticky add-to-cart top bar */}
+              <div style={{
+                position: 'sticky', top: 0, zIndex: 40,
+                display: 'flex', alignItems: 'center', gap: 12,
+                padding: '10px 18px',
+                background: 'rgba(15,25,35,0.96)',
+                backdropFilter: 'blur(8px)',
+                borderBottom: '1px solid rgba(255,255,255,0.06)',
+              }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--white)', fontFamily: 'var(--font-brand)' }}>
+                    {selectedBundle.name}
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: primaryColor, fontWeight: 600 }}>
+                    ${formatPrice(resolved.finalPrice)}
+                    {resolved.discountPct > 0 && (
+                      <span style={{ color: '#68D391', marginLeft: 8, fontSize: '0.72rem' }}>Save {resolved.discountPct}%</span>
+                    )}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { inCart ? removeBundleFromCart(selectedBundle.name) : addBundleToCart(selectedBundle); }}
+                  style={{
+                    padding: '9px 18px', borderRadius: 8, fontWeight: 700, fontSize: '0.82rem',
+                    background: inCart ? 'transparent' : `linear-gradient(135deg, ${primaryColor} 0%, ${primaryColor}cc 100%)`,
+                    border: inCart ? '1px solid rgba(255,255,255,0.2)' : 'none',
+                    color: 'var(--white)', cursor: 'pointer', whiteSpace: 'nowrap',
+                    boxShadow: inCart ? 'none' : '0 2px 12px rgba(0,0,0,0.4)',
+                    transition: 'opacity 0.15s',
+                  }}
+                >
+                  <ShoppingCart size={14} style={{ display: 'inline', marginRight: 6, verticalAlign: 'middle' }} />
+                  {inCart ? 'Remove' : 'Add To Cart'}
+                </button>
+              </div>
+
+              {/* Hero image */}
+              {selectedBundle.image_url && (
+                <div style={{ position: 'relative', width: '100%', height: 220, background: 'var(--surface-3)' }}>
+                  <Image
+                    src={selectedBundle.image_url}
+                    alt={selectedBundle.name}
+                    fill
+                    unoptimized
+                    sizes="560px"
+                    style={{ objectFit: 'cover' }}
+                  />
+                </div>
+              )}
+
+              {/* Body */}
+              <div style={{ padding: '24px 20px 40px' }}>
+                {/* Bundle name + badge */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                  <h2 style={{ fontFamily: 'var(--font-brand)', fontSize: '1.5rem', color: 'var(--white)', margin: 0, lineHeight: 1.2 }}>
+                    {selectedBundle.name}
+                  </h2>
+                  <span style={{
+                    fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em',
+                    padding: '4px 10px', borderRadius: 'var(--radius-full)',
+                    background: `${primaryColor}20`, border: `1px solid ${primaryColor}40`, color: primaryColor, whiteSpace: 'nowrap',
+                  }}>Bundle</span>
+                </div>
+
+                {/* Description */}
+                {selectedBundle.description && (
+                  <p style={{ fontSize: '0.9rem', color: 'var(--grey-300)', lineHeight: 1.65, marginBottom: 24 }}>
+                    {selectedBundle.description}
+                  </p>
+                )}
+
+                {/* What's included */}
+                <div style={{ marginBottom: 28 }}>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--grey-500)', marginBottom: 12 }}>
+                    What&apos;s Included ({resolved.members.length} Products)
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {resolved.members.map((m) => {
+                      const img = m.custom_image_url || m.products?.image_url || '/images/peptide_clear.png';
+                      const name = m.custom_name || m.products?.name || 'Product';
+                      const size = m.products?.unit_size ? `${m.products.unit_size}${m.products.unit_measure || ''}` : '';
+                      const perVial = (Number(m.retail_price) || 0) / 10;
+                      return (
+                        <div key={m.id} style={{
+                          display: 'flex', alignItems: 'center', gap: 14,
+                          background: 'rgba(255,255,255,0.04)', borderRadius: 10,
+                          padding: '10px 14px', border: '1px solid rgba(255,255,255,0.07)',
+                        }}>
+                          <Image
+                            src={img}
+                            alt={name}
+                            width={48}
+                            height={48}
+                            unoptimized
+                            style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }}
+                            onError={(e) => { const t = e.target as HTMLImageElement; if (!t.src.includes('/images/peptide_clear.png')) { t.srcset = ''; t.src = '/images/peptide_clear.png'; } }}
+                          />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--white)', marginBottom: 2 }}>{name}</div>
+                            {size && <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)' }}>{size}</div>}
+                          </div>
+                          <div style={{ fontSize: '0.88rem', fontWeight: 700, color: primaryColor, whiteSpace: 'nowrap' }}>
+                            ${formatPrice(perVial)}<span style={{ fontSize: '0.65rem', color: 'var(--grey-500)', fontWeight: 400 }}>/vial</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Pricing summary */}
+                <div style={{
+                  background: 'rgba(0,0,0,0.35)', borderRadius: 12, padding: '18px 20px',
+                  border: '1px solid rgba(255,255,255,0.08)', marginBottom: 24,
+                }}>
+                  {resolved.discountPct > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>Regular Price</span>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)', textDecoration: 'line-through' }}>${formatPrice(resolved.fullPrice)}</span>
+                    </div>
+                  )}
+                  {resolved.discountPct > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <span style={{ fontSize: '0.85rem', color: '#68D391' }}>Bundle Savings</span>
+                      <span style={{ fontSize: '0.85rem', color: '#68D391', fontWeight: 700 }}>−${formatPrice(resolved.fullPrice - resolved.finalPrice)} ({resolved.discountPct}% Off)</span>
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: resolved.discountPct > 0 ? '1px solid rgba(255,255,255,0.08)' : 'none', paddingTop: resolved.discountPct > 0 ? 12 : 0, marginTop: resolved.discountPct > 0 ? 8 : 0 }}>
+                    <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--white)' }}>Bundle Price</span>
+                    <span style={{ fontSize: '1.3rem', fontWeight: 800, color: primaryColor, fontFamily: 'var(--font-brand)' }}>${formatPrice(resolved.finalPrice)}</span>
+                  </div>
+                </div>
+
+                {/* Main CTA */}
+                <button
+                  type="button"
+                  onClick={() => { inCart ? removeBundleFromCart(selectedBundle.name) : addBundleToCart(selectedBundle); }}
+                  style={{
+                    width: '100%', height: 52, borderRadius: 10,
+                    fontFamily: 'var(--font-brand)', fontSize: '1.05rem', fontWeight: 700,
+                    background: inCart ? 'transparent' : `linear-gradient(135deg, ${primaryColor} 0%, ${primaryColor}bb 100%)`,
+                    border: inCart ? '1px solid rgba(255,255,255,0.2)' : 'none',
+                    color: 'var(--white)', cursor: 'pointer',
+                    boxShadow: inCart ? 'none' : '0 4px 20px rgba(0,0,0,0.4)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                    transition: 'opacity 0.15s',
+                  }}
+                >
+                  <ShoppingCart size={18} />
+                  {inCart ? 'Remove Bundle From Cart' : 'Add Bundle To Cart'}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        );
+      })()}
     </div>
+
   );
 }
