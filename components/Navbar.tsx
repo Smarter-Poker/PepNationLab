@@ -14,7 +14,9 @@ import { evictAllCatalogCaches } from '@/lib/storefront-cache';
 import { useModalA11y } from '@/lib/useModalA11y';
 import GlobalCompletenessWidget from '@/components/GlobalCompletenessWidget';
 import { toast } from 'sonner';
-import { triggerInstall, isRunningAsApp, isKnownInstalled, subscribeInstallState } from '@/lib/pwaInstall';
+import { triggerInstall, isRunningAsApp, isKnownInstalled, subscribeInstallState, isIosSafari } from '@/lib/pwaInstall';
+import dynamic from 'next/dynamic';
+const PwaIosInstructions = dynamic(() => import('@/components/PwaIosInstructions'), { ssr: false });
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { isLocale } from '@/lib/i18n';
 import { SUPPORTED_LOCALES, LOCALE_LABELS, type Locale } from '@/lib/i18n/manufacturer-dict';
@@ -144,6 +146,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
   // Whether to surface the manual "Download Pep Nation App" menu item: only
   // when NOT already installed (or running as the app) on this device.
   const [canOfferInstall, setCanOfferInstall] = useState(false);
+  const [showIosInstructions, setShowIosInstructions] = useState(false);
   // Drawer language (Phase 1 of the trilingual agent surface). Shares the
   // manufacturer dashboard's localStorage key so one choice follows the user
   // across every surface.
@@ -202,10 +205,11 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
     }
   };
 
-  // Manual PWA install entry. Only offered when the app is NOT already
-  // installed on this device (desktop and mobile detected independently).
+  // Manual PWA install entry. Offered when the app is NOT already installed.
+  // On iOS we always show it (no beforeinstallprompt ever fires there) unless
+  // already running as the installed app.
   useEffect(() => {
-    const update = () => setCanOfferInstall(!isRunningAsApp() && !isKnownInstalled());
+    const update = () => setCanOfferInstall(!isRunningAsApp() && (!isKnownInstalled() || isIosSafari()));
     update();
     return subscribeInstallState(update);
   }, []);
@@ -214,7 +218,8 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
     closeDrawer();
     const result = await triggerInstall();
     if (result === 'ios-instructions') {
-      toast('To Install: Tap The Share Icon, Then "Add To Home Screen".', { duration: 6000 });
+      // Show the full step-by-step iOS sheet instead of a plain toast
+      setShowIosInstructions(true);
     } else if (result === 'unavailable') {
       toast('To Install, Open Your Browser Menu (Or The Address-Bar Install Icon) And Choose "Install App".', { duration: 6000 });
     } else if (result === 'already-installed') {
@@ -753,6 +758,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
       )}
 
       <MyQRCodeModal open={showQRModal} onClose={() => setShowQRModal(false)} />
+      {showIosInstructions && <PwaIosInstructions onClose={() => setShowIosInstructions(false)} />}
 
       <style>{`
         .pnl-navbar { }

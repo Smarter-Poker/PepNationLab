@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
+const PwaIosInstructions = dynamic(() => import('@/components/PwaIosInstructions'), { ssr: false });
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -50,6 +52,8 @@ export default function PwaInstallPrompt() {
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
   const [visible, setVisible] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [iosVisible, setIosVisible] = useState(false);
+  const [showIosModal, setShowIosModal] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -107,6 +111,16 @@ export default function PwaInstallPrompt() {
         .catch(() => { /* unsupported / rejected -> rely on the other signals */ });
     }
 
+    // iOS: no beforeinstallprompt, but we can still show a manual-install banner
+    // after the same 30-second delay if the user hasn't dismissed it recently.
+    const ua = navigator.userAgent || '';
+    const maxTouch = (navigator as unknown as { maxTouchPoints?: number }).maxTouchPoints || 0;
+    const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && maxTouch > 1);
+    const isSafari = /WebKit/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
+    if (isIOS && isSafari && !cancelled) {
+      timer = window.setTimeout(() => { if (!cancelled) setIosVisible(true); }, DELAY_MS);
+    }
+
     return () => {
       cancelled = true;
       window.removeEventListener('beforeinstallprompt', onBeforeInstall);
@@ -114,6 +128,84 @@ export default function PwaInstallPrompt() {
       window.clearTimeout(timer);
     };
   }, []);
+
+  // iOS banner (no deferred event available)
+  if (iosVisible && !showIosModal) {
+    return (
+      <>
+        <div
+          role="dialog"
+          aria-label="Install Pep Nation Lab On Your iPhone"
+          style={{
+            position: 'fixed',
+            bottom: 'calc(max(16px, env(safe-area-inset-bottom)) + 8px)',
+            right: 'max(16px, env(safe-area-inset-right))',
+            left: 'auto',
+            zIndex: 9999,
+            maxWidth: 'min(320px, calc(100vw - 32px))',
+            background: '#0F1923',
+            border: '1px solid rgba(0,196,188,0.35)',
+            borderRadius: '0.75rem',
+            boxShadow: '0 10px 32px rgba(0,0,0,0.45)',
+            color: '#FFFFFF',
+            padding: '0.9rem 0.95rem',
+            fontSize: '0.85rem',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'start', gap: '0.6rem' }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00C4BC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0, marginTop: 2 }}>
+              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+              <polyline points="16 6 12 2 8 6"/>
+              <line x1="12" y1="2" x2="12" y2="15"/>
+            </svg>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 700, marginBottom: 4 }}>Add Pep Nation Lab To Your Home Screen</div>
+              <div style={{ color: '#A8B4C0', fontSize: '0.78rem', lineHeight: 1.4 }}>
+                Tap below to see how — it only takes 3 quick steps.
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => { setIosVisible(false); setShowIosModal(true); }}
+                  style={{
+                    background: '#00C4BC', color: '#050A0F',
+                    border: 'none', borderRadius: '0.4rem',
+                    padding: '0.4rem 0.9rem', fontWeight: 700,
+                    cursor: 'pointer',
+                    fontSize: '0.78rem',
+                  }}
+                >
+                  Show Me How
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIosVisible(false);
+                    try { localStorage.setItem(DISMISS_KEY, String(Date.now())); } catch { /* ignore */ }
+                  }}
+                  style={{
+                    background: 'transparent', color: '#A8B4C0',
+                    border: '1px solid rgba(255,255,255,0.12)', borderRadius: '0.4rem',
+                    padding: '0.4rem 0.9rem', fontWeight: 600, cursor: 'pointer',
+                    fontSize: '0.78rem',
+                  }}
+                >
+                  Not Now
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (showIosModal) {
+    return <PwaIosInstructions onClose={() => {
+      setShowIosModal(false);
+      try { localStorage.setItem(DISMISS_KEY, String(Date.now())); } catch { /* ignore */ }
+    }} />;
+  }
 
   if (!visible || !deferred) return null;
 
