@@ -77,13 +77,15 @@ export async function POST(
   }
 
   // Audit log
-  await supabase.from('admin_audit_log').insert({
-    actor_id: manufacturerId,
-    action: 'manufacturer_super_agent_toggle',
-    entity_type: 'profiles',
-    entity_id: agentId,
-    changes: { is_super_agent, role: newRole, target_name: target.full_name },
-  }).catch(() => { /* non-fatal */ });
+  try {
+    await supabase.from('admin_audit_log').insert({
+      actor_id: manufacturerId,
+      action: 'manufacturer_super_agent_toggle',
+      entity_type: 'profiles',
+      entity_id: agentId,
+      changes: { is_super_agent, role: newRole, target_name: target.full_name },
+    });
+  } catch { /* non-fatal */ }
 
   return NextResponse.json({ success: true, is_super_agent, role: newRole });
 }

@@ -74,7 +74,23 @@ interface Overview {
   ledger: { rows: LedgerRow[]; totals: LedgerTotals; totals30: LedgerTotals };
 }
 
-type Tab = 'products' | 'orders' | 'earnings' | 'settings';
+type Tab = 'products' | 'orders' | 'earnings' | 'settings' | 'network';
+
+interface NetworkAgent {
+  id: string;
+  username: string | null;
+  fullName: string | null;
+  role: string;
+  isSuperAgent: boolean;
+  isActive: boolean;
+  commissionPct: number | null;
+  tier: string | null;
+  accountType: string | null;
+  createdAt: string;
+  slug: string | null;
+  displayName: string | null;
+  gmv30d: number;
+}
 
 const money = (n: number | null | undefined) =>
   n == null || !Number.isFinite(Number(n)) ? '--' : `$${Number(n).toFixed(2)}`;
@@ -100,6 +116,25 @@ export default function ManufacturerDashboardClient() {
   const [pw2, setPw2] = useState('');
   const [pwMsg, setPwMsg] = useState<{ ok: boolean; key: string } | null>(null);
   const [pwBusy, setPwBusy] = useState(false);
+
+  // Network tab state
+  const [networkAgents, setNetworkAgents] = useState<NetworkAgent[]>([]);
+  const [networkLoading, setNetworkLoading] = useState(false);
+  const [networkError, setNetworkError] = useState<string | null>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [createBusy, setCreateBusy] = useState(false);
+  const [createMsg, setCreateMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [agentToggles, setAgentToggles] = useState<Record<string, boolean>>({});
+  // Create form fields
+  const [nUsername, setNUsername] = useState('');
+  const [nPassword, setNPassword] = useState('');
+  const [nFullName, setNFullName] = useState('');
+  const [nDisplayName, setNDisplayName] = useState('');
+  const [nSlug, setNSlug] = useState('');
+  const [nTier, setNTier] = useState('tier_1');
+  const [nAccountType, setNAccountType] = useState('prepaid');
+  const [nCommission, setNCommission] = useState('10');
+  const [nSuperAgent, setNSuperAgent] = useState(false);
 
   const load = useCallback(async () => {
     setLoadError(false);
@@ -336,11 +371,20 @@ export default function ManufacturerDashboardClient() {
 
       {/* Tabs */}
       <nav style={{ display: 'flex', gap: 6, padding: '14px 20px 0', flexWrap: 'wrap' }}>
-        {(['products', 'orders', 'earnings', 'settings'] as Tab[]).map(k => (
+        {(['products', 'orders', 'earnings', 'network', 'settings'] as Tab[]).map(k => (
           <button
             key={k}
             type="button"
-            onClick={() => setTab(k)}
+            onClick={() => {
+              setTab(k);
+              if (k === 'network' && networkAgents.length === 0 && !networkLoading) {
+                setNetworkLoading(true);
+                fetch('/api/manufacturer/agents', { cache: 'no-store' })
+                  .then(r => r.json())
+                  .then(j => { setNetworkAgents(j.agents ?? []); setNetworkLoading(false); })
+                  .catch(() => { setNetworkError('Failed to load network'); setNetworkLoading(false); });
+              }
+            }}
             style={{
               border: 'none', cursor: 'pointer', borderRadius: 10, padding: '9px 16px',
               fontWeight: 800, fontSize: '0.82rem',
@@ -349,7 +393,7 @@ export default function ManufacturerDashboardClient() {
               borderBottom: tab === k ? 'none' : '1px solid rgba(255,255,255,0.06)',
             }}
           >
-            {t(`tab_${k}`)}
+            {k === 'network' ? '🌐 Network' : t(`tab_${k}`)}
           </button>
         ))}
       </nav>
@@ -637,6 +681,253 @@ export default function ManufacturerDashboardClient() {
                   )}
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Network ── */}
+        {tab === 'network' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+
+            {/* Stats bar */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
+              {[{
+                label: 'Total Agents',
+                value: networkAgents.length,
+              }, {
+                label: 'Active Agents',
+                value: networkAgents.filter(a => a.isActive).length,
+              }, {
+                label: 'Super Agents',
+                value: networkAgents.filter(a => a.isSuperAgent).length,
+              }, {
+                label: 'Network GMV (30d)',
+                value: `$${networkAgents.reduce((s, a) => s + a.gmv30d, 0).toFixed(2)}`,
+              }].map(stat => (
+                <div key={stat.label} style={{ ...card, textAlign: 'center', padding: '14px 12px' }}>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--teal, #00C4BC)', fontFamily: 'monospace' }}>{stat.value}</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--silver, #A8B4C0)', marginTop: 2 }}>{stat.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Create agent button / form */}
+            <div style={card}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: showCreateForm ? 16 : 0 }}>
+                <div style={{ fontWeight: 800, fontSize: '0.95rem' }}>Create Agent</div>
+                <button
+                  type="button"
+                  onClick={() => { setShowCreateForm(s => !s); setCreateMsg(null); }}
+                  style={{ ...btnPrimary, padding: '7px 14px', fontSize: '0.8rem' }}
+                >
+                  {showCreateForm ? '✕ Cancel' : '+ New Agent'}
+                </button>
+              </div>
+
+              {showCreateForm && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <label style={label}>
+                      Username *
+                      <input value={nUsername} onChange={e => setNUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))} style={{ ...inputStyle, marginTop: 4 }} placeholder="johnsmith" />
+                    </label>
+                    <label style={label}>
+                      Password *
+                      <input type="password" value={nPassword} onChange={e => setNPassword(e.target.value)} style={{ ...inputStyle, marginTop: 4 }} placeholder="Min 8 chars" autoComplete="new-password" />
+                    </label>
+                    <label style={label}>
+                      Full Name
+                      <input value={nFullName} onChange={e => setNFullName(e.target.value)} style={{ ...inputStyle, marginTop: 4 }} placeholder="John Smith" />
+                    </label>
+                    <label style={label}>
+                      Display Name
+                      <input value={nDisplayName} onChange={e => setNDisplayName(e.target.value)} style={{ ...inputStyle, marginTop: 4 }} placeholder="Shown on storefront" />
+                    </label>
+                    <label style={label}>
+                      Storefront Slug * <span style={{ fontSize: '0.68rem', color: 'var(--silver, #A8B4C0)' }}>pepnationlab.com/</span>
+                      <input value={nSlug} onChange={e => setNSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))} style={{ ...inputStyle, marginTop: 4 }} placeholder="john-smith" />
+                    </label>
+                    <label style={label}>
+                      Commission %
+                      <input type="number" min={0} max={40} value={nCommission} onChange={e => setNCommission(e.target.value)} style={{ ...inputStyle, marginTop: 4 }} placeholder="10" />
+                    </label>
+                    <label style={label}>
+                      Tier
+                      <select value={nTier} onChange={e => setNTier(e.target.value)} style={{ ...inputStyle, marginTop: 4 }}>
+                        {['tier_1','tier_2','tier_3','tier_4','tier_5'].map(t => <option key={t} value={t}>{t.replace('_', ' ').toUpperCase()}</option>)}
+                      </select>
+                    </label>
+                    <label style={label}>
+                      Account Type
+                      <select value={nAccountType} onChange={e => setNAccountType(e.target.value)} style={{ ...inputStyle, marginTop: 4 }}>
+                        <option value="prepaid">Prepaid</option>
+                        <option value="credit">Credit</option>
+                        <option value="direct">Direct</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  <label style={{ ...label, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <input type="checkbox" checked={nSuperAgent} onChange={e => setNSuperAgent(e.target.checked)} style={{ width: 16, height: 16, accentColor: 'var(--teal, #00C4BC)' }} />
+                    <span>Make Super Agent</span>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--silver, #A8B4C0)' }}>(Can recruit their own agents)</span>
+                  </label>
+
+                  {createMsg && (
+                    <div style={{ padding: '10px 14px', borderRadius: 8, background: createMsg.ok ? 'rgba(0,196,188,0.1)' : 'rgba(229,62,62,0.1)', border: `1px solid ${createMsg.ok ? 'rgba(0,196,188,0.3)' : 'rgba(229,62,62,0.3)'}`, fontSize: '0.82rem', color: createMsg.ok ? 'var(--teal, #00C4BC)' : '#E53E3E', fontWeight: 600 }}>
+                      {createMsg.text}
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    disabled={createBusy}
+                    style={{ ...btnPrimary, opacity: createBusy ? 0.5 : 1, alignSelf: 'flex-start' }}
+                    onClick={async () => {
+                      if (!nUsername || !nPassword || !nSlug) {
+                        setCreateMsg({ ok: false, text: 'Username, password, and slug are required.' });
+                        return;
+                      }
+                      setCreateBusy(true);
+                      setCreateMsg(null);
+                      try {
+                        const res = await fetch('/api/manufacturer/agents', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            username: nUsername,
+                            password: nPassword,
+                            full_name: nFullName || nUsername,
+                            display_name: nDisplayName || nFullName || nUsername,
+                            slug: nSlug,
+                            tier: nTier,
+                            account_type: nAccountType,
+                            commission_pct: Number(nCommission) || 10,
+                            make_super_agent: nSuperAgent,
+                          }),
+                        });
+                        const json = await res.json();
+                        if (!res.ok) {
+                          setCreateMsg({ ok: false, text: json.error || 'Failed to create agent' });
+                        } else {
+                          setCreateMsg({ ok: true, text: `✓ Agent @${json.username} created! Storefront: pepnationlab.com/${json.slug}` });
+                          setNUsername(''); setNPassword(''); setNFullName(''); setNDisplayName(''); setNSlug(''); setNSuperAgent(false);
+                          // Refresh network list
+                          const r2 = await fetch('/api/manufacturer/agents', { cache: 'no-store' });
+                          const j2 = await r2.json();
+                          setNetworkAgents(j2.agents ?? []);
+                        }
+                      } catch {
+                        setCreateMsg({ ok: false, text: 'Network error. Please try again.' });
+                      } finally {
+                        setCreateBusy(false);
+                      }
+                    }}
+                  >
+                    {createBusy ? 'Creating...' : 'Create Agent'}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Agent list */}
+            <div style={card}>
+              <div style={{ fontWeight: 800, fontSize: '0.95rem', marginBottom: 14 }}>Your Agent Network</div>
+              {networkLoading && <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.85rem' }}>Loading agents...</div>}
+              {networkError && <div style={{ color: '#E53E3E', fontSize: '0.85rem' }}>{networkError}</div>}
+              {!networkLoading && !networkError && networkAgents.length === 0 && (
+                <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.85rem', textAlign: 'center', padding: '24px 0' }}>
+                  No agents yet. Create your first agent above.
+                </div>
+              )}
+              {networkAgents.length > 0 && (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                        {['Agent', 'Role', 'Tier', 'Commission', 'GMV (30d)', 'Storefront', 'Status', 'Actions'].map(h => (
+                          <th key={h} style={{ textAlign: 'left', padding: '8px 10px', color: 'var(--silver, #A8B4C0)', fontWeight: 700, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {networkAgents.map(agent => {
+                        const toggling = agentToggles[agent.id];
+                        return (
+                          <tr key={agent.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', opacity: agent.isActive ? 1 : 0.55 }}>
+                            <td style={{ padding: '10px 10px' }}>
+                              <div style={{ fontWeight: 700, color: 'var(--white, #FFFFFF)' }}>{agent.fullName || agent.username}</div>
+                              <div style={{ fontSize: '0.7rem', color: 'var(--silver, #A8B4C0)' }}>@{agent.username}</div>
+                            </td>
+                            <td style={{ padding: '10px 10px' }}>
+                              <span style={{ fontSize: '0.68rem', padding: '2px 8px', borderRadius: 999, border: `1px solid ${agent.isSuperAgent ? 'var(--teal, #00C4BC)' : 'rgba(168,180,192,0.3)'}`, color: agent.isSuperAgent ? 'var(--teal, #00C4BC)' : 'var(--silver, #A8B4C0)', fontWeight: 700 }}>
+                                {agent.isSuperAgent ? 'Super Agent' : 'Agent'}
+                              </span>
+                            </td>
+                            <td style={{ padding: '10px 10px', color: 'var(--silver, #A8B4C0)' }}>{agent.tier?.replace('_', ' ').toUpperCase() || '—'}</td>
+                            <td style={{ padding: '10px 10px', color: 'var(--teal, #00C4BC)', fontWeight: 700 }}>{agent.commissionPct != null ? `${agent.commissionPct}%` : '—'}</td>
+                            <td style={{ padding: '10px 10px', fontWeight: 700, color: 'var(--white, #FFFFFF)' }}>${agent.gmv30d.toFixed(2)}</td>
+                            <td style={{ padding: '10px 10px' }}>
+                              {agent.slug ? (
+                                <a href={`/${agent.slug}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--teal, #00C4BC)', fontSize: '0.75rem', textDecoration: 'none' }}>/{agent.slug}</a>
+                              ) : '—'}
+                            </td>
+                            <td style={{ padding: '10px 10px' }}>
+                              <span style={{ fontSize: '0.68rem', padding: '2px 8px', borderRadius: 999, background: agent.isActive ? 'rgba(0,196,188,0.1)' : 'rgba(168,180,192,0.1)', color: agent.isActive ? 'var(--teal, #00C4BC)' : 'var(--silver, #A8B4C0)', fontWeight: 700 }}>
+                                {agent.isActive ? 'Active' : 'Inactive'}
+                              </span>
+                            </td>
+                            <td style={{ padding: '10px 10px' }}>
+                              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                <button
+                                  type="button"
+                                  disabled={toggling}
+                                  style={{ ...btnGhost, padding: '4px 10px', fontSize: '0.7rem', opacity: toggling ? 0.5 : 1 }}
+                                  onClick={async () => {
+                                    setAgentToggles(s => ({ ...s, [agent.id]: true }));
+                                    try {
+                                      const res = await fetch(`/api/manufacturer/agents/${agent.id}/super-upgrade`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ is_super_agent: !agent.isSuperAgent }),
+                                      });
+                                      if (res.ok) {
+                                        setNetworkAgents(prev => prev.map(a => a.id === agent.id ? { ...a, isSuperAgent: !a.isSuperAgent, role: !a.isSuperAgent ? 'super_agent' : 'agent' } : a));
+                                      }
+                                    } finally { setAgentToggles(s => ({ ...s, [agent.id]: false })); }
+                                  }}
+                                >
+                                  {agent.isSuperAgent ? '↓ Demote' : '↑ Super'}
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={toggling}
+                                  style={{ ...btnGhost, padding: '4px 10px', fontSize: '0.7rem', opacity: toggling ? 0.5 : 1, color: agent.isActive ? '#E53E3E' : 'var(--teal, #00C4BC)', borderColor: agent.isActive ? 'rgba(229,62,62,0.4)' : 'rgba(0,196,188,0.4)' }}
+                                  onClick={async () => {
+                                    setAgentToggles(s => ({ ...s, [agent.id]: true }));
+                                    try {
+                                      const res = await fetch(`/api/manufacturer/agents/${agent.id}/toggle-active`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ is_active: !agent.isActive }),
+                                      });
+                                      if (res.ok) {
+                                        setNetworkAgents(prev => prev.map(a => a.id === agent.id ? { ...a, isActive: !a.isActive } : a));
+                                      }
+                                    } finally { setAgentToggles(s => ({ ...s, [agent.id]: false })); }
+                                  }}
+                                >
+                                  {agent.isActive ? 'Deactivate' : 'Activate'}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         )}

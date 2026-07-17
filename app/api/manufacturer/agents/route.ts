@@ -205,13 +205,15 @@ export async function POST(req: NextRequest) {
   }
 
   // Audit log
-  await supabase.from('admin_audit_log').insert({
-    actor_id: manufacturerId,
-    action: 'manufacturer_created_agent',
-    entity_type: 'profiles',
-    entity_id: userId,
-    changes: { username: usernameClean, role: agentRole, slug: slugClean },
-  }).catch(() => { /* non-fatal */ });
+  try {
+    await supabase.from('admin_audit_log').insert({
+      actor_id: manufacturerId,
+      action: 'manufacturer_created_agent',
+      entity_type: 'profiles',
+      entity_id: userId,
+      changes: { username: usernameClean, role: agentRole, slug: slugClean },
+    });
+  } catch { /* non-fatal */ }
 
   return NextResponse.json({
     success: true,

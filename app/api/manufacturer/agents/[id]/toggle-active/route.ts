@@ -58,13 +58,15 @@ export async function POST(
     return NextResponse.json({ error: 'Failed to update agent' }, { status: 500 });
   }
 
-  await supabase.from('admin_audit_log').insert({
-    actor_id: manufacturerId,
-    action: is_active ? 'manufacturer_agent_activated' : 'manufacturer_agent_deactivated',
-    entity_type: 'profiles',
-    entity_id: agentId,
-    changes: { is_active, target_name: target.full_name },
-  }).catch(() => { /* non-fatal */ });
+  try {
+    await supabase.from('admin_audit_log').insert({
+      actor_id: manufacturerId,
+      action: is_active ? 'manufacturer_agent_activated' : 'manufacturer_agent_deactivated',
+      entity_type: 'profiles',
+      entity_id: agentId,
+      changes: { is_active, target_name: target.full_name },
+    });
+  } catch { /* non-fatal */ }
 
   return NextResponse.json({ success: true, is_active });
 }
