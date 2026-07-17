@@ -4591,21 +4591,30 @@ export default function AgentStorefrontGrid({
         featureLabel={guestModalFeature ?? 'This Feature'}
       />
 
-      {/* Bundle detail modal — same sheet pattern as the product detail view */}
+      {/* Bundle detail modal — proper fixed overlay */}
       {selectedBundle && mounted && (() => {
         const resolved = resolveBundle(selectedBundle);
         if (!resolved) return null;
         const inCart = bundleCart.some((l) => l.bundleName === selectedBundle.name);
         return createPortal(
           <div
-            className="sf-modal-overlay"
             onClick={() => setSelectedBundle(null)}
-            style={{ zIndex: 999998 }}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 999998,
+              background: 'rgba(0,0,0,0.75)',
+              backdropFilter: 'blur(4px)',
+              overflowY: 'auto',
+              display: 'flex', flexDirection: 'column',
+            }}
           >
             <div
-              className="sf-modal-sheet"
               onClick={(e) => e.stopPropagation()}
-              style={{ maxWidth: 560, margin: '0 auto' }}
+              style={{
+                width: '100%', maxWidth: 560, margin: '0 auto',
+                minHeight: '100%',
+                background: 'linear-gradient(180deg, #131b24 0%, #0a0f14 100%)',
+                display: 'flex', flexDirection: 'column',
+              }}
             >
               {/* Back bar */}
               <div style={{
@@ -4613,6 +4622,7 @@ export default function AgentStorefrontGrid({
                 background: 'linear-gradient(180deg, #131b24 78%, rgba(19,27,36,0))',
                 position: 'sticky', top: 0, zIndex: 10,
               }}>
+
                 <button
                   onClick={() => setSelectedBundle(null)}
                   aria-label="Close bundle"
