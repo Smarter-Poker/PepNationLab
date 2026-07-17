@@ -168,9 +168,13 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
     setLoading(true);
     setError('');
     try {
+      const myGen = ++bundleFetchGen.current;
       fetch('/api/agent/bundles/effective').then(r => r.json()).then(d => {
+        // Discard stale response if fetchProducts() was called again since this fetch started.
+        if (bundleFetchGen.current !== myGen) return;
         if (d.data) setBundles(d.data);
       }).catch(e => console.error("Error fetching bundles", e));
+
       const res = await fetch('/api/agent/products');
       const json = await res.json();
       if (res.ok) {
