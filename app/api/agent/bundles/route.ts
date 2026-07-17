@@ -13,6 +13,8 @@ import {
   clampDiscount,
   normalizeBundleList,
 } from '@/lib/bundles';
+import { computeAgentCostsForAgent } from '@/lib/pricing';
+import type { AgentTier } from '@/lib/pricing';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -169,34 +171,66 @@ export async function GET() {
     ]);
 
     // Collect all unique product IDs across all bundles so we can return
-    // per-bundle pricing context (base cost to the agent, retail price to buyer).
+    // per-bundle pricing context (agent's actual cost, retail price to buyer).
+    // DB prices (base_cost, retail_price) are stored per-10-vial pack; bundles
+    // show per-vial totals so everything is divided by 10. base_cost_total must
+    // reflect the agent's TRUE tier-multiplied cost (not raw COGS), so we use
+    // computeAgentCostsForAgent — the same path as GET /api/agent/products.
     const allProductIds = [...new Set(own.bundles.flatMap((b) => b.product_ids))];
-    let priceMap: Map<string, { base_cost: number; retail_price: number }> = new Map();
+    let priceMap: Map<string, { agent_cost: number; retail_price: number }> = new Map();
     if (allProductIds.length > 0) {
+      // Fetch per-product DB rows (retail_price per 10-pack, base_cost per 10-pack).
       const { data: apRows } = await svc
         .from('agent_products')
         .select('product_id, retail_price, products ( base_cost )')
         .eq('agent_id', gate.user.id)
         .eq('is_visible', true)
         .in('product_id', allProductIds);
+
       if (apRows) {
+        // Resolve the agent's tier for the cost-ladder calculation.
+        const { data: profData } = await svc
+          .from('profiles')
+          .select('tier')
+          .eq('id', gate.user.id)
+          .maybeSingle();
+        const tier = ((profData?.tier as AgentTier | null) ?? 'tier_3') as AgentTier;
+
+        // Build the product list needed by computeAgentCostsForAgent.
+        const pricedProducts = (apRows as Array<Record<string, any>>)
+          .filter((row) => row.product_id && row.products?.base_cost != null && Number(row.products.base_cost) > 0)
+          .map((row) => ({ id: row.product_id as string, base_cost: Number(row.products.base_cost) }));
+
+        // For admin the cost basis is raw base_cost (COGS); for agents it is
+        // their tier-multiplied cost — use the same logic as /api/agent/products.
+        const costMap = gate.isAdmin
+          ? new Map<string, number>(
+              (apRows as Array<Record<string, any>>).map((row) => [
+                row.product_id as string,
+                Number(row.products?.base_cost ?? 0),
+              ]),
+            )
+          : await computeAgentCostsForAgent(svc, gate.user.id, tier, pricedProducts);
+
         for (const row of apRows as Array<Record<string, any>>) {
           const pid = row.product_id as string;
-          const baseCost = Number(row.products?.base_cost ?? 0);
-          const retail = Number(row.retail_price ?? 0);
-          if (pid) priceMap.set(pid, { base_cost: baseCost, retail_price: retail });
+          if (!pid) continue;
+          // costMap value is per 10-vials; divide by 10 for per-vial display.
+          const agentCost = (costMap.get(pid) ?? 0) / 10;
+          const retail = Number(row.retail_price ?? 0) / 10;
+          priceMap.set(pid, { agent_cost: agentCost, retail_price: retail });
         }
       }
     }
 
-    // Annotate each bundle with computed pricing totals.
+    // Annotate each bundle with computed pricing totals (per-vial sums).
     const bundlesWithPricing = own.bundles.map((b) => {
       let base_cost_total = 0;
       let retail_value_total = 0;
       for (const pid of b.product_ids) {
         const p = priceMap.get(pid);
         if (p) {
-          base_cost_total += p.base_cost;
+          base_cost_total += p.agent_cost;
           retail_value_total += p.retail_price;
         }
       }
