@@ -393,7 +393,7 @@ export default function AdminAgents() {
               firstName: '', lastName: '', full_name: '',
               username: '', password: '', tier: 'tier_3',
               account_type: 'prepaid', credit_limit: '', max_auto_approve_limit: '', prepaid_balance: '',
-              slug: '', display_name: '', account_role: 'agent', parent_agent_id: ''
+              slug: '', display_name: '', account_role: 'agent', parent_agent_id: '', locale: 'en'
             });
             setShowCreateModal(true);
           }}
