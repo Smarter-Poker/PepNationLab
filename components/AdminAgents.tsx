@@ -458,8 +458,12 @@ export default function AdminAgents() {
                       ID: {agent.id.split('-')[0]}
                     </span>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                    {agent.is_super_agent ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                    {agent.is_admin_account ? (
+                      <span className="badge" style={{ fontSize: '0.65rem', background: 'rgba(139,92,246,0.15)', color: '#A78BFA', border: '1px solid rgba(139,92,246,0.4)' }}>ADMIN ACCOUNT</span>
+                    ) : agent.is_manufacturer ? (
+                      <span className="badge" style={{ fontSize: '0.65rem', background: 'rgba(251,146,60,0.12)', color: '#FB923C', border: '1px solid rgba(251,146,60,0.35)' }}>MANUFACTURER</span>
+                    ) : agent.is_super_agent ? (
                       <span className="badge badge-teal" style={{ fontSize: '0.65rem' }}>SUPER AGENT</span>
                     ) : agent.parent_agent_id ? (
                       <span className="badge badge-silver" style={{ fontSize: '0.65rem' }}>Sub-Agent</span>
@@ -1124,7 +1128,7 @@ export default function AdminAgents() {
               </div>
 
               <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
-                <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Account Type</label>
+                <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Account Role</label>
                 <select
                   className="form-input"
                   value={createForm.account_role}
@@ -1133,8 +1137,20 @@ export default function AdminAgents() {
                 >
                   <option value="agent">Agent</option>
                   <option value="super_agent">Super Agent</option>
+                  <option value="manufacturer">Manufacturer</option>
+                  <option value="admin_account">Admin Account</option>
                   <option value="researcher">Researcher</option>
                 </select>
+                {createForm.account_role === 'admin_account' && (
+                  <p style={{ margin: '6px 0 0', fontSize: '0.74rem', color: 'var(--silver)', lineHeight: 1.5 }}>
+                    ⚡ Admin Account: Can manage Super Agents, view network orders, and recruit agents — but does <strong>not</strong> have platform admin access.
+                  </p>
+                )}
+                {createForm.account_role === 'manufacturer' && (
+                  <p style={{ margin: '6px 0 0', fontSize: '0.74rem', color: 'var(--silver)', lineHeight: 1.5 }}>
+                    🏭 Manufacturer: Gets their own storefront + pricing dashboard. Commissioned at a fixed rate on all sales.
+                  </p>
+                )}
               </div>
 
               {createForm.account_role === 'researcher' && (

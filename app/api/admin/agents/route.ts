@@ -31,7 +31,7 @@ export async function GET() {
       .from('profiles')
       .select(
         'id, created_at, full_name, first_name, last_name, username, email, phone, role, tier, ' +
-        'account_type, credit_limit, prepaid_balance, is_active, is_super_agent, is_sub_agent, is_manufacturer, ' +
+        'account_type, credit_limit, prepaid_balance, is_active, is_super_agent, is_sub_agent, is_manufacturer, is_admin_account, ' +
         'parent_agent_id, auto_approve_orders, provisioned_password, last_sign_in_at, ' +
         'agent_profiles(slug, is_active)'
       )
@@ -97,12 +97,14 @@ export async function POST(req: NextRequest) {
     // privileged account - a persistence backdoor that survives the original
     // admin's password rotation. This route may only provision non-privileged
     // account types; new admins/shipping users are created out of band.
-    const ALLOWED_ACCOUNT_ROLES = new Set(['agent', 'super_agent', 'researcher']);
+    const ALLOWED_ACCOUNT_ROLES = new Set(['agent', 'super_agent', 'researcher', 'manufacturer', 'admin_account']);
     if (!ALLOWED_ACCOUNT_ROLES.has(account_role)) {
       return NextResponse.json({ error: 'Invalid Account Role' }, { status: 400 });
     }
 
     const isResearcher = account_role === 'researcher';
+    const isManufacturer = account_role === 'manufacturer';
+    const isAdminAccount = account_role === 'admin_account';
 
     // Platform rule: no commission / gamification level may exceed 40%.
     const MAX_CAP_LIMIT = 40;
@@ -233,7 +235,14 @@ export async function POST(req: NextRequest) {
     }
 
     const userId = authData.user.id;
-    const profileRole = account_role === 'super_agent' ? 'agent' : account_role;
+    // Map account_role to the DB profile role:
+    // - manufacturer + admin_account both land as 'super_agent' in profiles.role
+    //   but carry extra boolean flags to distinguish them
+    const profileRole = (() => {
+      if (account_role === 'super_agent' || account_role === 'manufacturer' || account_role === 'admin_account') return 'super_agent';
+      if (account_role === 'researcher') return 'researcher';
+      return 'agent';
+    })();
     const profileData: Record<string, unknown> = {
       id: userId,
       email: null,
@@ -267,7 +276,11 @@ export async function POST(req: NextRequest) {
       profileData.max_auto_approve_limit = account_type === 'credit' && max_auto_approve_limit ? Number(max_auto_approve_limit) : null;
       profileData.credit_limit = account_type === 'credit' ? (Number(credit_limit) || null) : null;
       profileData.prepaid_balance = account_type === 'prepaid' ? (Number(prepaid_balance) || 0) : 0;
-      profileData.is_super_agent = account_role === 'super_agent';
+      profileData.is_super_agent = account_role === 'super_agent' || account_role === 'admin_account' || account_role === 'manufacturer';
+      profileData.is_manufacturer = account_role === 'manufacturer';
+      // Admin Account flag — used to gate the manufacturer-style dashboard & network features
+      // without granting full platform admin access
+      if (account_role === 'admin_account') profileData.is_admin_account = true;
       profileData.commission_pct = commPct;
       profileData.commission_max_pct = commMax;
       profileData.velocity_cap = velCap;
@@ -327,7 +340,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const roleLabel = isResearcher ? 'Researcher' : account_role === 'super_agent' ? 'Super Agent' : 'Agent';
+    const roleLabel = isResearcher ? 'Researcher' : isManufacturer ? 'Manufacturer' : isAdminAccount ? 'Admin Account' : account_role === 'super_agent' ? 'Super Agent' : 'Agent';
     return NextResponse.json({ success: true, userId, username: usernameClean, role: roleLabel });
   } catch (err) {
     console.error('[admin/agents] POST error:', err);

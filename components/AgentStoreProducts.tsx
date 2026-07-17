@@ -143,8 +143,11 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState('');
   const [isMobile, setIsMobile] = useState(false);
+  // Monotonically-increasing fetch counter so a stale bundle response arriving
+  // after a newer one is silently discarded (prevents race-condition overwrites
+  // when fetchProducts() is called multiple times in quick succession).
+  const bundleFetchGen = React.useRef(0);
 
-  // Bundle inline price editing state
   const [editingBundleId, setEditingBundleId] = useState<string | null>(null);
   const [bundlePriceText, setBundlePriceText] = useState('');
   const [bundleSaving, setBundleSaving] = useState(false);
@@ -645,7 +648,7 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
                           {/* Listed Price — clickable like individual peptides */}
                           <div
                             style={{ display: 'flex', flexDirection: 'column', cursor: 'pointer', padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)', transition: 'all 0.2s' }}
-                            onClick={() => { setEditingBundleId(b.id); setBundlePriceText(bList.toFixed(2)); }}
+                            onClick={() => { setEditingBundleId(b.id); setBundlePriceText(bList > 0 ? bList.toFixed(2) : ''); }}
                             title="Click to edit bundle price"
                             onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(0,229,255,0.3)'; }}
                             onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; }}
