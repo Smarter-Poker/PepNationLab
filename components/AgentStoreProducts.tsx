@@ -137,8 +137,7 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
   // Raw Text While Editing The Price So Typing Is Never Reformatted Mid-Keystroke.
   const [priceText, setPriceText] = useState('');
   const [saving, setSaving] = useState(false);
-  const [bulkMargin, setBulkMargin] = useState('50');
-  const [bulkSaving, setBulkSaving] = useState(false);
+
   const [reordering, setReordering] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState('');
@@ -470,63 +469,18 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
         placeholder="Search Products By Name..."
         value={search}
         onChange={e => setSearch(e.target.value)}
+        className="form-input"
         style={{
           width: '100%',
           padding: '12px 14px',
           fontSize: '0.95rem',
-          background: 'var(--bg-metal-dark)',
-          border: '1px solid rgba(0,0,0,0.8)',
-          boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)',
-          color: '#fff',
           borderRadius: 8,
-          marginBottom: 'var(--space-4)'
+          marginBottom: 16,
         }}
       />
 
       {/* Pricing & Discounts Configuration */}
       <PricingConfig agentId={agentId} />
-
-      {/* Master Reset / Bulk Margin */}
-      <div className="glass-panel">
-        <div className="" style={{ padding: 'var(--space-5)' }}>
-          <h4 style={{ fontSize: '0.9rem', color: '#00E5FF', marginBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Master Reset (Bulk Margin)</h4>
-          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.82rem', marginBottom: 'var(--space-4)', lineHeight: 1.4 }}>
-            Apply a universal bulk margin percentage to all products. This will override existing custom margins and automatically mark up your direct cost, increasing the final displayed retail prices inside your store by this exact percentage.
-            <br/><br/>
-            <strong style={{ color: '#00E5FF' }}>Note:</strong> Any products that hit a Minimum Advertised Price (MAP) or Margin Ceiling will be automatically skipped to protect brand integrity.
-          </p>
-          <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.4)' }}>Apply +</span>
-            <input
-              type="number"
-              className="form-input"
-              style={{ width: 80, padding: '4px 8px', height: 32, background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }}
-              value={bulkMargin}
-              onChange={e => setBulkMargin(e.target.value)}
-            />
-            <span style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.4)' }}>% Margin To All Products</span>
-            
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
-              <button
-                className="btn-silver"
-                onClick={() => { setBulkMargin('50'); handleBulkAdjust(50); }}
-                disabled={bulkSaving}
-                style={{ padding: '6px 16px', fontSize: '0.8rem', height: 32 }}
-              >
-                Reset To Standard Pricing (50%)
-              </button>
-              <button
-                className="btn-neon-cyan"
-                onClick={() => handleBulkAdjust()}
-                disabled={bulkSaving}
-                style={{ padding: '6px 16px', fontSize: '0.8rem', height: 32 }}
-              >
-                {bulkSaving ? 'Applying...' : 'Apply Master Reset'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {error && (
         <div className="glass-panel" style={{ border: '1px solid rgba(229,62,62,0.3)', padding: 'var(--space-3)', fontSize: '0.85rem', color: '#FC8181' }}>
