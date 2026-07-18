@@ -2955,6 +2955,7 @@ export default function AgentStorefrontGrid({
             display: 'flex',
             flexDirection: 'row',
             alignItems: 'center',
+            justifyContent: 'center',
             gap: '2%',
             padding: '0 3%',
             pointerEvents: 'none',
@@ -2969,10 +2970,11 @@ export default function AgentStorefrontGrid({
                 objectFit: 'contain',
                 flexShrink: 0,
                 filter: 'drop-shadow(0 2px 12px rgba(0,0,0,0.9))',
+                mixBlendMode: 'screen',
               }}
             />
             <span style={{
-              color: '#FFFFFF',
+              color: '#B0B6BA',
               fontSize: 'max(13px, 1.9vw)',
               fontWeight: 900,
               letterSpacing: '0.06em',
