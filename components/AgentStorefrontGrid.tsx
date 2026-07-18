@@ -2479,29 +2479,7 @@ export default function AgentStorefrontGrid({
     </span>
   );
 })()}
-                      {(() => {
-                        // CRO: purity and third-party COAs are the strongest
-                        // objection-handlers for research buyers, but they only
-                        // appeared deep inside the detail modal. Surface a
-                        // display-only trust chip at the browse stage using the
-                        // same catalog data (click still opens the modal).
-                        const _c2 = group.compoundSlug ? compoundsBySlug?.[group.compoundSlug] : undefined;
-                        const _purity = Number((_c2 as any)?.purity_percentage) || 0;
-                        const _hasCoa = group.variants.some(v => v.product_id && coaByProductId?.[v.product_id]);
-                        if (!_hasCoa && _purity <= 0) return null;
-                        return (
-                          <span style={{
-                            display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6, marginLeft: 4,
-                            padding: '3px 9px', borderRadius: 'var(--radius-full)',
-                            background: 'rgba(0, 196, 188, 0.08)', border: '1px solid rgba(0, 196, 188, 0.30)',
-                            color: 'var(--teal)', fontSize: '0.62rem', fontWeight: 800,
-                            textTransform: 'uppercase', letterSpacing: '0.04em',
-                          }}>
-                            <Shield size={9} aria-hidden="true" />
-                            {_purity > 0 ? `${_purity}%+ Tested` : 'COA Available'}
-                          </span>
-                        );
-                      })()}
+                      {/* CRO trust chip removed per user request */}
 
                     </div>
                   );
@@ -3829,7 +3807,36 @@ export default function AgentStorefrontGrid({
               </button>
               <div style={{ flex: 1 }} />
               <div style={{ width: 44, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.20)' }} aria-hidden="true" />
-              <div style={{ flex: 1 }} />
+              <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
+                {(() => {
+                  const _coaPid = detailProduct.variants.find(v => !!coaByProductId?.[v.product_id])?.product_id;
+                  const _coaUrl = _coaPid ? coaByProductId?.[_coaPid] : undefined;
+                  if (!_coaUrl) return null;
+                  return (
+                    <IframeLink
+                      href={_coaUrl}
+                      aria-label="View Certificate of Analysis"
+                      style={{
+                        display: 'block',
+                        height: 34,
+                        cursor: 'pointer',
+                        background: 'none',
+                        border: 'none',
+                        padding: 0,
+                        transition: 'opacity 0.15s, transform 0.15s',
+                      }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src="/images/coa-button.png"
+                        alt="Certificate of Analysis"
+                        style={{ height: '100%', width: 'auto', display: 'block', objectFit: 'contain' }}
+                        draggable={false}
+                      />
+                    </IframeLink>
+                  );
+                })()}
+              </div>
             </div>
 
             {/* CRO: sticky quick-add bar. The main Add-To-Cart CTA sits far
@@ -3909,39 +3916,6 @@ export default function AgentStorefrontGrid({
                     Back To {detailHistory[detailHistory.length - 2].name}
                   </button>
                 )}
-
-                {/* COA button — top of detail, above everything else */}
-                {(() => {
-                  const _coaPid = detailProduct.variants.find(v => !!coaByProductId?.[v.product_id])?.product_id;
-                  const _coaUrl = _coaPid ? coaByProductId?.[_coaPid] : undefined;
-                  if (!_coaUrl) return null;
-                  return (
-                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
-                      <IframeLink
-                        href={_coaUrl}
-                        aria-label="View Certificate of Analysis"
-                        style={{
-                          display: 'block',
-                          width: 220,
-                          height: 'auto',
-                          cursor: 'pointer',
-                          background: 'none',
-                          border: 'none',
-                          padding: 0,
-                          transition: 'opacity 0.15s, transform 0.15s',
-                        }}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src="/images/coa-button.png"
-                          alt="Certificate of Analysis"
-                          style={{ width: '100%', height: 'auto', display: 'block' }}
-                          draggable={false}
-                        />
-                      </IframeLink>
-                    </div>
-                  );
-                })()}
 
                 <div style={{ textAlign: 'center', marginBottom: 'var(--space-3)' }}>
                   {(() => {

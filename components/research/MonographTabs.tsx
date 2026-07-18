@@ -232,7 +232,21 @@ export default function MonographTabs({ compound, related = [], coaUrl = null }:
             productName={compound.display_name}
             size="sm"
           />
-          {/* COA button moved under title for consistency */}
+          {coaUrl && (
+            <a
+              href={coaUrl}
+              onClick={(e) => { e.preventDefault(); setModalUrl(coaUrl); }}
+              title="Certificate of Analysis"
+              style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/images/coa-button.png"
+                alt="View Certificate of Analysis"
+                style={{ height: 34, width: 'auto', objectFit: 'contain' }}
+              />
+            </a>
+          )}
           <Link
             href={`/research/${compound.slug}/spec`}
             className="btn-secondary"
@@ -282,19 +296,6 @@ export default function MonographTabs({ compound, related = [], coaUrl = null }:
             </span>
           )}
         </div>
-        {coaUrl && (
-          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 24 }}>
-            <a
-              href={coaUrl}
-              onClick={(e) => { e.preventDefault(); setModalUrl(coaUrl); }}
-              title="Certificate of Analysis"
-              style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/images/coa-button.png" alt="View Certificate of Analysis" style={{ width: 220, height: 'auto', objectFit: 'contain' }} draggable={false} />
-            </a>
-          </div>
-        )}
       </header>
 
       {/* Tab bar */}

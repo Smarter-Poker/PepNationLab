@@ -238,9 +238,22 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
             <Image src="/back-arrow.png" alt="Back" width={38} height={38} unoptimized style={{ objectFit: 'contain' }} />
             Back
           </button>
-          <span style={{ marginLeft: 'auto', fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--silver)' }}>
-            {VIEW_TITLE[view]}
-          </span>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 16 }}>
+            {coaUrl && (
+              <a
+                href={coaUrl}
+                onClick={(e) => { e.preventDefault(); setCoaOpen(true); }}
+                title="View Certificate of Analysis"
+                style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/images/coa-button.png" alt="View Certificate of Analysis" style={{ height: 34, width: 'auto', objectFit: 'contain' }} draggable={false} />
+              </a>
+            )}
+            <span style={{ fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--silver)' }}>
+              {VIEW_TITLE[view]}
+            </span>
+          </div>
         </div>
 
         {/* Scroll body */}
@@ -260,20 +273,6 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
               {compound.category && badge(compound.category, primaryColor)}
               {isHighRisk && badge(`${risk.label} Risk`, risk.color)}
             </div>
-            
-            {coaUrl && (
-              <div style={{ display: 'flex', justifyContent: 'center', marginTop: 24 }}>
-                <a
-                  href={coaUrl}
-                  onClick={(e) => { e.preventDefault(); setCoaOpen(true); }}
-                  title="View Certificate of Analysis"
-                  style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/images/coa-button.png" alt="View Certificate of Analysis" style={{ width: 220, height: 'auto', objectFit: 'contain' }} draggable={false} />
-                </a>
-              </div>
-            )}
           </header>
 
           <section style={{ minHeight: 160 }}>

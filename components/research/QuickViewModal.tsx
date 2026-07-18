@@ -82,14 +82,8 @@ export default function QuickViewModal({ compound, isOpen, onClose, imageUrl, pr
                   </div>
                 )}
               </div>
-              <button onClick={onClose} aria-label="Close Quick View" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#FFF', borderRadius: '50%', padding: 8, cursor: 'pointer', display: 'flex', transition: 'all 0.2s ease-in-out' }}>
-                <X size={20} />
-              </button>
-            </div>
-
-            <div style={{ padding: '24px 32px 0 32px' }}>
-              {coaUrl && (
-                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                {coaUrl && (
                   <a
                     href={coaUrl}
                     onClick={(e) => { e.preventDefault(); setCoaModalUrl(coaUrl); }}
@@ -97,11 +91,16 @@ export default function QuickViewModal({ compound, isOpen, onClose, imageUrl, pr
                     style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/images/coa-button.png" alt="View Certificate of Analysis" style={{ width: 220, height: 'auto', objectFit: 'contain' }} draggable={false} />
+                    <img src="/images/coa-button.png" alt="View Certificate of Analysis" style={{ height: 34, width: 'auto', objectFit: 'contain' }} draggable={false} />
                   </a>
-                </div>
-              )}
+                )}
+                <button onClick={onClose} aria-label="Close Quick View" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#FFF', borderRadius: '50%', padding: 8, cursor: 'pointer', display: 'flex', transition: 'all 0.2s ease-in-out' }}>
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
 
+            <div style={{ padding: '24px 32px 0 32px' }}>
               {/* Summary */}
               <p style={{ color: '#D0DAE4', lineHeight: 1.6, fontSize: '0.95rem', margin: '0 0 24px 0', textAlign: 'center' }}>
                 <InteractiveGlossaryText text={compound.plain_summary || compound.eli5_summary || ''} />

@@ -262,12 +262,15 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
       try {
         if (!agentSlug) {
           const supabase = createClient();
-          const { data: p } = await supabase
+          const { data: bacRows } = await supabase
             .from('products')
             .select('id, name, base_cost, weight_oz, unit_size, unit_measure')
             .eq('compound_slug', 'bac-water')
-            .limit(1)
-            .maybeSingle();
+            .limit(5);
+          // Deterministically prefer the 10 mL vial. `.limit(1)` with no ORDER BY
+          // returned whichever bac-water row Postgres yielded first (3 mL or
+          // 10 mL), silently changing the suggested product and price.
+          const p = (bacRows ?? []).find(r => String(r.unit_size) === '10') ?? (bacRows ?? [])[0] ?? null;
           if (p) {
             const basePrice = Number(p.base_cost) || 0;
             const sizeLabel = p.unit_size ? `(${p.unit_size}${p.unit_measure || ''})` : '';
@@ -312,7 +315,9 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             const json = await res.json();
             const items = json.data || [];
             
-            const matched = items.find((item: any) => item.products?.compound_slug === 'bac-water');
+            const bacMatches = items.filter((item: any) => item.products?.compound_slug === 'bac-water');
+            // Prefer the 10 mL vial (see the guest-path note above).
+            const matched = bacMatches.find((item: any) => String(item.products?.unit_size) === '10') ?? bacMatches[0];
             if (matched) {
               const retail = matched.retail_price / 10;
               const cost = matched.agent_cost != null ? matched.agent_cost / 10 : retail;
@@ -361,7 +366,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
           .maybeSingle();
 
         if (agentProfile) {
-          const { data: ap } = await supabase
+          const { data: apRows } = await supabase
             .from('agent_products')
             .select(`
               id,
@@ -378,8 +383,13 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             .eq('agent_id', agentProfile.id)
             .eq('is_visible', true)
             .eq('products.compound_slug', 'bac-water')
-            .limit(1)
-            .maybeSingle();
+            .limit(5);
+
+          // Prefer the 10 mL vial (see the guest-path note above).
+          const ap = (apRows ?? []).find((row: any) => {
+            const pr = (Array.isArray(row.products) ? row.products[0] : row.products) as any;
+            return String(pr?.unit_size) === '10';
+          }) ?? (apRows ?? [])[0] ?? null;
 
           if (ap) {
             const retail = ap.retail_price / 10;
@@ -539,6 +549,14 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const [disclaimer1, setDisclaimer1] = useState(false);
   const [disclaimer2, setDisclaimer2] = useState(false);
   const [disclaimer3, setDisclaimer3] = useState(false);
+
+  // Final-step BAC water reminder (Step 3, directly above Place Research
+  // Order). The Order Inventory panel's reminder is pushed to the TOP of the
+  // page on mobile (.checkout-grid > :last-child { order: -1 }), so buyers
+  // finishing the form never saw it. This one lives at the true end of the
+  // checkout process on every viewport.
+  const [bacReminderDismissed, setBacReminderDismissed] = useState(false);
+  const [bacAddedQty, setBacAddedQty] = useState(0);
 
   const [couponInput, setCouponInput] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
@@ -1425,6 +1443,42 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                   <h3 style={{ color: 'var(--red)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4, fontFamily: 'var(--font-brand)' }}>Binding Attestation</h3>
                   <p style={{ color: 'var(--silver-light)', fontSize: '0.78rem', margin: 0, lineHeight: 1.5 }}>Acceptance Of These Agreements Digitally Validates Your Institutional Consent. False Audits May Result In Restrictive Ban Of Profile Access To All Catalog Inventory.</p>
                 </div>
+
+                {/* End-of-checkout BAC water reminder: reviews the order, states
+                    the calculated amount needed for the WHOLE order, and adds the
+                    suggested quantity in one click. Hidden once covered,
+                    dismissed, or when no reconstitution vials are in the cart. */}
+                {neededBacWaterVials > 0 && bacProduct && !bacReminderDismissed && (
+                  <div role="status" style={{ background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.35)', borderRadius: 'var(--radius-md)', padding: 'var(--space-4)', boxShadow: '0 0 18px rgba(0,196,188,0.10)' }}>
+                    <strong style={{ display: 'block', color: 'var(--white)', fontSize: '0.85rem', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>Wait — Does Your Lab Have BAC Water?</strong>
+                    <p style={{ color: 'var(--silver-light)', fontSize: '0.8rem', margin: '0 0 12px', lineHeight: 1.5 }}>
+                      We Reviewed Your Order: <strong style={{ color: 'var(--white)' }}>{bacPeptideVials}</strong> Research Vial{bacPeptideVials !== 1 ? 's' : ''} Require{bacPeptideVials === 1 ? 's' : ''} Bacteriostatic Water For Reconstitution{currentBacWaterVials > 0 ? <> And Your Cart Currently Includes <strong style={{ color: 'var(--white)' }}>{currentBacWaterVials}</strong> BAC Water Vial{currentBacWaterVials !== 1 ? 's' : ''}</> : ', And Your Cart Has None'}. Suggested Amount For This Order: <strong style={{ color: 'var(--white)' }}>{neededBacWaterVials}</strong> Vial{neededBacWaterVials !== 1 ? 's' : ''}{bacProduct.unitSize ? ` (${bacProduct.unitSize}${bacProduct.unitMeasure || 'ml'} Each)` : ''}.
+                    </p>
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={() => { setBacAddedQty(neededBacWaterVials); handleAddBacWater(); }}
+                        className="btn-neon-cyan"
+                        style={{ flex: '1 1 230px', padding: '11px 14px', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', borderRadius: 6, cursor: 'pointer' }}
+                      >
+                        Add {neededBacWaterVials} BAC Water Vial{neededBacWaterVials !== 1 ? 's' : ''} — ${((isAgentSelfBuy ? bacProduct.costPrice : bacProduct.retailPrice) * neededBacWaterVials).toFixed(2)}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBacReminderDismissed(true)}
+                        style={{ flex: '0 1 auto', padding: '11px 14px', fontSize: '0.78rem', background: 'transparent', border: '1px solid rgba(255,255,255,0.18)', color: 'var(--silver)', borderRadius: 6, cursor: 'pointer' }}
+                      >
+                        My Lab Is Covered
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {bacAddedQty > 0 && neededBacWaterVials === 0 && (
+                  <div role="status" style={{ background: 'rgba(45,212,191,0.07)', border: '1px solid rgba(45,212,191,0.3)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', color: '#2DD4BF', fontSize: '0.8rem', fontWeight: 600 }}>
+                    {bacAddedQty} Vial{bacAddedQty !== 1 ? 's' : ''} Of Bacteriostatic Water Added To Your Order.
+                  </div>
+                )}
+
                 <div className="step-buttons">
                   <button type="button" onClick={handlePrevStep} className="btn" style={{ minWidth: 150, background: 'rgba(255,255,255,0.05)', color: 'var(--white)' }} disabled={loading}>Back</button>
                   <button type="submit" className="btn-neon-cyan" style={{ minWidth: 180, display: 'flex', alignItems: 'center', justifyContent: 'center' }} disabled={loading} aria-busy={loading}>
