@@ -2623,6 +2623,7 @@ export default function AgentStorefrontGrid({
           width: 100%;
           min-height: 100vh;
           background: linear-gradient(180deg, #131b24 0%, #0a0f14 100%);
+          padding-top: calc(var(--nav-offset, 60px) + 12px);
         }
         .sf-modal-sheet {
           width: 100%; max-width: 860px; margin: 0 auto;
