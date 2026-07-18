@@ -143,7 +143,7 @@ export function GuidedDiscoveryWizard({
                           <button
                             key={area}
                             type="button"
-                            onClick={() => setState(s => ({ ...s, area }))}
+                            onClick={() => { setState(s => ({ ...s, area })); setStep(1); }}
                             style={{
                               padding: '10px 14px',
                               borderRadius: 12,
@@ -179,7 +179,7 @@ export function GuidedDiscoveryWizard({
                           <button
                             key={o.v}
                             type="button"
-                            onClick={() => setState(s => ({ ...s, preference: o.v }))}
+                            onClick={() => { setState(s => ({ ...s, preference: o.v })); setStep(2); }}
                             style={{
                               textAlign: 'left',
                               padding: '14px 16px',
@@ -217,7 +217,7 @@ export function GuidedDiscoveryWizard({
                           <button
                             key={o.v}
                             type="button"
-                            onClick={() => setState(s => ({ ...s, comfort: o.v }))}
+                            onClick={() => { setState(s => ({ ...s, comfort: o.v })); setStep(3); }}
                             style={{
                               textAlign: 'left',
                               padding: '14px 16px',
