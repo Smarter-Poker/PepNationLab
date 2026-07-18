@@ -18,6 +18,7 @@ export function MatchResultsDrawer({
   followUp,
   submitFollowUp,
   matchError,
+  relaxed = false,
   onRetry,
   onClose,
   onAddToCart,
@@ -32,6 +33,7 @@ export function MatchResultsDrawer({
   followUp: { question: string; originalGoal: string } | null;
   submitFollowUp: (answer: string) => void;
   matchError: boolean;
+  relaxed?: boolean;
   onRetry: () => void;
   onClose: () => void;
   onAddToCart: (productId: string) => void;
@@ -338,6 +340,23 @@ export function MatchResultsDrawer({
                 </div>
               ) : null}
 
+              {/* Filters-broadened notice. The engine relaxed the requested
+                  evidence/risk/format constraints because nothing matched them, so
+                  we say so plainly rather than silently changing what the user asked
+                  for. */}
+              {!loading && !matchError && !followUp && relaxed && filteredResults.length > 0 && (
+                <div style={{
+                  display: 'flex', alignItems: 'flex-start', gap: 8,
+                  margin: '0 0 14px', padding: '10px 12px', borderRadius: 10,
+                  background: 'rgba(246,173,85,0.08)', border: '1px solid rgba(246,173,85,0.3)',
+                }}>
+                  <Sparkles size={14} color="#F6AD55" style={{ flexShrink: 0, marginTop: 2 }} aria-hidden />
+                  <span style={{ color: '#E2E8F0', fontSize: '0.8rem', lineHeight: 1.4 }}>
+                    No Compounds Met Every Filter You Chose, So We Broadened The Evidence And Risk Settings To Show The Closest Matches For Your Goal. Check Each Compound&apos;s Evidence And Safety Bars Below.
+                  </span>
+                </div>
+              )}
+
               {/* Stack "Add Protocol to Cart" logic */}
               {!loading && stackItems.length > 1 && !filterOralOnly && !filterHumanOnly && (
                 <div style={{ background: 'rgba(246,173,85,0.08)', border: '1px solid rgba(246,173,85,0.3)', borderRadius: 16, padding: '14px', marginBottom: 16 }}>
@@ -485,13 +504,14 @@ export function MatchResultsDrawer({
                 </div>
               )}
 
-              {!loading && recommendations.length > 0 && (
-                <div style={{ marginTop: inCatalog.length > 0 ? 20 : 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {inCatalog.length > 0 && (
-                    <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 2 }}>
-                      Top Recommended Compounds For This Goal
-                    </div>
-                  )}
+              {/* Full recommendation cards ONLY when there is nothing purchasable
+                  to show (e.g. the global Find A Peptide page, or a store that
+                  stocks none of the matches). When the store DOES stock some
+                  matches, non-stocked compounds stay as the compact chips below so
+                  the store's own sellable inventory keeps visual priority -- that
+                  was the pre-existing merchandising behavior and is preserved. */}
+              {!loading && recommendations.length > 0 && inCatalog.length === 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {recommendations.map((r) => (
                     <div
                       key={`rec-${r.compound_slug || r.display_name}`}
@@ -610,6 +630,49 @@ export function MatchResultsDrawer({
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+
+              {/* Compact "also studied" chips -- shown only when the store stocks
+                  some matches, so its sellable inventory keeps priority. Same
+                  treatment as before the recommendation-card change. */}
+              {!loading && recommendations.length > 0 && inCatalog.length > 0 && (
+                <div style={{ marginTop: 14 }}>
+                  <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>
+                    Also Studied For This Goal - Not Currently Stocked Here
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {recommendations.map((r) => (
+                      r.compound_slug ? (
+                        <a
+                          key={`oos-${r.compound_slug}`}
+                          href={`/research/${r.compound_slug}`}
+                          style={{
+                            background: 'rgba(255,255,255,0.04)',
+                            border: '1px solid rgba(255,255,255,0.10)',
+                            color: 'var(--silver, #A8B4C0)',
+                            borderRadius: 999, padding: '6px 10px',
+                            fontSize: '0.78rem', fontWeight: 600, textDecoration: 'none',
+                          }}
+                        >
+                          {r.display_name}
+                        </a>
+                      ) : (
+                        <span
+                          key={`oos-${r.display_name}`}
+                          style={{
+                            background: 'rgba(255,255,255,0.04)',
+                            border: '1px solid rgba(255,255,255,0.10)',
+                            color: 'var(--silver, #A8B4C0)',
+                            borderRadius: 999, padding: '6px 10px',
+                            fontSize: '0.78rem', fontWeight: 600,
+                          }}
+                        >
+                          {r.display_name}
+                        </span>
+                      )
+                    ))}
+                  </div>
                 </div>
               )}
 
