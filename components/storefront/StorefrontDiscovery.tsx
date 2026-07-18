@@ -256,37 +256,90 @@ export default function DiscoveryHero({
         return;
       }
       const json = await res.json().catch(() => null) as {
-        results?: Array<{ 
-          slug: string; 
-          rationale?: string; 
+        results?: Array<{
+          slug: string;
+          displayName?: string;
+          rationale?: string;
           isStackPartner?: boolean;
           score?: number;
+          evidenceTier?: string | null;
           riskLevel?: string;
           halfLife?: string;
-          molecularWeight?: number;
+          molecularWeight?: number | null;
         }>;
         excluded?: ExcludedCompound[];
       } | null;
-      const slugs = (json?.results || []).map(r => r.slug).filter(Boolean);
-      
-      const detailsMap = new Map((json?.results || []).map(r => [r.slug, r]));
-      
-      const products = resolveProducts(slugs);
-      
-      // Attach rationale and stack data by slug when available.
-      const stitched = products.map(p => {
-        const details = p.compound_slug ? detailsMap.get(p.compound_slug) : null;
-        return {
-          ...p,
-          rationale: details?.rationale || p.rationale,
-          isStackPartner: details?.isStackPartner || false,
-          score: details?.score,
-          riskLevel: details?.riskLevel,
-          halfLife: details?.halfLife,
-          molecularWeight: details?.molecularWeight,
-        };
-      });
-      setResults(stitched);
+
+      // The API response is the source of truth for WHICH compounds matched.
+      // The engine always returns real matches for a valid goal, so we build one
+      // result card per API match and NEVER let an empty product catalog swallow
+      // the recommendation. When the caller's storefront actually stocks a matched
+      // compound we enrich that card with the purchasable product (price, image,
+      // add-to-cart); otherwise we render a recommendation-only card built from the
+      // engine's own compound data. This is what makes the guided wizard, the
+      // Match Me button, and the typed search all recommend 100% of the time --
+      // including on the global Find A Peptide page, which sells nothing. Before
+      // this, results were built ONLY from resolveProducts(), so a page with no
+      // catalog (resolveProducts -> []) silently showed "0 Matches Found".
+      const apiResults = json?.results || [];
+      const slugs = apiResults.map(r => r.slug).filter(Boolean);
+
+      // Resolve any matched slugs the caller can turn into real products, keyed by
+      // compound slug for O(1) enrichment lookup. On the global page this is empty.
+      const resolved = resolveProducts(slugs);
+      const productBySlug = new Map(
+        resolved
+          .filter(p => p.compound_slug && p.product_id)
+          .map(p => [p.compound_slug as string, p]),
+      );
+
+      const prettify = (slug: string) =>
+        slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+      const built: MatchedProduct[] = apiResults
+        .filter(r => !!r.slug)
+        .map(r => {
+          const prod = productBySlug.get(r.slug);
+          const compound = compoundsBySlug?.[r.slug];
+          const shared = {
+            rationale: r.rationale || prod?.rationale || '',
+            isStackPartner: r.isStackPartner || false,
+            score: typeof r.score === 'number' ? r.score : undefined,
+            riskLevel: r.riskLevel,
+            halfLife: r.halfLife,
+            molecularWeight: typeof r.molecularWeight === 'number' ? r.molecularWeight : undefined,
+          };
+          if (prod) {
+            // Storefront stocks this compound -> real purchasable card.
+            return {
+              ...prod,
+              ...shared,
+              evidence_tier: prod.evidence_tier ?? r.evidenceTier ?? compound?.evidence_tier ?? null,
+            };
+          }
+          // Recommendation-only card (no purchasable product on this page).
+          return {
+            product_id: '',
+            display_name: r.displayName || compound?.display_name || prettify(r.slug),
+            compound_slug: r.slug,
+            price_cents: 0,
+            evidence_tier: r.evidenceTier ?? compound?.evidence_tier ?? null,
+            image_url: null,
+            in_stock: false,
+            ...shared,
+          };
+        });
+
+      // A 200 that produced nothing (parse failure or a genuinely empty engine
+      // response) must not read as a blank drawer -- surface the error panel so the
+      // user gets a Try Again path instead of a silent dead end.
+      if (built.length === 0) {
+        setMatchError(true);
+        reportClientError('find-a-peptide.match', new Error('match returned zero results'), { meta: { goal: input.goal } });
+        return;
+      }
+
+      setResults(built);
       setExcluded(json?.excluded || []);
     } catch (e) {
       setResults([]);
@@ -295,7 +348,7 @@ export default function DiscoveryHero({
     } finally {
       setLoading(false);
     }
-  }, [resolveProducts]);
+  }, [resolveProducts, compoundsBySlug]);
 
   const submitTypedGoal = useCallback(async (overrideGoal?: string) => {
     const g = (overrideGoal || query).trim();
