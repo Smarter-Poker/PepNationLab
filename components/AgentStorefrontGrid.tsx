@@ -3847,7 +3847,7 @@ export default function AgentStorefrontGrid({
               const stickyQty = Math.max(1, pendingQty);
               return (
                 <div style={{
-                  position: 'sticky', top: 0, zIndex: 40,
+                  position: 'sticky', top: 'var(--nav-offset, 60px)', zIndex: 40,
                   display: 'flex', alignItems: 'center', gap: 12,
                   padding: '10px 18px',
                   background: 'rgba(15,25,35,0.96)',
