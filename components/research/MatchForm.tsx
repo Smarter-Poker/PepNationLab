@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { Sparkles, ChevronRight, ShieldCheck, Printer, X, Info, Scale, Trash2, ArrowRight, ArrowLeft, Save, Search, Eye, Clock, Atom, Snowflake, AlertTriangle, Check, RotateCcw } from 'lucide-react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { RESEARCH_AREAS } from '@/lib/compounds';
 import type {
   EvidenceComfort,
@@ -451,7 +451,11 @@ function MatchFormInner() {
         ))}
       </div>
 
-      <AnimatePresence mode="wait">
+      {/* Plain conditional rendering: AnimatePresence mode="wait" was leaving
+          the exiting step mounted (its exit animation never completed), so the
+          next step never rendered and the wizard appeared frozen on step 1 even
+          though `step` state advanced. Each motion.div keeps its enter animation. */}
+      <>
         {step === 1 && (
           <motion.div key="step1" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.3 }} className="glass-panel no-print" style={{ padding: '32px' }}>
             <h2 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '8px' }}>What Is Your Primary Research Goal?</h2>
@@ -813,7 +817,7 @@ function MatchFormInner() {
             )}
           </motion.div>
         )}
-      </AnimatePresence>
+      </>
 
       {showCompare && comparePair.length >= 2 && (
         <div

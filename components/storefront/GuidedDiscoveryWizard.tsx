@@ -129,7 +129,10 @@ export function GuidedDiscoveryWizard({
             </div>
 
             <div style={{ padding: '14px 18px 18px', flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
-              <AnimatePresence mode="wait">
+              {/* Plain conditional rendering: mode="wait" could leave the exiting
+                  step mounted (exit never completing), freezing the modal on step 0
+                  even as `step` advanced. Each motion.div keeps its enter animation. */}
+              <>
                 {step === 0 && (
                   <motion.div key="step0" variants={variants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.2 }}>
                     <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>What Research Area Are You Focused On?</h3>
@@ -273,7 +276,7 @@ export function GuidedDiscoveryWizard({
                     </div>
                   </motion.div>
                 )}
-              </AnimatePresence>
+              </>
             </div>
 
             <div
