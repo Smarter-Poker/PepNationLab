@@ -2949,7 +2949,7 @@ export default function AgentStorefrontGrid({
             right: 0,
             /* Cover exactly the title row — matches the image layout where the title
                sits in the top ~27% before the search bar at 26.9% */
-            height: '27%',
+            height: '26%',
             background: '#000000',
             zIndex: 6,
             display: 'flex',
