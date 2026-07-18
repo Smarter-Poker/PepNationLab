@@ -56,7 +56,7 @@ export default function PrintLabelsClient({ products, isAdmin }: { products: Lab
   const [sizeKey, setSizeKey] = useState('default');
   const [customW, setCustomW] = useState('1.5');
   const [customH, setCustomH] = useState('0.75');
-  const [mode, setMode] = useState<'roll' | 'sheet'>('roll');
+  const [mode, setMode] = useState<'avery' | 'roll' | 'grid'>('avery');
 
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -101,34 +101,94 @@ export default function PrintLabelsClient({ products, isAdmin }: { products: Lab
     return items;
   }, [products, quantities]);
 
-  const handlePrint = () => {
-    if (totalSelected === 0) return;
-    window.print();
+  // Avery 61525 (PermaTrack Asset Tags, 3/4" X 1 1/2", 40 Per Sheet).
+  // Geometry extracted from Avery's official blank template PDF:
+  // 4 columns at x = 0.5", 2.5", 4.5", 6.5" (2.0" pitch), 10 rows starting
+  // 0.625" from the top on a 1.0" pitch, 0.075" corner radius.
+  const AVERY_COLS = [0.5, 2.5, 4.5, 6.5];
+  const AVERY_TOP = 0.625;
+  const AVERY_PITCH_Y = 1.0;
+  const AVERY_PER_SHEET = 40;
+
+  const buildPrintDocument = (): string => {
+    const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+    const imgTag = (slug: string, name: string, style: string) =>
+      `<img src="${STORAGE_BASE}/${esc(slug)}.png" alt="${esc(name)}" style="${style}">`;
+
+    let pages = '';
+    let css = '';
+
+    if (mode === 'avery') {
+      css = `@page { size: 8.5in 11in; margin: 0; }
+        body { margin: 0; }
+        .sheet { position: relative; width: 8.5in; height: 11in; page-break-after: always; overflow: hidden; }
+        .cell { position: absolute; width: 1.5in; height: 0.75in; overflow: hidden; border-radius: 0.075in; }
+        .cell img { width: 1.5in; height: 0.75in; object-fit: fill; display: block; }`;
+      for (let s = 0; s * AVERY_PER_SHEET < printItems.length; s++) {
+        const batch = printItems.slice(s * AVERY_PER_SHEET, (s + 1) * AVERY_PER_SHEET);
+        const cells = batch.map((item, i) => {
+          const col = i % 4;
+          const row = Math.floor(i / 4);
+          const left = AVERY_COLS[col];
+          const top = AVERY_TOP + row * AVERY_PITCH_Y;
+          return `<div class="cell" style="left:${left}in;top:${top}in;">${imgTag(item.slug, item.name, '')}</div>`;
+        }).join('');
+        pages += `<div class="sheet">${cells}</div>`;
+      }
+    } else if (mode === 'roll') {
+      css = `@page { size: ${labelW}in ${labelH}in; margin: 0; }
+        body { margin: 0; }
+        .pl { width: ${labelW}in; height: ${labelH}in; page-break-after: always; overflow: hidden; }
+        .pl img { width: ${labelW}in; height: ${labelH}in; object-fit: fill; display: block; }`;
+      pages = printItems.map(item => `<div class="pl">${imgTag(item.slug, item.name, '')}</div>`).join('');
+    } else {
+      css = `@page { size: 8.5in 11in; margin: 0.25in; }
+        body { margin: 0; font-size: 0; }
+        .pl { display: inline-block; width: ${labelW}in; height: ${labelH}in; margin: 0.0625in; overflow: hidden; page-break-inside: avoid; break-inside: avoid; }
+        .pl img { width: ${labelW}in; height: ${labelH}in; object-fit: fill; display: block; }`;
+      pages = printItems.map(item => `<div class="pl">${imgTag(item.slug, item.name, '')}</div>`).join('');
+    }
+
+    return `<!DOCTYPE html><html><head><title>Pep Nation Labels</title><style>${css}</style></head><body>${pages}
+      <script>
+        (function () {
+          var imgs = Array.prototype.slice.call(document.images);
+          var pending = imgs.length;
+          var fired = false;
+          function go() {
+            if (fired) return;
+            fired = true;
+            setTimeout(function () { window.focus(); window.print(); }, 200);
+          }
+          if (!pending) { go(); return; }
+          imgs.forEach(function (img) {
+            function done() { if (--pending <= 0) go(); }
+            if (img.complete && img.naturalWidth > 0) { done(); }
+            else { img.addEventListener('load', done); img.addEventListener('error', done); }
+          });
+          setTimeout(go, 20000);
+          window.onafterprint = function () { setTimeout(function () { window.close(); }, 300); };
+        })();
+      <\/script>
+    </body></html>`;
   };
 
-  const pageCss = mode === 'roll'
-    ? `@page { size: ${labelW}in ${labelH}in; margin: 0; }
-       @media print {
-         body * { visibility: hidden !important; }
-         #label-print-root, #label-print-root * { visibility: visible !important; }
-         #label-print-root { display: block !important; position: absolute; left: 0; top: 0; width: auto; }
-         #label-print-root .pl-item { width: ${labelW}in; height: ${labelH}in; page-break-after: always; break-after: page; overflow: hidden; }
-         #label-print-root .pl-item img { width: ${labelW}in; height: ${labelH}in; object-fit: fill; display: block; }
-       }`
-    : `@page { size: letter portrait; margin: 0.25in; }
-       @media print {
-         body * { visibility: hidden !important; }
-         #label-print-root, #label-print-root * { visibility: visible !important; }
-         #label-print-root { display: block !important; position: absolute; left: 0; top: 0; width: 8in; font-size: 0; }
-         #label-print-root .pl-item { display: inline-block; width: ${labelW}in; height: ${labelH}in; margin: 0.0625in; overflow: hidden; page-break-inside: avoid; break-inside: avoid; }
-         #label-print-root .pl-item img { width: ${labelW}in; height: ${labelH}in; object-fit: fill; display: block; }
-       }`;
+  const handlePrint = () => {
+    if (totalSelected === 0) return;
+    const win = window.open('', '_blank');
+    if (!win) {
+      alert('Please Allow Pop-Ups For This Site To Print Labels.');
+      return;
+    }
+    win.document.open();
+    win.document.write(buildPrintDocument());
+    win.document.close();
+  };
 
   const surface: React.CSSProperties = { background: '#0F1923', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12 };
 
   return (
     <div style={{ minHeight: '100vh', background: '#050A0F', color: '#FFFFFF', padding: '24px 16px 120px' }}>
-      <style dangerouslySetInnerHTML={{ __html: pageCss }} />
 
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         {/* Header */}
@@ -147,6 +207,14 @@ export default function PrintLabelsClient({ products, isAdmin }: { products: Lab
 
         {/* Print Setup */}
         <div style={{ ...surface, padding: 16, marginBottom: 16, display: 'flex', flexWrap: 'wrap', gap: 14, alignItems: 'flex-end' }}>
+          {mode === 'avery' ? (
+            <div>
+              <label style={{ display: 'block', fontSize: '0.72rem', color: '#A8B4C0', marginBottom: 6, fontWeight: 600, letterSpacing: '0.04em' }}>Label Size</label>
+              <div style={{ background: '#162230', color: '#A8B4C0', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 8, padding: '10px 12px', fontSize: '0.85rem', minWidth: 200 }}>
+                3/4" X 1 1/2" (Set By Avery 61525)
+              </div>
+            </div>
+          ) : (
           <div>
             <label style={{ display: 'block', fontSize: '0.72rem', color: '#A8B4C0', marginBottom: 6, fontWeight: 600, letterSpacing: '0.04em' }}>Label Size</label>
             <select
@@ -157,8 +225,9 @@ export default function PrintLabelsClient({ products, isAdmin }: { products: Lab
               {SIZE_PRESETS.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
             </select>
           </div>
+          )}
 
-          {sizeKey === 'custom' && (
+          {mode !== 'avery' && sizeKey === 'custom' && (
             <>
               <div>
                 <label style={{ display: 'block', fontSize: '0.72rem', color: '#A8B4C0', marginBottom: 6, fontWeight: 600 }}>Width (Inches)</label>
@@ -183,8 +252,9 @@ export default function PrintLabelsClient({ products, isAdmin }: { products: Lab
             <label style={{ display: 'block', fontSize: '0.72rem', color: '#A8B4C0', marginBottom: 6, fontWeight: 600, letterSpacing: '0.04em' }}>Print Mode</label>
             <div style={{ display: 'flex', gap: 6 }}>
               {([
-                { key: 'roll', label: 'Label Printer (One Per Label)' },
-                { key: 'sheet', label: 'Letter Sheet (Grid)' },
+                { key: 'avery', label: 'Avery 61525 Sheet (40 Per Page)' },
+                { key: 'roll', label: 'Roll Printer (One Per Label)' },
+                { key: 'grid', label: 'Simple Sheet Grid' },
               ] as const).map(m => (
                 <button
                   key={m.key}
@@ -226,6 +296,10 @@ export default function PrintLabelsClient({ products, isAdmin }: { products: Lab
             </button>
           </div>
         </div>
+
+        <p style={{ color: '#6E7B88', fontSize: '0.75rem', margin: '-8px 0 16px' }}>
+          Tip: In The Browser Print Dialog Set Margins To None And Scale To 100% So Labels Line Up Exactly.
+        </p>
 
         {/* Search + Category Filters */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginBottom: 16 }}>
@@ -323,7 +397,7 @@ export default function PrintLabelsClient({ products, isAdmin }: { products: Lab
       {totalSelected > 0 && (
         <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, background: 'rgba(5,10,15,0.94)', borderTop: '1px solid rgba(255,255,255,0.10)', padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, zIndex: 50, backdropFilter: 'blur(8px)' }}>
           <span style={{ color: '#A8B4C0', fontSize: '0.85rem' }}>
-            {totalSelected} Label{totalSelected === 1 ? '' : 's'} Selected — {sizeKey === 'custom' ? `${labelH}" X ${labelW}"` : preset.label.replace(' (Default)', '')}
+            {totalSelected} Label{totalSelected === 1 ? '' : 's'} Selected — {mode === 'avery' ? `Avery 61525 (${Math.ceil(totalSelected / 40)} Sheet${Math.ceil(totalSelected / 40) === 1 ? '' : 's'})` : sizeKey === 'custom' ? `${labelH}" X ${labelW}"` : preset.label.replace(' (Default)', '')}
           </span>
           <button
             onClick={handlePrint}
@@ -334,15 +408,6 @@ export default function PrintLabelsClient({ products, isAdmin }: { products: Lab
         </div>
       )}
 
-      {/* Hidden Print Root - Only Visible To The Printer */}
-      <div id="label-print-root" style={{ display: 'none' }}>
-        {printItems.map((item, i) => (
-          <div key={`${item.slug}-${i}`} className="pl-item">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`${STORAGE_BASE}/${item.slug}.png`} alt={`${item.name} Label`} />
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
