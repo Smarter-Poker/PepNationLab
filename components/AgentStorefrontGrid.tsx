@@ -3945,31 +3945,6 @@ export default function AgentStorefrontGrid({
                   })()}
                 </div>
 
-                {(() => {
-                  const selVId0 = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
-                  const selV0 = detailProduct.variants.find(v => v.id === selVId0) || detailProduct.variants[0];
-                  const localStock = Math.max(0, Number(inventoryMap[selV0?.product_id ?? ''] ?? 0));
-                  if (localStock <= 0) return null;
-                  return (
-                    <div style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 8,
-                      padding: '7px 14px', borderRadius: 'var(--radius-md)',
-                      background: 'rgba(72,187,120,0.10)',
-                      border: '1px solid rgba(72,187,120,0.30)',
-                      marginBottom: 'var(--space-4)'
-                    }}>
-                      <span style={{
-                        width: 8, height: 8, borderRadius: '50%',
-                        background: '#68D391', flexShrink: 0,
-                        boxShadow: '0 0 6px #68D39180'
-                      }} />
-                      <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>
-                        {localStock} Vial{localStock !== 1 ? 's' : ''} In Agent Local Stock - Ships Immediately
-                      </span>
-                    </div>
-                  );
-                })()}
-
                 {/* CRO: verified purity chip. purity_percentage is real catalog
                     data that previously only surfaced deep inside the monograph
                     portal - now it sits on the decision surface next to price. */}
