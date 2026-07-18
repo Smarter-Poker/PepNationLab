@@ -2529,11 +2529,11 @@ export default function AgentStorefrontGrid({
                         <div style={{ display: 'flex', alignItems: 'stretch', justifyContent: _hasCompare ? 'space-between' : 'center', gap: 12 }}>
                           {_hasCompare && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(0,196,188,0.35)', borderRadius: 10, padding: '8px 14px', background: 'rgba(0,196,188,0.06)' }}>
-                              <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)', letterSpacing: '0.01em', whiteSpace: 'nowrap' }}>YOU SAVE ${_youSave.toFixed(2)}</span>
                               <span style={{ display: 'flex', alignItems: 'baseline', gap: 5, whiteSpace: 'nowrap' }}>
                                 <span style={{ fontSize: '0.62rem', color: 'var(--grey-500)', fontWeight: 700, letterSpacing: '0.06em' }}>MSRP</span>
                                 <span style={{ fontSize: '0.92rem', color: 'var(--grey-500)', textDecoration: 'line-through', fontWeight: 700 }}>${_comparePrice.toFixed(2)}</span>
                               </span>
+                              <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)', letterSpacing: '0.01em', whiteSpace: 'nowrap' }}>YOU SAVE ${Math.floor(_youSave)}</span>
                             </div>
                           )}
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'center', justifyContent: 'center' }}>
