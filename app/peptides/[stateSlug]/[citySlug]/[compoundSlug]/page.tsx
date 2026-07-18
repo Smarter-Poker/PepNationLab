@@ -28,6 +28,8 @@ import type { CompoundStoreCard } from '@/lib/cities/compound-store';
 import { getRegionLabel, getRegionArea } from '@/lib/cities/city-content';
 import { getResearchAnchors } from '@/lib/cities/research-anchors';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
+import { isPilotCompoundCity } from '@/lib/cities/tier3-pilot';
+import { CompoundCityNarrative } from '@/components/cities/CompoundCityNarrative';
 
 // ISR: regenerate at most every 5 minutes so the live price card tracks the
 // storefront catalog without a redeploy.
@@ -90,7 +92,7 @@ export async function generateMetadata({
   // Selective indexing: index high-value tier-1/2 markets; noindex (but still
   // follow) the tier-3 long tail so the thin compound-city pages do not dilute
   // crawl budget or trip doorway-content heuristics.
-  const indexable = city.tier <= 2;
+  const indexable = city.tier <= 2 || isPilotCompoundCity(city, compoundSlug);
 
   const title = `${compound.displayName} In ${city.name}, ${city.stateAbbr} - Research-Grade Supply`;
   const description = `Buy research-grade ${compound.displayName} (${compound.popularName}) for verified researchers in ${city.name}, ${city.state}. Live wholesale pricing, batch COA documentation, fast nationwide shipping. In vitro laboratory use only.`;
@@ -461,6 +463,8 @@ export default async function CompoundCityPage({
             </div>
           </div>
         </section>
+
+        <CompoundCityNarrative city={city} compound={compound} />
 
         {/* CITY CONTEXT */}
         <section style={{ padding: 'clamp(40px, 6vw, 72px) 0', borderTop: '1px solid rgba(255,255,255,0.04)' }}>

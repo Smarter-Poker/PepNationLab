@@ -611,7 +611,7 @@ export default function AgentDashboardClient({
 
         {activeTab === 'Store Products' && (
           <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <AgentStoreProducts agentId={userProfile.id} agentSlug={userProfile.slug} />
+            <AgentStoreProducts agentId={userProfile.id} agentSlug={agentProfile.slug} />
           </div>
         )}
 

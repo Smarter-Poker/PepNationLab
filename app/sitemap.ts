@@ -9,6 +9,7 @@ import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 import { GUIDES, GUIDES_UPDATED } from '@/lib/research/guides';
 import { COMPARISON_PAIRS, matchupSlug } from '@/lib/research/comparisons';
 import { RESEARCH_AREAS } from '@/lib/compounds';
+import { getPilotCompoundCityUrls } from '@/lib/cities/tier3-pilot';
 
 // Regenerate at most hourly - each hit builds thousands of URLs and runs up to
 // three 2000-row Supabase queries, which crawlers should not trigger per-request.
@@ -207,6 +208,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // sitemap: at current domain authority they were crawl-budget sinks (Google
   // "Discovered/Crawled - not indexed"). The routes stay live and tier-1/2
   // remain indexable via internal links.
+  
+  // Tier-3 SEO Pilot Pages
+  const pilotUrls = getPilotCompoundCityUrls();
+  const pilotPages: MetadataRoute.Sitemap = pilotUrls.map((url) => ({
+    url,
+    lastModified: CITY_CONTENT_UPDATED,
+    changeFrequency: 'monthly',
+    priority: 0.5,
+  }));
 
-  return [...staticPaths, ...compounds, ...cityPages];
+  return [...staticPaths, ...compounds, ...cityPages, ...pilotPages];
 }

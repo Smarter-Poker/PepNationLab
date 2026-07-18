@@ -20,6 +20,7 @@ import { getAllCompounds } from '@/lib/compounds-server';
 import { COMPARISON_PAIRS, matchupSlug } from '@/lib/research/comparisons';
 import { CITIES, getStatesSlugs } from '@/lib/cities/cities-data';
 import { GUIDES } from '@/lib/research/guides';
+import { getPilotCompoundCityUrls } from '@/lib/cities/tier3-pilot';
 
 const BASE = 'https://pepnationlab.com';
 
@@ -56,6 +57,7 @@ async function importantUrls(): Promise<string[]> {
   for (const stateSlug of getStatesSlugs()) urls.add(`${BASE}/peptides/${stateSlug}`);
   for (const city of CITIES) urls.add(`${BASE}/peptides/${city.stateSlug}/${city.slug}`);
   for (const guide of GUIDES) urls.add(`${BASE}/research/guides/${guide.slug}`);
+  for (const url of getPilotCompoundCityUrls()) urls.add(url);
   try {
     const all = await getAllCompounds();
     const targets = new Set<string>();
