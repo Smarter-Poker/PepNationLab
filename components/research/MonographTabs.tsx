@@ -240,7 +240,7 @@ export default function MonographTabs({ compound, related = [], coaUrl = null }:
               title="Certificate of Analysis"
               style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}
             >
-              <DynamicCoaButton />
+              <DynamicCoaButton isSmall={true} />
             </a>
           )}
           <Link
