@@ -1846,7 +1846,12 @@ export default function AgentStorefrontGrid({
           seenBaseNames.set(baseName, item);
         }
       }
-      result = Array.from(seenBaseNames.values()).slice(0, 10);
+      const top10 = Array.from(seenBaseNames.values()).slice(0, 10);
+      const bacWater = withScores.find(({ g }) => g.name.toLowerCase().includes('bacteriostatic water'));
+      if (bacWater && !top10.some(item => item.g.name === bacWater.g.name)) {
+        top10.push(bacWater);
+      }
+      result = top10;
     } else if (activeCardIndex !== null && activeCardIndex > 1 && !deferredSearch.trim()) {
       const activeCard = CARD_MAPPINGS.find(m => m.index === activeCardIndex);
       if (activeCard) {
@@ -4056,9 +4061,8 @@ export default function AgentStorefrontGrid({
                 })()}
 
                 {(() => {
-                  const firstVariant = detailProduct.variants[0];
-                  const pid = firstVariant?.product_id;
-                  const coaUrl = pid ? coaByProductId?.[pid] : undefined;
+                  const _coaPid = detailProduct.variants.find(v => !!coaByProductId?.[v.product_id])?.product_id;
+                  const coaUrl = _coaPid ? coaByProductId?.[_coaPid] : undefined;
                   if (!coaUrl) return null;
                   return (
                     <div style={{ marginBottom: 'var(--space-6)' }}>
