@@ -118,6 +118,7 @@ export default function DiscoveryHero({
   const [goalSummary, setGoalSummary] = useState('');
   const [followUp, setFollowUp] = useState<{ question: string; originalGoal: string } | null>(null);
   const [matchError, setMatchError] = useState(false);
+  const [relaxed, setRelaxed] = useState(false);
   const [drawerMounted, setDrawerMounted] = useState(false);
   const [wizardMounted, setWizardMounted] = useState(false);
   useEffect(() => { if (drawerOpen) setDrawerMounted(true); }, [drawerOpen]);
@@ -229,6 +230,7 @@ export default function DiscoveryHero({
     setDrawerOpen(true);
     setFollowUp(null);
     setMatchError(false);
+    setRelaxed(false);
     try {
       const res = await fetch('/api/research/match', {
         method: 'POST',
@@ -268,6 +270,7 @@ export default function DiscoveryHero({
           molecularWeight?: number | null;
         }>;
         excluded?: ExcludedCompound[];
+        relaxed?: boolean;
       } | null;
 
       // The API response is the source of truth for WHICH compounds matched.
@@ -341,6 +344,7 @@ export default function DiscoveryHero({
 
       setResults(built);
       setExcluded(json?.excluded || []);
+      setRelaxed(!!json?.relaxed);
     } catch (e) {
       setResults([]);
       setMatchError(true);
@@ -672,6 +676,7 @@ export default function DiscoveryHero({
         followUp={followUp}
         submitFollowUp={submitFollowUp}
         matchError={matchError}
+        relaxed={relaxed}
         onRetry={() => { if (goalSummary) submitTypedGoal(goalSummary); }}
         primaryColor={primaryColor}
         onClose={() => setDrawerOpen(false)}
