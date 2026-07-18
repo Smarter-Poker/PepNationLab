@@ -289,18 +289,27 @@ export function toTitleCase(name: string): string {
 /**
  * Main resolver: product name takes priority over category.
  * Pass explicit imageUrl if the product has a custom one in the database.
+ *
+ * @param allowBrandSpecific - Set true when imageUrl comes from agent_products.custom_image_url
+ *   (agent-level override). Brand-specific paths like /images/savage-brands/ are valid there.
+ *   Leave false (default) when imageUrl comes from the shared products table — brand-specific
+ *   paths must never leak from that table into other storefronts.
  */
 export function getProductImage(
   imageUrl: string | null | undefined,
   category: string,
   productName?: string,
+  allowBrandSpecific?: boolean,
 ): string {
   // SAFETY GUARD: The shared `products` table must ONLY contain generic platform
   // image paths (Supabase CDN or /images/pep-nation-flattened/).
   // Brand-specific paths like /images/savage-brands/ must NEVER appear here —
   // if one sneaks in, treat it as null so the correct PepNation vials are shown.
+  // Exception: agent_products.custom_image_url is agent-scoped and may contain
+  // brand-specific paths — callers set allowBrandSpecific=true for those.
   const safeUrl =
-    imageUrl && imageUrl.trim() !== '' && !imageUrl.includes('/images/savage-brands/')
+    imageUrl && imageUrl.trim() !== '' &&
+    (allowBrandSpecific || !imageUrl.includes('/images/savage-brands/'))
       ? imageUrl
       : null;
 

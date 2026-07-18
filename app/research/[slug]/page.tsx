@@ -15,7 +15,7 @@
 
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getCompound, getAllCompounds, getCompoundBindings } from '@/lib/compounds-server';
+import { getCompound, getAllCompounds, getCompoundBindings, getCOAUrlByCompoundSlug } from '@/lib/compounds-server';
 import { relatedCompounds } from '@/lib/compounds';
 import { COMPARISON_PAIRS, matchupSlug } from '@/lib/research/comparisons';
 import MonographTabs from '@/components/research/MonographTabs';
@@ -99,8 +99,9 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   const related = relatedCompounds(compound, all);
 
   // Server-fetch the Wave 2 enriched data (bindings + structures); fail-soft.
-  const [bindingsRes] = await Promise.all([
+  const [bindingsRes, coaUrl] = await Promise.all([
     getCompoundBindings(slug),
+    getCOAUrlByCompoundSlug(slug),
   ]);
   const bindings = bindingsRes as Array<{
     target_name: string;
@@ -308,7 +309,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
           HTML. Clicks are intercepted into IframeModal (never navigate away). */}
       <MonographCitations sources={compound.sources ?? []} compoundName={compound.display_name} />
 
-      <MonographTabs compound={compound} related={related} />
+      <MonographTabs compound={compound} related={related} coaUrl={coaUrl} />
 
       {/* Personalization rail - server emits markup; the buttons handle auth themselves. */}
       <div

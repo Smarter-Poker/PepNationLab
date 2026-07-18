@@ -1058,6 +1058,7 @@ export default function AgentStorefrontGrid({
             item.custom_image_url ?? item.products?.image_url ?? null,
             item.products?.category || 'Other',
             rawName,
+            !!item.custom_image_url, // allowBrandSpecific: custom_image_url is agent-scoped
           ),
           variants: [],
           lowestPrice: Infinity,
@@ -2964,34 +2965,50 @@ export default function AgentStorefrontGrid({
           );
         })}
 
-        {/* ── Custom Branding Overlay ── logo rendered on top of hero for white-label stores */}
+        {/* ── Custom Branding Overlay ── covers baked-in 'PEP NATION'S RESEARCH STORE' title */}
         {customBranding && (customBranding as any).logo_url && (
           <div style={{
             position: 'absolute',
             top: 0,
             left: 0,
             right: 0,
-            bottom: 0,
-            pointerEvents: 'none',
+            /* Cover exactly the title row — matches the image layout where the title
+               sits in the top ~27% before the search bar at 26.9% */
+            height: '27%',
+            background: '#000000',
+            zIndex: 6,
             display: 'flex',
-            flexDirection: 'column',
+            flexDirection: 'row',
             alignItems: 'center',
-            justifyContent: 'flex-start',
-            paddingTop: '3%',
-            zIndex: 5,
+            gap: '2%',
+            padding: '0 3%',
+            pointerEvents: 'none',
           }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={(customBranding as any).logo_url}
               alt={(customBranding as any).brand_name ?? 'Store Logo'}
               style={{
+                height: '80%',
                 width: 'auto',
-                maxWidth: '36%',
-                maxHeight: '46%',
                 objectFit: 'contain',
-                filter: 'drop-shadow(0 4px 20px rgba(0,0,0,0.9))',
+                flexShrink: 0,
+                filter: 'drop-shadow(0 2px 12px rgba(0,0,0,0.9))',
               }}
             />
+            <span style={{
+              color: '#FFFFFF',
+              fontSize: 'max(13px, 1.9vw)',
+              fontWeight: 900,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              textShadow: '0 2px 8px rgba(0,0,0,0.9)',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}>
+              {(customBranding as any).storefront_heading ?? (customBranding as any).brand_name}
+            </span>
           </div>
         )}
       </div>
@@ -3352,6 +3369,7 @@ export default function AgentStorefrontGrid({
                     item.custom_image_url ?? item.products?.image_url ?? null,
                     item.products?.category || 'Other',
                     name,
+                    !!item.custom_image_url, // allowBrandSpecific: custom_image_url is agent-scoped
                   );
                   const perVial = item.retail_price / 10;
                   // Bac. water sells in fixed 10-packs; show it as packs (10x), not loose vials.
@@ -3517,6 +3535,7 @@ export default function AgentStorefrontGrid({
                         item.custom_image_url ?? item.products?.image_url ?? null,
                         item.products?.category || 'Other',
                         name,
+                        !!item.custom_image_url, // allowBrandSpecific: custom_image_url is agent-scoped
                       );
                       const perVial = item.retail_price / 10;
                       return (
