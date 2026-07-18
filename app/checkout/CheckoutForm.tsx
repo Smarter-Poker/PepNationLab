@@ -557,6 +557,8 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   // checkout process on every viewport.
   const [bacReminderDismissed, setBacReminderDismissed] = useState(false);
   const [bacAddedQty, setBacAddedQty] = useState(0);
+  const [aceticReminderDismissed, setAceticReminderDismissed] = useState(false);
+  const [aceticAddedQty, setAceticAddedQty] = useState(0);
 
   const [couponInput, setCouponInput] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
@@ -564,7 +566,20 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const [couponLoading, setCouponLoading] = useState(false);
   const [flashSale, setFlashSale] = useState<ActiveFlashSale | null>(null);
 
-  const ACETIC_ACID_SLUGS = /\b(igf[-_\s]?1[-_\s]?(lr3|des|des-1-3)|aod[-_\s]?9604|ghk[-_\s]?cu|ghrp[-_\s]?[26]|fragment[-_\s]?(176|hgh[-_\s]?frag)|melanotan[-_\s]?[i12]|epital[o]?n|epithalon|nad\+?)\b/i;
+  // Acetic-class peptides: reconstitute with dilute acetic acid rather than BAC
+  // water. Narrowed 2026-07-18 to match the authoritative per-compound
+  // compounds.handling.diluent data: of the on-sale catalog, ONLY IGF-1 LR3/DES
+  // list acetic acid. The prior regex wrongly flagged AOD-9604, GHK-Cu, GHRP-2/6,
+  // HGH-Fragment, Epithalon, NAD+ and Melanotan as acetic — every one of those
+  // actually reconstitutes with bacteriostatic/sterile water, so they now
+  // correctly route to the BAC Water suggestion instead.
+  const ACETIC_ACID_SLUGS = /\b(igf[-_\s]?1[-_\s]?(lr3|des|des-?1-?3))\b/i;
+
+  // Pre-mixed aqueous products ship as ready liquids and need NO diluent.
+  // (The Lipolysis Stack "Lemon Bottle", The Skinny Shot "Lipo-C" -- and any
+  // future product named accordingly.) Counting them over-suggested BAC water.
+  const isPreMixedName = (name: string | null | undefined) =>
+    !!name && /(lemon\s*bottle|skinny\s*shot|lipo-?c\b|pre-?mixed)/i.test(name);
 
   const isDiluentName = (name: string | null | undefined) => {
     if (!name) return false;
@@ -585,7 +600,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   }, 0);
 
   const bacPeptideVials = (cart || []).reduce((sum, item) => {
-    if (isDiluentName(item.name)) return sum;
+    if (isDiluentName(item.name) || isPreMixedName(item.name)) return sum;
     const isAcetic = ACETIC_ACID_SLUGS.test(item.name) || (item.sku && ACETIC_ACID_SLUGS.test(item.sku));
     if (isAcetic) return sum;
     let vialsPerUnit = 1;
@@ -605,7 +620,10 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     return sum;
   }, 0);
 
-  const requiredBacWaterVials = bacPeptideVials > 0 ? bacPeptideVials : 0;
+  // Platform rule (owner-confirmed 2026-07-18): suggest ONE 10 mL BAC vial per
+  // TWO research vials (a generous 5 mL allocation each). Applied consistently
+  // with /api/cart/bac-water so the cart drawer and checkout agree.
+  const requiredBacWaterVials = bacPeptideVials > 0 ? Math.ceil(bacPeptideVials / 2) : 0;
   const neededBacWaterVials = Math.max(0, requiredBacWaterVials - currentBacWaterVials);
 
   const requiredAceticAcidVials = aceticPeptideVials > 0 ? aceticPeptideVials : 0;
@@ -1476,6 +1494,38 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 {bacAddedQty > 0 && neededBacWaterVials === 0 && (
                   <div role="status" style={{ background: 'rgba(45,212,191,0.07)', border: '1px solid rgba(45,212,191,0.3)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', color: '#2DD4BF', fontSize: '0.8rem', fontWeight: 600 }}>
                     {bacAddedQty} Vial{bacAddedQty !== 1 ? 's' : ''} Of Bacteriostatic Water Added To Your Order.
+                  </div>
+                )}
+
+                {/* Acetic-acid parity: GLP-1/IGF-class vials reconstitute with
+                    acetic acid, not BAC water. Same end-of-checkout treatment. */}
+                {neededAceticAcidVials > 0 && aceticProduct && !aceticReminderDismissed && (
+                  <div role="status" style={{ background: 'rgba(235,178,54,0.05)', border: '1px solid rgba(235,178,54,0.32)', borderRadius: 'var(--radius-md)', padding: 'var(--space-4)' }}>
+                    <strong style={{ display: 'block', color: 'var(--white)', fontSize: '0.85rem', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>Acetic Acid Check</strong>
+                    <p style={{ color: 'var(--silver-light)', fontSize: '0.8rem', margin: '0 0 12px', lineHeight: 1.5 }}>
+                      <strong style={{ color: 'var(--white)' }}>{aceticPeptideVials}</strong> Vial{aceticPeptideVials !== 1 ? 's' : ''} In Your Order Reconstitute{aceticPeptideVials === 1 ? 's' : ''} With Acetic Acid 0.6% Instead Of BAC Water. Suggested: <strong style={{ color: 'var(--white)' }}>{neededAceticAcidVials}</strong> Vial{neededAceticAcidVials !== 1 ? 's' : ''}.
+                    </p>
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={() => { setAceticAddedQty(neededAceticAcidVials); handleAddAceticAcid(); }}
+                        style={{ flex: '1 1 230px', padding: '11px 14px', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', borderRadius: 6, cursor: 'pointer', background: 'transparent', border: '1px solid #EBB236', color: '#EBB236' }}
+                      >
+                        Add {neededAceticAcidVials} Acetic Acid Vial{neededAceticAcidVials !== 1 ? 's' : ''} — ${((isAgentSelfBuy ? aceticProduct.costPrice : aceticProduct.retailPrice) * neededAceticAcidVials).toFixed(2)}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAceticReminderDismissed(true)}
+                        style={{ flex: '0 1 auto', padding: '11px 14px', fontSize: '0.78rem', background: 'transparent', border: '1px solid rgba(255,255,255,0.18)', color: 'var(--silver)', borderRadius: 6, cursor: 'pointer' }}
+                      >
+                        My Lab Is Covered
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {aceticAddedQty > 0 && neededAceticAcidVials === 0 && (
+                  <div role="status" style={{ background: 'rgba(235,178,54,0.07)', border: '1px solid rgba(235,178,54,0.3)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', color: '#EBB236', fontSize: '0.8rem', fontWeight: 600 }}>
+                    {aceticAddedQty} Vial{aceticAddedQty !== 1 ? 's' : ''} Of Acetic Acid Added To Your Order.
                   </div>
                 )}
 

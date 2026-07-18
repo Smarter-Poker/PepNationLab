@@ -42,8 +42,10 @@ const BAC_WATER_RE = /bacteriostatic\s*water|bac\.?\s*water/i;
 const SUPPLY_CATEGORY_RE = /supply|supplies|equipment|lab\s*supply/i;
 const ACETIC_ACID_RE = /acetic\s*acid/i;
 
-// Standard reconstitution volume per vial (mL)
-const ML_PER_VIAL = 2;
+// Allocation per research vial (mL). Platform rule (owner-confirmed
+// 2026-07-18): ONE 10 mL BAC vial per TWO research vials -- a generous 5 mL
+// allocation each -- applied consistently with the checkout reminder.
+const ML_PER_VIAL = 5;
 // Volume per BAC water vial (mL)
 const ML_PER_BAC_VIAL = 10;
 
@@ -128,6 +130,15 @@ export async function POST(req: NextRequest) {
 
       for (const c of compounds ?? []) {
         if (c.evidence_tier === 'supply' || c.evidence_tier === 'cosmetic') {
+          supplyCompoundSlugs.add(c.slug);
+        }
+        // Pre-mixed aqueous products (Lemon Bottle, Lipo-C, ...) ship as ready
+        // liquids, and implants need no diluent. Both must not inflate the
+        // suggestion. NOTE: do NOT match bare 'solution' -- forms like PT-141's
+        // "solution (autoinjector) or lyophilized" still need BAC water for the
+        // lyophilized form.
+        const form = String((c.handling as { form?: unknown } | null)?.form ?? '');
+        if (/pre-?mixed|\bimplant\b/i.test(form)) {
           supplyCompoundSlugs.add(c.slug);
         }
       }
