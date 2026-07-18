@@ -295,7 +295,15 @@ export function getProductImage(
   category: string,
   productName?: string,
 ): string {
-  if (imageUrl && imageUrl.trim() !== '') return imageUrl;
+  // SAFETY GUARD: The shared `products` table must never contain brand-specific
+  // image paths (e.g. /images/savage-brands/...). If one sneaks in, treat it as
+  // null so the name/category fallback fires and PepNation vials are shown.
+  const safeUrl =
+    imageUrl && imageUrl.trim() !== '' && !imageUrl.includes('/images/savage-brands/')
+      ? imageUrl
+      : null;
+
+  if (safeUrl) return safeUrl;
   if (productName) {
     const specific = getProductVialImage(productName);
     if (specific) return specific;

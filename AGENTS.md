@@ -85,3 +85,24 @@ The files in `public/images/savage-brands/` are **canonical 3D vial renders** ap
 
 **If you are asked to do anything that would involve these files:** Stop, confirm with the user that they want to overwrite the canonical 3D renders, and wait for explicit approval before proceeding.
 <!-- END:savage-brands-image-protection -->
+
+
+<!-- BEGIN:products-table-image-protection -->
+# HARD RULE: Never Write Brand-Specific Image Paths to the Shared `products` Table
+
+The `products` table is **shared across all storefronts**. Its `image_url` column must NEVER be set to a brand-specific path such as `/images/savage-brands/...`.
+
+**Why:** Every storefront (PepNation, all agents) reads `products.image_url` as the default fallback image. Writing a Savage Brands path here causes every PepNation product and every agent's storefront to display Savage Brands vials instead of PepNation vials.
+
+**The correct architecture:**
+- `products.image_url` → generic platform images only (Supabase Storage CDN URLs from the `product-images` bucket)
+- `agent_products.custom_image_url` → per-agent overrides (e.g. `/images/savage-brands/...` for Savage Brands ONLY)
+- `lib/categoryImage.ts` → PepNation fallback vials by product name / category
+
+**Never:**
+- Run any script, API call, or migration that writes `/images/savage-brands/...` into `products.image_url`
+- Use the `/api/admin/products/bulk-images` route to upload Savage Brands images (it writes to the shared `products` table)
+- Execute any SQL `UPDATE products SET image_url = ...` with brand-specific paths
+
+**If you need to update Savage Brands product images:** Update `agent_products.custom_image_url` WHERE `agent_id = (SELECT id FROM agent_profiles WHERE slug = 'savagebrands')` — never touch `products.image_url`.
+<!-- END:products-table-image-protection -->
