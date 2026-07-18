@@ -49,7 +49,10 @@ export default function IframeModal({ url, title, onClose }: IframeModalProps) {
   const domain = useMemo(() => {
     if (!isExternal) return 'pepnationlab.com';
     try {
-      return new URL(url).hostname;
+      const hostname = new URL(url).hostname;
+      // Our Supabase storage bucket is our own content — always show our brand domain.
+      if (hostname.endsWith('.supabase.co')) return 'pepnationlab.com';
+      return hostname;
     } catch {
       return url;
     }

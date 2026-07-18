@@ -221,17 +221,18 @@ export default function CertificateDocument({ data }: { data: CertificateData })
       )}
 
       <div style={{ marginTop: 20, fontSize: 12, fontWeight: 500, color: TEAL_DARK, letterSpacing: 0.5 }}>Analytical Results</div>
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 6, fontSize: 13 }}>
-        <caption className="sr-only">Analytical Test Results</caption>
-        <thead>
-          <tr style={{ background: '#E1F5EE', color: '#04342C' }}>
-            <th scope="col" style={{ textAlign: 'left', padding: '8px 10px', fontWeight: 500 }}>Test</th>
-            <th scope="col" style={{ textAlign: 'left', padding: '8px 10px', fontWeight: 500 }}>Method</th>
-            <th scope="col" style={{ textAlign: 'right', padding: '8px 10px', fontWeight: 500 }}>Result</th>
-            <th scope="col" style={{ textAlign: 'right', padding: '8px 10px', fontWeight: 500 }}>Specification</th>
-          </tr>
-        </thead>
-        <tbody>
+      <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' as any }}>
+        <table style={{ width: '100%', minWidth: 400, borderCollapse: 'collapse', marginTop: 6, fontSize: 13 }}>
+          <caption className="sr-only">Analytical Test Results</caption>
+          <thead>
+            <tr style={{ background: '#E1F5EE', color: '#04342C' }}>
+              <th scope="col" style={{ textAlign: 'left', padding: '8px 10px', fontWeight: 500, whiteSpace: 'nowrap' }}>Test</th>
+              <th scope="col" style={{ textAlign: 'left', padding: '8px 10px', fontWeight: 500, whiteSpace: 'nowrap' }}>Method</th>
+              <th scope="col" style={{ textAlign: 'right', padding: '8px 10px', fontWeight: 500, whiteSpace: 'nowrap' }}>Result</th>
+              <th scope="col" style={{ textAlign: 'right', padding: '8px 10px', fontWeight: 500, whiteSpace: 'nowrap' }}>Specification</th>
+            </tr>
+          </thead>
+          <tbody>
           <ResultRow
             test="Purity"
             method={data.purityMethod || 'RP-HPLC'}
@@ -258,31 +259,37 @@ export default function CertificateDocument({ data }: { data: CertificateData })
             result={data.waterContentPct === null ? NOT_REPORTED : `${data.waterContentPct}%`}
             spec="Not More Than 8.0%"
           />
-        </tbody>
-      </table>
+          </tbody>
+        </table>
+      </div>
 
-      <div style={{ marginTop: 16, display: 'flex', gap: 14, alignItems: 'stretch' }}>
-        <div style={{ flex: 1, border: `0.5px solid ${HAIR}`, borderRadius: 6, padding: '8px 10px' }}>
-          <div style={{ fontSize: 11, color: MUTED, marginBottom: 4 }}>HPLC Chromatogram</div>
-          {data.chromatogramUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={data.chromatogramUrl} alt="HPLC Chromatogram" style={{ width: '100%', maxHeight: 90, objectFit: 'contain' }} />
-          ) : (
-            <div style={{ fontSize: 11, color: MUTED, fontStyle: 'italic', padding: '18px 0', textAlign: 'center' }}>
-              Chromatogram Not Attached
+      {/* On mobile this two-column flex can be too narrow and cause text to
+          stack vertically. We wrap it in an overflow-x scroll container and
+          set min-width on each cell so the labels never break. */}
+      <div style={{ marginTop: 16, overflowX: 'auto', WebkitOverflowScrolling: 'touch' as any }}>
+        <div style={{ display: 'flex', gap: 14, alignItems: 'stretch', minWidth: 340 }}>
+          <div style={{ flex: 1, border: `0.5px solid ${HAIR}`, borderRadius: 6, padding: '8px 10px', minWidth: 160 }}>
+            <div style={{ fontSize: 11, color: MUTED, marginBottom: 4, whiteSpace: 'nowrap' }}>HPLC Chromatogram</div>
+            {data.chromatogramUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={data.chromatogramUrl} alt="HPLC Chromatogram" style={{ width: '100%', maxHeight: 90, objectFit: 'contain' }} />
+            ) : (
+              <div style={{ fontSize: 11, color: MUTED, fontStyle: 'italic', padding: '18px 0', textAlign: 'center' }}>
+                Chromatogram Not Attached
+              </div>
+            )}
+            <div style={{ fontSize: 11, color: MUTED, marginTop: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              Method: {data.hplcColumn || NOT_REPORTED}
+              {data.hplcWavelengthNm ? `, ${data.hplcWavelengthNm} nm` : ''}
             </div>
-          )}
-          <div style={{ fontSize: 11, color: MUTED, marginTop: 6 }}>
-            Method: {data.hplcColumn || NOT_REPORTED}
-            {data.hplcWavelengthNm ? `, ${data.hplcWavelengthNm} nm` : ''}
           </div>
-        </div>
 
-        <div style={{ width: 170, border: `0.5px solid ${HAIR}`, borderRadius: 6, padding: '8px 10px' }}>
-          <div style={{ fontSize: 11, color: MUTED }}>Testing Laboratory</div>
-          <div style={{ fontSize: 12, fontWeight: 500, marginTop: 2 }}>{data.testingLab || NOT_REPORTED}</div>
-          <div style={{ fontSize: 11, color: MUTED, marginTop: 6 }}>Third Party: {thirdParty}</div>
-          <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>Accreditation: {data.labAccreditation || NOT_REPORTED}</div>
+          <div style={{ width: 170, flexShrink: 0, border: `0.5px solid ${HAIR}`, borderRadius: 6, padding: '8px 10px' }}>
+            <div style={{ fontSize: 11, color: MUTED, whiteSpace: 'nowrap' }}>Testing Laboratory</div>
+            <div style={{ fontSize: 12, fontWeight: 500, marginTop: 2 }}>{data.testingLab || NOT_REPORTED}</div>
+            <div style={{ fontSize: 11, color: MUTED, marginTop: 6, whiteSpace: 'nowrap' }}>Third Party: {thirdParty}</div>
+            <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>Accreditation: {data.labAccreditation || NOT_REPORTED}</div>
+          </div>
         </div>
       </div>
 
