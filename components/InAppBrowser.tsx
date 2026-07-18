@@ -41,6 +41,7 @@ export function useInAppBrowser(): InAppBrowserContextValue {
 function normalizeUrl(raw: string): string {
   const trimmed = (raw || '').trim();
   if (!trimmed) return '';
+  if (trimmed.startsWith('/')) return trimmed;
   if (/^https?:\/\//i.test(trimmed)) return trimmed;
   return `https://${trimmed}`;
 }

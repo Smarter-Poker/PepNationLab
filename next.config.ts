@@ -110,7 +110,7 @@ const nextConfig = {
             key: "Strict-Transport-Security",
             value: "max-age=63072000; includeSubDomains; preload",
           },
-          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           {
@@ -156,7 +156,7 @@ const nextConfig = {
               // form-action 'self': forms can only submit back to us — blocks
               // XSS-injected <form action=\"https://evil\"> credential exfil.
               "form-action 'self'; " +
-              "frame-ancestors 'none'; " +
+              "frame-ancestors 'self'; " +
               // Auto-upgrade any stray http:// subresource to https.
               "upgrade-insecure-requests;",
           },
