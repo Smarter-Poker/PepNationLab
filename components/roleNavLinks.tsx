@@ -68,12 +68,14 @@ const ICON = {
   book: <svg {...ip}><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>,
   labTools: <svg {...ip}><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>,
   search: <svg {...ip}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>,
+  printer: <svg {...ip}><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" /></svg>,
 };
 
 const ADMIN_LINKS: RoleNavLink[] = [
   { href: '/admin', label: 'Admin Dashboard', icon: ICON.grid },
   { href: '/admin/pricing', label: 'Pricing', icon: <svg {...ip}><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg> },
   { href: '/admin/products', label: 'Products', icon: <svg {...ip}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg> },
+  { href: '/dashboard/labels', label: 'Print Labels', icon: ICON.printer },
   { href: '/admin/store-preview', label: 'Visit Storefront', icon: <svg {...ip}><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="3" y1="9" x2="21" y2="9" /></svg> },
   { href: '/wallet', label: 'Wallet', icon: ICON.wallet },
   { href: '/admin/payments', label: 'Agent Payments', icon: <svg {...ip}><rect x="1" y="4" width="22" height="16" rx="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg> },
@@ -135,6 +137,7 @@ function agentLinks(isSuper: boolean, storefrontHref: string, pathname?: string)
     teamItem,
     { href: agentTab('Researchers'), label: 'My Researchers', icon: ICON.people },
     { href: agentTab('Inventory'), label: 'Local Instock Inventory', icon: <svg {...ip}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg> },
+    { href: '/dashboard/labels', label: 'Print Labels', icon: ICON.printer },
     { href: agentTab('Sales & Accounting'), label: 'Sales & Accounting', icon: <svg {...ip}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg> },
     { href: '/research', label: 'Research Library', icon: ICON.book },
     { href: '/find-a-peptide', label: 'Find A Peptide', icon: ICON.search },

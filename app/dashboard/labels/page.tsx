@@ -1,0 +1,59 @@
+import { redirect } from 'next/navigation';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
+import PrintLabelsClient from './PrintLabelsClient';
+
+export const dynamic = 'force-dynamic';
+
+export const metadata = {
+  title: 'Print Labels | Pep Nation Lab',
+  robots: { index: false, follow: false },
+};
+
+/**
+ * Label Printer Area.
+ *
+ * Available to every admin, super agent, agent, and manufacturer account.
+ * Researchers are redirected away. The label artwork is print-only brand
+ * collateral served from the public `print-labels` storage bucket - it is
+ * intentionally NOT used as product imagery anywhere else on the site.
+ */
+export default async function PrintLabelsPage() {
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    redirect('/login?redirect=/dashboard/labels');
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id, role, is_super_agent, is_sub_agent, is_manufacturer')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (!profile) {
+    redirect('/login');
+  }
+
+  const allowed =
+    ['agent', 'super_agent', 'admin'].includes(profile.role) ||
+    (profile as { is_super_agent?: boolean | null }).is_super_agent === true ||
+    (profile as { is_manufacturer?: boolean | null }).is_manufacturer === true;
+
+  if (!allowed) {
+    redirect('/dashboard');
+  }
+
+  // Full catalog - every peptide, stack, and supply gets a printable label.
+  // Banned / inactive products are intentionally included: agents still hold
+  // physical stock of them and need vial labels.
+  const service = await createServiceClient();
+  const { data: products } = await service
+    .from('products')
+    .select('id, name, slug, category, unit_size, unit_measure')
+    .order('category', { ascending: true })
+    .order('name', { ascending: true })
+    .order('slug', { ascending: true });
+
+  return <PrintLabelsClient products={products || []} isAdmin={profile.role === 'admin'} />;
+}
