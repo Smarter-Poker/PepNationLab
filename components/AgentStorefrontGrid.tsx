@@ -2513,19 +2513,19 @@ export default function AgentStorefrontGrid({
                     const _youSave = _hasCompare ? _comparePrice - displayPrice : 0;
                     return (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
-                        <div style={{ display: 'flex', alignItems: 'stretch', justifyContent: _hasCompare ? 'space-between' : 'center', gap: 12 }}>
+                        <div style={{ display: 'flex', flexWrap: 'nowrap', alignItems: 'stretch', justifyContent: _hasCompare ? 'space-between' : 'center', gap: 8 }}>
                           {_hasCompare && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(0,196,188,0.35)', borderRadius: 10, padding: '8px 14px', background: 'rgba(0,196,188,0.06)' }}>
-                              <span style={{ display: 'flex', alignItems: 'baseline', gap: 5, whiteSpace: 'nowrap' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(0,196,188,0.35)', borderRadius: 8, padding: '6px 10px', background: 'rgba(0,196,188,0.06)' }}>
+                              <span style={{ display: 'flex', alignItems: 'baseline', gap: 4, whiteSpace: 'nowrap' }}>
                                 <span style={{ fontSize: '0.62rem', color: 'var(--grey-500)', fontWeight: 700, letterSpacing: '0.06em' }}>MSRP</span>
-                                <span style={{ fontSize: '0.92rem', color: 'var(--grey-500)', textDecoration: 'line-through', fontWeight: 700 }}>${_comparePrice.toFixed(2)}</span>
+                                <span style={{ fontSize: '0.85rem', color: 'var(--grey-500)', textDecoration: 'line-through', fontWeight: 700 }}>${_comparePrice.toFixed(2)}</span>
                               </span>
-                              <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)', letterSpacing: '0.01em', whiteSpace: 'nowrap' }}>YOU SAVE ${Math.floor(_youSave)}</span>
+                              <span style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--teal)', letterSpacing: '0.01em', whiteSpace: 'nowrap' }}>YOU SAVE ${Math.floor(_youSave)}</span>
                             </div>
                           )}
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'center', justifyContent: 'center' }}>
                             <span style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--teal)', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>WHOLESALE PRICE</span>
-                            <span className="sf-product-price-nickel" style={{ fontSize: '1.7rem', fontWeight: 800, fontFamily: 'var(--font-brand)', lineHeight: 1 }}>${displayPrice.toFixed(2)}</span>
+                            <span className="sf-product-price-nickel" style={{ fontSize: '1.6rem', fontWeight: 800, fontFamily: 'var(--font-brand)', lineHeight: 1 }}>${displayPrice.toFixed(2)}</span>
                           </div>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'center' }}>
@@ -2624,7 +2624,7 @@ export default function AgentStorefrontGrid({
           width: 100%;
           min-height: 100vh;
           background: linear-gradient(180deg, #131b24 0%, #0a0f14 100%);
-          padding-top: calc(var(--nav-offset, 60px) + 12px);
+          padding-top: 12px;
         }
         .sf-modal-sheet {
           width: 100%; max-width: 860px; margin: 0 auto;
@@ -3784,27 +3784,29 @@ export default function AgentStorefrontGrid({
           <div className="sf-modal-sheet">
             {/* Back / close bar */}
             <div style={{
-              display: 'flex', alignItems: 'center', padding: '14px 18px 10px',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px 10px',
               background: 'linear-gradient(180deg, #131b24 78%, rgba(19,27,36,0))',
+              position: 'relative'
             }}>
-              <button
-                onClick={handleDetailProductBack}
-                aria-label="Back"
-                style={{
-                  width: 34, height: 34, minWidth: 34, minHeight: 34,
-                  borderRadius: '50%', padding: 0,
-                  background: 'linear-gradient(180deg, #2b3744 0%, #1b242e 100%)',
-                  border: '1px solid rgba(190,200,210,0.30)',
-                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18), 0 3px 9px rgba(0,0,0,0.5)',
-                  cursor: 'pointer', display: 'flex', alignItems: 'center',
-                  justifyContent: 'center', boxSizing: 'border-box', flexShrink: 0,
-                  transition: 'background 0.15s ease',
-                }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
-              </button>
-              <div style={{ flex: 1 }} />
-              <div style={{ width: 44, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.20)' }} aria-hidden="true" />
+              <div style={{ display: 'flex', flex: 1, justifyContent: 'flex-start' }}>
+                <button
+                  onClick={handleDetailProductBack}
+                  aria-label="Back"
+                  style={{
+                    width: 34, height: 34, minWidth: 34, minHeight: 34,
+                    borderRadius: '50%', padding: 0,
+                    background: 'linear-gradient(180deg, #2b3744 0%, #1b242e 100%)',
+                    border: '1px solid rgba(190,200,210,0.30)',
+                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18), 0 3px 9px rgba(0,0,0,0.5)',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', boxSizing: 'border-box', flexShrink: 0,
+                    transition: 'background 0.15s ease',
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
+                </button>
+              </div>
+              
               <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
                 {(() => {
                   const _coaPid = detailProduct.variants.find(v => !!coaByProductId?.[v.product_id])?.product_id;
