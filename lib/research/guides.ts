@@ -2080,6 +2080,165 @@ export const GUIDES: Guide[] = [
     compounds: [{ name: 'DSIP', slug: 'dsip' }],
   },
 
+  // ───────────────────────────────────────────────────────────────────────
+  {
+    slug: 'sermorelin-ghrh-analog-research',
+    title: 'Sermorelin In Growth-Hormone-Axis Research',
+    description:
+      'A research overview of Sermorelin, the GHRH(1-29) analog that represents the shortest fully active fragment of growth-hormone-releasing hormone, studied for pulsatile endogenous growth-hormone release. How it compares to Tesamorelin and CJC-1295. Research use only.',
+    datePublished: '2026-07-18',
+    dateModified: '2026-07-18',
+    readingTimeMin: 6,
+    keywords: ['sermorelin', 'GHRH', 'GHRH 1-29', 'growth hormone releasing hormone', 'IGF-1', 'growth hormone axis', 'research peptides'],
+    intro:
+      'Sermorelin is one of the foundational growth-hormone-releasing hormone (GHRH) analogs in research. It is the shortest fragment of GHRH that still retains full biological activity, which makes it a clean tool for studying how the growth-hormone axis is stimulated at its source. This guide explains what Sermorelin is, its studied mechanism, and how it compares to the other GHRH analogs in this library. It is written for in vitro Research Use Only context and is not medical or dosing guidance.',
+    sections: [
+      {
+        heading: 'What Is Sermorelin?',
+        paragraphs: [
+          'Sermorelin corresponds to GHRH(1-29) - the first 29 amino acids of natural growth-hormone-releasing hormone, which is the shortest sequence that preserves the full activity of the parent 44-residue hormone. Everything essential for receptor binding and activation lives in that N-terminal fragment.',
+          'Because it is a faithful fragment of an endogenous hormone, Sermorelin is studied as a direct probe of the GHRH receptor rather than as a novel synthetic construct. It has a relatively short half-life compared with the stabilized or acylated GHRH analogs.',
+        ],
+      },
+      {
+        heading: 'Studied Mechanism',
+        paragraphs: [
+          'Sermorelin engages the GHRH receptor on the anterior pituitary and stimulates the gland to release its own growth hormone in a pulsatile pattern, which in turn raises insulin-like growth factor 1 (IGF-1). Because it acts upstream and preserves the pituitary’s own feedback control, research frames it as working with the body’s natural release rhythm rather than overriding it with exogenous growth hormone.',
+        ],
+        bullets: [
+          'Sermorelin is GHRH(1-29), the shortest fully active GHRH fragment.',
+          'Agonist at the pituitary GHRH receptor; drives pulsatile growth-hormone release.',
+          'Raises IGF-1 downstream while preserving physiologic feedback.',
+          'Shorter-acting than stabilized or acylated GHRH analogs.',
+        ],
+      },
+      {
+        heading: 'Sermorelin, Tesamorelin, And CJC-1295',
+        paragraphs: [
+          'All three are GHRH-receptor agonists, but they differ in stability and duration. Sermorelin is the short-acting native fragment. Tesamorelin is a stabilized full-length GHRH(1-44) analog with protease resistance. CJC-1295 adds modifications (and, in its DAC form, albumin binding) for a substantially longer duration of action. Studying them side by side is a common way to examine how GHRH-analog half-life shapes the growth-hormone and IGF-1 response.',
+        ],
+      },
+      {
+        heading: 'Research Context And Handling',
+        paragraphs: [
+          'Sermorelin research uses growth-hormone and IGF-1 measurement as primary endpoints, often in pituitary or endocrine model systems. As with any Research Use Only compound, verified identity and purity from the Certificate of Analysis, appropriate storage, and interpretation against the primary literature are essential. It is supplied strictly for laboratory research and not for human or animal use.',
+        ],
+      },
+    ],
+    keyTakeaways: [
+      'Sermorelin is GHRH(1-29), the shortest fully active fragment of growth-hormone-releasing hormone.',
+      'It stimulates the pituitary GHRH receptor to drive pulsatile endogenous growth-hormone release and raise IGF-1.',
+      'It is shorter-acting than Tesamorelin (stabilized GHRH 1-44) and CJC-1295 (longer-acting analog).',
+      'Sermorelin is a Research Use Only compound for in vitro laboratory research, not human or animal use.',
+    ],
+    related: ['growth-hormone-secretagogues-explained', 'tesamorelin-ghrh-analog-research', 'peptide-research-areas-explained', 'evaluating-peptide-research-evidence'],
+    compounds: [{ name: 'Sermorelin', slug: 'sermorelin' }, { name: 'Tesamorelin', slug: 'tesamorelin' }, { name: 'CJC-1295', slug: 'cjc-1295-dac' }],
+  },
+
+  // ───────────────────────────────────────────────────────────────────────
+  {
+    slug: '5-amino-1mq-nnmt-metabolic-research',
+    title: '5-Amino-1MQ And NNMT Inhibition In Metabolic Research',
+    description:
+      'A research overview of 5-Amino-1MQ, a small-molecule NNMT inhibitor studied for its effect on NAD+ salvage, cellular methylation, and adipocyte energy metabolism in obesity research. Research use only.',
+    datePublished: '2026-07-18',
+    dateModified: '2026-07-18',
+    readingTimeMin: 6,
+    keywords: ['5-Amino-1MQ', 'NNMT', 'NNMT inhibitor', 'NAD+', 'methylation', 'adipocyte metabolism', 'obesity research', 'metabolic research'],
+    intro:
+      'Like NAD+, 5-Amino-1MQ is not a peptide - it is a small molecule - but it is included in the research library because it sits at an important node in metabolic and NAD+ research. It is studied as an inhibitor of the enzyme NNMT, a target that connects cellular methylation, NAD+ availability, and fat-cell energy metabolism. This guide explains what 5-Amino-1MQ is, the NNMT pathway it acts on, and its research context. It is written for in vitro Research Use Only context and is not medical or dosing guidance.',
+    sections: [
+      {
+        heading: 'What Is 5-Amino-1MQ?',
+        paragraphs: [
+          '5-Amino-1MQ (5-amino-1-methylquinolinium) is a small-molecule research compound, not a peptide. It is studied as an inhibitor of nicotinamide N-methyltransferase (NNMT), an enzyme that has drawn significant attention in metabolic research. This guide frames it accurately as a small-molecule enzyme inhibitor, distinct from the peptides elsewhere in the library.',
+        ],
+      },
+      {
+        heading: 'The NNMT Pathway: Methylation And NAD+',
+        paragraphs: [
+          'NNMT methylates nicotinamide using S-adenosylmethionine (SAM) as the methyl donor. This single reaction touches two important currencies at once: it consumes methyl groups (affecting the cell’s methylation capacity) and it diverts nicotinamide away from the NAD+ salvage pathway. When NNMT activity is high, more nicotinamide is methylated and cleared rather than recycled back into NAD+.',
+          'By inhibiting NNMT, 5-Amino-1MQ is studied for preserving the nicotinamide pool for NAD+ salvage and shifting cellular methylation balance. In adipocyte and metabolic models this is associated with increased energy expenditure, which is why NNMT inhibition is an active target in obesity and metabolic-dysfunction research.',
+        ],
+        bullets: [
+          '5-Amino-1MQ is a small-molecule NNMT inhibitor, not a peptide.',
+          'NNMT methylates nicotinamide using SAM, consuming methyl groups and diverting NAD+ precursors.',
+          'Inhibiting NNMT is studied for preserving NAD+ salvage and raising adipocyte energy expenditure.',
+          'A common target in obesity and metabolic-dysfunction research models.',
+        ],
+      },
+      {
+        heading: 'Relationship To NAD+ Research',
+        paragraphs: [
+          'Because NNMT inhibition influences the NAD+ salvage pathway, 5-Amino-1MQ is frequently studied in the same context as NAD+ biology. Where NAD+ research asks how to maintain the coenzyme pool directly, NNMT-inhibitor research asks how to reduce the drain on its precursors. The two lines of inquiry are complementary in metabolic and longevity research.',
+        ],
+      },
+      {
+        heading: 'Research Context And Handling',
+        paragraphs: [
+          '5-Amino-1MQ research uses NNMT enzyme-activity assays, NAD+/NADH quantification, and adipocyte metabolic readouts. As with any Research Use Only compound, verified identity and purity, appropriate storage, and interpretation against the primary literature are essential. It is supplied strictly for laboratory research and not for human or animal use.',
+        ],
+      },
+    ],
+    keyTakeaways: [
+      '5-Amino-1MQ is a small-molecule NNMT inhibitor, not a peptide.',
+      'NNMT methylates nicotinamide using SAM, consuming methyl groups and diverting NAD+ precursors; inhibiting it preserves NAD+ salvage.',
+      'In adipocyte and metabolic models, NNMT inhibition is associated with increased energy expenditure.',
+      '5-Amino-1MQ is a Research Use Only compound for in vitro laboratory research, not human or animal use.',
+    ],
+    related: ['nad-cellular-energy-longevity-research', 'weight-loss-peptide-research-overview', 'peptide-research-areas-explained', 'evaluating-peptide-research-evidence'],
+    compounds: [{ name: '5-Amino-1MQ', slug: '5-amino-1mq' }, { name: 'NAD+', slug: 'nad-plus' }],
+  },
+
+  // ───────────────────────────────────────────────────────────────────────
+  {
+    slug: 'vip-vasoactive-intestinal-peptide-research',
+    title: 'VIP (Vasoactive Intestinal Peptide) In Immune And Neuroscience Research',
+    description:
+      'A research overview of VIP, a 28-amino-acid neuropeptide studied for immunomodulation and neuroprotection through the VPAC1 and VPAC2 receptors. Mechanism, receptor system, and research context. Research use only.',
+    datePublished: '2026-07-18',
+    dateModified: '2026-07-18',
+    readingTimeMin: 6,
+    keywords: ['VIP', 'vasoactive intestinal peptide', 'VPAC1', 'VPAC2', 'immunomodulation', 'neuroprotection', 'PACAP', 'research peptides'],
+    intro:
+      'Vasoactive Intestinal Peptide, or VIP, is a widely studied neuropeptide that sits at the crossroads of the nervous, vascular, and immune systems. Despite its name, its research interest today centers less on the gut and more on its potent immunomodulatory and neuroprotective activity. This guide explains what VIP is, the receptor system it works through, and its research context. It is written for in vitro Research Use Only context and is not medical or dosing guidance.',
+    sections: [
+      {
+        heading: 'What Is VIP?',
+        paragraphs: [
+          'VIP is a 28-amino-acid neuropeptide belonging to the secretin/glucagon superfamily and closely related to PACAP (pituitary adenylate cyclase-activating polypeptide). It is distributed widely through the nervous system and peripheral tissues, where it acts as a signaling molecule with vasodilatory, neuroendocrine, and immune-regulating roles.',
+        ],
+      },
+      {
+        heading: 'The VPAC1 And VPAC2 Receptor System',
+        paragraphs: [
+          'VIP signals primarily through two class B G-protein-coupled receptors, VPAC1 and VPAC2, which it shares with PACAP. Activation of these receptors raises intracellular cyclic AMP and engages PKA signaling. The two receptor subtypes have different tissue distributions, which helps explain why VIP’s effects range from vasodilation to fine control of immune-cell behavior.',
+          'In immunology research, VIP is studied as an anti-inflammatory signal: it is associated with shifting immune responses away from pro-inflammatory Th1/Th17 profiles and toward regulatory Th2/Treg profiles. In neuroscience research it is studied for neuroprotection, with VPAC2 signaling implicated in protecting neurons in several model systems.',
+        ],
+        bullets: [
+          'VIP is a 28-amino-acid neuropeptide related to PACAP.',
+          'Signals through the VPAC1 and VPAC2 class B GPCRs via cAMP/PKA.',
+          'Studied as an anti-inflammatory signal (Th1/Th17 down, Th2/Treg up).',
+          'Studied for neuroprotection, with VPAC2 implicated in neuronal protection.',
+        ],
+      },
+      {
+        heading: 'Research Context And Handling',
+        paragraphs: [
+          'VIP appears in immunology, autoimmune-model, and neuroprotection research. Common in vitro readouts include cAMP accumulation assays at VPAC1/VPAC2, cytokine and T-cell-subset profiling, and neuronal-survival models. As with any Research Use Only compound, verified identity and purity, appropriate storage, and interpretation against the primary literature are essential. It is supplied strictly for laboratory research and not for human or animal use.',
+        ],
+      },
+    ],
+    keyTakeaways: [
+      'VIP is a 28-amino-acid neuropeptide related to PACAP that signals through the VPAC1 and VPAC2 receptors.',
+      'Receptor activation raises cAMP/PKA signaling and underlies its immune and neuroprotective effects.',
+      'It is studied as an anti-inflammatory signal (favoring Th2/Treg over Th1/Th17) and for neuroprotection.',
+      'VIP is a Research Use Only compound for in vitro laboratory research, not human or animal use.',
+    ],
+    related: ['thymosin-alpha-1-immune-research', 'selank-semax-nootropic-peptide-research', 'peptide-research-areas-explained', 'research-vs-pharmaceutical-peptides'],
+    compounds: [{ name: 'VIP', slug: 'vip' }, { name: 'Thymosin Alpha-1', slug: 'thymosin-alpha-1' }],
+  },
+
 ];
 
 export function getGuide(slug: string): Guide | undefined {
@@ -2436,6 +2595,48 @@ export const GUIDE_FAQS: Record<string, { q: string; a: string }[]> = {
       a: 'Not fully. No single dedicated receptor has been definitively confirmed, and reviews still describe its mechanism as an unresolved question, which makes careful controls and cautious interpretation especially important.',
     },
   ],
+  'sermorelin-ghrh-analog-research': [
+    {
+      q: 'What is Sermorelin?',
+      a: 'Sermorelin is GHRH(1-29), the shortest fragment of growth-hormone-releasing hormone that retains full biological activity. It stimulates the pituitary GHRH receptor to release the body’s own growth hormone.',
+    },
+    {
+      q: 'How is Sermorelin different from Tesamorelin and CJC-1295?',
+      a: 'All three are GHRH-receptor agonists but differ in duration: Sermorelin is the short-acting native fragment, Tesamorelin is a stabilized GHRH(1-44) analog, and CJC-1295 is modified for a substantially longer duration of action.',
+    },
+    {
+      q: 'What does Sermorelin do to IGF-1?',
+      a: 'By driving pulsatile endogenous growth-hormone release, Sermorelin raises insulin-like growth factor 1 (IGF-1) downstream while preserving the pituitary’s own feedback control. It is a Research Use Only compound for in vitro laboratory research.',
+    },
+  ],
+  '5-amino-1mq-nnmt-metabolic-research': [
+    {
+      q: 'Is 5-Amino-1MQ a peptide?',
+      a: 'No. 5-Amino-1MQ (5-amino-1-methylquinolinium) is a small molecule, not a peptide. It is studied as an inhibitor of the enzyme NNMT and is included in the library for its role in metabolic and NAD+ research.',
+    },
+    {
+      q: 'What is NNMT and why inhibit it?',
+      a: 'NNMT (nicotinamide N-methyltransferase) methylates nicotinamide using SAM, which consumes methyl groups and diverts nicotinamide away from NAD+ salvage. Inhibiting NNMT is studied for preserving the NAD+ precursor pool and raising adipocyte energy expenditure.',
+    },
+    {
+      q: 'How is 5-Amino-1MQ related to NAD+ research?',
+      a: 'Because NNMT inhibition preserves nicotinamide for NAD+ salvage, 5-Amino-1MQ is studied alongside NAD+ biology - one line asks how to maintain the NAD+ pool, the other how to reduce the drain on its precursors. Both are Research Use Only.',
+    },
+  ],
+  'vip-vasoactive-intestinal-peptide-research': [
+    {
+      q: 'What is VIP?',
+      a: 'VIP (Vasoactive Intestinal Peptide) is a 28-amino-acid neuropeptide related to PACAP. It acts across the nervous, vascular, and immune systems and is studied today mainly for its immunomodulatory and neuroprotective activity.',
+    },
+    {
+      q: 'How does VIP work?',
+      a: 'VIP signals through the VPAC1 and VPAC2 class B G-protein-coupled receptors, raising intracellular cAMP and engaging PKA signaling. Different tissue distributions of the two receptors underlie its range of effects.',
+    },
+    {
+      q: 'What is VIP studied for?',
+      a: 'It is studied as an anti-inflammatory signal that shifts immune responses from Th1/Th17 toward Th2/Treg, and for neuroprotection with VPAC2 implicated in protecting neurons. VIP is a Research Use Only compound for in vitro laboratory research.',
+    },
+  ],
 };
 
 // Maps a compound category to the most relevant research guides. Two universal
@@ -2443,12 +2644,12 @@ export const GUIDE_FAQS: Record<string, { q: string; a: string }[]> = {
 // guides. Used to surface editorial guides on compound monographs
 // (internal-link mesh + topical association).
 const CATEGORY_GUIDE_SLUGS: Record<string, string[]> = {
-  'Weight Loss & Metabolism': ['glp-1-receptor-agonists-in-research', 'cagrilintide-amylin-receptor-research', 'tesamorelin-ghrh-analog-research', 'peptide-research-areas-explained'],
+  'Weight Loss & Metabolism': ['glp-1-receptor-agonists-in-research', 'cagrilintide-amylin-receptor-research', 'tesamorelin-ghrh-analog-research', '5-amino-1mq-nnmt-metabolic-research', 'peptide-research-areas-explained'],
   'Healing & Recovery': ['bpc-157-research-overview', 'kpv-anti-inflammatory-peptide-research', 'peptide-research-areas-explained'],
-  'Muscle Growth & Performance': ['growth-hormone-secretagogues-explained', 'follistatin-myostatin-inhibition-research', 'tesamorelin-ghrh-analog-research', 'peptide-research-areas-explained'],
+  'Muscle Growth & Performance': ['growth-hormone-secretagogues-explained', 'follistatin-myostatin-inhibition-research', 'sermorelin-ghrh-analog-research', 'tesamorelin-ghrh-analog-research', 'peptide-research-areas-explained'],
   'Anti-Aging & Longevity': ['mitochondrial-peptides-mots-c-ss-31-research', 'nad-cellular-energy-longevity-research', 'peptide-research-areas-explained', 'understanding-peptide-purity'],
   'Skin, Hair & Cosmetics': ['peptide-research-areas-explained', 'understanding-peptide-purity'],
-  'Immunity & Wellness': ['thymosin-alpha-1-immune-research', 'll-37-cathelicidin-host-defense-research', 'dsip-delta-sleep-peptide-research', 'peptide-research-areas-explained', 'research-vs-pharmaceutical-peptides'],
+  'Immunity & Wellness': ['thymosin-alpha-1-immune-research', 'll-37-cathelicidin-host-defense-research', 'vip-vasoactive-intestinal-peptide-research', 'dsip-delta-sleep-peptide-research', 'peptide-research-areas-explained', 'research-vs-pharmaceutical-peptides'],
   'Sexual Health & Hormones': ['peptide-research-areas-explained', 'research-vs-pharmaceutical-peptides'],
   'Peptide Stacks': ['peptide-research-areas-explained', 'peptide-storage-and-reconstitution'],
 };
