@@ -1,16 +1,21 @@
 /**
  * city-narrative.ts
  *
- * Deep, per-city-unique long-form body copy for the highest-value (tier-1)
- * city pages. Every paragraph is woven from the city's real attributes
+ * Deep, per-city-unique long-form body copy for ALL city landing pages
+ * (tier 1, 2, and 3). Every paragraph is woven from the city's real attributes
  * (population, county, region, median income, ZIP coverage) plus its actual
  * regional research institutions, with hash-selected sentence variants so no
- * two tier-1 pages read identically. Naming nearby institutions is factual
+ * two city pages read identically. Naming nearby institutions is factual
  * region-level ecosystem context, NOT a claim of affiliation with Pep Nation
  * Lab.
  *
- * Returns null for tier-2 / tier-3 cities: the long tail keeps the leaner
- * templated copy; only tier-1 markets receive this expanded treatment.
+ * Every /peptides/{state}/{city} page is already index:true and in the sitemap;
+ * previously only tier-1 received this treatment while tier-2/tier-3 ran thinner
+ * templated copy (a primary driver of "crawled/discovered - currently not
+ * indexed" in Search Console). This engine now serves all tiers so every
+ * landing page carries substantive per-city content. Expanded variant pools and
+ * the median-income data point keep the copy distinct across the ~2,400-city
+ * long tail.
  *
  * Pure data module - safe to import anywhere.
  */
@@ -37,6 +42,13 @@ function pop(city: City): string {
   return `${p}`;
 }
 
+// Rounded median household income, e.g. "$68,000". Used as an additional
+// per-city data point so the long-tail copy stays distinct across tiers.
+function income(city: City): string | null {
+  if (!city.medianIncome || city.medianIncome <= 0) return null;
+  return `$${Math.round(city.medianIncome / 1000)},000`;
+}
+
 function pick<T>(arr: T[], n: number): T {
   return arr[n % arr.length];
 }
@@ -48,10 +60,11 @@ function listOf(names: string[]): string {
 }
 
 /**
- * Returns an ordered array of paragraph strings for a tier-1 city, or null.
+ * Returns an ordered array of per-city-unique paragraph strings for any city
+ * landing page (all tiers). Returns null only if the city record is missing.
  */
 export function getCityNarrative(city: City): string[] | null {
-  if (city.tier !== 1) return null;
+  if (!city) return null;
 
   const h = hash(city);
   const region = getRegionLabel(city);
@@ -59,6 +72,8 @@ export function getCityNarrative(city: City): string[] | null {
   const anchors = getResearchAnchors(city.region);
   const anchorNames = anchors ? anchors.slice(0, 3).map((a) => a.name) : [];
   const county = city.county ? `${city.county} County` : null;
+  const inc = income(city);
+  const incClause = inc ? `, where median household income runs near ${inc}, ` : ', ';
 
   // Paragraph 1 - research landscape / market context.
   const p1Open = pick(
@@ -71,9 +86,9 @@ export function getCityNarrative(city: City): string[] | null {
   );
   const p1Pop = pick(
     [
-      `Home to roughly ${pop(city)} residents${county ? ` and seated in ${county}` : ''}, the city supports a working research community`,
-      `With a population near ${pop(city)}${county ? ` across ${county}` : ''}, it sustains a base of investigators and institutions`,
-      `A metro of about ${pop(city)} people${county ? ` in ${county}` : ''}, ${city.name} carries a research base`,
+      `Home to roughly ${pop(city)} residents${county ? ` and seated in ${county}` : ''}${incClause}the city supports a working research community`,
+      `With a population near ${pop(city)}${county ? ` across ${county}` : ''}${incClause}it sustains a base of investigators and institutions`,
+      `A metro of about ${pop(city)} people${county ? ` in ${county}` : ''}${incClause}${city.name} carries a research base`,
     ],
     h >> 2
   );
@@ -105,6 +120,7 @@ export function getCityNarrative(city: City): string[] | null {
     [
       ` - spanning metabolic, recovery, longevity, cognitive, and tissue-repair research - at wholesale, tier-based pricing with no retail markup. Orders placed before the daily cutoff are typically processed same-day and shipped nationwide to ${city.stateAbbr}, with tracking on every parcel.`,
       ` - from BPC-157 and TB-500 to Semaglutide, Tirzepatide, GHK-Cu, and Epithalon - at transparent wholesale tiers. Same-day processing on orders placed before the fulfillment cutoff keeps ${city.name} labs supplied, with nationwide shipping and full tracking.`,
+      ` - covering weight-management, healing, growth-hormone-secretagogue, and nootropic research categories - at wholesale tiers with no retail markup. Qualifying ${city.name} orders are processed same-day when placed before the cutoff and shipped to ${city.stateAbbr} with tracking on every shipment.`,
     ],
     h >> 5
   );
@@ -115,6 +131,7 @@ export function getCityNarrative(city: City): string[] | null {
     [
       `Each compound shipped to ${city.name} is independently verified by third-party HPLC and mass-spectrometry testing, so investigators can confirm identity and purity before beginning an assay. Accounts are limited to verified researchers, and every product is sold strictly for in vitro laboratory research - not for human or animal consumption, and not FDA-approved. Researchers in ${city.state} remain responsible for compliance with all applicable local, state, and federal regulations.`,
       `Before it reaches a ${city.name} bench, every lot passes independent third-party HPLC and mass-spectrometry analysis, giving ${city.state} investigators documented purity and molecular-weight data for their protocols. Access is restricted to verified researchers, and all products are strictly for in vitro laboratory use - never for human or animal use, and not FDA-approved - with buyers responsible for full regulatory compliance.`,
+      `Every compound routed to ${city.name} carries third-party HPLC purity and mass-spectrometry identity data, so ${county ? `${county}` : `${city.state}`} labs can validate material before an assay begins. Accounts are open to verified researchers only, and all compounds are supplied strictly for in vitro laboratory research - not for human or animal consumption, and not FDA-approved - with full regulatory compliance resting with the researcher.`,
     ],
     h >> 6
   );
