@@ -27,7 +27,7 @@ export default async function PrintLabelsPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, role, is_super_agent, is_sub_agent, is_manufacturer')
+    .select('id, role, is_super_agent, is_sub_agent, is_manufacturer, parent_agent_id')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -44,10 +44,37 @@ export default async function PrintLabelsPage() {
     redirect('/dashboard');
   }
 
+  // Brand routing: the Savage Brands store and every agent in her downline
+  // print Savage-branded labels; everyone else prints Pep Nation labels.
+  const service = await createServiceClient();
+  let brand: 'pepnation' | 'savage' = 'pepnation';
+  const { data: savage } = await service
+    .from('profiles')
+    .select('id')
+    .eq('username', 'savagebrands')
+    .maybeSingle();
+  if (savage?.id) {
+    let currentId: string | null = profile.id;
+    let parentId: string | null = (profile as { parent_agent_id?: string | null }).parent_agent_id ?? null;
+    for (let hop = 0; hop < 6 && currentId; hop++) {
+      if (currentId === savage.id) {
+        brand = 'savage';
+        break;
+      }
+      if (!parentId) break;
+      currentId = parentId;
+      const { data: parent } = await service
+        .from('profiles')
+        .select('id, parent_agent_id')
+        .eq('id', parentId)
+        .maybeSingle();
+      parentId = (parent as { parent_agent_id?: string | null } | null)?.parent_agent_id ?? null;
+    }
+  }
+
   // Full catalog - every peptide, stack, and supply gets a printable label.
   // Banned / inactive products are intentionally included: agents still hold
   // physical stock of them and need vial labels.
-  const service = await createServiceClient();
   const { data: products } = await service
     .from('products')
     .select('id, name, slug, category, unit_size, unit_measure')
@@ -55,5 +82,5 @@ export default async function PrintLabelsPage() {
     .order('name', { ascending: true })
     .order('slug', { ascending: true });
 
-  return <PrintLabelsClient products={products || []} isAdmin={profile.role === 'admin'} />;
+  return <PrintLabelsClient products={products || []} isAdmin={profile.role === 'admin'} brand={brand} />;
 }

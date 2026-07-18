@@ -13,7 +13,8 @@ interface LabelProduct {
   unit_measure: string | null;
 }
 
-const STORAGE_BASE = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/print-labels`;
+const STORAGE_ROOT = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/print-labels`;
+const brandBase = (brand: 'pepnation' | 'savage') => brand === 'savage' ? `${STORAGE_ROOT}/savage` : STORAGE_ROOT;
 
 /** Category accent colors - mirrors the label artwork color system. */
 function categoryColor(category: string | null, slug: string): string {
@@ -49,7 +50,8 @@ const SIZE_PRESETS = [
   { key: 'custom', label: 'Custom Size', w: 0, h: 0 },
 ];
 
-export default function PrintLabelsClient({ products, isAdmin }: { products: LabelProduct[]; isAdmin: boolean }) {
+export default function PrintLabelsClient({ products, isAdmin, brand = 'pepnation' }: { products: LabelProduct[]; isAdmin: boolean; brand?: 'pepnation' | 'savage' }) {
+  const STORAGE_BASE = brandBase(brand);
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [quantities, setQuantities] = useState<Record<string, number>>({});
@@ -200,7 +202,9 @@ export default function PrintLabelsClient({ products, isAdmin }: { products: Lab
             <ArrowLeft size={16} /> Back To Dashboard
           </Link>
         </div>
-        <h1 style={{ fontSize: '1.6rem', fontWeight: 800, margin: '0 0 4px' }}>Print Labels</h1>
+        <h1 style={{ fontSize: '1.6rem', fontWeight: 800, margin: '0 0 4px' }}>
+          Print Labels{brand === 'savage' ? ' — Savage Brands' : ''}
+        </h1>
         <p style={{ color: '#A8B4C0', fontSize: '0.9rem', margin: '0 0 20px' }}>
           Select Any Labels And Quantities, Pick A Label Size, Then Print. Labels Are Color-Coded By Research Category.
         </p>
