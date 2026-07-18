@@ -44,13 +44,16 @@ export default function IframeModal({ url, title, onClose }: IframeModalProps) {
   // focus restored to the triggering element on close (WCAG 2.1.2, 2.4.3).
   const dialogRef = useModalA11y<HTMLDivElement>(true, { onClose });
 
+  const isExternal = url.startsWith('http://') || url.startsWith('https://');
+
   const domain = useMemo(() => {
+    if (!isExternal) return 'pepnationlab.com';
     try {
       return new URL(url).hostname;
     } catch {
       return url;
     }
-  }, [url]);
+  }, [url, isExternal]);
 
   const modalContent = (
     <AnimatePresence>
@@ -199,18 +202,17 @@ export default function IframeModal({ url, title, onClose }: IframeModalProps) {
           )}
 
           <iframe
-            src={'/api/proxy?url=' + encodeURIComponent(url)}
+            src={isExternal ? '/api/proxy?url=' + encodeURIComponent(url) : url}
             style={{ width: '100%', height: '100%', border: 'none', display: 'block', opacity: loading ? 0 : 1, transition: 'opacity 0.3s ease' }}
             referrerPolicy="origin-when-cross-origin"
             onLoad={() => setLoading(false)}
             onError={() => { setLoading(false); setError(true); }}
-            title="External Link Viewer"
-            /* SECURITY: NO allow-same-origin. The iframe src is our own
+            title={isExternal ? "External Link Viewer" : "Internal Viewer"}
+            /* SECURITY: NO allow-same-origin for external. The iframe src is our own
                /api/proxy origin, so allow-same-origin would let proxied
                third-party HTML read our storage and call our APIs with the
-               user's cookies. An opaque origin still runs scripts + the injected
-               navigation interceptor but cannot ride the user's session. */
-            sandbox="allow-scripts allow-popups allow-forms allow-popups-to-escape-sandbox"
+               user's cookies. Internal links are trusted and need same-origin. */
+            sandbox={`allow-scripts allow-popups allow-forms allow-popups-to-escape-sandbox${!isExternal ? ' allow-same-origin' : ''}`}
           />
         </div>
       </motion.div>
