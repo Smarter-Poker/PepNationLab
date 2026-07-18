@@ -82,6 +82,9 @@ const ALLOW = [
   '/research/guides/',
   '/research/compare/',
 
+  // Research Library - Per-compound sub-pages (bibliography + regulatory)
+  '/research/',
+
   // Research Library - API Docs
   '/research/api-docs',
 

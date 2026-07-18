@@ -13,8 +13,10 @@ import { getAllCompounds } from '@/lib/compounds-server';
 import ReferencesBrowser, { type RefEntry } from '@/components/research/ReferencesBrowser';
 
 export const metadata: Metadata = {
-  title: 'References Library | Pep Nation Lab',
-  robots: { index: false, follow: true },
+  title: 'References Library | Research Library | Pep Nation Lab',
+  description: 'Every peer-reviewed source cited across the Pep Nation Lab research compound catalog — 3,000+ references spanning PubMed, regulatory databases, and clinical literature. Research Use Only.',
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://pepnationlab.com/research/references' },
 };
 
 function hostOf(url: string): string {

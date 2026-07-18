@@ -97,6 +97,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Research Library - API Docs
     { url: `${BASE}/research/api-docs`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.5 },
 
+    // Research Library - References Hub (aggregates all citations)
+    { url: `${BASE}/research/references`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.7 },
+
     // Research Library - Editorial Guides
     { url: `${BASE}/research/guides`, lastModified: new Date(GUIDES_UPDATED), changeFrequency: 'monthly', priority: 0.7 },
     ...GUIDES.map((g) => ({
@@ -154,9 +157,35 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     for (const t of ((targetData ?? []) as Array<{ receptors: string[] | null }>)) {
       if (Array.isArray(t.receptors)) for (const r of t.receptors) targets.add(r);
     }
-    // NOTE: /research/area/ hubs are now indexable and emitted above (in
-    // staticPaths). /research/by-target/ pages remain noindexed (thin filter
-    // pages) and are intentionally excluded to avoid Search Console warnings.
+
+    // Per-compound sub-pages: /references and /regulatory are now indexed.
+    // /spec and /structure remain noindexed (print tool / 3D viewer).
+    for (const r of rows) {
+      compounds.push(
+        {
+          url: `${BASE}/research/${r.slug}/references`,
+          lastModified: r.updated_at ? new Date(r.updated_at) : now,
+          changeFrequency: 'monthly' as const,
+          priority: 0.5,
+        },
+        {
+          url: `${BASE}/research/${r.slug}/regulatory`,
+          lastModified: r.updated_at ? new Date(r.updated_at) : now,
+          changeFrequency: 'monthly' as const,
+          priority: 0.5,
+        },
+      );
+    }
+
+    // /research/by-target/[target] pages are now indexed — emit them.
+    for (const target of targets) {
+      compounds.push({
+        url: `${BASE}/research/by-target/${encodeURIComponent(target)}`,
+        lastModified: STATIC_CONTENT_UPDATED,
+        changeFrequency: 'monthly' as const,
+        priority: 0.5,
+      });
+    }
   } catch {
     // best-effort: fall back to static paths only
   }
