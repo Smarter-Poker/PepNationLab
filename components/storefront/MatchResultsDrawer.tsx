@@ -44,13 +44,14 @@ export function MatchResultsDrawer({
   const [filterHumanOnly, setFilterHumanOnly] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
   const [compareIds, setCompareIds] = useState<string[]>([]);
-  const [followUpInput, setFollowUpInput] = useState('');
   const [shareCopied, setShareCopied] = useState(false);
+  const [shareError, setShareError] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
 
   const handleShare = async () => {
     if (isSharing) return;
     setIsSharing(true);
+    setShareError(false);
     try {
       const res = await fetch('/api/research/share', {
         method: 'POST',
@@ -72,11 +73,12 @@ export function MatchResultsDrawer({
       }
     } catch (e) {
       console.error('Failed to share', e);
-      // Show user-visible feedback via the button label
+      // Surface the failure through React state so the label is not clobbered on
+      // the next render (the old direct textContent write was, and it reset to
+      // the wrong 'Share Results' label instead of 'Share Protocol').
       setShareCopied(false);
-      // Brief flash of error label reusing the button state
-      const el = document.getElementById('pnl-share-btn');
-      if (el) { el.textContent = 'Error — Try Again'; setTimeout(() => { if (el) el.textContent = 'Share Results'; }, 2000); }
+      setShareError(true);
+      setTimeout(() => setShareError(false), 2000);
     } finally {
       setIsSharing(false);
     }
@@ -709,9 +711,9 @@ export function MatchResultsDrawer({
                   aria-busy={isSharing}
                   style={{ flex: 1, padding: '14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#FFF', borderRadius: 8, fontWeight: 800, cursor: isSharing ? 'not-allowed' : 'pointer', transition: 'all 0.2s', opacity: isSharing ? 0.6 : 1 }}
                 >
-                  {isSharing ? 'Sharing...' : shareCopied ? 'Copied Link!' : 'Share Protocol'}
+                  {isSharing ? 'Sharing...' : shareError ? 'Error — Try Again' : shareCopied ? 'Copied Link!' : 'Share Protocol'}
                 </button>
-                {stackItems.length > 0 && (
+                {stackItems.length > 1 && (
                   <button
                     onClick={handleAddStack}
                     style={{ flex: 2, padding: '14px', background: primaryColor, border: 'none', color: '#0A1018', borderRadius: 8, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
