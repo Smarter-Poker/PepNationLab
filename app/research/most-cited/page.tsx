@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     creator: '@PepNationLab',
     title: 'Most Cited Research Peptides | Top Referenced Compounds | Pep Nation Lab',
     description: 'The most-cited and referenced research peptides ranked by publication count and scientific evidence. Discover the most-studied compounds in research literature. Research use only.',
-    images: ['https://pepnationlab.com/images/og-card.jpg'],
+    images: ['https://pepnationlab.com/og-card.png'],
   },
 };
 

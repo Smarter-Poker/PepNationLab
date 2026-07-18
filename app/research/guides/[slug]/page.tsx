@@ -74,7 +74,9 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
         inLanguage: 'en-US',
         keywords: guide.keywords.join(', '),
         image: 'https://pepnationlab.com/og-card.png',
-        author: { '@id': 'https://pepnationlab.com/#organization' },
+        // author = distinct research-team entity (not the publisher org) for
+        // article-level E-E-A-T; publisher stays the org.
+        author: { '@id': 'https://pepnationlab.com/#research-team' },
         publisher: { '@id': 'https://pepnationlab.com/#organization' },
         isPartOf: { '@id': 'https://pepnationlab.com/#website' },
         about: 'Research Use Only peptides for in vitro laboratory research',

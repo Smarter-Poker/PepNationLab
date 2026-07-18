@@ -255,8 +255,11 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         // entity; lastReviewed communicates content freshness to Google and
         // AI answer engines.
         publisher: { '@id': 'https://pepnationlab.com/#organization' },
-        reviewedBy: { '@id': 'https://pepnationlab.com/#organization' },
-        maintainer: { '@id': 'https://pepnationlab.com/#organization' },
+        // reviewedBy/maintainer point at the distinct research-team entity (not
+        // the publisher org) so author != publisher - the E-E-A-T signal
+        // Google's YMYL systems and AI answer engines actually reward.
+        reviewedBy: { '@id': 'https://pepnationlab.com/#research-team' },
+        maintainer: { '@id': 'https://pepnationlab.com/#research-team' },
         ...(reviewedDate ? { lastReviewed: reviewedDate, dateModified: reviewedDate } : {}),
         ...(publishedDate ? { datePublished: publishedDate } : {}),
         audience: {

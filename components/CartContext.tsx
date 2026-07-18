@@ -694,9 +694,9 @@ function BacWaterCalculator({
             alignItems: 'center',
           }}
         >
-          <span>{totalPeptideVials} Vials x 2 mL/Vial</span>
+          <span>~{totalMlNeeded} mL Total (By Strength)</span>
           <span style={{ color: 'rgba(255,255,255,0.2)' }}>/</span>
-          <span>10 mL/Bottle</span>
+          <span>{bacWaterProduct?.unit_size || '10'} mL/Bottle</span>
           <span style={{ color: 'rgba(255,255,255,0.2)' }}>=</span>
           <span style={{ color: 'var(--teal)', fontWeight: 700 }}>
             {stillNeeded} Bottle{stillNeeded !== 1 ? 's' : ''} Needed (Rounded Up)

@@ -36,6 +36,47 @@ const courseJsonLd = {
   inLanguage: 'en',
 };
 
+// Answer-first Q&A for the course. Rendered as real text in the crawlable
+// layer below AND emitted as FAQPage JSON-LD - a high-value AI-citation and
+// featured-snippet surface for "how to learn about peptides" style queries.
+const COURSE_FAQ: { q: string; a: string }[] = [
+  {
+    q: 'Is The Peptide 101 Course Free?',
+    a: 'Yes. Peptide 101 is a completely free 14-module research education course. There is no cost, no subscription, and no purchase required to complete the course or earn the certificate of completion.',
+  },
+  {
+    q: 'Do I Need A Science Background To Take Peptide 101?',
+    a: 'No prior background is required. The course starts with what a peptide is and builds up to reconstitution, evidence tiers, and research literacy in plain language, so newcomers and experienced researchers can both follow it.',
+  },
+  {
+    q: 'What Does The Peptide 101 Course Cover?',
+    a: 'The 14 modules cover peptide biology and structure, mechanisms of action, peptide families and categories, reconstitution with bacteriostatic water, storage and handling, certificate-of-analysis literacy, safety and sourcing, legality and research-use context, and a final quiz.',
+  },
+  {
+    q: 'What Is Peptide Reconstitution?',
+    a: 'Reconstitution is the process of dissolving a lyophilized (freeze-dried) peptide into a liquid, typically bacteriostatic water, to prepare a solution for laboratory research. The course includes a reconstitution calculator module that shows how concentration is calculated.',
+  },
+  {
+    q: 'Are These Peptides Intended For Human Use?',
+    a: 'No. All compounds referenced in Peptide 101 and across Pep Nation Lab are strictly for in vitro laboratory research use only. They are not FDA-approved and are not intended for human or animal consumption. The course is educational and is not medical advice.',
+  },
+  {
+    q: 'Do I Get A Certificate After Completing Peptide 101?',
+    a: 'Yes. Completing all modules and passing the final quiz unlocks a certificate of completion for the Peptide 101 research education course.',
+  },
+];
+
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  '@id': 'https://pepnationlab.com/peptide-101#faq',
+  mainEntity: COURSE_FAQ.map((f) => ({
+    '@type': 'Question',
+    name: f.q,
+    acceptedAnswer: { '@type': 'Answer', text: f.a },
+  })),
+};
+
 export default function Peptide101Layout({
   children,
 }: {
@@ -46,6 +87,10 @@ export default function Peptide101Layout({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(courseJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
       {/* Crawlable course content layer - visually hidden (clip-rect).
           The Peptide 101 page is fully client-rendered and blank before
@@ -67,6 +112,15 @@ export default function Peptide101Layout({
           <a href="/research/guides">Research Guides</a>
           <a href="/research/faq">Research Library FAQ</a>
         </nav>
+        <section aria-label="Peptide 101 Frequently Asked Questions">
+          <h2>Peptide 101 Frequently Asked Questions</h2>
+          {COURSE_FAQ.map((f) => (
+            <div key={f.q}>
+              <h3>{f.q}</h3>
+              <p>{f.a}</p>
+            </div>
+          ))}
+        </section>
       </section>
       {children}
     </>

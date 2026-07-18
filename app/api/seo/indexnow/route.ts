@@ -58,7 +58,20 @@ async function importantUrls(): Promise<string[]> {
   for (const guide of GUIDES) urls.add(`${BASE}/research/guides/${guide.slug}`);
   try {
     const all = await getAllCompounds();
-    for (const c of all) urls.add(`${BASE}/research/${c.slug}`);
+    const targets = new Set<string>();
+    for (const c of all) {
+      urls.add(`${BASE}/research/${c.slug}`);
+      // Per-compound sub-pages that are now indexable + in the sitemap but were
+      // never submitted to IndexNow, so Bing/Yandex (and ChatGPT Search, which
+      // reads Bing) only discovered them on slow organic recrawl.
+      urls.add(`${BASE}/research/${c.slug}/references`);
+      urls.add(`${BASE}/research/${c.slug}/regulatory`);
+      const receptors = (c as { receptors?: string[] | null }).receptors;
+      if (Array.isArray(receptors)) for (const r of receptors) if (r) targets.add(r);
+    }
+    // Molecular-target hub pages (/research/by-target/[target]) - indexable and
+    // sitemapped, previously absent from the IndexNow set.
+    for (const t of targets) urls.add(`${BASE}/research/by-target/${encodeURIComponent(t)}`);
   } catch {
     /* fail-soft: still submit the static + comparison set */
   }

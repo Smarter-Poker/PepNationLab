@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     creator: '@PepNationLab',
     title: 'Browse Peptides By Peptide Class | Research Library | Pep Nation Lab',
     description: 'Browse research-grade peptides organized by peptide class - GLP-1 agonists, GHRPs, GHRHs, BPC analogs, melanocortins, and more. Research use only.',
-    images: ['https://pepnationlab.com/images/og-card.jpg'],
+    images: ['https://pepnationlab.com/og-card.png'],
   },
 };
 

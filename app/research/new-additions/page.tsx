@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     creator: '@PepNationLab',
     title: 'New Peptide Additions | Recently Added Research Compounds | Pep Nation Lab',
     description: 'The most recently added research-grade peptides and compounds to the Pep Nation Lab Research Library. Stay current with new compound additions. Research use only.',
-    images: ['https://pepnationlab.com/images/og-card.jpg'],
+    images: ['https://pepnationlab.com/og-card.png'],
   },
 };
 

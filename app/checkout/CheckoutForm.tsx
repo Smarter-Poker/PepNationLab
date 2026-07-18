@@ -262,6 +262,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   // Server-computed smart reconstitution volume (mL) for the whole cart. See
   // /api/cart/bac-water, which sums each vial's strength-based BAC water need.
   const [smartBacMl, setSmartBacMl] = useState<number | null>(null);
+  const [smartPeptideVials, setSmartPeptideVials] = useState<number | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -488,7 +489,10 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
         });
         if (!res.ok) return;
         const json = await res.json();
-        if (!cancelled && typeof json?.totalMlNeeded === 'number') setSmartBacMl(json.totalMlNeeded);
+        if (!cancelled && typeof json?.totalMlNeeded === 'number') {
+          setSmartBacMl(json.totalMlNeeded);
+          if (typeof json?.totalPeptideVials === 'number') setSmartPeptideVials(json.totalPeptideVials);
+        }
       } catch { /* keep the conservative fallback estimate */ }
     })();
     return () => { cancelled = true; };
@@ -662,14 +666,14 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     return sum;
   }, 0);
 
-  // Platform rule (owner-confirmed 2026-07-18): suggest ONE 10 mL BAC vial per
-  // TWO research vials (a generous 5 mL allocation each). Applied consistently
-  // with /api/cart/bac-water so the cart drawer and checkout agree.
   // Smart reconstitution: the server (/api/cart/bac-water) sums each vial's
   // strength-based BAC water need in mL. Until it responds, fall back to a
   // conservative ~2 mL per research vial. Vials = ceil(totalMl / real vial size).
   const bacVialSizeMl = parseFloat(String(bacProduct?.unitSize ?? '')) || 10;
   const bacTotalMlNeeded = smartBacMl != null ? smartBacMl : bacPeptideVials * 2;
+  // Prefer the server's peptide-vial count so the displayed count and the mL
+  // describe the same item set (the server also drops cosmetic-tier compounds).
+  const bacPeptideVialsDisplay = smartPeptideVials != null ? smartPeptideVials : bacPeptideVials;
   const requiredBacWaterVials = bacTotalMlNeeded > 0 ? Math.ceil(bacTotalMlNeeded / bacVialSizeMl) : 0;
   const neededBacWaterVials = Math.max(0, requiredBacWaterVials - currentBacWaterVials);
 
@@ -1526,7 +1530,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                       </div>
                     )}
                     <p style={{ color: 'var(--silver-light)', fontSize: '0.8rem', margin: '0 0 12px', lineHeight: 1.5 }}>
-                      We Reviewed Your Order: <strong style={{ color: 'var(--white)' }}>{bacPeptideVials}</strong> Research Vial{bacPeptideVials !== 1 ? 's' : ''} Require{bacPeptideVials === 1 ? 's' : ''} Bacteriostatic Water For Reconstitution{currentBacWaterVials > 0 ? <> And Your Cart Currently Includes <strong style={{ color: 'var(--white)' }}>{currentBacWaterVials}</strong> BAC Water Vial{currentBacWaterVials !== 1 ? 's' : ''}</> : ', And Your Cart Has None'}. Based On Per-Vial Strength, This Order Needs Approximately <strong style={{ color: 'var(--white)' }}>{bacTotalMlNeeded} mL</strong> Of BAC Water — Suggested: <strong style={{ color: 'var(--white)' }}>{neededBacWaterVials}</strong> × {bacProduct.unitSize || '10'}{bacProduct.unitMeasure || 'ml'} Vial{neededBacWaterVials !== 1 ? 's' : ''}.
+                      We Reviewed Your Order: <strong style={{ color: 'var(--white)' }}>{bacPeptideVialsDisplay}</strong> Research Vial{bacPeptideVialsDisplay !== 1 ? 's' : ''} Require{bacPeptideVialsDisplay === 1 ? 's' : ''} Bacteriostatic Water For Reconstitution{currentBacWaterVials > 0 ? <> And Your Cart Currently Includes <strong style={{ color: 'var(--white)' }}>{currentBacWaterVials}</strong> BAC Water Vial{currentBacWaterVials !== 1 ? 's' : ''}</> : ', And Your Cart Has None'}. Based On Per-Vial Strength, This Order Needs Approximately <strong style={{ color: 'var(--white)' }}>{bacTotalMlNeeded} mL</strong> Of BAC Water — Suggested: <strong style={{ color: 'var(--white)' }}>{neededBacWaterVials}</strong> × {bacProduct.unitSize || '10'}{bacProduct.unitMeasure || 'ml'} Vial{neededBacWaterVials !== 1 ? 's' : ''}.
                     </p>
                     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                       <button
@@ -1648,7 +1652,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                   {bacProduct.imageUrl && (
                     <img src={bacProduct.imageUrl} alt={`Bacteriostatic Water${bacProduct.unitSize ? ` ${bacProduct.unitSize}${bacProduct.unitMeasure || 'ml'}` : ''}`} width={54} height={54} loading="lazy" decoding="async" style={{ flex: '0 0 auto', width: 54, height: 54, objectFit: 'contain', borderRadius: 6, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(0,196,188,0.25)', padding: 3 }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
                   )}
-                  <p style={{ color: 'var(--silver-light)', fontSize: '0.76rem', margin: 0, lineHeight: 1.4 }}>Your Order Contains <strong style={{ color: 'var(--white)' }}>{bacPeptideVials}</strong> Research Vial{bacPeptideVials !== 1 ? 's' : ''} Requiring BAC Water — Approximately <strong style={{ color: 'var(--teal)' }}>{bacTotalMlNeeded} mL</strong> Total Based On Per-Vial Strength. We Recommend <strong style={{ color: 'var(--white)' }}>{requiredBacWaterVials}</strong> × <strong style={{ color: 'var(--teal)' }}>{bacProduct.unitSize || '10'}{bacProduct.unitMeasure || 'ml'}</strong> Vial{requiredBacWaterVials !== 1 ? 's' : ''} Of Bacteriostatic Water.</p>
+                  <p style={{ color: 'var(--silver-light)', fontSize: '0.76rem', margin: 0, lineHeight: 1.4 }}>Your Order Contains <strong style={{ color: 'var(--white)' }}>{bacPeptideVialsDisplay}</strong> Research Vial{bacPeptideVialsDisplay !== 1 ? 's' : ''} Requiring BAC Water — Approximately <strong style={{ color: 'var(--teal)' }}>{bacTotalMlNeeded} mL</strong> Total Based On Per-Vial Strength. We Recommend <strong style={{ color: 'var(--white)' }}>{requiredBacWaterVials}</strong> × <strong style={{ color: 'var(--teal)' }}>{bacProduct.unitSize || '10'}{bacProduct.unitMeasure || 'ml'}</strong> Vial{requiredBacWaterVials !== 1 ? 's' : ''} Of Bacteriostatic Water.</p>
                 </div>
                 <button type="button" onClick={handleAddBacWater} className="btn-neon-cyan" style={{ width: '100%', padding: '8px 12px', fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer', borderRadius: 6, transition: 'all 0.2s ease' }}>
                   <span>Add {neededBacWaterVials} × {bacProduct.unitSize || '10'}{bacProduct.unitMeasure || 'ml'} Vial{neededBacWaterVials !== 1 ? 's' : ''} To Order</span>
