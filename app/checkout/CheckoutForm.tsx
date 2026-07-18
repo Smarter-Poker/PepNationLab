@@ -1287,12 +1287,15 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                           <input type="radio" name="shippingOption" checked={shippingOption === 'agent_pickup'} onChange={() => { setShippingOption('agent_pickup'); setFulfillmentMethod('agent_pickup'); }} style={{ accentColor: 'var(--teal)' }} />
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <strong style={{ color: 'var(--white)', fontSize: '0.95rem', lineHeight: '1.2' }}>Free Shipping To Agent</strong>
-                            <span style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginTop: '2px' }}>Same Day Pick Up Or Delivery Of In Stock Items Or 7-10 Days</span>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginTop: '2px' }}>Same Day Pick Up Or Delivery Of In Stock Items</span>
                           </div>
                         </div>
                         <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#2DD4BF' }}>Free</span>
                       </div>
-                      <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', paddingLeft: 22 }}>Free Zero Cost Shipping To Your Referring Representative. Coordinate Pickup Directly (For Items That Must Be Ordered)</span>
+                      <div style={{ paddingLeft: 22, display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}>
+                        <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--grey-300)' }}>— OR —</span>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)' }}>Free Zero Cost Shipping To Your Referring Representative. Coordinate Pickup Directly For Items That Must Be Ordered 7-10 Days</span>
+                      </div>
                     </label>
 
                     <label style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', background: shippingOption === 'fedex' ? 'rgba(192, 184, 168, 0.06)' : 'var(--surface-2)', border: shippingOption === 'fedex' ? '2px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', boxShadow: shippingOption === 'fedex' ? 'var(--shadow-teal-sm)' : 'none', transition: 'all 0.25s ease' }}>
