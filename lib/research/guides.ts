@@ -1774,6 +1774,312 @@ export const GUIDES: Guide[] = [
     compounds: [{ name: 'Cagrilintide', slug: 'cagrilintide' }, { name: 'Semaglutide', slug: 'semaglutide' }, { name: 'Tirzepatide', slug: 'tirzepatide' }],
   },
 
+  // ───────────────────────────────────────────────────────────────────────
+  {
+    slug: 'tesamorelin-ghrh-analog-research',
+    title: 'Tesamorelin: A Stabilized GHRH Analog In Metabolic Research',
+    description:
+      'A research overview of Tesamorelin, a stabilized growth-hormone-releasing hormone (GHRH) analog studied for its effect on endogenous growth hormone, IGF-1, and visceral adipose tissue. How it differs from growth hormone secretagogues. Research use only.',
+    datePublished: '2026-07-18',
+    dateModified: '2026-07-18',
+    readingTimeMin: 7,
+    keywords: ['tesamorelin', 'GHRH analog', 'growth hormone releasing hormone', 'IGF-1', 'visceral adipose tissue', 'metabolic research', 'research peptides'],
+    intro:
+      'Tesamorelin is a stabilized analog of growth-hormone-releasing hormone (GHRH) and one of the few research peptides in this class that has also been through formal clinical approval for a specific indication. It is studied for its ability to stimulate the body’s own growth-hormone axis rather than replacing growth hormone directly. This guide explains what Tesamorelin is, how its mechanism differs from growth hormone secretagogues, and the metabolic research context in which it appears. It is written for in vitro Research Use Only context and is not medical or dosing guidance.',
+    sections: [
+      {
+        heading: 'What Is Tesamorelin?',
+        paragraphs: [
+          'Tesamorelin is a synthetic analog of human GHRH(1-44). A trans-3-hexenoyl group added to the N-terminus protects the peptide from rapid enzymatic degradation, giving it a longer functional life than native GHRH while preserving the natural signaling sequence.',
+          'Because it is a GHRH analog, Tesamorelin acts upstream of growth hormone. It engages the GHRH receptor on the anterior pituitary and stimulates the gland to release its own growth hormone in a pulsatile pattern, which in turn raises insulin-like growth factor 1 (IGF-1). This upstream position is the defining feature of the compound.',
+        ],
+      },
+      {
+        heading: 'Studied Mechanism And Metabolic Effects',
+        paragraphs: [
+          'In research and clinical literature, Tesamorelin is most associated with reductions in visceral adipose tissue — the metabolically active fat surrounding the internal organs. It was studied and approved specifically for excess visceral fat in the context of HIV-associated lipodystrophy, which makes it one of the better-characterized peptides in this library from a regulatory standpoint.',
+          'Because it drives the pituitary to release growth hormone in physiologic pulses rather than delivering a flat exogenous dose, Tesamorelin is often contrasted with direct growth hormone administration in research discussions of how the growth-hormone axis is best studied.',
+        ],
+      },
+      {
+        heading: 'Tesamorelin Versus Growth Hormone Secretagogues',
+        paragraphs: [
+          'Tesamorelin and the growth hormone secretagogues (GHS) both raise growth hormone, but through different receptors. Tesamorelin is a GHRH-receptor agonist. Secretagogues such as Ipamorelin, GHRP-2, and GHRP-6 act on the ghrelin/GH-secretagogue receptor. The two pathways are complementary in research models, which is why GHRH analogs and GHS are sometimes studied in combination.',
+        ],
+        bullets: [
+          'Tesamorelin: GHRH-receptor agonist, stabilized GHRH(1-44) analog.',
+          'Growth hormone secretagogues: ghrelin-receptor agonists (Ipamorelin, CJC-1295, GHRP-2/6).',
+          'Both raise endogenous growth hormone and IGF-1 but through distinct receptor systems.',
+        ],
+      },
+      {
+        heading: 'Research Context And Handling',
+        paragraphs: [
+          'Tesamorelin research uses endpoints such as growth-hormone and IGF-1 measurement and, in preclinical models, imaging of adipose depots. As with any Research Use Only compound, verified identity and purity from the Certificate of Analysis, appropriate storage, and interpretation against the primary literature are essential. The compound is supplied strictly for laboratory research and not for human or animal use.',
+        ],
+      },
+    ],
+    keyTakeaways: [
+      'Tesamorelin is a stabilized GHRH(1-44) analog that acts upstream of growth hormone by stimulating the pituitary.',
+      'It raises endogenous growth hormone and IGF-1 in a pulsatile pattern and is studied for visceral adipose tissue reduction.',
+      'It differs from growth hormone secretagogues, which act on the ghrelin receptor rather than the GHRH receptor.',
+      'It is a Research Use Only compound for in vitro laboratory research, not human or animal use.',
+    ],
+    related: ['growth-hormone-secretagogues-explained', 'weight-loss-peptide-research-overview', 'research-vs-pharmaceutical-peptides', 'peptide-research-areas-explained'],
+    compounds: [{ name: 'Tesamorelin', slug: 'tesamorelin' }, { name: 'Sermorelin', slug: 'sermorelin' }, { name: 'CJC-1295', slug: 'cjc-1295-dac' }],
+  },
+
+  // ───────────────────────────────────────────────────────────────────────
+  {
+    slug: 'follistatin-myostatin-inhibition-research',
+    title: 'Follistatin And Myostatin Inhibition In Muscle Research',
+    description:
+      'A research overview of Follistatin, a glycoprotein that binds and neutralizes myostatin and activin, and how myostatin inhibition is studied in models of muscle growth and wasting. Research use only.',
+    datePublished: '2026-07-18',
+    dateModified: '2026-07-18',
+    readingTimeMin: 7,
+    keywords: ['follistatin', 'myostatin', 'myostatin inhibition', 'activin', 'muscle growth', 'GDF-8', 'skeletal muscle research', 'research peptides'],
+    intro:
+      'Follistatin is central to one of the most studied questions in muscle biology: what happens when the body’s brake on muscle growth is released. That brake is myostatin, and Follistatin is a natural antagonist of it. This guide explains what Follistatin is, how myostatin inhibition is studied, and the research context around muscle-mass regulation. It is written for in vitro Research Use Only context and is not medical, dosing, or performance guidance.',
+    sections: [
+      {
+        heading: 'What Is Follistatin?',
+        paragraphs: [
+          'Follistatin is an autocrine glycoprotein found across many tissues. Its defining activity is high-affinity binding to members of the TGF-β superfamily — most importantly myostatin (also called growth differentiation factor 8, or GDF-8) and activin. By binding these ligands, Follistatin prevents them from engaging their receptors.',
+          'Several isoforms exist, including the commonly referenced Follistatin-344 and Follistatin-315, which differ in their tissue distribution and binding behavior. In research they are studied as tools for neutralizing myostatin and activin signaling.',
+        ],
+      },
+      {
+        heading: 'The Myostatin Brake And Why It Matters',
+        paragraphs: [
+          'Myostatin is a negative regulator of skeletal muscle mass: it acts as a built-in brake that limits how large muscle can grow. This role is dramatically illustrated by naturally occurring myostatin loss-of-function in certain animal breeds, which show pronounced muscle hypertrophy.',
+          'Because Follistatin sequesters myostatin, research models associate it with de-repression of myogenesis — in effect, releasing the brake. Follistatin also binds activin, so engineered and research forms that block both ligands are studied for producing greater hypertrophy than blocking myostatin alone in muscular-dystrophy models.',
+        ],
+        bullets: [
+          'Myostatin (GDF-8) normally limits skeletal muscle growth.',
+          'Follistatin binds and neutralizes myostatin, de-repressing myogenesis in models.',
+          'Follistatin also binds activin; dual blockade is studied for greater hypertrophy.',
+          'Common research isoforms include Follistatin-344 and Follistatin-315.',
+        ],
+      },
+      {
+        heading: 'Research Areas And Study Models',
+        paragraphs: [
+          'Follistatin features in skeletal-muscle research, including models of muscle wasting and muscular dystrophy, as well as in fibrosis and reproductive-biology research where activin signaling is relevant. Typical in vitro readouts include myoblast differentiation assays, reporter assays for myostatin/activin (SMAD) signaling, and measurements of muscle-fiber size in preclinical models.',
+          'As with any Research Use Only compound, verified identity and purity, appropriate storage of this glycoprotein, and careful interpretation against the primary literature are essential. It is supplied strictly for laboratory research and not for human or animal use.',
+        ],
+      },
+    ],
+    keyTakeaways: [
+      'Follistatin is a glycoprotein that binds and neutralizes myostatin (GDF-8) and activin.',
+      'Myostatin normally limits muscle growth; Follistatin releases that brake in research models.',
+      'Dual blockade of myostatin and activin is studied for greater hypertrophy than blocking myostatin alone.',
+      'Follistatin is a Research Use Only compound for in vitro laboratory research, not human or animal use.',
+    ],
+    related: ['growth-hormone-secretagogues-explained', 'tesamorelin-ghrh-analog-research', 'peptide-research-areas-explained', 'evaluating-peptide-research-evidence'],
+    compounds: [{ name: 'Follistatin', slug: 'follistatin' }],
+  },
+
+  // ───────────────────────────────────────────────────────────────────────
+  {
+    slug: 'kpv-anti-inflammatory-peptide-research',
+    title: 'KPV: An Alpha-MSH Tripeptide In Anti-Inflammatory Research',
+    description:
+      'A research overview of KPV, the C-terminal tripeptide of alpha-melanocyte-stimulating hormone, studied for anti-inflammatory activity through intracellular NF-kB modulation. Research use only.',
+    datePublished: '2026-07-18',
+    dateModified: '2026-07-18',
+    readingTimeMin: 6,
+    keywords: ['KPV', 'alpha-MSH', 'anti-inflammatory peptide', 'NF-kB', 'tripeptide', 'inflammation research', 'research peptides'],
+    intro:
+      'KPV is one of the smallest peptides in the research library — just three amino acids — yet it is studied intensively in inflammation biology. It is the C-terminal fragment of alpha-melanocyte-stimulating hormone (alpha-MSH), and it appears to carry much of that hormone’s anti-inflammatory activity in a compact form. This guide explains what KPV is, its studied intracellular mechanism, and its research context. It is written for in vitro Research Use Only context and is not medical or dosing guidance.',
+    sections: [
+      {
+        heading: 'What Is KPV?',
+        paragraphs: [
+          'KPV is a tripeptide composed of lysine, proline, and valine (Lys-Pro-Val), corresponding to residues 11–13 at the C-terminus of alpha-MSH. Alpha-MSH is a well-studied anti-inflammatory hormone, and research indicates that this short C-terminal sequence retains a substantial part of its anti-inflammatory effect while being much smaller and simpler.',
+          'Its small size is part of what makes it interesting as a research tool: it is studied for acting through pathways that do not necessarily depend on the classic melanocortin receptors that full-length alpha-MSH uses.',
+        ],
+      },
+      {
+        heading: 'Studied Mechanism: Intracellular NF-kB Modulation',
+        paragraphs: [
+          'The recurring theme in KPV research is intracellular anti-inflammatory signaling. Rather than acting only at a cell-surface receptor, KPV is studied for entering cells and interfering with the NF-kB pathway — a master regulator of pro-inflammatory gene expression. By dampening NF-kB activation, it is associated in models with reduced production of pro-inflammatory mediators such as TNF-alpha and certain interleukins.',
+          'In gastrointestinal research, KPV is also studied in the context of the PepT1 transporter, which can carry small peptides into intestinal epithelial cells — a route relevant to models of intestinal inflammation.',
+        ],
+        bullets: [
+          'KPV is the Lys-Pro-Val C-terminal fragment of alpha-MSH.',
+          'Studied for intracellular action on the NF-kB inflammatory pathway.',
+          'Associated with reduced pro-inflammatory mediators (e.g., TNF-alpha) in models.',
+          'Studied in intestinal-inflammation models via PepT1-mediated uptake.',
+        ],
+      },
+      {
+        heading: 'Research Context And Handling',
+        paragraphs: [
+          'KPV appears in inflammation, gastrointestinal, and wound-healing research. Common in vitro readouts include NF-kB reporter assays, cytokine panels, and epithelial-barrier models. As with any Research Use Only compound, verified identity and purity, appropriate storage, and interpretation against the primary literature are essential. It is supplied strictly for laboratory research and not for human or animal use.',
+        ],
+      },
+    ],
+    keyTakeaways: [
+      'KPV is a Lys-Pro-Val tripeptide derived from the C-terminus of alpha-MSH.',
+      'It is studied for anti-inflammatory activity through intracellular modulation of the NF-kB pathway.',
+      'It is associated with reduced pro-inflammatory mediators in inflammation and gastrointestinal models.',
+      'KPV is a Research Use Only compound for in vitro laboratory research, not human or animal use.',
+    ],
+    related: ['bpc-157-research-overview', 'collagen-peptides-matrix-biology-research', 'peptide-research-areas-explained', 'evaluating-peptide-research-evidence'],
+    compounds: [{ name: 'KPV', slug: 'kpv' }, { name: 'BPC-157', slug: 'bpc-157' }],
+  },
+
+  // ───────────────────────────────────────────────────────────────────────
+  {
+    slug: 'll-37-cathelicidin-host-defense-research',
+    title: 'LL-37: The Human Cathelicidin In Host-Defense Research',
+    description:
+      'A research overview of LL-37, the only human cathelicidin-derived antimicrobial peptide, studied for direct membrane-disrupting antimicrobial activity and immunomodulatory host-defense functions. Research use only.',
+    datePublished: '2026-07-18',
+    dateModified: '2026-07-18',
+    readingTimeMin: 7,
+    keywords: ['LL-37', 'cathelicidin', 'antimicrobial peptide', 'host defense peptide', 'innate immunity', 'immunomodulation', 'research peptides'],
+    intro:
+      'LL-37 is the human body’s only cathelicidin-derived antimicrobial peptide, and it sits at the intersection of two research fields: direct antimicrobial action and immune modulation. It is a core molecule of the innate immune system and is studied both for how it kills microbes and for how it shapes the host response. This guide explains what LL-37 is, its dual studied mechanism, and its research context. It is written for in vitro Research Use Only context and is not medical or dosing guidance.',
+    sections: [
+      {
+        heading: 'What Is LL-37?',
+        paragraphs: [
+          'LL-37 is a 37-amino-acid amphipathic, cationic peptide released from the C-terminal end of the human cathelicidin precursor protein hCAP18. Its name comes from its two leading leucine residues and its length. It is expressed by neutrophils and epithelial cells and is a central effector of innate immunity.',
+          'Being amphipathic and positively charged is fundamental to how it works: those properties let it associate with and insert into microbial membranes, which tend to carry more negative surface charge than host-cell membranes.',
+        ],
+      },
+      {
+        heading: 'A Dual Mechanism: Antimicrobial And Immunomodulatory',
+        paragraphs: [
+          'The first arm of LL-37’s studied activity is direct antimicrobial action. It binds anionic microbial membranes and can oligomerize and form pores or otherwise disrupt membrane integrity, which is studied against a broad range of bacteria as well as some fungi and enveloped viruses.',
+          'The second arm is immunomodulation. Beyond killing microbes directly, LL-37 is studied as a host-cell modulator: it influences chemotaxis of immune cells, modulates inflammatory signaling, and participates in wound-healing and angiogenesis processes. This dual role — direct antimicrobial plus immune signaling — is why it is described as a host-defense peptide rather than simply an antibiotic-like molecule.',
+        ],
+        bullets: [
+          'LL-37 is the only human cathelicidin antimicrobial peptide, cleaved from hCAP18.',
+          'Amphipathic and cationic: disrupts anionic microbial membranes (pore formation).',
+          'Also immunomodulatory: chemotaxis, inflammation modulation, wound healing.',
+          'Studied across antimicrobial, innate-immunity, and tissue-repair research.',
+        ],
+      },
+      {
+        heading: 'Research Context And Handling',
+        paragraphs: [
+          'LL-37 appears in antimicrobial-resistance research, innate-immunity studies, and wound-healing models. Common in vitro readouts include minimum-inhibitory-concentration assays, membrane-permeabilization assays, and immune-cell migration or cytokine assays. As with any Research Use Only compound, verified identity and purity, appropriate storage, and interpretation against the primary literature are essential. It is supplied strictly for laboratory research and not for human or animal use.',
+        ],
+      },
+    ],
+    keyTakeaways: [
+      'LL-37 is the only human cathelicidin antimicrobial peptide, a 37-residue amphipathic cationic host-defense peptide.',
+      'It acts directly against microbes by disrupting their membranes and also modulates the host immune response.',
+      'This dual antimicrobial-plus-immunomodulatory role defines it as a host-defense peptide.',
+      'LL-37 is a Research Use Only compound for in vitro laboratory research, not human or animal use.',
+    ],
+    related: ['thymosin-alpha-1-immune-research', 'peptide-research-areas-explained', 'research-vs-pharmaceutical-peptides', 'evaluating-peptide-research-evidence'],
+    compounds: [{ name: 'LL-37', slug: 'll-37' }, { name: 'Thymosin Alpha-1', slug: 'thymosin-alpha-1' }],
+  },
+
+  // ───────────────────────────────────────────────────────────────────────
+  {
+    slug: 'nad-cellular-energy-longevity-research',
+    title: 'NAD+ In Cellular Energy And Longevity Research',
+    description:
+      'A research overview of NAD+ (nicotinamide adenine dinucleotide), the central redox coenzyme and substrate for sirtuins and PARPs, and how its age-related decline is studied in energy-metabolism and longevity research. Research use only.',
+    datePublished: '2026-07-18',
+    dateModified: '2026-07-18',
+    readingTimeMin: 7,
+    keywords: ['NAD+', 'nicotinamide adenine dinucleotide', 'sirtuins', 'PARP', 'cellular energy', 'redox', 'longevity research', 'mitochondrial function'],
+    intro:
+      'NAD+ is not a peptide — it is a coenzyme — but it is one of the most studied molecules in longevity and energy-metabolism research, and it is included here for that reason. Nicotinamide adenine dinucleotide sits at the center of how cells produce energy and how several key repair and signaling enzymes operate. This guide explains what NAD+ is, why its age-related decline matters in research, and its study context. It is written for in vitro Research Use Only context and is not medical or dosing guidance.',
+    sections: [
+      {
+        heading: 'What Is NAD+?',
+        paragraphs: [
+          'NAD+ (nicotinamide adenine dinucleotide) is a coenzyme present in every living cell. Its most fundamental role is as a redox carrier: it cycles between its oxidized form (NAD+) and reduced form (NADH), shuttling electrons through glycolysis, the citric acid cycle, and oxidative phosphorylation. Without this cycling, cells cannot efficiently convert nutrients into usable energy.',
+          'Because it is a coenzyme rather than a peptide, NAD+ is studied as a metabolic cofactor. This guide frames it accurately as such, distinct from the peptides elsewhere in this library.',
+        ],
+      },
+      {
+        heading: 'NAD+ As A Signaling Substrate: Sirtuins And PARPs',
+        paragraphs: [
+          'Beyond energy metabolism, NAD+ is consumed as a substrate by several important enzyme families. Sirtuins use NAD+ to remove acetyl and other groups from proteins, which links the cell’s energy state to gene expression, stress resistance, and mitochondrial function. PARP enzymes use NAD+ during DNA-damage repair, and CD38 consumes it in immune-signaling contexts.',
+          'This makes NAD+ availability a shared currency: when it is abundant, sirtuin and repair pathways can operate; when it is depleted, they compete for a shrinking pool. That competition is a recurring theme in aging research.',
+        ],
+        bullets: [
+          'NAD+ is the central redox coenzyme for cellular energy production.',
+          'It is the required substrate for sirtuins (protein deacylation) and PARPs (DNA repair).',
+          'Cellular NAD+ levels decline with age in many tissues in research models.',
+          'It is a coenzyme, not a peptide — studied as a metabolic cofactor.',
+        ],
+      },
+      {
+        heading: 'Research Context And Handling',
+        paragraphs: [
+          'NAD+ features in aging, mitochondrial-function, and DNA-repair research, and is often studied alongside its biosynthetic precursors and the enzymes that consume it. Common in vitro readouts include NAD+/NADH ratio assays, sirtuin-activity assays, and mitochondrial-respiration measurements. As with any Research Use Only compound, verified identity and purity, appropriate storage, and interpretation against the primary literature are essential. It is supplied strictly for laboratory research and not for human or animal use.',
+        ],
+      },
+    ],
+    keyTakeaways: [
+      'NAD+ is a redox coenzyme central to cellular energy production, not a peptide.',
+      'It is the required substrate for sirtuins and PARP DNA-repair enzymes, linking energy state to repair and gene expression.',
+      'Cellular NAD+ declines with age in many tissues, a recurring theme in longevity research.',
+      'NAD+ is a Research Use Only compound for in vitro laboratory research, not human or animal use.',
+    ],
+    related: ['mitochondrial-peptides-mots-c-ss-31-research', 'epithalon-telomere-research', 'peptide-research-areas-explained', 'evaluating-peptide-research-evidence'],
+    compounds: [{ name: 'NAD+', slug: 'nad-plus' }, { name: 'SS-31', slug: 'ss-31' }, { name: 'Epithalon', slug: 'epithalon' }],
+  },
+
+  // ───────────────────────────────────────────────────────────────────────
+  {
+    slug: 'dsip-delta-sleep-peptide-research',
+    title: 'DSIP (Delta Sleep-Inducing Peptide) In Sleep And Stress Research',
+    description:
+      'A research overview of DSIP, a nine-amino-acid neuropeptide studied for slow-wave sleep regulation, stress-axis modulation, and neuroprotection, and why its mechanism remains an open research question. Research use only.',
+    datePublished: '2026-07-18',
+    dateModified: '2026-07-18',
+    readingTimeMin: 6,
+    keywords: ['DSIP', 'delta sleep-inducing peptide', 'slow-wave sleep', 'neuropeptide', 'HPA axis', 'stress', 'neuroscience research', 'research peptides'],
+    intro:
+      'DSIP, or delta sleep-inducing peptide, is one of the more enigmatic molecules in neuroscience research. It was discovered through its ability to promote delta-wave (deep, slow-wave) sleep in early animal studies, yet decades later its precise mechanism is still described in the literature as an unresolved question. This guide explains what DSIP is, what it is studied for, and why it remains a genuine research puzzle. It is written for in vitro Research Use Only context and is not medical, sleep, or dosing guidance.',
+    sections: [
+      {
+        heading: 'What Is DSIP?',
+        paragraphs: [
+          'DSIP is a small neuropeptide composed of nine amino acids (Trp-Ala-Gly-Gly-Asp-Ala-Ser-Gly-Glu). It was first isolated from studies of sleep-related activity in the brain and named for its association with delta-wave sleep, the deep, slow-wave stage of the sleep cycle.',
+          'Unlike peptides with a single well-mapped receptor, DSIP is studied as a neuromodulator whose effects appear broad and context-dependent, which is part of why it has been so difficult to characterize.',
+        ],
+      },
+      {
+        heading: 'An Unresolved Mechanism',
+        paragraphs: [
+          'The honest state of the research is that DSIP’s mechanism is not fully established. No single dedicated receptor has been definitively confirmed, and its effects in the literature span sleep regulation, modulation of the hypothalamic-pituitary-adrenal (HPA) stress axis, and neuroprotective observations in models such as focal stroke. Reviews have gone so far as to call it a still-unresolved riddle.',
+          'For researchers, this is exactly what makes DSIP interesting: it is a reproducibly studied molecule whose pathway is still being worked out, which places a premium on careful controls and cautious interpretation.',
+        ],
+        bullets: [
+          'DSIP is a nine-amino-acid neuropeptide associated with delta-wave (slow-wave) sleep.',
+          'No single definitive receptor has been confirmed; the mechanism remains open.',
+          'Studied for sleep regulation, HPA stress-axis modulation, and neuroprotection.',
+          'Its unresolved mechanism makes rigorous study design especially important.',
+        ],
+      },
+      {
+        heading: 'Research Context And Handling',
+        paragraphs: [
+          'DSIP appears in sleep-physiology, stress, and neuroprotection research. Common study models include electroencephalography (EEG) sleep-architecture measurement in animals and stress-hormone assays. As with any Research Use Only compound, verified identity and purity, appropriate storage, and cautious interpretation against the primary literature are especially important given the open mechanism. It is supplied strictly for laboratory research and not for human or animal use.',
+        ],
+      },
+    ],
+    keyTakeaways: [
+      'DSIP is a nine-amino-acid neuropeptide named for its association with delta-wave (slow-wave) sleep.',
+      'Its mechanism remains unresolved, with no single confirmed receptor.',
+      'It is studied for sleep regulation, HPA stress-axis modulation, and neuroprotection in models.',
+      'DSIP is a Research Use Only compound for in vitro laboratory research, not human or animal use.',
+    ],
+    related: ['selank-semax-nootropic-peptide-research', 'epithalon-telomere-research', 'peptide-research-areas-explained', 'evaluating-peptide-research-evidence'],
+    compounds: [{ name: 'DSIP', slug: 'dsip' }],
+  },
+
 ];
 
 export function getGuide(slug: string): Guide | undefined {
@@ -2046,6 +2352,90 @@ export const GUIDE_FAQS: Record<string, { q: string; a: string }[]> = {
       a: 'CagriSema is the research combination of Cagrilintide (an amylin analog) with Semaglutide (a GLP-1 receptor agonist), studied to examine complementary satiety and metabolic signaling. All such compounds are for in vitro Research Use Only.',
     },
   ],
+  'tesamorelin-ghrh-analog-research': [
+    {
+      q: 'What is Tesamorelin?',
+      a: 'Tesamorelin is a stabilized synthetic analog of growth-hormone-releasing hormone, GHRH(1-44). It engages the GHRH receptor on the pituitary to stimulate the body’s own pulsatile growth-hormone release, raising IGF-1.',
+    },
+    {
+      q: 'How is Tesamorelin different from a growth hormone secretagogue?',
+      a: 'Tesamorelin is a GHRH-receptor agonist, while secretagogues such as Ipamorelin and GHRP-2 act on the ghrelin/GH-secretagogue receptor. Both raise growth hormone, but through distinct receptor systems.',
+    },
+    {
+      q: 'What is Tesamorelin studied for?',
+      a: 'It is most associated in research with reductions in visceral adipose tissue and was studied and approved specifically for excess visceral fat in HIV-associated lipodystrophy. It is a Research Use Only compound for in vitro laboratory research.',
+    },
+  ],
+  'follistatin-myostatin-inhibition-research': [
+    {
+      q: 'What does Follistatin do?',
+      a: 'Follistatin is a glycoprotein that binds and neutralizes myostatin (GDF-8) and activin, preventing them from engaging their receptors. In research models this de-represses muscle growth.',
+    },
+    {
+      q: 'What is myostatin?',
+      a: 'Myostatin, also called GDF-8, is a negative regulator of skeletal muscle mass — a built-in brake on how large muscle can grow. Follistatin releases that brake in research models by sequestering it.',
+    },
+    {
+      q: 'What is the difference between Follistatin-344 and Follistatin-315?',
+      a: 'They are isoforms of Follistatin that differ in tissue distribution and binding behavior. Both are studied as tools for neutralizing myostatin and activin signaling, strictly for in vitro Research Use Only work.',
+    },
+  ],
+  'kpv-anti-inflammatory-peptide-research': [
+    {
+      q: 'What is KPV?',
+      a: 'KPV is a tripeptide of lysine, proline, and valine (Lys-Pro-Val) corresponding to the C-terminal fragment of alpha-melanocyte-stimulating hormone (alpha-MSH). It retains much of that hormone’s anti-inflammatory activity in a compact form.',
+    },
+    {
+      q: 'How is KPV studied to reduce inflammation?',
+      a: 'KPV is studied for acting intracellularly on the NF-kB pathway, a master regulator of pro-inflammatory gene expression, and is associated with reduced pro-inflammatory mediators such as TNF-alpha in models.',
+    },
+    {
+      q: 'Is KPV related to melanotan peptides?',
+      a: 'KPV is derived from alpha-MSH but is studied for anti-inflammatory pathways that do not necessarily depend on the melanocortin receptors used by pigmentation-focused MSH analogs. It is a Research Use Only compound.',
+    },
+  ],
+  'll-37-cathelicidin-host-defense-research': [
+    {
+      q: 'What is LL-37?',
+      a: 'LL-37 is the only human cathelicidin-derived antimicrobial peptide, a 37-amino-acid amphipathic cationic host-defense peptide cleaved from the precursor protein hCAP18 and central to innate immunity.',
+    },
+    {
+      q: 'How does LL-37 work?',
+      a: 'It has a dual studied mechanism: direct antimicrobial action by disrupting anionic microbial membranes, and immunomodulation such as immune-cell chemotaxis and inflammation modulation. That dual role defines it as a host-defense peptide.',
+    },
+    {
+      q: 'What is LL-37 studied for?',
+      a: 'It appears in antimicrobial-resistance, innate-immunity, and wound-healing research. It is a Research Use Only compound for in vitro laboratory research, not human or animal use.',
+    },
+  ],
+  'nad-cellular-energy-longevity-research': [
+    {
+      q: 'Is NAD+ a peptide?',
+      a: 'No. NAD+ (nicotinamide adenine dinucleotide) is a coenzyme, not a peptide. It is included in the research library because it is central to cellular energy metabolism and longevity research.',
+    },
+    {
+      q: 'Why is NAD+ important in longevity research?',
+      a: 'NAD+ is the required substrate for sirtuins and PARP DNA-repair enzymes, linking a cell’s energy state to gene expression and repair. Cellular NAD+ declines with age in many tissues, a recurring theme in aging research.',
+    },
+    {
+      q: 'What are sirtuins?',
+      a: 'Sirtuins are enzymes that use NAD+ to remove acetyl and other groups from proteins, connecting metabolic state to stress resistance and mitochondrial function. Their activity depends on NAD+ availability.',
+    },
+  ],
+  'dsip-delta-sleep-peptide-research': [
+    {
+      q: 'What is DSIP?',
+      a: 'DSIP (delta sleep-inducing peptide) is a nine-amino-acid neuropeptide named for its association with delta-wave, slow-wave sleep in early animal studies. It is studied as a neuromodulator.',
+    },
+    {
+      q: 'What is DSIP studied for?',
+      a: 'Its studied effects in the literature span sleep regulation, modulation of the hypothalamic-pituitary-adrenal (HPA) stress axis, and neuroprotection in models. It is a Research Use Only compound for in vitro laboratory research.',
+    },
+    {
+      q: 'Is DSIP’s mechanism understood?',
+      a: 'Not fully. No single dedicated receptor has been definitively confirmed, and reviews still describe its mechanism as an unresolved question, which makes careful controls and cautious interpretation especially important.',
+    },
+  ],
 };
 
 // Maps a compound category to the most relevant research guides. Two universal
@@ -2053,12 +2443,12 @@ export const GUIDE_FAQS: Record<string, { q: string; a: string }[]> = {
 // guides. Used to surface editorial guides on compound monographs
 // (internal-link mesh + topical association).
 const CATEGORY_GUIDE_SLUGS: Record<string, string[]> = {
-  'Weight Loss & Metabolism': ['glp-1-receptor-agonists-in-research', 'cagrilintide-amylin-receptor-research', 'peptide-research-areas-explained'],
-  'Healing & Recovery': ['bpc-157-research-overview', 'peptide-research-areas-explained'],
-  'Muscle Growth & Performance': ['growth-hormone-secretagogues-explained', 'peptide-research-areas-explained'],
-  'Anti-Aging & Longevity': ['mitochondrial-peptides-mots-c-ss-31-research', 'peptide-research-areas-explained', 'understanding-peptide-purity'],
+  'Weight Loss & Metabolism': ['glp-1-receptor-agonists-in-research', 'cagrilintide-amylin-receptor-research', 'tesamorelin-ghrh-analog-research', 'peptide-research-areas-explained'],
+  'Healing & Recovery': ['bpc-157-research-overview', 'kpv-anti-inflammatory-peptide-research', 'peptide-research-areas-explained'],
+  'Muscle Growth & Performance': ['growth-hormone-secretagogues-explained', 'follistatin-myostatin-inhibition-research', 'tesamorelin-ghrh-analog-research', 'peptide-research-areas-explained'],
+  'Anti-Aging & Longevity': ['mitochondrial-peptides-mots-c-ss-31-research', 'nad-cellular-energy-longevity-research', 'peptide-research-areas-explained', 'understanding-peptide-purity'],
   'Skin, Hair & Cosmetics': ['peptide-research-areas-explained', 'understanding-peptide-purity'],
-  'Immunity & Wellness': ['thymosin-alpha-1-immune-research', 'peptide-research-areas-explained', 'research-vs-pharmaceutical-peptides'],
+  'Immunity & Wellness': ['thymosin-alpha-1-immune-research', 'll-37-cathelicidin-host-defense-research', 'dsip-delta-sleep-peptide-research', 'peptide-research-areas-explained', 'research-vs-pharmaceutical-peptides'],
   'Sexual Health & Hormones': ['peptide-research-areas-explained', 'research-vs-pharmaceutical-peptides'],
   'Peptide Stacks': ['peptide-research-areas-explained', 'peptide-storage-and-reconstitution'],
 };
