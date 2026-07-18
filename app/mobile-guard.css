@@ -38,3 +38,29 @@
    which is unaffected by this rule.
    ============================================================ */
 html { scroll-behavior: auto; }
+
+
+/* ============================================================
+   LETTER-STACKING FIX (2026-07-18)
+   ------------------------------------------------------------
+   globals.css applies `overflow-wrap: anywhere` broadly to
+   p/span/div/td/th/li/a/label/button/headings (two rules: a global
+   one and a max-width:768px one). Per the CSS spec, `anywhere` folds
+   the soft-wrap opportunities into the min-content intrinsic size, so
+   an element's minimum width becomes a SINGLE CHARACTER. Any flex or
+   grid text column that then loses room (e.g. a sibling badge on a
+   narrow phone) collapses to one-letter-per-line -- the "letter
+   stacking" seen on the mobile researcher cards and elsewhere.
+
+   `overflow-wrap: break-word` gives the exact same long-token wrapping
+   (URLs, hashes, long usernames still break instead of overflowing the
+   page) but does NOT shrink the min-content size, so columns keep their
+   natural width and text never stacks vertically. Loaded after
+   globals.css, so it wins over the identically-specific `anywhere`
+   rules. The narrow, intentional !important uses in chat bubbles /
+   legal docs (higher specificity) are left untouched.
+   ============================================================ */
+p, span, div, td, th, li, a, label, button,
+h1, h2, h3, h4, h5, h6, dd, dt {
+  overflow-wrap: break-word;
+}
