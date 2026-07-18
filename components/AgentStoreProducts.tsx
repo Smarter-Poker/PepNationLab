@@ -125,7 +125,7 @@ function MarketIntel({ p, priceOverride }: { p: AgentProduct; priceOverride?: nu
   );
 }
 
-export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', unlimitedMargin = false }: { agentId: string; costLabel?: string; unlimitedMargin?: boolean }) {
+export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Your Cost', unlimitedMargin = false }: { agentId: string; agentSlug?: string; costLabel?: string; unlimitedMargin?: boolean }) {
   const [products, setProducts] = useState<AgentProduct[]>([]);
   const [bundles, setBundles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -673,7 +673,7 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
                   {isEditing ? (
                     <div className="agentprod-card" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
                       <Image
-                        src={p.custom_image_url || p.products.image_url || '/images/peptide_clear.png'}
+                        src={getProductImage(p.custom_image_url ?? p.products.image_url ?? null, p.products.category || 'Other', p.products.name, !!p.custom_image_url, agentSlug)}
                         alt={displayName}
                         width={80}
                         height={80}
@@ -769,7 +769,7 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
                   ) : (
                     <div className="agentprod-card" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
                       <Image
-                        src={p.custom_image_url || p.products.image_url || '/images/peptide_clear.png'}
+                        src={getProductImage(p.custom_image_url ?? p.products.image_url ?? null, p.products.category || 'Other', p.products.name, !!p.custom_image_url, agentSlug)}
                         alt={displayName}
                         width={80}
                         height={80}
@@ -900,7 +900,7 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
                   {isEditing ? (
                     <div className="agentprod-card" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
                       <Image
-                        src={p.custom_image_url || p.products.image_url || '/images/peptide_clear.png'}
+                        src={getProductImage(p.custom_image_url ?? p.products.image_url ?? null, p.products.category || 'Other', p.products.name, !!p.custom_image_url, agentSlug)}
                         alt={displayName}
                         width={80}
                         height={80}
@@ -990,7 +990,7 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
                   ) : (
                     <div className="agentprod-card" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
                       <Image
-                        src={p.custom_image_url || p.products.image_url || '/images/peptide_clear.png'}
+                        src={getProductImage(p.custom_image_url ?? p.products.image_url ?? null, p.products.category || 'Other', p.products.name, !!p.custom_image_url, agentSlug)}
                         alt={displayName}
                         width={80}
                         height={80}

@@ -1060,6 +1060,7 @@ export default function AgentStorefrontGrid({
             item.products?.category || 'Other',
             rawName,
             !!item.custom_image_url, // allowBrandSpecific: custom_image_url is agent-scoped
+            agentProfile?.slug
           ),
           variants: [],
           lowestPrice: Infinity,
@@ -2388,7 +2389,7 @@ export default function AgentStorefrontGrid({
                   className="store-image-hover"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    const fallback = getProductImage(null, group.category || 'Other', group.name);
+                    const fallback = getProductImage(null, group.category || 'Other', group.name, false, agentProfile?.slug);
                     if (target.src !== fallback && !target.src.includes(fallback)) {
                       target.srcset = '';
                       target.src = fallback;
@@ -3347,6 +3348,7 @@ export default function AgentStorefrontGrid({
                     item.products?.category || 'Other',
                     name,
                     !!item.custom_image_url, // allowBrandSpecific: custom_image_url is agent-scoped
+                    agentProfile?.slug
                   );
                   const perVial = item.retail_price / 10;
                   // Bac. water sells in fixed 10-packs; show it as packs (10x), not loose vials.
@@ -3369,7 +3371,7 @@ export default function AgentStorefrontGrid({
                         style={{ width: 64, height: 64, borderRadius: 10, objectFit: 'cover', flexShrink: 0, background: '#0F1923' }}
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
-                          const fallback = getProductImage(null, item.products?.category || 'Other', name);
+                          const fallback = getProductImage(null, item.products?.category || 'Other', name, false, agentProfile?.slug);
                           if (target.src !== fallback && !target.src.includes(fallback)) {
                             target.srcset = '';
                             target.src = fallback;
@@ -3513,6 +3515,7 @@ export default function AgentStorefrontGrid({
                         item.products?.category || 'Other',
                         name,
                         !!item.custom_image_url, // allowBrandSpecific: custom_image_url is agent-scoped
+                        agentProfile?.slug
                       );
                       const perVial = item.retail_price / 10;
                       return (
@@ -3528,7 +3531,7 @@ export default function AgentStorefrontGrid({
                             style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'cover', flexShrink: 0, background: '#0F1923', opacity: 0.9 }}
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
-                              const fallback = getProductImage(null, item.products?.category || 'Other', name);
+                              const fallback = getProductImage(null, item.products?.category || 'Other', name, false, agentProfile?.slug);
                               if (target.src !== fallback) {
                                 target.src = fallback;
                               } else {
@@ -3879,7 +3882,7 @@ export default function AgentStorefrontGrid({
                   style={{ objectFit: 'contain', objectPosition: 'center', padding: '16px', transition: 'transform 0.4s ease' }}
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    const fallback = getProductImage(null, detailProduct.category || 'Other', detailProduct.name);
+                    const fallback = getProductImage(null, detailProduct.category || 'Other', detailProduct.name, false, agentProfile?.slug);
                     if (target.src !== fallback && !target.src.includes(fallback)) {
                       target.srcset = '';
                       target.src = fallback;
@@ -4775,7 +4778,7 @@ export default function AgentStorefrontGrid({
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {resolved.members.map((m) => {
-                      const img = m.custom_image_url || m.products?.image_url || '/images/peptide_clear.png';
+                      const img = getProductImage(m.custom_image_url ?? m.products?.image_url ?? null, m.products?.category || 'Other', m.products?.name, !!m.custom_image_url);
                       const name = m.custom_name || m.products?.name || 'Product';
                       const size = m.products?.unit_size ? `${m.products.unit_size}${m.products.unit_measure || ''}` : '';
                       const perVial = (Number(m.retail_price) || 0) / 10;

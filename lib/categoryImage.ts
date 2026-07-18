@@ -311,7 +311,19 @@ export function getProductImage(
   category: string,
   productName?: string,
   allowBrandSpecific?: boolean,
+  agentSlug?: string
 ): string {
+  // STRICT HARDENING: If this is the Savage Brands store, we MUST NEVER 
+  // leak PepNation vials (products table or category fallbacks).
+  if (agentSlug === 'savagebrands') {
+    if (imageUrl && imageUrl.trim() !== '' && imageUrl.includes('/images/savage-brands/')) {
+      return imageUrl;
+    }
+    // If no specific 3D vial is assigned yet, fallback to the generic clear vial.
+    // This absolutely guarantees that PepNation black vials never appear here.
+    return '/images/peptide_clear.png';
+  }
+
   // SAFETY GUARD: The shared `products` table must ONLY contain generic platform
   // image paths (Supabase CDN or /images/products/).
   // Brand-specific paths like /images/savage-brands/ must NEVER appear here —
