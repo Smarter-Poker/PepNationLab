@@ -182,11 +182,14 @@ export async function POST(req: NextRequest) {
     relaxed = matches.length > 0;
   }
 
-  // Detect synergistic stack relationships among the top results
+  // Detect synergistic stack relationships among the top results.
+  // Index the catalog by slug once so the nested pair scan does O(1) lookups
+  // instead of a full compounds.find() linear scan on every comparison.
+  const compoundBySlug = new Map(compounds.map(c => [c.slug, c]));
   for (let i = 0; i < matches.length; i++) {
     for (let j = i + 1; j < matches.length; j++) {
-      const cA = compounds.find(c => c.slug === matches[i].slug);
-      const cB = compounds.find(c => c.slug === matches[j].slug);
+      const cA = compoundBySlug.get(matches[i].slug);
+      const cB = compoundBySlug.get(matches[j].slug);
       if (cA && cB) {
         // Match the engine's own stack logic: case-insensitive, by slug OR display
         // name. The previous case-sensitive slug-only check under-detected stacks.
