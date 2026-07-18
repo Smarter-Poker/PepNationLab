@@ -3907,7 +3907,7 @@ export default function AgentStorefrontGrid({
 
                 {/* COA button — top of detail, above everything else */}
                 {(() => {
-                  const _coaPid = detailProduct.variants[0]?.product_id;
+                  const _coaPid = detailProduct.variants.find(v => !!coaByProductId?.[v.product_id])?.product_id;
                   const _coaUrl = _coaPid ? coaByProductId?.[_coaPid] : undefined;
                   if (!_coaUrl) return null;
                   return (
