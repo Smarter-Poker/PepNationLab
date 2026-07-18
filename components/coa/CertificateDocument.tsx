@@ -92,9 +92,9 @@ const TEAL_DARK = '#0F6E56';
 
 function InfoCell({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: `0.5px solid ${HAIR}`, padding: '6px 0', fontSize: 13 }}>
-      <span style={{ color: MUTED }}>{label}</span>
-      <span style={{ fontWeight: 500, textAlign: 'right' }}>{value}</span>
+    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: `0.5px solid ${HAIR}`, padding: '6px 0', fontSize: 13, gap: '0.75rem', minWidth: 0 }}>
+      <span style={{ color: MUTED, flexShrink: 0 }}>{label}</span>
+      <span style={{ fontWeight: 500, textAlign: 'right', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }} title={value}>{value}</span>
     </div>
   );
 }
@@ -204,13 +204,15 @@ export default function CertificateDocument({ data }: { data: CertificateData })
         </div>
       </header>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 24px', marginTop: 16 }}>
-        <InfoCell label="Product" value={data.productName} />
-        <InfoCell label="Lot Number" value={data.lotNumber} />
-        <InfoCell label="CAS" value={data.cas || NOT_REPORTED} />
-        <InfoCell label="Test Date" value={fmtDate(data.testDate)} />
-        <InfoCell label="Appearance" value={data.appearance || NOT_REPORTED} />
-        <InfoCell label="Storage" value={data.storage || 'Store At 36 To 46 F'} />
+      <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' as any }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 24px', marginTop: 16, minWidth: 300 }}>
+          <InfoCell label="Product" value={data.productName} />
+          <InfoCell label="Lot Number" value={data.lotNumber} />
+          <InfoCell label="CAS" value={data.cas || NOT_REPORTED} />
+          <InfoCell label="Test Date" value={fmtDate(data.testDate)} />
+          <InfoCell label="Appearance" value={data.appearance || NOT_REPORTED} />
+          <InfoCell label="Storage" value={data.storage || 'Store At 36 To 46 F'} />
+        </div>
       </div>
 
       {sequence && (
