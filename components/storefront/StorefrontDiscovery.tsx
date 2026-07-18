@@ -211,6 +211,11 @@ export default function DiscoveryHero({
     if (onSearchStarted) onSearchStarted(s.display_name);
   }
 
+  // Remember the exact structured input of the last match run so "Try Again"
+  // replays it verbatim -- re-parsing the human-readable goalSummary would drop
+  // the wizard's evidence / preference / budget selections.
+  const lastRunRef = useRef<{ input: Parameters<typeof runMatch>[0]; summary: string } | null>(null);
+
   const runMatch = useCallback(async (input: {
     goal: string;
     goals?: string[];
@@ -223,6 +228,7 @@ export default function DiscoveryHero({
     /** When set, /match parses this raw goal server-side (single round trip). */
     prompt?: string;
   }, summary: string) => {
+    lastRunRef.current = { input, summary };
     setLoading(true);
     setResults([]);
     setExcluded([]);
@@ -677,7 +683,13 @@ export default function DiscoveryHero({
         submitFollowUp={submitFollowUp}
         matchError={matchError}
         relaxed={relaxed}
-        onRetry={() => { if (goalSummary) submitTypedGoal(goalSummary); }}
+        onRetry={() => {
+          if (lastRunRef.current) {
+            void runMatch(lastRunRef.current.input, lastRunRef.current.summary);
+          } else if (goalSummary) {
+            void submitTypedGoal(goalSummary);
+          }
+        }}
         primaryColor={primaryColor}
         onClose={() => setDrawerOpen(false)}
         onAddToCart={(id) => { setDrawerOpen(false); onAddToCart(id); }}
