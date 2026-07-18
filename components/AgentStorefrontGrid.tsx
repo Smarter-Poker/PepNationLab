@@ -13,6 +13,7 @@ import IframeLink from '@/components/ui/IframeLink';
 import DiscoveryHero, { type MatchedProduct } from './storefront/StorefrontDiscovery';
 import type { ModalGroupedProductRef } from './storefront/ProductModalEnhancements';
 import DynamicAddToCartButton from './storefront/DynamicAddToCartButton';
+import DynamicCoaButton from './storefront/DynamicCoaButton';
 import DynamicCartButton from './storefront/DynamicCartButton';
 import DynamicDetailButton from './storefront/DynamicDetailButton';
 import { evidenceTier, EVIDENCE_TIER, RISK_META, intranasalDisplay, type Compound } from '@/lib/compounds';
@@ -3818,7 +3819,6 @@ export default function AgentStorefrontGrid({
                       aria-label="View Certificate of Analysis"
                       style={{
                         display: 'block',
-                        height: 34,
                         cursor: 'pointer',
                         background: 'none',
                         border: 'none',
@@ -3826,13 +3826,7 @@ export default function AgentStorefrontGrid({
                         transition: 'opacity 0.15s, transform 0.15s',
                       }}
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src="/images/coa-button.png"
-                        alt="Certificate of Analysis"
-                        style={{ height: '100%', width: 'auto', display: 'block', objectFit: 'contain' }}
-                        draggable={false}
-                      />
+                      <DynamicCoaButton style={{ width: 122, height: 38 }} />
                     </IframeLink>
                   );
                 })()}

@@ -35,6 +35,7 @@ import PinToCompareButton from '@/components/research/PinToCompareButton';
 import ResearchCartButton from '@/components/research/ResearchCartButton';
 import EfficacyScoreChart from '@/components/research/EfficacyScoreChart';
 import TrialsMetricsPanel from '@/components/research/TrialsMetricsPanel';
+import DynamicCoaButton from '@/components/storefront/DynamicCoaButton';
 import IframeModal from '@/components/ui/IframeModal';
 import { trackResearchEvent } from '@/lib/research-track';
 
@@ -239,12 +240,7 @@ export default function MonographTabs({ compound, related = [], coaUrl = null }:
               title="Certificate of Analysis"
               style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/images/coa-button.png"
-                alt="View Certificate of Analysis"
-                style={{ height: 34, width: 'auto', objectFit: 'contain' }}
-              />
+              <DynamicCoaButton />
             </a>
           )}
           <Link

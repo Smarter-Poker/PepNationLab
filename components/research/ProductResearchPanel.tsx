@@ -18,6 +18,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, Sparkles } from 'lucide-react';
+import DynamicCoaButton from '../storefront/DynamicCoaButton';
 import {
   type Compound,
   evidenceTier,
@@ -246,8 +247,7 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
                 title="View Certificate of Analysis"
                 style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/images/coa-button.png" alt="View Certificate of Analysis" style={{ height: 34, width: 'auto', objectFit: 'contain' }} draggable={false} />
+                <DynamicCoaButton />
               </a>
             )}
             <span style={{ fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--silver)' }}>

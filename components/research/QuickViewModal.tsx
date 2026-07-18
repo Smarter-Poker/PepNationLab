@@ -9,6 +9,7 @@ import { Compound, evidenceTier, intranasalDisplay } from '@/lib/compounds';
 import InteractiveGlossaryText from '@/components/research/InteractiveGlossaryText';
 import PinToCompareButton from '@/components/research/PinToCompareButton';
 import ResearchCartButton from '@/components/research/ResearchCartButton';
+import DynamicCoaButton from '@/components/storefront/DynamicCoaButton';
 import IframeModal from '@/components/ui/IframeModal';
 import { useModalA11y } from '@/lib/useModalA11y';
 
@@ -90,8 +91,7 @@ export default function QuickViewModal({ compound, isOpen, onClose, imageUrl, pr
                     title="Certificate of Analysis"
                     style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/images/coa-button.png" alt="View Certificate of Analysis" style={{ height: 34, width: 'auto', objectFit: 'contain' }} draggable={false} />
+                    <DynamicCoaButton />
                   </a>
                 )}
                 <button onClick={onClose} aria-label="Close Quick View" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#FFF', borderRadius: '50%', padding: 8, cursor: 'pointer', display: 'flex', transition: 'all 0.2s ease-in-out' }}>
