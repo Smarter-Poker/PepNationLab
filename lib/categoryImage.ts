@@ -160,6 +160,17 @@ const PRODUCT_IMAGE_MAP: Record<string, string> = {
 
   // ── Curated Stacks ─────────────────────────────────────────────────────────
   'gh synergy stack':                         '/images/pep-nation-flattened/cjc-1295-ipa.png',
+
+  // ── Missing Compounds added from Audit ─────────────────────────────────────
+  'hcg':                                      '/images/pep-nation-flattened/hcg-g5k.png',
+  'ss-31':                                    '/images/pep-nation-flattened/ss-31-2s50.png',
+  'survodutide':                              '/images/pep-nation-flattened/survodutide-sur10.png',
+  'cerebrolysin':                             '/images/pep-nation-flattened/cerebrolysin-cbl60.png',
+  'aicar':                                    '/images/pep-nation-flattened/aicar-ar50.png',
+  'thymalin':                                 '/images/pep-nation-flattened/thymalin-ty10.png',
+  'melatonin':                                '/images/pep-nation-flattened/melatonin-mt10.png',
+  'mt-1':                                     '/images/pep-nation-flattened/mt-1-mt1.png',
+  'vip':                                      '/images/pep-nation-flattened/vip-vp10.png',
 };
 
 // ─── Category → base vial image (fallback when no individual image exists) ───
