@@ -138,22 +138,32 @@ export async function POST(req: NextRequest) {
     .slice(0, 12);
 
   // Never-empty guarantee. A real research goal must ALWAYS surface candidates.
-  // If the user's evidence-comfort and/or risk-tolerance gates excluded every
-  // compound, re-run the scoring with just those two gates relaxed so the drawer
-  // shows the most relevant compounds (with their true, honest evidence tiers)
-  // instead of a dead-end "0 Matches" screen. Hard product constraints
-  // (injectable / prep / single-vs-stack preference) are still respected. Only
-  // triggers for a concrete goal -- an 'any' goal that returns nothing genuinely
-  // has nothing to relax to.
+  // If the user's constraints (evidence comfort, risk tolerance, no-injectables,
+  // long-half-life, prep, or single-vs-stack preference) combined to exclude every
+  // compound, re-run the scoring with ALL of those hard gates dropped -- keeping
+  // only the goal itself -- so the drawer shows the most relevant compounds (with
+  // their true, honest evidence tiers) instead of a dead-end "0 Matches" screen.
+  // The only surviving filter is goal relevance, so any concrete goal that has
+  // catalog coverage is guaranteed to return results. `relaxed` is surfaced so the
+  // UI can tell the user their filters were broadened -- never a silent change.
+  // ('any'-goal empties have nothing to relax to and are left as-is.)
   let relaxed = false;
   if (matches.length === 0 && goals.some(g => g !== 'any')) {
     const relaxedMap = new Map<string, MatchResult>();
     for (const g of goals) {
+      // Fresh input: drop every optional hard gate rather than spreading `input`
+      // (which would carry excludeInjectables / preference / requireLongHalfLife
+      // forward and could keep the result empty). Budget is scoring-only, not a
+      // gate, so it is safe to preserve for ranking.
       const relaxedInput: MatchInput = {
-        ...input,
         goal: g,
         evidenceComfort: 'any',
         riskTolerance: 'any',
+        preference: 'either',
+        excludeInjectables: false,
+        requireLongHalfLife: false,
+        prep: 'all',
+        budget: input.budget,
       };
       const scoredData = scoreCompounds(relaxedInput, compounds);
       for (const match of scoredData.matches) {
