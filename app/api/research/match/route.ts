@@ -130,12 +130,47 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const matches = Array.from(allMatchesMap.values())
+  let matches = Array.from(allMatchesMap.values())
     .sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
       return a.displayName.localeCompare(b.displayName);
     })
     .slice(0, 12);
+
+  // Never-empty guarantee. A real research goal must ALWAYS surface candidates.
+  // If the user's evidence-comfort and/or risk-tolerance gates excluded every
+  // compound, re-run the scoring with just those two gates relaxed so the drawer
+  // shows the most relevant compounds (with their true, honest evidence tiers)
+  // instead of a dead-end "0 Matches" screen. Hard product constraints
+  // (injectable / prep / single-vs-stack preference) are still respected. Only
+  // triggers for a concrete goal -- an 'any' goal that returns nothing genuinely
+  // has nothing to relax to.
+  let relaxed = false;
+  if (matches.length === 0 && goals.some(g => g !== 'any')) {
+    const relaxedMap = new Map<string, MatchResult>();
+    for (const g of goals) {
+      const relaxedInput: MatchInput = {
+        ...input,
+        goal: g,
+        evidenceComfort: 'any',
+        riskTolerance: 'any',
+      };
+      const scoredData = scoreCompounds(relaxedInput, compounds);
+      for (const match of scoredData.matches) {
+        const existing = relaxedMap.get(match.slug);
+        if (!existing || match.score > existing.score) {
+          relaxedMap.set(match.slug, match);
+        }
+      }
+    }
+    matches = Array.from(relaxedMap.values())
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return a.displayName.localeCompare(b.displayName);
+      })
+      .slice(0, 12);
+    relaxed = matches.length > 0;
+  }
 
   // Detect synergistic stack relationships among the top results
   for (let i = 0; i < matches.length; i++) {
@@ -184,6 +219,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     results: matches,
     excluded: excluded,
+    relaxed,
     note: RESEARCH_NOTE,
   });
 }
