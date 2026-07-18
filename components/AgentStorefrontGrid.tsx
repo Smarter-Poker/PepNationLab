@@ -1060,7 +1060,7 @@ export default function AgentStorefrontGrid({
             item.products?.category || 'Other',
             rawName,
             !!item.custom_image_url, // allowBrandSpecific: custom_image_url is agent-scoped
-            agentProfile?.slug
+            agentSlug
           ),
           variants: [],
           lowestPrice: Infinity,
@@ -2389,7 +2389,7 @@ export default function AgentStorefrontGrid({
                   className="store-image-hover"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    const fallback = getProductImage(null, group.category || 'Other', group.name, false, agentProfile?.slug);
+                    const fallback = getProductImage(null, group.category || 'Other', group.name, false, agentSlug);
                     if (target.src !== fallback && !target.src.includes(fallback)) {
                       target.srcset = '';
                       target.src = fallback;
@@ -3348,7 +3348,7 @@ export default function AgentStorefrontGrid({
                     item.products?.category || 'Other',
                     name,
                     !!item.custom_image_url, // allowBrandSpecific: custom_image_url is agent-scoped
-                    agentProfile?.slug
+                    agentSlug
                   );
                   const perVial = item.retail_price / 10;
                   // Bac. water sells in fixed 10-packs; show it as packs (10x), not loose vials.
@@ -3371,7 +3371,7 @@ export default function AgentStorefrontGrid({
                         style={{ width: 64, height: 64, borderRadius: 10, objectFit: 'cover', flexShrink: 0, background: '#0F1923' }}
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
-                          const fallback = getProductImage(null, item.products?.category || 'Other', name, false, agentProfile?.slug);
+                          const fallback = getProductImage(null, item.products?.category || 'Other', name, false, agentSlug);
                           if (target.src !== fallback && !target.src.includes(fallback)) {
                             target.srcset = '';
                             target.src = fallback;
@@ -3515,7 +3515,7 @@ export default function AgentStorefrontGrid({
                         item.products?.category || 'Other',
                         name,
                         !!item.custom_image_url, // allowBrandSpecific: custom_image_url is agent-scoped
-                        agentProfile?.slug
+                        agentSlug
                       );
                       const perVial = item.retail_price / 10;
                       return (
@@ -3531,7 +3531,7 @@ export default function AgentStorefrontGrid({
                             style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'cover', flexShrink: 0, background: '#0F1923', opacity: 0.9 }}
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
-                              const fallback = getProductImage(null, item.products?.category || 'Other', name, false, agentProfile?.slug);
+                              const fallback = getProductImage(null, item.products?.category || 'Other', name, false, agentSlug);
                               if (target.src !== fallback) {
                                 target.src = fallback;
                               } else {
@@ -3882,7 +3882,7 @@ export default function AgentStorefrontGrid({
                   style={{ objectFit: 'contain', objectPosition: 'center', padding: '16px', transition: 'transform 0.4s ease' }}
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    const fallback = getProductImage(null, detailProduct.category || 'Other', detailProduct.name, false, agentProfile?.slug);
+                    const fallback = getProductImage(null, detailProduct.category || 'Other', detailProduct.name, false, agentSlug);
                     if (target.src !== fallback && !target.src.includes(fallback)) {
                       target.srcset = '';
                       target.src = fallback;
