@@ -313,6 +313,7 @@ export default function AgentStorefrontGrid({
   minOverallQty = 1,
   compoundsBySlug = {},
   featuredProductIds = [],
+  customBranding = null,
 }: Props) {
   const [mounted, setMounted] = useState(false);
   const [showStoreGrid, setShowStoreGrid] = useState(true);
