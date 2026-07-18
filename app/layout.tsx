@@ -208,6 +208,33 @@ export default function RootLayout({
                     'https://www.pinterest.com/PepNationLab/',
                   ],
                 },
+                {
+                  // Distinct author/reviewer entity for YMYL E-E-A-T. Monographs
+                  // and guides previously pointed reviewedBy/author at the
+                  // publisher Organization itself (the org reviewing its own
+                  // work carries near-zero trust signal). This editorial-team
+                  // entity separates author from publisher and declares the
+                  // subject-matter expertise (knowsAbout) that answer engines
+                  // and Google's quality systems read. Modeled as an
+                  // Organization sub-team - an honest collective, not a
+                  // fabricated named individual.
+                  '@type': 'Organization',
+                  '@id': 'https://pepnationlab.com/#research-team',
+                  name: 'Pep Nation Lab Research Desk',
+                  description:
+                    'The editorial and scientific review team responsible for sourcing, evidence-tiering, and maintaining the Pep Nation Lab research library. All references are compiled from peer-reviewed literature and regulatory records under a strict Research-Use-Only editorial policy.',
+                  url: 'https://pepnationlab.com/research/methodology',
+                  parentOrganization: { '@id': 'https://pepnationlab.com/#organization' },
+                  knowsAbout: [
+                    'Research peptides',
+                    'Peptide pharmacology',
+                    'Peptide pharmacokinetics',
+                    'Mechanism of action',
+                    'Structure-activity relationships',
+                    'Regulatory status of research compounds',
+                    'Evidence grading of preclinical research',
+                  ],
+                },
               ],
             }),
           }}

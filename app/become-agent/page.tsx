@@ -25,23 +25,59 @@ export const metadata: Metadata = {
   },
 };
 
+const AGENT_FAQ: { q: string; a: string }[] = [
+  {
+    q: 'What Is A Pep Nation Lab Distribution Agent?',
+    a: 'A distribution agent operates their own branded research-supply storefront on the Pep Nation Lab platform. Agents connect qualified researchers with wholesale-priced Research-Use-Only compounds and earn commissions, while Pep Nation Lab provides the catalog, fulfillment, and compliance infrastructure.',
+  },
+  {
+    q: 'How Do Agents Earn Money?',
+    a: 'Agents earn on the margin between their tier-based wholesale cost and the price they set for their researchers. Tier 1, 2, and 3 multipliers apply to base cost, and top-performing agents automatically unlock better margins.',
+  },
+  {
+    q: 'What Are The Eligibility Requirements To Become An Agent?',
+    a: 'Applicants need an established relationship with a current Pep Nation Lab agent or admin, a demonstrated research background or client base, agreement to all platform compliance and Research-Use-Only terms, and a weekly billing account (credit line or prepaid balance).',
+  },
+  {
+    q: 'Do I Need My Own Website Or Inventory?',
+    a: 'No. Agents receive a white-label storefront with their own branded URL, colors, logo, and catalog. Pep Nation Lab holds inventory and handles fulfillment, so agents do not carry stock or build their own site.',
+  },
+  {
+    q: 'How Do I Apply To Become An Agent?',
+    a: 'Sign in to your Pep Nation Lab account and contact your agent administrator to begin the application. Applications are reviewed manually. All compounds distributed through the platform are for research use only and not intended for human consumption.',
+  },
+];
+
 const jsonLd = {
   '@context': 'https://schema.org',
-  '@type': 'WebPage',
-  '@id': 'https://pepnationlab.com/become-agent#webpage',
-  name: 'Become A Distribution Agent',
-  url: 'https://pepnationlab.com/become-agent',
-  description:
-    'Apply to operate a branded research peptide distribution storefront on the Pep Nation Lab platform. Earn commissions, access wholesale pricing, and serve your local research community.',
-  isPartOf: { '@id': 'https://pepnationlab.com/#website' },
-  publisher: { '@id': 'https://pepnationlab.com/#organization' },
-  breadcrumb: {
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
-      { '@type': 'ListItem', position: 2, name: 'Become An Agent', item: 'https://pepnationlab.com/become-agent' },
-    ],
-  },
+  '@graph': [
+    {
+      '@type': 'WebPage',
+      '@id': 'https://pepnationlab.com/become-agent#webpage',
+      name: 'Become A Distribution Agent',
+      url: 'https://pepnationlab.com/become-agent',
+      description:
+        'Apply to operate a branded research peptide distribution storefront on the Pep Nation Lab platform. Earn commissions, access wholesale pricing, and serve your local research community.',
+      isPartOf: { '@id': 'https://pepnationlab.com/#website' },
+      publisher: { '@id': 'https://pepnationlab.com/#organization' },
+      breadcrumb: {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
+          { '@type': 'ListItem', position: 2, name: 'Become An Agent', item: 'https://pepnationlab.com/become-agent' },
+        ],
+      },
+    },
+    {
+      '@type': 'FAQPage',
+      '@id': 'https://pepnationlab.com/become-agent#faq',
+      mainEntity: AGENT_FAQ.map((f) => ({
+        '@type': 'Question',
+        name: f.q,
+        acceptedAnswer: { '@type': 'Answer', text: f.a },
+      })),
+    },
+  ],
 };
 
 export default function BecomeAgentPage() {
@@ -129,6 +165,22 @@ export default function BecomeAgentPage() {
               Agent Applications Are Reviewed Manually. All Compounds Distributed Through The Platform Are
               For Research Use Only And Not Intended For Human Consumption.
             </p>
+          </div>
+        </div>
+
+        {/* FAQ - visible on-page content backing the FAQPage schema above.
+            High-value AI-citation and featured-snippet surface. */}
+        <div className="container" style={{ maxWidth: 760, marginTop: 'var(--space-12)' }}>
+          <h2 style={{ color: 'var(--white)', textAlign: 'center', marginBottom: 'var(--space-6)', fontSize: '1.4rem' }}>
+            Frequently Asked Questions
+          </h2>
+          <div style={{ display: 'grid', gap: 'var(--space-4)' }}>
+            {AGENT_FAQ.map(({ q, a }) => (
+              <div key={q} className="card" style={{ padding: 'var(--space-5)', borderRadius: 'var(--radius-lg)' }}>
+                <h3 style={{ color: 'var(--white)', fontSize: '1rem', marginBottom: 'var(--space-2)' }}>{q}</h3>
+                <p style={{ color: 'var(--silver)', fontSize: '0.9rem', lineHeight: 1.7, margin: 0 }}>{a}</p>
+              </div>
+            ))}
           </div>
         </div>
 

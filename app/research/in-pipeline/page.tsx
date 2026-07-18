@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     creator: '@PepNationLab',
     title: 'Peptides In Clinical Pipeline | Compounds In Development | Pep Nation Lab',
     description: 'Research peptides and compounds currently in clinical development pipeline - Phase 1, 2, and 3 trials. Track emerging peptide drug development. Research use only.',
-    images: ['https://pepnationlab.com/images/og-card.jpg'],
+    images: ['https://pepnationlab.com/og-card.png'],
   },
 };
 

@@ -221,6 +221,25 @@ export default function MonographSeoContent({ compound }: { compound: Compound }
         </section>
       )}
 
+      {/* Descriptive SSR links into the compound's own indexable sub-pages.
+          These previously had zero crawlable inbound links (only client-side
+          tab buttons), so Google/AI crawlers never prioritized them. */}
+      <section style={{ margin: '0 0 20px' }}>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: '0 0 8px' }}>Full Reference Detail</h2>
+        <ul style={{ margin: 0, paddingLeft: '1.2rem', lineHeight: 1.7 }}>
+          <li>
+            <a href={`/research/${compound.slug}/references`} style={{ color: 'var(--teal, #00C4BC)' }}>
+              View The Full {compound.display_name} Bibliography And Citations
+            </a>
+          </li>
+          <li>
+            <a href={`/research/${compound.slug}/regulatory`} style={{ color: 'var(--teal, #00C4BC)' }}>
+              {compound.display_name} Regulatory And Legal Status Detail
+            </a>
+          </li>
+        </ul>
+      </section>
+
       {relatedGuides.length > 0 && (
         <section style={{ margin: '0 0 20px' }}>
           <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: '0 0 8px' }}>Related Research Guides</h2>

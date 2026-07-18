@@ -45,6 +45,14 @@ export default async function ResearchLibraryPage({
   const { q } = await searchParams;
   const compounds = await getAllCompounds();
 
+  // Most-recent compound edit date, used as the Dataset's dateModified so the
+  // freshness signal reflects real data changes rather than the render time.
+  const datasetModified = compounds
+    .map((c) => (c as { updated_at?: string | null }).updated_at)
+    .filter((d): d is string => typeof d === 'string' && d.length > 0)
+    .sort()
+    .slice(-1)[0]?.slice(0, 10) ?? null;
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#0C151D' }}>
 
@@ -59,6 +67,25 @@ export default async function ResearchLibraryPage({
             description: 'A comprehensive database of research-grade peptides and chemical compounds for laboratory use. Includes molecular weights, sequences, and evidence tiers.',
             url: 'https://pepnationlab.com/research/catalog',
             keywords: 'research peptides, peptide database, compound monographs, BPC-157, semaglutide, tirzepatide, evidence tiers',
+            // Google Dataset Search + AI answer engines weight these fields when
+            // deciding whether to surface/cite a dataset: how many records it
+            // holds, when it last changed, and what each record measures.
+            numberOfItems: compounds.length,
+            // Honest freshness: the most recent compound edit date, NOT the
+            // render date (which would fabricate a "changed today" signal on
+            // every ISR revalidation).
+            ...(datasetModified ? { dateModified: datasetModified } : {}),
+            variableMeasured: [
+              'Compound Name',
+              'Molecular Weight',
+              'Amino Acid Sequence',
+              'CAS Number',
+              'Molecular Target',
+              'Mechanism Of Action',
+              'Half-Life',
+              'Route Of Administration',
+              'Evidence Tier',
+            ],
             distribution: [{
               '@type': 'DataDownload',
               encodingFormat: 'text/markdown',
