@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import React from 'react';
 
 interface DynamicCoaButtonProps {
@@ -11,7 +12,7 @@ export default function DynamicCoaButton({
   isSmall = false,
   style = {},
 }: DynamicCoaButtonProps) {
-  // We intentionally use the AddToCart button aspect ratio to ensure EXACT same footprint size globally
+  // Use the exact same footprint logic as Add To Cart
   // Aspect ratio is 896 / 251 = ~3.57
   const baseWidth = isSmall ? 130 : 180;
   const baseHeight = Math.round(baseWidth / 3.57);
@@ -30,22 +31,22 @@ export default function DynamicCoaButton({
         width: baseWidth,
         height: baseHeight,
         flexShrink: 0,
-        borderRadius: '9999px',
-        background: 'linear-gradient(180deg, #2A303A 0%, #11151A 100%)',
-        boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.2), 0 4px 10px rgba(0,0,0,0.4)',
-        border: '1px solid rgba(139,147,158,0.3)',
-        color: '#FFFFFF',
-        fontSize: baseHeight * 0.35,
-        fontWeight: 800,
-        textTransform: 'uppercase',
-        letterSpacing: '0.1em',
-        cursor: 'pointer',
         transform: isPressed ? 'scale(0.96)' : 'scale(1)',
         transition: 'transform 0.1s ease',
+        cursor: 'pointer',
         ...style,
       }}
     >
-      COA
+      <Image
+        src="/images/coa-button.png"
+        alt="Certificate of Analysis"
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'contain',
+          display: 'block',
+        }}
+        width={896} height={251} unoptimized />
     </div>
   );
 }

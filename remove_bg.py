@@ -1,39 +1,30 @@
-from PIL import Image, ImageDraw
-import sys
+from PIL import Image
 
-def remove_background(input_path, output_path):
-    img = Image.open(input_path).convert("RGBA")
-    data = img.load()
-    width, height = img.size
+def remove_solid_background(image_path, output_path, tolerance=15):
+    img = Image.open(image_path).convert("RGBA")
+    data = img.getdata()
     
-    # We will do a simple flood fill from the 4 corners.
-    # We treat anything close to black as background.
-    threshold = 20
+    # Get top-left pixel as background color
+    bg_color = data[0]
     
-    def is_bg(r, g, b, a):
-        return r < threshold and g < threshold and b < threshold
-    
-    visited = set()
-    stack = [(0,0), (width-1, 0), (0, height-1), (width-1, height-1)]
-    
-    while stack:
-        x, y = stack.pop()
-        if (x, y) in visited:
-            continue
-        if x < 0 or x >= width or y < 0 or y >= height:
-            continue
+    new_data = []
+    for item in data:
+        # Check if color is within tolerance
+        if abs(item[0] - bg_color[0]) <= tolerance and \
+           abs(item[1] - bg_color[1]) <= tolerance and \
+           abs(item[2] - bg_color[2]) <= tolerance:
+            new_data.append((255, 255, 255, 0)) # transparent
+        else:
+            new_data.append(item)
             
-        visited.add((x, y))
-        r, g, b, a = data[x, y]
+    img.putdata(new_data)
+    
+    # Now crop to bounding box
+    bbox = img.getbbox()
+    if bbox:
+        img = img.crop(bbox)
         
-        if is_bg(r, g, b, a):
-            data[x, y] = (0, 0, 0, 0)
-            stack.append((x+1, y))
-            stack.append((x-1, y))
-            stack.append((x, y+1))
-            stack.append((x, y-1))
-
     img.save(output_path, "PNG")
-    print(f"Saved to {output_path}")
+    print(f"Saved to {output_path}. Size: {img.size}")
 
-remove_background(sys.argv[1], sys.argv[2])
+remove_solid_background('/Users/smarter.poker/.gemini/antigravity/brain/36b8d1d7-0e6d-4948-90a7-33f2114fbcf5/.user_uploaded/media__1784384384324.png', '/Users/smarter.poker/Documents/pepnationlab/public/images/coa-button.png')
