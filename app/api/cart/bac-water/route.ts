@@ -15,9 +15,10 @@ import { resolveCartIdsToProductIds } from '@/lib/cart-ids';
  *   strength (~5 mg/mL convention, 1-5 mL/vial) rather than a flat per-vial
  *   amount, then summed across the cart (see reconstitutionMlPerVial /
  *   lineReconstitutionMl below).
- *   Products whose compound_slug maps to evidence_tier = 'supply'/'cosmetic',
- *   or whose form is pre-mixed/implant, are excluded (they don't need
- *   reconstitution). BAC water products themselves are excluded.
+ *   Products whose compound_slug maps to evidence_tier = 'supply', or whose
+ *   form is pre-mixed/implant, are excluded (they don't need reconstitution).
+ *   Cosmetic-tier lyophilized peptides (GHK-Cu, AHK-Cu, SNAP-8) DO need BAC
+ *   water and are counted. BAC water products themselves are excluded.
  *   Acetic-acid peptides (IGF class) need acetic acid, not BAC water, and are
  *   excluded from this calculation.
  *   Vials needed = ceil(totalMlNeeded / actualBacVialSizeMl).
@@ -158,7 +159,13 @@ export async function POST(req: NextRequest) {
         .in('slug', compoundSlugsToCheck);
 
       for (const c of compounds ?? []) {
-        if (c.evidence_tier === 'supply' || c.evidence_tier === 'cosmetic') {
+        // Only 'supply' compounds (BAC water, acetic acid, lab supplies) are
+        // categorically non-reconstitutable. 'cosmetic' tier is NOT excluded
+        // here: GHK-Cu / AHK-Cu / SNAP-8 are lyophilized mg powders whose
+        // diluent is bacteriostatic/sterile water, so they genuinely need BAC
+        // water. Pre-mixed cosmetic liquids (Lemon Bottle) are still excluded
+        // below via their form, and any 'ml' product contributes 0 mL anyway.
+        if (c.evidence_tier === 'supply') {
           supplyCompoundSlugs.add(c.slug);
         }
         // Pre-mixed aqueous products (Lemon Bottle, Lipo-C, ...) ship as ready
