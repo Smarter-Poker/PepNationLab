@@ -23,15 +23,22 @@ export function GuidedDiscoveryWizard({
   const [step, setStep] = useState(0);
   const [state, setState] = useState<WizardState>(DEFAULT_WIZARD);
 
+  // Reset the wizard ONLY when it opens. `availableAreas` must NOT be a dep:
+  // it loads empty then populates async (e.g. on /find-a-peptide), and having it
+  // here re-ran this effect mid-flow, resetting step to 0 and clobbering the
+  // user's selected area — which made card-tap auto-advance silently fail and
+  // could bounce a user back to step 0. Seed the default area from whatever
+  // availableAreas holds at open; if still empty, keep the current/fallback area.
   useEffect(() => {
     if (open) {
       const timer = window.setTimeout(() => {
         setStep(0);
-        setState(s => ({ ...s, area: availableAreas[0] || 'healing' }));
+        setState(s => ({ ...s, area: availableAreas[0] || s.area || 'healing' }));
       }, 0);
       return () => window.clearTimeout(timer);
     }
-  }, [open, availableAreas]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
