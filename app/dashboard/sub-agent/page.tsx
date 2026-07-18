@@ -84,7 +84,7 @@ export default function SubAgentDashboardPage() {
     return (
       <div style={{ minHeight: '100dvh', background: 'var(--black)' }}>
         <Navbar />
-        <div style={{ height: 60 }} />
+        <div style={{ height: 'var(--nav-offset, 60px)' }} />
         <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
           <h1 style={{ fontSize: '28px' }}>Sub-Agent Dashboard</h1>
           <p>Loading...</p>
@@ -97,7 +97,7 @@ export default function SubAgentDashboardPage() {
     return (
       <div style={{ minHeight: '100dvh', background: 'var(--black)' }}>
         <Navbar />
-        <div style={{ height: 60 }} />
+        <div style={{ height: 'var(--nav-offset, 60px)' }} />
         <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
           <h1 style={{ fontSize: '28px' }}>Sub-Agent Dashboard</h1>
           <div style={{ color: '#E53E3E', marginTop: '12px' }}>{error || 'No Data.'}</div>

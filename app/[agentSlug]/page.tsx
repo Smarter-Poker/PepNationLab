@@ -403,7 +403,7 @@ export default async function AgentStorefrontPage({ params, searchParams }: Prop
       {/* Capture agent slug for guest signup attribution */}
       {!user && <AgentLinkCapture agentSlug={agentSlug} />}
       <Navbar agentSlug={agentSlug} />
-      <div style={{ height: 60 }} />
+      <div style={{ height: 'var(--nav-offset, 60px)' }} />
 
       {showRenameBanner ? (
         <StorefrontRenameBanner

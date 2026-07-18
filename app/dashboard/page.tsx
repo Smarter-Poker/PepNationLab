@@ -81,8 +81,8 @@ export default async function DashboardPage({
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--black)' }}>
       <Navbar />
-      {/* 60px spacer for fixed navbar */}
-      <div style={{ height: 60 }} />
+      {/* Spacer for the fixed navbar */}
+      <div style={{ height: 'var(--nav-offset, 60px)' }} />
 
       <div>
         {/* Welcome banner */}

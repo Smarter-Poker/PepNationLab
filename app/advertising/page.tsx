@@ -44,7 +44,7 @@ export default async function AdvertisingPage() {
     <div style={{ minHeight: '100dvh', background: 'var(--black)' }}>
       <Navbar />
       {/* Spacer for the fixed navbar */}
-      <div style={{ height: 60 }} />
+      <div style={{ height: 'var(--nav-offset, 60px)' }} />
       <div
         className="container"
         style={{ paddingTop: 'var(--space-6)', paddingBottom: 'var(--space-6)' }}
