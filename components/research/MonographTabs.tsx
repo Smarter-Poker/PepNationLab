@@ -41,6 +41,7 @@ import { trackResearchEvent } from '@/lib/research-track';
 interface Props {
   compound: Compound;
   related?: RelatedCompoundRef[];
+  coaUrl?: string | null;
 }
 
 const cap: React.CSSProperties = { textTransform: 'capitalize' };
@@ -136,7 +137,7 @@ function InfoCard({ color, children }: { color: string; children: React.ReactNod
   );
 }
 
-export default function MonographTabs({ compound, related = [] }: Props) {
+export default function MonographTabs({ compound, related = [], coaUrl = null }: Props) {
   const router = useRouter();
   const tier = evidenceTier(compound.evidence_tier);
   const risk = RISK_META[compound.risk_level];
@@ -231,6 +232,21 @@ export default function MonographTabs({ compound, related = [] }: Props) {
             productName={compound.display_name}
             size="sm"
           />
+          {coaUrl && (
+            <a
+              href={coaUrl}
+              onClick={(e) => { e.preventDefault(); setModalUrl(coaUrl); }}
+              title="Certificate of Analysis"
+              style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/images/coa-button.png"
+                alt="View Certificate of Analysis"
+                style={{ height: 32, width: 'auto', objectFit: 'contain' }}
+              />
+            </a>
+          )}
           <Link
             href={`/research/${compound.slug}/spec`}
             className="btn-secondary"
@@ -430,8 +446,8 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                       borderRadius: 3,
                     }} />
                   </div>
-                  {compound.coa_url && (
-                    <a href={compound.coa_url} onClick={(e) => { e.preventDefault(); setModalUrl(compound.coa_url!); }} style={{ fontSize: '0.72rem', color: teal, textDecoration: 'none', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                  {(coaUrl ?? compound.coa_url) && (
+                    <a href={coaUrl ?? compound.coa_url!} onClick={(e) => { e.preventDefault(); setModalUrl((coaUrl ?? compound.coa_url)!); }} style={{ fontSize: '0.72rem', color: teal, textDecoration: 'none', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
                       <ExternalLink size={11} /> COA
                     </a>
                   )}

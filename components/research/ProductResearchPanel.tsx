@@ -415,17 +415,19 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
                 </div>
 
                 {coaUrl ? (
-                  <button
-                    type="button"
-                    onClick={() => setCoaOpen(true)}
-                    style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 18px',
-                      borderRadius: 'var(--radius-md)', background: primaryColor, color: '#04221F',
-                      fontWeight: 800, fontSize: '0.88rem', border: 'none', cursor: 'pointer',
-                    }}
+                  <a
+                    href={coaUrl}
+                    onClick={(e) => { e.preventDefault(); setCoaOpen(true); }}
+                    title="View Certificate of Analysis"
+                    style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}
                   >
-                    View Batch Certificate Of Analysis
-                  </button>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="/images/coa-button.png"
+                      alt="View Certificate of Analysis"
+                      style={{ height: 52, width: 'auto', objectFit: 'contain' }}
+                    />
+                  </a>
                 ) : (
                   <div style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.10)' }}>
                     <Para>

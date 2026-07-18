@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { X } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -8,6 +9,7 @@ import { Compound, evidenceTier, intranasalDisplay } from '@/lib/compounds';
 import InteractiveGlossaryText from '@/components/research/InteractiveGlossaryText';
 import PinToCompareButton from '@/components/research/PinToCompareButton';
 import ResearchCartButton from '@/components/research/ResearchCartButton';
+import IframeModal from '@/components/ui/IframeModal';
 import { useModalA11y } from '@/lib/useModalA11y';
 
 interface QuickViewModalProps {
@@ -17,9 +19,11 @@ interface QuickViewModalProps {
   imageUrl?: string;
   price?: number | null;
   storeProduct?: any;
+  coaUrl?: string | null;
 }
 
-export default function QuickViewModal({ compound, isOpen, onClose, imageUrl, price, storeProduct }: QuickViewModalProps) {
+export default function QuickViewModal({ compound, isOpen, onClose, imageUrl, price, storeProduct, coaUrl = null }: QuickViewModalProps) {
+  const [coaModalUrl, setCoaModalUrl] = useState<string | null>(null);
   const formatPrice = (p: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(p);
   const nasal = intranasalDisplay(compound);
   // A11y: initial focus, Tab trap, Escape-to-close, focus restore
@@ -205,9 +209,23 @@ export default function QuickViewModal({ compound, isOpen, onClose, imageUrl, pr
                 productName={storeProduct?.productName || compound.display_name} 
                 size="md" 
               />
+              {coaUrl && (
+                <a
+                  href={coaUrl}
+                  onClick={(e) => { e.preventDefault(); setCoaModalUrl(coaUrl); }}
+                  title="Certificate of Analysis"
+                  style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/images/coa-button.png" alt="View Certificate of Analysis" style={{ height: 36, width: 'auto', objectFit: 'contain' }} />
+                </a>
+              )}
             </div>
           </motion.div>
         </div>
+      )}
+      {coaModalUrl && (
+        <IframeModal url={coaModalUrl} title="Certificate of Analysis" onClose={() => setCoaModalUrl(null)} />
       )}
     </AnimatePresence>
   );
