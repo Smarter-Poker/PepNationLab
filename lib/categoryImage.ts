@@ -295,9 +295,10 @@ export function getProductImage(
   category: string,
   productName?: string,
 ): string {
-  // SAFETY GUARD: The shared `products` table must never contain brand-specific
-  // image paths (e.g. /images/savage-brands/...). If one sneaks in, treat it as
-  // null so the name/category fallback fires and PepNation vials are shown.
+  // SAFETY GUARD: The shared `products` table must ONLY contain generic platform
+  // image paths (Supabase CDN or /images/pep-nation-flattened/).
+  // Brand-specific paths like /images/savage-brands/ must NEVER appear here —
+  // if one sneaks in, treat it as null so the correct PepNation vials are shown.
   const safeUrl =
     imageUrl && imageUrl.trim() !== '' && !imageUrl.includes('/images/savage-brands/')
       ? imageUrl
