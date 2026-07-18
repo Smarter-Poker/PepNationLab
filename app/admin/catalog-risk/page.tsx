@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { isEffectiveAdmin } from '@/lib/platform-admins';
 import { redirect } from 'next/navigation';
 import AdminCatalogRisk from '@/components/AdminCatalogRisk';
 
@@ -14,7 +15,7 @@ export default async function AdminCatalogRiskPage() {
     .select('role')
     .eq('id', user.id)
     .maybeSingle();
-  if (profile?.role !== 'admin') redirect('/dashboard');
+  if (!isEffectiveAdmin(user.id, profile?.role)) redirect('/dashboard');
 
   return (
     <div style={{ padding: 'var(--space-8)' }}>

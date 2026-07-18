@@ -1,4 +1,5 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { isEffectiveAdmin } from '@/lib/platform-admins';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import ReparentControl from '@/components/admin/ReparentControl';
@@ -37,7 +38,7 @@ export default async function AdminNetworkPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
   const { data: profile } = await supabase.from('profiles').select('role, is_active').eq('id', user.id).maybeSingle();
-  if (profile?.role !== 'admin' || profile?.is_active === false) redirect('/dashboard');
+  if (!isEffectiveAdmin(user.id, profile?.role) || profile?.is_active === false) redirect('/dashboard');
 
   const svc = await createServiceClient();
   const { data, error } = await svc.rpc('fn_admin_downline_tree', { p_days: 30 });

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { isEffectiveAdmin } from '@/lib/platform-admins';
 import { redirect } from 'next/navigation';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import AdminMessengerClient from './AdminMessengerClient';
@@ -20,7 +21,7 @@ export default async function AdminModerationPage() {
     .select('role, is_active')
     .eq('id', user.id)
     .maybeSingle();
-  if (me?.role !== 'admin' || me?.is_active === false) redirect('/dashboard');
+  if (!isEffectiveAdmin(user.id, me?.role) || me?.is_active === false) redirect('/dashboard');
 
   return <AdminMessengerClient />;
 }

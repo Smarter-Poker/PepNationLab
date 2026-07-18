@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { isPlatformAdminId } from '@/lib/platform-admins';
 import Image from 'next/image';
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -233,6 +234,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
     ? getRoleNavLinks(role, {
         isSuperAgent: profile?.is_super_agent === true,
         isSubAgent: profile?.is_sub_agent === true,
+        isPlatformAdmin: isPlatformAdminId(user?.id),
         storefrontHref: activeAgentSlug ? `/${activeAgentSlug}` : '/dashboard/agent',
         storefrontName: agentName || undefined,
         pathname,

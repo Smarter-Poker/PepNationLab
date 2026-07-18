@@ -1,4 +1,5 @@
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { isEffectiveAdmin } from '@/lib/platform-admins';
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
@@ -20,7 +21,7 @@ export default async function AdminProductsPage() {
     .eq("id", user.id)
     .maybeSingle();
 
-  if (!profile || (profile.role !== "admin" && profile.role !== "shipping")) {
+  if (!profile || (!isEffectiveAdmin(user.id, profile.role) && profile.role !== "shipping")) {
     return redirect("/dashboard");
   }
 

@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { isEffectiveAdmin } from '@/lib/platform-admins';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { getImpersonationContext } from '@/lib/impersonation';
 
@@ -41,7 +42,7 @@ export async function requireAdmin(): Promise<
     .eq('id', user.id)
     .maybeSingle();
 
-  if (profile?.role !== 'admin') {
+  if (!isEffectiveAdmin(user.id, profile?.role)) {
     return {
       ok: false,
       response: NextResponse.json(
@@ -58,7 +59,7 @@ export async function requireAdmin(): Promise<
  * Guards API routes that can be accessed by both Admins AND the Shipping role.
  */
 export async function requireOrdersAccess(): Promise<
-  | { ok: true; userId: string; role: string }
+  | { ok: true; userId: string; role: string; isAdmin: boolean }
   | { ok: false; response: NextResponse }
 > {
   const supabase = await createClient();
@@ -78,14 +79,14 @@ export async function requireOrdersAccess(): Promise<
     .eq('id', user.id)
     .maybeSingle();
 
-  if (profile?.role !== 'admin' && profile?.role !== 'shipping') {
+  if (!isEffectiveAdmin(user.id, profile?.role) && profile?.role !== 'shipping') {
     return {
       ok: false,
       response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }),
     };
   }
 
-  return { ok: true, userId: user.id, role: profile.role };
+  return { ok: true, userId: user.id, role: profile.role, isAdmin: isEffectiveAdmin(user.id, profile.role) };
 }
 
 /**

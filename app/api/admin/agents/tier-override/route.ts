@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isEffectiveAdmin } from '@/lib/platform-admins';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
@@ -28,7 +29,7 @@ export async function GET(req: NextRequest) {
     .maybeSingle();
 
   const { data: caller } = await svc.from('profiles').select('role').eq('id', gate.userId).maybeSingle();
-  if (caller?.role !== 'admin' && data?.parent_agent_id !== gate.userId) {
+  if (!isEffectiveAdmin(gate.userId, caller?.role) && data?.parent_agent_id !== gate.userId) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { isEffectiveAdmin } from '@/lib/platform-admins';
 import { createClient, getCachedUser } from '@/lib/supabase/server';
 import { AdminLayoutClient } from './AdminLayoutClient';
 
@@ -33,7 +34,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect('/shipping');
   }
 
-  if (profile?.role !== 'admin') {
+  if (!isEffectiveAdmin(user.id, profile?.role)) {
     redirect('/dashboard');
   }
 

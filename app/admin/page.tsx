@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 import { createClient, getCachedUser } from '@/lib/supabase/server';
+import { isEffectiveAdmin } from '@/lib/platform-admins';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import AdminAnalytics from '@/components/LazyAdminAnalytics';
@@ -42,7 +43,7 @@ export default async function AdminDashboard() {
 
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
 
-  if (profile?.role !== 'admin') {
+  if (!isEffectiveAdmin(user.id, profile?.role)) {
     return redirect('/dashboard');
   }
 

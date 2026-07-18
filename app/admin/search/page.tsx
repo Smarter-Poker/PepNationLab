@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { isEffectiveAdmin } from '@/lib/platform-admins';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import AdminSearchClient from './AdminSearchClient';
 
@@ -16,7 +17,7 @@ export default async function AdminSearchPage() {
     .eq('id', user.id)
     .maybeSingle();
   if (!prof || prof.is_active === false) redirect('/login');
-  if (prof.role !== 'admin') redirect('/dashboard');
+  if (!isEffectiveAdmin(user.id, prof.role)) redirect('/dashboard');
 
   return <AdminSearchClient />;
 }

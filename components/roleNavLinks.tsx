@@ -204,12 +204,19 @@ function researcherLinks(storefrontHref?: string, storefrontName?: string, pathn
  */
 export function getRoleNavLinks(
   role: string,
-  opts: { isSuperAgent?: boolean; isSubAgent?: boolean; storefrontHref?: string; storefrontName?: string; pathname?: string } = {},
+  opts: { isSuperAgent?: boolean; isSubAgent?: boolean; isPlatformAdmin?: boolean; storefrontHref?: string; storefrontName?: string; pathname?: string } = {},
 ): RoleNavLink[] | null {
   if (role === 'admin') return ADMIN_LINKS;
   if (opts.isSubAgent) return SUBAGENT_LINKS;
   if (role === 'super_agent' || role === 'agent' || opts.isSuperAgent) {
-    return agentLinks(!!opts.isSuperAgent || role === 'super_agent', opts.storefrontHref || '/dashboard/agent', opts.pathname);
+    const links = agentLinks(!!opts.isSuperAgent || role === 'super_agent', opts.storefrontHref || '/dashboard/agent', opts.pathname);
+    // Platform admins (e.g. Savage Brands) keep the ENTIRE super-agent menu and
+    // gain one Admin entry pinned to the very top that opens the /admin dashboard.
+    // role stays super_agent, so nothing else about their account changes.
+    if (opts.isPlatformAdmin) {
+      links.unshift({ href: '/admin', label: 'Admin', icon: <svg {...ip}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M9 12l2 2 4-4" /></svg> });
+    }
+    return links;
   }
   if (role === 'researcher') return researcherLinks(opts.storefrontHref, opts.storefrontName, opts.pathname);
   return null;

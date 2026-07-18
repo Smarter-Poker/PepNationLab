@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { isEffectiveAdmin } from '@/lib/platform-admins';
 import { createClient } from '@/lib/supabase/server';
 import AdminSettingsClient from './AdminSettingsClient';
 
@@ -20,7 +21,7 @@ export default async function AdminSettingsPage() {
     .eq('id', user.id)
     .maybeSingle();
 
-  if (!profile || profile.role !== 'admin') {
+  if (!profile || !isEffectiveAdmin(user.id, profile.role)) {
     redirect('/dashboard');
   }
 

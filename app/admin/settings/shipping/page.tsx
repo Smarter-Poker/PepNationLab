@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { isEffectiveAdmin } from '@/lib/platform-admins';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import AdminShippingSettingsClient from './AdminShippingSettingsClient';
@@ -19,7 +20,7 @@ export default async function AdminShippingSettingsPage() {
     .select('role')
     .eq('id', user.id)
     .maybeSingle();
-  if (profile?.role !== 'admin') redirect('/dashboard');
+  if (!isEffectiveAdmin(user.id, profile?.role)) redirect('/dashboard');
 
   return <AdminShippingSettingsClient />;
 }
