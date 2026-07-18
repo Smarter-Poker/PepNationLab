@@ -2950,15 +2950,15 @@ export default function AgentStorefrontGrid({
             right: 0,
             /* Cover exactly the title row — matches the image layout where the title
                sits in the top ~27% before the search bar at 26.9% */
-            height: '26%',
+            height: '24%',
             background: '#000000',
             zIndex: 6,
             display: 'flex',
-            flexDirection: 'row',
+            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '2%',
-            padding: '0 3%',
+            gap: '4px',
+            padding: '4px 3% 0',
             pointerEvents: 'none',
           }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -2966,21 +2966,22 @@ export default function AgentStorefrontGrid({
               src={(customBranding as any).logo_url}
               alt={(customBranding as any).brand_name ?? 'Store Logo'}
               style={{
-                height: '80%',
+                height: '55%',
                 width: 'auto',
                 objectFit: 'contain',
                 flexShrink: 0,
-                filter: 'drop-shadow(0 2px 12px rgba(0,0,0,0.9))',
+                filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.9)) contrast(1.3) brightness(1.1)',
                 mixBlendMode: 'screen',
               }}
             />
             <span style={{
-              color: '#B0B6BA',
-              fontSize: 'max(13px, 1.9vw)',
+              background: 'linear-gradient(180deg, #E2E8F0 0%, #94A3B8 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              fontSize: 'max(14px, 2.2vw)',
               fontWeight: 900,
-              letterSpacing: '0.06em',
+              letterSpacing: '0.08em',
               textTransform: 'uppercase',
-              textShadow: '0 2px 8px rgba(0,0,0,0.9)',
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
