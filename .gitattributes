@@ -1,0 +1,5 @@
+# ── Savage Brands 3D Vial Images — DO NOT OVERWRITE ──────────────────────────
+# These are the canonical 3D renders approved by the brand owner.
+# Treat as binary-only; no diffs, no merges, no auto-regeneration.
+public/images/savage-brands/*.jpg binary
+public/images/savage-brands/*.png binary

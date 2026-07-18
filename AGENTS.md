@@ -69,3 +69,19 @@ calling `buildStepper()` and skips the overwrite automatically. No changes neede
 **Never re-generate or overwrite JS-SVG content for a module already marked ✅.**
 <!-- END:peptide-101-module-image-convention -->
 
+
+<!-- BEGIN:savage-brands-image-protection -->
+# HARD RULE: Savage Brands Vial Images Are Frozen — Never Overwrite
+
+The files in `public/images/savage-brands/` are **canonical 3D vial renders** approved by the brand owner. They must NEVER be regenerated, replaced, overwritten, or deleted by any AI agent, script, or pipeline — under any circumstances.
+
+**What "regenerate" means and why it is banned:**
+- Running any image-generation script (Python, node, API call) that writes to `public/images/savage-brands/`
+- Checking out a different version of these files from git
+- Replacing them with flat label versions, AI-generated versions, or any other style
+- Any commit that touches these files without explicit written instruction from the user in the current session
+
+**The ONLY time these files may change:** If the user explicitly says, in the current conversation, "replace/update/regenerate the Savage Brands vial images." Even then, back up the originals first.
+
+**If you are asked to do anything that would involve these files:** Stop, confirm with the user that they want to overwrite the canonical 3D renders, and wait for explicit approval before proceeding.
+<!-- END:savage-brands-image-protection -->
