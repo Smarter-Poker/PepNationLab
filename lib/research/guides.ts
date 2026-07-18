@@ -1604,6 +1604,176 @@ export const GUIDES: Guide[] = [
     compounds: [{ name: 'Selank', slug: 'selank' }, { name: 'Semax', slug: 'semax' }, { name: 'PT-141', slug: 'pt-141' }],
   },
 
+  // ───────────────────────────────────────────────────────────────────────
+  {
+    slug: 'mitochondrial-peptides-mots-c-ss-31-research',
+    title: 'Mitochondrial Peptides In Research: MOTS-c And SS-31',
+    description:
+      'A research overview of two distinct classes of mitochondrial peptide: MOTS-c, a mitochondrial-derived peptide that signals through AMPK, and SS-31 (elamipretide), a mitochondria-targeted tetrapeptide that binds cardiolipin. Mechanisms, distinctions, and in vitro context. Research use only.',
+    datePublished: '2026-07-18',
+    dateModified: '2026-07-18',
+    readingTimeMin: 8,
+    keywords: ['MOTS-c', 'SS-31', 'elamipretide', 'mitochondrial peptides', 'mitochondrial-derived peptides', 'cardiolipin', 'AMPK', 'metabolic research'],
+    intro:
+      'Two of the most studied peptides in mitochondrial research work in fundamentally different ways, and they are often confused. MOTS-c is a mitochondrial-derived peptide (MDP): a short peptide the cell actually encodes within its mitochondrial DNA and uses as a signaling molecule. SS-31 (elamipretide) is a synthetic mitochondria-targeted peptide: a designed molecule that concentrates in the inner mitochondrial membrane to stabilize it. This guide explains what each one is, how their mechanisms differ, and how they are framed in laboratory research. All discussion is for in vitro Research Use Only context and is not medical or dosing guidance.',
+    sections: [
+      {
+        heading: 'What Is A Mitochondrial-Derived Peptide?',
+        paragraphs: [
+          'Mitochondria carry their own small genome. Beyond the well-known genes for respiratory-chain proteins, short open reading frames within mitochondrial ribosomal RNA genes encode a family of bioactive peptides called mitochondrial-derived peptides (MDPs). These peptides are released and act as signaling molecules, communicating the metabolic state of the mitochondria to the rest of the cell and even to distant tissues.',
+          'MOTS-c is the best characterized metabolic MDP. It is a 16-amino-acid peptide encoded within the mitochondrial 12S ribosomal RNA region, and its sequence is highly conserved across species. Because it originates from the mitochondrial genome itself, MOTS-c is studied as an endogenous regulator rather than a foreign compound.',
+        ],
+      },
+      {
+        heading: 'MOTS-c: AMPK Signaling And Nuclear Translocation',
+        paragraphs: [
+          'In research models, MOTS-c is associated with activation of AMP-activated protein kinase (AMPK), the central cellular energy sensor. It is linked to the folate-methionine one-carbon cycle, with downstream accumulation of AICAR-like intermediates that engage AMPK signaling. The net effect studied in cell and animal models is enhanced insulin sensitivity and glucose handling in skeletal muscle.',
+          'A striking feature of MOTS-c is that under metabolic stress it can translocate from the mitochondria into the cell nucleus in an AMPK-dependent manner, where it associates with stress-responsive and antioxidant-response-element (ARE) transcription factors. This positions MOTS-c as a mitochondria-to-nucleus signal that helps coordinate the cell-wide stress response.',
+          'MOTS-c is also studied in the context of exercise and aging. Reported observations in the literature include exercise-associated increases in MOTS-c in skeletal muscle and circulation, and age-associated declines in MOTS-c levels in both human and rodent tissue. These are research findings in models and populations, not indications for use.',
+        ],
+      },
+      {
+        heading: 'SS-31 (Elamipretide): A Mitochondria-Targeted Tetrapeptide',
+        paragraphs: [
+          'SS-31, also known as elamipretide, takes a completely different approach. It is a synthetic aromatic-cationic tetrapeptide (sequence D-Arg-2’,6’-dimethylTyr-Lys-Phe-NH2). Its alternating cationic and aromatic residues let it concentrate several thousand-fold within the inner mitochondrial membrane without depending on membrane potential.',
+          'Once there, SS-31 selectively binds cardiolipin, a signature phospholipid of the inner mitochondrial membrane. By associating with cardiolipin it is studied for stabilizing the folded cristae architecture, supporting electron-transport-chain organization and ATP synthesis efficiency, and reducing the generation of reactive oxygen species. In short, MOTS-c is a signal the cell sends; SS-31 is a structural stabilizer that acts on the membrane itself.',
+        ],
+        bullets: [
+          'MOTS-c: endogenous 16-aa mitochondrial-derived peptide; signals via AMPK; studied for metabolic homeostasis and stress resistance.',
+          'SS-31: synthetic 4-aa mitochondria-targeted peptide; binds cardiolipin; studied for cristae stability and electron-transport efficiency.',
+          'Different origin, size, target, and mechanism — they are not interchangeable in study design.',
+        ],
+      },
+      {
+        heading: 'Research Areas And Study Models',
+        paragraphs: [
+          'Both peptides are studied in the broad area of mitochondrial dysfunction, which is relevant to metabolic, cardiovascular, renal, and aging research. SS-31 has been examined in preclinical models of ischemia-reperfusion injury, heart failure, and mitochondrial myopathy, while MOTS-c features in metabolic and exercise-physiology research. Common in vitro readouts include oxygen-consumption-rate assays (Seahorse respirometry), mitochondrial membrane-potential dyes, ATP quantification, and reactive-oxygen-species probes.',
+          'As with any Research Use Only compound, the value of these peptides in a study depends on rigorous controls, verified identity and purity, and careful interpretation against the primary literature rather than summary claims.',
+        ],
+      },
+    ],
+    keyTakeaways: [
+      'MOTS-c is an endogenous 16-amino-acid mitochondrial-derived peptide that signals through AMPK and can translocate to the nucleus under stress.',
+      'SS-31 (elamipretide) is a synthetic mitochondria-targeted tetrapeptide that binds cardiolipin to stabilize the inner mitochondrial membrane.',
+      'They differ in origin, size, target, and mechanism and should not be treated as equivalent.',
+      'Both are studied in mitochondrial-dysfunction research and are strictly for in vitro Research Use Only.',
+    ],
+    related: ['epithalon-telomere-research', 'evaluating-peptide-research-evidence', 'peptide-research-areas-explained', 'thymosin-alpha-1-immune-research'],
+    compounds: [{ name: 'MOTS-c', slug: 'mots-c' }, { name: 'SS-31', slug: 'ss-31' }, { name: 'NAD+', slug: 'nad-plus' }],
+  },
+
+  // ───────────────────────────────────────────────────────────────────────
+  {
+    slug: 'thymosin-alpha-1-immune-research',
+    title: 'Thymosin Alpha-1 In Immune Research',
+    description:
+      'A research overview of Thymosin Alpha-1 (Ta1), a 28-amino-acid thymic peptide studied for immune modulation through Toll-like receptor signaling, T-cell maturation, and dendritic-cell activation. How it differs from Thymosin Beta-4. Research use only.',
+    datePublished: '2026-07-18',
+    dateModified: '2026-07-18',
+    readingTimeMin: 7,
+    keywords: ['thymosin alpha-1', 'Ta1', 'immune modulation', 'Toll-like receptors', 'T cells', 'dendritic cells', 'immunology research', 'research peptides'],
+    intro:
+      'Thymosin Alpha-1 (often written Ta1 or Tα1) is one of the most studied immunomodulatory peptides in research. It is important not to confuse it with Thymosin Beta-4 (the parent of TB-500): despite the shared "thymosin" name, the two are structurally unrelated and act on entirely different systems. This guide covers what Thymosin Alpha-1 is, its studied mechanism in immunology, and the research context in which it appears. It is written for in vitro Research Use Only context and is not medical or dosing guidance.',
+    sections: [
+      {
+        heading: 'What Is Thymosin Alpha-1?',
+        paragraphs: [
+          'Thymosin Alpha-1 is a 28-amino-acid peptide (molecular weight roughly 3,108 Da) generated by enzymatic cleavage of the precursor protein prothymosin alpha. It was originally isolated from thymic tissue, the organ central to T-cell development, which is the origin of its name and its long association with immune research.',
+          'Because it is a naturally occurring fragment of an endogenous protein, Thymosin Alpha-1 is studied as an immune-signaling molecule rather than a receptor-blocking drug. Its research profile centers on modulating, or rebalancing, immune activity rather than simply stimulating or suppressing it.',
+        ],
+      },
+      {
+        heading: 'Studied Mechanism: Toll-Like Receptors And T-Cell Maturation',
+        paragraphs: [
+          'In research models, Thymosin Alpha-1 engages Toll-like receptors (notably TLR2 and TLR9, among others) on dendritic cells and monocytes. This receptor engagement is linked to downstream signaling through NF-κB, MAPK, and IRF pathways, which together shape how antigen-presenting cells instruct the rest of the immune system.',
+          'The downstream effects reported in the literature include maturation and differentiation of T cells (including cytotoxic T lymphocytes), activation of dendritic cells and antigen presentation, natural-killer-cell activity, and a shift toward Th1 cytokines such as IFN-γ and IL-2. The recurring theme is restoration of immune balance, which is why Thymosin Alpha-1 is frequently studied as an immune-modulating adjuvant in models rather than a standalone agent.',
+        ],
+        bullets: [
+          'Engages Toll-like receptors (TLR2, TLR9) on dendritic cells and monocytes.',
+          'Promotes T-cell maturation and dendritic-cell activation in research models.',
+          'Associated with a Th1-skewed cytokine profile (IFN-γ, IL-2).',
+          'Studied as an immune-modulating adjuvant rather than a broad stimulant.',
+        ],
+      },
+      {
+        heading: 'Thymosin Alpha-1 Versus Thymosin Beta-4',
+        paragraphs: [
+          'This distinction matters for study design. Thymosin Alpha-1 is a 28-residue fragment of prothymosin alpha and is studied in immunology. Thymosin Beta-4 (the peptide behind TB-500) is a 43-residue actin-sequestering protein studied in tissue-repair and cytoskeletal research. They share a family name for historical reasons but are different molecules with different targets. A researcher sourcing "thymosin" must be specific about which one an experiment requires.',
+        ],
+      },
+      {
+        heading: 'Research Context And Handling',
+        paragraphs: [
+          'Thymosin Alpha-1 appears in immunology research spanning antiviral response, immune reconstitution, and vaccine-adjuvant models. Common in vitro readouts include cytokine panels, dendritic-cell maturation markers, and T-cell proliferation or differentiation assays. As with any Research Use Only peptide, verified identity and purity, appropriate storage, and interpretation against primary sources are essential; the compound is supplied strictly for laboratory research and never for human or animal use.',
+        ],
+      },
+    ],
+    keyTakeaways: [
+      'Thymosin Alpha-1 is a 28-amino-acid thymic peptide derived from prothymosin alpha, studied for immune modulation.',
+      'Its studied mechanism runs through Toll-like receptors on dendritic cells, driving T-cell maturation and a Th1 cytokine profile.',
+      'It is structurally and functionally distinct from Thymosin Beta-4 (TB-500), which is a tissue-repair peptide.',
+      'It is used strictly for in vitro Research Use Only immunology research, not human or animal use.',
+    ],
+    related: ['tb-500-thymosin-beta-4-research', 'research-vs-pharmaceutical-peptides', 'evaluating-peptide-research-evidence', 'peptide-research-areas-explained'],
+    compounds: [{ name: 'Thymosin Alpha-1', slug: 'thymosin-alpha-1' }, { name: 'TB-500', slug: 'tb-500' }, { name: 'LL-37', slug: 'll-37' }],
+  },
+
+  // ───────────────────────────────────────────────────────────────────────
+  {
+    slug: 'cagrilintide-amylin-receptor-research',
+    title: 'Cagrilintide And Amylin-Receptor Research In Weight Management',
+    description:
+      'A research overview of Cagrilintide, a long-acting amylin analog studied for satiety and metabolic signaling through amylin and calcitonin receptors, and how amylin-based research complements GLP-1 receptor agonists. Research use only.',
+    datePublished: '2026-07-18',
+    dateModified: '2026-07-18',
+    readingTimeMin: 7,
+    keywords: ['cagrilintide', 'amylin', 'amylin analog', 'amylin receptor', 'CagriSema', 'satiety', 'weight management research', 'GLP-1', 'research peptides'],
+    intro:
+      'Most attention in metabolic peptide research has centered on GLP-1 receptor agonists such as Semaglutide and Tirzepatide. Amylin-based research represents a distinct and complementary pathway, and Cagrilintide is its most studied long-acting example. This guide explains what amylin is, how Cagrilintide is studied as an amylin analog, and why amylin and GLP-1 pathways are often examined together. It is written for in vitro Research Use Only context and is not medical, dosing, or weight-loss guidance.',
+    sections: [
+      {
+        heading: 'What Is Amylin?',
+        paragraphs: [
+          'Amylin (also called islet amyloid polypeptide, or IAPP) is a hormone co-secreted with insulin from pancreatic beta cells. Where insulin acts largely on nutrient uptake and storage, amylin is studied as a satiety and gastric-emptying signal: in research models it is associated with reduced food intake, slowed gastric emptying, and modulation of glucagon. It acts centrally, in brain regions such as the area postrema and hypothalamus.',
+          'Native amylin is difficult to study directly because it is prone to aggregation and has a very short half-life. This is the problem that engineered amylin analogs are designed to solve.',
+        ],
+      },
+      {
+        heading: 'Cagrilintide: A Long-Acting Amylin Analog',
+        paragraphs: [
+          'Cagrilintide is a modified amylin analog engineered for stability and a long duration of action. Sequence modifications reduce the aggregation tendency of native amylin, and a lipid (fatty-diacid) side chain promotes reversible albumin binding, which greatly extends its circulating half-life in research models compared with native amylin.',
+          'In studied mechanism, Cagrilintide acts as an agonist across the amylin receptor family — receptors formed when the calcitonin receptor pairs with receptor-activity-modifying proteins (RAMPs) to form AMY1, AMY2, and AMY3 — and at the calcitonin receptor itself. Research associates this non-incretin, satiety-signaling pathway with reduced food intake in models, mechanistically separate from how GLP-1 receptor agonists work.',
+        ],
+        bullets: [
+          'Amylin analog engineered against aggregation, with a fatty-acid chain for albumin binding and a long half-life.',
+          'Agonist at amylin receptors (AMY1–3, calcitonin receptor + RAMPs) and the calcitonin receptor.',
+          'Studied for central satiety signaling — a pathway distinct from incretin (GLP-1) signaling.',
+        ],
+      },
+      {
+        heading: 'Why Amylin And GLP-1 Are Studied Together',
+        paragraphs: [
+          'Because amylin and GLP-1 act through different receptors and different circuits, research frequently examines them in combination to study whether the effects on satiety and metabolic signaling are additive or complementary. The combination of Cagrilintide with the GLP-1 agonist Semaglutide (studied under the research name CagriSema) is the most prominent example of this dual-pathway approach in the metabolic literature.',
+          'For researchers, the practical point is that amylin analogs open a second, mechanistically independent lever alongside the GLP-1 and GIP pathways covered elsewhere in this library.',
+        ],
+      },
+      {
+        heading: 'Research Context And Handling',
+        paragraphs: [
+          'Cagrilintide research uses in vitro receptor-binding and cAMP signaling assays for amylin and calcitonin receptors, alongside preclinical feeding and metabolic models. As with every Research Use Only compound, identity and purity should be verified from the Certificate of Analysis, storage should follow the peptide’s stability profile, and findings should be read against the primary literature. The compound is supplied strictly for laboratory research and is not for human or animal use.',
+        ],
+      },
+    ],
+    keyTakeaways: [
+      'Amylin is a satiety hormone co-secreted with insulin; Cagrilintide is a long-acting amylin analog engineered for stability and half-life.',
+      'Cagrilintide is studied as an agonist at amylin receptors (AMY1–3) and the calcitonin receptor — a pathway distinct from GLP-1.',
+      'Amylin and GLP-1 research are often combined (e.g., the Cagrilintide + Semaglutide "CagriSema" research combination) to study complementary satiety signaling.',
+      'Cagrilintide is a Research Use Only compound for in vitro laboratory research, not human or animal use.',
+    ],
+    related: ['glp-1-receptor-agonists-in-research', 'tirzepatide-vs-semaglutide-research', 'weight-loss-peptide-research-overview', 'peptide-receptor-targets-explained'],
+    compounds: [{ name: 'Cagrilintide', slug: 'cagrilintide' }, { name: 'Semaglutide', slug: 'semaglutide' }, { name: 'Tirzepatide', slug: 'tirzepatide' }],
+  },
+
 ];
 
 export function getGuide(slug: string): Guide | undefined {
@@ -1616,7 +1786,7 @@ export function getRelatedGuides(guide: Guide): Guide[] {
     .filter((g): g is Guide => Boolean(g));
 }
 
-export const GUIDES_UPDATED = '2026-07-07';
+export const GUIDES_UPDATED = '2026-07-18';
 export const GUIDE_AUTHOR = AUTHOR;
 
 // Per-guide FAQs, keyed by guide slug. Appended to lib/research/guides.ts.
@@ -1834,6 +2004,48 @@ export const GUIDE_FAQS: Record<string, { q: string; a: string }[]> = {
       a: 'Check the source (peer-reviewed study, review, or anecdote), the study type (in vitro, animal, or human), and whether the finding has been replicated rather than reported once.',
     },
   ],
+  'mitochondrial-peptides-mots-c-ss-31-research': [
+    {
+      q: 'What is the difference between MOTS-c and SS-31?',
+      a: 'MOTS-c is an endogenous 16-amino-acid mitochondrial-derived peptide that signals through AMPK, while SS-31 (elamipretide) is a synthetic tetrapeptide that binds cardiolipin to stabilize the inner mitochondrial membrane. They differ in origin, size, target, and mechanism.',
+    },
+    {
+      q: 'What is a mitochondrial-derived peptide?',
+      a: 'A mitochondrial-derived peptide (MDP) is a short peptide encoded within the mitochondrial genome that acts as a signaling molecule. MOTS-c, encoded in the mitochondrial 12S rRNA region, is the best-characterized metabolic MDP.',
+    },
+    {
+      q: 'What is SS-31 studied for?',
+      a: 'SS-31 (elamipretide) is studied in mitochondrial-dysfunction research, including preclinical models of ischemia-reperfusion injury, heart failure, and mitochondrial myopathy. It is a Research Use Only compound for in vitro laboratory research only.',
+    },
+  ],
+  'thymosin-alpha-1-immune-research': [
+    {
+      q: 'What is Thymosin Alpha-1?',
+      a: 'Thymosin Alpha-1 is a 28-amino-acid peptide derived from prothymosin alpha and originally isolated from thymic tissue. It is studied as an immune-modulating signaling molecule in laboratory research.',
+    },
+    {
+      q: 'How is Thymosin Alpha-1 different from Thymosin Beta-4 (TB-500)?',
+      a: 'They share a family name but are unrelated molecules. Thymosin Alpha-1 is a 28-residue immunology peptide, while Thymosin Beta-4 is a 43-residue actin-sequestering peptide studied in tissue repair. A study must specify which one it requires.',
+    },
+    {
+      q: 'What is the studied mechanism of Thymosin Alpha-1?',
+      a: 'In research models it engages Toll-like receptors (such as TLR2 and TLR9) on dendritic cells, promoting T-cell maturation, dendritic-cell activation, and a Th1 cytokine profile. It is used strictly for in vitro Research Use Only work.',
+    },
+  ],
+  'cagrilintide-amylin-receptor-research': [
+    {
+      q: 'What is Cagrilintide?',
+      a: 'Cagrilintide is a long-acting amylin analog engineered against aggregation and given a fatty-acid chain for albumin binding to extend its half-life. It is studied as an agonist at amylin receptors and the calcitonin receptor.',
+    },
+    {
+      q: 'How does amylin research differ from GLP-1 research?',
+      a: 'Amylin and GLP-1 act through different receptors and circuits. Amylin analogs like Cagrilintide signal satiety through amylin/calcitonin receptors, a pathway mechanistically separate from GLP-1 receptor agonists such as Semaglutide.',
+    },
+    {
+      q: 'What is CagriSema?',
+      a: 'CagriSema is the research combination of Cagrilintide (an amylin analog) with Semaglutide (a GLP-1 receptor agonist), studied to examine complementary satiety and metabolic signaling. All such compounds are for in vitro Research Use Only.',
+    },
+  ],
 };
 
 // Maps a compound category to the most relevant research guides. Two universal
@@ -1841,12 +2053,12 @@ export const GUIDE_FAQS: Record<string, { q: string; a: string }[]> = {
 // guides. Used to surface editorial guides on compound monographs
 // (internal-link mesh + topical association).
 const CATEGORY_GUIDE_SLUGS: Record<string, string[]> = {
-  'Weight Loss & Metabolism': ['glp-1-receptor-agonists-in-research', 'peptide-research-areas-explained'],
+  'Weight Loss & Metabolism': ['glp-1-receptor-agonists-in-research', 'cagrilintide-amylin-receptor-research', 'peptide-research-areas-explained'],
   'Healing & Recovery': ['bpc-157-research-overview', 'peptide-research-areas-explained'],
   'Muscle Growth & Performance': ['growth-hormone-secretagogues-explained', 'peptide-research-areas-explained'],
-  'Anti-Aging & Longevity': ['peptide-research-areas-explained', 'understanding-peptide-purity'],
+  'Anti-Aging & Longevity': ['mitochondrial-peptides-mots-c-ss-31-research', 'peptide-research-areas-explained', 'understanding-peptide-purity'],
   'Skin, Hair & Cosmetics': ['peptide-research-areas-explained', 'understanding-peptide-purity'],
-  'Immunity & Wellness': ['peptide-research-areas-explained', 'research-vs-pharmaceutical-peptides'],
+  'Immunity & Wellness': ['thymosin-alpha-1-immune-research', 'peptide-research-areas-explained', 'research-vs-pharmaceutical-peptides'],
   'Sexual Health & Hormones': ['peptide-research-areas-explained', 'research-vs-pharmaceutical-peptides'],
   'Peptide Stacks': ['peptide-research-areas-explained', 'peptide-storage-and-reconstitution'],
 };
