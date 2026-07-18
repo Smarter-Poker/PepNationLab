@@ -3853,6 +3853,40 @@ export default function AgentStorefrontGrid({
                     Back To {detailHistory[detailHistory.length - 2].name}
                   </button>
                 )}
+
+                {/* COA button — top of detail, above everything else */}
+                {(() => {
+                  const _coaPid = detailProduct.variants[0]?.product_id;
+                  const _coaUrl = _coaPid ? coaByProductId?.[_coaPid] : undefined;
+                  if (!_coaUrl) return null;
+                  return (
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+                      <IframeLink
+                        href={_coaUrl}
+                        aria-label="View Certificate of Analysis"
+                        style={{
+                          display: 'block',
+                          width: 220,
+                          height: 'auto',
+                          cursor: 'pointer',
+                          background: 'none',
+                          border: 'none',
+                          padding: 0,
+                          transition: 'opacity 0.15s, transform 0.15s',
+                        }}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src="/images/coa-button.png"
+                          alt="Certificate of Analysis"
+                          style={{ width: '100%', height: 'auto', display: 'block' }}
+                          draggable={false}
+                        />
+                      </IframeLink>
+                    </div>
+                  );
+                })()}
+
                 <div style={{ textAlign: 'center', marginBottom: 'var(--space-3)' }}>
                   {(() => {
                     const { main, subtitle } = splitProductName(toTitleCase(detailProduct.name));
