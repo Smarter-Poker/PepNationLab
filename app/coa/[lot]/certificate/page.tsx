@@ -119,24 +119,25 @@ export default async function CertificatePage({ params }: { params: Promise<{ lo
   };
 
   return (
-    <main style={{ padding: '2rem 1rem 4rem' }}>
+    <main style={{ padding: 'calc(2.5rem + env(safe-area-inset-top, 0px)) 1rem 4rem' }}>
       <div
         className="coa-actions"
-        style={{ maxWidth: 780, margin: '0 auto 1.5rem', display: 'flex', gap: '0.75rem', justifyContent: 'space-between', alignItems: 'center' }}
+        style={{ maxWidth: 780, margin: '0 auto 1.5rem', display: 'flex', flexWrap: 'wrap', gap: '1rem', justifyContent: 'space-between', alignItems: 'center' }}
       >
         <Link
           href={`/coa?lot=${encodeURIComponent(record.lot_number)}`}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '0.4rem',
+            gap: '0.5rem',
             color: '#A8B4C0',
-            fontSize: '0.9rem',
-            fontWeight: 500,
+            fontSize: '1.15rem',
+            fontWeight: 600,
             textDecoration: 'none',
+            padding: '0.5rem 0',
           }}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <polyline points="15 18 9 12 15 6" />
           </svg>
           Back To Verification
