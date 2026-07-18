@@ -7,6 +7,7 @@ import { Loader2, Plus, GripVertical, Edit2 } from 'lucide-react';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { getPopularName } from '@/lib/peptide-popular-names';
+import { getProductImage } from '@/lib/categoryImage';
 
 interface ProductInfo {
   name: string;
