@@ -100,6 +100,22 @@ export default async function ResearchLibraryPage({
         }}
       />
 
+      {/* SERP breadcrumb eligibility for the catalog hub. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+              { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
+              { '@type': 'ListItem', position: 2, name: 'Research Library', item: 'https://pepnationlab.com/research' },
+              { '@type': 'ListItem', position: 3, name: 'Research Catalog', item: 'https://pepnationlab.com/research/catalog' },
+            ],
+          })
+        }}
+      />
+
       <CatalogSeoContent compounds={compounds} />
 
       {/* Left Dock Navigation */}
