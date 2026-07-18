@@ -2962,36 +2962,6 @@ export default function AgentStorefrontGrid({
             />
           );
         })}
-
-        {/* ── Custom Branding Overlay ── logo rendered on top of hero for white-label stores */}
-        {customBranding && (customBranding as any).logo_url && (
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            pointerEvents: 'none',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'flex-start',
-            paddingTop: '3%',
-            zIndex: 5,
-          }}>
-            <img
-              src={(customBranding as any).logo_url}
-              alt={(customBranding as any).brand_name ?? 'Store Logo'}
-              style={{
-                width: 'auto',
-                maxWidth: '36%',
-                maxHeight: '46%',
-                objectFit: 'contain',
-                filter: 'drop-shadow(0 4px 20px rgba(0,0,0,0.9))',
-              }}
-            />
-          </div>
-        )}
       </div>
 
       {/* Grid section - hidden when product detail is shown */}
