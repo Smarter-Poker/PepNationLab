@@ -12,8 +12,8 @@ export default function DynamicCoaButton({
   isSmall = false,
   style = {},
 }: DynamicCoaButtonProps) {
-  // Use the exact same footprint logic as Add To Cart
-  // Aspect ratio is 896 / 251 = ~3.57
+  // Use the exact same footprint logic as Add To Cart container
+  // Aspect ratio of Add To Cart is 896 / 251 = ~3.57
   const baseWidth = isSmall ? 130 : 180;
   const baseHeight = Math.round(baseWidth / 3.57);
   const [isPressed, setIsPressed] = React.useState(false);

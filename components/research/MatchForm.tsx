@@ -455,7 +455,7 @@ function MatchFormInner() {
         {step === 1 && (
           <motion.div key="step1" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.3 }} className="glass-panel no-print" style={{ padding: '32px' }}>
             <h2 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '8px' }}>What Is Your Primary Research Goal?</h2>
-            <p style={{ color: 'var(--silver)', marginBottom: '32px' }}>Select The Main Focus Of Your Protocol To Calibrate The Engine.</p>
+            <p style={{ color: 'var(--silver)', marginBottom: '32px' }}>Tap Any Goal Below To Continue &mdash; The Engine Calibrates Instantly.</p>
             
             <div style={{ marginBottom: '40px', padding: '16px', background: 'rgba(0,0,0,0.2)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
               <p style={{ color: 'var(--silver)', fontSize: '0.9rem', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -471,14 +471,14 @@ function MatchFormInner() {
               {goalOptions.map(g => (
                 <div
                   key={g.value}
-                  onClick={() => setGoal(g.value)}
+                  onClick={() => { setGoal(g.value); setStep(2); }}
                   role="button"
                   tabIndex={0}
                   aria-pressed={goal === g.value}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       if (e.key === ' ') e.preventDefault();
-                      setGoal(g.value);
+                      setGoal(g.value); setStep(2);
                     }
                   }}
                   className={`image-card ${goal === g.value ? 'selected' : ''}`}
@@ -525,7 +525,7 @@ function MatchFormInner() {
                   boxShadow: '0 0 20px rgba(0,196,188,0.4)'
                 }}
               >
-                Next Step <ArrowRight size={24} />
+                Continue With {goalOptions.find(g => g.value === goal)?.label ?? 'This Goal'} <ArrowRight size={24} />
               </button>
             </div>
           </motion.div>
@@ -537,7 +537,7 @@ function MatchFormInner() {
             <p style={{ color: 'var(--silver)', marginBottom: '24px' }}>How Much Clinical Evidence Do You Require For These Compounds?</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
               {EVIDENCE_OPTIONS.map(o => (
-                <div key={o.value} onClick={() => setEvidenceComfort(o.value)} role="button" tabIndex={0} aria-pressed={evidenceComfort === o.value} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { if (e.key === ' ') e.preventDefault(); setEvidenceComfort(o.value); } }} className={`step-card ${evidenceComfort === o.value ? 'selected' : ''}`}>
+                <div key={o.value} onClick={() => { setEvidenceComfort(o.value); setStep(3); }} role="button" tabIndex={0} aria-pressed={evidenceComfort === o.value} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { if (e.key === ' ') e.preventDefault(); setEvidenceComfort(o.value); setStep(3); } }} className={`step-card ${evidenceComfort === o.value ? 'selected' : ''}`}>
                   <h3 style={{ color: 'white', fontSize: '1.1rem', margin: '0 0 4px 0' }}>{o.label}</h3>
                   <p style={{ color: 'var(--silver)', fontSize: '0.85rem', margin: 0 }}>{o.help}</p>
                 </div>
@@ -557,7 +557,7 @@ function MatchFormInner() {
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
               {RISK_OPTIONS.map(o => (
-                <div key={o.value} onClick={() => setRiskTolerance(o.value)} role="button" tabIndex={0} aria-pressed={riskTolerance === o.value} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { if (e.key === ' ') e.preventDefault(); setRiskTolerance(o.value); } }} className={`step-card ${riskTolerance === o.value ? 'selected' : ''}`}>
+                <div key={o.value} onClick={() => { setRiskTolerance(o.value); setStep(4); }} role="button" tabIndex={0} aria-pressed={riskTolerance === o.value} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { if (e.key === ' ') e.preventDefault(); setRiskTolerance(o.value); setStep(4); } }} className={`step-card ${riskTolerance === o.value ? 'selected' : ''}`}>
                   <h3 style={{ color: 'white', fontSize: '1.1rem', margin: '0 0 4px 0' }}>{o.label}</h3>
                   <p style={{ color: 'var(--silver)', fontSize: '0.85rem', margin: 0 }}>{o.help}</p>
                 </div>

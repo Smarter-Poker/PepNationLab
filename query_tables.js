@@ -6,15 +6,11 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PU
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function run() {
-  const { data: products } = await supabase.from('products').select('*').order('name');
+  const { data: products } = await supabase.from('products').select('*').limit(3);
+  console.log("Products:", products);
   
-  if (!products) {
-    console.log("No products found");
-    return;
-  }
-  
-  const formatted = products.map(p => `${p.sku} | ${p.name} | ${p.unit_size}${p.unit_measure} | ${p.category}`);
-  console.log(formatted.join('\n'));
+  const { data: variants } = await supabase.from('variants').select('*').limit(3);
+  console.log("Variants:", variants);
 }
 
 run();

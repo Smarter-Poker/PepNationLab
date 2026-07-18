@@ -3782,57 +3782,7 @@ export default function AgentStorefrontGrid({
       {detailProduct && (
         <div className="sf-modal-overlay">
           <div className="sf-modal-sheet">
-            {/* Back / close bar */}
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px 10px',
-              background: 'linear-gradient(180deg, #131b24 78%, rgba(19,27,36,0))',
-              position: 'relative'
-            }}>
-              <div style={{ display: 'flex', flex: 1, justifyContent: 'flex-start' }}>
-                <button
-                  onClick={handleDetailProductBack}
-                  aria-label="Back"
-                  style={{
-                    width: 34, height: 34, minWidth: 34, minHeight: 34,
-                    borderRadius: '50%', padding: 0,
-                    background: 'linear-gradient(180deg, #2b3744 0%, #1b242e 100%)',
-                    border: '1px solid rgba(190,200,210,0.30)',
-                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18), 0 3px 9px rgba(0,0,0,0.5)',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', boxSizing: 'border-box', flexShrink: 0,
-                    transition: 'background 0.15s ease',
-                  }}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
-                </button>
-              </div>
-              
-              <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
-                {(() => {
-                  const _coaPid = detailProduct.variants.find(v => !!coaByProductId?.[v.product_id])?.product_id;
-                  const _coaUrl = _coaPid ? coaByProductId?.[_coaPid] : undefined;
-                  if (!_coaUrl) return null;
-                  return (
-                    <IframeLink
-                      href={_coaUrl}
-                      aria-label="View Certificate of Analysis"
-                      style={{
-                        display: 'block',
-                        cursor: 'pointer',
-                        background: 'none',
-                        border: 'none',
-                        padding: 0,
-                        transition: 'opacity 0.15s, transform 0.15s',
-                      }}
-                    >
-                      <DynamicCoaButton style={{ width: 122, height: 38 }} />
-                    </IframeLink>
-                  );
-                })()}
-              </div>
-            </div>
-
-            {/* CRO: sticky quick-add bar. The main Add-To-Cart CTA sits far
+            {/* Header removed to eliminate bloat. Back button moved to sticky bar below. */}            {/* CRO: sticky quick-add bar. The main Add-To-Cart CTA sits far
                 below the fold (after description, monograph, and size picker),
                 so the purchase action stays visible from the first pixel and
                 while scrolling. Uses the same shared handler as the main CTA. */}
@@ -3854,6 +3804,22 @@ export default function AgentStorefrontGrid({
                   backdropFilter: 'blur(8px)',
                   borderBottom: '1px solid rgba(255,255,255,0.08)',
                 }}>
+                  <button
+                    onClick={handleDetailProductBack}
+                    aria-label="Back"
+                    style={{
+                      width: 32, height: 32, minWidth: 32, minHeight: 32,
+                      borderRadius: '50%', padding: 0,
+                      background: 'linear-gradient(180deg, #2b3744 0%, #1b242e 100%)',
+                      border: '1px solid rgba(190,200,210,0.30)',
+                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18), 0 3px 9px rgba(0,0,0,0.5)',
+                      cursor: 'pointer', display: 'flex', alignItems: 'center',
+                      justifyContent: 'center', boxSizing: 'border-box', flexShrink: 0,
+                      transition: 'background 0.15s ease',
+                    }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
+                  </button>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{
                       fontSize: '0.85rem', fontWeight: 700, color: 'var(--white)',
@@ -4032,25 +3998,20 @@ export default function AgentStorefrontGrid({
                   const coaUrl = _coaPid ? coaByProductId?.[_coaPid] : undefined;
                   if (!coaUrl) return null;
                   return (
-                    <div style={{ marginBottom: 'var(--space-6)' }}>
+                    <div style={{ marginBottom: 'var(--space-6)', display: 'flex', alignItems: 'center' }}>
                       <IframeLink
                         href={coaUrl}
+                        aria-label="View Certificate of Analysis"
                         style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 8,
-                          padding: '8px 14px',
-                          borderRadius: 'var(--radius-md)',
-                          background: `${primaryColor}15`,
-                          color: primaryColor,
-                          border: `1px solid ${primaryColor}40`,
-                          fontSize: '0.85rem',
-                          fontWeight: 700,
-                          textDecoration: 'none',
+                          display: 'block',
+                          cursor: 'pointer',
+                          background: 'none',
+                          border: 'none',
+                          padding: 0,
+                          transition: 'opacity 0.15s, transform 0.15s',
                         }}
                       >
-                        <FileText size={14} aria-hidden="true" />
-                        View Certificate Of Analysis
+                        <DynamicCoaButton style={{ width: 122, height: 38 }} />
                       </IframeLink>
                     </div>
                   );

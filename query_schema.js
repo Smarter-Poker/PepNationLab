@@ -6,15 +6,12 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PU
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function run() {
-  const { data: products } = await supabase.from('products').select('*').order('name');
-  
-  if (!products) {
-    console.log("No products found");
-    return;
+  const { data, error } = await supabase.rpc('get_tables'); // this might not exist
+  if (error) {
+     // fallback to querying information_schema
+     const { data: tables } = await supabase.from('products').select('name').limit(1);
+     console.log("DB connection works. Let's list files to see if there are sql files for schema");
   }
-  
-  const formatted = products.map(p => `${p.sku} | ${p.name} | ${p.unit_size}${p.unit_measure} | ${p.category}`);
-  console.log(formatted.join('\n'));
 }
 
 run();
