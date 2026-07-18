@@ -45,10 +45,10 @@ export default async function DashboardPage({
       redirect('/onboarding');
     }
   }
-  // Admin Accounts get the Manufacturer dashboard which contains the Network tools
-  // (managing super agents, network orders, recruiting).
+  // Admin Accounts get their own dedicated Command Center dashboard (network
+  // tools, agent management, recruiting) -- separate from the manufacturer page.
   if ((profile as { is_admin_account?: boolean | null })?.is_admin_account === true) {
-    redirect('/dashboard/manufacturer');
+    redirect('/dashboard/network');
   }
 
   // SACA: sub-agents have role='agent' + is_sub_agent=true. They get their

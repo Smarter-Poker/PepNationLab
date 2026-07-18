@@ -24,7 +24,7 @@ export default async function ManufacturerDashboardPage() {
     .eq('id', user.id)
     .maybeSingle();
 
-  if (!profile || (!profile.is_manufacturer && !profile.is_admin_account) || profile.is_active === false) {
+  if (!profile || !profile.is_manufacturer || profile.is_active === false) {
     redirect('/dashboard');
   }
 
