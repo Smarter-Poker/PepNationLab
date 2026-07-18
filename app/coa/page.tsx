@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import IframeLink from '@/components/ui/IframeLink';
 import { createServiceClient } from '@/lib/supabase/server';
+import CoaBackButton from './CoaBackButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -136,6 +137,28 @@ export default async function CoaLookupPage({
 
   return (
     <main style={{ maxWidth: 760, margin: '0 auto', padding: '3rem 1.25rem 5rem' }}>
+
+      {/* ── Back navigation ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <CoaBackButton />
+        {query && record && (
+          <Link
+            href="/coa"
+            style={{
+              fontSize: '0.82rem',
+              color: '#A8B4C0',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="18 6 6 6" /><path d="M6 6l6 6-6 6" transform="rotate(180 12 12)" /></svg>
+            Search Another Lot
+          </Link>
+        )}
+      </div>
+
       <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem' }}>
         Verify A Certificate Of Analysis
       </h1>

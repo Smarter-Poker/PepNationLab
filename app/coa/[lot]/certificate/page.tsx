@@ -124,7 +124,21 @@ export default async function CertificatePage({ params }: { params: Promise<{ lo
         className="coa-actions"
         style={{ maxWidth: 780, margin: '0 auto 1.5rem', display: 'flex', gap: '0.75rem', justifyContent: 'space-between', alignItems: 'center' }}
       >
-        <Link href={`/coa?lot=${encodeURIComponent(record.lot_number)}`} style={{ color: '#A8B4C0', fontSize: '0.9rem' }}>
+        <Link
+          href={`/coa?lot=${encodeURIComponent(record.lot_number)}`}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            color: '#A8B4C0',
+            fontSize: '0.9rem',
+            fontWeight: 500,
+            textDecoration: 'none',
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
           Back To Verification
         </Link>
         <PrintButton />
