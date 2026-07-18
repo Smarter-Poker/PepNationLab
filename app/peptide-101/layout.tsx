@@ -36,6 +36,16 @@ const courseJsonLd = {
   inLanguage: 'en',
 };
 
+// SERP breadcrumb eligibility for the course landing page.
+const breadcrumbJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
+    { '@type': 'ListItem', position: 2, name: 'Peptide 101', item: 'https://pepnationlab.com/peptide-101' },
+  ],
+};
+
 // Answer-first Q&A for the course. Rendered as real text in the crawlable
 // layer below AND emitted as FAQPage JSON-LD - a high-value AI-citation and
 // featured-snippet surface for "how to learn about peptides" style queries.
@@ -87,6 +97,10 @@ export default function Peptide101Layout({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(courseJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
       <script
         type="application/ld+json"
