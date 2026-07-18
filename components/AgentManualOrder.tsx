@@ -235,15 +235,15 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
                   <div style={{ width: 220 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)' }}>
                       <span>Subtotal</span>
-                      <span style={{ color: '#fff' }}>${subtotal.toFixed(2)}</span>
+                      <span style={{ color: '#fff', whiteSpace: 'nowrap' }}>${subtotal.toFixed(2)}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)' }}>
                       <span>Shipping</span>
-                      <span style={{ color: '#fff' }}>${shippingCost.toFixed(2)}</span>
+                      <span style={{ color: '#fff', whiteSpace: 'nowrap' }}>${shippingCost.toFixed(2)}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 12, borderTop: '1px dashed rgba(255,255,255,0.15)', fontSize: '1.1rem', color: '#fff', fontWeight: 800 }}>
                       <span>Total</span>
-                      <span style={{ color: '#00E5FF', textShadow: '0 0 10px rgba(0,229,255,0.3)' }}>${total.toFixed(2)}</span>
+                      <span style={{ color: '#00E5FF', textShadow: '0 0 10px rgba(0,229,255,0.3)', whiteSpace: 'nowrap' }}>${total.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>

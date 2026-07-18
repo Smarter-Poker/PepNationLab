@@ -634,21 +634,21 @@ export default async function OrderDetailPage(
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 'var(--space-3)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--grey-400)' }}>
                   <span>Subtotal</span>
-                  <span>${num(order.subtotal).toFixed(2)}</span>
+                  <span style={{ whiteSpace: 'nowrap' }}>${num(order.subtotal).toFixed(2)}</span>
                 </div>
                 {num(order.discount_amount) > 0 && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#68D391' }}>
                     <span>Coupon Discount{order.coupon_code ? ` (${order.coupon_code})` : ''}</span>
-                    <span>-${num(order.discount_amount).toFixed(2)}</span>
+                    <span style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>-${num(order.discount_amount).toFixed(2)}</span>
                   </div>
                 )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--grey-400)' }}>
                   <span>Shipping</span>
-                  <span>${num(order.shipping_cost).toFixed(2)}</span>
+                  <span style={{ whiteSpace: 'nowrap' }}>${num(order.shipping_cost).toFixed(2)}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 700, color: 'var(--teal)', marginTop: 4, paddingTop: 'var(--space-2)', }}>
                   <span>Total</span>
-                  <span style={{ fontFamily: 'var(--font-brand)' }}>${num(order.total).toFixed(2)}</span>
+                  <span style={{ fontFamily: 'var(--font-brand)', whiteSpace: 'nowrap' }}>${num(order.total).toFixed(2)}</span>
                 </div>
               </div>
             </div>

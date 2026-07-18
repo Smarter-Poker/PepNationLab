@@ -409,7 +409,7 @@ export default function AdminSalesPage() {
                   <div key={label}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                       <span style={{ fontSize: '0.8rem', color: 'var(--grey-300)' }}>{label}</span>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 700, color, fontFamily: 'var(--font-brand)' }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 700, color, fontFamily: 'var(--font-brand)', whiteSpace: 'nowrap', flexShrink: 0 }}>
                         {money(amount)} <span style={{ color: 'var(--grey-500)', fontWeight: 400 }}>({pct}%)</span>
                       </span>
                     </div>

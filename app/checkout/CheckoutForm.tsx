@@ -1627,44 +1627,44 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             )}
 
             <div style={{ paddingTop: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
-                <span style={{ color: 'var(--grey-400)' }}>{isAgentSelfBuy ? 'Agent Direct Subtotal' : 'Items Subtotal'}</span>
-                <strong style={{ color: 'var(--white)' }}>${cartSubtotal.toFixed(2)}</strong>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', gap: 8 }}>
+                <span style={{ color: 'var(--grey-400)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{isAgentSelfBuy ? 'Agent Direct Subtotal' : 'Items Subtotal'}</span>
+                <strong style={{ color: 'var(--white)', whiteSpace: 'nowrap', flexShrink: 0 }}>${cartSubtotal.toFixed(2)}</strong>
               </div>
               {agentPricingDiscount > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '6px 10px', background: 'rgba(0,196,188,0.06)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(0,196,188,0.2)' }}>
-                  <span style={{ color: 'var(--teal)', fontWeight: 600 }}>Agent Direct Pricing Discount</span>
-                  <strong style={{ color: 'var(--teal)' }}>-${agentPricingDiscount.toFixed(2)}</strong>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', gap: 8, padding: '6px 10px', background: 'rgba(0,196,188,0.06)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(0,196,188,0.2)' }}>
+                  <span style={{ color: 'var(--teal)', fontWeight: 600, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Agent Direct Pricing Discount</span>
+                  <strong style={{ color: 'var(--teal)', whiteSpace: 'nowrap', flexShrink: 0 }}>-${agentPricingDiscount.toFixed(2)}</strong>
                 </div>
               )}
               {volumeDiscount > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '6px 10px', background: 'rgba(45,212,191,0.06)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(45,212,191,0.2)' }}>
-                  <span style={{ color: '#2DD4BF', fontWeight: 600 }}>Volume Discount (3+ Vials Per Peptide)</span>
-                  <strong style={{ color: '#2DD4BF' }}>-${volumeDiscount.toFixed(2)}</strong>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', gap: 8, padding: '6px 10px', background: 'rgba(45,212,191,0.06)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(45,212,191,0.2)' }}>
+                  <span style={{ color: '#2DD4BF', fontWeight: 600, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Volume Discount (3+ Vials Per Peptide)</span>
+                  <strong style={{ color: '#2DD4BF', whiteSpace: 'nowrap', flexShrink: 0 }}>-${volumeDiscount.toFixed(2)}</strong>
                 </div>
               )}
               {appliedCoupon && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', gap: 8 }}>
                   <span style={{ color: '#2DD4BF' }}>Coupon Discount</span>
-                  <strong style={{ color: '#2DD4BF' }}>-${discount.toFixed(2)}</strong>
+                  <strong style={{ color: '#2DD4BF', whiteSpace: 'nowrap', flexShrink: 0 }}>-${discount.toFixed(2)}</strong>
                 </div>
               )}
               {flashDiscount > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '6px 10px', background: 'rgba(45,212,191,0.06)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(45,212,191,0.2)' }}>
-                  <span style={{ color: '#2DD4BF', fontWeight: 600 }}>Flash Sale ({flashSale!.discount_pct}% Off)</span>
-                  <strong style={{ color: '#2DD4BF' }}>-${flashDiscount.toFixed(2)}</strong>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', gap: 8, padding: '6px 10px', background: 'rgba(45,212,191,0.06)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(45,212,191,0.2)' }}>
+                  <span style={{ color: '#2DD4BF', fontWeight: 600, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Flash Sale ({flashSale!.discount_pct}% Off)</span>
+                  <strong style={{ color: '#2DD4BF', whiteSpace: 'nowrap', flexShrink: 0 }}>-${flashDiscount.toFixed(2)}</strong>
                 </div>
               )}
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
-                <span style={{ color: 'var(--grey-400)' }}>{shippingCarrier ? shippingCarrier : (shippingOption === 'fedex' ? 'FedEx / UPS Fast' : shippingOption === 'usps' ? 'USPS / China Post Cheap' : 'Fulfillment')}{shippingOption !== 'agent_pickup' && shippingEstimated ? ' (Estimated)' : ''}</span>
-                {shippingOption !== 'agent_pickup' ? <strong style={{ color: 'var(--white)' }}>${shippingCost.toFixed(2)}</strong> : <strong style={{ color: 'var(--teal)' }}>Free Shipping To Agent</strong>}
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', gap: 8 }}>
+                <span style={{ color: 'var(--grey-400)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{shippingCarrier ? shippingCarrier : (shippingOption === 'fedex' ? 'FedEx / UPS Fast' : shippingOption === 'usps' ? 'USPS / China Post Cheap' : 'Fulfillment')}{shippingOption !== 'agent_pickup' && shippingEstimated ? ' (Estimated)' : ''}</span>
+                {shippingOption !== 'agent_pickup' ? <strong style={{ color: 'var(--white)', whiteSpace: 'nowrap', flexShrink: 0 }}>${shippingCost.toFixed(2)}</strong> : <strong style={{ color: 'var(--teal)', whiteSpace: 'nowrap', flexShrink: 0 }}>Free Shipping To Agent</strong>}
               </div>
               {shippingOption !== 'agent_pickup' && (
                 <div style={{ fontSize: '0.7rem', color: 'var(--grey-400)', textAlign: 'right', marginTop: -4 }}>Total Weight: {totalWeightOz.toFixed(1)} Oz ({(totalWeightOz * 28.3495).toFixed(0)}g)</div>
               )}
-              <div style={{ paddingTop: 'var(--space-3)', display: 'flex', justifyContent: 'space-between', fontSize: '1.05rem', marginTop: 'var(--space-1)' }}>
+              <div style={{ paddingTop: 'var(--space-3)', display: 'flex', justifyContent: 'space-between', fontSize: '1.05rem', marginTop: 'var(--space-1)', gap: 8 }}>
                 <span style={{ color: 'var(--white)', fontWeight: 600 }}>Total Due</span>
-                <strong style={{ color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>${grandTotal.toFixed(2)}</strong>
+                <strong style={{ color: 'var(--teal)', fontFamily: 'var(--font-brand)', whiteSpace: 'nowrap', flexShrink: 0 }}>${grandTotal.toFixed(2)}</strong>
               </div>
             </div>
             </div>

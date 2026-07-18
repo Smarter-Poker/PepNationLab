@@ -54,7 +54,7 @@ export default function IframeModal({ url, title, onClose }: IframeModalProps) {
       if (hostname.endsWith('.supabase.co')) return 'pepnationlab.com';
       return hostname;
     } catch {
-      return url;
+      return 'pepnationlab.com';
     }
   }, [url, isExternal]);
 
