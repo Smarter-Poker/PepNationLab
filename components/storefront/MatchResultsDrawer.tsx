@@ -112,8 +112,13 @@ export function MatchResultsDrawer({
     });
   }, [results, filterOralOnly, filterHumanOnly]);
 
-  const inCatalog = filteredResults.filter(r => r.in_stock);
-  const outOfCatalog = filteredResults.filter(r => !r.in_stock);
+  // A card is purchasable only when the caller resolved it to a real, in-stock
+  // product. Everything else -- out-of-stock, or a page that sells nothing (the
+  // global Find A Peptide page) -- still renders as a full recommendation card so
+  // the engine's answer is NEVER hidden. This is the display half of the fix that
+  // stops the guided wizard from "walking you through but never recommending".
+  const inCatalog = filteredResults.filter(r => r.product_id && r.in_stock);
+  const recommendations = filteredResults.filter(r => !(r.product_id && r.in_stock));
   const stackItems = inCatalog.filter(r => r.isStackPartner);
 
   const handleAddStack = () => {
@@ -480,27 +485,131 @@ export function MatchResultsDrawer({
                 </div>
               )}
 
-              {!loading && outOfCatalog.length > 0 && (
-                <div style={{ marginTop: 14 }}>
-                  <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>
-                    Also Studied For This Goal - Not Currently Stocked Here
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {outOfCatalog.map((r) => (
-                      <span
-                        key={`oos-${r.compound_slug || r.display_name}`}
-                        style={{
-                          background: 'rgba(255,255,255,0.04)',
-                          border: '1px solid rgba(255,255,255,0.10)',
-                          color: 'var(--silver, #A8B4C0)',
-                          borderRadius: 999, padding: '6px 10px',
-                          fontSize: '0.78rem', fontWeight: 600,
-                        }}
-                      >
-                        {r.display_name}
-                      </span>
-                    ))}
-                  </div>
+              {!loading && recommendations.length > 0 && (
+                <div style={{ marginTop: inCatalog.length > 0 ? 20 : 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {inCatalog.length > 0 && (
+                    <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 2 }}>
+                      Top Recommended Compounds For This Goal
+                    </div>
+                  )}
+                  {recommendations.map((r) => (
+                    <div
+                      key={`rec-${r.compound_slug || r.display_name}`}
+                      style={{
+                        display: 'flex', gap: 12, alignItems: 'stretch',
+                        background: 'rgba(255,255,255,0.04)',
+                        border: '1px solid rgba(255,255,255,0.10)',
+                        borderRadius: 14, padding: 12, position: 'relative',
+                      }}
+                    >
+                      {r.image_url ? (
+                        <Image
+                          src={r.image_url}
+                          alt={r.display_name}
+                          onClick={() => { if (r.product_id) onOpenProduct(r.product_id); }}
+                          style={{ width: 72, height: 72, borderRadius: 10, objectFit: 'cover', cursor: r.product_id ? 'pointer' : 'default', flexShrink: 0 }}
+                          width={200} height={200} unoptimized
+                        />
+                      ) : (
+                        <div style={{ width: 72, height: 72, borderRadius: 10, background: 'rgba(192,197,206,0.08)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Sparkles size={22} color={primaryColor} style={{ opacity: 0.5 }} />
+                        </div>
+                      )}
+
+                      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                          <div style={{ color: '#FFFFFF', fontWeight: 800, fontSize: '0.96rem', lineHeight: 1.25, flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {r.display_name}
+                          </div>
+                          {typeof r.score === 'number' && (
+                            <span style={{
+                              fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.04em',
+                              padding: '3px 8px', borderRadius: 6, flexShrink: 0,
+                              background: 'rgba(61,217,164,0.14)', color: '#3DD9A4',
+                              border: '1px solid rgba(61,217,164,0.35)',
+                            }} title="Match score out of 100">
+                              {r.score}% Match
+                            </span>
+                          )}
+                          {r.isStackPartner && (
+                            <span style={{
+                              fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase',
+                              padding: '3px 7px', borderRadius: 6,
+                              background: 'rgba(246,173,85,0.14)', color: '#F6AD55',
+                              border: '1px solid rgba(246,173,85,0.35)', flexShrink: 0,
+                              display: 'inline-flex', alignItems: 'center', gap: '4px',
+                            }} title="Synergizes well with other matched compounds">
+                              <Sparkles size={10} /> Stack Partner
+                            </span>
+                          )}
+                        </div>
+
+                        {r.rationale && (
+                          <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.82rem', lineHeight: 1.4 }}>
+                            <span style={{ color: 'var(--grey-400, #C8D2DD)', fontWeight: 700 }}>Why This Match: </span>
+                            {r.rationale}
+                          </div>
+                        )}
+
+                        {/* Visualizations */}
+                        <div style={{ display: 'flex', gap: 16, marginTop: 6, marginBottom: 6 }}>
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--silver)', textTransform: 'uppercase' }}>Target Efficacy</div>
+                            <div style={{ width: '100%', height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden' }}>
+                              <div style={{ width: `${r.score || 0}%`, height: '100%', background: 'linear-gradient(90deg, #3182ce, #63b3ed)', borderRadius: 4 }} />
+                            </div>
+                          </div>
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--silver)', textTransform: 'uppercase' }}>Human Data</div>
+                            <div style={{ width: '100%', height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden' }}>
+                              <div style={{ width: `${getTierPercent(r.evidence_tier)}%`, height: '100%', background: 'linear-gradient(90deg, #805ad5, #b794f4)', borderRadius: 4 }} />
+                            </div>
+                          </div>
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--silver)', textTransform: 'uppercase' }}>Safety Profile</div>
+                            <div style={{ width: '100%', height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden' }}>
+                              <div style={{ width: `${getRiskPercent(r.riskLevel)}%`, height: '100%', background: getRiskColor(r.riskLevel), borderRadius: 4 }} />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
+                          {r.product_id && r.price_cents > 0 && (
+                            <div style={{ color: '#C0C5CE', fontWeight: 900, fontSize: '1rem' }}>
+                              ${(r.price_cents / 100).toFixed(2)}
+                            </div>
+                          )}
+                          <div style={{ flex: 1 }} />
+                          {r.product_id ? (
+                            <button
+                              type="button"
+                              onClick={() => onOpenProduct(r.product_id)}
+                              style={{
+                                background: 'transparent', border: '1px solid rgba(255,255,255,0.16)',
+                                color: '#FFFFFF', fontWeight: 700, fontSize: '0.82rem',
+                                padding: '8px 12px', borderRadius: 10, cursor: 'pointer', minHeight: 40,
+                              }}
+                            >
+                              View Details
+                            </button>
+                          ) : r.compound_slug ? (
+                            <a
+                              href={`/research/${r.compound_slug}`}
+                              style={{
+                                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                                background: primaryColor, border: 'none',
+                                color: '#0A1018', fontWeight: 800, fontSize: '0.82rem',
+                                padding: '8px 14px', borderRadius: 10, cursor: 'pointer', minHeight: 40,
+                                textDecoration: 'none',
+                              }}
+                            >
+                              View Research Profile
+                            </a>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
 
