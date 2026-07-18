@@ -1168,30 +1168,33 @@ export default function ProductModalEnhancements({
         <>
           <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
           <section aria-label="Supplies You Will Need">
-            <SectionTitle primaryColor={primaryColor}>
-              Supplies You&apos;ll Need
-            </SectionTitle>
-            <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginTop: -4, marginBottom: 10 }}>
-              For Reconstitution And Lab Prep Of {currentProductName}.
-            </div>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(min(220px, 100%), 1fr))',
-              gap: 10,
-            }}>
-              {supplies.map((s) => (
-                <SupplyMiniCard
-                  key={s.key}
-                  supply={s.group!}
-                  primaryColor={primaryColor}
-                  onAdd={() => onAddVariantToCart(s.group!.defaultVariantId, 1)}
-                  onOpen={() => onOpenProductByName(s.group!.name)}
-                />
-              ))}
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+              {/* Left: heading + subtitle */}
+              <div style={{ flex: '1 1 160px', minWidth: 0 }}>
+                <SectionTitle primaryColor={primaryColor}>
+                  Supplies You&apos;ll Need
+                </SectionTitle>
+                <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginTop: -4 }}>
+                  For Reconstitution And Lab Prep Of {currentProductName}.
+                </div>
+              </div>
+              {/* Right: supply cards */}
+              <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 10, flex: '0 0 auto' }}>
+                {supplies.map((s) => (
+                  <SupplyMiniCard
+                    key={s.key}
+                    supply={s.group!}
+                    primaryColor={primaryColor}
+                    onAdd={() => onAddVariantToCart(s.group!.defaultVariantId, 1)}
+                    onOpen={() => onOpenProductByName(s.group!.name)}
+                  />
+                ))}
+              </div>
             </div>
           </section>
         </>
       )}
+
 
       <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
       <ReconstitutionCalc
