@@ -126,14 +126,16 @@ async function AgentStorefrontDataLoader({
     // 1. Inventory counts
     supabase.rpc('agent_inventory_for_storefront', { p_slug: agentSlug }),
 
-    // 2. COA PDFs (only if we have product IDs)
+    // 2. COA lot numbers — link to /coa?lot= page (no storage file required)
     productIds.length > 0
       ? supabase
           .from('product_lots')
-          .select('product_id, coa_storage_key, received_at')
+          .select('product_id, lot_number, coa_storage_key, received_at')
           .in('product_id', productIds)
           .eq('is_active', true)
-          .not('coa_storage_key', 'is', null)
+          .not('coa_verified_at', 'is', null)
+          .is('coa_retracted_at', null)
+          .is('superseded_by', null)
           .order('received_at', { ascending: false })
       : Promise.resolve({ data: null }),
 
@@ -152,15 +154,20 @@ async function AgentStorefrontDataLoader({
       ?.map(i => [i.product_id, i.stock_count]) ?? []
   );
 
-  // Build COA URL map
+  // Build COA URL map — prefer storage PDF if available, fall back to /coa?lot= page
   const coaByProductId: Record<string, string> = {};
   for (const row of lotsResult.data ?? []) {
-    if (!row.coa_storage_key) continue;
-    if (coaByProductId[row.product_id]) continue; // keep newest
-    const { data: pub } = supabase.storage
-      .from('product-coas')
-      .getPublicUrl(row.coa_storage_key);
-    if (pub?.publicUrl) coaByProductId[row.product_id] = pub.publicUrl;
+    if (coaByProductId[row.product_id]) continue; // keep newest (query ordered desc)
+    if (row.coa_storage_key) {
+      const { data: pub } = supabase.storage
+        .from('product-coas')
+        .getPublicUrl(row.coa_storage_key);
+      if (pub?.publicUrl) { coaByProductId[row.product_id] = pub.publicUrl; continue; }
+    }
+    // No storage file yet — link to the COA detail page by lot number
+    if (row.lot_number) {
+      coaByProductId[row.product_id] = `/coa?lot=${encodeURIComponent(row.lot_number)}`;
+    }
   }
 
   // Wishlist IDs

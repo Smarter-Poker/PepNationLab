@@ -143,19 +143,26 @@ async function buildCatalogPayload(agentSlug: string): Promise<CatalogResult> {
   if (productIds.length > 0) {
     const { data: lots } = await supabase
       .from('product_lots')
-      .select('product_id, coa_storage_key, received_at')
+      .select('product_id, lot_number, coa_storage_key, received_at')
       .in('product_id', productIds)
       .eq('is_active', true)
-      .not('coa_storage_key', 'is', null)
+      .not('coa_verified_at', 'is', null)
+      .is('coa_retracted_at', null)
+      .is('superseded_by', null)
       .order('received_at', { ascending: false });
 
     for (const row of lots ?? []) {
-      if (!row.coa_storage_key) continue;
       if (coaByProductId[row.product_id]) continue; // keep newest
-      const { data: pub } = supabase.storage
-        .from('product-coas')
-        .getPublicUrl(row.coa_storage_key);
-      if (pub?.publicUrl) coaByProductId[row.product_id] = pub.publicUrl;
+      if (row.coa_storage_key) {
+        const { data: pub } = supabase.storage
+          .from('product-coas')
+          .getPublicUrl(row.coa_storage_key);
+        if (pub?.publicUrl) { coaByProductId[row.product_id] = pub.publicUrl; continue; }
+      }
+      // No storage file — link to the COA detail page by lot number
+      if (row.lot_number) {
+        coaByProductId[row.product_id] = `/coa?lot=${encodeURIComponent(row.lot_number)}`;
+      }
     }
   }
 
