@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import AddressesClient from './AddressesClient';
@@ -25,6 +26,24 @@ export default async function AddressesPage() {
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--black)', padding: 'var(--space-6) var(--space-4)' }}>
       <div className="container" style={{ maxWidth: 960 }}>
+        <Link
+          href="/account"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            color: 'var(--grey-400)',
+            fontSize: '0.9rem',
+            fontWeight: 500,
+            textDecoration: 'none',
+            marginBottom: 'var(--space-4)',
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          Back To Account
+        </Link>
         <h1 className="animated-gradient-text" style={{ color: 'var(--white)', fontSize: '1.6rem', fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-2)' }}>
           Saved Addresses
         </h1>

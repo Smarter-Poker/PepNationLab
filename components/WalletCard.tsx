@@ -242,7 +242,7 @@ export default function WalletCard() {
                     </div>
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <div style={{ fontSize: '0.95rem', fontWeight: 700, color: positive ? '#68D391' : '#FC8181', fontFamily: 'var(--font-brand)' }}>
+                    <div style={{ fontSize: '0.95rem', fontWeight: 700, color: positive ? '#68D391' : '#FC8181', fontFamily: 'var(--font-brand)', whiteSpace: 'nowrap' }}>
                       {positive ? '+' : '-'}
                       {money(Math.abs(t.signedAmount))}
                     </div>

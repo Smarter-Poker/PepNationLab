@@ -268,6 +268,24 @@ export default function AccountSecurityClient({
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--black)', color: 'var(--white)' }}>
       <div style={{ maxWidth: 760, margin: '0 auto', padding: 'var(--space-6) var(--space-4)' }}>
+        <a
+          href="/account"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            color: 'var(--grey-400)',
+            fontSize: '0.9rem',
+            fontWeight: 500,
+            textDecoration: 'none',
+            marginBottom: 'var(--space-4)',
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          Back To Account
+        </a>
         <h1
           className="animated-gradient-text"
           style={{

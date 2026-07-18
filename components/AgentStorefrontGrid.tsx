@@ -4820,20 +4820,20 @@ export default function AgentStorefrontGrid({
                   border: '1px solid rgba(255,255,255,0.08)', marginBottom: 24,
                 }}>
                   {resolved.discountPct > 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, gap: 8 }}>
                       <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>Regular Price</span>
-                      <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)', textDecoration: 'line-through' }}>${formatPrice(resolved.fullPrice)}</span>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)', textDecoration: 'line-through', whiteSpace: 'nowrap', flexShrink: 0 }}>${formatPrice(resolved.fullPrice)}</span>
                     </div>
                   )}
                   {resolved.discountPct > 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, gap: 8 }}>
                       <span style={{ fontSize: '0.85rem', color: '#68D391' }}>Bundle Savings</span>
-                      <span style={{ fontSize: '0.85rem', color: '#68D391', fontWeight: 700 }}>−${formatPrice(resolved.fullPrice - resolved.finalPrice)} ({resolved.discountPct}% Off)</span>
+                      <span style={{ fontSize: '0.85rem', color: '#68D391', fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>−${formatPrice(resolved.fullPrice - resolved.finalPrice)} ({resolved.discountPct}% Off)</span>
                     </div>
                   )}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: resolved.discountPct > 0 ? '1px solid rgba(255,255,255,0.08)' : 'none', paddingTop: resolved.discountPct > 0 ? 12 : 0, marginTop: resolved.discountPct > 0 ? 8 : 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, borderTop: resolved.discountPct > 0 ? '1px solid rgba(255,255,255,0.08)' : 'none', paddingTop: resolved.discountPct > 0 ? 12 : 0, marginTop: resolved.discountPct > 0 ? 8 : 0 }}>
                     <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--white)' }}>Bundle Price</span>
-                    <span style={{ fontSize: '1.3rem', fontWeight: 800, color: primaryColor, fontFamily: 'var(--font-brand)' }}>${formatPrice(resolved.finalPrice)}</span>
+                    <span style={{ fontSize: '1.3rem', fontWeight: 800, color: primaryColor, fontFamily: 'var(--font-brand)', whiteSpace: 'nowrap', flexShrink: 0 }}>${formatPrice(resolved.finalPrice)}</span>
                   </div>
                 </div>
 
