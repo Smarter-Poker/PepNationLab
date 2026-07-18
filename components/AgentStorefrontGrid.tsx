@@ -2902,7 +2902,6 @@ export default function AgentStorefrontGrid({
           const CARD_LEFTS = [1.270, 12.207, 23.242, 34.180, 45.215, 56.152, 67.188, 78.125, 89.160];
           const left = CARD_LEFTS[card.index - 1];
           const width = 9.570;
-          const isActive = activeCardIndex === card.index;
 
           return (
             <button
@@ -2922,27 +2921,18 @@ export default function AgentStorefrontGrid({
                 height: '39.7%',
                 cursor: 'pointer',
                 background: 'transparent',
-                border: isActive ? '2px solid rgba(255, 255, 255, 0.45)' : '2px solid transparent',
+                border: 'none',
                 borderRadius: 14,
-                boxShadow: isActive ? '0 0 15px rgba(255,255,255,0.15), inset 0 0 10px rgba(255,255,255,0.05)' : 'none',
-                backgroundColor: isActive ? 'rgba(255, 255, 255, 0.03)' : 'transparent',
                 outline: 'none',
-                boxSizing: 'border-box',
                 margin: 0,
                 padding: 0,
-                transition: 'background 0.2s, border-color 0.2s, box-shadow 0.2s',
+                transition: 'background 0.2s',
               }}
               onMouseEnter={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
-                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
-                }
+                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
               }}
               onMouseLeave={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                  e.currentTarget.style.borderColor = 'transparent';
-                }
+                e.currentTarget.style.backgroundColor = 'transparent';
               }}
               title={card.label}
               aria-label={card.label}
