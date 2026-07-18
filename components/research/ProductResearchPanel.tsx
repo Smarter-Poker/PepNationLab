@@ -260,6 +260,20 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
               {compound.category && badge(compound.category, primaryColor)}
               {isHighRisk && badge(`${risk.label} Risk`, risk.color)}
             </div>
+            
+            {coaUrl && (
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: 24 }}>
+                <a
+                  href={coaUrl}
+                  onClick={(e) => { e.preventDefault(); setCoaOpen(true); }}
+                  title="View Certificate of Analysis"
+                  style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/images/coa-button.png" alt="View Certificate of Analysis" style={{ width: 220, height: 'auto', objectFit: 'contain' }} draggable={false} />
+                </a>
+              </div>
+            )}
           </header>
 
           <section style={{ minHeight: 160 }}>
@@ -414,28 +428,13 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
                   <Fact label="Net Quantity Per Vial" value="Reported On The Batch Certificate" />
                 </div>
 
-                {coaUrl ? (
-                  <a
-                    href={coaUrl}
-                    onClick={(e) => { e.preventDefault(); setCoaOpen(true); }}
-                    title="View Certificate of Analysis"
-                    style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src="/images/coa-button.png"
-                      alt="View Certificate of Analysis"
-                      style={{ height: 52, width: 'auto', objectFit: 'contain' }}
-                    />
-                  </a>
-                ) : (
+                {/* Removed from here to move to the top */}
                   <div style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.10)' }}>
                     <Para>
                       A Batch-Specific Certificate Of Analysis For The Current Lot Is Available On Request.
                       Contact Your Agent To Receive The Latest Lot Certificate For This Product.
                     </Para>
                   </div>
-                )}
               </div>
             )}
 

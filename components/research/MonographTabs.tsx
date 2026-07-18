@@ -232,21 +232,7 @@ export default function MonographTabs({ compound, related = [], coaUrl = null }:
             productName={compound.display_name}
             size="sm"
           />
-          {coaUrl && (
-            <a
-              href={coaUrl}
-              onClick={(e) => { e.preventDefault(); setModalUrl(coaUrl); }}
-              title="Certificate of Analysis"
-              style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/images/coa-button.png"
-                alt="View Certificate of Analysis"
-                style={{ height: 32, width: 'auto', objectFit: 'contain' }}
-              />
-            </a>
-          )}
+          {/* COA button moved under title for consistency */}
           <Link
             href={`/research/${compound.slug}/spec`}
             className="btn-secondary"
@@ -281,7 +267,7 @@ export default function MonographTabs({ compound, related = [], coaUrl = null }:
             </span>
           )}
           {isHighRisk && (
-            <span style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', padding: '4px 12px', borderRadius: 9999, background: risk.bg, border: `1px solid ${risk.color}`, color: risk.color }}>
+            <span style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', padding: '4px 12px', borderRadius: 9999, background: `${risk.color}1A`, border: `1px solid ${risk.color}40`, color: risk.color }}>
               {risk.label} Risk
             </span>
           )}
@@ -296,6 +282,19 @@ export default function MonographTabs({ compound, related = [], coaUrl = null }:
             </span>
           )}
         </div>
+        {coaUrl && (
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 24 }}>
+            <a
+              href={coaUrl}
+              onClick={(e) => { e.preventDefault(); setModalUrl(coaUrl); }}
+              title="Certificate of Analysis"
+              style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/images/coa-button.png" alt="View Certificate of Analysis" style={{ width: 220, height: 'auto', objectFit: 'contain' }} draggable={false} />
+            </a>
+          </div>
+        )}
       </header>
 
       {/* Tab bar */}
