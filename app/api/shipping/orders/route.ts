@@ -4,8 +4,9 @@ import { getEffectiveUser } from '@/lib/impersonation';
 import { assertSameOrigin } from '@/lib/csrf';
 import { canTransition, type OrderStatus } from '@/lib/order-states';
 import { notifyOrderShipped } from '@/lib/notify';
-import { enqueueOrderPush, shortOrderId } from '@/lib/push-enqueue';
+import { shortOrderId } from '@/lib/push-enqueue';
 import { emailConfigured, sendOrderShippedEmail } from '@/lib/email';
+import { logOrderEvent } from '@/lib/order-events';
 
 export async function GET() {
   try {
@@ -185,11 +186,12 @@ export async function POST(request: NextRequest) {
       try {
         const short = shortOrderId(order_id);
         await notifyOrderShipped(serviceClient, buyerId, order_id, short, tracking_number ?? undefined);
-        await enqueueOrderPush(serviceClient, {
-          userId: buyerId,
+        await logOrderEvent(serviceClient, {
           orderId: order_id,
-          event: 'order_shipped',
-          tracking: tracking_number ?? null,
+          event: 'shipped',
+          actorId: user.id,
+          actorRole: 'shipping',
+          payload: { tracking_number: tracking_number ?? null, via: 'shipping_console' },
         });
         if (emailConfigured()) {
           const { data: buyer } = await serviceClient
@@ -207,6 +209,20 @@ export async function POST(request: NextRequest) {
           }
         }
       } catch { /* notifications must not break the shipping response */ }
+    }
+
+    // Timeline event when this console moves an order from approved_ship to
+    // in_fulfillment (tracking assigned, not yet physically shipped).
+    if (action === 'save_tracking' && prevStatus && prevStatus !== updateData.status) {
+      try {
+        await logOrderEvent(serviceClient, {
+          orderId: order_id,
+          event: 'status_changed',
+          actorId: user.id,
+          actorRole: 'shipping',
+          payload: { from: prevStatus, to: updateData.status },
+        });
+      } catch { /* timeline must not break the shipping response */ }
     }
 
     return NextResponse.json({ data, message: 'Order Updated Successfully' });
