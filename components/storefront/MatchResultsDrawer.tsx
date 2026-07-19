@@ -361,9 +361,9 @@ export function MatchResultsDrawer({
 
               {/* Stack "Add Protocol to Cart" logic */}
               {!loading && stackItems.length > 1 && !filterOralOnly && !filterHumanOnly && (
-                <div style={{ background: 'rgba(246,173,85,0.08)', border: '1px solid rgba(246,173,85,0.3)', borderRadius: 16, padding: '14px', marginBottom: 16 }}>
+                <div style={{ background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.25)', borderRadius: 16, padding: '14px', marginBottom: 16 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <div style={{ color: '#F6AD55', fontWeight: 800, fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Sparkles size={14} /> Recommended Protocol Stack</div>
+                    <div style={{ color: '#00C4BC', fontWeight: 800, fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Sparkles size={14} /> Recommended Protocol Stack</div>
                     <button
                       type="button"
                       onClick={handleAddStack}
@@ -437,11 +437,11 @@ export function MatchResultsDrawer({
                             <span style={{
                               fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase',
                               padding: '3px 7px', borderRadius: 6,
-                              background: 'rgba(246,173,85,0.14)', color: '#F6AD55',
-                              border: '1px solid rgba(246,173,85,0.35)', flexShrink: 0,
+                              background: 'rgba(0,196,188,0.12)', color: '#00C4BC',
+                              border: '1px solid rgba(0,196,188,0.35)', flexShrink: 0,
                               display: 'inline-flex', alignItems: 'center', gap: '4px'
                             }} title="Synergizes well with other matched compounds">
-                              <Sparkles size={10} /> Synergistic Stack Partner
+                              <Sparkles size={10} /> Stack Partner
                             </span>
                           )}
                         </div>
@@ -457,14 +457,14 @@ export function MatchResultsDrawer({
                           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
                             <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--silver)', textTransform: 'uppercase' }}>Target Efficacy</div>
                             <div style={{ width: '100%', height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden' }}>
-                              <div style={{ width: `${r.score || 0}%`, height: '100%', background: 'linear-gradient(90deg, #3182ce, #63b3ed)', borderRadius: 4 }} />
+                              <div style={{ width: `${r.score || 0}%`, height: '100%', background: 'linear-gradient(90deg, #00C4BC, #4FD1C5)', borderRadius: 4 }} />
                             </div>
                           </div>
                           {/* Evidence */}
                           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
                             <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--silver)', textTransform: 'uppercase' }}>Human Data</div>
                             <div style={{ width: '100%', height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden' }}>
-                              <div style={{ width: `${getTierPercent(r.evidence_tier)}%`, height: '100%', background: 'linear-gradient(90deg, #805ad5, #b794f4)', borderRadius: 4 }} />
+                              <div style={{ width: `${getTierPercent(r.evidence_tier)}%`, height: '100%', background: 'linear-gradient(90deg, #0A9B94, #00C4BC)', borderRadius: 4 }} />
                             </div>
                           </div>
                           {/* Safety */}
@@ -485,14 +485,14 @@ export function MatchResultsDrawer({
                             type="button"
                             onClick={() => onOpenProduct(r.product_id)}
                             style={{
-                              background: 'transparent',
-                              border: '1px solid rgba(255,255,255,0.16)',
-                              color: '#FFFFFF', fontWeight: 700, fontSize: '0.82rem',
-                              padding: '8px 12px', borderRadius: 10, cursor: 'pointer',
+                              background: primaryColor,
+                              border: 'none',
+                              color: '#0A1018', fontWeight: 800, fontSize: '0.82rem',
+                              padding: '8px 16px', borderRadius: 10, cursor: 'pointer',
                               minHeight: 40,
                             }}
                           >
-                            View Details
+                            View Research Profile
                           </button>
                           <DynamicAddToCartButton
                             onClick={() => onAddToCart(r.product_id)}
