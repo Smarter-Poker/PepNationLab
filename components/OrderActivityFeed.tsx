@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * OrderActivityFeed - buyer-facing order activity history.
  *
@@ -7,9 +9,9 @@
  * escalations, admin-review demotions) are filtered out - buyers only see
  * events about THEIR order journey.
  *
- * Pure presentational server-compatible component: no fetching, no client
- * hooks. The caller (app/orders/[id]/page.tsx) passes rows it already read
- * under RLS. Renders nothing when no visible events exist, so it is always
+ * Pure presentational client component: no fetching, no state. Rendered on
+ * the client so event timestamps display in the buyer's own timezone. The
+ * caller (app/orders/[id]/page.tsx) passes rows it already read under RLS. Renders nothing when no visible events exist, so it is always
  * safe to mount.
  */
 
