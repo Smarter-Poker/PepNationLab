@@ -72,7 +72,7 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
     if (agentSlug) {
       const { data: ap } = await supabase
         .from('agent_profiles')
-        .select('payment_handles, min_overall_qty, min_order_qty, volume_pricing_enabled, is_manufacturer_store')
+        .select('id, payment_handles, min_overall_qty, min_order_qty, volume_pricing_enabled, is_manufacturer_store')
         .eq('slug', agentSlug)
         .maybeSingle();
       if (ap?.payment_handles) {
@@ -93,6 +93,18 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
       }
       if ((ap as { is_manufacturer_store?: boolean | null } | null)?.is_manufacturer_store === true) {
         manufacturerStore = true;
+      }
+      // The server-side checkout and approval routes gate manufacturer
+      // behavior on profiles.is_manufacturer - honor that flag here too so
+      // the client form and the server can never disagree.
+      const apId = (ap as { id?: string | null } | null)?.id;
+      if (!manufacturerStore && apId) {
+        const { data: agentProfile } = await supabase
+          .from('profiles')
+          .select('is_manufacturer')
+          .eq('id', apId)
+          .maybeSingle();
+        if (agentProfile?.is_manufacturer === true) manufacturerStore = true;
       }
     } else if (profile.referring_agent_id) {
       const { data: ap } = await supabase
@@ -118,6 +130,15 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
       }
       if ((ap as { is_manufacturer_store?: boolean | null } | null)?.is_manufacturer_store === true) {
         manufacturerStore = true;
+      }
+      // Same server-authoritative manufacturer flag check as the slug branch.
+      if (!manufacturerStore) {
+        const { data: agentProfile } = await supabase
+          .from('profiles')
+          .select('is_manufacturer')
+          .eq('id', profile.referring_agent_id)
+          .maybeSingle();
+        if (agentProfile?.is_manufacturer === true) manufacturerStore = true;
       }
     }
   } catch {
