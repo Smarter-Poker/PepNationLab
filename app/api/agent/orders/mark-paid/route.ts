@@ -80,6 +80,9 @@ export async function POST(req: NextRequest) {
       status: nextStatus,
       payment_confirmed_at: nowIso,
       payment_confirmed_by: callerId,
+      // Fresh escalation ladder for the new waiting stage.
+      stale_escalation_level: 0,
+      last_stale_escalation_at: null,
       updated_at: nowIso,
     })
     .eq('id', orderId)
@@ -140,10 +143,16 @@ export async function POST(req: NextRequest) {
           .select('contact_email, email_verified, full_name')
           .eq('id', order.buyer_id)
           .maybeSingle();
-        if (buyer?.contact_email && buyer.email_verified) {
+        let buyerTo: string | null = (buyer?.contact_email && buyer.email_verified) ? buyer.contact_email : null;
+        if (!buyerTo) {
+          // Fallback: the auth account email (already verified by the login flow).
+          const { data: authUser } = await svc.auth.admin.getUserById(order.buyer_id);
+          buyerTo = authUser?.user?.email ?? null;
+        }
+        if (buyerTo) {
           await sendPaymentConfirmedEmail({
-            to: buyer.contact_email,
-            fullName: buyer.full_name,
+            to: buyerTo,
+            fullName: buyer?.full_name ?? null,
             orderId,
             total,
           }).catch(() => {});
