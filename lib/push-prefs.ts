@@ -19,6 +19,8 @@ export type PushTypeKey =
   | 'order_shipped'
   | 'order_delivered'
   | 'order_cancelled'
+  | 'payment_confirmed'
+  | 'order_attention'
   | 'commission_earned'
   | 'new_researcher'
   | 'invoice'
@@ -54,6 +56,8 @@ export const PUSH_TYPES: PushTypeDef[] = [
   { key: 'order_shipped',     group: 'Orders',                label: 'Order Shipped',       desc: 'An Order Ships With Tracking' },
   { key: 'order_delivered',   group: 'Orders',                label: 'Order Delivered',     desc: 'An Order Is Delivered' },
   { key: 'order_cancelled',   group: 'Orders',                label: 'Order Cancelled',     desc: 'An Order Is Cancelled' },
+  { key: 'payment_confirmed', group: 'Orders',                label: 'Payment Confirmed',   desc: 'Your Payment Is Verified By Your Seller' },
+  { key: 'order_attention',   group: 'Orders',                label: 'Order Attention Alerts', desc: 'An Order Is Waiting On Someone And Needs A Look' },
 
   { key: 'commission_earned', group: 'Earnings & Team',       label: 'Commission Earned',   desc: 'You Earn Or Are Paid A Commission' },
   { key: 'new_researcher',    group: 'Earnings & Team',       label: 'New Researcher',      desc: 'A Researcher Joins Your Team' },
