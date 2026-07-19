@@ -200,7 +200,12 @@ export async function notifyOrderAttention(
   });
 }
 
-/** Convenience: notify an agent that a new order was placed on their storefront */
+/**
+ * Convenience: notify an agent that a new order was placed on their storefront.
+ * In-app row ONLY (withPush: false): the checkout route sends its own richer
+ * order_new push (with the order total) for this same event, so pushing here
+ * too made every sale ring the agent's device twice. One event, one push.
+ */
 export async function notifyOrderPlaced(
   supabase: SupabaseClient,
   agentId: string,
@@ -214,6 +219,7 @@ export async function notifyOrderPlaced(
     title: `New Order #${shortId}`,
     body: `${researcherName} placed a new order on your storefront.`,
     url: `/dashboard/agent?tab=orders`,
+    withPush: false,
   });
 }
 
