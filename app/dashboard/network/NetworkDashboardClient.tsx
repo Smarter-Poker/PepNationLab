@@ -1,25 +1,10 @@
 'use client';
 
-/**
- * Admin-account "Command Center" dashboard.
- *
- * This is the dedicated landing dashboard for is_admin_account accounts (e.g.
- * Savage Brands) -- the "super-agent admin" experience. It is DELIBERATELY
- * separate from the manufacturer dashboard (/dashboard/manufacturer): no
- * trilingual language toggle, no manufacturer commission card, no factory
- * pricing/earnings. Instead it surfaces network stats, agent management, and
- * one-tap access to the full admin toolset (these accounts hold admin-panel
- * access, so every /admin/* link resolves).
- *
- * Data reuses the endpoints that already back admin accounts:
- *   GET /api/manufacturer/overview      -> display name
- *   GET /api/manufacturer/agents        -> downline agents + 30d GMV
- *   GET /api/manufacturer/network-orders-> network order count
- *   GET /api/agent/my-qr                -> recruit QR
- */
-
-import { useEffect, useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
+import LazyAdminOverviewSparkline from '@/components/LazyAdminOverviewSparkline';
+import { exportCSV, downloadCSV } from '@/lib/export';
+import { Megaphone, Send, Users, Check } from 'lucide-react';
 
 interface NetworkAgent {
   id: string;
@@ -34,10 +19,9 @@ interface NetworkAgent {
   gmv30d: number;
 }
 
-// Brand accent is a warm taupe (--teal resolves to #C0B8A8 app-wide), NOT cyan.
 const TEAL = 'var(--teal, #C0B8A8)';
 const SILVER = 'var(--silver, #A8B4C0)';
-const GREEN = '#89C79C'; // muted sage for positive money figures
+const GREEN = '#89C79C';
 
 const card: React.CSSProperties = {
   background: '#0F1923',
@@ -58,7 +42,6 @@ const btnGhost: React.CSSProperties = {
 
 const money = (n: number) => `$${(Number.isFinite(n) ? n : 0).toFixed(2)}`;
 
-// Icon set — small inline SVGs so the grid reads as one system.
 const ip = { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
 const ICONS: Record<string, React.ReactNode> = {
   agents: <svg {...ip}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>,
@@ -86,36 +69,37 @@ const TOOLS: { href: string; key: string; label: string; desc: string }[] = [
   { href: '/admin', key: 'admin', label: 'Full Admin Panel', desc: 'Every platform control' },
 ];
 
-export default function NetworkDashboardClient() {
-  const [name, setName] = useState<string>('');
-  const [agents, setAgents] = useState<NetworkAgent[]>([]);
-  const [orderCount, setOrderCount] = useState<number | null>(null);
-  const [qr, setQr] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState<Record<string, boolean>>({});
+interface Props {
+  initialName: string;
+  initialAgents: NetworkAgent[];
+  initialOrderCount: number | null;
+  initialQr: string | null;
+  sparkline: { date: string; revenue: number }[];
+}
 
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const [ov, ag] = await Promise.all([
-          fetch('/api/manufacturer/overview', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null),
-          fetch('/api/manufacturer/agents', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null),
-        ]);
-        if (!alive) return;
-        const p = ov?.profile;
-        setName(p?.displayName || p?.fullName || p?.username || 'Admin');
-        setAgents(Array.isArray(ag?.agents) ? ag.agents : Array.isArray(ag) ? ag : []);
-      } finally {
-        if (alive) setLoading(false);
-      }
-      fetch('/api/manufacturer/network-orders', { cache: 'no-store' })
-        .then(r => r.ok ? r.json() : null).then(j => { if (alive && j) setOrderCount(Array.isArray(j.orders) ? j.orders.length : null); }).catch(() => {});
-      fetch('/api/agent/my-qr', { cache: 'no-store' })
-        .then(r => r.ok ? r.json() : null).then(j => { if (alive && j) setQr(j.qrDataUrl ?? null); }).catch(() => {});
-    })();
-    return () => { alive = false; };
-  }, []);
+type SortKey = 'name' | 'role' | 'tier' | 'commission' | 'gmv' | 'status';
+
+export default function NetworkDashboardClient({
+  initialName,
+  initialAgents,
+  initialOrderCount,
+  initialQr,
+  sparkline,
+}: Props) {
+  const [agents, setAgents] = useState<NetworkAgent[]>(initialAgents);
+  const [busy, setBusy] = useState<Record<string, boolean>>({});
+  
+  // Sorting and Filtering
+  const [filterText, setFilterText] = useState('');
+  const [sortKey, setSortKey] = useState<SortKey>('gmv');
+  const [sortAsc, setSortAsc] = useState(false);
+
+  // Broadcast state
+  const [broadcastTitle, setBroadcastTitle] = useState('');
+  const [broadcastMessage, setBroadcastMessage] = useState('');
+  const [broadcastUrl, setBroadcastUrl] = useState('');
+  const [sendingBroadcast, setSendingBroadcast] = useState(false);
+  const [broadcastResult, setBroadcastResult] = useState<string | null>(null);
 
   const totalAgents = agents.length;
   const activeAgents = agents.filter(a => a.isActive).length;
@@ -126,8 +110,7 @@ export default function NetworkDashboardClient() {
     { label: 'Total Agents', value: String(totalAgents), accent: TEAL },
     { label: 'Active', value: String(activeAgents), accent: GREEN },
     { label: 'Super Agents', value: String(superAgents), accent: TEAL },
-    { label: 'Network GMV (30d)', value: money(gmv30), accent: GREEN },
-    { label: 'Network Orders', value: orderCount == null ? '—' : String(orderCount), accent: TEAL },
+    { label: 'Network Orders', value: initialOrderCount == null ? '—' : String(initialOrderCount), accent: TEAL },
   ];
 
   async function agentAction(a: NetworkAgent, kind: 'super' | 'active') {
@@ -151,6 +134,130 @@ export default function NetworkDashboardClient() {
     }
   }
 
+  async function updateAgent(a: NetworkAgent, updates: { tier?: string; commission_pct?: number | null }) {
+    setBusy(s => ({ ...s, [a.id]: true }));
+    try {
+      const res = await fetch(`/api/manufacturer/agents/${a.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+      if (res.ok) {
+        setAgents(prev => prev.map(x => x.id === a.id ? { ...x, ...updates } : x));
+      }
+    } finally {
+      setBusy(s => ({ ...s, [a.id]: false }));
+    }
+  }
+
+  async function impersonate(targetUserId: string) {
+    if (!window.confirm('Impersonate this agent? You will be redirected to their dashboard.')) return;
+    try {
+      const res = await fetch('/api/admin/impersonate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target_user_id: targetUserId }),
+      });
+      const data = await res.json();
+      if (data.ok && data.redirect_to) {
+        window.location.href = data.redirect_to;
+      } else {
+        alert(data.error || 'Failed to start impersonation');
+      }
+    } catch {
+      alert('An error occurred while trying to impersonate');
+    }
+  }
+
+  const handleExportCSV = () => {
+    const columns = [
+      { key: 'name', label: 'Agent Name' },
+      { key: 'username', label: 'Username' },
+      { key: 'role', label: 'Role' },
+      { key: 'tier', label: 'Tier' },
+      { key: 'commission', label: 'Commission (%)' },
+      { key: 'gmv', label: '30-Day GMV ($)' },
+      { key: 'status', label: 'Status' },
+      { key: 'store', label: 'Store URL' },
+    ];
+    const rows = filteredAgents.map(a => ({
+      name: a.fullName || a.username || '',
+      username: a.username || '',
+      role: a.isSuperAgent ? 'Super Agent' : 'Agent',
+      tier: a.tier || '',
+      commission: String(a.commissionPct ?? ''),
+      gmv: String(a.gmv30d),
+      status: a.isActive ? 'Active' : 'Inactive',
+      store: a.slug ? `https://pepnationlab.com/${a.slug}` : '',
+    }));
+    const csvData = exportCSV(rows, columns);
+    downloadCSV(`network_agents_${new Date().toISOString().split('T')[0]}.csv`, csvData);
+  };
+
+  const handleBroadcast = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (sendingBroadcast) return;
+    setSendingBroadcast(true);
+    setBroadcastResult(null);
+    try {
+      const res = await fetch('/api/manufacturer/broadcasts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: broadcastTitle, message: broadcastMessage, url: broadcastUrl || null }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) { alert(json?.error || 'Failed to send broadcast'); return; }
+      setBroadcastResult(`Sent to ${json.sent} agents.`);
+      setBroadcastTitle(''); setBroadcastMessage(''); setBroadcastUrl('');
+    } catch {
+      alert('Something went wrong. Please try again.');
+    } finally {
+      setSendingBroadcast(false);
+    }
+  };
+
+  const filteredAgents = useMemo(() => {
+    let result = [...agents];
+    if (filterText) {
+      const lower = filterText.toLowerCase();
+      result = result.filter(a => 
+        a.fullName?.toLowerCase().includes(lower) || 
+        a.username?.toLowerCase().includes(lower) || 
+        a.slug?.toLowerCase().includes(lower)
+      );
+    }
+    result.sort((a, b) => {
+      let cmp = 0;
+      switch (sortKey) {
+        case 'name':
+          cmp = (a.fullName || a.username || '').localeCompare(b.fullName || b.username || '');
+          break;
+        case 'role':
+          cmp = (a.isSuperAgent === b.isSuperAgent) ? 0 : a.isSuperAgent ? -1 : 1;
+          break;
+        case 'tier':
+          cmp = (a.tier || '').localeCompare(b.tier || '');
+          break;
+        case 'commission':
+          cmp = (a.commissionPct || 0) - (b.commissionPct || 0);
+          break;
+        case 'gmv':
+          cmp = a.gmv30d - b.gmv30d;
+          break;
+        case 'status':
+          cmp = (a.isActive === b.isActive) ? 0 : a.isActive ? -1 : 1;
+          break;
+      }
+      return sortAsc ? cmp : -cmp;
+    });
+    return result;
+  }, [agents, filterText, sortKey, sortAsc]);
+
+  const setSort = (key: SortKey) => {
+    if (sortKey === key) setSortAsc(!sortAsc);
+    else { setSortKey(key); setSortAsc(false); }
+  };
+
   return (
     <div style={{ minHeight: '100vh', background: '#050A0F', color: '#FFFFFF', paddingBottom: 60 }}>
       <div style={{ maxWidth: 1120, margin: '0 auto', padding: '0 16px' }}>
@@ -164,7 +271,7 @@ export default function NetworkDashboardClient() {
         }}>
           <div>
             <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: TEAL }}>Command Center</div>
-            <h1 style={{ margin: '4px 0 0', fontSize: '1.7rem', fontWeight: 900, lineHeight: 1.1 }}>{loading ? '…' : name}</h1>
+            <h1 style={{ margin: '4px 0 0', fontSize: '1.7rem', fontWeight: 900, lineHeight: 1.1 }}>{initialName}</h1>
             <div style={{ marginTop: 4, fontSize: '0.85rem', color: SILVER }}>Manage your network, agents, and the full platform.</div>
           </div>
           <Link href="/admin" style={{
@@ -176,14 +283,19 @@ export default function NetworkDashboardClient() {
           </Link>
         </header>
 
-        {/* KPI tiles */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 24 }}>
-          {kpis.map(k => (
-            <div key={k.label} style={{ ...card, padding: '16px 18px' }}>
-              <div style={{ fontSize: '1.7rem', fontWeight: 900, color: k.accent, fontFamily: 'ui-monospace, monospace', letterSpacing: '-0.02em' }}>{loading ? '—' : k.value}</div>
-              <div style={{ fontSize: '0.72rem', color: SILVER, marginTop: 4, fontWeight: 600 }}>{k.label}</div>
-            </div>
-          ))}
+        {/* Sparkline & KPIs */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 3fr', gap: 12, marginBottom: 24, alignItems: 'stretch' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, gridAutoRows: '1fr' }}>
+            {kpis.map(k => (
+              <div key={k.label} style={{ ...card, padding: '16px 18px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <div style={{ fontSize: '1.7rem', fontWeight: 900, color: k.accent, fontFamily: 'ui-monospace, monospace', letterSpacing: '-0.02em' }}>{k.value}</div>
+                <div style={{ fontSize: '0.72rem', color: SILVER, marginTop: 4, fontWeight: 600 }}>{k.label}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ ...card, padding: '16px 20px', minHeight: 180 }}>
+            <LazyAdminOverviewSparkline data={sparkline} />
+          </div>
         </div>
 
         {/* Tool grid */}
@@ -209,15 +321,42 @@ export default function NetworkDashboardClient() {
           ))}
         </div>
 
+        {/* Broadcast Form */}
+        <div style={{ ...card, marginBottom: 24 }}>
+          <h2 style={{ fontSize: '1.15rem', fontWeight: 700, margin: '0 0 1rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Megaphone size={20} color={TEAL} /> Broadcast To Network
+          </h2>
+          <p style={{ color: SILVER, fontSize: '0.85rem', margin: '0 0 1rem' }}>
+            Send an in-app and push notification to all {activeAgents} active agents in your downline.
+          </p>
+          <form onSubmit={handleBroadcast} style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-start' }}>
+            <input type="text" required maxLength={80} value={broadcastTitle} onChange={e => setBroadcastTitle(e.target.value)} placeholder="Title (e.g. New Peptides Dropped)" style={{ flex: 1, minWidth: 200, padding: '8px 12px', background: '#050A0F', border: '1px solid #1D2D3E', borderRadius: 8, color: '#FFF' }} />
+            <input type="text" required maxLength={500} value={broadcastMessage} onChange={e => setBroadcastMessage(e.target.value)} placeholder="Message body..." style={{ flex: 2, minWidth: 250, padding: '8px 12px', background: '#050A0F', border: '1px solid #1D2D3E', borderRadius: 8, color: '#FFF' }} />
+            <input type="text" value={broadcastUrl} onChange={e => setBroadcastUrl(e.target.value)} placeholder="URL (e.g. /dashboard)" style={{ flex: 1, minWidth: 150, padding: '8px 12px', background: '#050A0F', border: '1px solid #1D2D3E', borderRadius: 8, color: '#FFF' }} />
+            <button type="submit" disabled={sendingBroadcast} style={{ background: TEAL, color: '#050A0F', border: 'none', padding: '8px 16px', borderRadius: 8, fontWeight: 700, cursor: sendingBroadcast ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Send size={16} /> {sendingBroadcast ? 'Sending...' : 'Send'}
+            </button>
+          </form>
+          {broadcastResult && <p style={{ margin: '10px 0 0', fontSize: '0.85rem', color: GREEN, display: 'flex', alignItems: 'center', gap: 4 }}><Check size={14} /> {broadcastResult}</p>}
+        </div>
+
         {/* My Agents */}
         <div style={{ ...card, padding: 0, overflow: 'hidden', marginBottom: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexWrap: 'wrap', gap: 12 }}>
             <h2 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>My Agents</h2>
-            <Link href="/admin/agents" style={{ color: TEAL, fontSize: '0.8rem', fontWeight: 700, textDecoration: 'none' }}>Create &amp; manage &rarr;</Link>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <input
+                type="text"
+                placeholder="Search agents..."
+                value={filterText}
+                onChange={e => setFilterText(e.target.value)}
+                style={{ background: '#050A0F', border: '1px solid rgba(255,255,255,0.1)', color: '#FFF', padding: '6px 12px', borderRadius: 6, fontSize: '0.8rem', width: 200 }}
+              />
+              <button onClick={handleExportCSV} style={btnGhost}>Export CSV</button>
+              <Link href="/admin/agents" style={{ color: TEAL, fontSize: '0.8rem', fontWeight: 700, textDecoration: 'none' }}>Create new &rarr;</Link>
+            </div>
           </div>
-          {loading ? (
-            <div style={{ padding: 24, color: SILVER, fontSize: '0.85rem' }}>Loading agents…</div>
-          ) : agents.length === 0 ? (
+          {agents.length === 0 ? (
             <div style={{ padding: 24, color: SILVER, fontSize: '0.85rem' }}>
               No agents yet. <Link href="/admin/agents" style={{ color: TEAL, textDecoration: 'none' }}>Create your first agent &rarr;</Link>
             </div>
@@ -226,16 +365,32 @@ export default function NetworkDashboardClient() {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                    {['Agent', 'Role', 'Tier', 'Commission', 'GMV (30d)', 'Store', 'Status', ''].map(h => (
-                      <th key={h} style={{ textAlign: 'left', padding: '10px 14px', color: SILVER, fontWeight: 700, fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
+                    {[
+                      { key: 'name', label: 'Agent' },
+                      { key: 'role', label: 'Role' },
+                      { key: 'tier', label: 'Tier' },
+                      { key: 'commission', label: 'Commission' },
+                      { key: 'gmv', label: 'GMV (30d)' },
+                      { key: null, label: 'Store' },
+                      { key: 'status', label: 'Status' },
+                      { key: null, label: '' }
+                    ].map(h => (
+                      <th key={h.label} 
+                          onClick={() => h.key && setSort(h.key as SortKey)}
+                          style={{ textAlign: 'left', padding: '10px 14px', color: SILVER, fontWeight: 700, fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap', cursor: h.key ? 'pointer' : 'default', userSelect: 'none' }}>
+                        {h.label} {sortKey === h.key && (sortAsc ? '↑' : '↓')}
+                      </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {agents.map(a => (
+                  {filteredAgents.map(a => (
                     <tr key={a.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', opacity: a.isActive ? 1 : 0.55 }}>
                       <td style={{ padding: '11px 14px' }}>
-                        <div style={{ fontWeight: 700 }}>{a.fullName || a.username}</div>
+                        <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          {a.fullName || a.username}
+                          <button onClick={() => impersonate(a.id)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#FFF', fontSize: '0.65rem', padding: '2px 6px', borderRadius: 4, cursor: 'pointer' }} title="View As this Agent">View As</button>
+                        </div>
                         <div style={{ fontSize: '0.7rem', color: SILVER }}>@{a.username}</div>
                       </td>
                       <td style={{ padding: '11px 14px' }}>
@@ -243,8 +398,31 @@ export default function NetworkDashboardClient() {
                           {a.isSuperAgent ? 'Super Agent' : 'Agent'}
                         </span>
                       </td>
-                      <td style={{ padding: '11px 14px', color: SILVER }}>{a.tier ? a.tier.replace('_', ' ').toUpperCase() : '—'}</td>
-                      <td style={{ padding: '11px 14px', color: TEAL, fontWeight: 700 }}>{a.commissionPct != null ? `${a.commissionPct}%` : '—'}</td>
+                      <td style={{ padding: '11px 14px', color: SILVER }}>
+                        <select 
+                          value={a.tier || ''} 
+                          onChange={(e) => updateAgent(a, { tier: e.target.value })}
+                          disabled={busy[a.id]}
+                          style={{ background: 'transparent', color: SILVER, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, padding: '2px', fontSize: '0.75rem' }}
+                        >
+                          <option value="tier_1">Tier 1</option>
+                          <option value="tier_2">Tier 2</option>
+                          <option value="tier_3">Tier 3</option>
+                          <option value="tier_4">Tier 4</option>
+                        </select>
+                      </td>
+                      <td style={{ padding: '11px 14px', color: TEAL, fontWeight: 700 }}>
+                        <input 
+                          type="number" 
+                          value={a.commissionPct ?? ''} 
+                          onChange={(e) => {
+                             const val = e.target.value ? Number(e.target.value) : null;
+                             updateAgent(a, { commission_pct: val });
+                          }}
+                          disabled={busy[a.id]}
+                          style={{ width: 50, background: 'transparent', color: TEAL, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, padding: '2px 4px', fontSize: '0.75rem', fontWeight: 700 }}
+                        /> %
+                      </td>
                       <td style={{ padding: '11px 14px', fontWeight: 700, fontFamily: 'ui-monospace, monospace' }}>{money(Number(a.gmv30d) || 0)}</td>
                       <td style={{ padding: '11px 14px' }}>
                         {a.slug ? <a href={`/${a.slug}`} target="_blank" rel="noopener noreferrer" style={{ color: TEAL, fontSize: '0.75rem', textDecoration: 'none' }}>/{a.slug}</a> : '—'}
@@ -268,6 +446,11 @@ export default function NetworkDashboardClient() {
                       </td>
                     </tr>
                   ))}
+                  {filteredAgents.length === 0 && (
+                    <tr>
+                      <td colSpan={8} style={{ padding: 20, textAlign: 'center', color: SILVER }}>No agents match your search.</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -277,7 +460,7 @@ export default function NetworkDashboardClient() {
         {/* Recruit */}
         <div style={{ ...card, display: 'flex', gap: 22, alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ flexShrink: 0, width: 132, height: 132, borderRadius: 12, background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-            {qr ? <img src={qr} alt="Referral QR" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : <span style={{ color: '#0F1923', fontSize: '0.75rem' }}>QR…</span>}
+            {initialQr ? <img src={initialQr} alt="Referral QR" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : <span style={{ color: '#0F1923', fontSize: '0.75rem' }}>QR…</span>}
           </div>
           <div style={{ minWidth: 200, flex: 1 }}>
             <h2 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>Recruit Agents</h2>
