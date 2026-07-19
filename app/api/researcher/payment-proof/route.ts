@@ -177,7 +177,7 @@ export async function POST(req: NextRequest) {
     .from('payment-proofs')
     .createSignedUrl(key, 600);
 
-  // ── Messenger integration ────────────────────────────────────────────────
+  // ── Messenger integration ────────────────────────────────────────
   // Post a message in the researcher↔agent conversation so the agent is
   // immediately alerted and can view the proof without leaving the app.
   // IMPORTANT: We must 'await' this so Vercel does not kill the process!
