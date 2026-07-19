@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { Sparkles, ChevronRight, ShieldCheck, Printer, X, Info, Scale, Trash2, ArrowRight, ArrowLeft, Save, Search, Eye, Clock, Atom, Snowflake, AlertTriangle, Check, RotateCcw, FlaskConical, Microscope, Globe, Dna, Shield, Radiation, Infinity, Zap } from 'lucide-react';
+import { Sparkles, ChevronRight, ShieldCheck, Printer, X, Info, Scale, Trash2, ArrowRight, ArrowLeft, Save, Search, Eye, Clock, Atom, Snowflake, AlertTriangle, Check, RotateCcw, FlaskConical, Microscope, Globe, Shield, Infinity, Zap, Link2, ShoppingCart } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { RESEARCH_AREAS } from '@/lib/compounds';
 import type {
@@ -172,7 +172,23 @@ function MatchFormInner() {
   const [selectedDrawerCompound, setSelectedDrawerCompound] = useState<MatchResult | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // Sync state to URL
+  // Delayed auto-advance for step cards (gives selected state time to render)
+  function advanceAfterDelay(nextStep: number, delay = 340) {
+    setTimeout(() => setStep(nextStep), delay);
+  }
+
+  // Copy sharable link with ?run=true
+  function handleCopyLink() {
+    const url = new URL(window.location.href);
+    url.searchParams.set('run', 'true');
+    navigator.clipboard.writeText(url.toString()).then(() => {
+      toast.success('Link Copied To Clipboard!');
+    }).catch(() => {
+      toast.error('Could Not Copy Link.');
+    });
+  }
+
+  // Sync state to URL — include run=true when on results step so refreshing auto-reruns
   useEffect(() => {
     const params = new URLSearchParams();
     if (goal) params.set('goal', goal);
@@ -182,9 +198,10 @@ function MatchFormInner() {
     if (requireLongHalfLife) params.set('long_half_life', 'true');
     if (preference && preference !== 'either') params.set('preference', preference);
     if (budget && budget !== 'standard') params.set('budget', budget);
+    if (step === 5) params.set('run', 'true');
     excludeSlugs.forEach(s => params.append('exclude', s));
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [goal, evidenceComfort, riskTolerance, excludeInjectables, requireLongHalfLife, preference, budget, excludeSlugs, pathname, router]);
+  }, [goal, evidenceComfort, riskTolerance, excludeInjectables, requireLongHalfLife, preference, budget, excludeSlugs, step, pathname, router]);
 
   async function onSubmit(e?: React.FormEvent, overrides?: Record<string, unknown>) {
     if (e) e.preventDefault();
@@ -557,9 +574,42 @@ function MatchFormInner() {
         <hr />
       </div>
 
-      <div className="no-print" style={{ display: 'flex', gap: '8px', marginBottom: '24px', justifyContent: 'center' }}>
-        {[1, 2, 3, 4, 5].map(s => (
-          <div key={s} style={{ height: '4px', flex: 1, maxWidth: '60px', background: s <= step ? 'var(--teal)' : 'rgba(255,255,255,0.1)', borderRadius: '2px', transition: 'background 0.3s' }} />
+      {/* Labeled step progress */}
+      <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '28px', justifyContent: 'center', flexWrap: 'wrap' }}>
+        {[
+          { s: 1, label: 'Goal' },
+          { s: 2, label: 'Evidence' },
+          { s: 3, label: 'Risk' },
+          { s: 4, label: 'Filters' },
+          { s: 5, label: 'Results' },
+        ].map(({ s, label }, i) => (
+          <>
+            {i > 0 && <div key={`sep-${s}`} style={{ width: '20px', height: '2px', background: s <= step ? 'var(--teal)' : 'rgba(255,255,255,0.12)', borderRadius: '2px', transition: 'background 0.3s', flexShrink: 0 }} />}
+            <button
+              key={s}
+              onClick={() => s < step ? setStep(s) : undefined}
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
+                background: 'none', border: 'none', cursor: s < step ? 'pointer' : 'default', padding: '0 4px',
+              }}
+              title={s < step ? `Go back to ${label}` : label}
+            >
+              <div style={{
+                width: '28px', height: '28px', borderRadius: '50%',
+                background: s < step ? 'var(--teal)' : s === step ? 'rgba(0,196,188,0.15)' : 'rgba(255,255,255,0.06)',
+                border: s === step ? '2px solid var(--teal)' : s < step ? '2px solid var(--teal)' : '2px solid rgba(255,255,255,0.1)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'all 0.3s',
+                boxShadow: s === step ? '0 0 12px rgba(0,196,188,0.4)' : 'none',
+              }}>
+                {s < step
+                  ? <Check size={13} color="#0F1923" />
+                  : <span style={{ fontSize: '0.7rem', fontWeight: 800, color: s === step ? 'var(--teal)' : 'rgba(255,255,255,0.3)' }}>{s}</span>
+                }
+              </div>
+              <span style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.04em', color: s === step ? 'var(--teal)' : s < step ? 'rgba(0,196,188,0.7)' : 'rgba(255,255,255,0.25)', textTransform: 'uppercase', transition: 'color 0.3s' }}>{label}</span>
+            </button>
+          </>
         ))}
       </div>
 
@@ -570,16 +620,22 @@ function MatchFormInner() {
       <>
         {step === 1 && (
           <motion.div key="step1" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.3 }} className="glass-panel no-print" style={{ padding: '32px' }}>
+            <div style={{ marginBottom: '8px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.8 }}>Step 1 of 4</div>
             <h2 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '8px' }}>What Is Your Primary Research Goal?</h2>
             <p style={{ color: 'var(--silver)', marginBottom: '32px' }}>Tap Any Goal Below To Continue &mdash; The Engine Calibrates Instantly.</p>
-            
-            <div style={{ marginBottom: '40px', padding: '16px', background: 'rgba(0,0,0,0.2)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+
+            {/* AI Configure — visually distinct with teal left-border treatment */}
+            <div style={{ marginBottom: '40px', padding: '16px 16px 16px 20px', background: 'rgba(0,0,0,0.2)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', borderLeft: '3px solid var(--teal)', boxShadow: 'inset 4px 0 16px rgba(0,196,188,0.06)' }}>
               <p style={{ color: 'var(--silver)', fontSize: '0.9rem', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Sparkles size={16} color="var(--teal)" /> Or Use AI To Configure Parameters:
+                <Sparkles size={16} color="var(--teal)" style={{ flexShrink: 0 }} />
+                <span><strong style={{ color: 'var(--teal)' }}>AI Configure</strong> — Describe Your Research Scenario In Plain Language:
+                </span>
               </p>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <input type="text" value={aiPrompt} onChange={e => setAiPrompt(e.target.value)} placeholder="Describe Your Scenario..." style={{ flex: 1, padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid #1D2D3E', background: '#0F1923', color: 'white', fontSize: '1rem' }} onKeyDown={e => e.key === 'Enter' && onAiSubmit()} />
-                <button onClick={onAiSubmit} disabled={aiLoading} className="btn-secondary" style={{ padding: '0 1.5rem', fontWeight: 600 }}>{aiLoading ? 'Thinking...' : 'AI Configure'}</button>
+                <input type="text" value={aiPrompt} onChange={e => setAiPrompt(e.target.value)} placeholder="e.g. I want to research weight loss compounds with low risk..." style={{ flex: 1, padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid rgba(0,196,188,0.25)', background: 'rgba(0,196,188,0.04)', color: 'white', fontSize: '1rem', outline: 'none' }} onKeyDown={e => e.key === 'Enter' && onAiSubmit()} />
+                <button onClick={onAiSubmit} disabled={aiLoading} className="wizard-next-btn" style={{ padding: '0 1.4rem', fontSize: '0.9rem', whiteSpace: 'nowrap' }}>
+                  {aiLoading ? <><Sparkles size={15} className="animate-pulse" /> Thinking...</> : <><Sparkles size={15} /> Configure</>}
+                </button>
               </div>
             </div>
 
@@ -629,31 +685,18 @@ function MatchFormInner() {
                 </div>
               ))}
             </div>
-            
-            <div style={{ marginTop: '40px', display: 'flex', justifyContent: 'center' }}>
-              <button 
-                onClick={() => setStep(2)} 
-                className="btn-primary" 
-                style={{ 
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', 
-                  width: '100%', maxWidth: '400px', padding: '16px', fontSize: '1.2rem', 
-                  fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px',
-                  boxShadow: '0 0 20px rgba(0,196,188,0.4)'
-                }}
-              >
-                Continue With {goalOptions.find(g => g.value === goal)?.label ?? 'This Goal'} <ArrowRight size={24} />
-              </button>
-            </div>
+            {/* No redundant Continue button — clicking a card is the action */}
           </motion.div>
         )}
 
         {step === 2 && (
           <motion.div key="step2" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.3 }} className="glass-panel no-print" style={{ padding: '32px' }}>
+            <div style={{ marginBottom: '8px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.8 }}>Step 2 of 4</div>
             <h2 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '8px' }}>Evidence Tier Comfort</h2>
             <p style={{ color: 'var(--silver)', marginBottom: '24px' }}>How Much Clinical Evidence Do You Require For These Compounds?</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '16px' }}>
               {EVIDENCE_OPTIONS.map(o => (
-                <div key={o.value} onClick={() => { setEvidenceComfort(o.value); setStep(3); }} role="button" tabIndex={0} aria-pressed={evidenceComfort === o.value} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { if (e.key === ' ') e.preventDefault(); setEvidenceComfort(o.value); setStep(3); } }} className={`step-card ${evidenceComfort === o.value ? 'selected' : ''}`}>
+                <div key={o.value} onClick={() => { setEvidenceComfort(o.value); advanceAfterDelay(3); }} role="button" tabIndex={0} aria-pressed={evidenceComfort === o.value} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { if (e.key === ' ') e.preventDefault(); setEvidenceComfort(o.value); advanceAfterDelay(3); } }} className={`step-card ${evidenceComfort === o.value ? 'selected' : ''}`}>
                   <div className="step-card-check"><Check size={12} color="#0F1923" /></div>
                   <div className="step-card-icon" style={{ color: o.color }}>{o.icon}</div>
                   <h3 style={{ color: 'white', fontSize: '1.1rem', margin: '0 0 6px 0', fontWeight: 700 }}>{o.label}</h3>
@@ -670,12 +713,13 @@ function MatchFormInner() {
 
         {step === 3 && (
           <motion.div key="step3" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.3 }} className="glass-panel no-print" style={{ padding: '32px' }}>
+            <div style={{ marginBottom: '8px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.8 }}>Step 3 of 4</div>
             <h2 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '8px' }}>Risk Tolerance</h2>
             <p style={{ color: 'var(--silver)', marginBottom: '24px' }}>Set Your Safety Constraints.</p>
-            
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '16px' }}>
               {RISK_OPTIONS.map(o => (
-                <div key={o.value} onClick={() => { setRiskTolerance(o.value); setStep(4); }} role="button" tabIndex={0} aria-pressed={riskTolerance === o.value} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { if (e.key === ' ') e.preventDefault(); setRiskTolerance(o.value); setStep(4); } }} className={`step-card ${riskTolerance === o.value ? 'selected' : ''}`}>
+                <div key={o.value} onClick={() => { setRiskTolerance(o.value); advanceAfterDelay(4); }} role="button" tabIndex={0} aria-pressed={riskTolerance === o.value} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { if (e.key === ' ') e.preventDefault(); setRiskTolerance(o.value); advanceAfterDelay(4); } }} className={`step-card ${riskTolerance === o.value ? 'selected' : ''}`}>
                   <div className="step-card-check"><Check size={12} color="#0F1923" /></div>
                   <div className="step-card-icon" style={{ color: o.color }}>{o.icon}</div>
                   <h3 style={{ color: 'white', fontSize: '1.1rem', margin: '0 0 6px 0', fontWeight: 700 }}>{o.label}</h3>
@@ -693,6 +737,7 @@ function MatchFormInner() {
 
         {step === 4 && (
           <motion.div key="step4" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.3 }} className="glass-panel no-print" style={{ padding: '32px' }}>
+            <div style={{ marginBottom: '8px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.8 }}>Step 4 of 4</div>
             <h2 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '8px' }}>Advanced Preferences</h2>
             <p style={{ color: 'var(--silver)', marginBottom: '24px' }}>Fine-Tune Format And Handling Requirements.</p>
 
@@ -766,6 +811,9 @@ function MatchFormInner() {
                     <Scale size={16} /> {compareSelection.length === 2 ? 'Compare Selected' : 'Compare Top 2'}
                   </button>
                 )}
+                <button onClick={handleCopyLink} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', fontSize: '0.9rem', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', color: '#A8B4C0', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }} title="Copy shareable link">
+                  <Link2 size={15} /> Share
+                </button>
               </div>
             </div>
 
@@ -814,12 +862,15 @@ function MatchFormInner() {
             )}
 
             {!loading && results && results.length === 0 && (
-              <div className="glass-panel" style={{ textAlign: 'center', padding: '48px' }}>
-                <p style={{ color: 'var(--silver)', fontSize: '1.2rem', marginBottom: '24px' }}>No Matching Compounds Survived Your Constraints.</p>
-                <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-                  <button onClick={() => setStep(2)} className="btn-primary">Loosen Constraints</button>
+              <div className="glass-panel" style={{ textAlign: 'center', padding: '56px 48px' }}>
+                <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🔬</div>
+                <h3 style={{ color: 'white', fontSize: '1.3rem', marginBottom: '8px' }}>No Compounds Passed Your Filters</h3>
+                <p style={{ color: 'var(--silver)', fontSize: '1rem', marginBottom: '28px', maxWidth: '420px', margin: '0 auto 28px', lineHeight: 1.6 }}>The engine scanned the full catalog and nothing matched all your constraints. Try relaxing one parameter to open up results.</p>
+                <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <button onClick={() => setStep(2)} className="wizard-next-btn" style={{ padding: '12px 24px' }}>Loosen Evidence Filter <ArrowRight size={16} /></button>
+                  <button onClick={() => setStep(3)} className="wizard-back-btn">Adjust Risk Tolerance</button>
                   {excludeSlugs.length > 0 && (
-                    <button onClick={() => setExcludeSlugs([])} className="btn-secondary">Clear Exclusions</button>
+                    <button onClick={() => setExcludeSlugs([])} className="wizard-back-btn">Clear Exclusions ({excludeSlugs.length})</button>
                   )}
                 </div>
               </div>
@@ -827,10 +878,21 @@ function MatchFormInner() {
 
             {results && results.length > 0 && (
               <div style={{ opacity: loading ? 0.5 : 1, transition: 'opacity 0.2s', pointerEvents: loading ? 'none' : 'auto' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4, 16px)' }}>
-                  <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--white, #FFFFFF)', margin: 0 }}>
-                    Top {results.length} {results.length === 1 ? 'Match' : 'Matches'} {loading && <Sparkles size={16} className="animate-pulse inline" />}
-                  </h3>
+                {/* Trust-building result summary */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-4, 16px)', flexWrap: 'wrap', gap: '8px' }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--white, #FFFFFF)', margin: '0 0 4px' }}>
+                      Top {results.length} {results.length === 1 ? 'Match' : 'Matches'} {loading && <Sparkles size={16} className="animate-pulse inline" />}
+                    </h3>
+                    <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--grey-500, #6B7785)', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                      <Sparkles size={12} color="var(--teal)" />
+                      Engine scanned the full catalog
+                      <span style={{ color: 'rgba(255,255,255,0.2)' }}>·</span>
+                      <strong style={{ color: 'var(--teal)' }}>{results.length} compound{results.length !== 1 ? 's' : ''}</strong> passed your filters
+                      <span style={{ color: 'rgba(255,255,255,0.2)' }}>·</span>
+                      Ranked by score out of 100
+                    </p>
+                  </div>
                   {excludeSlugs.length > 0 && (
                     <button onClick={() => setExcludeSlugs([])} className="no-print" style={{ background: 'rgba(229,62,62,0.1)', color: '#F08A8A', border: '1px solid rgba(229,62,62,0.3)', borderRadius: '8px', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}>
                       Clear Exclusions ({excludeSlugs.length})
@@ -878,6 +940,10 @@ function MatchFormInner() {
                           </div>
                         </div>
                         <div className="match-actions no-print">
+                          {/* View In Store CTA */}
+                          <Link href={`/store/${r.slug}`} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: '8px 12px', background: 'linear-gradient(135deg,#3DD9A4,#00C4BC)', color: '#0a1a14', fontWeight: 800, borderRadius: '8px', textDecoration: 'none', whiteSpace: 'nowrap', justifyContent: 'center' }}>
+                            <ShoppingCart size={14} /> View In Store
+                          </Link>
                           <button onClick={() => { setSelectedDrawerCompound(r); setIsDrawerOpen(true); }} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: '8px 12px' }}>
                             <Eye size={16} /> Quick View
                           </button>
@@ -888,16 +954,18 @@ function MatchFormInner() {
                           >
                             {compareSelection.includes(r.slug) ? <Check size={14} /> : <Scale size={14} />} Compare
                           </button>
-                          <button onClick={() => setExcludeSlugs(prev => [...prev, r.slug])} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#A8B4C0', padding: '8px 12px', cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <Trash2 size={14} /> Exclude
+                          <button onClick={() => setExcludeSlugs(prev => [...prev, r.slug])} style={{ background: 'rgba(229,62,62,0.06)', border: '1px solid rgba(229,62,62,0.2)', borderRadius: '8px', color: '#F08A8A', padding: '7px 10px', cursor: 'pointer', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <Trash2 size={13} /> Exclude
                           </button>
                         </div>
                       </div>
                       
                       <div className="no-print" style={{ marginTop: '16px', background: 'rgba(0,0,0,0.2)', padding: '14px', borderRadius: '8px' }}>
-                        <details style={{ fontSize: '0.9rem', color: '#A8B4C0' }}>
+                        {/* Auto-expand the #1 result's score breakdown to showcase the engine */}
+                        <details open={idx === 0} style={{ fontSize: '0.9rem', color: '#A8B4C0' }}>
                           <summary style={{ cursor: 'pointer', outline: 'none', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <Search size={16} /> How This Score Was Calculated
+                            {idx === 0 && <span style={{ fontSize: '0.7rem', background: 'rgba(0,196,188,0.15)', color: 'var(--teal)', borderRadius: '4px', padding: '2px 6px', fontWeight: 700, letterSpacing: '0.05em' }}>TOP MATCH</span>}
                           </summary>
                           <div style={{ marginTop: '14px' }}>
                             {BREAKDOWN_FACTORS.filter(f => (r.scoreBreakdown[f.key] ?? 0) !== 0).map(f => {
