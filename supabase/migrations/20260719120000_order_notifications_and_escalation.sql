@@ -66,11 +66,11 @@ CREATE INDEX IF NOT EXISTS idx_orders_awaiting_action
   WHERE status IN ('pending_customer_payment', 'agent_approval_pending', 'admin_approval_pending');
 
 -- 4. Neutralize the auto-cancel sweep ---------------------------------------
--- Orders must NEVER be auto-cancelled. The function is kept (same signature)
--- so any residual caller gets a harmless 0 instead of an error, but it no
--- longer touches a single row. Manual cancels (agent/admin via cancel_order)
--- are unaffected.
-CREATE OR REPLACE FUNCTION public.cancel_stale_pending_orders(p_hours integer)
+-- Orders must NEVER be auto-cancelled. The function is kept (same signature
+-- incl. DEFAULT 72) so any residual caller gets a harmless 0 instead of an
+-- error, but it no longer touches a single row. Manual cancels (agent/admin
+-- via cancel_order) are unaffected.
+CREATE OR REPLACE FUNCTION public.cancel_stale_pending_orders(p_hours integer DEFAULT 72)
 RETURNS integer
 LANGUAGE plpgsql
 SECURITY DEFINER
