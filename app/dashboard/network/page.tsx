@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import NetworkDashboardClient from './NetworkDashboardClient';
+import Navbar from '@/components/Navbar';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,5 +33,12 @@ export default async function NetworkDashboardPage() {
     redirect(profile.is_manufacturer === true ? '/dashboard/manufacturer' : '/dashboard');
   }
 
-  return <NetworkDashboardClient />;
+  return (
+    <div style={{ minHeight: '100dvh', background: '#050A0F' }}>
+      <Navbar />
+      {/* Spacer for the fixed navbar */}
+      <div style={{ height: 'var(--nav-offset, 60px)' }} />
+      <NetworkDashboardClient />
+    </div>
+  );
 }

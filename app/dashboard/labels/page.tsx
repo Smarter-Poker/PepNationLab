@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import PrintLabelsClient from './PrintLabelsClient';
+import Navbar from '@/components/Navbar';
 
 export const dynamic = 'force-dynamic';
 
@@ -82,5 +83,12 @@ export default async function PrintLabelsPage() {
     .order('name', { ascending: true })
     .order('slug', { ascending: true });
 
-  return <PrintLabelsClient products={products || []} isAdmin={profile.role === 'admin'} brand={brand} />;
+  return (
+    <div style={{ minHeight: '100dvh', background: '#050A0F' }}>
+      <Navbar />
+      {/* Spacer for the fixed navbar */}
+      <div style={{ height: 'var(--nav-offset, 60px)' }} />
+      <PrintLabelsClient products={products || []} isAdmin={profile.role === 'admin'} brand={brand} />
+    </div>
+  );
 }

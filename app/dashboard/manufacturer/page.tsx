@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { LanguageProvider } from '@/lib/i18n';
 import ManufacturerDashboardClient from './ManufacturerDashboardClient';
+import Navbar from '@/components/Navbar';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,8 +30,13 @@ export default async function ManufacturerDashboardPage() {
   }
 
   return (
-    <LanguageProvider initialLocale={profile.locale as string | null} syncToProfile>
-      <ManufacturerDashboardClient />
-    </LanguageProvider>
+    <div style={{ minHeight: '100dvh', background: '#050A0F' }}>
+      <Navbar />
+      {/* Spacer for the fixed navbar */}
+      <div style={{ height: 'var(--nav-offset, 60px)' }} />
+      <LanguageProvider initialLocale={profile.locale as string | null} syncToProfile>
+        <ManufacturerDashboardClient />
+      </LanguageProvider>
+    </div>
   );
 }
