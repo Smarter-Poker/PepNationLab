@@ -122,9 +122,12 @@ export async function POST(req: NextRequest) {
   const signatureValid = authorised; // true only when a secret matched
 
   // If no secret is configured at all, reject in production to prevent forged
-  // tracking events from being accepted (fail-closed). The only exception is
-  // during initial setup when NEXT_PUBLIC_VERCEL_ENV is not set or is 'development'.
-  const isDev = !process.env.NEXT_PUBLIC_VERCEL_ENV || process.env.NEXT_PUBLIC_VERCEL_ENV === 'development';
+  // tracking events from being accepted (fail-closed). The environment comes
+  // from the server-populated VERCEL_ENV (NEXT_PUBLIC_VERCEL_ENV as a fallback)
+  // so this guard fails closed in production. The only exception is during
+  // initial setup when neither is set or is 'development'.
+  const vercelEnv = process.env.VERCEL_ENV || process.env.NEXT_PUBLIC_VERCEL_ENV;
+  const isDev = !vercelEnv || vercelEnv === 'development';
   if (!secret) {
     if (!isDev) {
       // No secret configured in a live environment -> refuse; forces operator to configure the webhook secret.
