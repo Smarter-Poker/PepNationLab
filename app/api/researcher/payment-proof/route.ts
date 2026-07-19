@@ -3,6 +3,7 @@ import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { getEffectiveUser } from '@/lib/impersonation';
 import { assertSameOrigin } from '@/lib/csrf';
 import { findOrCreateDirectConversation } from '@/lib/messenger/conversations';
+import { notify, notifyAdmins } from '@/lib/notify';
 import crypto from 'crypto';
 
 export const runtime = 'nodejs';
@@ -57,9 +58,21 @@ export async function GET(req: NextRequest) {
   const isBuyer = orderCheck.buyer_id === user.id;
   const isAgent = orderCheck.agent_id === user.id;
 
+  // The order agent's upline super agent gets oversight access too (the
+  // route's documented access model; mark-paid already honors it).
+  let isUpline = false;
+  if (!isBuyer && !isAgent && orderCheck.agent_id) {
+    const { data: agentProf } = await service
+      .from('profiles')
+      .select('parent_agent_id')
+      .eq('id', orderCheck.agent_id)
+      .maybeSingle();
+    isUpline = !!agentProf?.parent_agent_id && agentProf.parent_agent_id === user.id;
+  }
+
   // Allow admins as a third access tier
   let isAdmin = false;
-  if (!isBuyer && !isAgent) {
+  if (!isBuyer && !isAgent && !isUpline) {
     const { data: prof } = await service
       .from('profiles')
       .select('role')
@@ -68,7 +81,7 @@ export async function GET(req: NextRequest) {
     isAdmin = prof?.role === 'admin';
   }
 
-  if (!isBuyer && !isAgent && !isAdmin) {
+  if (!isBuyer && !isAgent && !isUpline && !isAdmin) {
     return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
   }
 
@@ -130,7 +143,7 @@ export async function POST(req: NextRequest) {
   const service = await createServiceClient();
   const { data: order, error: orderErr } = await service
     .from('orders')
-    .select('id, buyer_id, agent_id')
+    .select('id, buyer_id, agent_id, status')
     .eq('id', orderId)
     .maybeSingle();
 
@@ -138,6 +151,12 @@ export async function POST(req: NextRequest) {
   if (!order) return NextResponse.json({ error: 'Order Not Found.' }, { status: 404 });
   if (order.buyer_id !== user.id) {
     return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
+  }
+  if (['cancelled', 'shipped', 'delivered'].includes(order.status)) {
+    return NextResponse.json(
+      { error: 'This Order Is No Longer Awaiting Payment. Payment Proof Can No Longer Be Submitted.' },
+      { status: 409 },
+    );
   }
 
   const ext = EXT_BY_MIME[file.type] || 'bin';
@@ -191,18 +210,12 @@ export async function POST(req: NextRequest) {
       .createSignedUrl(key, 86400);
 
     if (!order.agent_id) {
-      // Direct to admin - fetch admins and drop notifications
-      const { data: admins } = await service.from('profiles').select('id').eq('role', 'admin');
-      if (admins && admins.length > 0) {
-        const payload = admins.map(a => ({
-          user_id: a.id,
-          title: 'Payment Proof Received (Direct Order)',
-          body: `A direct customer submitted a payment proof for Order #${shortId}. Review and mark as paid.`,
-          type: 'system',
-          url: '/admin/orders',
-        }));
-        await service.from('notifications').insert(payload);
-      }
+      await notifyAdmins(service, {
+        type: 'system',
+        title: 'Payment Proof Received (Direct Order)',
+        body: `A Direct Customer Submitted A Payment Proof For Order #${shortId}. Review And Mark As Paid.`,
+        url: '/admin/orders',
+      });
     } else {
       const conversationId = await findOrCreateDirectConversation(
         service,
@@ -224,31 +237,26 @@ export async function POST(req: NextRequest) {
           },
           labels: [`Order #${shortId}`, 'Proof of Payment'],
         });
+      }
 
-        // Also drop an in-app notification for the agent
-        const notificationsToInsert = [
-          {
-            user_id: order.agent_id,
-            title: 'Payment Proof Received',
-            body: `Your researcher submitted a payment proof for Order #${shortId}. Review and mark as paid.`,
-            type: 'system',
-            url: '/dashboard?tab=Orders',
-          }
-        ];
-
-        // If the agent has a parent (super agent), notify them too so they can oversee it
-        const { data: agentProf } = await service.from('profiles').select('parent_agent_id').eq('id', order.agent_id).maybeSingle();
-        if (agentProf?.parent_agent_id) {
-          notificationsToInsert.push({
-            user_id: agentProf.parent_agent_id,
-            title: 'Sub-Agent Payment Proof Received',
-            body: `A researcher for your sub-agent submitted a payment proof for Order #${shortId}.`,
-            type: 'system',
-            url: '/dashboard?tab=Orders',
-          });
-        }
-
-        await service.from('notifications').insert(notificationsToInsert);
+      // Notifications are independent of the messenger thread - a messenger
+      // failure must never silence the payment-proof alert.
+      await notify(service, {
+        userId: order.agent_id,
+        type: 'system',
+        title: 'Payment Proof Received',
+        body: `Your Researcher Submitted A Payment Proof For Order #${shortId}. Review And Mark As Paid Once Verified.`,
+        url: '/dashboard?tab=Orders',
+      });
+      const { data: agentProf } = await service.from('profiles').select('parent_agent_id').eq('id', order.agent_id).maybeSingle();
+      if (agentProf?.parent_agent_id) {
+        await notify(service, {
+          userId: agentProf.parent_agent_id,
+          type: 'system',
+          title: 'Sub-Agent Payment Proof Received',
+          body: `A Researcher For Your Sub-Agent Submitted A Payment Proof For Order #${shortId}.`,
+          url: '/dashboard?tab=Orders',
+        });
       }
     }
   } catch (err) {
