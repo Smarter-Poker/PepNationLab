@@ -395,6 +395,9 @@ export default function DiscoveryHero({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: combined })
       });
+      if (!res.ok) {
+        throw new Error('Failed to submit follow-up match');
+      }
       const data = await res.json().catch(() => null);
       if (data?.result) {
         // If it asks ANOTHER follow-up, just force the match without it to prevent loops
@@ -696,14 +699,14 @@ export default function DiscoveryHero({
         onOpenProduct={(id) => { setDrawerOpen(false); onOpenProduct(id); }}
       />
       )}
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style>{`
         @media (min-width: 769px) {
           #discovery-search-input {
             font-size: calc(max(16px, 1.86vw) * 1.5) !important;
             padding: 14px 10px 0 96px !important;
           }
         }
-      ` }} />
+      `}</style>
     </>
   );
 }

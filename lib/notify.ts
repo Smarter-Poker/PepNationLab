@@ -10,8 +10,7 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { deliverPushNow } from '@/lib/push-deliver';
-import { pushTypeAllowed } from '@/lib/push-prefs';
+import { enqueuePush } from '@/lib/push-enqueue';
 
 export type NotificationType =
   | 'order_placed'
@@ -19,6 +18,8 @@ export type NotificationType =
   | 'order_shipped'
   | 'order_delivered'
   | 'order_cancelled'
+  | 'payment_confirmed'
+  | 'order_attention'
   | 'commission_earned'
   | 'new_researcher'
   | 'new_message'
@@ -72,54 +73,131 @@ export async function notify(
 
   if (!withPush) return;
 
+  // Single push pipeline: enqueuePush owns preference gating (push_enabled /
+  // mute_all / per-type prefs via eventToTypeKey), the push_outbox audit row,
+  // and immediate delivery with the 5-minute cron as durability fallback.
+  // notify() previously re-implemented all of that with a slightly different
+  // outbox row shape (no event / related_order_id), which double-fetched prefs
+  // and fragmented the audit trail.
   try {
-    const { data: prefs } = await supabase
-      .from('notification_preferences')
-      .select('push_enabled, mute_all, push_type_prefs')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    if (!prefs?.push_enabled || prefs?.mute_all) return;
-
-    if (!pushTypeAllowed(prefs.push_type_prefs as Record<string, boolean> | null, type)) return;
-
-    const { data: outbox, error: outboxErr } = await supabase
-      .from('push_outbox')
-      .insert({
-        recipient_user_id: userId,
-        title,
-        body: body ?? null,
-        url: url ?? null,
-        tag: type,
-        status: 'pending',
-      })
-      .select('id')
-      .maybeSingle();
-
-    if (outboxErr) {
-      console.error('[notify] push_outbox insert failed - skipping push to preserve audit trail:', outboxErr);
-      return;
-    }
-
-    const sent = await deliverPushNow(supabase, userId, {
+    await enqueuePush(supabase, {
+      userId,
       title,
-      body: body ?? '',
-      url: url ?? undefined,
+      body: body ?? title,
+      url,
+      event: type,
       tag: type,
-      vibrate: [120, 60, 120],
-      renotify: true,
-      urgency: 'high',
     });
-    if (sent > 0 && outbox?.id) {
-      await supabase
-        .from('push_outbox')
-        .update({ status: 'sent', sent_at: new Date().toISOString() })
-        .eq('id', outbox.id)
-        .then(() => undefined, () => undefined);
-    }
   } catch (err) {
     console.error('[notify] push enqueue error:', err);
   }
+}
+
+/**
+ * Fan a notification out to every admin account (in-app + push each).
+ * Optionally skip specific user ids (e.g. an admin who already received a
+ * store-owner notification for the same event). Never throws.
+ */
+export async function notifyAdmins(
+  supabase: SupabaseClient,
+  opts: { type?: NotificationType; title: string; body: string; url?: string; skipUserIds?: string[] },
+): Promise<void> {
+  try {
+    const { data: admins } = await supabase.from('profiles').select('id').eq('role', 'admin');
+    const skip = new Set(opts.skipUserIds ?? []);
+    const targets = (admins ?? []).map((a: { id: string }) => a.id).filter((id) => !skip.has(id));
+    if (targets.length === 0) return;
+    await Promise.allSettled(
+      targets.map((id) =>
+        notify(supabase, {
+          userId: id,
+          type: opts.type ?? 'system',
+          title: opts.title,
+          body: opts.body,
+          url: opts.url,
+        }),
+      ),
+    );
+  } catch (err) {
+    console.error('[notify] notifyAdmins error:', err);
+  }
+}
+
+/** Notify the buyer that their peer-to-peer payment was confirmed by the seller. */
+export async function notifyPaymentConfirmed(
+  supabase: SupabaseClient,
+  buyerId: string,
+  orderId: string,
+  shortId: string,
+  totalFormatted: string,
+) {
+  await notify(supabase, {
+    userId: buyerId,
+    type: 'payment_confirmed',
+    title: `Payment Confirmed For Order #${shortId}`,
+    body: `Your Payment Of ${totalFormatted} Was Confirmed. Your Order Is Now Moving To Approval And Fulfillment.`,
+    url: `/orders/${orderId}`,
+  });
+}
+
+/** Notify a super agent that a downline order was placed on a store they back. */
+export async function notifyDownlineOrderPlaced(
+  supabase: SupabaseClient,
+  superAgentId: string,
+  orderId: string,
+  shortId: string,
+  totalFormatted: string,
+  storeLabel: string,
+) {
+  await notify(supabase, {
+    userId: superAgentId,
+    type: 'order_placed',
+    title: `Downline Sale: Order #${shortId}`,
+    body: `A ${totalFormatted} Order Was Just Placed On ${storeLabel} In Your Downline.`,
+    url: `/dashboard?tab=Orders`,
+  });
+}
+
+/** Notify a super agent that an order is waiting on THEIR approval. */
+export async function notifyOrderAwaitingApproval(
+  supabase: SupabaseClient,
+  approverId: string,
+  orderId: string,
+  shortId: string,
+  totalFormatted: string,
+) {
+  await notify(supabase, {
+    userId: approverId,
+    type: 'order_attention',
+    title: `Order #${shortId} Awaits Your Approval`,
+    body: `A ${totalFormatted} Order Has Been Forwarded To You For Approval. Please Review It Now.`,
+    url: `/dashboard?tab=Orders`,
+  });
+}
+
+/**
+ * Staleness escalation: an order has been sitting without confirmation.
+ * Sent to the responsible agent, their upline, and (at higher levels) admins.
+ */
+export async function notifyOrderAttention(
+  supabase: SupabaseClient,
+  recipientId: string,
+  opts: { orderId: string; shortId: string; hoursWaiting: number; who: 'agent' | 'upline' | 'admin'; agentName?: string | null; url?: string },
+) {
+  const hrs = Math.floor(opts.hoursWaiting);
+  const title = opts.who === 'agent'
+    ? `Action Needed: Order #${opts.shortId} Is Waiting On You`
+    : `Unconfirmed Order Alert: #${opts.shortId}`;
+  const body = opts.who === 'agent'
+    ? `Order #${opts.shortId} Has Been Waiting ${hrs} Hours Without Confirmation. Please Review And Confirm It Now.`
+    : `${opts.agentName || 'An Agent'} Has Not Confirmed Order #${opts.shortId} For ${hrs} Hours. Please Follow Up.`;
+  await notify(supabase, {
+    userId: recipientId,
+    type: 'order_attention',
+    title,
+    body,
+    url: opts.url ?? (opts.who === 'admin' ? '/admin/orders' : '/dashboard?tab=Orders'),
+  });
 }
 
 /** Convenience: notify an agent that a new order was placed on their storefront */

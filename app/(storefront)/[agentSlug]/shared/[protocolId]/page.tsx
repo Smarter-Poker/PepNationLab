@@ -87,7 +87,7 @@ export default async function SharedProtocolPage({
                     </div>
                   </div>
                   <div style={{ fontSize: '1.25rem', fontWeight: 900, color: config.primary_color || '#C0C5CE' }}>
-                    ${(product.retail_price / 100).toFixed(2)}
+                    ${Number(product.is_on_sale ? product.sale_price : product.retail_price).toFixed(2)}
                   </div>
                 </div>
 
@@ -101,11 +101,9 @@ export default async function SharedProtocolPage({
                   </div>
                 )}
 
-                {/* NOTE: We fire a custom event to add to the cart layer if it's mounted, 
-                    but since this is a dedicated page, we might just redirect to the storefront with a cart intent parameter.
-                    For now, we'll link to the storefront home. */}
+                {/* Directs to the storefront and opens the product modal immediately */}
                 <a 
-                  href={`/${brandId}?product=${product.id}`}
+                  href={`/${brandId}?product=${product.product_id}`}
                   style={{
                     display: 'inline-flex', padding: '12px 24px', background: config.primary_color || '#C0C5CE',
                     color: '#0A1018', fontWeight: 800, borderRadius: 12, textDecoration: 'none'

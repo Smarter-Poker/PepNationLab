@@ -3,10 +3,28 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { isAgentAncestorOf } from '@/lib/agent-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { findOrCreateDirectConversation } from '@/lib/messenger/conversations';
+import { notifyPaymentConfirmed, notifyAdmins, notify } from '@/lib/notify';
+import { emailConfigured, sendPaymentConfirmedEmail } from '@/lib/email';
+import { logOrderEvent } from '@/lib/order-events';
+import { shortOrderId } from '@/lib/push-enqueue';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+/**
+ * POST /api/agent/orders/mark-paid
+ *
+ * The agent (or an upline ancestor) confirms they received the buyer's
+ * peer-to-peer payment. This is the platform's payment-confirmation moment,
+ * so it now:
+ *   - stamps orders.payment_confirmed_at / payment_confirmed_by (audit)
+ *   - stamps the latest unverified payment_proofs row verified_at/verified_by
+ *   - notifies the buyer (in-app + push + email) with honest status copy
+ *   - notifies the agent's upline super agent and all admins
+ *   - appends a payment_confirmed order_events row
+ *   - drops a messenger message in the buyer<->agent thread (as before)
+ */
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -52,29 +70,132 @@ export async function POST(req: NextRequest) {
 
   const isAgentPickup = order.fulfillment_method === 'agent_pickup';
   const nextStatus = 'agent_approval_pending';
+  const nowIso = new Date().toISOString();
 
-  const { error: updateErr } = await svc
+  // Compare-and-swap on status so two concurrent mark-paid clicks (agent on
+  // two devices, or agent + upline) cannot both win and double-notify.
+  const { data: claimed, error: updateErr } = await svc
     .from('orders')
     .update({
       status: nextStatus,
-      updated_at: new Date().toISOString(),
+      payment_confirmed_at: nowIso,
+      payment_confirmed_by: callerId,
+      updated_at: nowIso,
     })
-    .eq('id', orderId);
+    .eq('id', orderId)
+    .eq('status', 'pending_customer_payment')
+    .select('id');
 
   if (updateErr) {
     console.error('[mark-paid] order update failed:', updateErr.message);
     return NextResponse.json({ error: 'Failed To Update Order Status. Please Try Again.' }, { status: 500 });
   }
+  if (!claimed || claimed.length === 0) {
+    return NextResponse.json({ error: 'Order Was Already Processed. Please Refresh To See Its Current Status.' }, { status: 409 });
+  }
 
+  const short = shortOrderId(orderId);
+  const total = Number(order.total) || 0;
+  const totalStr = total.toFixed(2);
+  const totalFmt = `$${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  // Link the confirmation to the buyer's uploaded proof (if one exists):
+  // stamp the newest unverified payment_proofs row for this order.
+  try {
+    const { data: proof } = await svc
+      .from('payment_proofs')
+      .select('id')
+      .eq('order_id', orderId)
+      .is('verified_at', null)
+      .order('uploaded_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (proof?.id) {
+      await svc
+        .from('payment_proofs')
+        .update({ verified_at: nowIso, verified_by: callerId })
+        .eq('id', proof.id);
+    }
+  } catch (err) {
+    console.error('[mark-paid] proof verification stamp failed:', err);
+  }
+
+  // Order timeline.
+  await logOrderEvent(svc, {
+    orderId,
+    event: 'payment_confirmed',
+    actorId: callerId,
+    actorRole: isDirectAgent ? 'agent' : 'upline',
+    payload: { total, payment_method: order.payment_method },
+  });
+
+  // Buyer: in-app + push + email. Honest copy - the order now awaits agent
+  // approval; it has NOT been submitted to fulfillment yet.
+  try {
+    if (order.buyer_id) {
+      await notifyPaymentConfirmed(svc, order.buyer_id, orderId, short, totalFmt);
+      if (emailConfigured()) {
+        const { data: buyer } = await svc
+          .from('profiles')
+          .select('contact_email, email_verified, full_name')
+          .eq('id', order.buyer_id)
+          .maybeSingle();
+        if (buyer?.contact_email && buyer.email_verified) {
+          await sendPaymentConfirmedEmail({
+            to: buyer.contact_email,
+            fullName: buyer.full_name,
+            orderId,
+            total,
+          }).catch(() => {});
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[mark-paid] buyer notification error:', err);
+  }
+
+  // Upline super agent + admins: payment confirmations are money events -
+  // the whole chain should see them, not just the confirming agent.
+  try {
+    let agentName: string | null = null;
+    let parentAgentId: string | null = null;
+    if (order.agent_id) {
+      const { data: agentProf } = await svc
+        .from('profiles')
+        .select('full_name, parent_agent_id')
+        .eq('id', order.agent_id)
+        .maybeSingle();
+      agentName = agentProf?.full_name ?? null;
+      parentAgentId = agentProf?.parent_agent_id ?? null;
+    }
+    if (parentAgentId && parentAgentId !== callerId) {
+      await notify(svc, {
+        userId: parentAgentId,
+        type: 'payment_confirmed',
+        title: `Downline Payment Confirmed: Order #${short}`,
+        body: `${agentName || 'Your Sub-Agent'} Confirmed A ${totalFmt} Payment On Order #${short}. It Now Awaits Approval.`,
+        url: '/dashboard?tab=Orders',
+      });
+    }
+    await notifyAdmins(svc, {
+      type: 'payment_confirmed',
+      title: `Payment Confirmed: Order #${short} ($${totalStr})`,
+      body: `${agentName || 'An Agent'} Confirmed Payment On Order #${short}. The Order Is Now Awaiting Approval.`,
+      url: `/admin/orders?highlight=${orderId}`,
+      skipUserIds: [callerId],
+    });
+  } catch (err) {
+    console.error('[mark-paid] chain notification error:', err);
+  }
+
+  // Messenger thread message (as before, with corrected status copy).
   try {
     if (order.buyer_id && order.agent_id) {
       const conversationId = await findOrCreateDirectConversation(svc, order.buyer_id, order.agent_id);
       if (conversationId) {
-        const shortId = orderId.slice(0, 8).toUpperCase();
-        const totalStr = Number(order.total).toFixed(2);
         const statusMsg = isAgentPickup
-          ? `Payment Verified For Order #${shortId} ($${totalStr}). Your Order Has Been Approved For Pickup - Your Agent Will Contact You Shortly.`
-          : `Payment Verified For Order #${shortId} ($${totalStr}). Your Order Has Been Submitted To Fulfillment For Processing. You Will Receive A Tracking Number Once Shipped.`;
+          ? `Payment Verified For Order #${short} ($${totalStr}). Your Order Is Now Awaiting Final Approval For Pickup - Your Agent Will Contact You Shortly.`
+          : `Payment Verified For Order #${short} ($${totalStr}). Your Order Is Now Awaiting Final Approval - You Will Be Notified As Soon As It Is Approved, And Again When It Ships With Tracking.`;
 
         await svc.from('messenger_messages').insert({
           conversation_id: conversationId,
@@ -96,60 +217,4 @@ export async function POST(req: NextRequest) {
     newStatus: nextStatus,
     isAgentPickup,
   });
-}
-
-async function findOrCreateDirectConversation(
-  svc: ReturnType<typeof createAdminClient>,
-  userAId: string,
-  userBId: string
-): Promise<string | null> {
-  try {
-    const { data: aParticipations } = await svc
-      .from('messenger_participants')
-      .select('conversation_id')
-      .eq('user_id', userAId);
-
-    const aConvoIds = (aParticipations ?? [])
-      .map((p) => p.conversation_id)
-      .filter(Boolean) as string[];
-
-    if (aConvoIds.length > 0) {
-      const { data: sharedDirectConvos } = await svc
-        .from('messenger_conversations')
-        .select('id')
-        .eq('type', 'direct')
-        .in('id', aConvoIds);
-
-      const sharedDirectIds = (sharedDirectConvos ?? []).map(c => c.id);
-
-      if (sharedDirectIds.length > 0) {
-        const { data: sharedPart } = await svc
-          .from('messenger_participants')
-          .select('conversation_id')
-          .eq('user_id', userBId)
-          .in('conversation_id', sharedDirectIds)
-          .limit(1)
-          .maybeSingle();
-
-        if (sharedPart?.conversation_id) return sharedPart.conversation_id;
-      }
-    }
-
-    const { data: newConvo, error: convoErr } = await svc
-      .from('messenger_conversations')
-      .insert({ type: 'direct' })
-      .select('id')
-      .maybeSingle();
-
-    if (convoErr || !newConvo?.id) return null;
-
-    await svc.from('messenger_participants').insert([
-      { conversation_id: newConvo.id, user_id: userAId },
-      { conversation_id: newConvo.id, user_id: userBId },
-    ]);
-
-    return newConvo.id;
-  } catch {
-    return null;
-  }
 }

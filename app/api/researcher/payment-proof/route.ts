@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { getEffectiveUser } from '@/lib/impersonation';
 import { assertSameOrigin } from '@/lib/csrf';
+import { findOrCreateDirectConversation } from '@/lib/messenger/conversations';
 import crypto from 'crypto';
 
 export const runtime = 'nodejs';
@@ -257,60 +258,5 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ data: { ...row, signed_url: signed?.signedUrl ?? null } });
 }
 
-// ── Helper shared with mark-paid route ─────────────────────────────────────
-async function findOrCreateDirectConversation(
-  svc: Awaited<ReturnType<typeof createServiceClient>>,
-  userAId: string,
-  userBId: string
-): Promise<string | null> {
-  try {
-    const { data: aParticipations } = await svc
-      .from('messenger_participants')
-      .select('conversation_id')
-      .eq('user_id', userAId);
-
-    const aConvoIds = (aParticipations ?? [])
-      .map((p) => p.conversation_id)
-      .filter(Boolean) as string[];
-
-    if (aConvoIds.length > 0) {
-      const { data: sharedDirectConvos } = await svc
-        .from('messenger_conversations')
-        .select('id')
-        .eq('type', 'direct')
-        .in('id', aConvoIds);
-
-      const sharedDirectIds = (sharedDirectConvos ?? []).map(c => c.id);
-
-      if (sharedDirectIds.length > 0) {
-        const { data: sharedPart } = await svc
-          .from('messenger_participants')
-          .select('conversation_id')
-          .eq('user_id', userBId)
-          .in('conversation_id', sharedDirectIds)
-          .limit(1)
-          .maybeSingle();
-
-        if (sharedPart?.conversation_id) return sharedPart.conversation_id;
-      }
-    }
-
-    // Create a new direct conversation
-    const { data: newConvo, error: convoErr } = await svc
-      .from('messenger_conversations')
-      .insert({ type: 'direct' })
-      .select('id')
-      .maybeSingle();
-
-    if (convoErr || !newConvo?.id) return null;
-
-    await svc.from('messenger_participants').insert([
-      { conversation_id: newConvo.id, user_id: userAId },
-      { conversation_id: newConvo.id, user_id: userBId },
-    ]);
-
-    return newConvo.id;
-  } catch {
-    return null;
-  }
-}
+// The direct-conversation resolver lives in lib/messenger/conversations.ts,
+// shared with /api/agent/orders/mark-paid (was previously duplicated here).

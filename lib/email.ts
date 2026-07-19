@@ -483,6 +483,8 @@ export async function sendOrderConfirmationEmail(params: {
   shippingCost?: number | null;
   /** Payment method label when the order still awaits customer payment. */
   paymentMethod?: string | null;
+  /** The seller's actual payment handle (Zelle address, $Cashtag, ...) so the buyer can pay straight from the inbox. */
+  paymentHandle?: string | null;
 }): Promise<SendEmailResult> {
   const name = (params.fullName || '').trim() || 'Researcher';
   const short = shortId(params.orderId);
@@ -504,13 +506,21 @@ export async function sendOrderConfirmationEmail(params: {
     ? `<p style="font-size:13px;line-height:1.7;color:#A8B4C0;margin:0 0 8px;">${rows.map(escapeHtml).join('<br />')}</p>`
     : '';
   const methodLabel = (params.paymentMethod || '').trim();
+  const handle = (params.paymentHandle || '').trim();
+  const handleBlock = handle
+    ? `<div style="background:#0F1923;border:1px solid #0A5F5B;border-radius:12px;padding:16px;text-align:center;margin:0 0 16px;">
+        <p style="font-size:13px;line-height:1.6;color:#A8B4C0;margin:0 0 6px;">Send ${escapeHtml(money(Number(params.total)))} Via ${escapeHtml(methodLabel)} To</p>
+        <div style="font-size:20px;font-weight:800;letter-spacing:1px;color:#00C4BC;margin:0 0 6px;word-break:break-all;">${escapeHtml(handle)}</div>
+        <p style="font-size:12px;line-height:1.6;color:#6B7684;margin:0;">Include Order <strong style="color:#D0DAE4;">#${escapeHtml(short)}</strong> In The Payment Memo So Your Payment Is Matched Quickly.</p>
+      </div>`
+    : '';
   const payment = methodLabel
     ? `<p style="font-size:14px;line-height:1.7;margin:0 0 16px;">
         Payment Method: <strong style="color:#FFFFFF;">${escapeHtml(methodLabel)}</strong>.
-        Your Agent's Payment Handle And Instructions Are On Your Order Page.
+        ${handle ? '' : `Your Agent's Payment Handle And Instructions Are On Your Order Page.`}
         Please Send ${escapeHtml(money(Number(params.total)))} And Include Order
         <strong style="color:#FFFFFF;">#${escapeHtml(short)}</strong> In The Payment Memo So Your Payment Is Matched Quickly.
-      </p>`
+      </p>${handleBlock}`
     : '';
   const copy = await resolveTemplateCopy(
     'order_confirmation',
@@ -538,7 +548,7 @@ export async function sendOrderConfirmationEmail(params: {
     to: params.to,
     subject: copy.subject,
     html,
-    text: `Thank you, ${name}. Order #${short} confirmed.${params.itemsSummary ? ` Items: ${params.itemsSummary}.` : ''} Total ${money(Number(params.total))}.${methodLabel ? ` Payment method: ${methodLabel}. Your agent's payment handle and instructions are on your order page. Include order #${short} in the payment memo.` : ''} View it at ${SITE}/orders/${params.orderId}`,
+    text: `Thank you, ${name}. Order #${short} confirmed.${params.itemsSummary ? ` Items: ${params.itemsSummary}.` : ''} Total ${money(Number(params.total))}.${methodLabel ? (handle ? ` Send ${money(Number(params.total))} via ${methodLabel} to ${handle} and include order #${short} in the payment memo.` : ` Payment method: ${methodLabel}. Your agent's payment handle and instructions are on your order page. Include order #${short} in the payment memo.`) : ''} View it at ${SITE}/orders/${params.orderId}`,
     template: 'order_confirmation',
   });
 }
@@ -694,6 +704,239 @@ export async function sendOrderCancelledEmail(params: {
     html,
     text: `Hi ${name}, your order #${short} has been cancelled. View it at ${SITE}/orders/${params.orderId}`,
     template: 'order_cancelled',
+  });
+}
+
+/** Payment confirmed: the seller verified the buyer's peer-to-peer payment. */
+export async function sendPaymentConfirmedEmail(params: {
+  to: string;
+  fullName?: string | null;
+  orderId: string;
+  total: number;
+}): Promise<SendEmailResult> {
+  const name = (params.fullName || '').trim() || 'Researcher';
+  const short = shortId(params.orderId);
+  const money = `$${(Number(params.total) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const copy = await resolveTemplateCopy(
+    'payment_confirmed',
+    {
+      subject: `Payment Confirmed - Order #${short}`,
+      body: `Hi ${name}, your payment of ${money} for order #${short} has been confirmed. Your order is now moving to approval and fulfillment - we will notify you at every step.`,
+    },
+    { name, order: short, total: money },
+  );
+  const introHtml = copy.bodyOverridden
+    ? paragraphs(copy.body)
+    : `<p style="font-size:14px;line-height:1.7;margin:0 0 24px;">
+      Hi ${escapeHtml(name)}, your payment of <strong style="color:#00C4BC;">${escapeHtml(money)}</strong> for order
+      <strong style="color:#FFFFFF;">#${escapeHtml(short)}</strong> has been confirmed.
+      Your order is now moving to approval and fulfillment &mdash; we will notify you at every step.
+    </p>`;
+  const html = layout(`
+    <h1 style="font-size:20px;color:#FFFFFF;margin:0 0 12px;">Payment Confirmed</h1>
+    ${introHtml}
+    ${button(`${SITE}/orders/${params.orderId}`, 'View Your Order')}
+  `, { preheader: `Payment For Order #${short} Confirmed - ${money}` });
+  return sendEmail({
+    to: params.to,
+    subject: copy.subject,
+    html,
+    text: `Hi ${name}, your payment of ${money} for order #${short} has been confirmed. View it at ${SITE}/orders/${params.orderId}`,
+    template: 'payment_confirmed',
+  });
+}
+
+/** New-sale alert for the storefront owner (agent / super agent). */
+export async function sendAgentSaleEmail(params: {
+  to: string;
+  agentName?: string | null;
+  orderId: string;
+  buyerName?: string | null;
+  total: number;
+  itemsSummary?: string | null;
+  awaitingPayment?: boolean;
+}): Promise<SendEmailResult> {
+  const name = (params.agentName || '').trim() || 'Agent';
+  const buyer = (params.buyerName || '').trim() || 'A Researcher';
+  const short = shortId(params.orderId);
+  const money = `$${(Number(params.total) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const copy = await resolveTemplateCopy(
+    'agent_sale',
+    {
+      subject: `New Sale - Order #${short} (${money})`,
+      body: `${buyer} just placed a ${money} order (#${short}) on your storefront.`,
+    },
+    { name, buyer, order: short, total: money },
+  );
+  const items = params.itemsSummary
+    ? `<p style="font-size:13px;line-height:1.7;color:#A8B4C0;margin:0 0 16px;">${escapeHtml(params.itemsSummary)}</p>`
+    : '';
+  const next = params.awaitingPayment
+    ? `<p style="font-size:14px;line-height:1.7;margin:0 0 16px;">The Order Is Awaiting The Customer's Payment. Once You Receive It, Open Your Dashboard And Mark The Order Paid To Keep It Moving.</p>`
+    : `<p style="font-size:14px;line-height:1.7;margin:0 0 16px;">Open Your Dashboard To Review And Approve The Order.</p>`;
+  const introHtml = copy.bodyOverridden
+    ? paragraphs(copy.body)
+    : `<p style="font-size:14px;line-height:1.7;margin:0 0 16px;">
+      ${escapeHtml(buyer)} just placed a <strong style="color:#00C4BC;">${escapeHtml(money)}</strong> order
+      (<strong style="color:#FFFFFF;">#${escapeHtml(short)}</strong>) on your storefront.
+    </p>`;
+  const html = layout(`
+    <h1 style="font-size:20px;color:#FFFFFF;margin:0 0 12px;">You Made A Sale</h1>
+    ${introHtml}
+    ${items}
+    ${next}
+    ${button(`${SITE}/dashboard?tab=Orders`, 'Review The Order')}
+  `, { preheader: `${buyer} Placed A ${money} Order On Your Store` });
+  return sendEmail({
+    to: params.to,
+    subject: copy.subject,
+    html,
+    text: `${buyer} just placed a ${money} order (#${short}) on your storefront.${params.itemsSummary ? ` Items: ${params.itemsSummary}.` : ''} Review it at ${SITE}/dashboard?tab=Orders`,
+    template: 'agent_sale',
+  });
+}
+
+/** Buyer payment reminder for an order still awaiting peer-to-peer payment. */
+export async function sendPaymentReminderEmail(params: {
+  to: string;
+  fullName?: string | null;
+  orderId: string;
+  total: number;
+  methodLabel?: string | null;
+  paymentHandle?: string | null;
+}): Promise<SendEmailResult> {
+  const name = (params.fullName || '').trim() || 'Researcher';
+  const short = shortId(params.orderId);
+  const money = `$${(Number(params.total) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const method = (params.methodLabel || '').trim();
+  const handle = (params.paymentHandle || '').trim();
+  const copy = await resolveTemplateCopy(
+    'payment_reminder',
+    {
+      subject: `Payment Reminder - Order #${short} (${money})`,
+      body: `Hi ${name}, your order #${short} is reserved and waiting on your payment of ${money}. Send it whenever you are ready and your order keeps moving - nothing is cancelled.`,
+    },
+    { name, order: short, total: money },
+  );
+  const handleBlock = handle && method
+    ? `<div style="background:#0F1923;border:1px solid #0A5F5B;border-radius:12px;padding:16px;text-align:center;margin:0 0 16px;">
+        <p style="font-size:13px;line-height:1.6;color:#A8B4C0;margin:0 0 6px;">Send ${escapeHtml(money)} Via ${escapeHtml(method)} To</p>
+        <div style="font-size:20px;font-weight:800;letter-spacing:1px;color:#00C4BC;margin:0 0 6px;word-break:break-all;">${escapeHtml(handle)}</div>
+        <p style="font-size:12px;line-height:1.6;color:#6B7684;margin:0;">Include Order <strong style="color:#D0DAE4;">#${escapeHtml(short)}</strong> In The Payment Memo.</p>
+      </div>`
+    : '';
+  const introHtml = copy.bodyOverridden
+    ? paragraphs(copy.body)
+    : `<p style="font-size:14px;line-height:1.7;margin:0 0 16px;">
+      Hi ${escapeHtml(name)}, your order <strong style="color:#FFFFFF;">#${escapeHtml(short)}</strong> is reserved and
+      waiting on your payment of <strong style="color:#00C4BC;">${escapeHtml(money)}</strong>.
+      Send it whenever you are ready and your order keeps moving.
+    </p>`;
+  const html = layout(`
+    <h1 style="font-size:20px;color:#FFFFFF;margin:0 0 12px;">Your Order Is Waiting On Payment</h1>
+    ${introHtml}
+    ${handleBlock}
+    ${button(`${SITE}/orders/${params.orderId}`, 'View Payment Instructions')}
+  `, { preheader: `Order #${short} Is Waiting On Your ${money} Payment` });
+  return sendEmail({
+    to: params.to,
+    subject: copy.subject,
+    html,
+    text: `Hi ${name}, your order #${short} is waiting on your payment of ${money}.${handle && method ? ` Send it via ${method} to ${handle} and include #${short} in the memo.` : ''} Payment instructions: ${SITE}/orders/${params.orderId}`,
+    template: 'payment_reminder',
+  });
+}
+
+/** Staleness escalation email to an agent (or upline) about an unconfirmed order. */
+export async function sendOrderAttentionEmail(params: {
+  to: string;
+  recipientName?: string | null;
+  orderId: string;
+  hoursWaiting: number;
+  total: number;
+  isUpline?: boolean;
+  agentName?: string | null;
+}): Promise<SendEmailResult> {
+  const name = (params.recipientName || '').trim() || 'Agent';
+  const short = shortId(params.orderId);
+  const hrs = Math.floor(Number(params.hoursWaiting) || 0);
+  const money = `$${(Number(params.total) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const line = params.isUpline
+    ? `${(params.agentName || 'An agent in your downline').trim()} has not confirmed order #${short} (${money}) for ${hrs} hours. Please follow up with them so the customer is not left waiting.`
+    : `Order #${short} (${money}) has been waiting ${hrs} hours without confirmation. Please review and confirm it now so the customer is not left waiting.`;
+  const copy = await resolveTemplateCopy(
+    'order_attention',
+    {
+      subject: params.isUpline
+        ? `Downline Alert - Order #${short} Unconfirmed For ${hrs}h`
+        : `Action Needed - Order #${short} Waiting ${hrs}h`,
+      body: `Hi ${name}, ${line}`,
+    },
+    { name, order: short, hours: String(hrs), total: money },
+  );
+  const introHtml = copy.bodyOverridden
+    ? paragraphs(copy.body)
+    : `<p style="font-size:14px;line-height:1.7;margin:0 0 24px;">Hi ${escapeHtml(name)}, ${escapeHtml(line)}</p>`;
+  const html = layout(`
+    <h1 style="font-size:20px;color:#FFFFFF;margin:0 0 12px;">${params.isUpline ? 'Unconfirmed Order In Your Downline' : 'An Order Is Waiting On You'}</h1>
+    ${introHtml}
+    ${button(`${SITE}/dashboard?tab=Orders`, 'Review The Order')}
+  `, { preheader: `Order #${short} Has Been Waiting ${hrs} Hours` });
+  return sendEmail({
+    to: params.to,
+    subject: copy.subject,
+    html,
+    text: `Hi ${name}, ${line} Review it at ${SITE}/dashboard?tab=Orders`,
+    template: 'order_attention',
+  });
+}
+
+/** Admin daily operations digest. */
+export async function sendAdminDigestEmail(params: {
+  to: string;
+  adminName?: string | null;
+  stats: {
+    orders24h: number;
+    gmv24h: number;
+    cancelled24h: number;
+    pendingPayment: number;
+    pendingPaymentAging: number;
+    agentApprovalPending: number;
+    agentApprovalAging: number;
+    adminApprovalPending: number;
+    shippedInTransit: number;
+  };
+}): Promise<SendEmailResult> {
+  const name = (params.adminName || '').trim() || 'Admin';
+  const s = params.stats;
+  const money = (n: number) => `$${(Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const row = (label: string, value: string, warn = false) =>
+    `<tr>
+      <td style="padding:8px 12px;border-bottom:1px solid #1C2430;font-family:Inter,Arial,sans-serif;font-size:13px;color:#A8B4C0;">${escapeHtml(label)}</td>
+      <td align="right" style="padding:8px 12px;border-bottom:1px solid #1C2430;font-family:Inter,Arial,sans-serif;font-size:13px;font-weight:700;color:${warn ? '#E53E3E' : '#FFFFFF'};">${escapeHtml(value)}</td>
+    </tr>`;
+  const html = layout(`
+    <h1 style="font-size:20px;color:#FFFFFF;margin:0 0 12px;">Daily Operations Digest</h1>
+    <p style="font-size:14px;line-height:1.7;margin:0 0 16px;">Hi ${escapeHtml(name)}, here is the platform snapshot for the last 24 hours.</p>
+    <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="background:#0F1923;border:1px solid #1C2430;border-radius:12px;margin:0 0 20px;">
+      ${row('New Orders (24h)', String(s.orders24h))}
+      ${row('Sales Volume (24h)', money(s.gmv24h))}
+      ${row('Cancelled (24h)', String(s.cancelled24h), s.cancelled24h > 0)}
+      ${row('Awaiting Customer Payment', String(s.pendingPayment))}
+      ${row('  - Waiting Over 24h', String(s.pendingPaymentAging), s.pendingPaymentAging > 0)}
+      ${row('Awaiting Agent Approval', String(s.agentApprovalPending))}
+      ${row('  - Waiting Over 24h', String(s.agentApprovalAging), s.agentApprovalAging > 0)}
+      ${row('Awaiting Admin Approval', String(s.adminApprovalPending), s.adminApprovalPending > 0)}
+      ${row('Approved / In Transit', String(s.shippedInTransit))}
+    </table>
+    ${button(`${SITE}/admin/orders`, 'Open The Orders Board')}
+  `, { preheader: `${s.orders24h} Orders / ${money(s.gmv24h)} In The Last 24h` });
+  return sendEmail({
+    to: params.to,
+    subject: `Pep Nation Lab Daily Digest - ${s.orders24h} Orders, ${money(s.gmv24h)} (24h)`,
+    html,
+    text: `Daily digest: ${s.orders24h} orders, ${money(s.gmv24h)} volume, ${s.cancelled24h} cancelled in the last 24h. Awaiting customer payment: ${s.pendingPayment} (${s.pendingPaymentAging} over 24h). Awaiting agent approval: ${s.agentApprovalPending} (${s.agentApprovalAging} over 24h). Awaiting admin approval: ${s.adminApprovalPending}. Approved/in transit: ${s.shippedInTransit}. ${SITE}/admin/orders`,
+    template: 'admin_digest',
   });
 }
 

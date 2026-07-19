@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ArrowRight, Compass } from 'lucide-react';
-import type { Compound } from '@/lib/compounds';
 import { labelForArea, DEFAULT_WIZARD, type WizardState } from './discovery-shared';
 import { useModalA11y } from '@/lib/useModalA11y';
 
@@ -54,11 +53,11 @@ export function GuidedDiscoveryWizard({
 
   const TOTAL_STEPS = 4;
 
-  const variants = {
+  const variants = useMemo(() => ({
     initial: { x: 20, opacity: 0 },
     animate: { x: 0, opacity: 1 },
     exit: { x: -20, opacity: 0 }
-  };
+  }), []);
 
   return (
     <AnimatePresence>
@@ -147,27 +146,33 @@ export function GuidedDiscoveryWizard({
                       Pick The Area Closest To Your Goal. We Will Match Compounds Studied For That Area.
                     </p>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
-                      {availableAreas.map((area) => {
-                        const active = state.area === area;
-                        return (
-                          <button
-                            key={area}
-                            type="button"
-                            onClick={() => { setState(s => ({ ...s, area })); setStep(1); }}
-                            style={{
-                              padding: '10px 14px',
-                              borderRadius: 12,
-                              background: active ? 'rgba(192,197,206,0.2)' : 'rgba(255,255,255,0.05)',
-                              border: active ? '1px solid #C0C5CE' : '1px solid rgba(255,255,255,0.14)',
-                              color: active ? '#C0C5CE' : '#FFFFFF',
-                              fontWeight: 700, fontSize: '0.86rem',
-                              cursor: 'pointer', minHeight: 44, transition: 'all 0.2s ease',
-                            }}
-                          >
-                            {labelForArea(area)}
-                          </button>
-                        );
-                      })}
+                      {availableAreas.length === 0 ? (
+                        <div style={{ padding: '20px', textAlign: 'center', width: '100%', color: '#A8B4C0', background: 'rgba(255,255,255,0.05)', borderRadius: 12 }}>
+                          Loading research areas...
+                        </div>
+                      ) : (
+                        availableAreas.map((area) => {
+                          const active = state.area === area;
+                          return (
+                            <button
+                              key={area}
+                              type="button"
+                              onClick={() => { setState(s => ({ ...s, area })); setStep(1); }}
+                              style={{
+                                padding: '10px 14px',
+                                borderRadius: 12,
+                                background: active ? 'rgba(192,197,206,0.2)' : 'rgba(255,255,255,0.05)',
+                                border: active ? '1px solid #C0C5CE' : '1px solid rgba(255,255,255,0.14)',
+                                color: active ? '#C0C5CE' : '#FFFFFF',
+                                fontWeight: 700, fontSize: '0.86rem',
+                                cursor: 'pointer', minHeight: 44, transition: 'all 0.2s ease',
+                              }}
+                            >
+                              {labelForArea(area)}
+                            </button>
+                          );
+                        })
+                      )}
                     </div>
                   </motion.div>
                 )}
@@ -309,12 +314,16 @@ export function GuidedDiscoveryWizard({
               {step < TOTAL_STEPS - 1 ? (
                 <button
                   type="button"
+                  disabled={step === 0 && availableAreas.length === 0}
                   onClick={() => setStep(step + 1)}
                   style={{
                     flex: 1,
-                    background: '#C0C5CE', color: '#0A1018', border: 0,
+                    background: (step === 0 && availableAreas.length === 0) ? 'rgba(255,255,255,0.1)' : '#C0C5CE', 
+                    color: (step === 0 && availableAreas.length === 0) ? 'rgba(255,255,255,0.4)' : '#0A1018',
+                    border: 0,
                     fontWeight: 900, fontSize: '0.92rem',
-                    padding: '12px 16px', borderRadius: 12, cursor: 'pointer',
+                    padding: '12px 16px', borderRadius: 12, 
+                    cursor: (step === 0 && availableAreas.length === 0) ? 'not-allowed' : 'pointer',
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                     minHeight: 48,
                     boxShadow: '0 4px 12px rgba(192,197,206,0.3)',

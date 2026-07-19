@@ -8,8 +8,9 @@ import { canTransition, type OrderStatus } from '@/lib/order-states';
 import { enqueueOrderPush, shortOrderId } from '@/lib/push-enqueue';
 import { enqueueWebhook, fetchOrderForWebhook, type WebhookEventType } from '@/lib/webhook-dispatch';
 import { assertSameOrigin } from '@/lib/csrf';
-import { notifyAdminOrderStatusChange } from '@/lib/notify';
-import { emailConfigured, sendOrderShippedEmail, sendOrderDeliveredEmail } from '@/lib/email';
+import { notifyAdminOrderStatusChange, notify } from '@/lib/notify';
+import { emailConfigured, sendOrderShippedEmail, sendOrderDeliveredEmail, sendOrderCancelledEmail } from '@/lib/email';
+import { logOrderEvent } from '@/lib/order-events';
 
 type OrderPushEvent = 'order_approved' | 'order_shipped' | 'order_delivered';
 
@@ -226,11 +227,26 @@ export async function POST(req: NextRequest) {
       });
     } catch { /* ignore audit failure */ }
 
+    // Order timeline event for every admin-driven transition.
+    try {
+      await logOrderEvent(supabase, {
+        orderId: id,
+        event: status === 'cancelled' ? 'cancelled'
+          : status === 'shipped' ? 'shipped'
+          : status === 'delivered' ? 'delivered'
+          : (status === 'approved_ship' || status === 'approved_pickup') ? 'approved'
+          : 'status_changed',
+        actorId: gate.userId,
+        actorRole: 'admin',
+        payload: { from: currentStatus, to: status, tracking_number: tracking_number ?? null },
+      });
+    } catch { /* timeline must not break admin response */ }
+
     // In-app + push notifications (awaited)
     try {
       const { data: orderRow } = await supabase
         .from('orders')
-        .select('buyer_id, tracking_number')
+        .select('buyer_id, agent_id, tracking_number')
         .eq('id', id)
         .maybeSingle();
 
@@ -238,6 +254,39 @@ export async function POST(req: NextRequest) {
         const short = shortOrderId(id);
         const trk = orderRow.tracking_number || tracking_number || null;
         await notifyAdminOrderStatusChange(supabase, orderRow.buyer_id, id, short, status, trk);
+
+        // The storefront owner was previously never told when an admin moved
+        // one of their orders (ship / deliver / cancel). Keep them in the loop
+        // on real transitions so their dashboard is never a surprise.
+        if (orderRow.agent_id && orderRow.agent_id !== gate.userId && currentStatus !== status
+            && ['approved_ship', 'approved_pickup', 'shipped', 'delivered', 'cancelled'].includes(status)) {
+          const agentBodies: Record<string, string> = {
+            approved_ship: `Order #${short} On Your Store Was Approved For Shipping By Admin.`,
+            approved_pickup: `Order #${short} On Your Store Was Approved For Pickup By Admin.`,
+            shipped: `Order #${short} On Your Store Was Marked Shipped${trk ? ` (Tracking: ${trk})` : ''}.`,
+            delivered: `Order #${short} On Your Store Was Delivered.`,
+            cancelled: `Order #${short} On Your Store Was Cancelled By Admin.`,
+          };
+          await notify(supabase, {
+            userId: orderRow.agent_id,
+            type: 'system',
+            title: `Order #${short} Update`,
+            body: agentBodies[status],
+            url: '/dashboard?tab=Orders',
+          });
+        }
+
+        // Buyer email on an admin cancel (previously in-app only).
+        if (status === 'cancelled' && currentStatus !== status && emailConfigured()) {
+          const { data: buyerProf } = await supabase
+            .from('profiles')
+            .select('contact_email, email_verified, full_name')
+            .eq('id', orderRow.buyer_id)
+            .maybeSingle();
+          if (buyerProf?.contact_email && buyerProf.email_verified) {
+            void sendOrderCancelledEmail({ to: buyerProf.contact_email, fullName: buyerProf.full_name, orderId: id }).catch(() => {});
+          }
+        }
 
         let event: OrderPushEvent | null = null;
         if (status === 'approved_ship' || status === 'approved_pickup') event = 'order_approved';

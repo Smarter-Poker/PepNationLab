@@ -95,6 +95,15 @@ export function eventToTypeKey(event: string): PushTypeKey | null {
     case 'order_delivered': return 'order_delivered';
     case 'order_cancelled': return 'order_cancelled';
     case 'payment_reminder':return 'payment_reminder';
-    default:                return null;
+    // Agent-side "a researcher ordered on your store" push uses the
+    // order_new event string; gate it under the same Orders > New Order
+    // preference toggle as the order_placed notification type.
+    case 'order_new':       return 'order_placed';
+    default:
+      // Identity-map any event string that IS a canonical push type key
+      // (commission_earned, invoice, system, ...) so per-type preference
+      // toggles apply consistently no matter which emission path fired.
+      // Unknown events (test pushes, marketing) stay ungated (null).
+      return PUSH_TYPE_KEYS.has(event) ? (event as PushTypeKey) : null;
   }
 }

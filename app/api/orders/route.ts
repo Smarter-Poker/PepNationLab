@@ -14,8 +14,9 @@ import { computeLineSplit, type ItemFulfillmentSplit } from '@/lib/order-line-sp
 import { quantityDiscountPct, isVolumeDiscountExcluded } from '@/lib/quantity-discount';
 import { resolveCheckoutCoupon, getHouseAgentId } from '@/lib/coupons';
 import { enqueuePush, shortOrderId } from '@/lib/push-enqueue';
-import { notifyOrderPlaced, notify, notifyCouponRedeemed } from '@/lib/notify';
-import { sendOrderConfirmationEmail } from '@/lib/email';
+import { notifyOrderPlaced, notify, notifyCouponRedeemed, notifyAdmins, notifyDownlineOrderPlaced, notifyCommissionEarned } from '@/lib/notify';
+import { sendOrderConfirmationEmail, sendAgentSaleEmail } from '@/lib/email';
+import { logOrderEvent } from '@/lib/order-events';
 import { PAYMENT_METHOD_LABELS } from '@/lib/payment-method-labels';
 import { captureError } from '@/lib/sentry';
 import { logError } from '@/lib/log';
@@ -191,11 +192,12 @@ export async function POST(request: NextRequest) {
       min_order_qty: number | null;
       bundles_config: unknown;
       volume_pricing_enabled: boolean | null;
+      payment_handles?: Record<string, string> | null;
     } | null = null;
     if (agentProfile) {
       const { data: acRow } = await serviceSupabase
         .from('agent_profiles')
-        .select('id, slug, min_overall_qty, min_order_qty, bundles_config, volume_pricing_enabled')
+        .select('id, slug, min_overall_qty, min_order_qty, bundles_config, volume_pricing_enabled, payment_handles')
         .eq('id', agentProfile.id)
         .maybeSingle();
       agentConfig = acRow ?? null;
@@ -1485,13 +1487,11 @@ export async function POST(request: NextRequest) {
             }
           }
         }
-      } else if (initialStatus === 'approved_ship') {
-        const { error: labelErr } = await serviceSupabase.rpc('shipping_enqueue_label_job', { p_order_id: order.id });
-        if (labelErr) {
-          logError('orders.POST.shipping_enqueue_label_job', { orderId: order.id }, labelErr);
-          captureError(labelErr, { context: 'orders.POST.shipping_enqueue_label_job', orderId: order.id });
-        }
       }
+      // NOTE: no label job is enqueued here. Shipping labels are purchased
+      // MANUALLY (on-demand) via the admin/agent label flows; the label-jobs
+      // cron is retired, so enqueuing rows here only filled a queue nothing
+      // drains (removed 2026-07-19).
     }
 
     // SACA Phase 4: Sub-Agent Commission Accrual
@@ -1516,6 +1516,28 @@ export async function POST(request: NextRequest) {
           .rpc('accrue_sub_agent_commission', { p_order_id: order.id });
         if (accrueErr) {
           console.error('[orders] accrue_sub_agent_commission failed:', accrueErr.message);
+        } else {
+          // Commission accrued silently before - tell the earning sub-agent.
+          // Amount is read back from the order row the RPC just stamped.
+          const subAgentToNotify = effectiveReferringSubAgentId;
+          after(async () => {
+            try {
+              const { data: commRow } = await serviceSupabase
+                .from('orders')
+                .select('sub_agent_commission_amount')
+                .eq('id', order.id)
+                .maybeSingle();
+              const amt = Number(commRow?.sub_agent_commission_amount) || 0;
+              if (amt > 0 && subAgentToNotify && subAgentToNotify !== user.id) {
+                await notifyCommissionEarned(
+                  serviceSupabase,
+                  subAgentToNotify,
+                  `$${amt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                  order.id,
+                );
+              }
+            } catch { /* commission notify is best-effort */ }
+          });
         }
       }
     } catch (e) {
@@ -1544,98 +1566,169 @@ export async function POST(request: NextRequest) {
       // Best-effort attribution
     }
 
-    // In-app + push notifications for new order. Each call is an independent
-    // best-effort side effect (the helpers never throw -- they swallow their
-    // own errors), so run them in parallel; allSettled keeps the same
-    // fire-and-forget tolerance as the surrounding try/catch. Buyer name comes
-    // from the profile row already loaded at the top of the route (the old
-    // refetch of profiles.full_name was redundant).
-    try {
+    // ── Post-commit fan-out (after the response flushes) ────────────────────
+    // Everything below is a best-effort side effect of an already-committed
+    // order: timeline events, in-app + push notifications for every party
+    // (buyer, agent, super-agent upline, admins), the agent's sale email, and
+    // the buyer's confirmation email. Deferring the whole block with after()
+    // keeps checkout latency flat while Vercel guarantees the work completes.
+    {
       const short = shortOrderId(order.id);
-      const notificationTasks: Promise<unknown>[] = [];
-      if (agentProfile && !isAgentSelfBuy) {
-        const buyerName = (profile as { full_name?: string | null }).full_name || 'A Researcher';
-        notificationTasks.push(notifyOrderPlaced(serviceSupabase, agentProfile.id, order.id, short, buyerName));
-        if (appliedCouponCode && discountAmount > 0) {
-          notificationTasks.push(notifyCouponRedeemed(
-            serviceSupabase,
-            agentProfile.id,
-            appliedCouponCode,
-            discountAmount,
-            Number(order.total) || 0,
-            order.id,
-            short,
-          ));
-        }
-        notificationTasks.push(enqueuePush(serviceSupabase, {
-          userId: agentProfile.id,
-          title: `New Order #${short}`,
-          body: `${buyerName} Placed A New Order. Tap To Review.`,
-          url: '/dashboard?tab=Orders',
-          event: 'order_new',
-          relatedOrderId: order.id,
-          tag: `new-order-${order.id}`,
-        }));
+      const buyerName = (profile as { full_name?: string | null }).full_name || 'A Researcher';
+      const orderTotal = Number(order.total) || 0;
+      const totalFmt = `$${orderTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      const storeSlug = agentConfig?.slug ? `/${agentConfig.slug}` : 'A Storefront';
+      const autoApproved = initialStatus === 'approved_ship' || initialStatus === 'approved_pickup';
+      // Aggregate quantities by product name: computedItems carries a separate
+      // row per local/China warehouse split, which would otherwise render the
+      // same product twice in emailed summaries.
+      const qtyByName = new Map<string, number>();
+      for (const i of computedItems as Array<{ product_name: string; quantity: number }>) {
+        qtyByName.set(i.product_name, (qtyByName.get(i.product_name) ?? 0) + (Number(i.quantity) || 0));
       }
-      notificationTasks.push(notify(serviceSupabase, {
-        userId: user.id,
-        type: 'order_placed',
-        title: `Order #${short} Placed`,
-        body: 'Your Order Has Been Placed. You Will Be Notified When It Is Approved.',
-        url: `/orders/${order.id}`,
-      }));
-      notificationTasks.push(enqueuePush(serviceSupabase, {
-        userId: user.id,
-        title: `Order #${short} Placed`,
-        body: 'Your Order Has Been Placed. You Will Be Notified When It Is Approved.',
-        url: `/orders/${order.id}`,
-        event: 'order_placed',
-        relatedOrderId: order.id,
-        tag: `order-placed-${order.id}`,
-      }));
-      await Promise.allSettled(notificationTasks);
-    } catch (notifErr) {
-      // Never propagate - notifications are best-effort. But a silent swallow
-      // here previously meant a broken notify()/enqueuePush() migration could
-      // stop ALL new-order alerts platform-wide with zero evidence.
-      logError('orders.POST.notifications', { orderId: order.id }, notifErr);
-      captureError(notifErr, { context: 'orders.POST.notifications', orderId: order.id });
-    }
+      const itemsSummary = [...qtyByName.entries()].map(([n, q]) => `${q}x ${n}`).join(', ');
+      const paymentHandle = initialStatus === 'pending_customer_payment'
+        ? ((agentConfig?.payment_handles as Record<string, string> | null | undefined)?.[paymentMethod] ?? null)
+        : null;
 
-    // Send order confirmation email (best-effort, non-blocking). Only to a
-    // VERIFIED contact email, to protect sender reputation / deliverability.
-    if (profile?.contact_email && (profile as { email_verified?: boolean }).email_verified) {
-      try {
-        // Aggregate quantities by product name: computedItems carries a
-        // separate row per local/China warehouse split, which used to render
-        // the same product twice in the emailed summary.
-        const qtyByName = new Map<string, number>();
-        for (const i of computedItems as Array<{ product_name: string; quantity: number }>) {
-          qtyByName.set(i.product_name, (qtyByName.get(i.product_name) ?? 0) + (Number(i.quantity) || 0));
-        }
-        const itemsSummary = [...qtyByName.entries()].map(([n, q]) => `${q}x ${n}`).join(', ');
-        // after(): the send survives the response being flushed. A detached
-        // promise on Vercel can be killed before the provider call completes,
-        // silently losing the order confirmation.
-        after(
-          sendOrderConfirmationEmail({
-            to: profile.contact_email,
-            fullName: profile.full_name,
+      after(async () => {
+        try {
+          const tasks: Promise<unknown>[] = [];
+
+          // Order timeline events.
+          tasks.push(logOrderEvent(serviceSupabase, {
             orderId: order.id,
-            total: Number(order.total) || 0,
-            itemsSummary,
-            subtotal: Number(subtotal) || null,
-            discount: Number(discountAmount) || null,
-            shippingCost: Number(shippingCost) || null,
-            // Peer-to-peer payment model: when the order awaits customer
-            // payment, tell the buyer how to pay in the one artifact that
-            // survives a closed tab -- their inbox.
-            paymentMethod: initialStatus === 'pending_customer_payment'
-              ? ((PAYMENT_METHOD_LABELS as Record<string, string>)[paymentMethod] ?? paymentMethod)
-              : null,
-          }).catch(() => { /* ignore */ })
-        );
-      } catch { /* ignore */ }
+            event: 'placed',
+            actorId: user.id,
+            actorRole: profile.role ?? null,
+            payload: { status: initialStatus, total: orderTotal, agent_id: agentProfile?.id ?? null, payment_method: paymentMethod },
+          }));
+          if (autoApproved) {
+            tasks.push(logOrderEvent(serviceSupabase, {
+              orderId: order.id,
+              event: 'auto_approved',
+              payload: { status: initialStatus },
+            }));
+          }
+
+          // Agent of record: sale alert (in-app + push + email).
+          if (agentProfile && !isAgentSelfBuy) {
+            tasks.push(notifyOrderPlaced(serviceSupabase, agentProfile.id, order.id, short, buyerName));
+            if (appliedCouponCode && discountAmount > 0) {
+              tasks.push(notifyCouponRedeemed(
+                serviceSupabase,
+                agentProfile.id,
+                appliedCouponCode,
+                discountAmount,
+                orderTotal,
+                order.id,
+                short,
+              ));
+            }
+            tasks.push(enqueuePush(serviceSupabase, {
+              userId: agentProfile.id,
+              title: `New Order #${short}`,
+              body: `${buyerName} Placed A ${totalFmt} Order. Tap To Review.`,
+              url: '/dashboard?tab=Orders',
+              event: 'order_new',
+              relatedOrderId: order.id,
+              tag: `new-order-${order.id}`,
+            }));
+            // Sale email: verified contact email first, auth email as the
+            // fallback (auth emails are verified by the login flow itself).
+            tasks.push((async () => {
+              try {
+                const { data: agentContact } = await serviceSupabase
+                  .from('profiles')
+                  .select('contact_email, email_verified, full_name')
+                  .eq('id', agentProfile.id)
+                  .maybeSingle();
+                let to: string | null = (agentContact?.contact_email && agentContact.email_verified)
+                  ? agentContact.contact_email
+                  : null;
+                if (!to) {
+                  const { data: authUser } = await serviceSupabase.auth.admin.getUserById(agentProfile.id);
+                  to = authUser?.user?.email ?? null;
+                }
+                if (to) {
+                  await sendAgentSaleEmail({
+                    to,
+                    agentName: agentContact?.full_name,
+                    orderId: order.id,
+                    buyerName,
+                    total: orderTotal,
+                    itemsSummary,
+                    awaitingPayment: initialStatus === 'pending_customer_payment',
+                  });
+                }
+              } catch { /* sale email is best-effort */ }
+            })());
+          }
+
+          // Super-agent upline: downline sale visibility.
+          if (superAgentProfile && superAgentProfile.id !== user.id && (!agentProfile || superAgentProfile.id !== agentProfile.id)) {
+            tasks.push(notifyDownlineOrderPlaced(
+              serviceSupabase,
+              superAgentProfile.id,
+              order.id,
+              short,
+              totalFmt,
+              storeSlug,
+            ));
+          }
+
+          // Admins: platform-wide new-order visibility (skip when the store
+          // owner IS an admin - they already got the store-owner alert).
+          tasks.push(notifyAdmins(serviceSupabase, {
+            type: 'order_placed',
+            title: `New Order #${short} (${totalFmt})`,
+            body: `${buyerName} Placed A ${totalFmt} Order On ${storeSlug}. Status: ${initialStatus.replace(/_/g, ' ')}.`,
+            url: `/admin/orders?highlight=${order.id}`,
+            skipUserIds: agentProfile ? [agentProfile.id] : [],
+          }));
+
+          // Buyer: placement confirmation (in-app + push).
+          tasks.push(notify(serviceSupabase, {
+            userId: user.id,
+            type: 'order_placed',
+            title: `Order #${short} Placed`,
+            body: initialStatus === 'pending_customer_payment'
+              ? 'Your Order Has Been Placed. Send Your Payment To Keep It Moving - Instructions Are On Your Order Page.'
+              : 'Your Order Has Been Placed. You Will Be Notified When It Is Approved.',
+            url: `/orders/${order.id}`,
+          }));
+
+          await Promise.allSettled(tasks);
+        } catch (notifErr) {
+          // Never propagate - notifications are best-effort. But a silent
+          // swallow here previously meant a broken notify()/enqueuePush()
+          // migration could stop ALL new-order alerts with zero evidence.
+          logError('orders.POST.notifications', { orderId: order.id }, notifErr);
+          captureError(notifErr, { context: 'orders.POST.notifications', orderId: order.id });
+        }
+
+        // Buyer order-confirmation email. Only to a VERIFIED contact email, to
+        // protect sender reputation / deliverability. Now carries the seller's
+        // actual payment handle so the buyer can pay straight from the inbox.
+        if (profile?.contact_email && (profile as { email_verified?: boolean }).email_verified) {
+          try {
+            await sendOrderConfirmationEmail({
+              to: profile.contact_email,
+              fullName: profile.full_name,
+              orderId: order.id,
+              total: orderTotal,
+              itemsSummary,
+              subtotal: Number(subtotal) || null,
+              discount: Number(discountAmount) || null,
+              shippingCost: Number(shippingCost) || null,
+              paymentMethod: initialStatus === 'pending_customer_payment'
+                ? ((PAYMENT_METHOD_LABELS as Record<string, string>)[paymentMethod] ?? paymentMethod)
+                : null,
+              paymentHandle,
+            });
+          } catch { /* ignore */ }
+        }
+      });
     }
 
     return NextResponse.json({

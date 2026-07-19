@@ -6,10 +6,36 @@ import { computeAgentCostForAgent, type AgentTier } from '@/lib/pricing';
 import { enqueueWebhook, fetchOrderForWebhook } from '@/lib/webhook-dispatch';
 import { assertSameOrigin } from '@/lib/csrf';
 import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
-import { shortOrderId } from '@/lib/push-enqueue';
+import { shortOrderId, enqueueOrderPush } from '@/lib/push-enqueue';
 import { assertChainCanTransact } from '@/lib/billing-chain';
 import { captureError } from '@/lib/sentry';
 import { logError } from '@/lib/log';
+import { notifyOrderApproved, notifyOrderCancelled, notifyOrderAwaitingApproval, notifyAdmins } from '@/lib/notify';
+import { emailConfigured, sendOrderApprovedEmail, sendOrderCancelledEmail } from '@/lib/email';
+import { logOrderEvent } from '@/lib/order-events';
+
+/**
+ * Resolve a buyer's best deliverable email: verified contact email first,
+ * auth email (already verified by the login flow) as fallback. Never throws.
+ */
+async function resolveBuyerEmail(
+  supabase: ReturnType<typeof createAdminClient>,
+  buyerId: string,
+): Promise<{ email: string | null; fullName: string | null }> {
+  try {
+    const { data: prof } = await supabase
+      .from('profiles')
+      .select('contact_email, email_verified, full_name')
+      .eq('id', buyerId)
+      .maybeSingle();
+    if (prof?.contact_email && prof.email_verified) {
+      return { email: prof.contact_email, fullName: prof.full_name ?? null };
+    }
+    return { email: null, fullName: prof?.full_name ?? null };
+  } catch {
+    return { email: null, fullName: null };
+  }
+}
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -78,6 +104,34 @@ export async function POST(req: NextRequest) {
           });
         }
       } catch { /* webhook errors must not break the cancel */ }
+      // A cancel used to be silent for the buyer -- tell every party.
+      try {
+        const short = shortOrderId(orderId);
+        await logOrderEvent(supabase, {
+          orderId,
+          event: 'cancelled',
+          actorId: callerId,
+          actorRole: 'agent',
+          payload: { reason: 'Cancelled By Agent' },
+        });
+        if (order.buyer_id) {
+          // notifyOrderCancelled handles both the in-app row and the push
+          // (event order_cancelled) through the unified pipeline.
+          await notifyOrderCancelled(supabase, order.buyer_id, orderId, short);
+          if (emailConfigured()) {
+            const buyer = await resolveBuyerEmail(supabase, order.buyer_id);
+            if (buyer.email) {
+              await sendOrderCancelledEmail({ to: buyer.email, fullName: buyer.fullName, orderId }).catch(() => {});
+            }
+          }
+        }
+        await notifyAdmins(supabase, {
+          title: `Order #${short} Cancelled By Agent`,
+          body: `Order #${short} ($${Number(order.total || 0).toFixed(2)}) Was Cancelled By Its Agent.`,
+          url: `/admin/orders?highlight=${orderId}`,
+          skipUserIds: [callerId],
+        });
+      } catch { /* notifications must not break the cancel */ }
       return NextResponse.json({ success: true, status: 'cancelled' });
     }
 
@@ -90,6 +144,22 @@ export async function POST(req: NextRequest) {
       const updatePayload: Record<string, string> = { status: finalStatus, updated_at: new Date().toISOString() };
       const { error: updateError } = await supabase.from('orders').update(updatePayload).eq('id', orderId);
       if (updateError) return NextResponse.json({ error: 'Failed To Forward Order To Super Agent' }, { status: 500 });
+      // The handoff used to be silent -- the super agent never knew an order
+      // was sitting in their queue. Alert them (in-app + push) immediately.
+      try {
+        const short = shortOrderId(orderId);
+        const totalFmt = `$${Number(order.total || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        if (orderAgentParentId) {
+          await notifyOrderAwaitingApproval(supabase, orderAgentParentId, orderId, short, totalFmt);
+        }
+        await logOrderEvent(supabase, {
+          orderId,
+          event: 'forwarded_to_super',
+          actorId: callerId,
+          actorRole: 'agent',
+          payload: { forwarded_to: orderAgentParentId },
+        });
+      } catch { /* notifications must not break the forward */ }
       return NextResponse.json({ success: true, status: finalStatus });
     }
 
@@ -124,6 +194,27 @@ export async function POST(req: NextRequest) {
       if (!manuClaimed || manuClaimed.length === 0) {
         return NextResponse.json({ error: 'Order Was Already Processed. Please Refresh To See Its Current Status.' }, { status: 409 });
       }
+      // Tell the buyer their order is approved (in-app + push + email).
+      try {
+        const short = shortOrderId(orderId);
+        if (order.buyer_id) {
+          await notifyOrderApproved(supabase, order.buyer_id, orderId, short);
+          await enqueueOrderPush(supabase, { userId: order.buyer_id, orderId, event: 'order_approved' });
+          if (emailConfigured()) {
+            const buyer = await resolveBuyerEmail(supabase, order.buyer_id);
+            if (buyer.email) {
+              await sendOrderApprovedEmail({ to: buyer.email, fullName: buyer.fullName, orderId, pickup: manuFinal === 'approved_pickup' }).catch(() => {});
+            }
+          }
+        }
+        await logOrderEvent(supabase, {
+          orderId,
+          event: 'approved',
+          actorId: callerId,
+          actorRole: 'manufacturer',
+          payload: { status: manuFinal },
+        });
+      } catch { /* notifications must not break the approval */ }
       return NextResponse.json({ success: true, status: manuFinal });
     }
 
@@ -298,25 +389,51 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Post-approval fan-out: buyer (previously NEVER notified on the agent
+    // approval path), admins (in-app + push), and the order timeline.
     try {
-      const { data: admins } = await supabase.from('profiles').select('id').eq('role', 'admin');
-      if (admins && admins.length > 0) {
-        const short = shortOrderId(orderId);
-        const totalStr = Number(totalOwed).toFixed(2);
-        const fulfillmentMsg = order.fulfillment_method === 'agent_pickup' ? 'For Pickup' : 'For Shipping';
-        const notifications = admins.map((admin) => ({
-          user_id: admin.id,
-          title: effectiveStatus === 'admin_approval_pending' ? 'Order Needs Admin Approval' : 'Order Auto-Approved',
-          body: effectiveStatus === 'admin_approval_pending'
-            ? `Order #${short} ($${totalStr}) - Agent Approved (${fulfillmentMsg}). Review And Release To Fulfillment.`
-            : `Order #${short} ($${totalStr}) - Agent Approved (${fulfillmentMsg}). Auto-Approved on Credit Line.`,
-          type: 'system',
-          url: `/admin/orders?status=${effectiveStatus}`,
-        }));
-        await supabase.from('notifications').insert(notifications);
+      const short = shortOrderId(orderId);
+      const totalStr = Number(totalOwed).toFixed(2);
+      const fulfillmentMsg = order.fulfillment_method === 'agent_pickup' ? 'For Pickup' : 'For Shipping';
+
+      if (effectiveStatus === 'approved_ship' || effectiveStatus === 'approved_pickup') {
+        if (order.buyer_id) {
+          await notifyOrderApproved(supabase, order.buyer_id, orderId, short);
+          await enqueueOrderPush(supabase, { userId: order.buyer_id, orderId, event: 'order_approved' });
+          if (emailConfigured()) {
+            const buyer = await resolveBuyerEmail(supabase, order.buyer_id);
+            if (buyer.email) {
+              await sendOrderApprovedEmail({ to: buyer.email, fullName: buyer.fullName, orderId, pickup: effectiveStatus === 'approved_pickup' }).catch(() => {});
+            }
+          }
+        }
+        await logOrderEvent(supabase, {
+          orderId,
+          event: 'approved',
+          actorId: callerId,
+          actorRole: 'agent',
+          payload: { status: effectiveStatus, total_owed: totalOwed },
+        });
+      } else if (effectiveStatus === 'admin_approval_pending') {
+        await logOrderEvent(supabase, {
+          orderId,
+          event: 'demoted_admin_review',
+          actorId: callerId,
+          actorRole: 'agent',
+          payload: { total_owed: totalOwed },
+        });
       }
+
+      await notifyAdmins(supabase, {
+        type: 'order_attention',
+        title: effectiveStatus === 'admin_approval_pending' ? 'Order Needs Admin Approval' : 'Order Auto-Approved',
+        body: effectiveStatus === 'admin_approval_pending'
+          ? `Order #${short} ($${totalStr}) - Agent Approved (${fulfillmentMsg}). Review And Release To Fulfillment.`
+          : `Order #${short} ($${totalStr}) - Agent Approved (${fulfillmentMsg}). Auto-Approved On Credit Line.`,
+        url: `/admin/orders?status=${effectiveStatus}`,
+      });
     } catch (err) {
-      console.error('Failed to notify admins of pending approval', err);
+      console.error('Failed to send post-approval notifications', err);
     }
 
     return NextResponse.json({ success: true, status: effectiveStatus });

@@ -2513,19 +2513,19 @@ export default function AgentStorefrontGrid({
                     const _youSave = _hasCompare ? _comparePrice - displayPrice : 0;
                     return (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
-                        <div style={{ display: 'flex', flexWrap: 'nowrap', alignItems: 'stretch', justifyContent: _hasCompare ? 'space-between' : 'center', gap: 8 }}>
+                        <div className="sf-pricing-row" style={{ display: 'flex', flexWrap: 'nowrap', alignItems: 'stretch', justifyContent: _hasCompare ? 'space-between' : 'center', gap: _hasCompare ? 4 : 8 }}>
                           {_hasCompare && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(0,196,188,0.35)', borderRadius: 8, padding: '6px 10px', background: 'rgba(0,196,188,0.06)' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(0,196,188,0.35)', borderRadius: 8, padding: '4px 6px', background: 'rgba(0,196,188,0.06)', flexShrink: 1, minWidth: 0 }}>
                               <span style={{ display: 'flex', alignItems: 'baseline', gap: 4, whiteSpace: 'nowrap' }}>
-                                <span style={{ fontSize: '0.62rem', color: 'var(--grey-500)', fontWeight: 700, letterSpacing: '0.06em' }}>MSRP</span>
-                                <span style={{ fontSize: '0.85rem', color: 'var(--grey-500)', textDecoration: 'line-through', fontWeight: 700 }}>${_comparePrice.toFixed(2)}</span>
+                                <span style={{ fontSize: '0.58rem', color: 'var(--grey-500)', fontWeight: 700, letterSpacing: '0.04em' }}>MSRP</span>
+                                <span style={{ fontSize: '0.78rem', color: 'var(--grey-500)', textDecoration: 'line-through', fontWeight: 700 }}>${_comparePrice.toFixed(2)}</span>
                               </span>
-                              <span style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--teal)', letterSpacing: '0.01em', whiteSpace: 'nowrap' }}>YOU SAVE ${Math.floor(_youSave)}</span>
+                              <span style={{ fontSize: '0.62rem', fontWeight: 800, color: 'var(--teal)', letterSpacing: '0.01em', whiteSpace: 'nowrap' }}>YOU SAVE ${Math.floor(_youSave)}</span>
                             </div>
                           )}
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'center', justifyContent: 'center' }}>
-                            <span style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--teal)', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>WHOLESALE PRICE</span>
-                            <span className="sf-product-price-nickel" style={{ fontSize: '1.6rem', fontWeight: 800, fontFamily: 'var(--font-brand)', lineHeight: 1 }}>${displayPrice.toFixed(2)}</span>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 1, minWidth: 0 }}>
+                            <span style={{ fontSize: '0.62rem', fontWeight: 800, color: 'var(--teal)', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>WHOLESALE PRICE</span>
+                            <span className="sf-product-price-nickel" style={{ fontSize: '1.45rem', fontWeight: 800, fontFamily: 'var(--font-brand)', lineHeight: 1 }}>${displayPrice.toFixed(2)}</span>
                           </div>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'center' }}>
@@ -2688,6 +2688,9 @@ export default function AgentStorefrontGrid({
           color: #A8B4C0 !important;
           text-shadow: none !important;
         }
+        .sf-pricing-row {
+          flex-wrap: nowrap !important;
+        }
       `}} />
 
       {!showStoreGrid && !detailProduct && (
@@ -2748,6 +2751,7 @@ export default function AgentStorefrontGrid({
                 const v0 = grp.variants[0];
                 const priceDollars = grp.lowestPrice || 0;
                 const evTier = compoundsBySlug?.[slug]?.evidence_tier ?? null;
+                const inStock = grp.variants.some((v: any) => (v.inventory_count ?? 1) > 0);
                 out.push({
                   product_id: v0?.id || '',
                   display_name: grp.name,
@@ -2756,7 +2760,7 @@ export default function AgentStorefrontGrid({
                   evidence_tier: evTier,
                   rationale: '',
                   image_url: grp.imageUrl,
-                  in_stock: true,
+                  in_stock: inStock,
                 });
               }
               return out;
