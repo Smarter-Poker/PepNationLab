@@ -5,14 +5,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireOrdersAccess } from '@/lib/admin-auth';
 import { canTransition, type OrderStatus } from '@/lib/order-states';
-import { enqueueOrderPush, shortOrderId } from '@/lib/push-enqueue';
+import { shortOrderId } from '@/lib/push-enqueue';
 import { enqueueWebhook, fetchOrderForWebhook, type WebhookEventType } from '@/lib/webhook-dispatch';
 import { assertSameOrigin } from '@/lib/csrf';
 import { notifyAdminOrderStatusChange, notify } from '@/lib/notify';
 import { emailConfigured, sendOrderShippedEmail, sendOrderDeliveredEmail, sendOrderCancelledEmail } from '@/lib/email';
 import { logOrderEvent } from '@/lib/order-events';
-
-type OrderPushEvent = 'order_approved' | 'order_shipped' | 'order_delivered';
 
 // GET: List all orders with buyer profile join
 export async function GET(req: NextRequest) {
@@ -253,7 +251,12 @@ export async function POST(req: NextRequest) {
       if (orderRow?.buyer_id) {
         const short = shortOrderId(id);
         const trk = orderRow.tracking_number || tracking_number || null;
-        await notifyAdminOrderStatusChange(supabase, orderRow.buyer_id, id, short, status, trk);
+        // Only on a real transition -- re-saving the same status must not
+        // re-notify. notify() also queues the buyer web push (prefs-gated),
+        // so no separate enqueueOrderPush call is needed.
+        if (currentStatus !== status) {
+          await notifyAdminOrderStatusChange(supabase, orderRow.buyer_id, id, short, status, trk);
+        }
 
         // The storefront owner was previously never told when an admin moved
         // one of their orders (ship / deliver / cancel). Keep them in the loop
@@ -286,17 +289,6 @@ export async function POST(req: NextRequest) {
           if (buyerProf?.contact_email && buyerProf.email_verified) {
             void sendOrderCancelledEmail({ to: buyerProf.contact_email, fullName: buyerProf.full_name, orderId: id }).catch(() => {});
           }
-        }
-
-        let event: OrderPushEvent | null = null;
-        if (status === 'approved_ship' || status === 'approved_pickup') event = 'order_approved';
-        else if (status === 'shipped') event = 'order_shipped';
-        else if (status === 'delivered') event = 'order_delivered';
-        // Only push on an actual transition. canTransition() returns true for
-        // from === to, so re-saving an already-shipped order used to re-notify
-        // the buyer; gate the push on a real status change.
-        if (event && currentStatus !== status) {
-          await enqueueOrderPush(supabase, { userId: orderRow.buyer_id, orderId: id, event, tracking: trk });
         }
 
         // Transactional email for shipped/delivered. Best-effort, non-blocking,
