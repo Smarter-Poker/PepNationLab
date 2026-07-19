@@ -6,7 +6,7 @@ import { computeAgentCostForAgent, type AgentTier } from '@/lib/pricing';
 import { enqueueWebhook, fetchOrderForWebhook } from '@/lib/webhook-dispatch';
 import { assertSameOrigin } from '@/lib/csrf';
 import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
-import { shortOrderId, enqueueOrderPush } from '@/lib/push-enqueue';
+import { shortOrderId } from '@/lib/push-enqueue';
 import { assertChainCanTransact } from '@/lib/billing-chain';
 import { captureError } from '@/lib/sentry';
 import { logError } from '@/lib/log';
@@ -31,7 +31,11 @@ async function resolveBuyerEmail(
     if (prof?.contact_email && prof.email_verified) {
       return { email: prof.contact_email, fullName: prof.full_name ?? null };
     }
-    return { email: null, fullName: prof?.full_name ?? null };
+    // Fallback: the auth account email (already verified by the login flow).
+    // Buyers rarely fill in a separate contact email, and skipping them here
+    // silently dropped every approval / cancellation email.
+    const { data: authUser } = await supabase.auth.admin.getUserById(buyerId);
+    return { email: authUser?.user?.email ?? null, fullName: prof?.full_name ?? null };
   } catch {
     return { email: null, fullName: null };
   }
@@ -141,8 +145,26 @@ export async function POST(req: NextRequest) {
     }
 
     if (finalStatus === 'agent_approval_pending') {
+      // Double-click / two-tab guard: the status value itself may not change
+      // on a forward (researcher orders already sit at agent_approval_pending),
+      // so idempotence keys on the timeline - if this order was already
+      // forwarded, do not alert the super agent or log the event again.
+      const { data: priorForward } = await supabase
+        .from('order_events')
+        .select('id')
+        .eq('order_id', orderId)
+        .eq('event', 'forwarded_to_super')
+        .limit(1)
+        .maybeSingle();
+      if (priorForward) {
+        return NextResponse.json({ success: true, status: finalStatus, alreadyForwarded: true });
+      }
       const updatePayload: Record<string, string> = { status: finalStatus, updated_at: new Date().toISOString() };
-      const { error: updateError } = await supabase.from('orders').update(updatePayload).eq('id', orderId);
+      const { error: updateError } = await supabase
+        .from('orders')
+        .update(updatePayload)
+        .eq('id', orderId)
+        .in('status', ['pending_customer_payment', 'agent_approval_pending']);
       if (updateError) return NextResponse.json({ error: 'Failed To Forward Order To Super Agent' }, { status: 500 });
       // The handoff used to be silent -- the super agent never knew an order
       // was sitting in their queue. Alert them (in-app + push) immediately.
@@ -199,7 +221,6 @@ export async function POST(req: NextRequest) {
         const short = shortOrderId(orderId);
         if (order.buyer_id) {
           await notifyOrderApproved(supabase, order.buyer_id, orderId, short);
-          await enqueueOrderPush(supabase, { userId: order.buyer_id, orderId, event: 'order_approved' });
           if (emailConfigured()) {
             const buyer = await resolveBuyerEmail(supabase, order.buyer_id);
             if (buyer.email) {
@@ -381,7 +402,7 @@ export async function POST(req: NextRequest) {
         // manual admin review, mirroring app/api/orders/route.ts.
         const { error: demoteErr } = await supabase
           .from('orders')
-          .update({ status: 'admin_approval_pending', updated_at: new Date().toISOString() })
+          .update({ status: 'admin_approval_pending', stale_escalation_level: 0, last_stale_escalation_at: null, updated_at: new Date().toISOString() })
           .eq('id', orderId);
         if (demoteErr) {
           captureError(demoteErr, { context: 'agent.orders.approve.charge_credit_demotion_failed', severity: 'critical', orderId });
@@ -399,7 +420,6 @@ export async function POST(req: NextRequest) {
       if (effectiveStatus === 'approved_ship' || effectiveStatus === 'approved_pickup') {
         if (order.buyer_id) {
           await notifyOrderApproved(supabase, order.buyer_id, orderId, short);
-          await enqueueOrderPush(supabase, { userId: order.buyer_id, orderId, event: 'order_approved' });
           if (emailConfigured()) {
             const buyer = await resolveBuyerEmail(supabase, order.buyer_id);
             if (buyer.email) {
