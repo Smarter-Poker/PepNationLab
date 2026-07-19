@@ -1,6 +1,7 @@
 import { createServiceClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
+import { ProtocolScheduler } from '@/components/research/ProtocolScheduler';
 
 export const revalidate = 0; // Don't cache shared links statically
 
@@ -163,6 +164,12 @@ export default async function SharedProtocolPage({
             );
           })}
         </div>
+
+        {payload.results && payload.results.length > 0 && (
+          <div style={{ marginTop: 24 }}>
+            <ProtocolScheduler results={payload.results} primaryColor={config.primary_color || '#C0C5CE'} />
+          </div>
+        )}
 
         {payload.excluded && payload.excluded.length > 0 && (
           <div style={{ marginTop: 48, padding: 24, background: 'rgba(255,0,0,0.05)', borderRadius: 20, border: '1px solid rgba(255,0,0,0.15)' }}>
