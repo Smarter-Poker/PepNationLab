@@ -114,8 +114,8 @@ export default async function NetworkDashboardPage() {
     tier: a.tier,
     accountType: a.account_type,
     createdAt: a.created_at,
-    slug: (a.agent_profiles as any)?.slug ?? null,
-    displayName: (a.agent_profiles as any)?.display_name ?? null,
+    slug: Array.isArray(a.agent_profiles) ? a.agent_profiles[0]?.slug ?? null : (a.agent_profiles as any)?.slug ?? null,
+    displayName: Array.isArray(a.agent_profiles) ? a.agent_profiles[0]?.display_name ?? null : (a.agent_profiles as any)?.display_name ?? null,
     gmv30d: gmvMap[a.id] ?? 0,
   }));
 

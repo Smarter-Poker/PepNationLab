@@ -143,7 +143,13 @@ export default function NetworkDashboardClient({
         body: JSON.stringify(updates),
       });
       if (res.ok) {
-        setAgents(prev => prev.map(x => x.id === a.id ? { ...x, ...updates } : x));
+        setAgents(prev => prev.map(x => {
+          if (x.id !== a.id) return x;
+          const next = { ...x };
+          if (updates.tier !== undefined) next.tier = updates.tier;
+          if (updates.commission_pct !== undefined) next.commissionPct = updates.commission_pct;
+          return next;
+        }));
       }
     } finally {
       setBusy(s => ({ ...s, [a.id]: false }));
@@ -414,10 +420,12 @@ export default function NetworkDashboardClient({
                       <td style={{ padding: '11px 14px', color: TEAL, fontWeight: 700 }}>
                         <input 
                           type="number" 
-                          value={a.commissionPct ?? ''} 
-                          onChange={(e) => {
+                          defaultValue={a.commissionPct ?? ''} 
+                          onBlur={(e) => {
                              const val = e.target.value ? Number(e.target.value) : null;
-                             updateAgent(a, { commission_pct: val });
+                             if (val !== a.commissionPct) {
+                               updateAgent(a, { commission_pct: val });
+                             }
                           }}
                           disabled={busy[a.id]}
                           style={{ width: 50, background: 'transparent', color: TEAL, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, padding: '2px 4px', fontSize: '0.75rem', fontWeight: 700 }}
