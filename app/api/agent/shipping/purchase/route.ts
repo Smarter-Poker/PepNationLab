@@ -16,9 +16,10 @@ import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { pickOne } from '@/lib/relations';
 import { purchaseLabelForOrder } from '@/lib/shipping';
-import { enqueueOrderPush, shortOrderId } from '@/lib/push-enqueue';
+import { shortOrderId } from '@/lib/push-enqueue';
 import { enqueueWebhook, fetchOrderForWebhook } from '@/lib/webhook-dispatch';
 import { notifyOrderShipped } from '@/lib/notify';
+import { logOrderEvent } from '@/lib/order-events';
 import { emailConfigured, sendOrderShippedEmail } from '@/lib/email';
 
 export async function POST(req: NextRequest) {
@@ -80,8 +81,17 @@ export async function POST(req: NextRequest) {
       try {
         const short = shortOrderId(orderId);
         await notifyOrderShipped(supabase, order.buyer_id, orderId, short, trackingNumber ?? undefined);
-        await enqueueOrderPush(supabase, { userId: order.buyer_id, orderId, event: 'order_shipped', tracking: trackingNumber });
       } catch { /* notification failures must not break shipping */ }
+
+      try {
+        await logOrderEvent(supabase, {
+          orderId,
+          event: 'shipped',
+          actorId: agentId,
+          actorRole: 'agent',
+          payload: { tracking_number: trackingNumber ?? null, via: 'label_purchase' },
+        });
+      } catch { /* timeline must not break shipping */ }
 
       // Tracking email on the PRIMARY shipping path. Label purchase is how
       // agents actually ship; the shipped email previously existed only on the
