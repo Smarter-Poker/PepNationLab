@@ -5,6 +5,8 @@ import { computeAgentCostForAgent, computeSubAgentBaselineCost, type AgentTier }
 import { assertSameOrigin } from '@/lib/csrf';
 import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
 import { ManualOrderInputSchema } from '@/lib/schemas/order';
+import { logOrderEvent } from '@/lib/order-events';
+import { notifyAdmins } from '@/lib/notify';
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -196,22 +198,37 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      const { data: admins } = await supabase.from('profiles').select('id').eq('role', 'admin');
-      if (admins && admins.length > 0) {
-        const short = newOrder.id.slice(0, 8).toUpperCase();
-        const totalStr = Number(computedTotal).toFixed(2);
-        const fulfillmentMsg = fulfillment === 'ship' ? 'Ready For Shipping' : 'Ready For Agent Pickup';
-        const notifications = admins.map((admin) => ({
-          user_id: admin.id,
-          title: finalAutoStatus === 'admin_approval_pending' ? 'Manual Order Needs Admin Approval' : 'Manual Order Auto-Approved',
-          body: finalAutoStatus === 'admin_approval_pending'
-            ? `Order #${short} ($${totalStr}) - Agent Created & Approved. Needs Admin Release (${fulfillmentMsg}).`
-            : `Order #${short} ($${totalStr}) - Agent Created & Auto-Approved On Credit Line. (${fulfillmentMsg}).`,
-          type: 'system',
-          url: `/admin/orders?status=${finalAutoStatus}`,
-        }));
-        await supabase.from('notifications').insert(notifications);
+      await logOrderEvent(supabase, {
+        orderId: newOrder.id,
+        event: 'placed',
+        actorId: agentId,
+        actorRole: 'agent',
+        payload: { manual: true, total: computedTotal },
+      });
+      if (finalAutoStatus === 'approved_ship' || finalAutoStatus === 'approved_pickup') {
+        await logOrderEvent(supabase, {
+          orderId: newOrder.id,
+          event: 'approved',
+          actorRole: 'agent',
+          payload: { status: finalAutoStatus, auto: true },
+        });
       }
+    } catch (err) {
+      console.error('Failed to log manual order timeline events', err);
+    }
+
+    try {
+      const short = newOrder.id.slice(0, 8).toUpperCase();
+      const totalStr = Number(computedTotal).toFixed(2);
+      const fulfillmentMsg = fulfillment === 'ship' ? 'Ready For Shipping' : 'Ready For Agent Pickup';
+      await notifyAdmins(supabase, {
+        type: 'system',
+        title: finalAutoStatus === 'admin_approval_pending' ? 'Manual Order Needs Admin Approval' : 'Manual Order Auto-Approved',
+        body: finalAutoStatus === 'admin_approval_pending'
+          ? `Order #${short} ($${totalStr}) - Agent Created & Approved. Needs Admin Release (${fulfillmentMsg}).`
+          : `Order #${short} ($${totalStr}) - Agent Created & Auto-Approved On Credit Line. (${fulfillmentMsg}).`,
+        url: `/admin/orders?status=${finalAutoStatus}`,
+      });
     } catch (err) {
       console.error('Failed to notify admins of manual order', err);
     }
