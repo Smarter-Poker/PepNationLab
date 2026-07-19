@@ -141,7 +141,7 @@ export async function GET(req: Request) {
       const total = Number(order.total) || 0;
       const totalFmt = `$${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-      // ── PART A: buyer payment reminders ──────────────────────────────────
+      // ── PART A: buyer payment reminders ────────────────────────────────
       try {
         if (order.status === 'pending_customer_payment' && order.buyer_id) {
           const count = Number(order.payment_reminder_count) || 0;
@@ -194,7 +194,7 @@ export async function GET(req: Request) {
         console.error('[order-attention] buyer reminder failed:', order.id, err);
       }
 
-      // ── PART B: staleness escalation ─────────────────────────────────────
+      // ── PART B: staleness escalation ───────────────────────────────────
       try {
         const level = Number(order.stale_escalation_level) || 0;
         const isAdminCourt = order.status === 'admin_approval_pending';
