@@ -19,6 +19,11 @@ type Category =
 
 type Emphasis = 'positive' | 'negative' | 'warning' | 'neutral';
 
+interface ActivityAction {
+  label: string;
+  href: string;
+}
+
 interface Item {
   id: string;
   category: Category;
@@ -29,6 +34,7 @@ interface Item {
   timestamp: string;
   href?: string;
   emphasis: Emphasis;
+  primaryAction?: ActivityAction;
 }
 
 interface FeedResponse {
@@ -977,7 +983,33 @@ export default function AgentActivityFeed() {
                         </span>
                       </div>
 
-                      {clickable && <ChevronRight size={14} style={{ color: 'rgba(255,255,255,0.2)', flexShrink: 0, marginRight: 4 }} />}
+                      {it.primaryAction ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (it.primaryAction?.href) window.location.href = it.primaryAction.href;
+                          }}
+                          className="pna-btn"
+                          style={{
+                            marginLeft: 4,
+                            padding: '6px 12px',
+                            background: 'rgba(0,196,188,0.1)',
+                            border: '1px solid rgba(0,196,188,0.3)',
+                            color: '#00C4BC',
+                            borderRadius: 8,
+                            fontWeight: 800,
+                            fontSize: '0.72rem',
+                            cursor: 'pointer',
+                            flexShrink: 0,
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          {it.primaryAction.label}
+                        </button>
+                      ) : (
+                        clickable && <ChevronRight size={14} style={{ color: 'rgba(255,255,255,0.2)', flexShrink: 0, marginRight: 4 }} />
+                      )}
                     </div>
                   );
                 })}

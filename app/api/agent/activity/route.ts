@@ -37,6 +37,11 @@ type Category =
 
 type Emphasis = 'positive' | 'negative' | 'warning' | 'neutral';
 
+interface ActivityAction {
+  label: string;
+  href: string;
+}
+
 interface ActivityItem {
   id: string;
   category: Category;
@@ -47,6 +52,7 @@ interface ActivityItem {
   timestamp: string;
   href?: string;
   emphasis: Emphasis;
+  primaryAction?: ActivityAction;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -223,8 +229,13 @@ async function fetchItems(
       .limit(PER_SOURCE);
     if (cutoff) q = q.gte('created_at', cutoff);
     const { data } = await q;
-    for (const su of data || [])
-      add({ id: `sub:${su.id}`, category: 'subagent', title: 'New sub-agent added', subtitle: su.full_name || su.email || 'Sub-agent', timestamp: su.created_at as string, href: '/dashboard/agent?tab=My Sub-Agents', emphasis: 'positive' });
+    for (const su of data || []) {
+      const action: ActivityAction | undefined = su.email ? {
+        label: 'Welcome',
+        href: `mailto:${su.email}?subject=Welcome to the Team!&body=Hi ${su.full_name || ''},%0A%0AI'm thrilled to have you join as a sub-agent...`
+      } : undefined;
+      add({ id: `sub:${su.id}`, category: 'subagent', title: 'New sub-agent added', subtitle: su.full_name || su.email || 'Sub-agent', timestamp: su.created_at as string, href: '/dashboard/agent?tab=My Sub-Agents', emphasis: 'positive', primaryAction: action });
+    }
   } catch { /* noop */ }
 
   // ── 7) Refunds ───────────────────────────────────────────────────────────
@@ -357,7 +368,11 @@ async function fetchItems(
       if (c.recovered_order_id) {
         add({ id: `cart_rec:${c.id}`, category: 'cart', title: 'Cart Recovered', subtitle: `${who} completed their order`, amount: Number(c.cart_value) || 0, timestamp: c.sent_at as string, href: `/orders/${c.recovered_order_id}`, emphasis: 'positive' });
       } else {
-        add({ id: `cart_abnd:${c.id}`, category: 'cart', title: 'Cart Abandoned', subtitle: `${who} left items in their cart`, amount: Number(c.cart_value) || 0, timestamp: c.sent_at as string, href: '/dashboard/agent?tab=Researchers', emphasis: 'warning' });
+        const action: ActivityAction | undefined = researcher?.email ? {
+          label: 'Remind',
+          href: `mailto:${researcher.email}?subject=Your cart at Pep Nation&body=Hi ${researcher.full_name || ''},%0A%0AWe noticed you left some items in your cart...`
+        } : undefined;
+        add({ id: `cart_abnd:${c.id}`, category: 'cart', title: 'Cart Abandoned', subtitle: `${who} left items in their cart`, amount: Number(c.cart_value) || 0, timestamp: c.sent_at as string, href: '/dashboard/agent?tab=Researchers', emphasis: 'warning', primaryAction: action });
       }
     }
   } catch { /* noop */ }
@@ -366,14 +381,24 @@ async function fetchItems(
   try {
     let q = db
       .from('agent_milestones')
-      .select('id, title, subtitle, achieved_at')
+      .select('id, title, subtitle, achieved_at, agent_id, profiles!agent_milestones_agent_id_fkey(full_name, email)')
       .in('agent_id', agentIds)
       .order('achieved_at', { ascending: false })
       .limit(PER_SOURCE);
     if (cutoff) q = q.gte('achieved_at', cutoff);
     const { data } = await q;
     for (const m of data || []) {
-      add({ id: `mile:${m.id}`, category: 'milestone', title: m.title, subtitle: m.subtitle || 'Milestone achieved', timestamp: m.achieved_at as string, emphasis: 'positive' });
+      const isSub = m.agent_id !== agentId;
+      const prof = one((m as any).profiles) as { full_name?: string; email?: string } | null;
+      if (isSub) {
+        const action: ActivityAction | undefined = prof?.email ? {
+          label: 'Congratulate',
+          href: `mailto:${prof.email}?subject=Congrats on the milestone!&body=Hi ${prof.full_name || ''},%0A%0AAmazing job hitting this milestone: ${m.title}! Keep up the great work.`
+        } : undefined;
+        add({ id: `mile:${m.id}`, category: 'milestone', title: `Sub-agent: ${m.title}`, subtitle: `${prof?.full_name || 'Sub-agent'} achieved a milestone`, timestamp: m.achieved_at as string, emphasis: 'positive', primaryAction: action });
+      } else {
+        add({ id: `mile:${m.id}`, category: 'milestone', title: m.title, subtitle: m.subtitle || 'Milestone achieved', timestamp: m.achieved_at as string, emphasis: 'positive' });
+      }
     }
   } catch { /* noop */ }
 
