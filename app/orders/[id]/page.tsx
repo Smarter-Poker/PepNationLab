@@ -9,6 +9,7 @@ import RecommendationStrip, { type RecommendationItem } from '@/components/Recom
 import ReceiptButton from './ReceiptButton';
 import OrderTrackingTimeline, { type TrackingEvent } from '@/components/OrderTrackingTimeline';
 import OrderStageTimeline from '@/components/OrderStageTimeline';
+import OrderActivityFeed, { type OrderActivityEvent } from '@/components/OrderActivityFeed';
 import ReorderOrderButton from './ReorderOrderButton';
 import ReorderStackButton from './ReorderStackButton';
 import ChangePaymentMethod from '@/components/ChangePaymentMethod';
@@ -173,6 +174,22 @@ export default async function OrderDetailPage(
     if (Array.isArray(te)) trackingEvents = te as unknown as TrackingEvent[];
   } catch {
     trackingEvents = [];
+  }
+
+  // Order activity timeline (order_events). RLS grants the buyer (and the
+  // order's agent / upline / admins) read access; best-effort so a failure
+  // never breaks the order page. The component filters to buyer-safe events.
+  let activityEvents: OrderActivityEvent[] = [];
+  try {
+    const { data: oe } = await supabase
+      .from('order_events')
+      .select('event, actor_role, payload, created_at')
+      .eq('order_id', order.id)
+      .order('created_at', { ascending: true })
+      .limit(100);
+    if (Array.isArray(oe)) activityEvents = oe as unknown as OrderActivityEvent[];
+  } catch {
+    activityEvents = [];
   }
 
   // Resolve seller payment handles if order has an agent
@@ -781,6 +798,11 @@ export default async function OrderDetailPage(
           {/* Carrier tracking history from the EasyPost webhook. Renders nothing
               until tracking events arrive, so it is safe to mount always. */}
           <OrderTrackingTimeline events={trackingEvents} />
+
+          {/* Order activity history from order_events - the authoritative
+              timeline of everything that happened to this order. Renders
+              nothing when no buyer-visible events exist. */}
+          <OrderActivityFeed events={activityEvents} />
 
           {/* Lot Numbers & COA (R26 placeholder - wired to order_items.lot_number / coa_url;
               real values are stamped at fulfillment time. Until then, each line item
