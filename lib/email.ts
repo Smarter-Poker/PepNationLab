@@ -1,4 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────────
 // PepNationLab transactional email.
 //
 // Provider-agnostic, ZERO-dependency sender. It talks to a transactional email
@@ -29,7 +29,7 @@
 // ~2,000/day, and (c) a REST API gives far better inbox placement and needs no
 // library. Google Workspace + a transactional API side-by-side is standard.
 // A future SMTP branch can be added here if pure Google SMTP is ever required.
-// ─────────────────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────────
 
 import { createHmac } from 'crypto';
 import { carrierInfo } from '@/lib/carrier';
@@ -224,7 +224,7 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
 
 const SITE = (process.env.NEXT_PUBLIC_APP_URL || 'https://pepnationlab.com').replace(/\/$/, '');
 
-// ─── Unsubscribe (marketing sends only) ─────────────────────────────────────
+// ─── Unsubscribe (marketing sends only) ───────────────────────────────
 // Deterministic HMAC token so marketing emails can carry a one-click opt-out
 // without storing anything. Verified by /api/unsubscribe. Transactional mail
 // (orders, codes, security alerts) never carries an unsubscribe link.
@@ -248,7 +248,7 @@ function marketingHeaders(unsubUrl: string): Record<string, string> {
   };
 }
 
-// ─── Shared layout ───────────────────────────────────────────────────────────
+// ─── Shared layout ────────────────────────────────────────────────────────────
 // Brand-aligned HTML shell (dark teal/black, RUO footer). Table-based with a
 // full-bleed background table so Outlook desktop (Word engine) honors the dark
 // fill and the 600px width; inline styles only -- email clients strip <style>
