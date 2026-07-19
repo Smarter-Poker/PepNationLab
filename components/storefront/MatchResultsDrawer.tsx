@@ -476,7 +476,7 @@ export function MatchResultsDrawer({
                           </div>
                         </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, flexWrap: 'wrap' }}>
                           <div style={{ color: '#C0C5CE', fontWeight: 900, fontSize: '1rem' }}>
                             ${(r.price_cents / 100).toFixed(2)}
                           </div>
@@ -595,7 +595,7 @@ export function MatchResultsDrawer({
                           </div>
                         </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, flexWrap: 'wrap' }}>
                           {r.product_id && r.price_cents > 0 && (
                             <div style={{ color: '#C0C5CE', fontWeight: 900, fontSize: '1rem' }}>
                               ${(r.price_cents / 100).toFixed(2)}
