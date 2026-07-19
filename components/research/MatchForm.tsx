@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useEffect, Suspense } from 'react';
+import React, { useMemo, useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { Sparkles, ChevronRight, ShieldCheck, Printer, X, Info, Scale, Trash2, ArrowRight, ArrowLeft, Save, Search, Eye, Clock, Atom, Snowflake, AlertTriangle, Check, RotateCcw, FlaskConical, Microscope, Globe, Shield, Infinity, Zap, Link2, ShoppingCart } from 'lucide-react';
@@ -583,15 +583,15 @@ function MatchFormInner() {
           { s: 4, label: 'Filters' },
           { s: 5, label: 'Results' },
         ].map(({ s, label }, i) => (
-          <>
-            {i > 0 && <div key={`sep-${s}`} style={{ width: '20px', height: '2px', background: s <= step ? 'var(--teal)' : 'rgba(255,255,255,0.12)', borderRadius: '2px', transition: 'background 0.3s', flexShrink: 0 }} />}
+          <React.Fragment key={s}>
+            {i > 0 && <div style={{ width: '20px', height: '2px', background: s <= step ? 'var(--teal)' : 'rgba(255,255,255,0.12)', borderRadius: '2px', transition: 'background 0.3s', flexShrink: 0 }} />}
             <button
-              key={s}
               onClick={() => s < step ? setStep(s) : undefined}
               style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
                 background: 'none', border: 'none', cursor: s < step ? 'pointer' : 'default', padding: '0 4px',
               }}
+              aria-label={s < step ? `Go back to ${label}` : label}
               title={s < step ? `Go back to ${label}` : label}
             >
               <div style={{
@@ -609,7 +609,7 @@ function MatchFormInner() {
               </div>
               <span style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.04em', color: s === step ? 'var(--teal)' : s < step ? 'rgba(0,196,188,0.7)' : 'rgba(255,255,255,0.25)', textTransform: 'uppercase', transition: 'color 0.3s' }}>{label}</span>
             </button>
-          </>
+          </React.Fragment>
         ))}
       </div>
 
