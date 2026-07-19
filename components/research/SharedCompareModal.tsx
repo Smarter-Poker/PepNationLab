@@ -91,11 +91,10 @@ interface SharedCompareModalProps {
   items: CompareItem[];
   onClose: () => void;
   storefrontMode?: boolean; 
-  onAddToCart?: (productId: string) => void;
   onOpenProduct?: (productId: string) => void;
 }
 
-export function SharedCompareModal({ items, onClose, storefrontMode, onAddToCart, onOpenProduct }: SharedCompareModalProps) {
+export function SharedCompareModal({ items, onClose, storefrontMode, onOpenProduct }: SharedCompareModalProps) {
   const isHeadToHead = items.length === 2;
   let winnerIndex = -1;
   let isTie = false;

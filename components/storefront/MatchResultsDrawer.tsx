@@ -772,7 +772,6 @@ export function MatchResultsDrawer({
           items={compareIds.map(id => mapToCompareItem(results.find(r => r.product_id === id || r.compound_slug === id || r.display_name === id)!))}
           onClose={() => setCompareOpen(false)}
           storefrontMode={true}
-          onAddToCart={handleAddStack}
           onOpenProduct={onOpenProduct}
         />
       )}
