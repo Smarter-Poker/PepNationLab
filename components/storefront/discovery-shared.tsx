@@ -16,6 +16,7 @@ export interface MatchedProduct {
   riskLevel?: string;
   halfLife?: string;
   molecularWeight?: number;
+  typicalFrequency?: string | null;
 }
 
 export interface ExcludedCompound {

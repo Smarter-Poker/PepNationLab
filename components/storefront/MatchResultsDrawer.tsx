@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingCart, X, Sparkles, Check, AlertTriangle } from 'lucide-react';
 import DynamicAddToCartButton from './DynamicAddToCartButton';
 import { ProtocolScheduler } from '../research/ProtocolScheduler';
+import { SharedCompareModal, mapToCompareItem } from '../research/SharedCompareModal';
 import { getTierPercent, getRiskPercent, getRiskColor, type MatchedProduct, type ExcludedCompound } from './discovery-shared';
 import { useModalA11y } from '@/lib/useModalA11y';
 
@@ -549,7 +550,7 @@ export function MatchResultsDrawer({
                           <div
                             onClick={(e) => {
                               e.stopPropagation();
-                              const cid = r.compound_slug || r.slug || r.display_name;
+                              const cid = r.product_id || r.compound_slug || r.display_name;
                               if (compareIds.includes(cid)) {
                                 setCompareIds(compareIds.filter(id => id !== cid));
                               } else {
@@ -563,13 +564,13 @@ export function MatchResultsDrawer({
                             }}
                             style={{
                               position: 'absolute', top: -6, left: -6, width: 24, height: 24,
-                              background: compareIds.includes(r.compound_slug || r.slug || r.display_name) ? primaryColor : 'rgba(0,0,0,0.6)',
-                              border: `2px solid ${compareIds.includes(r.compound_slug || r.slug || r.display_name) ? primaryColor : 'rgba(255,255,255,0.4)'}`,
+                              background: compareIds.includes(r.product_id || r.compound_slug || r.display_name) ? primaryColor : 'rgba(0,0,0,0.6)',
+                              border: `2px solid ${compareIds.includes(r.product_id || r.compound_slug || r.display_name) ? primaryColor : 'rgba(255,255,255,0.4)'}`,
                               borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center',
                               cursor: 'pointer', zIndex: 10
                             }}
                           >
-                            {compareIds.includes(r.compound_slug || r.slug || r.display_name) && <Check size={14} color="#000" strokeWidth={4} />}
+                            {compareIds.includes(r.product_id || r.compound_slug || r.display_name) && <Check size={14} color="#000" strokeWidth={4} />}
                           </div>
                         </div>
                       )}
@@ -766,106 +767,15 @@ export function MatchResultsDrawer({
     </AnimatePresence>
 
       {/* Compare Modal */}
-      <AnimatePresence>
-        {compareOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            style={{
-              position: 'fixed', inset: 0, zIndex: 900,
-              background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(20px)',
-              display: 'flex', flexDirection: 'column', alignItems: 'center',
-              padding: 'env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px)',
-            }}
-          >
-            <div style={{ width: '100%', maxWidth: 1000, flex: 1, display: 'flex', flexDirection: 'column', padding: 24 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-                <h2 style={{ color: '#FFF', margin: 0 }}>Compare Matches</h2>
-                <button
-                  type="button"
-                  onClick={() => setCompareOpen(false)}
-                  style={{
-                    background: 'rgba(255,255,255,0.1)', color: '#FFF', border: 'none',
-                    padding: 8, borderRadius: 12, cursor: 'pointer'
-                  }}
-                >
-                  <X size={24} />
-                </button>
-              </div>
-
-              <div style={{ flex: 1, overflowX: 'auto', background: 'rgba(255,255,255,0.03)', border: '6px solid #E2E8F0', boxSizing: 'border-box', borderRadius: 20 }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', color: '#E2E8F0', minWidth: 800 }}>
-                  <thead>
-                    <tr>
-                      <th style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.1)', width: 180 }}>Attribute</th>
-                      {compareIds.map(id => {
-                        const item = results.find(r => r.product_id === id || r.compound_slug === id || r.slug === id || r.display_name === id);
-                        return (
-                          <th key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.1)', minWidth: 200 }}>
-                            {item?.display_name || item?.displayName}
-                          </th>
-                        );
-                      })}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 700, color: '#A8B4C0' }}>Price</td>
-                      {compareIds.map(id => {
-                        const item = results.find(r => r.product_id === id || r.compound_slug === id || r.slug === id || r.display_name === id);
-                        return <td key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 800, color: '#C0C5CE' }}>{item?.product_id && item?.price_cents ? `$${(item.price_cents / 100).toFixed(2)}` : 'Research Only'}</td>;
-                      })}
-                    </tr>
-                    <tr>
-                      <td style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 700, color: '#A8B4C0' }}>Target Efficacy</td>
-                      {compareIds.map(id => {
-                        const item = results.find(r => r.product_id === id || r.compound_slug === id || r.slug === id || r.display_name === id);
-                        return <td key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{item?.score}%</td>;
-                      })}
-                    </tr>
-                    <tr>
-                      <td style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 700, color: '#A8B4C0' }}>Human Data Tier</td>
-                      {compareIds.map(id => {
-                        const item = results.find(r => r.product_id === id || r.compound_slug === id || r.slug === id || r.display_name === id);
-                        return <td key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{item?.evidence_tier?.replace(/_/g, ' ')}</td>;
-                      })}
-                    </tr>
-                    <tr>
-                      <td style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 700, color: '#A8B4C0' }}>Safety Profile</td>
-                      {compareIds.map(id => {
-                        const item = results.find(r => r.product_id === id || r.compound_slug === id || r.slug === id || r.display_name === id);
-                        return <td key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', textTransform: 'capitalize' }}>{item?.riskLevel} Risk</td>;
-                      })}
-                    </tr>
-                    <tr>
-                      <td style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 700, color: '#A8B4C0' }}>Half Life</td>
-                      {compareIds.map(id => {
-                        const item = results.find(r => r.product_id === id || r.compound_slug === id || r.slug === id || r.display_name === id);
-                        return <td key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{item?.halfLife || 'N/A'}</td>;
-                      })}
-                    </tr>
-                    <tr>
-                      <td style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 700, color: '#A8B4C0' }}>Molecular Wt</td>
-                      {compareIds.map(id => {
-                        const item = results.find(r => r.product_id === id || r.compound_slug === id || r.slug === id || r.display_name === id);
-                        return <td key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{item?.molecularWeight ? `${item.molecularWeight} Da` : 'N/A'}</td>;
-                      })}
-                    </tr>
-                    <tr>
-                      <td style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 700, color: '#A8B4C0' }}>Why This Match</td>
-                      {compareIds.map(id => {
-                        const item = results.find(r => r.product_id === id || r.compound_slug === id || r.slug === id || r.display_name === id);
-                        return <td key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.85rem', lineHeight: 1.5 }}>{item?.rationale}</td>;
-                      })}
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {compareOpen && (
+        <SharedCompareModal
+          items={compareIds.map(id => mapToCompareItem(results.find(r => r.product_id === id || r.compound_slug === id || r.display_name === id)!))}
+          onClose={() => setCompareOpen(false)}
+          storefrontMode={true}
+          onAddToCart={handleAddStack}
+          onOpenProduct={onOpenProduct}
+        />
+      )}
     </>
   );
 }

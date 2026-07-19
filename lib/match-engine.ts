@@ -60,6 +60,7 @@ export interface MatchResult {
   halfLife: string | null;
   molecularWeight: number | null;
   isTempSensitive: boolean;
+  typicalFrequency?: string | null;
   scoreBreakdown: ScoreBreakdown;
   isStackPartner?: boolean;
 }
@@ -417,6 +418,7 @@ export function scoreCompounds(
       halfLife: c.half_life,
       molecularWeight: c.molecular_weight_da ?? null,
       isTempSensitive: c.is_temp_sensitive ?? false,
+      typicalFrequency: c.typical_frequency ?? null,
       scoreBreakdown: result.breakdown,
       isStackPartner: false, // Updated below
     });

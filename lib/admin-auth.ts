@@ -86,7 +86,7 @@ export async function requireOrdersAccess(): Promise<
     };
   }
 
-  return { ok: true, userId: user.id, role: profile.role, isAdmin: isEffectiveAdmin(user.id, profile.role) };
+  return { ok: true, userId: user.id, role: profile?.role || 'user', isAdmin: isEffectiveAdmin(user.id, profile?.role) };
 }
 
 /**

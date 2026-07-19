@@ -51,20 +51,20 @@ type CatMeta = {
 
 const CAT_META: Record<Category, CatMeta> = {
   order:        { label: 'Orders',         icon: ShoppingBag,  accent: '#00C4BC' },
-  payment:      { label: 'Payments',        icon: Clock,        accent: '#ffb800' },
+  payment:      { label: 'Payments',        icon: Clock,        accent: '#fb923c' },
   researcher:   { label: 'Researchers',     icon: UserPlus,     accent: '#7ee787' },
   commission:   { label: 'Commissions',     icon: TrendingUp,   accent: '#00C4BC' },
-  referral:     { label: 'Referrals',       icon: Gift,         accent: '#c084fc' },
+  referral:     { label: 'Referrals',       icon: Gift,         accent: '#38bdf8' },
   coupon:       { label: 'Coupons',         icon: Ticket,       accent: '#fb923c' },
-  inventory:    { label: 'Inventory',       icon: AlertTriangle,accent: '#ffb800' },
+  inventory:    { label: 'Inventory',       icon: AlertTriangle,accent: '#fb923c' },
   subagent:     { label: 'Sub-Agents',      icon: Users,        accent: '#60a5fa' },
   wallet:       { label: 'Wallet',          icon: Wallet,       accent: '#a3a3a3' },
   refund:       { label: 'Refunds',         icon: RotateCcw,    accent: '#ff6b6b' },
   payout:       { label: 'Payouts',         icon: DollarSign,   accent: '#4ade80' },
-  subscription: { label: 'Subscriptions',   icon: Repeat,       accent: '#818cf8' },
+  subscription: { label: 'Subscriptions',   icon: Repeat,       accent: '#60a5fa' },
   invitation:   { label: 'Invitations',     icon: Mail,         accent: '#38bdf8' },
-  proof:        { label: 'Receipts',        icon: FileCheck,    accent: '#f472b6' },
-  broadcast:    { label: 'Broadcasts',      icon: Megaphone,    accent: '#fbbf24' },
+  proof:        { label: 'Receipts',        icon: FileCheck,    accent: '#00E5FF' },
+  broadcast:    { label: 'Broadcasts',      icon: Megaphone,    accent: '#fb923c' },
 };
 
 const ALL_CATS = Object.keys(CAT_META) as Category[];
