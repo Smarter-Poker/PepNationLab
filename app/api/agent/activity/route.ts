@@ -16,6 +16,10 @@ import { requireAgentOrAdmin } from '@/lib/admin-auth';
  *   - coupon redemptions on their codes
  *   - low / out-of-stock inventory alerts (current state — never date-filtered)
  *   - sub-agent additions + weekly commission settlements
+ *   - refunds issued on the agent's orders
+ *   - payout records (agent payouts)
+ *   - subscriptions (new, paused, cancelled)
+ *   - redeemed agent invitations
  *
  * `days` bounds the event window (default 90; `all` for no window) so the feed
  * never silently hides older activity — the caller can widen the window or export.
@@ -24,7 +28,8 @@ import { requireAgentOrAdmin } from '@/lib/admin-auth';
 
 type Category =
   | 'order' | 'payment' | 'researcher' | 'commission'
-  | 'referral' | 'coupon' | 'inventory' | 'subagent' | 'wallet';
+  | 'referral' | 'coupon' | 'inventory' | 'subagent' | 'wallet'
+  | 'refund' | 'payout' | 'subscription' | 'invitation';
 
 type Emphasis = 'positive' | 'negative' | 'warning' | 'neutral';
 
@@ -212,6 +217,82 @@ export async function GET(req: Request) {
     const { data } = await q;
     for (const su of data || [])
       add({ id: `sub:${su.id}`, category: 'subagent', title: 'New sub-agent added', subtitle: su.full_name || su.email || 'Sub-agent', timestamp: su.created_at as string, href: '/dashboard/agent?tab=My Sub-Agents', emphasis: 'positive' });
+  } catch { /* noop */ }
+
+  // 7) Refunds issued on this agent's orders
+  try {
+    let q = db
+      .from('refunds')
+      .select('id, amount, reason, status, refund_type, created_at, order_id, orders!inner(agent_id)')
+      .in('orders.agent_id', agentIds)
+      .order('created_at', { ascending: false })
+      .limit(PER_SOURCE);
+    if (cutoff) q = q.gte('created_at', cutoff);
+    const { data } = await q;
+    for (const r of data || []) {
+      const st = String(r.status || '');
+      const emphasis: Emphasis = st === 'completed' ? 'negative' : st === 'failed' ? 'neutral' : 'warning';
+      const subtitle = [r.reason, r.refund_type?.replace(/_/g, ' ')].filter(Boolean).join(' · ');
+      add({ id: `refund:${r.id}`, category: 'refund', title: `Refund ${st}`, subtitle, amount: Number(r.amount) || 0, status: st, timestamp: r.created_at as string, href: r.order_id ? `/orders/${r.order_id}` : undefined, emphasis });
+    }
+  } catch { /* noop */ }
+
+  // 8) Payout records for this agent
+  try {
+    let q = db
+      .from('payout_records')
+      .select('id, amount, payment_method, status, reference_number, notes, created_at')
+      .eq('agent_id', agentId)
+      .order('created_at', { ascending: false })
+      .limit(PER_SOURCE);
+    if (cutoff) q = q.gte('created_at', cutoff);
+    const { data } = await q;
+    for (const p of data || []) {
+      const st = String(p.status || '');
+      const emphasis: Emphasis = st === 'completed' ? 'positive' : st === 'failed' ? 'negative' : 'neutral';
+      const sub = [p.payment_method, p.reference_number, p.notes].filter(Boolean).join(' · ');
+      add({ id: `payout:${p.id}`, category: 'payout', title: `Payout ${st}`, subtitle: sub || undefined, amount: Number(p.amount) || 0, status: st, timestamp: p.created_at as string, href: '/dashboard/agent?tab=Sales & Accounting', emphasis });
+    }
+  } catch { /* noop */ }
+
+  // 9) Subscription state changes (new, paused, cancelled)
+  try {
+    let q = db
+      .from('subscriptions')
+      .select('id, status, cadence_days, payment_method, created_at, paused_at, cancelled_at, updated_at, researcher_id, profiles!subscriptions_researcher_id_fkey(full_name, email)')
+      .in('agent_id', agentIds)
+      .order('updated_at', { ascending: false })
+      .limit(PER_SOURCE);
+    if (cutoff) q = q.gte('updated_at', cutoff);
+    const { data } = await q;
+    for (const s of data || []) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const researcher = one((s as any).profiles) as { full_name?: string; email?: string } | null;
+      const who = researcher?.full_name || researcher?.email || 'A researcher';
+      const st = String(s.status || 'active');
+      let title = 'Subscription activated';
+      let emphasis: Emphasis = 'positive';
+      let ts = s.created_at as string;
+      if (st === 'cancelled') { title = 'Subscription cancelled'; emphasis = 'negative'; ts = (s.cancelled_at || s.updated_at) as string; }
+      else if (st === 'paused')   { title = 'Subscription paused';    emphasis = 'warning';  ts = (s.paused_at   || s.updated_at) as string; }
+      const sub = `${who} · every ${s.cadence_days}d`;
+      add({ id: `sub:${s.id}:${st}`, category: 'subscription', title, subtitle: sub, status: st, timestamp: ts, href: '/dashboard/agent?tab=Orders', emphasis });
+    }
+  } catch { /* noop */ }
+
+  // 10) Redeemed agent invitations (your invited agents accepted)
+  try {
+    let q = db
+      .from('agent_invitations')
+      .select('id, email, full_name, intended_role, redeemed_at')
+      .eq('invited_by', agentId)
+      .not('redeemed_at', 'is', null)
+      .order('redeemed_at', { ascending: false })
+      .limit(PER_SOURCE);
+    if (cutoff) q = q.gte('redeemed_at', cutoff);
+    const { data } = await q;
+    for (const inv of data || [])
+      add({ id: `inv:${inv.id}`, category: 'invitation', title: 'Invitation accepted', subtitle: `${inv.full_name || inv.email || 'Agent'} joined as ${(inv.intended_role || 'agent').replace(/_/g, ' ')}`, timestamp: inv.redeemed_at as string, href: '/dashboard/agent?tab=My Sub-Agents', emphasis: 'positive' });
   } catch { /* noop */ }
 
   const sorted = items
