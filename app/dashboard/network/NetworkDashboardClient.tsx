@@ -34,8 +34,10 @@ interface NetworkAgent {
   gmv30d: number;
 }
 
-const TEAL = 'var(--teal, #00C4BC)';
+// Brand accent is a warm taupe (--teal resolves to #C0B8A8 app-wide), NOT cyan.
+const TEAL = 'var(--teal, #C0B8A8)';
 const SILVER = 'var(--silver, #A8B4C0)';
+const GREEN = '#89C79C'; // muted sage for positive money figures
 
 const card: React.CSSProperties = {
   background: '#0F1923',
@@ -122,9 +124,9 @@ export default function NetworkDashboardClient() {
 
   const kpis = [
     { label: 'Total Agents', value: String(totalAgents), accent: TEAL },
-    { label: 'Active', value: String(activeAgents), accent: '#4ADE80' },
+    { label: 'Active', value: String(activeAgents), accent: GREEN },
     { label: 'Super Agents', value: String(superAgents), accent: TEAL },
-    { label: 'Network GMV (30d)', value: money(gmv30), accent: '#4ADE80' },
+    { label: 'Network GMV (30d)', value: money(gmv30), accent: GREEN },
     { label: 'Network Orders', value: orderCount == null ? '—' : String(orderCount), accent: TEAL },
   ];
 
@@ -156,8 +158,8 @@ export default function NetworkDashboardClient() {
         {/* Header */}
         <header style={{
           marginTop: 20, marginBottom: 22, padding: '24px 26px', borderRadius: 18,
-          background: 'linear-gradient(135deg, rgba(0,196,188,0.14), rgba(74,222,128,0.06) 60%, rgba(15,25,35,0.2))',
-          border: '1px solid rgba(0,196,188,0.22)',
+          background: 'linear-gradient(135deg, rgba(192,184,168,0.14), rgba(192,184,168,0.05) 60%, rgba(15,25,35,0.2))',
+          border: '1px solid rgba(192,184,168,0.22)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14,
         }}>
           <div>
@@ -167,7 +169,7 @@ export default function NetworkDashboardClient() {
           </div>
           <Link href="/admin" style={{
             display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none',
-            background: TEAL, color: '#04221F', fontWeight: 800, fontSize: '0.85rem',
+            background: TEAL, color: '#050A0F', fontWeight: 800, fontSize: '0.85rem',
             padding: '10px 18px', borderRadius: 10, whiteSpace: 'nowrap',
           }}>
             <span style={{ display: 'inline-flex' }}>{ICONS.admin}</span> Full Admin Panel
@@ -197,7 +199,7 @@ export default function NetworkDashboardClient() {
             }}>
               <span style={{
                 flexShrink: 0, width: 40, height: 40, borderRadius: 10, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                background: 'rgba(0,196,188,0.12)', color: TEAL,
+                background: 'rgba(192,184,168,0.12)', color: TEAL,
               }}>{ICONS[tool.key]}</span>
               <span style={{ minWidth: 0 }}>
                 <span style={{ display: 'block', fontWeight: 800, fontSize: '0.92rem' }}>{tool.label}</span>
@@ -248,7 +250,7 @@ export default function NetworkDashboardClient() {
                         {a.slug ? <a href={`/${a.slug}`} target="_blank" rel="noopener noreferrer" style={{ color: TEAL, fontSize: '0.75rem', textDecoration: 'none' }}>/{a.slug}</a> : '—'}
                       </td>
                       <td style={{ padding: '11px 14px' }}>
-                        <span style={{ fontSize: '0.66rem', padding: '2px 8px', borderRadius: 999, background: a.isActive ? 'rgba(0,196,188,0.12)' : 'rgba(168,180,192,0.1)', color: a.isActive ? TEAL : SILVER, fontWeight: 700 }}>
+                        <span style={{ fontSize: '0.66rem', padding: '2px 8px', borderRadius: 999, background: a.isActive ? 'rgba(192,184,168,0.12)' : 'rgba(168,180,192,0.1)', color: a.isActive ? TEAL : SILVER, fontWeight: 700 }}>
                           {a.isActive ? 'Active' : 'Inactive'}
                         </span>
                       </td>
@@ -259,7 +261,7 @@ export default function NetworkDashboardClient() {
                             {a.isSuperAgent ? '↓ Demote' : '↑ Super'}
                           </button>
                           <button type="button" disabled={busy[a.id]} onClick={() => agentAction(a, 'active')}
-                            style={{ ...btnGhost, opacity: busy[a.id] ? 0.5 : 1, color: a.isActive ? '#F87171' : TEAL, borderColor: a.isActive ? 'rgba(248,113,113,0.4)' : 'rgba(0,196,188,0.4)' }}>
+                            style={{ ...btnGhost, opacity: busy[a.id] ? 0.5 : 1, color: a.isActive ? '#F87171' : TEAL, borderColor: a.isActive ? 'rgba(248,113,113,0.4)' : 'rgba(192,184,168,0.4)' }}>
                             {a.isActive ? 'Deactivate' : 'Activate'}
                           </button>
                         </div>
@@ -287,7 +289,7 @@ export default function NetworkDashboardClient() {
 
       </div>
 
-      <style>{`.cc-tool:hover{transform:translateY(-2px);border-color:rgba(0,196,188,0.5)!important;background:#12202c!important;}`}</style>
+      <style>{`.cc-tool:hover{transform:translateY(-2px);border-color:rgba(192,184,168,0.5)!important;background:#12202c!important;}`}</style>
     </div>
   );
 }
