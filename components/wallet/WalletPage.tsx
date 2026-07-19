@@ -10,6 +10,7 @@ import CreditIncreaseForm from './CreditIncreaseForm';
 import WalletSettings from './WalletSettings';
 import WalletSendSheet from './WalletSendSheet';
 import IframeLink from '@/components/ui/IframeLink';
+import DownlineBalances from './DownlineBalances';
 
 const money = (n: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(Number(n) || 0);
@@ -384,7 +385,9 @@ export default function WalletPage({
           )}
 
           {tab === 'statements' && (
-            <section className="glass-panel" style={{ padding: 16, borderRadius: 12 }}>
+            <>
+              <DownlineBalances />
+              <section className="glass-panel" style={{ padding: 16, borderRadius: 12 }}>
               <h3 style={{ color: 'var(--white)', marginTop: 0 }}>Invoice History</h3>
               {statements.length === 0 ? (
                 <p style={{ color: 'var(--grey-500)' }}>No Invoices Yet.</p>
@@ -435,7 +438,8 @@ export default function WalletPage({
                   </table>
                 </div>
               )}
-            </section>
+              </section>
+            </>
           )}
 
           {tab === 'commissions' && <CommissionsTab />}
