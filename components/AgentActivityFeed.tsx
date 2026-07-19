@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import {
-  Activity, Package, Clock, UserPlus, TrendingUp, Gift, Ticket,
+  Activity, Clock, UserPlus, TrendingUp, Gift, Ticket,
   AlertTriangle, Users, Wallet, RefreshCw, ChevronRight, Download,
   RotateCcw, DollarSign, Repeat, Mail, ShoppingBag, Search, X,
-  Megaphone, FileCheck, ChevronDown, TrendingDown, Minus, Eye,
+  Megaphone, FileCheck, ChevronDown, TrendingDown,
 } from 'lucide-react';
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
@@ -508,24 +508,10 @@ export default function AgentActivityFeed() {
             setNewLiveItems(prev => [newItem, ...prev].slice(0, 20));
           }
         )
-        .on(
-          'postgres_changes',
-          { event: 'INSERT', schema: 'public', table: 'payment_proofs' },
-          (payload) => {
-            const pp = payload.new as { id?: string; order_id?: string; uploaded_at?: string };
-            if (!pp?.id) return;
-            const newItem: Item = {
-              id: `proof:${pp.id}`,
-              category: 'proof',
-              title: 'Payment proof submitted',
-              subtitle: 'A researcher uploaded a receipt',
-              timestamp: pp.uploaded_at || new Date().toISOString(),
-              href: pp.order_id ? `/orders/${pp.order_id}` : '/wallet',
-              emphasis: 'warning',
-            };
-            setNewLiveItems(prev => [newItem, ...prev].slice(0, 20));
-          }
-        )
+        // Note: payment_proofs realtime intentionally omitted — Realtime
+        // cannot filter on joined tables (e.g. orders.agent_id), so a channel
+        // on payment_proofs would fire for ALL agents' orders, leaking events
+        // cross-agent. Proof notifications surface via the API poll instead.
         .subscribe((status) => {
           if (active) setIsLive(status === 'SUBSCRIBED');
         });
@@ -950,6 +936,7 @@ export default function AgentActivityFeed() {
                         cursor: clickable ? 'pointer' : 'default',
                         animation: `pna-fadein 0.2s ease ${ri * 0.025}s both`,
                         position: 'relative',
+                        overflow: 'visible',
                       }}
                     >
                       {/* Unread dot */}

@@ -313,17 +313,14 @@ async function fetchItems(
     if (orderIds.length > 0) {
       let q = db
         .from('payment_proofs')
-        .select('id, order_id, uploaded_at, uploader_id, profiles!payment_proofs_uploader_id_fkey(full_name, email)')
+        .select('id, order_id, uploaded_at, uploader_id')
         .in('order_id', orderIds.slice(0, 500))
         .order('uploaded_at', { ascending: false })
         .limit(PER_SOURCE);
       if (cutoff) q = q.gte('uploaded_at', cutoff);
       const { data } = await q;
       for (const pp of data || []) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const uploader = one((pp as any).profiles) as { full_name?: string; email?: string } | null;
-        const who = uploader?.full_name || uploader?.email || 'A researcher';
-        add({ id: `proof:${pp.id}`, category: 'proof', title: 'Payment proof submitted', subtitle: `${who} uploaded a payment receipt`, timestamp: pp.uploaded_at as string, href: pp.order_id ? `/orders/${pp.order_id}` : '/wallet', emphasis: 'warning' });
+        add({ id: `proof:${pp.id}`, category: 'proof', title: 'Payment proof submitted', subtitle: `Receipt uploaded for order`, timestamp: pp.uploaded_at as string, href: pp.order_id ? `/orders/${pp.order_id}` : '/wallet', emphasis: 'warning' });
       }
     }
   } catch { /* noop */ }
