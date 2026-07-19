@@ -34,6 +34,8 @@ import { decryptSecret } from '@/lib/shipping-crypto';
 import { canTransition, type OrderStatus } from '@/lib/order-states';
 import { enqueueOrderPush } from '@/lib/push-enqueue';
 import { emailConfigured, sendOrderDeliveredEmail } from '@/lib/email';
+import { logOrderEvent } from '@/lib/order-events';
+import { notify } from '@/lib/notify';
 
 // ---------------------------------------------------------------------------
 // bytea coercion - Supabase/PostgREST can hand bytea back as a Buffer, a
@@ -262,6 +264,33 @@ export async function handleTrackerEvent(
   // Best-effort delivery push (single insert, stays within the time budget).
   if (justDelivered && buyerId) {
     try {
+      // In-app bell notification. withPush: false -- the enqueueOrderPush call
+      // below already sends the push (with tracking), so notify() must not
+      // queue a second one for the same delivery.
+      await notify(supabase, {
+        userId: buyerId,
+        type: 'order_delivered',
+        title: `Order #${orderId.slice(0, 8).toUpperCase()} Delivered`,
+        body: 'Your Order Has Been Delivered. Thank You For Your Business.',
+        url: `/orders/${orderId}`,
+        withPush: false,
+      });
+    } catch {
+      /* notifications must not break webhook ack */
+    }
+
+    try {
+      await logOrderEvent(supabase, {
+        orderId,
+        event: 'delivered',
+        actorRole: 'system',
+        payload: { tracking_number: trackingNumber, carrier: carrier ?? null, occurred_at: occurredAt },
+      });
+    } catch {
+      /* timeline must not break webhook ack */
+    }
+
+    try {
       await enqueueOrderPush(supabase, {
         userId: buyerId,
         orderId,
@@ -275,7 +304,9 @@ export async function handleTrackerEvent(
     // Delivered email on the PRIMARY delivery path. The carrier webhook is
     // what marks orders delivered in production; once it has transitioned the
     // order, the admin route's delivered email is unreachable, so it must be
-    // sent from here. Verified contact email only; never breaks the ack.
+    // sent from here. Verified contact email first, falling back to the auth
+    // account email when no verified contact email is on file; never breaks
+    // the ack.
     try {
       if (emailConfigured()) {
         const { data: buyer } = await supabase
@@ -283,10 +314,16 @@ export async function handleTrackerEvent(
           .select('contact_email, email_verified, full_name')
           .eq('id', buyerId)
           .maybeSingle();
-        if (buyer?.contact_email && buyer.email_verified) {
+        let to: string | null = (buyer?.contact_email && buyer.email_verified) ? buyer.contact_email : null;
+        if (!to) {
+          // Fallback: the auth account email (already verified by login).
+          const { data: authUser } = await supabase.auth.admin.getUserById(buyerId);
+          to = authUser?.user?.email ?? null;
+        }
+        if (to) {
           await sendOrderDeliveredEmail({
-            to: buyer.contact_email,
-            fullName: buyer.full_name,
+            to,
+            fullName: buyer?.full_name ?? null,
             orderId,
           });
         }
