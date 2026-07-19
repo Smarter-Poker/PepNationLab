@@ -13,7 +13,8 @@ import { Package, CheckCircle, Truck, Gift, XCircle, DollarSign, User, MessageSq
 export type NotifType =
   | 'order_placed' | 'order_approved' | 'order_shipped' | 'order_delivered'
   | 'order_cancelled' | 'commission_earned' | 'new_researcher' | 'new_message'
-  | 'invoice' | 'payment_reminder' | 'cart_reminder' | 'referral' | 'system';
+  | 'invoice' | 'payment_reminder' | 'cart_reminder' | 'referral' | 'system'
+  | 'payment_confirmed' | 'order_attention';
 
 interface NotifItem {
   id: string;
@@ -41,6 +42,8 @@ function NotifIcon({ type }: { type: string }) {
     cart_reminder:     <ShoppingCart size={14} style={{ color: '#F6AD55' }} />,
     referral:          <Link2 size={14} style={{ color: '#63B3ED' }} />,
     system:            <Bell size={14} style={{ color: '#A0AEC0' }} />,
+    payment_confirmed: <DollarSign size={14} style={{ color: '#48BB78' }} />,
+    order_attention:   <Clock size={14} style={{ color: '#E53E3E' }} />,
   };
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, width: 26, height: 26, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }}>
