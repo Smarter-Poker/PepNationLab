@@ -940,9 +940,9 @@ function MatchFormInner() {
                           </div>
                         </div>
                         <div className="match-actions no-print">
-                          {/* View In Store CTA */}
-                          <Link href={`/store/${r.slug}`} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: '8px 12px', background: 'linear-gradient(135deg,#3DD9A4,#00C4BC)', color: '#0a1a14', fontWeight: 800, borderRadius: '8px', textDecoration: 'none', whiteSpace: 'nowrap', justifyContent: 'center' }}>
-                            <ShoppingCart size={14} /> View In Store
+                          {/* View & Order CTA — links to /research/[slug] monograph with add-to-cart */}
+                          <Link href={`/research/${r.slug}`} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: '8px 12px', background: 'linear-gradient(135deg,#3DD9A4,#00C4BC)', color: '#0a1a14', fontWeight: 800, borderRadius: '8px', textDecoration: 'none', whiteSpace: 'nowrap', justifyContent: 'center' }}>
+                            <ShoppingCart size={14} /> View &amp; Order
                           </Link>
                           <button onClick={() => { setSelectedDrawerCompound(r); setIsDrawerOpen(true); }} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: '8px 12px' }}>
                             <Eye size={16} /> Quick View
