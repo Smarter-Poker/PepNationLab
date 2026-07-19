@@ -71,12 +71,20 @@ export async function GET(req: Request) {
   const items: ActivityItem[] = [];
   const add = (i: ActivityItem) => { if (i.timestamp) items.push(i); };
 
-  // 1) Orders on this agent's storefront
+  // Resolve the full set of agent IDs this user controls (own ID + sub-agent IDs).
+  // This mirrors the dashboard page logic so the activity feed is consistent with the KPI tiles.
+  const { data: subAgentProfiles } = await db
+    .from('profiles')
+    .select('id')
+    .eq('parent_agent_id', agentId);
+  const agentIds = [agentId, ...(subAgentProfiles || []).map((p: { id: string }) => p.id)];
+
+  // 1) Orders on this agent's storefront (including sub-agents)
   try {
     let q = db
       .from('orders')
       .select('id, status, total, discount_amount, discount_source, coupon_code, created_at, is_wholesale_restock, profiles!orders_buyer_id_fkey(full_name, email)')
-      .eq('agent_id', agentId)
+      .in('agent_id', agentIds)
       .order('created_at', { ascending: false })
       .limit(PER_SOURCE);
     if (cutoff) q = q.gte('created_at', cutoff);
@@ -147,12 +155,12 @@ export async function GET(req: Request) {
     }
   } catch { /* noop */ }
 
-  // 4) Coupon redemptions on this agent's codes
+  // 4) Coupon redemptions on this agent's codes (including sub-agents)
   try {
     let q = db
       .from('coupon_redemptions')
       .select('id, code, redeemed_at, order_id, coupons!inner(agent_id)')
-      .eq('coupons.agent_id', agentId)
+      .in('coupons.agent_id', agentIds)
       .order('redeemed_at', { ascending: false })
       .limit(PER_SOURCE);
     if (cutoff) q = q.gte('redeemed_at', cutoff);
@@ -161,12 +169,12 @@ export async function GET(req: Request) {
       add({ id: `coupon:${c.id}`, category: 'coupon', title: 'Coupon redeemed', subtitle: String(c.code || ''), timestamp: c.redeemed_at as string, href: c.order_id ? `/orders/${c.order_id}` : '/dashboard/agent?tab=Coupons', emphasis: 'neutral' });
   } catch { /* noop */ }
 
-  // 5) Low / out-of-stock inventory (current state — intentionally NOT date-filtered)
+  // 5) Low / out-of-stock inventory (current state — intentionally NOT date-filtered, all controlled agents)
   try {
     const { data } = await db
       .from('agent_inventory')
       .select('id, stock_count, low_stock_threshold, updated_at, products(name)')
-      .eq('agent_id', agentId)
+      .in('agent_id', agentIds)
       .order('updated_at', { ascending: false })
       .limit(120);
     for (const iv of data || []) {
