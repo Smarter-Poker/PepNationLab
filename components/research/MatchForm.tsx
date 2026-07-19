@@ -696,7 +696,7 @@ function MatchFormInner() {
               aria-label={s < step ? `Go back to ${label}` : label}
               title={s < step ? `Go back to ${label}` : label}
             >
-              <div style={{
+              <div className={s === 5 && step === 5 && !loading ? 'animate-pulse' : ''} style={{
                 width: '28px', height: '28px', borderRadius: '50%',
                 background: s < step ? 'var(--teal)' : s === step ? 'rgba(0,196,188,0.15)' : 'rgba(255,255,255,0.06)',
                 border: s === step ? '2px solid var(--teal)' : s < step ? '2px solid var(--teal)' : '2px solid rgba(255,255,255,0.1)',
@@ -954,7 +954,7 @@ function MatchFormInner() {
                 <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '0 0 8px 0', color: 'var(--teal, #00C4BC)' }}>
                   <Info size={18} /> Synergistic Stack Detected
                 </h4>
-                <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--silver)' }}>
+                <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--silver)', lineHeight: 1.5, wordWrap: 'break-word' }}>
                   The engine detected that <strong>{stackPartners[0].displayName}</strong> and <strong>{stackPartners[1].displayName}</strong> are highly synergistic and frequently researched together as a stack for this protocol.
                   <button 
                     onClick={() => {
@@ -1009,18 +1009,11 @@ function MatchFormInner() {
                 )}
                 {/* Trust-building result summary */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-4, 16px)', flexWrap: 'wrap', gap: '8px' }}>
-                  <div>
-                    <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--white, #FFFFFF)', margin: '0 0 4px' }}>
-                      Top {results.length} {results.length === 1 ? 'Match' : 'Matches'} {loading && <Sparkles size={16} className="animate-pulse inline" />}
-                    </h3>
-                    <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--grey-500, #6B7785)', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                      <Sparkles size={12} color="var(--teal)" />
-                      Engine scanned the full catalog
-                      <span style={{ color: 'rgba(255,255,255,0.2)' }}>·</span>
-                      <strong style={{ color: 'var(--teal)' }}>{results.length} compound{results.length !== 1 ? 's' : ''}</strong> passed your filters
-                      <span style={{ color: 'rgba(255,255,255,0.2)' }}>·</span>
-                      Ranked by score out of 100
-                    </p>
+                  <div style={{ marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <h3 style={{ color: 'white', fontSize: '1.4rem', margin: 0 }}>Top Matches</h3>
+                    <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ margin: 0, color: 'var(--silver)', fontSize: '0.9rem', lineHeight: 1.5 }}>
+                      Engine scanned the catalog · <strong style={{ color: 'var(--teal)' }}>{results.length} compound{results.length !== 1 ? 's' : ''}</strong> matched your criteria · Ranked by score out of 100
+                    </motion.p>
                   </div>
                   {excludeSlugs.length > 0 && (
                     <button onClick={() => setExcludeSlugs([])} className="no-print" style={{ background: 'rgba(229,62,62,0.1)', color: '#F08A8A', border: '1px solid rgba(229,62,62,0.3)', borderRadius: '8px', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}>
@@ -1070,9 +1063,9 @@ function MatchFormInner() {
                         </div>
                         <div className="match-actions no-print">
                           {/* PRIMARY: View In Store */}
-                          <Link href={`/research/${r.slug}`} className="btn-view-order">
+                          <a href={`/pepnation?search=${r.slug}`} className="btn-view-order">
                             <ShoppingCart size={14} /> View In Store
-                          </Link>
+                          </a>
                           {/* SECONDARY: Quick View */}
                           <button
                             onClick={() => { setSelectedDrawerCompound(r); setIsDrawerOpen(true); }}
@@ -1093,6 +1086,7 @@ function MatchFormInner() {
                           <button
                             onClick={() => setExcludeSlugs(prev => [...prev, r.slug])}
                             className="btn-exclude"
+                            style={{ background: 'rgba(229,62,62,0.05)', color: '#F08A8A', border: '1px solid rgba(229,62,62,0.2)' }}
                             aria-label={`Exclude ${r.displayName} from results`}
                           >
                             <Trash2 size={13} /> Exclude
@@ -1115,7 +1109,15 @@ function MatchFormInner() {
                               return (
                                 <div key={f.key} className="factor-row">
                                   <span style={{ fontSize: '0.8rem', color: 'var(--silver, #A8B4C0)' }}>{f.label}</span>
-                                  <span className="factor-track"><span className="factor-fill" style={{ width, background: neg ? '#FC8181' : f.color }} /></span>
+                                  <span className="factor-track">
+                                    <motion.span 
+                                      className="factor-fill" 
+                                      initial={{ width: 0 }} 
+                                      animate={{ width }} 
+                                      transition={{ duration: 0.8, delay: 0.1 + (idx * 0.1) }}
+                                      style={{ background: neg ? '#FC8181' : f.color }} 
+                                    />
+                                  </span>
                                   <span style={{ fontSize: '0.85rem', fontWeight: 800, textAlign: 'right', color: neg ? '#FC8181' : 'var(--white, #FFFFFF)' }}>{val > 0 ? `+${val}` : val}</span>
                                 </div>
                               );
