@@ -33,7 +33,7 @@ type Category =
   | 'order' | 'payment' | 'researcher' | 'commission'
   | 'referral' | 'coupon' | 'inventory' | 'subagent' | 'wallet'
   | 'refund' | 'payout' | 'subscription' | 'invitation'
-  | 'proof' | 'broadcast';
+  | 'proof' | 'broadcast' | 'cart' | 'milestone';
 
 type Emphasis = 'positive' | 'negative' | 'warning' | 'neutral';
 
@@ -338,6 +338,42 @@ async function fetchItems(
     for (const b of data || []) {
       const reach = Number(b.sent_count || b.recipient_count || 0);
       add({ id: `bcast:${b.id}`, category: 'broadcast', title: 'Broadcast sent', subtitle: `${b.title}${reach > 0 ? ` · ${reach} researchers reached` : ''}`, timestamp: b.created_at as string, href: '/dashboard/agent/broadcasts', emphasis: 'neutral' });
+    }
+  } catch { /* noop */ }
+
+  // ── 13) Abandoned Carts & Recoveries ──────────────────────────────────────
+  try {
+    let q = db
+      .from('abandoned_cart_reminders')
+      .select('id, cart_value, sent_at, recovered_order_id, profiles!inner(full_name, email, referring_agent_id)')
+      .in('profiles.referring_agent_id', agentIds)
+      .order('sent_at', { ascending: false })
+      .limit(PER_SOURCE);
+    if (cutoff) q = q.gte('sent_at', cutoff);
+    const { data } = await q;
+    for (const c of data || []) {
+      const researcher = one((c as any).profiles) as { full_name?: string; email?: string } | null;
+      const who = researcher?.full_name || researcher?.email || 'A researcher';
+      if (c.recovered_order_id) {
+        add({ id: `cart_rec:${c.id}`, category: 'cart', title: 'Cart Recovered', subtitle: `${who} completed their order`, amount: Number(c.cart_value) || 0, timestamp: c.sent_at as string, href: `/orders/${c.recovered_order_id}`, emphasis: 'positive' });
+      } else {
+        add({ id: `cart_abnd:${c.id}`, category: 'cart', title: 'Cart Abandoned', subtitle: `${who} left items in their cart`, amount: Number(c.cart_value) || 0, timestamp: c.sent_at as string, href: '/dashboard/agent?tab=Researchers', emphasis: 'warning' });
+      }
+    }
+  } catch { /* noop */ }
+
+  // ── 14) Gamification & Milestones ─────────────────────────────────────────
+  try {
+    let q = db
+      .from('agent_milestones')
+      .select('id, title, subtitle, achieved_at')
+      .in('agent_id', agentIds)
+      .order('achieved_at', { ascending: false })
+      .limit(PER_SOURCE);
+    if (cutoff) q = q.gte('achieved_at', cutoff);
+    const { data } = await q;
+    for (const m of data || []) {
+      add({ id: `mile:${m.id}`, category: 'milestone', title: m.title, subtitle: m.subtitle || 'Milestone achieved', timestamp: m.achieved_at as string, emphasis: 'positive' });
     }
   } catch { /* noop */ }
 

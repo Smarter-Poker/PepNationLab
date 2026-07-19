@@ -7,7 +7,7 @@ import {
   Activity, Clock, UserPlus, TrendingUp, Gift, Ticket,
   AlertTriangle, Users, Wallet, RefreshCw, ChevronRight, Download,
   RotateCcw, DollarSign, Repeat, Mail, ShoppingBag, Search, X,
-  Megaphone, FileCheck, ChevronDown, TrendingDown,
+  Megaphone, FileCheck, ChevronDown, TrendingDown, ShoppingCart, Trophy
 } from 'lucide-react';
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
@@ -15,7 +15,7 @@ type Category =
   | 'order' | 'payment' | 'researcher' | 'commission'
   | 'referral' | 'coupon' | 'inventory' | 'subagent' | 'wallet'
   | 'refund' | 'payout' | 'subscription' | 'invitation'
-  | 'proof' | 'broadcast';
+  | 'proof' | 'broadcast' | 'cart' | 'milestone';
 
 type Emphasis = 'positive' | 'negative' | 'warning' | 'neutral';
 
@@ -65,6 +65,8 @@ const CAT_META: Record<Category, CatMeta> = {
   invitation:   { label: 'Invitations',     icon: Mail,         accent: '#38bdf8' },
   proof:        { label: 'Receipts',        icon: FileCheck,    accent: '#00E5FF' },
   broadcast:    { label: 'Broadcasts',      icon: Megaphone,    accent: '#fb923c' },
+  cart:         { label: 'Carts',           icon: ShoppingCart, accent: '#fb923c' },
+  milestone:    { label: 'Milestones',      icon: Trophy,       accent: '#facc15' },
 };
 
 const ALL_CATS = Object.keys(CAT_META) as Category[];
