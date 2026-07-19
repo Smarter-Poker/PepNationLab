@@ -78,14 +78,14 @@ export async function GET(req: Request) {
     const money = `$${stats.gmv24h.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
     for (const a of admins ?? []) {
-      // In-app summary for the bell feed.
+      // In-app summary for the bell feed - deep-links to the Order Attention Board.
       try {
         await notify(admin, {
           userId: a.id,
           type: 'system',
           title: `Daily Digest: ${stats.orders24h} Orders / ${money} (24h)`,
           body: `Stuck: ${stats.pendingPaymentAging} Awaiting Payment 24h+, ${stats.agentApprovalAging} Awaiting Agent 24h+, ${stats.adminApprovalPending} Awaiting Admin Release.`,
-          url: '/admin/orders',
+          url: '/admin/attention',
           withPush: false,
         });
         notified++;
