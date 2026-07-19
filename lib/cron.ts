@@ -86,7 +86,7 @@ export async function claimCronRun(
 
   const startedMs = existing.started_at ? new Date(existing.started_at as string).getTime() : 0;
   const isStaleRunning = existing.status === 'running' && Date.now() - startedMs > staleMs;
-  const isRetryable = existing.status === 'failed' || existing.status === 'partial_failure' || isStaleRunning;
+  const isRetryable = existing.status === 'failed' || isStaleRunning;
   if (!isRetryable) return null;
 
   // Optimistic take-over: only succeeds if the row is still in the state we saw,
@@ -113,7 +113,7 @@ export async function claimCronRun(
  */
 export async function finishCronRun(
   id: string,
-  status: 'succeeded' | 'failed' | 'partial_failure',
+  status: 'succeeded' | 'failed',
   notes?: string
 ): Promise<void> {
   try {
