@@ -956,9 +956,15 @@ function MatchFormInner() {
                 </h4>
                 <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--silver)' }}>
                   The engine detected that <strong>{stackPartners[0].displayName}</strong> and <strong>{stackPartners[1].displayName}</strong> are highly synergistic and frequently researched together as a stack for this protocol.
-                  <Link href={`/research/compare?add=${stackPartners[0].slug},${stackPartners[1].slug}`} style={{ color: 'var(--white)', fontWeight: 700, marginLeft: '8px', textDecoration: 'underline' }}>
-                    Compare Them Side-By-Side <ChevronRight size={14} style={{ display: 'inline', verticalAlign: 'middle' }} />
-                  </Link>
+                  <button 
+                    onClick={() => {
+                      setCompareSelection([stackPartners[0].slug, stackPartners[1].slug]);
+                      setShowCompare(true);
+                    }}
+                    style={{ background: 'none', border: 'none', padding: 0, color: 'var(--white)', fontWeight: 700, marginLeft: '8px', textDecoration: 'underline', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}
+                  >
+                    Compare Them Side-By-Side <ChevronRight size={14} />
+                  </button>
                 </p>
               </div>
             )}
