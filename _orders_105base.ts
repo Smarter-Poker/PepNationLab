@@ -563,7 +563,7 @@ export async function POST(request: NextRequest) {
         !isBundleLine &&
         !isVolumeDiscountExcluded(dbProduct.name)
       ) {
-        const qtyPct = quantityDiscountPct(itemQty);
+        const qtyPct = quantityDiscountPct(itemQty, dbProduct.name);
         if (qtyPct > 0) {
           retailPrice = Math.max(0, retailPrice * (1 - qtyPct / 100));
         }

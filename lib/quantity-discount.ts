@@ -16,15 +16,17 @@ export const QUANTITY_DISCOUNT_TIERS = [
   { minQty: 3, pct: 10, label: '3-4 Vials' },
 ] as const;
 
-export function quantityDiscountPct(qty: number): number {
+export function quantityDiscountPct(qty: number, name?: string | null): number {
+  if (name && /bac\.?\s*water|bacteriostatic/i.test(name)) {
+    return qty >= 10 ? 10 : 0;
+  }
   for (const tier of QUANTITY_DISCOUNT_TIERS) {
     if (qty >= tier.minQty) return tier.pct;
   }
   return 0;
 }
 
-// Diluents And Accessories Are Not Peptides -- No Quantity Discount.
-const EXCLUDED_NAME_RE = /bac\.?\s*water|bacteriostatic|acetic\s*acid/i;
+const EXCLUDED_NAME_RE = /acetic\s*acid/i;
 
 export function isVolumeDiscountExcluded(name: string | null | undefined): boolean {
   return EXCLUDED_NAME_RE.test(name || '');
@@ -32,8 +34,8 @@ export function isVolumeDiscountExcluded(name: string | null | undefined): boole
 
 // Unit Price After The Quantity Discount, Rounded To Exact Cents.
 // Mirrors The Server-Side Rounding In /api/orders So Client Estimates Match.
-export function discountedUnitPrice(unitPrice: number, qty: number): number {
-  const pct = quantityDiscountPct(qty);
+export function discountedUnitPrice(unitPrice: number, qty: number, name?: string | null): number {
+  const pct = quantityDiscountPct(qty, name);
   if (pct <= 0) return Math.round(unitPrice * 100) / 100;
   return Math.round(unitPrice * (1 - pct / 100) * 100) / 100;
 }

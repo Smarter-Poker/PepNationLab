@@ -888,7 +888,7 @@ export default function AgentStorefrontGrid({
   const isBacWaterItem = (name: string | null | undefined, slug: string | null | undefined) => slug === 'bac-water' || /bac\.?\s*water/i.test(name || '');
   // Manufacturer stores trade EVERYTHING in 10-vial packs, storewide -- the
   // same mechanics Bac. Water already uses (10-pack pricing, steps of 10).
-  const packOf10 = (name: string | null | undefined, slug: string | null | undefined) => manufacturerStore === true || isBacWaterItem(name, slug);
+  const packOf10 = (name: string | null | undefined, slug: string | null | undefined) => manufacturerStore === true;
 
   // Track the most recently viewed product for recommendations context
   const lastViewedProductId = useRef<string | null>(null);
@@ -3360,7 +3360,7 @@ export default function AgentStorefrontGrid({
                   const isBWReal = isBacWaterItem(item.products?.name, item.products?.compound_slug);
                   const isBW = packOf10(item.products?.name, item.products?.compound_slug);
                   const packSize = 10;
-                  const lineName = isBWReal ? 'Bac. Water 10x 10ml Vials' : isBW ? `${name}${size ? ` (${size})` : ''} - 10 Pack` : `${name}${size ? ` (${size})` : ''}`;
+                  const lineName = isBW ? `${name}${size ? ` (${size})` : ''} - 10 Pack` : `${name}${size ? ` (${size})` : ''}`;
                   const unitPrice = isBW ? perVial * packSize : perVial;
                   const displayCount = isBW ? Math.round(qty / packSize) : qty;
                   return (
@@ -3393,8 +3393,8 @@ export default function AgentStorefrontGrid({
                           // so the cart over-quoted the price and never asked for
                           // the next tier. Mirror the server math per line.
                           const qdEligible = volumePricingEnabled !== false && !isBW && !isVolumeDiscountExcluded(item.products?.name) && !isStorefrontOwner;
-                          const pct = qdEligible ? quantityDiscountPct(qty) : 0;
-                          const discUnit = qdEligible ? discountedUnitPrice(perVial, qty) : perVial;
+                          const pct = qdEligible ? quantityDiscountPct(qty, item.products?.name) : 0;
+                          const discUnit = qdEligible ? discountedUnitPrice(perVial, qty, item.products?.name) : perVial;
                           const nextTier = qdEligible
                             ? [...QUANTITY_DISCOUNT_TIERS].reverse().find(t => qty < t.minQty && t.pct > pct)
                             : undefined;
@@ -3630,9 +3630,8 @@ export default function AgentStorefrontGrid({
                     flatTotal += per * qty;
                     const eligible = volumePricingEnabled !== false
                       && !isStorefrontOwner
-                      && !isBacWaterItem(item.products?.name, item.products?.compound_slug)
                       && !isVolumeDiscountExcluded(item.products?.name);
-                    discTotal += (eligible ? discountedUnitPrice(per, qty) : per) * qty;
+                    discTotal += (eligible ? discountedUnitPrice(per, qty, item.products?.name) : per) * qty;
                   }
                   const saved = flatTotal - discTotal;
                   return (
