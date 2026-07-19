@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { Sparkles, ChevronRight, ShieldCheck, Printer, X, Info, Scale, Trash2, ArrowRight, ArrowLeft, Save, Search, Eye, Clock, Atom, Snowflake, AlertTriangle, Check, RotateCcw } from 'lucide-react';
+import { Sparkles, ChevronRight, ShieldCheck, Printer, X, Info, Scale, Trash2, ArrowRight, ArrowLeft, Save, Search, Eye, Clock, Atom, Snowflake, AlertTriangle, Check, RotateCcw, FlaskConical, Microscope, Globe, Dna, Shield, Radiation, Infinity, Zap } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { RESEARCH_AREAS } from '@/lib/compounds';
 import type {
@@ -22,17 +22,17 @@ interface ApiResponse {
   note?: string;
 }
 
-const EVIDENCE_OPTIONS: { value: EvidenceComfort; label: string; help: string }[] = [
-  { value: 'strict_human_only', label: 'Approved Drugs Only', help: 'FDA / EMA approved compounds with human trial data.' },
-  { value: 'investigational_ok', label: 'Investigational Or Better', help: 'In active human clinical trials, or approved.' },
-  { value: 'preclinical_ok', label: 'Preclinical Or Better', help: 'Animal or in-vitro evidence acceptable.' },
-  { value: 'any', label: 'Any Evidence Level', help: 'Include research-only and exploratory compounds.' },
+const EVIDENCE_OPTIONS: { value: EvidenceComfort; label: string; help: string; icon: React.ReactNode; color: string }[] = [
+  { value: 'strict_human_only', label: 'Approved Drugs Only', help: 'FDA / EMA approved compounds with human trial data.', icon: <ShieldCheck size={22} />, color: '#68D391' },
+  { value: 'investigational_ok', label: 'Investigational Or Better', help: 'In active human clinical trials, or approved.', icon: <FlaskConical size={22} />, color: '#00E5FF' },
+  { value: 'preclinical_ok', label: 'Preclinical Or Better', help: 'Animal or in-vitro evidence acceptable.', icon: <Microscope size={22} />, color: '#F6AD55' },
+  { value: 'any', label: 'Any Evidence Level', help: 'Include research-only and exploratory compounds.', icon: <Globe size={22} />, color: '#A8B4C0' },
 ];
 
-const RISK_OPTIONS: { value: RiskTolerance; label: string; help: string }[] = [
-  { value: 'low_only', label: 'Low Risk Only', help: 'Exclude compounds with moderate, high, or critical research risk.' },
-  { value: 'moderate_ok', label: 'Low Or Moderate Risk', help: 'Exclude high and critical risk compounds.' },
-  { value: 'any', label: 'Any Risk Level', help: 'Include all risk classifications.' },
+const RISK_OPTIONS: { value: RiskTolerance; label: string; help: string; icon: React.ReactNode; color: string }[] = [
+  { value: 'low_only', label: 'Low Risk Only', help: 'Exclude compounds with moderate, high, or critical research risk.', icon: <Shield size={22} />, color: '#68D391' },
+  { value: 'moderate_ok', label: 'Low Or Moderate Risk', help: 'Exclude high and critical risk compounds.', icon: <Zap size={22} />, color: '#F6AD55' },
+  { value: 'any', label: 'Any Risk Level', help: 'Include all risk classifications.', icon: <Infinity size={22} />, color: '#FC8181' },
 ];
 
 function tierLabel(tier: string): string {
@@ -347,21 +347,133 @@ function MatchFormInner() {
         }
         .print-only { display: none; }
         .step-card {
-          background: #0F1923;
-          border: 1px solid rgba(168,180,192,0.2);
-          border-radius: 12px;
-          padding: 16px;
+          background: rgba(15,25,35,0.8);
+          border: 1px solid rgba(168,180,192,0.15);
+          border-radius: 16px;
+          padding: 20px 20px 20px 20px;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+          position: relative;
+          overflow: hidden;
+        }
+        .step-card::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          opacity: 0;
+          background: radial-gradient(ellipse at 30% 50%, rgba(0,196,188,0.12) 0%, transparent 70%);
+          transition: opacity 0.25s;
         }
         .step-card:hover {
-          border-color: var(--teal);
+          border-color: rgba(0,196,188,0.5);
           background: rgba(0,196,188,0.05);
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(0,196,188,0.2);
         }
+        .step-card:hover::before { opacity: 1; }
         .step-card.selected {
           border-color: var(--teal);
-          background: rgba(0,196,188,0.1);
+          background: rgba(0,196,188,0.08);
+          box-shadow: 0 0 0 1px var(--teal), 0 8px 32px rgba(0,196,188,0.2);
+          transform: translateY(-2px);
         }
+        .step-card.selected::before { opacity: 1; }
+        .step-card-icon {
+          width: 44px; height: 44px; border-radius: 12px;
+          display: flex; align-items: center; justify-content: center;
+          margin-bottom: 14px; flex-shrink: 0;
+          background: rgba(255,255,255,0.05);
+          border: 1px solid rgba(255,255,255,0.08);
+          transition: background 0.25s, border-color 0.25s;
+        }
+        .step-card.selected .step-card-icon {
+          background: rgba(0,196,188,0.15);
+          border-color: rgba(0,196,188,0.4);
+        }
+        .step-card-check {
+          position: absolute; top: 12px; right: 12px;
+          background: var(--teal); border-radius: 50%; padding: 3px;
+          display: flex; align-items: center; justify-content: center;
+          opacity: 0; transform: scale(0.5);
+          transition: opacity 0.2s, transform 0.2s;
+        }
+        .step-card.selected .step-card-check {
+          opacity: 1; transform: scale(1);
+        }
+        .wizard-next-btn {
+          display: flex; align-items: center; gap: 10px;
+          background: linear-gradient(135deg, #00C4BC, #00a89f);
+          color: #0F1923; border: none; border-radius: 12px;
+          padding: 13px 28px; font-size: 1rem; font-weight: 800;
+          cursor: pointer; letter-spacing: 0.02em;
+          transition: all 0.2s; box-shadow: 0 4px 18px rgba(0,196,188,0.35);
+        }
+        .wizard-next-btn:hover {
+          background: linear-gradient(135deg, #00d9d0, #00C4BC);
+          box-shadow: 0 6px 24px rgba(0,196,188,0.5);
+          transform: translateX(2px);
+        }
+        .wizard-next-btn:hover svg { transform: translateX(3px); }
+        .wizard-next-btn svg { transition: transform 0.2s; }
+        .wizard-back-btn {
+          display: flex; align-items: center; gap: 8px;
+          background: none; border: 1px solid rgba(255,255,255,0.12); border-radius: 12px;
+          color: #A8B4C0; padding: 13px 20px; font-size: 0.95rem; font-weight: 600;
+          cursor: pointer; transition: all 0.2s;
+        }
+        .wizard-back-btn:hover {
+          border-color: rgba(255,255,255,0.25); color: white;
+          transform: translateX(-2px);
+        }
+        .toggle-group {
+          display: flex; flex-wrap: wrap; gap: 10px;
+        }
+        .toggle-opt {
+          padding: 10px 18px; border-radius: 10px; cursor: pointer;
+          border: 1px solid rgba(168,180,192,0.2);
+          background: rgba(15,25,35,0.8); color: #A8B4C0;
+          font-size: 0.92rem; font-weight: 600; transition: all 0.2s;
+        }
+        .toggle-opt:hover {
+          border-color: rgba(0,196,188,0.4); color: white;
+          background: rgba(0,196,188,0.05);
+        }
+        .toggle-opt.active {
+          border-color: var(--teal); background: rgba(0,196,188,0.12);
+          color: var(--teal); box-shadow: 0 0 12px rgba(0,196,188,0.2);
+        }
+        .pill-toggle {
+          display: flex; align-items: center; gap: 14px;
+          cursor: pointer; padding: 14px 18px;
+          border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);
+          background: rgba(15,25,35,0.6); transition: all 0.2s;
+          user-select: none;
+        }
+        .pill-toggle:hover { border-color: rgba(0,196,188,0.3); background: rgba(0,196,188,0.04); }
+        .pill-switch {
+          width: 44px; height: 24px; border-radius: 999px;
+          background: rgba(255,255,255,0.1); position: relative;
+          flex-shrink: 0; transition: background 0.2s;
+          border: 1px solid rgba(255,255,255,0.12);
+        }
+        .pill-switch.on { background: var(--teal); border-color: var(--teal); }
+        .pill-switch::after {
+          content: ''; position: absolute; top: 2px; left: 2px;
+          width: 18px; height: 18px; border-radius: 50%;
+          background: white; transition: transform 0.2s cubic-bezier(0.4,0,0.2,1);
+          box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+        }
+        .pill-switch.on::after { transform: translateX(20px); }
+        .save-btn {
+          display: flex; align-items: center; gap: 8px;
+          background: linear-gradient(135deg, #3DD9A4, #00C4BC);
+          color: #0a1a14; border: none; border-radius: 10px;
+          padding: 10px 20px; font-size: 0.9rem; font-weight: 800;
+          cursor: pointer; transition: all 0.2s;
+          box-shadow: 0 4px 14px rgba(61,217,164,0.3);
+        }
+        .save-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+        .save-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
         .image-card {
           border-radius: 12px;
           cursor: pointer;
@@ -539,17 +651,19 @@ function MatchFormInner() {
           <motion.div key="step2" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.3 }} className="glass-panel no-print" style={{ padding: '32px' }}>
             <h2 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '8px' }}>Evidence Tier Comfort</h2>
             <p style={{ color: 'var(--silver)', marginBottom: '24px' }}>How Much Clinical Evidence Do You Require For These Compounds?</p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '16px' }}>
               {EVIDENCE_OPTIONS.map(o => (
                 <div key={o.value} onClick={() => { setEvidenceComfort(o.value); setStep(3); }} role="button" tabIndex={0} aria-pressed={evidenceComfort === o.value} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { if (e.key === ' ') e.preventDefault(); setEvidenceComfort(o.value); setStep(3); } }} className={`step-card ${evidenceComfort === o.value ? 'selected' : ''}`}>
-                  <h3 style={{ color: 'white', fontSize: '1.1rem', margin: '0 0 4px 0' }}>{o.label}</h3>
-                  <p style={{ color: 'var(--silver)', fontSize: '0.85rem', margin: 0 }}>{o.help}</p>
+                  <div className="step-card-check"><Check size={12} color="#0F1923" /></div>
+                  <div className="step-card-icon" style={{ color: o.color }}>{o.icon}</div>
+                  <h3 style={{ color: 'white', fontSize: '1.1rem', margin: '0 0 6px 0', fontWeight: 700 }}>{o.label}</h3>
+                  <p style={{ color: 'var(--silver)', fontSize: '0.85rem', margin: 0, lineHeight: 1.5 }}>{o.help}</p>
                 </div>
               ))}
             </div>
-            <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'space-between' }}>
-              <button onClick={() => setStep(1)} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><ArrowLeft size={18} /> Back</button>
-              <button onClick={() => setStep(3)} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>Next Step <ArrowRight size={18} /></button>
+            <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <button onClick={() => setStep(1)} className="wizard-back-btn"><ArrowLeft size={17} /> Back</button>
+              <button onClick={() => setStep(3)} className="wizard-next-btn">Next Step <ArrowRight size={18} /></button>
             </div>
           </motion.div>
         )}
@@ -559,18 +673,20 @@ function MatchFormInner() {
             <h2 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '8px' }}>Risk Tolerance</h2>
             <p style={{ color: 'var(--silver)', marginBottom: '24px' }}>Set Your Safety Constraints.</p>
             
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '16px' }}>
               {RISK_OPTIONS.map(o => (
                 <div key={o.value} onClick={() => { setRiskTolerance(o.value); setStep(4); }} role="button" tabIndex={0} aria-pressed={riskTolerance === o.value} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { if (e.key === ' ') e.preventDefault(); setRiskTolerance(o.value); setStep(4); } }} className={`step-card ${riskTolerance === o.value ? 'selected' : ''}`}>
-                  <h3 style={{ color: 'white', fontSize: '1.1rem', margin: '0 0 4px 0' }}>{o.label}</h3>
-                  <p style={{ color: 'var(--silver)', fontSize: '0.85rem', margin: 0 }}>{o.help}</p>
+                  <div className="step-card-check"><Check size={12} color="#0F1923" /></div>
+                  <div className="step-card-icon" style={{ color: o.color }}>{o.icon}</div>
+                  <h3 style={{ color: 'white', fontSize: '1.1rem', margin: '0 0 6px 0', fontWeight: 700 }}>{o.label}</h3>
+                  <p style={{ color: 'var(--silver)', fontSize: '0.85rem', margin: 0, lineHeight: 1.5 }}>{o.help}</p>
                 </div>
               ))}
             </div>
 
-            <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'space-between' }}>
-              <button onClick={() => setStep(2)} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><ArrowLeft size={18} /> Back</button>
-              <button onClick={() => setStep(4)} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>Next Step <ArrowRight size={18} /></button>
+            <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <button onClick={() => setStep(2)} className="wizard-back-btn"><ArrowLeft size={17} /> Back</button>
+              <button onClick={() => setStep(4)} className="wizard-next-btn">Next Step <ArrowRight size={18} /></button>
             </div>
           </motion.div>
         )}
@@ -580,40 +696,50 @@ function MatchFormInner() {
             <h2 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '8px' }}>Advanced Preferences</h2>
             <p style={{ color: 'var(--silver)', marginBottom: '24px' }}>Fine-Tune Format And Handling Requirements.</p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
               <div>
-                <label className="block text-sm font-bold text-white mb-2">Format Preference</label>
-                <select value={preference} onChange={(e) => setPreference(e.target.value as 'single' | 'stack' | 'either')} className="w-full max-w-md p-3 rounded-md border border-[#1D2D3E] bg-[#0F1923] text-white">
-                  <option value="either">Any Format</option>
-                  <option value="single">Single Compounds Only</option>
-                  <option value="stack">Pre-Blended Stacks Only</option>
-                </select>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--silver)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '12px' }}>Format Preference</label>
+                <div className="toggle-group">
+                  {[{ value: 'either', label: 'Any Format' }, { value: 'single', label: 'Single Compounds' }, { value: 'stack', label: 'Pre-Blended Stacks' }].map(opt => (
+                    <button key={opt.value} onClick={() => setPreference(opt.value as 'single' | 'stack' | 'either')} className={`toggle-opt${preference === opt.value ? ' active' : ''}`}>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-white mb-2">Budget Sensitivity</label>
-                <select value={budget} onChange={(e) => setBudget(e.target.value as 'conservative' | 'standard' | 'unlimited')} className="w-full max-w-md p-3 rounded-md border border-[#1D2D3E] bg-[#0F1923] text-white">
-                  <option value="standard">Standard Budget</option>
-                  <option value="conservative">Conservative (Cost-Sensitive)</option>
-                  <option value="unlimited">Unlimited (Ignore Cost)</option>
-                </select>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--silver)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '12px' }}>Budget Sensitivity</label>
+                <div className="toggle-group">
+                  {[{ value: 'standard', label: 'Standard' }, { value: 'conservative', label: 'Cost-Sensitive' }, { value: 'unlimited', label: 'Ignore Cost' }].map(opt => (
+                    <button key={opt.value} onClick={() => setBudget(opt.value as 'conservative' | 'standard' | 'unlimited')} className={`toggle-opt${budget === opt.value ? ' active' : ''}`}>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'white', fontSize: '1.05rem', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={excludeInjectables} onChange={e => setExcludeInjectables(e.target.checked)} style={{ width: 20, height: 20 }} />
-                  Exclude Injectables (Oral/Topical/Nasal Only)
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'white', fontSize: '1.05rem', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={requireLongHalfLife} onChange={e => setRequireLongHalfLife(e.target.checked)} style={{ width: 20, height: 20 }} />
-                  Require Long Half-Life (Less Frequent Dosing)
-                </label>
+                <div className="pill-toggle" onClick={() => setExcludeInjectables(!excludeInjectables)}>
+                  <div className={`pill-switch${excludeInjectables ? ' on' : ''}`} />
+                  <div>
+                    <div style={{ color: 'white', fontSize: '1rem', fontWeight: 600 }}>Exclude Injectables</div>
+                    <div style={{ color: 'var(--silver)', fontSize: '0.82rem', marginTop: '2px' }}>Oral / Topical / Nasal Only</div>
+                  </div>
+                </div>
+                <div className="pill-toggle" onClick={() => setRequireLongHalfLife(!requireLongHalfLife)}>
+                  <div className={`pill-switch${requireLongHalfLife ? ' on' : ''}`} />
+                  <div>
+                    <div style={{ color: 'white', fontSize: '1rem', fontWeight: 600 }}>Require Long Half-Life</div>
+                    <div style={{ color: 'var(--silver)', fontSize: '0.82rem', marginTop: '2px' }}>Less Frequent Dosing</div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'space-between' }}>
-              <button onClick={() => setStep(3)} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><ArrowLeft size={18} /> Back</button>
-              <button onClick={() => { setStep(5); onSubmit(); }} className="btn-primary" disabled={loading} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ marginTop: '36px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <button onClick={() => setStep(3)} className="wizard-back-btn"><ArrowLeft size={17} /> Back</button>
+              <button onClick={() => { setStep(5); onSubmit(); }} className="wizard-next-btn" disabled={loading} style={{ gap: '10px' }}>
                 <Sparkles size={18} /> {loading ? 'Matching...' : 'Generate Matches'}
               </button>
             </div>
@@ -623,21 +749,21 @@ function MatchFormInner() {
         {step === 5 && (
           <motion.div key="step5" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduceMotion ? 0 : 0.5 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '24px' }} className="no-print">
-              <button onClick={() => setStep(1)} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><ArrowLeft size={18} /> Edit Criteria</button>
-              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              <button onClick={() => setStep(1)} className="wizard-back-btn" style={{ fontSize: '0.9rem', padding: '10px 16px' }}><ArrowLeft size={16} /> Edit Criteria</button>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                 {results && results.length > 0 && (
                   <>
-                    <button onClick={handleSaveMatch} disabled={saving} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Save size={18} /> {saving ? 'Saving...' : 'Save Stack'}
+                    <button onClick={handleSaveMatch} disabled={saving} className="save-btn">
+                      <Save size={16} /> {saving ? 'Saving...' : 'Save Stack'}
                     </button>
-                    <button onClick={() => window.print()} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Printer size={18} /> Export PDF
+                    <button onClick={() => window.print()} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', fontSize: '0.9rem' }}>
+                      <Printer size={16} /> Export PDF
                     </button>
                   </>
                 )}
                 {results && results.length >= 2 && (
-                  <button onClick={() => setShowCompare(true)} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Scale size={18} /> {compareSelection.length === 2 ? 'Compare Selected' : 'Compare Top 2'}
+                  <button onClick={() => setShowCompare(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', fontSize: '0.9rem', background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.35)', borderRadius: '10px', color: 'var(--teal)', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}>
+                    <Scale size={16} /> {compareSelection.length === 2 ? 'Compare Selected' : 'Compare Top 2'}
                   </button>
                 )}
               </div>
