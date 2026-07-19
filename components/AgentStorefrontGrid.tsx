@@ -2958,10 +2958,10 @@ export default function AgentStorefrontGrid({
             background: '#000000',
             zIndex: 6,
             display: 'flex',
-            flexDirection: 'column',
+            flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '4px',
+            gap: '12px',
             padding: '4px 3% 0',
             pointerEvents: 'none',
           }}>
@@ -2970,7 +2970,7 @@ export default function AgentStorefrontGrid({
               src={(customBranding as any).logo_url}
               alt={(customBranding as any).brand_name ?? 'Store Logo'}
               style={{
-                height: '55%',
+                height: '70%',
                 width: 'auto',
                 objectFit: 'contain',
                 flexShrink: 0,
