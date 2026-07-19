@@ -65,7 +65,18 @@ export function MatchResultsDrawer({
       if (!res.ok) throw new Error('Share request failed');
       const data = await res.json();
       if (data.url) {
-        await navigator.clipboard.writeText(window.location.origin + data.url);
+        const fullUrl = window.location.origin + data.url;
+        try {
+          await navigator.clipboard.writeText(fullUrl);
+        } catch (err) {
+          // Fallback for Firefox strict mode / iOS WKWebView
+          const textArea = document.createElement('textarea');
+          textArea.value = fullUrl;
+          document.body.appendChild(textArea);
+          textArea.select();
+          try { document.execCommand('copy'); } catch (e) {}
+          document.body.removeChild(textArea);
+        }
         setShareCopied(true);
         setTimeout(() => setShareCopied(false), 2000);
       } else {
@@ -533,8 +544,33 @@ export function MatchResultsDrawer({
                           width={200} height={200} unoptimized
                         />
                       ) : (
-                        <div style={{ width: 72, height: 72, borderRadius: 10, background: 'rgba(192,197,206,0.08)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ width: 72, height: 72, borderRadius: 10, background: 'rgba(192,197,206,0.08)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                           <Sparkles size={22} color={primaryColor} style={{ opacity: 0.5 }} />
+                          <div
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const cid = r.compound_slug || r.slug || r.display_name;
+                              if (compareIds.includes(cid)) {
+                                setCompareIds(compareIds.filter(id => id !== cid));
+                              } else {
+                                if (compareIds.length >= 3) {
+                                  alert('You can compare up to 3 matches at once.');
+                                  return;
+                                }
+                                setCompareIds([...compareIds, cid]);
+                                setCompareOpen(true);
+                              }
+                            }}
+                            style={{
+                              position: 'absolute', top: -6, left: -6, width: 24, height: 24,
+                              background: compareIds.includes(r.compound_slug || r.slug || r.display_name) ? primaryColor : 'rgba(0,0,0,0.6)',
+                              border: `2px solid ${compareIds.includes(r.compound_slug || r.slug || r.display_name) ? primaryColor : 'rgba(255,255,255,0.4)'}`,
+                              borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              cursor: 'pointer', zIndex: 10
+                            }}
+                          >
+                            {compareIds.includes(r.compound_slug || r.slug || r.display_name) && <Check size={14} color="#000" strokeWidth={4} />}
+                          </div>
                         </div>
                       )}
 
@@ -764,10 +800,10 @@ export function MatchResultsDrawer({
                     <tr>
                       <th style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.1)', width: 180 }}>Attribute</th>
                       {compareIds.map(id => {
-                        const item = results.find(r => r.product_id === id);
+                        const item = results.find(r => r.product_id === id || r.compound_slug === id || r.slug === id || r.display_name === id);
                         return (
                           <th key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.1)', minWidth: 200 }}>
-                            {item?.display_name}
+                            {item?.display_name || item?.displayName}
                           </th>
                         );
                       })}
@@ -777,49 +813,49 @@ export function MatchResultsDrawer({
                     <tr>
                       <td style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 700, color: '#A8B4C0' }}>Price</td>
                       {compareIds.map(id => {
-                        const item = results.find(r => r.product_id === id);
-                        return <td key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 800, color: '#C0C5CE' }}>${(item?.price_cents ? item.price_cents / 100 : 0).toFixed(2)}</td>;
+                        const item = results.find(r => r.product_id === id || r.compound_slug === id || r.slug === id || r.display_name === id);
+                        return <td key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 800, color: '#C0C5CE' }}>{item?.product_id && item?.price_cents ? `$${(item.price_cents / 100).toFixed(2)}` : 'Research Only'}</td>;
                       })}
                     </tr>
                     <tr>
                       <td style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 700, color: '#A8B4C0' }}>Target Efficacy</td>
                       {compareIds.map(id => {
-                        const item = results.find(r => r.product_id === id);
+                        const item = results.find(r => r.product_id === id || r.compound_slug === id || r.slug === id || r.display_name === id);
                         return <td key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{item?.score}%</td>;
                       })}
                     </tr>
                     <tr>
                       <td style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 700, color: '#A8B4C0' }}>Human Data Tier</td>
                       {compareIds.map(id => {
-                        const item = results.find(r => r.product_id === id);
+                        const item = results.find(r => r.product_id === id || r.compound_slug === id || r.slug === id || r.display_name === id);
                         return <td key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{item?.evidence_tier?.replace(/_/g, ' ')}</td>;
                       })}
                     </tr>
                     <tr>
                       <td style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 700, color: '#A8B4C0' }}>Safety Profile</td>
                       {compareIds.map(id => {
-                        const item = results.find(r => r.product_id === id);
+                        const item = results.find(r => r.product_id === id || r.compound_slug === id || r.slug === id || r.display_name === id);
                         return <td key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', textTransform: 'capitalize' }}>{item?.riskLevel} Risk</td>;
                       })}
                     </tr>
                     <tr>
                       <td style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 700, color: '#A8B4C0' }}>Half Life</td>
                       {compareIds.map(id => {
-                        const item = results.find(r => r.product_id === id);
+                        const item = results.find(r => r.product_id === id || r.compound_slug === id || r.slug === id || r.display_name === id);
                         return <td key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{item?.halfLife || 'N/A'}</td>;
                       })}
                     </tr>
                     <tr>
                       <td style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 700, color: '#A8B4C0' }}>Molecular Wt</td>
                       {compareIds.map(id => {
-                        const item = results.find(r => r.product_id === id);
+                        const item = results.find(r => r.product_id === id || r.compound_slug === id || r.slug === id || r.display_name === id);
                         return <td key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{item?.molecularWeight ? `${item.molecularWeight} Da` : 'N/A'}</td>;
                       })}
                     </tr>
                     <tr>
                       <td style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 700, color: '#A8B4C0' }}>Why This Match</td>
                       {compareIds.map(id => {
-                        const item = results.find(r => r.product_id === id);
+                        const item = results.find(r => r.product_id === id || r.compound_slug === id || r.slug === id || r.display_name === id);
                         return <td key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.85rem', lineHeight: 1.5 }}>{item?.rationale}</td>;
                       })}
                     </tr>

@@ -91,10 +91,20 @@ export async function POST(req: NextRequest) {
   // { prompt } which we parse server-side -- letting the typed-goal search hit
   // this endpoint in a single round trip instead of pre-calling /ai-match.
   const rawBody = body as { input?: unknown; prompt?: unknown } | null;
-  const input =
-    rawBody && typeof rawBody.prompt === 'string' && rawBody.prompt.trim()
-      ? parseInput(parsePromptToMatchInput(rawBody.prompt))
-      : parseInput(rawBody?.input ?? body);
+  let input;
+  try {
+    input =
+      rawBody && typeof rawBody.prompt === 'string' && rawBody.prompt.trim()
+        ? parseInput(parsePromptToMatchInput(rawBody.prompt))
+        : parseInput(rawBody?.input ?? body);
+  } catch (error) {
+    console.error('[Match API] Parse Error', error);
+    return NextResponse.json(
+      { error: 'Failed to parse match input', note: RESEARCH_NOTE },
+      { status: 400 },
+    );
+  }
+
   if (!input) {
     return NextResponse.json(
       {
@@ -106,7 +116,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const compounds = await getAllCompounds();
+  let compounds;
+  try {
+    compounds = await getAllCompounds();
+  } catch (error) {
+    console.error('[Match API] Failed to fetch compounds from DB', error);
+    return NextResponse.json(
+      { error: 'Internal database error', note: RESEARCH_NOTE },
+      { status: 500 },
+    );
+  }
 
   const goals = input.goals && input.goals.length > 0 ? input.goals : [input.goal];
   const allMatchesMap = new Map<string, MatchResult>();

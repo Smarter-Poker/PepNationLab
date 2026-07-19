@@ -82,23 +82,26 @@ const BREAKDOWN_FACTORS: { key: 'base' | 'keyword' | 'evidenceBonus' | 'classBon
 
 function CircularScore({ score }: { score: number }) {
   const reduce = useReducedMotion();
-  const size = 60;
-  const stroke = 5;
+  // Reduced from 60→52px and stroke 5→4 to prevent edge clipping on narrow mobile cards
+  const size = 52;
+  const stroke = 4;
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
   const pct = Math.max(0, Math.min(100, Math.round(score)));
   const strokeDashoffset = circumference - (pct / 100) * circumference;
   // Calibrated to the engine's real score distribution. A strong match
   // (research-area tag + keyword + solid evidence tier + research interest)
-  // lands in the high 70s-90s; a keyword-only match lands in the 40s. The old
-  // 80/50 cutoffs were tuned for the pre-gradient engine, where nearly every
-  // relevant compound scored ~90, and made strong results render amber.
+  // lands in the high 70s-90s; a keyword-only match lands in the 40s.
   const color = pct >= 75 ? '#3DD9A4' : pct >= 45 ? '#F6AD55' : '#FC8181';
 
   return (
     <div
       title={`Match score: ${pct} out of 100`}
-      style={{ position: 'relative', width: size, height: size, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      style={{
+        position: 'relative', width: size, height: size,
+        flexShrink: 0, flex: '0 0 auto',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}
     >
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)', display: 'block' }}>
         <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={stroke} />
@@ -112,8 +115,8 @@ function CircularScore({ score }: { score: number }) {
         />
       </svg>
       <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 }}>
-        <span style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--white)' }}>{pct}</span>
-        <span style={{ fontSize: '0.48rem', fontWeight: 700, letterSpacing: '0.1em', color: color, marginTop: 3 }}>MATCH</span>
+        <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--white)' }}>{pct}</span>
+        <span style={{ fontSize: '0.42rem', fontWeight: 700, letterSpacing: '0.1em', color: color, marginTop: 2 }}>MATCH</span>
       </div>
     </div>
   );
@@ -539,12 +542,89 @@ function MatchFormInner() {
           background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
           border-radius: 999px; padding: 4px 11px;
         }
-        .match-actions { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
-        .match-actions button { white-space: nowrap; justify-content: center; min-width: 118px; }
+        /* ── Action button column ─────────────────────────────── */
+        .match-actions {
+          display: flex; flex-direction: column; gap: 7px;
+          flex-shrink: 0;
+        }
+        .match-actions a, .match-actions button {
+          white-space: nowrap; justify-content: center;
+          min-width: 126px; transition: all 0.18s ease;
+        }
+        /* Primary CTA — View & Order */
+        .btn-view-order {
+          display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+          background: linear-gradient(135deg, #3DD9A4, #00C4BC);
+          color: #051a14; font-weight: 800; font-size: 0.84rem;
+          padding: 9px 14px; border-radius: 10px;
+          text-decoration: none; border: none; cursor: pointer;
+          box-shadow: 0 4px 14px rgba(0,196,188,0.28);
+          letter-spacing: 0.01em;
+        }
+        .btn-view-order:hover {
+          filter: brightness(1.08);
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(0,196,188,0.42);
+        }
+        .btn-view-order:active { transform: translateY(0); }
+        /* Secondary — Quick View */
+        .btn-quick-view {
+          display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.16);
+          color: #C0C5CE; font-weight: 700; font-size: 0.84rem;
+          padding: 9px 14px; border-radius: 10px; cursor: pointer;
+          backdrop-filter: blur(8px);
+        }
+        .btn-quick-view:hover {
+          background: rgba(255,255,255,0.12);
+          border-color: rgba(255,255,255,0.35);
+          color: #fff;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        }
+        /* Compare toggle */
+        .cmp-toggle {
+          display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.12); border-radius: 10px;
+          color: #A8B4C0; padding: 9px 14px; cursor: pointer; font-size: 0.84rem;
+          font-weight: 700; transition: all 0.18s ease;
+        }
+        .cmp-toggle:hover {
+          background: rgba(0,196,188,0.06);
+          border-color: rgba(0,196,188,0.3);
+          color: var(--teal, #00C4BC);
+          transform: translateY(-1px);
+        }
+        .cmp-toggle.on {
+          border-color: var(--teal, #00C4BC);
+          color: var(--teal, #00C4BC);
+          background: rgba(0,196,188,0.12);
+          box-shadow: 0 0 0 1px rgba(0,196,188,0.25), 0 4px 14px rgba(0,196,188,0.18);
+        }
+        /* Exclude — danger glass */
+        .btn-exclude {
+          display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+          background: rgba(229,62,62,0.05);
+          border: 1px solid rgba(229,62,62,0.18); border-radius: 10px;
+          color: #F08A8A; padding: 9px 14px; cursor: pointer;
+          font-size: 0.84rem; font-weight: 700;
+          transition: all 0.18s ease;
+        }
+        .btn-exclude:hover {
+          background: rgba(229,62,62,0.12);
+          border-color: rgba(229,62,62,0.45);
+          color: #FC8181;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 14px rgba(229,62,62,0.2);
+        }
         @media (max-width: 640px) {
           .match-head { flex-wrap: wrap; }
-          .match-actions { flex-direction: row; width: 100%; }
-          .match-actions button { flex: 1; }
+          .match-actions {
+            flex-direction: row; flex-wrap: wrap; width: 100%;
+          }
+          .match-actions a, .match-actions button { flex: 1; min-width: 0; }
         }
         .criteria-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 20px; }
         .criteria-chip {
@@ -552,12 +632,6 @@ function MatchFormInner() {
           background: rgba(0,196,188,0.08); border: 1px solid rgba(0,196,188,0.25);
           border-radius: 999px; padding: 4px 11px;
         }
-        .cmp-toggle {
-          display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-          background: none; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
-          color: #A8B4C0; padding: 8px 12px; cursor: pointer; font-size: 0.85rem;
-        }
-        .cmp-toggle.on { border-color: var(--teal, #00C4BC); color: var(--teal, #00C4BC); background: rgba(0,196,188,0.08); }
         .factor-row { display: grid; grid-template-columns: 130px 1fr 46px; align-items: center; gap: 10px; margin-bottom: 8px; }
         .factor-track { height: 7px; border-radius: 999px; background: rgba(255,255,255,0.06); overflow: hidden; }
         .factor-fill { height: 100%; border-radius: 999px; }
@@ -940,13 +1014,19 @@ function MatchFormInner() {
                           </div>
                         </div>
                         <div className="match-actions no-print">
-                          {/* View & Order CTA — links to /research/[slug] monograph with add-to-cart */}
-                          <Link href={`/research/${r.slug}`} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: '8px 12px', background: 'linear-gradient(135deg,#3DD9A4,#00C4BC)', color: '#0a1a14', fontWeight: 800, borderRadius: '8px', textDecoration: 'none', whiteSpace: 'nowrap', justifyContent: 'center' }}>
-                            <ShoppingCart size={14} /> View &amp; Order
+                          {/* PRIMARY: View In Store */}
+                          <Link href={`/research/${r.slug}`} className="btn-view-order">
+                            <ShoppingCart size={14} /> View In Store
                           </Link>
-                          <button onClick={() => { setSelectedDrawerCompound(r); setIsDrawerOpen(true); }} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: '8px 12px' }}>
-                            <Eye size={16} /> Quick View
+                          {/* SECONDARY: Quick View */}
+                          <button
+                            onClick={() => { setSelectedDrawerCompound(r); setIsDrawerOpen(true); }}
+                            className="btn-quick-view"
+                            aria-label={`Quick View: ${r.displayName}`}
+                          >
+                            <Eye size={15} /> Quick View
                           </button>
+                          {/* COMPARE TOGGLE */}
                           <button
                             onClick={() => toggleCompare(r.slug)}
                             aria-pressed={compareSelection.includes(r.slug)}
@@ -954,7 +1034,12 @@ function MatchFormInner() {
                           >
                             {compareSelection.includes(r.slug) ? <Check size={14} /> : <Scale size={14} />} Compare
                           </button>
-                          <button onClick={() => setExcludeSlugs(prev => [...prev, r.slug])} style={{ background: 'rgba(229,62,62,0.06)', border: '1px solid rgba(229,62,62,0.2)', borderRadius: '8px', color: '#F08A8A', padding: '7px 10px', cursor: 'pointer', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          {/* EXCLUDE — danger glass */}
+                          <button
+                            onClick={() => setExcludeSlugs(prev => [...prev, r.slug])}
+                            className="btn-exclude"
+                            aria-label={`Exclude ${r.displayName} from results`}
+                          >
                             <Trash2 size={13} /> Exclude
                           </button>
                         </div>
@@ -1017,7 +1102,15 @@ function MatchFormInner() {
         <div
           className="no-print"
           onClick={() => setShowCompare(false)}
-          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(5,10,18,0.92)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            display: 'flex', flexDirection: 'column',
+            paddingTop: 'env(safe-area-inset-top, 0px)',
+            paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          }}
         >
           <div
             ref={compareDialogRef}
@@ -1025,23 +1118,23 @@ function MatchFormInner() {
             aria-modal="true"
             aria-label="Head-to-head compound comparison"
             onClick={(e) => e.stopPropagation()}
-            className="glass-panel"
-            style={{ width: '100%', maxWidth: '760px', maxHeight: '90vh', overflowY: 'auto', background: '#0F1923' }}
+            style={{
+              width: '100%', flex: 1,
+              display: 'flex', flexDirection: 'column',
+              overflow: 'hidden',
+            }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ margin: 0, color: 'white' }}>Head-To-Head Comparison</h3>
-              <button onClick={() => setShowCompare(false)} aria-label="Close comparison" style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}><X size={24} /></button>
-            </div>
+            {/* ── Full-screen header ── */}
             {(() => {
               const [a, b] = comparePair;
-              const higher = (x: number, y: number) => (x === y ? 0 : x > y ? -1 : 1); // -1 => a wins
-              const win = higher(a.score, b.score);
-              const winStyle = { color: 'var(--teal, #00C4BC)', fontWeight: 800 };
+              const win = a.score > b.score ? 'a' : b.score > a.score ? 'b' : 'tie';
+              const winStyle: React.CSSProperties = { color: '#3DD9A4', fontWeight: 900 };
+              const loseStyle: React.CSSProperties = { color: '#A8B4C0', fontWeight: 700 };
               const rows: { label: string; a: React.ReactNode; b: React.ReactNode }[] = [
                 {
                   label: 'Match Score',
-                  a: <span style={win === -1 ? winStyle : { fontWeight: 700 }}>{a.score} / 100</span>,
-                  b: <span style={win === 1 ? winStyle : { fontWeight: 700 }}>{b.score} / 100</span>,
+                  a: <span style={win === 'a' ? winStyle : loseStyle}>{a.score} / 100{win === 'a' && ' ✓'}</span>,
+                  b: <span style={win === 'b' ? winStyle : loseStyle}>{b.score} / 100{win === 'b' && ' ✓'}</span>,
                 },
                 {
                   label: 'Evidence Tier',
@@ -1053,33 +1146,115 @@ function MatchFormInner() {
                   a: <span style={{ color: riskMeta(a.riskLevel).color, fontWeight: 700 }}>{riskMeta(a.riskLevel).label}</span>,
                   b: <span style={{ color: riskMeta(b.riskLevel).color, fontWeight: 700 }}>{riskMeta(b.riskLevel).label}</span>,
                 },
-                { label: 'Half-Life', a: a.halfLife || 'Unknown', b: b.halfLife || 'Unknown' },
-                { label: 'Molecular Weight', a: a.molecularWeight ? `${a.molecularWeight} Da` : 'Unknown', b: b.molecularWeight ? `${b.molecularWeight} Da` : 'Unknown' },
+                { label: 'Half-Life', a: a.halfLife || 'N/A', b: b.halfLife || 'N/A' },
+                { label: 'Molecular Weight', a: a.molecularWeight ? `${a.molecularWeight} Da` : 'N/A', b: b.molecularWeight ? `${b.molecularWeight} Da` : 'N/A' },
                 { label: 'Storage', a: a.isTempSensitive ? 'Cold Storage' : 'Room Temp', b: b.isTempSensitive ? 'Cold Storage' : 'Room Temp' },
               ];
+
               return (
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', color: 'white' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid #1D2D3E' }}>
-                      <th style={{ padding: '12px', color: '#A8B4C0', fontWeight: 600 }}>Feature</th>
-                      <th style={{ padding: '12px', fontSize: '1.05rem', color: 'var(--teal)' }}>
-                        <Link href={`/research/${a.slug}`} style={{ color: 'var(--teal)', textDecoration: 'none' }}>{a.displayName}</Link>
-                      </th>
-                      <th style={{ padding: '12px', fontSize: '1.05rem', color: 'var(--teal)' }}>
-                        <Link href={`/research/${b.slug}`} style={{ color: 'var(--teal)', textDecoration: 'none' }}>{b.displayName}</Link>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((row, i) => (
-                      <tr key={row.label} style={{ borderBottom: i < rows.length - 1 ? '1px solid #1D2D3E' : 'none' }}>
-                        <td style={{ padding: '12px', color: '#A8B4C0' }}>{row.label}</td>
-                        <td style={{ padding: '12px' }}>{row.a}</td>
-                        <td style={{ padding: '12px' }}>{row.b}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <>
+                  {/* Header bar */}
+                  <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '18px 20px',
+                    borderBottom: '1px solid rgba(255,255,255,0.08)',
+                    background: 'linear-gradient(135deg, rgba(0,196,188,0.1) 0%, rgba(5,10,18,0) 60%)',
+                    flexShrink: 0,
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#00C4BC', marginBottom: 4 }}>Head-To-Head Comparison</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{ color: win === 'a' ? '#3DD9A4' : '#C0C5CE', fontWeight: 800, fontSize: '1.05rem' }}>{a.displayName}</span>
+                        <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.9rem', fontWeight: 700 }}>vs</span>
+                        <span style={{ color: win === 'b' ? '#3DD9A4' : '#C0C5CE', fontWeight: 800, fontSize: '1.05rem' }}>{b.displayName}</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowCompare(false)}
+                      aria-label="Close comparison"
+                      style={{
+                        background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.16)',
+                        color: '#fff', borderRadius: 12, padding: 10, cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        minWidth: 44, minHeight: 44, flexShrink: 0,
+                      }}
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
+
+                  {/* Winner banner (when not tied) */}
+                  {win !== 'tie' && (
+                    <div style={{
+                      background: 'rgba(61,217,164,0.07)',
+                      borderBottom: '1px solid rgba(61,217,164,0.2)',
+                      padding: '10px 20px',
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      flexShrink: 0,
+                    }}>
+                      <Sparkles size={14} color="#3DD9A4" />
+                      <span style={{ color: '#3DD9A4', fontSize: '0.82rem', fontWeight: 800 }}>
+                        {win === 'a' ? a.displayName : b.displayName} Scores Higher For This Goal
+                      </span>
+                      <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.78rem' }}>
+                        ({win === 'a' ? a.score : b.score} vs {win === 'a' ? b.score : a.score} points)
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Scrollable table area */}
+                  <div style={{ flex: 1, overflowY: 'auto', overflowX: 'auto', padding: '16px 12px' }}>
+                    <table style={{
+                      width: '100%', minWidth: 480, borderCollapse: 'separate', borderSpacing: 0,
+                      textAlign: 'left', color: '#E2E8F0',
+                      background: 'rgba(255,255,255,0.02)',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      borderRadius: 16, overflow: 'hidden',
+                    }}>
+                      <thead>
+                        <tr style={{ background: 'rgba(0,196,188,0.06)' }}>
+                          <th style={{ padding: '14px 16px', color: '#A8B4C0', fontWeight: 700, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid rgba(255,255,255,0.08)', width: 130 }}>Attribute</th>
+                          <th style={{ padding: '14px 16px', fontSize: '1rem', fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                            <Link href={`/research/${a.slug}`} style={{ color: win === 'a' ? '#3DD9A4' : '#C0C5CE', textDecoration: 'none' }}>{a.displayName}</Link>
+                          </th>
+                          <th style={{ padding: '14px 16px', fontSize: '1rem', fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                            <Link href={`/research/${b.slug}`} style={{ color: win === 'b' ? '#3DD9A4' : '#C0C5CE', textDecoration: 'none' }}>{b.displayName}</Link>
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rows.map((row, i) => (
+                          <tr
+                            key={row.label}
+                            style={{
+                              background: i % 2 === 0 ? 'rgba(255,255,255,0.015)' : 'transparent',
+                            }}
+                          >
+                            <td style={{ padding: '14px 16px', color: '#A8B4C0', fontSize: '0.82rem', fontWeight: 700, borderBottom: i < rows.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', whiteSpace: 'nowrap' }}>{row.label}</td>
+                            <td style={{ padding: '14px 16px', fontSize: '0.9rem', borderBottom: i < rows.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>{row.a}</td>
+                            <td style={{ padding: '14px 16px', fontSize: '0.9rem', borderBottom: i < rows.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>{row.b}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+
+                    {/* CTA row */}
+                    <div style={{ display: 'flex', gap: 10, marginTop: 20, justifyContent: 'center', flexWrap: 'wrap' }}>
+                      <Link
+                        href={`/research/${a.slug}`}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '11px 22px', background: win === 'a' ? 'linear-gradient(135deg,#3DD9A4,#00C4BC)' : 'rgba(255,255,255,0.06)', color: win === 'a' ? '#051a14' : '#C0C5CE', border: win === 'a' ? 'none' : '1px solid rgba(255,255,255,0.14)', borderRadius: 10, fontWeight: 800, fontSize: '0.85rem', textDecoration: 'none' }}
+                      >
+                        <ShoppingCart size={14} /> View {a.displayName}
+                      </Link>
+                      <Link
+                        href={`/research/${b.slug}`}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '11px 22px', background: win === 'b' ? 'linear-gradient(135deg,#3DD9A4,#00C4BC)' : 'rgba(255,255,255,0.06)', color: win === 'b' ? '#051a14' : '#C0C5CE', border: win === 'b' ? 'none' : '1px solid rgba(255,255,255,0.14)', borderRadius: 10, fontWeight: 800, fontSize: '0.85rem', textDecoration: 'none' }}
+                      >
+                        <ShoppingCart size={14} /> View {b.displayName}
+                      </Link>
+                    </div>
+                  </div>
+                </>
               );
             })()}
           </div>
