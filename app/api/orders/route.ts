@@ -182,9 +182,10 @@ export async function POST(request: NextRequest) {
 
     // Consolidated agent_profiles config for the agent of record. One query
     // covers everything this route needs from that table: slug + min-qty rules
-    // (storefront checks below), bundles_config (stack discount), and
-    // volume_pricing_enabled (quantity discounts) -- previously fetched in up
-    // to three separate round trips.
+    // (storefront checks below), bundles_config (stack discount),
+    // volume_pricing_enabled (quantity discounts), and payment_handles (so the
+    // buyer's confirmation email can carry the actual pay-to handle) --
+    // previously fetched in up to three separate round trips.
     let agentConfig: {
       id: string;
       slug: string | null;
@@ -1753,4 +1754,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Internal Server Error Occurred.' }, { status: 500 });
   }
 }
-
