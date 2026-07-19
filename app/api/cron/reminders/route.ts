@@ -15,22 +15,35 @@ export const runtime = 'nodejs';
  *
  * The order-attention engine. Two jobs, one sweep, and orders are NEVER
  * cancelled - the platform rule (2026-07-19) is that a stale order escalates
- * to humans instead of dying.
+ * to humans instead of dying. The main query skips orders that have nothing
+ * left to do (reminders maxed AND escalation ladder maxed) so the permanent
+ * backlog of ancient unpaid orders cannot starve newer orders out of the
+ * batch.
  *
  * PART A - Buyer payment reminders (pending_customer_payment):
  *   >= 24h old, no reminder yet  -> reminder #1 (in-app + push + email with
  *                                   the seller's payment handle)
  *   >= 72h old, one reminder     -> reminder #2 (final; same channels)
+ *   The reminder-count milestone is claimed BEFORE the notify/push/email
+ *   calls, so a mid-run crash can only cause a missed reminder, never a
+ *   duplicate one.
  *
  * PART B - Agent staleness escalation (order awaiting confirmation):
  *   Applies to pending_customer_payment + agent_approval_pending (agent's
- *   court) and admin_approval_pending (admin's court).
+ *   court) and admin_approval_pending (admin's court). Agent-less/house
+ *   orders (agent_id is null) escalate straight to admins, same as
+ *   admin_approval_pending, since there is no agent or upline to alert.
  *   Level 1 (>= 24h): the responsible agent (in-app + push + email) and
  *                     their upline super agent.
  *   Level 2 (>= 48h): agent + upline again, plus ALL admins.
  *   Level 3 (>= 72h): strong admin alert - agent is not confirming.
  *   admin_approval_pending orders escalate straight to admins at 24h.
  *   Each level fires exactly once per order (orders.stale_escalation_level).
+ *   The staleness clock is stage-based: once a buyer's payment is confirmed
+ *   (payment_confirmed_at), the age used for escalation is time-since-
+ *   confirmation rather than time-since-checkout, so a slow buyer does not
+ *   burn through the agent's escalation levels before the order even
+ *   reaches the agent's court.
  *
  * Auth: Vercel cron Authorization: Bearer ${CRON_SECRET}.
  * Idempotent per 6h window via cron_runs UNIQUE (job_name, partition_key).
@@ -49,6 +62,7 @@ interface PendingOrder {
   created_at: string;
   payment_reminder_count: number | null;
   stale_escalation_level: number | null;
+  payment_confirmed_at: string | null;
 }
 
 export async function GET(req: Request) {
@@ -70,9 +84,14 @@ export async function GET(req: Request) {
 
     const { data: rows, error } = await admin
       .from('orders')
-      .select('id, buyer_id, agent_id, status, total, payment_method, created_at, payment_reminder_count, stale_escalation_level')
+      .select('id, buyer_id, agent_id, status, total, payment_method, created_at, payment_reminder_count, stale_escalation_level, payment_confirmed_at')
       .in('status', ['pending_customer_payment', 'agent_approval_pending', 'admin_approval_pending'])
       .lt('created_at', new Date(now - 24 * HOUR_MS).toISOString())
+      // Skip rows with nothing left to do (ladder maxed AND reminders maxed) so
+      // a permanent backlog of ancient unpaid orders cannot starve newer ones
+      // out of the batch. Orders are never auto-cancelled, so this backlog is
+      // expected to exist and grow.
+      .or('stale_escalation_level.lt.3,and(status.eq.pending_customer_payment,payment_reminder_count.lt.2)')
       .order('created_at', { ascending: true })
       .limit(BATCH_LIMIT);
 
@@ -147,6 +166,12 @@ export async function GET(req: Request) {
           const count = Number(order.payment_reminder_count) || 0;
           const due = (ageHours >= 72 && count === 1) || (ageHours >= 24 && count === 0);
           if (due) {
+            // Claim the reminder milestone FIRST - if the process dies mid-send
+            // the worst case is one missed reminder, never buyer spam.
+            await admin
+              .from('orders')
+              .update({ payment_reminder_count: count + 1, last_payment_reminder_at: new Date().toISOString() })
+              .eq('id', order.id);
             const methodLabel = order.payment_method
               ? ((PAYMENT_METHOD_LABELS as Record<string, string>)[order.payment_method] ?? order.payment_method)
               : null;
@@ -177,10 +202,6 @@ export async function GET(req: Request) {
                 }).catch(() => {});
               }
             }
-            await admin
-              .from('orders')
-              .update({ payment_reminder_count: count + 1, last_payment_reminder_at: new Date().toISOString() })
-              .eq('id', order.id);
             await logOrderEvent(admin, {
               orderId: order.id,
               event: 'payment_reminder_sent',
@@ -198,28 +219,38 @@ export async function GET(req: Request) {
       try {
         const level = Number(order.stale_escalation_level) || 0;
         const isAdminCourt = order.status === 'admin_approval_pending';
+
+        // The staleness clock restarts when the buyer's payment is confirmed -
+        // the agent should be judged on time since the order became THEIR wait,
+        // not time since checkout.
+        const confirmedAtMs = order.payment_confirmed_at ? new Date(order.payment_confirmed_at).getTime() : null;
+        const stageAgeHours = confirmedAtMs && confirmedAtMs > 0
+          ? Math.min(ageHours, (now - confirmedAtMs) / HOUR_MS)
+          : ageHours;
+
         let targetLevel = 0;
-        if (ageHours >= 72) targetLevel = 3;
-        else if (ageHours >= 48) targetLevel = 2;
-        else if (ageHours >= 24) targetLevel = 1;
+        if (stageAgeHours >= 72) targetLevel = 3;
+        else if (stageAgeHours >= 48) targetLevel = 2;
+        else if (stageAgeHours >= 24) targetLevel = 1;
         if (targetLevel <= level) continue;
 
-        if (isAdminCourt) {
-          // Admin's court: escalate straight to admins at every new level.
+        if (isAdminCourt || !order.agent_id) {
+          // Admin's court -- or an agent-less/house order with no one else to
+          // alert. Either way admins are the escalation target at every level.
           await notifyAdmins(admin, {
             type: 'order_attention',
-            title: `Order #${short} Awaiting Admin Release (${Math.floor(ageHours)}h)`,
-            body: `Order #${short} (${totalFmt}) Has Been Waiting On Admin Approval For ${Math.floor(ageHours)} Hours. Review And Release It.`,
+            title: `Order #${short} Awaiting Admin Release (${Math.floor(stageAgeHours)}h)`,
+            body: `Order #${short} (${totalFmt}) Has Been Waiting On Admin Approval For ${Math.floor(stageAgeHours)} Hours. Review And Release It.`,
             url: `/admin/orders?status=admin_approval_pending`,
           });
-        } else if (order.agent_id) {
+        } else {
           const agentProf = await getAgent(order.agent_id);
 
           // The responsible agent - every level, all channels.
           await notifyOrderAttention(admin, order.agent_id, {
             orderId: order.id,
             shortId: short,
-            hoursWaiting: ageHours,
+            hoursWaiting: stageAgeHours,
             who: 'agent',
           });
           if (emailConfigured()) {
@@ -229,7 +260,7 @@ export async function GET(req: Request) {
                 to: agentEmail,
                 recipientName: agentProf.full_name,
                 orderId: order.id,
-                hoursWaiting: ageHours,
+                hoursWaiting: stageAgeHours,
                 total,
               }).catch(() => {});
             }
@@ -240,7 +271,7 @@ export async function GET(req: Request) {
             await notifyOrderAttention(admin, agentProf.parent_agent_id, {
               orderId: order.id,
               shortId: short,
-              hoursWaiting: ageHours,
+              hoursWaiting: stageAgeHours,
               who: 'upline',
               agentName: agentProf.full_name,
             });
@@ -252,7 +283,7 @@ export async function GET(req: Request) {
                   to: uplineEmail,
                   recipientName: upline.full_name,
                   orderId: order.id,
-                  hoursWaiting: ageHours,
+                  hoursWaiting: stageAgeHours,
                   total,
                   isUpline: true,
                   agentName: agentProf.full_name,
@@ -266,9 +297,9 @@ export async function GET(req: Request) {
             await notifyAdmins(admin, {
               type: 'order_attention',
               title: targetLevel >= 3
-                ? `ESCALATION: Order #${short} Unconfirmed For ${Math.floor(ageHours)}h`
-                : `Unconfirmed Order: #${short} (${Math.floor(ageHours)}h)`,
-              body: `${agentProf.full_name || 'An Agent'} Has Not Confirmed Order #${short} (${totalFmt}) For ${Math.floor(ageHours)} Hours. Please Follow Up Directly.`,
+                ? `ESCALATION: Order #${short} Unconfirmed For ${Math.floor(stageAgeHours)}h`
+                : `Unconfirmed Order: #${short} (${Math.floor(stageAgeHours)}h)`,
+              body: `${agentProf.full_name || 'An Agent'} Has Not Confirmed Order #${short} (${totalFmt}) For ${Math.floor(stageAgeHours)} Hours. Please Follow Up Directly.`,
               url: `/admin/orders?highlight=${order.id}`,
             });
           }
@@ -281,7 +312,7 @@ export async function GET(req: Request) {
         await logOrderEvent(admin, {
           orderId: order.id,
           event: 'stale_escalated',
-          payload: { level: targetLevel, age_hours: Math.floor(ageHours), status: order.status },
+          payload: { level: targetLevel, age_hours: Math.floor(stageAgeHours), status: order.status },
         });
         escalations++;
       } catch (err) {
