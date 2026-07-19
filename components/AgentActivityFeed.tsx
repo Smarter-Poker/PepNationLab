@@ -128,7 +128,7 @@ function toCsv(rows: Item[]): string {
 
 /* ── Status badge ──────────────────────────────────────────────────────── */
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
-  pending_customer_payment: { label: 'Awaiting Payment', color: '#ffb800', bg: 'rgba(255,184,0,0.12)' },
+  pending_customer_payment: { label: 'Awaiting Payment', color: '#fb923c', bg: 'rgba(251,146,60,0.12)' },
   agent_approval_pending:   { label: 'Needs Approval',   color: '#fb923c', bg: 'rgba(251,146,60,0.12)' },
   admin_approval_pending:   { label: 'Needs Approval',   color: '#fb923c', bg: 'rgba(251,146,60,0.12)' },
   approved_ship:            { label: 'Approved',         color: '#4ade80', bg: 'rgba(74,222,128,0.12)' },
@@ -138,7 +138,7 @@ const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> =
   delivered:                { label: 'Delivered',        color: '#4ade80', bg: 'rgba(74,222,128,0.12)' },
   cancelled:                { label: 'Cancelled',        color: '#ff6b6b', bg: 'rgba(255,107,107,0.12)' },
   active:                   { label: 'Active',           color: '#4ade80', bg: 'rgba(74,222,128,0.12)' },
-  paused:                   { label: 'Paused',           color: '#ffb800', bg: 'rgba(255,184,0,0.12)' },
+  paused:                   { label: 'Paused',           color: '#fb923c', bg: 'rgba(251,146,60,0.12)' },
   completed:                { label: 'Completed',        color: '#4ade80', bg: 'rgba(74,222,128,0.12)' },
   pending:                  { label: 'Pending',          color: '#a3a3a3', bg: 'rgba(163,163,163,0.12)' },
   failed:                   { label: 'Failed',           color: '#ff6b6b', bg: 'rgba(255,107,107,0.12)' },
@@ -271,7 +271,7 @@ function SummaryBar({
     { label: 'Revenue In',  value: money(summary.totalIn) || '$0.00',       prev: prevSummary?.totalIn,    prevVal: money(prevSummary?.totalIn),  color: '#4ade80', icon: <TrendingUp  size={14} /> },
     { label: 'Paid Out',    value: money(summary.totalOut) || '$0.00',       prev: prevSummary?.totalOut,   prevVal: money(prevSummary?.totalOut), color: '#ff6b6b', icon: <DollarSign  size={14} /> },
     { label: 'Orders',      value: String(summary.orderCount),               prev: prevSummary?.orderCount, color: '#00C4BC', icon: <ShoppingBag  size={14} /> },
-    { label: 'Alerts',      value: String(summary.alertCount),               prev: prevSummary?.alertCount, color: '#ffb800', icon: <AlertTriangle size={14} /> },
+    { label: 'Alerts',      value: String(summary.alertCount),               prev: prevSummary?.alertCount, color: '#fb923c', icon: <AlertTriangle size={14} /> },
   ];
 
   return (
@@ -317,12 +317,12 @@ function NeedsAttention({ items, onItemClick }: { items: Item[]; onItemClick: (h
   return (
     <div style={{
       borderRadius: 14, padding: '14px 16px', marginBottom: 20,
-      background: 'linear-gradient(135deg, rgba(255,184,0,0.07), rgba(255,184,0,0.02))',
-      border: '1px solid rgba(255,184,0,0.25)',
+      background: 'linear-gradient(135deg, rgba(251,146,60,0.07), rgba(251,146,60,0.02))',
+      border: '1px solid rgba(251,146,60,0.25)',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-        <AlertTriangle size={15} color="#ffb800" />
-        <span style={{ color: '#ffb800', fontSize: '0.72rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+        <AlertTriangle size={15} color="#fb923c" />
+        <span style={{ color: '#fb923c', fontSize: '0.72rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
           Needs Attention · {urgent.length} item{urgent.length !== 1 ? 's' : ''}
         </span>
       </div>
@@ -340,8 +340,8 @@ function NeedsAttention({ items, onItemClick }: { items: Item[]; onItemClick: (h
               className="pna-attn-row"
               style={{
                 display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px',
-                borderRadius: 9, background: 'rgba(255,184,0,0.06)',
-                border: '1px solid rgba(255,184,0,0.15)',
+                borderRadius: 9, background: 'rgba(251,146,60,0.06)',
+                border: '1px solid rgba(251,146,60,0.15)',
                 cursor: 'pointer',
               }}
             >
@@ -353,7 +353,7 @@ function NeedsAttention({ items, onItemClick }: { items: Item[]; onItemClick: (h
                 )}
               </div>
               {it.amount && it.amount > 0 && (
-                <span style={{ color: '#ffb800', fontWeight: 900, fontSize: '0.82rem', flexShrink: 0 }}>
+                <span style={{ color: '#fb923c', fontWeight: 900, fontSize: '0.82rem', flexShrink: 0 }}>
                   {money(it.amount)}
                 </span>
               )}
@@ -365,7 +365,7 @@ function NeedsAttention({ items, onItemClick }: { items: Item[]; onItemClick: (h
           );
         })}
         {urgent.length > 5 && (
-          <div style={{ textAlign: 'center', color: '#ffb800', fontSize: '0.72rem', fontWeight: 700, padding: '4px 0' }}>
+          <div style={{ textAlign: 'center', color: '#fb923c', fontSize: '0.72rem', fontWeight: 700, padding: '4px 0' }}>
             +{urgent.length - 5} more — filter by category to see all
           </div>
         )}
@@ -595,7 +595,7 @@ export default function AgentActivityFeed() {
         .pna-row       { transition: background 0.15s, transform 0.12s; }
         .pna-row:hover { background: rgba(255,255,255,0.065) !important; transform: translateX(3px); }
         .pna-attn-row  { transition: background 0.15s, transform 0.12s; }
-        .pna-attn-row:hover { background: rgba(255,184,0,0.1) !important; transform: translateX(2px); }
+        .pna-attn-row:hover { background: rgba(251,146,60,0.1) !important; transform: translateX(2px); }
         .pna-chip      { transition: all 0.15s ease; cursor:pointer; }
         .pna-chip:hover { border-color: rgba(255,255,255,0.3) !important; }
         .pna-win-btn   { transition: all 0.15s ease; cursor:pointer; }
