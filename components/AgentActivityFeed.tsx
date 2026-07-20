@@ -291,6 +291,12 @@ function SummaryBar({
           role={onStatClick ? "button" : undefined}
           tabIndex={onStatClick ? 0 : undefined}
           onClick={() => onStatClick?.(s.label)}
+          onKeyDown={(e) => {
+            if (onStatClick && (e.key === 'Enter' || e.key === ' ')) {
+              e.preventDefault();
+              onStatClick(s.label);
+            }
+          }}
           style={{
           background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
           borderRadius: 12, padding: '12px 14px',

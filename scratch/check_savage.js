@@ -9,15 +9,14 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 async function main() {
-  const { data: order } = await supabase
-    .from('orders')
-    .select('*, order_items(*)')
-    .eq('id', '770b5503-79a6-493a-8fc3-7dea78d3046a')
-    .single();
+  const { data: logs } = await supabase
+    .from('audit_logs')
+    .select('*')
+    .ilike('action', '%product%')
+    .order('created_at', { ascending: false })
+    .limit(20);
 
-  fs.writeFileSync('scratch/output12.json', JSON.stringify({
-    order
-  }, null, 2));
+  fs.writeFileSync('scratch/output13.json', JSON.stringify(logs, null, 2));
 }
 
 main();
