@@ -2098,10 +2098,13 @@ export default function AgentStorefrontGrid({
             <Image src={bundle.image_url} alt={bundle.name} fill unoptimized sizes="(max-width: 768px) 100vw, 33vw" style={{ objectFit: 'cover' }} />
           </div>
         )}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-3)', gap: 8 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-2)', gap: 8 }}>
           <h4 style={{ fontFamily: 'var(--font-brand)', fontSize: '1.1rem', color: 'var(--white)', letterSpacing: '0.02em', lineHeight: 1.2 }}>{bundle.name}</h4>
           <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', padding: '4px 10px', borderRadius: 'var(--radius-full)', background: `${primaryColor}20`, border: `1px solid ${primaryColor}40`, color: primaryColor, whiteSpace: 'nowrap' }}>Bundle</span>
         </div>
+        {bundle.tagline && (
+          <div style={{ fontSize: '0.82rem', fontWeight: 700, color: primaryColor, marginBottom: 'var(--space-3)' }}>{bundle.tagline}</div>
+        )}
         {bundle.description && (
           <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', lineHeight: 1.5, marginBottom: 'var(--space-3)' }}>{bundle.description}</p>
         )}
@@ -4713,7 +4716,7 @@ export default function AgentStorefrontGrid({
               {/* Body */}
               <div style={{ padding: '24px 20px 40px' }}>
                 {/* Bundle name + badge */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: selectedBundle.tagline ? 4 : 10 }}>
                   <h2 style={{ fontFamily: 'var(--font-brand)', fontSize: '1.5rem', color: 'var(--white)', margin: 0, lineHeight: 1.2 }}>
                     {selectedBundle.name}
                   </h2>
@@ -4723,6 +4726,9 @@ export default function AgentStorefrontGrid({
                     background: `${primaryColor}20`, border: `1px solid ${primaryColor}40`, color: primaryColor, whiteSpace: 'nowrap',
                   }}>Bundle</span>
                 </div>
+                {selectedBundle.tagline && (
+                  <div style={{ fontSize: '1rem', fontWeight: 700, color: primaryColor, marginBottom: 16 }}>{selectedBundle.tagline}</div>
+                )}
 
                 {/* Description */}
                 {selectedBundle.description && (
