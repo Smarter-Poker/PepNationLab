@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import AgentInvitations from '@/components/AgentInvitations';
+import Navbar from '@/components/Navbar';
+import BackButton from '@/components/ui/BackButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,6 +32,7 @@ export default async function AgentInvitationsPage() {
 
   return (
     <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem 1rem 3rem' }}>
+      <Navbar />
       <AgentInvitations canInviteSuperAgents={isAdmin} />
     </div>
   );

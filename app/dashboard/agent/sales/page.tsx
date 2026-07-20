@@ -1,4 +1,6 @@
 import { redirect } from 'next/navigation';
+import Navbar from '@/components/Navbar';
+import BackButton from '@/components/ui/BackButton';
 
 export const dynamic = 'force-dynamic';
 

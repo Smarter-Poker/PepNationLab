@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import SalesPageV2 from '@/components/sales/SalesPageV2';
+import Navbar from '@/components/Navbar';
+import BackButton from '@/components/ui/BackButton';
 
 export const dynamic = 'force-dynamic';
 export const metadata = {

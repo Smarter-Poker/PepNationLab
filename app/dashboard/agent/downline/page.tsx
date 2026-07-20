@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import DownlineTree from '@/components/DownlineTree';
+import Navbar from '@/components/Navbar';
+import BackButton from '@/components/ui/BackButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,10 +36,9 @@ export default async function SuperAgentDownlinePage() {
 
   return (
     <div style={{ padding: 'var(--space-5)' }}>
+      <Navbar />
       <div style={{ marginBottom: 'var(--space-4)', display: 'flex', gap: 'var(--space-4)' }}>
-        <Link href="/dashboard/agent" style={{ color: 'var(--teal)', fontSize: '0.85rem', textDecoration: 'none' }}>
-          &larr; Back To Agent Dashboard
-        </Link>
+        <BackButton label="Back To Agent Dashboard" />
       </div>
       <h1 className="animated-gradient-text" style={{ color: 'var(--white)', fontSize: '1.5rem', marginBottom: 'var(--space-2)' }}>
         My Downline

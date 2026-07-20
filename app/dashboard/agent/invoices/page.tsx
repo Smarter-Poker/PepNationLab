@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import AgentStatements from '@/components/AgentStatements';
 import AgentDownlineInvoices from '@/components/AgentDownlineInvoices';
+import Navbar from '@/components/Navbar';
+import BackButton from '@/components/ui/BackButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,10 +34,9 @@ export default async function AgentInvoicesPage() {
 
   return (
     <div style={{ padding: 'var(--space-5)' }}>
+      <Navbar />
       <div style={{ marginBottom: 'var(--space-4)' }}>
-        <Link href="/dashboard/agent?tab=Sales%20%26%20Accounting" style={{ color: 'var(--teal)', fontSize: '0.85rem', textDecoration: 'none' }}>
-          &larr; Back To Agent Dashboard
-        </Link>
+        <BackButton label="Back To Agent Dashboard" />
       </div>
       <h1 className="animated-gradient-text" style={{ color: 'var(--white)', fontSize: '1.5rem', marginBottom: 'var(--space-2)' }}>
         Invoices
