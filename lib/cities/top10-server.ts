@@ -92,6 +92,16 @@ const POPULAR_ORDER: string[] = [
   'Selank',
 ];
 
+// Base names excluded from the storefront "Top 10 Best Peptides" card.
+// Removing them frees slots so Tirzepatide + Retatrutide (already ranked
+// next in POPULAR_ORDER) surface. Stacks otherwise get a +20000 rank bonus,
+// so they must be filtered here rather than merely dropped from POPULAR_ORDER.
+const TOP10_EXCLUDE = new Set<string>([
+  'SEMAGLUTIDE',
+  'THE FURNACE STACK',
+  'THE LIPOLYSIS STACK',
+]);
+
 const isBacWaterItem = (name: string | null | undefined, slug: string | null | undefined) =>
   slug === 'bac-water' || /bac\.?\s*water/i.test(name || '');
 
@@ -237,6 +247,7 @@ async function fetchStoreTop10(): Promise<StoreTop10Item[]> {
     const seen = new Map<string, Group>();
     for (const g of ranked) {
       const base = g.name.replace(/\s*\(.*\)\s*$/, '').trim().toUpperCase();
+      if (TOP10_EXCLUDE.has(base)) continue;
       if (!seen.has(base)) seen.set(base, g);
     }
     const top = Array.from(seen.values()).slice(0, 10);
