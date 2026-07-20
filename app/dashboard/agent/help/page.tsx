@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import Navbar from '@/components/Navbar';
 import HelpContent from './HelpContent';
+import BackButton from '@/components/ui/BackButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,6 +32,7 @@ export default async function AgentHelpPage() {
     <>
       <Navbar />
       <main style={{ paddingTop: 'var(--nav-offset, 60px)', minHeight: '100dvh', background: 'var(--black)' }}>
+        <div style={{ padding: "var(--space-5)" }}><BackButton label="Back To Dashboard" /></div>
         <HelpContent />
       </main>
     </>

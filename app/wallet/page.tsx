@@ -1,6 +1,7 @@
 // Round 24 Wallet - /wallet shell
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import Navbar from '@/components/Navbar';
 import WalletPage from '@/components/wallet/WalletPage';
 
 export const dynamic = 'force-dynamic';
@@ -24,5 +25,10 @@ export default async function WalletRoute() {
   // returns nothing.
   const allowed = ['researcher', 'agent', 'super_agent', 'admin'].includes(profile.role);
   if (!allowed) redirect('/dashboard');
-  return <WalletPage userId={user.id} role={profile.role} isSuperAgent={!!profile.is_super_agent} />;
+  return (
+    <>
+      <Navbar title="Wallet" />
+      <WalletPage userId={user.id} role={profile.role} isSuperAgent={!!profile.is_super_agent} />
+    </>
+  );
 }

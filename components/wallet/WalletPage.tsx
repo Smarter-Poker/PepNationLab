@@ -11,6 +11,7 @@ import WalletSettings from './WalletSettings';
 import WalletSendSheet from './WalletSendSheet';
 import IframeLink from '@/components/ui/IframeLink';
 import DownlineBalances from './DownlineBalances';
+import BackButton from '@/components/ui/BackButton';
 
 const money = (n: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(Number(n) || 0);
@@ -158,6 +159,9 @@ export default function WalletPage({
     <div style={{ textTransform: 'capitalize', paddingTop: 'calc(var(--nav-offset, 60px) + var(--space-6))', paddingRight: 'var(--space-4)', paddingBottom: 'var(--space-8)', paddingLeft: 'var(--space-4)', minHeight: '100dvh' }}>
       <div className="glass-panel" style={{ maxWidth: 960, margin: '0 auto', width: '100%' }}>
         <div className="" style={{ padding: 'var(--space-6)', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ marginBottom: -8 }}>
+            <BackButton label="Back To Dashboard" />
+          </div>
           <header style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }}>
             <div>
               <h1 style={{ fontSize: '1.6rem', color: 'var(--white)', margin: 0, fontFamily: 'var(--font-brand)' }}>Wallet</h1>

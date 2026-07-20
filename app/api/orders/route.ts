@@ -2,7 +2,7 @@ import { after, NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { getEffectiveUser } from '@/lib/impersonation';
 import { CheckoutSchema } from '@/lib/schemas/order';
-import { applyBulkPrice, isTierLadderV2 } from '@/lib/pricing';
+import { isTierLadderV2, computeAgentCostsForAgent, resolveAgentPricingContext } from '@/lib/pricing';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { calculateShippingCost, getCarrierName } from '@/lib/shipping-cost';
@@ -430,6 +430,17 @@ export async function POST(request: NextRequest) {
     const tierMultipliers: Record<string, number> = {};
     tiers?.forEach((t: { tier_name: string; multiplier: unknown }) => { tierMultipliers[t.tier_name] = Number(t.multiplier); });
 
+    // 1a. Precompute Agent Cost Maps
+    const productListForPricing = (dbProducts || []).map(p => ({ id: p.id, base_cost: Number(p.base_cost) }));
+    let agentCosts = new Map<string, number>();
+    if (agentProfile && !isManufacturerStore) {
+      agentCosts = await computeAgentCostsForAgent(serviceSupabase, agentProfile.id, agentTier, productListForPricing);
+    }
+    let superAgentCosts = new Map<string, number>();
+    if (superAgentProfile && !isManufacturerStore) {
+      superAgentCosts = await computeAgentCostsForAgent(serviceSupabase, superAgentProfile.id, superAgentTier || 'tier_3', productListForPricing);
+    }
+
     let flashSaleDiscountPct = 0;
     if (flashSaleEligible && activeSale) {
       const d = Number(activeSale.discount_pct);
@@ -639,17 +650,14 @@ export async function POST(request: NextRequest) {
           // lives in manufacturer_ledger (written after the insert below).
           costPrice = Math.round(retailPrice * (manufacturerCommissionPct / 100) * 100) / 100;
         } else if (superAgentProfile) {
-          // Fix 7: removed ?? 1.7 hardcoded fallback
-          const saMultiplier = superAgentOverrides[dbProduct.id] ?? tierMultipliers[superAgentProfile.tier || 'tier_3'];
-          // A missing pricing_tiers row must NOT silently collapse cost to $0
-          // (free goods). Hard-fail exactly like the retail path above.
-          if (saMultiplier === undefined || saMultiplier === null) {
+          const saCostRaw = superAgentCosts.get(dbProduct.id);
+          if (saCostRaw === undefined || saCostRaw === null) {
             return NextResponse.json({ error: 'Pricing Configuration Unavailable. Please Try Again.' }, { status: 500 });
           }
           superAgentCost = isWholesalePurchase
-            ? (baseCost * saMultiplier / 10)
+            ? (saCostRaw / 10)
             : applyBulkPrice(
-                baseCost * saMultiplier / 10,
+                saCostRaw / 10,
                 itemQty,
                 dbProduct.admin_bulk_price != null ? dbProduct.admin_bulk_price / 10 : null,
                 dbProduct.admin_bulk_threshold
@@ -676,23 +684,29 @@ export async function POST(request: NextRequest) {
           // The Agent pays the Super Agent's cost + Markup.
           // Sub-agent wholesale orders are exempt -- they pay baseline_cost.
           if (agentProfile && !agentProfile.is_sub_agent && !isSubAgent) {
-             costPrice = (superAgentCost ?? 0) * (1 + (agentEffectiveMarkupPct / 100));
+             if (isTierLadderV2()) {
+               const aCostRaw = agentCosts.get(dbProduct.id);
+               if (aCostRaw !== undefined && aCostRaw !== null) {
+                 costPrice = aCostRaw / 10;
+               } else {
+                 costPrice = (superAgentCost ?? 0) * (1 + (agentEffectiveMarkupPct / 100));
+               }
+             } else {
+               costPrice = (superAgentCost ?? 0) * (1 + (agentEffectiveMarkupPct / 100));
+             }
           }
 
         } else {
-          // Fix 7: removed ?? 1.7 hardcoded fallback
-          const agentMultiplier = agentOverrides[dbProduct.id] ?? tierMultipliers[agentTier];
-          // A missing pricing_tiers row must NOT silently collapse cost to $0
-          // (free goods). Hard-fail exactly like the retail path above.
-          if (agentMultiplier === undefined || agentMultiplier === null) {
+          const aCostRaw = agentCosts.get(dbProduct.id);
+          if (aCostRaw === undefined || aCostRaw === null) {
             return NextResponse.json({ error: 'Pricing Configuration Unavailable. Please Try Again.' }, { status: 500 });
           }
           // Agent self-buy at a regular agent's storefront: skip bulk pricing.
           // Researcher buying through the agent: keep bulk pricing.
           costPrice = isWholesalePurchase
-            ? (baseCost * agentMultiplier / 10)
+            ? (aCostRaw / 10)
             : applyBulkPrice(
-                baseCost * agentMultiplier / 10,
+                aCostRaw / 10,
                 itemQty,
                 dbProduct.admin_bulk_price != null ? dbProduct.admin_bulk_price / 10 : null,
                 dbProduct.admin_bulk_threshold

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import BackButton from '@/components/ui/BackButton';
+import Navbar from '@/components/Navbar';
 
 /**
  * Minimal SACA Phase 2.5 promote-sub-agent UI.
@@ -152,7 +154,10 @@ export default function PromoteSubAgentPage() {
   }
 
   return (
-    <div style={{ padding: '24px', maxWidth: '900px', margin: '0 auto' }}>
+    <>
+      <Navbar />
+      <div style={{ padding: '24px', maxWidth: '900px', margin: '0 auto' }}>
+      <div style={{ marginBottom: "var(--space-4)" }}><BackButton label="Back" /></div>
       <h1 style={{ fontSize: '28px', marginBottom: '8px' }}>Promote A Researcher To Sub-Agent</h1>
       <p style={{ marginBottom: '24px', opacity: 0.85, lineHeight: 1.6 }}>
         Sub-Agents Sell On Your Storefront At Your Prices And Earn A Commission Percentage Of Total
@@ -325,5 +330,6 @@ export default function PromoteSubAgentPage() {
         </button>
       </form>
     </div>
+    </>
   );
 }
