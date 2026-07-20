@@ -112,103 +112,24 @@ export default function DoseFrequencyPanel({ slug, compoundName }: Props) {
         onClick={() => setOpen((o) => !o)}
         style={{
           width: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 0,
-          padding: '0 20px 0 16px',
-          height: 60,
-          borderRadius: 40,
-          border: '2px solid',
-          borderColor: 'rgba(120,120,130,0.55)',
-          background: 'linear-gradient(180deg, #1c1c1e 0%, #111113 100%)',
-          boxShadow:
-            '0 1px 0 0 rgba(255,255,255,0.07) inset, 0 -1px 0 0 rgba(0,0,0,0.6) inset, 0 4px 24px rgba(0,0,0,0.5)',
+          display: 'block',
+          background: 'transparent',
+          border: 'none',
+          padding: 0,
           cursor: 'pointer',
           outline: 'none',
           position: 'relative',
-          overflow: 'hidden',
         }}
       >
-        {/* Subtle top-edge highlight */}
-        <div
-          aria-hidden
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 1,
-            background:
-              'linear-gradient(90deg, transparent, rgba(255,255,255,0.12) 30%, rgba(255,255,255,0.12) 70%, transparent)',
-            borderRadius: '40px 40px 0 0',
-          }}
+        <img
+          src="/images/buttons/dose-and-frequency-btn.png"
+          alt="Dose and Frequency"
+          style={{ width: '100%', height: 'auto', display: 'block', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.5))' }}
         />
-
-        {/* Teal checkmark circle */}
-        <div
-          aria-hidden
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: '50%',
-            border: '2.5px solid #00C4BC',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            boxShadow: '0 0 12px rgba(0,196,188,0.35)',
-          }}
-        >
-          {/* Checkmark SVG */}
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-            <polyline
-              points="3,9 7,13 15,5"
-              stroke="#00C4BC"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </div>
-
-        {/* Label */}
-        <span
-          style={{
-            flex: 1,
-            textAlign: 'center',
-            fontSize: '1rem',
-            fontWeight: 900,
-            letterSpacing: '0.12em',
-            color: '#F0F4F8',
-            textTransform: 'uppercase',
-            fontFamily: 'var(--font-sans, system-ui, sans-serif)',
-            userSelect: 'none',
-          }}
-        >
-          Dose and Frequency
-        </span>
-
-        {/* Vertical divider + chevron */}
-        <div
-          aria-hidden
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 14,
-            flexShrink: 0,
-          }}
-        >
-          <div
-            style={{
-              width: 1,
-              height: 28,
-              background: 'rgba(255,255,255,0.15)',
-            }}
-          />
-          {/* Animated chevron */}
+        <div style={{ position: 'absolute', right: 24, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center' }}>
           <svg
-            width="18"
-            height="18"
+            width="24"
+            height="24"
             viewBox="0 0 18 18"
             fill="none"
             aria-hidden

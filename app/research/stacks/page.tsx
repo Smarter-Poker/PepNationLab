@@ -78,9 +78,6 @@ export default async function StacksPage() {
           <h1 style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: 900, letterSpacing: '-0.02em', background: 'linear-gradient(135deg, #FFFFFF 0%, #00E5FF 50%, #00C4BC 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: '0 0 var(--space-3, 16px) 0', lineHeight: 1.1 }}>Peptide Stacks</h1>
           <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '1.15rem', maxWidth: '680px', margin: '0 auto', lineHeight: 1.6 }}>Design, Compare, And Optimize Research Combinations. Evaluate Compound Synergy, Calculate Cumulative Risk Factors, And Auto-Generate 12-Week Dosing Protocols.</p>
         </header>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--space-8, 64px)' }}>
-          <img src="/images/banners/buy-in-bundles.png" alt="Save Even More Buy In Bundles" style={{ maxWidth: '800px', width: '100%', height: 'auto', filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.5))' }} />
-        </div>
         <StacksClient compounds={compounds} stacks={stacks} products={products} />
       </div>
     </div>
