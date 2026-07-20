@@ -35,24 +35,43 @@ export async function GET(req: NextRequest) {
       }))
       .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
 
-    // 2. Fetch all orders for this agent
+    // 1.5. Fetch direct downlines (sub-agents reporting to this agent) so a
+    // super agent's Sales And Accounting view rolls up their downline's
+    // orders instead of only their own. Mirrors the downline lookup used by
+    // sub-agent-rollup/route.ts and the SSR page at dashboard/agent/page.tsx.
+    const { data: downlines, error: downlinesError } = await supabase
+      .from('profiles')
+      .select('id, full_name')
+      .eq('parent_agent_id', agentId);
+
+    if (downlinesError) {
+      return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
+    }
+
+    const downlineNames = new Map<string, string | null>(
+      (downlines || []).map((d: any) => [d.id, d.full_name ?? null])
+    );
+    const agentIds = [agentId, ...(downlines || []).map((d: any) => d.id)];
+
+    // 2. Fetch all orders for this agent and its direct downlines
     // Explicit column lists instead of '*, order_items(*)': this fetch is
     // capped at 2500 orders, and the wildcard pulled every order and line-item
     // column into the route. The order columns below are exactly the ones the
     // mapping further down reads; the order_items columns cover the route's
-    // profit math (unit_retail_price, unit_cost_price, quantity) plus the raw
-    // items passthrough consumed by components/AgentSales.tsx (product_name,
-    // quantity, unit_retail_price, unit_cost_price).
+    // profit math (unit_retail_price, unit_cost_price, unit_super_agent_cost,
+    // quantity) plus the raw items passthrough consumed by
+    // components/AgentSales.tsx (product_name, quantity, unit_retail_price,
+    // unit_cost_price).
     const { data: orders, error: ordersError } = await supabase
       .from('orders')
       .select(
         'id, buyer_id, agent_id, status, fulfillment_method, payment_method, shipping_address, ' +
         'shipping_cost, subtotal, total, discount_amount, coupon_code, created_at, ' +
         'tracking_number, label_url, ' +
-        'order_items(id, order_id, product_id, product_name, quantity, unit_retail_price, unit_cost_price), ' +
+        'order_items(id, order_id, product_id, product_name, quantity, unit_retail_price, unit_cost_price, unit_super_agent_cost), ' +
         'profiles!orders_buyer_id_fkey(full_name, email)'
       )
-      .eq('agent_id', agentId)
+      .in('agent_id', agentIds)
       // Exclude wholesale restock orders from the sales view.
       // Restocks were appearing as zero-profit 'sales' in the agent dashboard.
       .eq('is_wholesale_restock', false)
@@ -66,25 +85,49 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
     }
 
-    // Calculate profit for each order. The agent's true margin is:
-    //   profit = retail (customer paid, net of coupon) - cost (what agent
-    //            pays the platform) - shipping (also billed to the agent)
-    // Shipping is included because the platform bills the agent for it on
-    // the weekly statement, even though the customer paid retail shipping.
+    // Calculate profit for each order.
+    // - Own sales (agent_id === agentId): the agent's true margin is
+    //     profit = retail (customer paid, net of coupon) - cost (what agent
+    //              pays the platform) - shipping (also billed to the agent)
+    //   Shipping is included because the platform bills the agent for it on
+    //   the weekly statement, even though the customer paid retail shipping.
+    // - Downline sales (agent_id is a direct downline): this agent doesn't
+    //   own the retail sale, it earns the markup it set for that downline,
+    //   i.e. the spread between what the downline owes (unit_cost_price) and
+    //   what the downline's cost is upstream of this agent
+    //   (unit_super_agent_cost). Shipping is a pass-through re-billed to the
+    //   downline, and discounts are borne by the downline's own margin, so
+    //   neither factors into this agent's downline profit.
     const sales = orders.map((o: any) => {
-      let totalRetail = 0;
-      let totalCost = 0;
+      const isDownlineOrder = o.agent_id !== agentId;
 
-      for (const item of o.order_items || []) {
-        totalRetail += Number(item.unit_retail_price) * Number(item.quantity);
-        totalCost += Number(item.unit_cost_price) * Number(item.quantity);
+      let profit: number;
+
+      if (isDownlineOrder) {
+        let spread = 0;
+        for (const item of o.order_items || []) {
+          const cost = Number(item.unit_cost_price) || 0;
+          const superAgentCost = item.unit_super_agent_cost != null
+            ? Number(item.unit_super_agent_cost)
+            : cost;
+          spread += (cost - superAgentCost) * Number(item.quantity);
+        }
+        profit = spread;
+      } else {
+        let totalRetail = 0;
+        let totalCost = 0;
+
+        for (const item of o.order_items || []) {
+          totalRetail += Number(item.unit_retail_price) * Number(item.quantity);
+          totalCost += Number(item.unit_cost_price) * Number(item.quantity);
+        }
+
+        const discount = Number(o.discount_amount) || 0;
+        const shippingCost = Number(o.shipping_cost) || 0;
+        totalRetail -= discount;
+
+        profit = totalRetail - totalCost - shippingCost;
       }
-
-      const discount = Number(o.discount_amount) || 0;
-      const shippingCost = Number(o.shipping_cost) || 0;
-      totalRetail -= discount;
-
-      const profit = totalRetail - totalCost - shippingCost;
 
       // o.profiles from Supabase FK join may be an array.
       // Direct .full_name access on an array returns undefined.
@@ -108,7 +151,10 @@ export async function GET(req: NextRequest) {
         tracking_number: o.tracking_number,
         label_url: o.label_url,
         agent_id: o.agent_id,
-        is_sub_agent_order: o.is_sub_agent_order,
+        is_sub_agent_order: isDownlineOrder,
+        is_downline_order: isDownlineOrder,
+        downline_agent_id: isDownlineOrder ? o.agent_id : null,
+        downline_agent_name: isDownlineOrder ? (downlineNames.get(o.agent_id) ?? null) : null,
         profit: Number(profit.toFixed(2)),
         items: o.order_items
       };
