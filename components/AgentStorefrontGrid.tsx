@@ -3087,6 +3087,13 @@ export default function AgentStorefrontGrid({
       {/* Peptide Stacks tab: bundles as full cards (image, discount, add-to-cart). */}
       {activeCardIndex === 9 && renderableBundles.length > 0 && (
         <div style={{ marginTop: 0 }}>
+          <div style={{ margin: '0 auto 24px', textAlign: 'center', width: '100%' }}>
+            <img 
+              src="/images/storefront/bundle-savings-banner.png" 
+              alt="Save even more, buy in bundles" 
+              style={{ width: '100%', maxWidth: '800px', height: 'auto', display: 'block', margin: '0 auto' }}
+            />
+          </div>
           <h3 style={{ fontFamily: 'var(--font-brand)', fontSize: '1.05rem', color: 'var(--white)', marginBottom: 'var(--space-4)', letterSpacing: '0.03em' }}>
             Research Stacks &amp; Bundles
           </h3>

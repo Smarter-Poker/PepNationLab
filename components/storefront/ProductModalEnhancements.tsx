@@ -50,7 +50,6 @@ import { useMemo, useState, useEffect } from 'react';
 import { ArrowRight, Plus, Beaker, ChevronDown, ChevronUp, BookmarkPlus, AlertCircle, CheckCircle2, Shield, AlertTriangle, BookOpen, Trophy, Clock, Sparkles, Thermometer } from 'lucide-react';
 import PinToCompareButton from '../research/PinToCompareButton';
 import DynamicDetailButton from './DynamicDetailButton';
-import DoseFrequencyPanel from '../research/DoseFrequencyPanel';
 import { scoreCompound } from '../research/CompareTool';
 import {
   evidenceTier,
@@ -1055,8 +1054,12 @@ export default function ProductModalEnhancements({
         <>
           <QualityScoreWidget compound={currentCompound} primaryColor={primaryColor} />
           <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
-          <div style={{ margin: '8px 0' }}>
-            <DoseFrequencyPanel slug={currentCompound.slug} compoundName={currentCompound.display_name} />
+          <div style={{ margin: '8px 0', textAlign: 'center' }}>
+            <img 
+              src="/images/storefront/bundle-savings-banner.png" 
+              alt="Save even more, buy in bundles" 
+              style={{ width: '100%', maxWidth: '800px', height: 'auto', display: 'block', margin: '0 auto' }}
+            />
           </div>
         </>
       )}
