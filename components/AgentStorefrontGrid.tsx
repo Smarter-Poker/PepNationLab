@@ -2101,7 +2101,17 @@ export default function AgentStorefrontGrid({
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 'var(--space-3)', textAlign: 'center' }}>
           <h4 style={{ fontFamily: 'var(--font-brand)', fontSize: '1.2rem', color: 'var(--white)', letterSpacing: '0.02em', lineHeight: 1.2, marginBottom: bundle.tagline ? 'var(--space-1)' : 0 }}>{bundle.name}</h4>
           {bundle.tagline && (
-            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: primaryColor }}>{bundle.tagline}</div>
+            <div style={{
+              fontSize: '1rem',
+              fontWeight: 800,
+              fontStyle: 'italic',
+              fontFamily: 'var(--font-brand)',
+              background: 'linear-gradient(to bottom, #ffffff 0%, #a1a1aa 48%, #e4e4e7 50%, #52525b 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              filter: 'drop-shadow(0px 2px 2px rgba(0,0,0,0.8))',
+              letterSpacing: '0.02em'
+            }}>{bundle.tagline}</div>
           )}
         </div>
         {bundle.description && (
@@ -4727,7 +4737,17 @@ export default function AgentStorefrontGrid({
                     {selectedBundle.name}
                   </h2>
                   {selectedBundle.tagline && (
-                    <div style={{ fontSize: '1.1rem', fontWeight: 700, color: primaryColor }}>{selectedBundle.tagline}</div>
+                    <div style={{
+                      fontSize: '1.25rem',
+                      fontWeight: 800,
+                      fontStyle: 'italic',
+                      fontFamily: 'var(--font-brand)',
+                      background: 'linear-gradient(to bottom, #ffffff 0%, #a1a1aa 48%, #e4e4e7 50%, #52525b 100%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      filter: 'drop-shadow(0px 2px 3px rgba(0,0,0,0.8))',
+                      letterSpacing: '0.02em'
+                    }}>{selectedBundle.tagline}</div>
                   )}
                 </div>
 
