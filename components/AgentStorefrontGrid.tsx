@@ -3258,11 +3258,8 @@ export default function AgentStorefrontGrid({
       {/* Research Bundles: shown directly below the Top 10 on the default view. */}
       {activeCardIndex === 1 && !deferredSearch.trim() && filterCategory === 'all' && !filterArea && renderableBundles.length > 0 && (
         <div style={{ marginTop: 'var(--space-8)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 'var(--space-5)' }}>
-            <div style={{ background: primaryColor, padding: '6px', borderRadius: '8px', display: 'flex' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-            </div>
-            <h2 style={{ fontSize: '1.4rem', color: 'var(--white)', margin: 0, fontWeight: 700 }}>Research Bundles</h2>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--space-5)', width: '100%' }}>
+            <img src="/images/banners/buy-in-bundles.png" alt="Save Even More Buy In Bundles" style={{ maxWidth: '800px', width: '100%', height: 'auto', filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.5))' }} />
           </div>
           <div className="grid-3" style={{ gap: 'var(--space-6)' }}>
             {renderableBundles.map(renderBundleCard)}
