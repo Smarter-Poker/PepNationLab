@@ -13,9 +13,9 @@ export default function DynamicCoaButton({
   style = {},
 }: DynamicCoaButtonProps) {
   // Use the exact same footprint logic as Add To Cart container
-  // Aspect ratio of Add To Cart is 896 / 251 = ~3.57
-  const baseWidth = isSmall ? 130 : 180;
-  const baseHeight = Math.round(baseWidth / 3.57);
+  // Aspect ratio of the new COA button is 1024 / 521 = ~1.965
+  const baseWidth = isSmall ? 100 : 140;
+  const baseHeight = Math.round(baseWidth / 1.965);
   const [isPressed, setIsPressed] = React.useState(false);
 
   return (
@@ -46,7 +46,7 @@ export default function DynamicCoaButton({
           objectFit: 'contain',
           display: 'block',
         }}
-        width={896} height={251} unoptimized />
+        width={1024} height={521} unoptimized />
     </div>
   );
 }
