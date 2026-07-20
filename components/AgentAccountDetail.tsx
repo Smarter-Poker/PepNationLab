@@ -76,6 +76,16 @@ type Detail = {
     created_at: string;
     provisioned_password?: string | null;
   }>;
+  downline_agents?: Array<{
+    id: string;
+    full_name: string | null;
+    username: string | null;
+    email: string | null;
+    is_active: boolean;
+    is_super_agent?: boolean;
+    commission_pct: number | null;
+    created_at: string;
+  }>;
   researchers: Array<{
     id: string;
     full_name: string | null;
@@ -158,7 +168,7 @@ export default function AgentAccountDetail({
   const [isActive, setIsActive] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<'Overview' | 'Sub Agents' | 'Researchers'>('Overview');
+  const [activeTab, setActiveTab] = useState<'Overview' | 'Downline Agents' | 'Sub Agents' | 'Researchers'>('Overview');
 
   // Password management for sub-agents and researchers in this drawer
   const [revealedDownlinePasswords, setRevealedDownlinePasswords] = useState<Set<string>>(new Set());
@@ -400,6 +410,21 @@ export default function AgentAccountDetail({
                 >
                   Overview
                 </button>
+                {!isSubAgent && (detail.agent.is_super_agent === true || (detail.downline_agents?.length ?? 0) > 0) && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('Downline Agents')}
+                    style={{
+                      background: 'none', border: 'none', padding: '0 0 8px 0', cursor: 'pointer',
+                      fontSize: '1rem', fontWeight: 700,
+                      color: activeTab === 'Downline Agents' ? '#00C4BC' : 'var(--grey-400)',
+                      borderBottom: activeTab === 'Downline Agents' ? '2px solid #00C4BC' : '2px solid transparent',
+                      textTransform: 'uppercase', letterSpacing: '0.05em'
+                    }}
+                  >
+                    Downline Agents ({detail.downline_agents?.length || 0})
+                  </button>
+                )}
                 {!isSubAgent && (
                   <button
                     type="button"
@@ -621,6 +646,36 @@ export default function AgentAccountDetail({
                     </div>
                   </div>
                 </>
+              )}
+
+              {activeTab === 'Downline Agents' && (
+                <div className="glass-panel">
+                  <h3 className="metal-text" style={{ fontSize: '1rem', margin: '0 0 var(--space-3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Downline Agents</h3>
+                  {!detail.downline_agents || detail.downline_agents.length === 0 ? (
+                    <div style={{ color: 'var(--grey-400)', fontSize: '0.85rem', padding: 'var(--space-3) 0' }}>No Downline Agents Yet.</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {detail.downline_agents.map((a) => (
+                        <div key={a.id} style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', padding: '10px 12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, gap: 12 }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: '1 1 160px' }}>
+                            <span style={{ color: 'var(--white)', fontWeight: 700 }}>
+                              {a.full_name || a.username || 'Anonymous'}
+                              {a.is_super_agent && <span style={{ marginLeft: 6, fontSize: '0.66rem', color: 'var(--teal)', border: '1px solid var(--teal)', borderRadius: 4, padding: '1px 6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Super</span>}
+                            </span>
+                            <span style={{ color: a.is_active ? '#2DD4BF' : '#F87171', fontSize: '0.75rem' }}>{a.is_active ? 'Active' : 'Inactive'}</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: '1 1 140px' }}>
+                            <span style={{ fontSize: '0.68rem', color: 'var(--grey-500)', minWidth: 52 }}>Username</span>
+                            <span style={{ fontFamily: 'monospace', color: 'var(--teal)', fontWeight: 700, fontSize: '0.82rem' }}>{a.username || '-'}</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ color: '#00C4BC', fontWeight: 700, fontSize: '0.82rem' }}>{a.commission_pct ?? 0}% Markup</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
 
               {activeTab === 'Sub Agents' && (

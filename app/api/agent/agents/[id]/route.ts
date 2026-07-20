@@ -121,6 +121,19 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       .eq('is_sub_agent', true)
       .order('created_at', { ascending: false });
 
+    // Full downline AGENTS of this agent (role agent/super_agent,
+    // is_sub_agent=false). These exist when the account is itself a Super
+    // Agent (e.g. a mid-tier Super who reports to another Super). They were
+    // never surfaced in this drawer, so a Super Agent's own agents appeared
+    // to vanish when their account was opened from an upline's roster.
+    const { data: downlineAgentsRows } = await supabase
+      .from('profiles')
+      .select('id, full_name, username, email, created_at, is_active, is_super_agent, commission_pct')
+      .eq('parent_agent_id', id)
+      .eq('is_sub_agent', false)
+      .in('role', ['agent', 'super_agent'])
+      .order('created_at', { ascending: false });
+
     // Researchers of this agent
     const { data: researchersRows } = await supabase
       .from('profiles')
@@ -201,6 +214,16 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
         created_at: sa.created_at,
         // provisioned_password intentionally NOT returned: an agent must never
         // be able to read the live plaintext login of anyone in their downline.
+      })),
+      downline_agents: (downlineAgentsRows ?? []).map((a) => ({
+        id: a.id,
+        full_name: a.full_name,
+        username: a.username,
+        email: a.email,
+        is_active: a.is_active,
+        is_super_agent: (a as { is_super_agent?: boolean }).is_super_agent === true,
+        commission_pct: a.commission_pct != null ? num(a.commission_pct) : null,
+        created_at: a.created_at,
       })),
       researchers: (researchersRows ?? []).map((r) => ({
         id: r.id,
