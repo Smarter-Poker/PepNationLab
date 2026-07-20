@@ -994,7 +994,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                         <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 600, textTransform: 'uppercase' }}>Product Name</th>
                         <th style={{ textAlign: 'center', padding: '12px 16px', fontWeight: 600, textTransform: 'uppercase' }}>Weight</th>
                         <th style={{ textAlign: 'center', padding: '12px 16px', fontWeight: 600, textTransform: 'uppercase' }}>Quantity</th>
-                        <th style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 600, textTransform: 'uppercase' }}>Unit Price</th>
+                        <th style={{ textAlign: 'center', padding: '12px 16px', fontWeight: 600, textTransform: 'uppercase' }}>Unit Price</th>
                         <th style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 600, textTransform: 'uppercase' }}>Total</th>
                       </tr>
                     </thead>
@@ -1025,7 +1025,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                               {item.unit_size ? `${item.unit_size} ${item.unit_measure || 'mg'}` : '-'}
                             </td>
                             <td style={{ textAlign: 'center', padding: '12px 16px' }}>{qty}</td>
-                            <td style={{ textAlign: 'right', padding: '12px 16px' }}>
+                            <td style={{ textAlign: 'center', padding: '12px 16px' }}>
                               {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(unit) || 0)}
                             </td>
                             <td
