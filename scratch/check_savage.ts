@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
+import * as dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
 
-const SUPABASE_URL = 'https://ydsaqnnuwyvtyxgvrnys.supabase.co';
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ydsaqnnuwyvtyxgvrnys.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!SUPABASE_KEY) {
@@ -18,14 +20,20 @@ async function main() {
     .eq('slug', 'savagebrands')
     .single();
 
+  let agentId = profile?.id;
+  
   if (!profile) {
     console.error("Could not find savagebrands in agent_profiles");
     const { data: profiles } = await supabase.from('profiles').select('id, full_name, role');
-    console.log("Profiles available:", profiles.filter(p => p.full_name?.toLowerCase().includes('savage')));
-    return;
+    const savage = profiles?.find(p => p.full_name?.toLowerCase().includes('savage'));
+    if (savage) {
+        agentId = savage.id;
+        console.log("Found profile in `profiles`:", savage);
+    } else {
+        return;
+    }
   }
 
-  const agentId = profile.id;
   console.log(`Agent ID: ${agentId}`);
 
   // 2. Get statements
@@ -33,7 +41,8 @@ async function main() {
     .from('weekly_statements')
     .select('*')
     .eq('agent_id', agentId)
-    .order('week_start', { ascending: false });
+    .order('week_start', { ascending: false })
+    .limit(3);
 
   console.log('Statements:', statements);
 
