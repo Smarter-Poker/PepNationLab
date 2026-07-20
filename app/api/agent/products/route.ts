@@ -84,8 +84,8 @@ export async function GET(req: NextRequest) {
         agentCost = gate.isAdmin ? houseCost : (costMap.get(productId) ?? 0);
       }
 
-      const { base_cost: _stripped, ...safeProducts } = (ap.products as any) ?? {};
-      void _stripped;
+      const { base_cost: _stripped, house_cost: _strippedHouse, ...safeProducts } = (ap.products as any) ?? {};
+      void _stripped; void _strippedHouse;
 
       return {
         ...ap,
