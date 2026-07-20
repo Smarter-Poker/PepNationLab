@@ -26,6 +26,7 @@ import { EXTRACTED_J } from '@/lib/i18n/ui-extracted-j';
 import { EXTRACTED_K } from '@/lib/i18n/ui-extracted-k';
 import { EXTRACTED_L } from '@/lib/i18n/ui-extracted-l';
 import { EXTRACTED_M } from '@/lib/i18n/ui-extracted-m';
+import { EXTRACTED_N } from '@/lib/i18n/ui-extracted-n';
 
 type ZhLocale = 'zh-CN' | 'zh-TW';
 type Entry = { 'zh-CN': string; 'zh-TW': string };
@@ -196,7 +197,7 @@ function buildDict(): Record<string, Entry> {
   // Extracted agent-surface strings fill coverage (Orders, Store Products,
   // Sales, Sub-Agents, Coupons, Inventory, Bundles, CRM, Storefront Config,
   // wallet, messaging, QR, dashboard shell). Curated entries still win below.
-  for (const part of [EXTRACTED_A, EXTRACTED_B, EXTRACTED_C, EXTRACTED_D, EXTRACTED_E, EXTRACTED_F, EXTRACTED_G, EXTRACTED_H, EXTRACTED_I, EXTRACTED_J, EXTRACTED_K, EXTRACTED_L, EXTRACTED_M]) {
+  for (const part of [EXTRACTED_A, EXTRACTED_B, EXTRACTED_C, EXTRACTED_D, EXTRACTED_E, EXTRACTED_F, EXTRACTED_G, EXTRACTED_H, EXTRACTED_I, EXTRACTED_J, EXTRACTED_K, EXTRACTED_L, EXTRACTED_M, EXTRACTED_N]) {
     for (const [en, entry] of Object.entries(part)) {
       dict[en] = entry;
     }
