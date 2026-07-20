@@ -51,6 +51,8 @@ interface OrderItem {
   quantity: number;
   unit_retail_price: number;
   unit_cost_price: number | null;
+  unit_size?: number | null;
+  unit_measure?: string | null;
   stackData?: {
     isPreBlended: boolean;
     components: string[];
@@ -989,10 +991,11 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                           borderBottom: '1px solid rgba(255,255,255,0.06)',
                         }}
                       >
-                        <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 600 }}>Product</th>
-                        <th style={{ textAlign: 'center', padding: '12px 16px', fontWeight: 600 }}>Quantity</th>
-                        <th style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 600 }}>Unit Price</th>
-                        <th style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 600 }}>Line Total</th>
+                        <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 600, textTransform: 'uppercase' }}>Product Name</th>
+                        <th style={{ textAlign: 'center', padding: '12px 16px', fontWeight: 600, textTransform: 'uppercase' }}>Weight</th>
+                        <th style={{ textAlign: 'center', padding: '12px 16px', fontWeight: 600, textTransform: 'uppercase' }}>Quantity</th>
+                        <th style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 600, textTransform: 'uppercase' }}>Unit Price</th>
+                        <th style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 600, textTransform: 'uppercase' }}>Total</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1017,6 +1020,9 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                                   )}
                                 </div>
                               )}
+                            </td>
+                            <td style={{ textAlign: 'center', padding: '12px 16px', color: 'var(--silver)' }}>
+                              {item.unit_size ? `${item.unit_size} ${item.unit_measure || 'mg'}` : '-'}
                             </td>
                             <td style={{ textAlign: 'center', padding: '12px 16px' }}>{qty}</td>
                             <td style={{ textAlign: 'right', padding: '12px 16px' }}>

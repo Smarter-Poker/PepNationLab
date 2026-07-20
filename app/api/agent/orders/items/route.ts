@@ -64,9 +64,14 @@ export async function GET(req: NextRequest) {
     if (item.product_id) {
       const { data: product } = await supabase
         .from('products')
-        .select('compound_slug')
+        .select('compound_slug, unit_size, unit_measure')
         .eq('id', item.product_id)
         .maybeSingle();
+
+      if (product) {
+        item.unit_size = product.unit_size;
+        item.unit_measure = product.unit_measure;
+      }
 
       if (product?.compound_slug) {
         const { data: compound } = await supabase

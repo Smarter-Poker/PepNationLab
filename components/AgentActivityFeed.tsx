@@ -715,17 +715,19 @@ export default function AgentActivityFeed() {
       )}
 
       {/* ── Summary Stats ── */}
-      <SummaryBar
-        summary={summary}
-        prevSummary={prevSummary}
-        days={days}
-        onStatClick={(label) => {
-          if (label === 'Revenue In') setFilter('payment');
-          else if (label === 'Paid Out') setFilter('payout');
-          else if (label === 'Orders') setFilter('order');
-          else if (label === 'Alerts') setFilter('all');
-        }}
-      />
+      {summary && (
+        <SummaryBar
+          summary={summary}
+          prevSummary={prevSummary}
+          days={days}
+          onStatClick={(label) => {
+            if (label === 'Revenue In') setFilter('payment');
+            else if (label === 'Paid Out') setFilter('payout');
+            else if (label === 'Orders') setFilter('order');
+            else if (label === 'Alerts') setFilter('all');
+          }}
+        />
+      )}
 
       {/* ── Heatmap ── */}
       {liveAndLoaded.length > 0 && (
