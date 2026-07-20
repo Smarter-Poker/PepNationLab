@@ -32,6 +32,7 @@ import PinToCompareButton from '@/components/research/PinToCompareButton';
 import ResearchCartButton from '@/components/research/ResearchCartButton';
 import MonographSeoContent from '@/components/research/MonographSeoContent';
 import MonographCitations from '@/components/research/MonographCitations';
+import DoseFrequencyPanel from '@/components/research/DoseFrequencyPanel';
 
 // ISR: monographs are static reference content that changes rarely. Pre-render
 // every compound at build and revalidate hourly. This ships full, instant HTML
@@ -339,6 +340,9 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
           productName={compound.display_name}
         />
       </div>
+
+      {/* Dose & Frequency — branded collapsible panel, research reference only */}
+      <DoseFrequencyPanel slug={compound.slug} compoundName={compound.display_name} />
 
       {/* Visualization rail - each component fails gracefully when its data is missing. */}
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 var(--space-4, 16px) var(--space-6, 32px)', display: 'grid', gap: 'var(--space-4, 16px)' }}>
