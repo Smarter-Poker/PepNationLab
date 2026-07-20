@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
         custom_image_url, retail_price, margin_percent, is_visible, is_on_sale, sale_price, sort_order,
         manufacturer_cost,
         products (name, description, image_url, category, compound_slug, in_stock, inventory_count,
-                 unit_size, unit_measure, base_cost,
+                 unit_size, unit_measure, base_cost, house_cost,
                  max_retail_price,
                  market_avg_price, market_low_price, market_high_price)
       `)
@@ -70,6 +70,7 @@ export async function GET(req: NextRequest) {
       const baseCost = (ap.products as any)?.base_cost != null
         ? Number((ap.products as any).base_cost)
         : 0;
+      const houseCost = (ap.products as any)?.house_cost != null ? Number((ap.products as any).house_cost) : baseCost;
 
       // Admin cost basis is base_cost (true COGS on the house store); agents
       // get their tier-multiplied / custom-scaled cost; manufacturers get
@@ -80,7 +81,7 @@ export async function GET(req: NextRequest) {
           ? Number((ap as { manufacturer_cost?: number | null }).manufacturer_cost)
           : null;
       } else if (baseCost > 0) {
-        agentCost = gate.isAdmin ? baseCost : (costMap.get(productId) ?? 0);
+        agentCost = gate.isAdmin ? houseCost : (costMap.get(productId) ?? 0);
       }
 
       const { base_cost: _stripped, ...safeProducts } = (ap.products as any) ?? {};
@@ -138,7 +139,7 @@ export async function PATCH(req: NextRequest) {
       .from('agent_products')
       .select(`
         id, retail_price, margin_percent, product_id, agent_id, sale_price, is_on_sale,
-        products ( min_retail_price, max_margin_percent, max_retail_price, base_cost )
+        products ( min_retail_price, max_margin_percent, max_retail_price, base_cost, house_cost )
       `)
       .eq('id', id)
       .eq('agent_id', gate.user.id)
@@ -156,7 +157,7 @@ export async function PATCH(req: NextRequest) {
     // Manufacturer stores: zero pricing restrictions of any kind.
     let isManufacturer = false;
     if (gate.isAdmin) {
-      const rawBase = (check.products as any)?.base_cost;
+      const rawBase = (check.products as any)?.house_cost ?? (check.products as any)?.base_cost;
       agentCostPer10 = rawBase != null ? Number(rawBase) : 0;
     } else {
       const { data: profData } = await supabase
