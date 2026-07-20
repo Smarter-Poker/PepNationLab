@@ -183,12 +183,19 @@ export async function PATCH(req: NextRequest) {
       }
     }
 
-    const minRetailPrice = Number((check.products as any)?.min_retail_price || agentCostPer10);
     const maxMargin = Number((check.products as any)?.max_margin_percent || 300);
     // Admin store price = the hard price ceiling for all agents.
     const maxRetailPrice: number | null = (check.products as any)?.max_retail_price != null
       ? Number((check.products as any).max_retail_price)
       : null;
+
+    // Minimum-margin floor (platform rule): retail must be at least 10% above
+    // the agent's cost - but never demand a price above the admin ceiling,
+    // or an agent whose cost sits near the ceiling could not price at all.
+    const minMarginFloor = Math.round(agentCostPer10 * 1.10 * 100) / 100;
+    const effectiveFloor = maxRetailPrice != null ? Math.min(minMarginFloor, maxRetailPrice) : minMarginFloor;
+
+    const minRetailPrice = Number((check.products as any)?.min_retail_price || effectiveFloor);
 
     // ── Pricing guardrails ─────────────────────────────────────────────
     // Manufacturers are EXEMPT from every floor, ceiling, and margin cap:
@@ -204,10 +211,10 @@ export async function PATCH(req: NextRequest) {
         );
       }
 
-      if (resolvedRetailPrice !== undefined && resolvedRetailPrice < agentCostPer10) {
+      if (resolvedRetailPrice !== undefined && resolvedRetailPrice < effectiveFloor) {
         return NextResponse.json(
           {
-            error: `Listed price ($${(resolvedRetailPrice / 10).toFixed(2)}/vial) cannot be below your cost ($${(agentCostPer10 / 10).toFixed(2)}/vial).`,
+            error: `Retail Price Must Be At Least 10% Above Your Cost ($${(effectiveFloor / 10).toFixed(2)} Minimum).`,
           },
           { status: 422 }
         );
@@ -266,10 +273,10 @@ export async function PATCH(req: NextRequest) {
         );
       }
 
-      if (!(activeSalePrice >= agentCostPer10)) {
+      if (!(activeSalePrice >= effectiveFloor)) {
         return NextResponse.json(
           {
-            error: `Sale price ($${(activeSalePrice / 10).toFixed(2)}/vial) cannot be below your cost ($${(agentCostPer10 / 10).toFixed(2)}/vial).`,
+            error: `Retail Price Must Be At Least 10% Above Your Cost ($${(effectiveFloor / 10).toFixed(2)} Minimum).`,
           },
           { status: 422 }
         );
