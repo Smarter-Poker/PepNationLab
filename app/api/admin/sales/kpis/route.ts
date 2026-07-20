@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
         .from('orders')
         .select(`
           id, total, status, agent_id, created_at,
-          order_items ( quantity, unit_cost_price, unit_retail_price, products ( base_cost ) )
+          order_items ( quantity, unit_cost_price, unit_retail_price, unit_super_agent_cost, products ( base_cost ) )
         `)
         .gte('created_at', from.toISOString())
         .lt('created_at', to.toISOString())
@@ -53,11 +53,16 @@ export async function GET(req: NextRequest) {
            const qty = Number(item.quantity || 1);
            const ucp = Number(item.unit_cost_price || 0);
            const urp = Number(item.unit_retail_price || 0);
+           // Chained orders (a super agent in the billing chain): the house
+           // collects unit_super_agent_cost from the super; unit_cost_price -
+           // unit_super_agent_cost is the SUPER's markup profit, not ours.
+           const usc = Number(item.unit_super_agent_cost || 0);
+           const houseCollect = usc > 0 ? usc : ucp;
            const baseCostPer10 = Number(item.products?.base_cost || 0);
            const baseCostPerVial = baseCostPer10 / 10;
            
            if (o.agent_id) {
-             houseProfit += (ucp - baseCostPerVial) * qty;
+             houseProfit += (houseCollect - baseCostPerVial) * qty;
            } else {
              houseProfit += (urp - baseCostPerVial) * qty;
            }

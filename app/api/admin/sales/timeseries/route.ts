@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
       .from('orders')
       .select(`
         total, status, created_at, agent_id,
-        order_items ( quantity, unit_cost_price, unit_retail_price, products ( base_cost ) )
+        order_items ( quantity, unit_cost_price, unit_retail_price, unit_super_agent_cost, products ( base_cost ) )
       `)
       .gte('created_at', start.toISOString())
       .lt('created_at', end.toISOString())
@@ -47,11 +47,14 @@ export async function GET(req: NextRequest) {
          const qty = Number(item.quantity || 1);
          const ucp = Number(item.unit_cost_price || 0);
          const urp = Number(item.unit_retail_price || 0);
+         // Chained orders: house collects unit_super_agent_cost (see kpis route).
+         const usc = Number(item.unit_super_agent_cost || 0);
+         const houseCollect = usc > 0 ? usc : ucp;
          const baseCostPer10 = Number(item.products?.base_cost || 0);
          const baseCostPerVial = baseCostPer10 / 10;
          
          if (o.agent_id) {
-           houseProfit += (ucp - baseCostPerVial) * qty;
+           houseProfit += (houseCollect - baseCostPerVial) * qty;
          } else {
            houseProfit += (urp - baseCostPerVial) * qty;
          }
