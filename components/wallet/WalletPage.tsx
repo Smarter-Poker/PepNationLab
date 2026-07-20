@@ -54,6 +54,18 @@ const fmtDate = (s: string | null | undefined): string => {
     : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
+// "Week Closes In Xh" countdown for the Invoices tab's own-account snapshot,
+// derived the same way as DownlineBalances' weekCloseText but reduced to a
+// single hours-remaining figure per the tab's compact card layout.
+const weekClosesInLabel = (weekEndsAtIso: string | null, now: number): string => {
+  if (!weekEndsAtIso) return '';
+  const end = new Date(weekEndsAtIso).getTime();
+  const diff = end - now;
+  if (isNaN(end) || diff <= 0) return 'Week Closed - Invoices Generate Monday Morning';
+  const hours = Math.max(1, Math.ceil(diff / (60 * 60 * 1000)));
+  return `Week Closes In ${hours}h`;
+};
+
 type ActivityTxn = {
   id: string;
   ledger: 'wallet' | 'credit';
@@ -64,7 +76,7 @@ type ActivityTxn = {
   createdAt: string;
 };
 
-type Tab = 'overview' | 'activity' | 'statements' | 'commissions' | 'receipts' | 'settings';
+type Tab = 'overview' | 'activity' | 'invoices' | 'statements' | 'commissions' | 'receipts' | 'settings';
 
 type StatementRow = {
   id: string;
@@ -78,6 +90,19 @@ type StatementRow = {
   paid_at?: string | null;
   target_type: 'statement' | 'agent_invoice';
   bills_from?: 'admin' | 'super_agent';
+};
+
+// Own-account real-time snapshot returned in the `self` block of
+// GET /api/agent/downline-balances - powers the Invoices tab's running totals.
+type SelfSnapshot = {
+  accountType: 'prepaid' | 'credit' | null;
+  prepaidBalance: number;
+  creditUsed: number;
+  creditLimit: number;
+  currentWeekOrderCount: number;
+  currentWeekOrderTotal: number;
+  openBillsTotal: number;
+  openBillsCount: number;
 };
 
 export default function WalletPage({
@@ -96,6 +121,10 @@ export default function WalletPage({
   const [creditOpen, setCreditOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [self, setSelf] = useState<SelfSnapshot | null>(null);
+  const [selfLoading, setSelfLoading] = useState(false);
+  const [weekEndsAtIso, setWeekEndsAtIso] = useState<string | null>(null);
+  const [tick, setTick] = useState<number>(() => Date.now());
 
   async function refresh() {
     setLoading(true);
@@ -130,6 +159,38 @@ export default function WalletPage({
 
   useEffect(() => { refresh(); }, []);
 
+  // Real-time own-account running totals for the Invoices tab - fetched once
+  // per tab visit (not on every wallet-wide refresh) so the numbers stay
+  // current whenever the agent checks the tab.
+  useEffect(() => {
+    if (tab !== 'invoices') return;
+    let cancelled = false;
+    (async () => {
+      setSelfLoading(true);
+      try {
+        const res = await fetch('/api/agent/downline-balances', { cache: 'no-store' });
+        if (!res.ok) return;
+        const j = await res.json();
+        if (cancelled) return;
+        setSelf(j?.self ?? null);
+        setWeekEndsAtIso(typeof j?.weekEndsAtIso === 'string' ? j.weekEndsAtIso : null);
+      } catch {
+        // Network or parse failure - the running totals card falls back to its empty state.
+      } finally {
+        if (!cancelled) setSelfLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [tab]);
+
+  // Ticks the "Week Closes In Xh" countdown forward without re-fetching data.
+  useEffect(() => {
+    const id = setInterval(() => setTick(Date.now()), 60000);
+    return () => clearInterval(id);
+  }, []);
+
   // Open invoices = anything that isn't paid/cancelled AND has an actual balance.
   // $0 statements should never be shown as outstanding - they have nothing to pay.
   const openInvoices = useMemo(
@@ -149,11 +210,70 @@ export default function WalletPage({
   const tabs: { id: Tab; label: string }[] = [
     { id: 'overview', label: 'Overview' },
     { id: 'activity', label: 'Activity' },
+    { id: 'invoices', label: 'Invoices' },
     { id: 'statements', label: 'Statements' },
     { id: 'commissions', label: 'Commissions' },
     { id: 'receipts', label: 'Receipts' },
     { id: 'settings', label: 'Settings' },
   ];
+
+  // The statements/invoices table is shown both as "Invoice History" on the
+  // Statements tab and as "Bills To Pay" on the Invoices tab - one render
+  // helper keeps the row logic in exactly one place.
+  const renderStatementsSection = (heading: string) => (
+    <section className="glass-panel" style={{ padding: 16, borderRadius: 12 }}>
+      <h3 style={{ color: 'var(--white)', marginTop: 0 }}>{heading}</h3>
+      {statements.length === 0 ? (
+        <p style={{ color: 'var(--grey-500)' }}>No Invoices Yet.</p>
+      ) : (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                <th style={{ textAlign: 'left',  padding: '8px', color: 'var(--silver)' }}>Week</th>
+                <th style={{ textAlign: 'left',  padding: '8px', color: 'var(--silver)' }}>Bills From</th>
+                <th style={{ textAlign: 'right', padding: '8px', color: 'var(--silver)' }}>COGS</th>
+                <th style={{ textAlign: 'right', padding: '8px', color: 'var(--silver)' }}>Shipping</th>
+                <th style={{ textAlign: 'right', padding: '8px', color: 'var(--teal)' }}>Owed</th>
+                <th style={{ textAlign: 'center', padding: '8px', color: 'var(--silver)' }}>Status</th>
+                <th style={{ textAlign: 'center', padding: '8px', color: 'var(--silver)' }}>Print</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(statements || []).slice(0, 24).map((s) => {
+                const colors = statusColors(s.status);
+                const billsFromLabel = s.target_type === 'agent_invoice' ? 'Super Agent' : 'Admin';
+                return (
+                  <tr key={`${s.target_type}-${s.id}`}
+                    style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <td onClick={() => { setDetailId(s.id); setDetailType(s.target_type); }} style={{ padding: '10px 8px', color: 'var(--white)', cursor: 'pointer' }}>{fmtDate(s.week_start)}</td>
+                    <td style={{ padding: '10px 8px', color: 'var(--grey-400)' }}>{billsFromLabel}</td>
+                    <td style={{ padding: '10px 8px', color: 'var(--white)', textAlign: 'right' }}>{money(Number(s.total_cogs || 0))}</td>
+                    <td style={{ padding: '10px 8px', color: 'var(--white)', textAlign: 'right' }}>{money(Number(s.total_shipping || 0))}</td>
+                    <td style={{ padding: '10px 8px', color: 'var(--teal)', textAlign: 'right', fontWeight: 700 }}>{money(Number(s.total_owed || 0))}</td>
+                    <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                      <span style={{
+                        padding: '4px 10px', borderRadius: 6, fontSize: '0.72rem', fontWeight: 700,
+                        background: colors.bg, color: colors.fg,
+                      }}>{statusLabel(s.status)}</span>
+                    </td>
+                    <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                      <IframeLink
+                        href={`/wallet/print?type=${s.target_type}&id=${s.id}`}
+                        style={{ color: 'var(--teal)', fontSize: '0.78rem', fontWeight: 700, textDecoration: 'none' }}
+                      >
+                        Print
+                      </IframeLink>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
 
   return (
     <div style={{ textTransform: 'capitalize', paddingTop: 'calc(var(--nav-offset, 60px) + var(--space-6))', paddingRight: 'var(--space-4)', paddingBottom: 'var(--space-8)', paddingLeft: 'var(--space-4)', minHeight: '100dvh' }}>
@@ -388,63 +508,74 @@ export default function WalletPage({
             </section>
           )}
 
-          {tab === 'statements' && (
+          {tab === 'invoices' && (
             <>
-              <DownlineBalances />
-              <section className="glass-panel" style={{ padding: 16, borderRadius: 12 }}>
-              <h3 style={{ color: 'var(--white)', marginTop: 0 }}>Invoice History</h3>
-              {statements.length === 0 ? (
-                <p style={{ color: 'var(--grey-500)' }}>No Invoices Yet.</p>
-              ) : (
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                        <th style={{ textAlign: 'left',  padding: '8px', color: 'var(--silver)' }}>Week</th>
-                        <th style={{ textAlign: 'left',  padding: '8px', color: 'var(--silver)' }}>Bills From</th>
-                        <th style={{ textAlign: 'right', padding: '8px', color: 'var(--silver)' }}>COGS</th>
-                        <th style={{ textAlign: 'right', padding: '8px', color: 'var(--silver)' }}>Shipping</th>
-                        <th style={{ textAlign: 'right', padding: '8px', color: 'var(--teal)' }}>Owed</th>
-                        <th style={{ textAlign: 'center', padding: '8px', color: 'var(--silver)' }}>Status</th>
-                        <th style={{ textAlign: 'center', padding: '8px', color: 'var(--silver)' }}>Print</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(statements || []).slice(0, 24).map((s) => {
-                        const colors = statusColors(s.status);
-                        const billsFromLabel = s.target_type === 'agent_invoice' ? 'Super Agent' : 'Admin';
-                        return (
-                          <tr key={`${s.target_type}-${s.id}`}
-                            style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                            <td onClick={() => { setDetailId(s.id); setDetailType(s.target_type); }} style={{ padding: '10px 8px', color: 'var(--white)', cursor: 'pointer' }}>{fmtDate(s.week_start)}</td>
-                            <td style={{ padding: '10px 8px', color: 'var(--grey-400)' }}>{billsFromLabel}</td>
-                            <td style={{ padding: '10px 8px', color: 'var(--white)', textAlign: 'right' }}>{money(Number(s.total_cogs || 0))}</td>
-                            <td style={{ padding: '10px 8px', color: 'var(--white)', textAlign: 'right' }}>{money(Number(s.total_shipping || 0))}</td>
-                            <td style={{ padding: '10px 8px', color: 'var(--teal)', textAlign: 'right', fontWeight: 700 }}>{money(Number(s.total_owed || 0))}</td>
-                            <td style={{ padding: '10px 8px', textAlign: 'center' }}>
-                              <span style={{
-                                padding: '4px 10px', borderRadius: 6, fontSize: '0.72rem', fontWeight: 700,
-                                background: colors.bg, color: colors.fg,
-                              }}>{statusLabel(s.status)}</span>
-                            </td>
-                            <td style={{ padding: '10px 8px', textAlign: 'center' }}>
-                              <IframeLink
-                                href={`/wallet/print?type=${s.target_type}&id=${s.id}`}
-                                style={{ color: 'var(--teal)', fontSize: '0.78rem', fontWeight: 700, textDecoration: 'none' }}
-                              >
-                                Print
-                              </IframeLink>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+              <section className="glass-panel" style={{ padding: 16, borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                  <h3 style={{ color: 'var(--white)', margin: 0, fontSize: '1rem' }}>Your Running Totals</h3>
+                  {weekEndsAtIso && (
+                    <span style={{ color: 'var(--grey-400)', fontSize: '0.78rem' }}>
+                      {weekClosesInLabel(weekEndsAtIso, tick)}
+                    </span>
+                  )}
                 </div>
-              )}
+                {selfLoading && !self ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14 }}>
+                    {[0, 1, 2].map((i) => (
+                      <div key={i}>
+                        <div className="skeleton" style={{ height: 12, width: '60%', borderRadius: 4, marginBottom: 8 }} />
+                        <div className="skeleton" style={{ height: 22, width: '80%', borderRadius: 6 }} />
+                      </div>
+                    ))}
+                  </div>
+                ) : self ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14 }}>
+                    <div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>This Week's Sales</div>
+                      <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--white)' }}>
+                        {self.currentWeekOrderCount} Orders / {money(self.currentWeekOrderTotal)}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Owed Upstream Right Now</div>
+                      <div style={{ fontSize: '1.3rem', fontWeight: 800, color: self.openBillsTotal > 0 ? '#ff6b6b' : 'var(--teal)' }}>
+                        {money(self.openBillsTotal)}{' '}
+                        <span style={{ fontSize: '0.78rem', color: 'var(--grey-500)', fontWeight: 600 }}>
+                          ({self.openBillsCount} {self.openBillsCount === 1 ? 'Bill' : 'Bills'})
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                        {self.accountType === 'prepaid' ? 'Prepaid Balance' : 'Credit Used'}
+                      </div>
+                      <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--teal)' }}>
+                        {self.accountType === 'prepaid' ? (
+                          money(self.prepaidBalance)
+                        ) : (
+                          <>
+                            {money(self.creditUsed)}{' '}
+                            <span style={{ fontSize: '0.78rem', color: 'var(--grey-500)', fontWeight: 600 }}>Of {money(self.creditLimit)}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p style={{ color: 'var(--grey-500)', fontSize: '0.9rem' }}>Could Not Load Your Running Totals.</p>
+                )}
               </section>
+
+              {renderStatementsSection('Bills To Pay')}
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <h3 style={{ color: 'var(--white)', margin: 0, fontSize: '1rem' }}>Downline Snapshots</h3>
+                <DownlineBalances />
+              </div>
             </>
           )}
+
+          {tab === 'statements' && renderStatementsSection('Invoice History')}
 
           {tab === 'commissions' && <CommissionsTab />}
           {tab === 'receipts' && <ReceiptVault />}
