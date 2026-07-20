@@ -39,6 +39,10 @@ interface Order {
   label_url?: string | null;
   agent_id?: string;
   is_sub_agent_order?: boolean;
+  profit?: number;
+  is_downline_order?: boolean;
+  downline_agent_id?: string | null;
+  downline_agent_name?: string | null;
 }
 
 interface OrderItem {
@@ -363,7 +367,9 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                         WebkitTextFillColor: 'transparent',
                         textShadow: '0 2px 10px rgba(255,255,255,0.1)'
                       }}>
-                        {order.is_sub_agent_order ? `Sub-Agent Order #${order.id.slice(0, 8).toUpperCase()}` : `Order #${order.id.slice(0, 8).toUpperCase()}`}
+                        {order.is_sub_agent_order || order.is_downline_order
+                          ? (order.downline_agent_name ? `Downline Order - ${order.downline_agent_name}` : `Sub-Agent Order #${order.id.slice(0, 8).toUpperCase()}`)
+                          : `Order #${order.id.slice(0, 8).toUpperCase()}`}
                       </span>
                       <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)', fontWeight: 600 }}>
                         &bull;
@@ -469,6 +475,14 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                         {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(order.total) || 0)}
                       </strong>
                     </div>
+                    {typeof order.profit === 'number' && (
+                      <div style={{ marginTop: '8px', fontSize: '0.8rem', color: 'var(--grey-400)', fontWeight: 600 }}>
+                        {order.is_downline_order ? 'Your Profit On This Sale' : 'Your Profit'}:{' '}
+                        <span style={{ color: '#48BB78', fontWeight: 700 }}>
+                          ${order.profit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   
                   {/* Tracking / Fulfillment */}
