@@ -1,6 +1,13 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import PrintButton from '@/components/wallet/PrintButton';
+import { chicagoMidnightIso } from '@/lib/time-cst';
+
+function addDays(dateStr: string, days: number): string {
+  const d = new Date(`${dateStr}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
 
 export const dynamic = 'force-dynamic';
 export const metadata = {
@@ -98,6 +105,70 @@ export default async function WalletPrintPage({ searchParams }: { searchParams: 
   const shipping = Number(row.total_shipping || 0);
   const owed = Number(row.total_owed || 0);
 
+  // FETCH ORDERS (LINE ITEMS)
+  let orders: any[] = [];
+  if (type === 'statement') {
+    // Exact mapping for statements
+    const { data: stmtOrders } = await supabase
+      .from('statement_orders')
+      .select('orders(id, created_at, status, total, shipping_cost, agent_approved_at, agent_id, order_items(product_name, product_id, quantity, unit_retail_price, unit_super_agent_cost, unit_cost_price, is_wholesale_restock))')
+      .eq('statement_id', row.id);
+    
+    if (stmtOrders) {
+      orders = stmtOrders.map((so: any) => so.orders).filter(Boolean);
+    }
+  } else {
+    // Recreate time-window query for agent invoices
+    const rangeStart = chicagoMidnightIso(row.week_start);
+    const rangeEndExclusive = chicagoMidnightIso(addDays(row.week_start, 7));
+    
+    const { data: invOrders } = await supabase
+      .from('orders')
+      .select('id, created_at, status, total, shipping_cost, agent_approved_at, agent_id, order_items(product_name, product_id, quantity, unit_retail_price, unit_super_agent_cost, unit_cost_price, is_wholesale_restock)')
+      .eq('agent_id', row.agent_id)
+      .neq('status', 'cancelled')
+      .neq('status', 'pending_customer_payment')
+      .neq('status', 'agent_approval_pending')
+      .neq('is_wholesale_restock', true)
+      .or(
+        `and(agent_approved_at.gte.${rangeStart},agent_approved_at.lt.${rangeEndExclusive}),` +
+        `and(agent_approved_at.is.null,created_at.gte.${rangeStart},created_at.lt.${rangeEndExclusive})`
+      );
+      
+    if (invOrders) orders = invOrders;
+  }
+
+  // Calculate order stats
+  const lineItems = orders.map(order => {
+    let orderCogs = 0;
+    let orderRetail = 0;
+    const items = order.order_items || [];
+    for (const item of items) {
+      const q = Number(item.quantity) || 0;
+      orderRetail += (Number(item.unit_retail_price) || 0) * q;
+      orderCogs += (Number(item.unit_cost_price) || 0) * q;
+    }
+    const orderShipping = Number(order.shipping_cost) || 0;
+    const profit = orderRetail - orderCogs - orderShipping;
+    const margin = orderRetail > 0 ? (profit / orderRetail) * 100 : 0;
+    
+    return {
+      id: order.id,
+      date: order.agent_approved_at || order.created_at,
+      retail: orderRetail,
+      cogs: orderCogs,
+      shipping: orderShipping,
+      profit,
+      margin
+    };
+  }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  const totalRetail = lineItems.reduce((sum, li) => sum + li.retail, 0);
+  const totalLineCogs = lineItems.reduce((sum, li) => sum + li.cogs, 0);
+  const totalLineShipping = lineItems.reduce((sum, li) => sum + li.shipping, 0);
+  const totalProfit = lineItems.reduce((sum, li) => sum + li.profit, 0);
+  const avgMargin = totalRetail > 0 ? (totalProfit / totalRetail) * 100 : 0;
+
   return (
     <html lang="en">
       <head>
@@ -135,6 +206,7 @@ export default async function WalletPrintPage({ searchParams }: { searchParams: 
           .status-disputed { background: #fee2e2; color: #991b1b; }
           .footer { margin-top: 36px; padding-top: 18px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #6b7280; }
           .print-btn { background: #00C4BC; color: #000; padding: 10px 18px; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 13px; }
+          .section-title { font-size: 16px; margin: 32px 0 12px; color: #333; font-weight: 700; border-bottom: 2px solid #e5e7eb; padding-bottom: 6px; }
         `}</style>
       </head>
       <body>
@@ -196,6 +268,46 @@ export default async function WalletPrintPage({ searchParams }: { searchParams: 
             <tr className="total-row"><td>Total Owed</td><td className="right">{money(owed)}</td></tr>
           </tbody>
         </table>
+
+        {lineItems.length > 0 && (
+          <>
+            <div className="section-title" style={{ pageBreakBefore: 'auto' }}>Order Line Items</div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Order ID</th>
+                  <th>Date</th>
+                  <th className="right">Retail Sales</th>
+                  <th className="right">COGS</th>
+                  <th className="right">Shipping</th>
+                  <th className="right">Profit</th>
+                  <th className="right">Margin</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lineItems.map(li => (
+                  <tr key={li.id}>
+                    <td style={{ fontFamily: 'monospace', fontSize: '12px' }}>{li.id.slice(0, 8).toUpperCase()}</td>
+                    <td>{fmtDate(li.date)}</td>
+                    <td className="right">{money(li.retail)}</td>
+                    <td className="right" style={{ color: '#6b7280' }}>{money(li.cogs)}</td>
+                    <td className="right" style={{ color: '#6b7280' }}>{money(li.shipping)}</td>
+                    <td className="right" style={{ color: li.profit > 0 ? '#065f46' : 'inherit' }}>{money(li.profit)}</td>
+                    <td className="right">{li.margin.toFixed(1)}%</td>
+                  </tr>
+                ))}
+                <tr className="total-row">
+                  <td colSpan={2}>Totals for {lineItems.length} Order{lineItems.length !== 1 ? 's' : ''}</td>
+                  <td className="right">{money(totalRetail)}</td>
+                  <td className="right">{money(totalLineCogs)}</td>
+                  <td className="right">{money(totalLineShipping)}</td>
+                  <td className="right">{money(totalProfit)}</td>
+                  <td className="right">{avgMargin.toFixed(1)}%</td>
+                </tr>
+              </tbody>
+            </table>
+          </>
+        )}
 
         <div className="footer">
           <strong>Payment Instructions:</strong> Pay via Zelle, Venmo, CashApp, or Apple Pay using your preferred handle on file.
