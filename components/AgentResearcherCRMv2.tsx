@@ -88,6 +88,7 @@ type TabKey = 'list' | 'kanban' | 'charts' | 'acquisition';
 
 export interface CRMExternalProps {
   isSuperAgent?: boolean;
+  isSubAgent?: boolean;
   onResetPassword?: (r: { id: string; name: string; username: string }) => void;
   onPromote?: (r: { id: string; full_name: string | null; username: string | null; email: string | null; created_at: string; auto_approve_orders?: boolean; }) => void;
   onToggleAutoApprove?: (researcherId: string, currentStatus: boolean) => void;
