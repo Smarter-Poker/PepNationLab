@@ -21,6 +21,10 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
   const [caPassword, setCaPassword] = useState('');
   const [caDisplayName, setCaDisplayName] = useState('');
   const [caSlug, setCaSlug] = useState('');
+  // Whether the new downline account should itself be a Super Agent, able to
+  // build and manage its own downline of Agents underneath it (a nested Super
+  // Agent still sits under the caller in the billing chain).
+  const [caIsSuperAgent, setCaIsSuperAgent] = useState(false);
   const [caAccountType, setCaAccountType] = useState<'credit' | 'prepaid'>('prepaid');
   const [caCreditLimit, setCaCreditLimit] = useState('');
   const [caPrepaidBalance, setCaPrepaidBalance] = useState('');
@@ -83,6 +87,10 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
           credit_limit: caAccountType === 'credit' ? caCreditLimit : undefined,
           prepaid_balance: caAccountType === 'prepaid' ? caPrepaidBalance : undefined,
           locale: caLocale,
+          // Whether this new downline account is itself a Super Agent (can
+          // build and manage its own downline of Agents under you) or a
+          // Standard Agent (storefront-only, no downline of its own).
+          is_super_agent: caIsSuperAgent,
           // Markup this Super Agent earns on every order this new downline
           // Agent sells or restocks. Sent as an explicit number (including 0)
           // so the API can tell "no markup" apart from "use the platform
@@ -101,6 +109,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
       setCaPassword('');
       setCaDisplayName('');
       setCaSlug('');
+      setCaIsSuperAgent(false);
       setCaCreditLimit('');
       setCaPrepaidBalance('');
       setCaCommissionMode('fixed');
@@ -144,6 +153,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                   setCaUsername('');
                   setCaPassword('');
                   setCaAccountType('prepaid');
+                  setCaIsSuperAgent(false);
                   setCaCreditLimit('');
                   setCaPrepaidBalance('');
                   setCaCommissionMode('fixed');
@@ -168,7 +178,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
               agents.map(agent => {
                 const ap = Array.isArray(agent.agent_profiles) ? agent.agent_profiles[0] : (agent.agent_profiles || null);
                 return (
-                  <div 
+                  <div
                     key={agent.id}
                     className="glass-panel"
                     style={{
@@ -189,6 +199,9 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                       >
                         {agent.full_name || 'Anonymous'}
                       </button>
+                      {agent.is_super_agent && (
+                        <span style={{ fontSize: '0.7rem', color: '#00E5FF', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Super Agent</span>
+                      )}
                       {ap?.display_name && (
                         <span style={{ fontSize: '0.8rem', color: 'var(--silver)' }}>Store: {ap.display_name}</span>
                       )}
@@ -346,7 +359,28 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
 
                 <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)', margin: 'var(--space-2) 0' }} />
 
-
+                <div>
+                  <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Agent Type</label>
+                  <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+                    <label style={{ flex: 1, padding: '10px', background: 'var(--bg-metal-dark)', border: `1px solid ${!caIsSuperAgent ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input type="radio" checked={!caIsSuperAgent} onChange={() => setCaIsSuperAgent(false)} />
+                        Standard Agent
+                      </span>
+                    </label>
+                    <label style={{ flex: 1, padding: '10px', background: 'var(--bg-metal-dark)', border: `1px solid ${caIsSuperAgent ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input type="radio" checked={caIsSuperAgent} onChange={() => setCaIsSuperAgent(true)} />
+                        Super Agent
+                      </span>
+                    </label>
+                  </div>
+                  <p style={{ marginTop: '6px', color: 'var(--grey-400)', fontSize: '0.75rem' }}>
+                    {caIsSuperAgent
+                      ? 'Can Build And Manage Their Own Downline Of Agents Under You.'
+                      : 'Gets Their Own Storefront And Sets Their Own Retail Prices. No Downline Of Their Own.'}
+                  </p>
+                </div>
 
                 <div>
                   <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Payment Model</label>
