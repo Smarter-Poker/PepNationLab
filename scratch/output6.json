@@ -1,0 +1,39 @@
+{
+  "error": null,
+  "subAgents": [
+    {
+      "id": "95f4e5fa-95b1-42aa-b481-42f200475877",
+      "full_name": "Sebestian Mysliewiec"
+    },
+    {
+      "id": "78edf4f1-9cef-4fba-b974-537213b1b87b",
+      "full_name": "Tom Gorczak"
+    },
+    {
+      "id": "40e9f391-2bb8-4eea-9495-c9edfe9ff0ed",
+      "full_name": "David Dapper"
+    },
+    {
+      "id": "ed61dbc9-2ac5-49d0-8196-14a7a1e1317e",
+      "full_name": "Brandon Schweitzer"
+    }
+  ],
+  "orders": [
+    {
+      "id": "770b5503-79a6-493a-8fc3-7dea78d3046a",
+      "created_at": "2026-07-19T04:29:46.655926+00:00",
+      "status": "approved_pickup",
+      "subtotal": 58.5,
+      "shipping_cost": 0,
+      "total": 58.5,
+      "agent_id": "40e9f391-2bb8-4eea-9495-c9edfe9ff0ed",
+      "order_items": [
+        {
+          "quantity": 3,
+          "unit_cost_price": 19.5,
+          "unit_super_agent_cost": 19.5
+        }
+      ]
+    }
+  ]
+}

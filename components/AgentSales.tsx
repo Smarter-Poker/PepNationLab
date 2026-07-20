@@ -523,43 +523,53 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
 
       {/* ACCOUNTING / MONEY STRIP */}
       <div className="sa-capitalize-all" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-4)' }}>
-        <div className="glass-panel">
-          <div className=" sa-box-centered" style={{ padding: 'var(--space-5)' }}>
-            <div className="sa-label">{wallet?.primaryLabel || 'Available'}</div>
-            <div className="sa-stat" style={{ color: '#00E5FF', marginTop: 6 }}>{fmt(wallet?.primary ?? 0)}</div>
-            <a href="/wallet" style={{ color: 'var(--teal)', fontSize: '0.76rem', fontWeight: 700, marginTop: 8, display: 'inline-block' }}>Open Wallet</a>
-          </div>
-        </div>
-        <div className="glass-panel">
-          <div className=" sa-box-centered" style={{ padding: 'var(--space-5)' }}>
-            <div className="sa-label">Owed This Week</div>
-            <div className="sa-stat" style={{ color: (wallet?.owedThisWeek ?? 0) > 0 ? '#FF6B81' : 'var(--white)', marginTop: 6 }}>{fmt(wallet?.owedThisWeek ?? 0)}</div>
-            <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>
-              {wallet?.nextStatementDate ? `Due ${new Date(wallet.nextStatementDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : 'No Open Statement'}
+        <div className="glass-panel" style={{ cursor: 'pointer', transition: 'all 0.2s ease', position: 'relative' }}>
+          <Link href="/wallet" style={{ textDecoration: 'none', color: 'inherit', display: 'block', height: '100%' }}>
+            <div className=" sa-box-centered" style={{ padding: 'var(--space-5)' }}>
+              <div className="sa-label">{wallet?.primaryLabel || 'Available'}</div>
+              <div className="sa-stat" style={{ color: '#00E5FF', marginTop: 6 }}>{fmt(wallet?.primary ?? 0)}</div>
+              <span style={{ color: 'var(--teal)', fontSize: '0.76rem', fontWeight: 700, marginTop: 8, display: 'inline-block' }}>Open Wallet</span>
             </div>
-          </div>
+          </Link>
         </div>
-        <div className="glass-panel">
-          <div className=" sa-box-centered" style={{ padding: 'var(--space-5)' }}>
-            <div className="sa-label">Profit This Month<span className="sa-info" title={PROFIT_HELP}>i</span></div>
-            <div className="sa-stat" style={{ color: '#00FF9D', marginTop: 6 }}>{fmt(a.monthProfit)}</div>
-            <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>{fmt(a.monthRevenue)} Revenue</div>
-          </div>
+        <div className="glass-panel" style={{ cursor: 'pointer', transition: 'all 0.2s ease', position: 'relative' }}>
+          <Link href="/wallet" style={{ textDecoration: 'none', color: 'inherit', display: 'block', height: '100%' }}>
+            <div className=" sa-box-centered" style={{ padding: 'var(--space-5)' }}>
+              <div className="sa-label">Owed This Week</div>
+              <div className="sa-stat" style={{ color: (wallet?.owedThisWeek ?? 0) > 0 ? '#FF6B81' : 'var(--white)', marginTop: 6 }}>{fmt(wallet?.owedThisWeek ?? 0)}</div>
+              <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>
+                {wallet?.nextStatementDate ? `Due ${new Date(wallet.nextStatementDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : 'No Open Statement'}
+              </div>
+            </div>
+          </Link>
         </div>
-        <div className="glass-panel">
-          <div className=" sa-box-centered" style={{ padding: 'var(--space-5)' }}>
-            <div className="sa-label">Lifetime Profit<span className="sa-info" title={PROFIT_HELP}>i</span></div>
-            <div className="sa-stat" style={{ marginTop: 6 }}>{fmt(a.lifetimeProfit)}</div>
-            <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>{Number(a.margin || 0).toFixed(0)}% Margin</div>
-          </div>
+        <div className="glass-panel" style={{ cursor: 'pointer', transition: 'all 0.2s ease', position: 'relative' }}>
+          <Link href="/dashboard/agent?tab=Orders" style={{ textDecoration: 'none', color: 'inherit', display: 'block', height: '100%' }}>
+            <div className=" sa-box-centered" style={{ padding: 'var(--space-5)' }}>
+              <div className="sa-label">Profit This Month<span className="sa-info" title={PROFIT_HELP}>i</span></div>
+              <div className="sa-stat" style={{ color: '#00FF9D', marginTop: 6 }}>{fmt(a.monthProfit)}</div>
+              <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>{fmt(a.monthRevenue)} Revenue</div>
+            </div>
+          </Link>
+        </div>
+        <div className="glass-panel" style={{ cursor: 'pointer', transition: 'all 0.2s ease', position: 'relative' }}>
+          <Link href="/dashboard/agent?tab=Orders" style={{ textDecoration: 'none', color: 'inherit', display: 'block', height: '100%' }}>
+            <div className=" sa-box-centered" style={{ padding: 'var(--space-5)' }}>
+              <div className="sa-label">Lifetime Profit<span className="sa-info" title={PROFIT_HELP}>i</span></div>
+              <div className="sa-stat" style={{ marginTop: 6 }}>{fmt(a.lifetimeProfit)}</div>
+              <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>{Number(a.margin || 0).toFixed(0)}% Margin</div>
+            </div>
+          </Link>
         </div>
         {showCommission && (
-          <div className="glass-panel">
-            <div className=" sa-box-centered" style={{ padding: 'var(--space-5)' }}>
-              <div className="sa-label">Commission Earned</div>
-              <div className="sa-stat" style={{ color: '#7C5CFF', marginTop: 6 }}>{fmt(commission?.thisMonth ?? 0)}</div>
-              <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>This Month · {fmt(commission?.lifetime ?? 0)} Lifetime</div>
-            </div>
+          <div className="glass-panel" style={{ cursor: 'pointer', transition: 'all 0.2s ease', position: 'relative' }}>
+            <Link href="/wallet" style={{ textDecoration: 'none', color: 'inherit', display: 'block', height: '100%' }}>
+              <div className=" sa-box-centered" style={{ padding: 'var(--space-5)' }}>
+                <div className="sa-label">Commission Earned</div>
+                <div className="sa-stat" style={{ color: '#7C5CFF', marginTop: 6 }}>{fmt(commission?.thisMonth ?? 0)}</div>
+                <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>This Month · {fmt(commission?.lifetime ?? 0)} Lifetime</div>
+              </div>
+            </Link>
           </div>
         )}
       </div>
@@ -687,19 +697,20 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
           delta={a.revDelta30}
           deltaLabel="Vs Prior 30d"
           sub={a.downlineOrderCount > 0 ? `Includes ${a.downlineOrderCount} Downline Orders (${fmt(a.downlineSalesTotal)})` : undefined}
+          href="/dashboard/agent?tab=Orders"
         />
         {a.downlineOrderCount > 0 ? (
           <>
-            <KpiCard label="My Sales Profit" value={fmt(a.ownProfit)} color="#00FF9D" help={PROFIT_HELP} />
-            <KpiCard label="Downline Profit" value={fmt(a.downlineProfit)} color="#7C5CFF" />
-            <KpiCard label="Total Profit" value={fmt(a.lifetimeProfit)} color="#00FF9D" help={PROFIT_HELP} />
+            <KpiCard label="My Sales Profit" value={fmt(a.ownProfit)} color="#00FF9D" help={PROFIT_HELP} href="/wallet" />
+            <KpiCard label="Downline Profit" value={fmt(a.downlineProfit)} color="#7C5CFF" href="/wallet" />
+            <KpiCard label="Total Profit" value={fmt(a.lifetimeProfit)} color="#00FF9D" help={PROFIT_HELP} href="/wallet" />
           </>
         ) : (
-          <KpiCard label="Total Profit" value={fmt(a.lifetimeProfit)} color="#00FF9D" help={PROFIT_HELP} />
+          <KpiCard label="Total Profit" value={fmt(a.lifetimeProfit)} color="#00FF9D" help={PROFIT_HELP} href="/wallet" />
         )}
-        <KpiCard label="Orders" value={String(a.lifetimeOrders)} delta={a.ordersDelta30} deltaLabel="Vs Prior 30d" color="#00E5FF" />
-        <KpiCard label="Avg Order Value" value={fmt(a.aov)} />
-        <KpiCard label="Repeat Buyer Rate" value={`${Number(a.repeatRate || 0).toFixed(0)}%`} sub={`${a.distinctBuyers} Buyers`} />
+        <KpiCard label="Orders" value={String(a.lifetimeOrders)} delta={a.ordersDelta30} deltaLabel="Vs Prior 30d" color="#00E5FF" href="/dashboard/agent?tab=Orders" />
+        <KpiCard label="Avg Order Value" value={fmt(a.aov)} href="/dashboard/agent/analytics" />
+        <KpiCard label="Repeat Buyer Rate" value={`${Number(a.repeatRate || 0).toFixed(0)}%`} sub={`${a.distinctBuyers} Buyers`} href="/dashboard/agent/analytics" />
       </div>
 
       {/* TREND CHART */}
@@ -1004,19 +1015,23 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
 }
 
 // -- Small presentational helpers --
-function KpiCard({ label, value, delta, deltaLabel, sub, color, help }: { label: string; value: string; delta?: number; deltaLabel?: string; sub?: string; color?: string; help?: string }) {
+function KpiCard({ label, value, delta, deltaLabel, sub, color, help, href }: { label: string; value: string; delta?: number; deltaLabel?: string; sub?: string; color?: string; help?: string; href?: string }) {
+  const content = (
+    <div className=" sa-box-centered" style={{ padding: 'var(--space-5)' }}>
+      <div className="sa-label">{label}{help && <span className="sa-info" title={help}>i</span>}</div>
+      <div className="sa-stat" style={{ marginTop: 6, color: color || 'var(--white)' }}>{value}</div>
+      {typeof delta === 'number' && (
+        <div className={delta >= 0 ? 'sa-delta-up' : 'sa-delta-down'} style={{ marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+          {delta >= 0 ? <ArrowUp size={12} aria-hidden /> : <ArrowDown size={12} aria-hidden />} {Math.abs(delta).toFixed(0)}% <span style={{ color: 'var(--grey-500)', fontWeight: 600 }}>{deltaLabel}</span>
+        </div>
+      )}
+      {sub && <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 6 }}>{sub}</div>}
+    </div>
+  );
+
   return (
-    <div className="glass-panel">
-      <div className=" sa-box-centered" style={{ padding: 'var(--space-5)' }}>
-        <div className="sa-label">{label}{help && <span className="sa-info" title={help}>i</span>}</div>
-        <div className="sa-stat" style={{ marginTop: 6, color: color || 'var(--white)' }}>{value}</div>
-        {typeof delta === 'number' && (
-          <div className={delta >= 0 ? 'sa-delta-up' : 'sa-delta-down'} style={{ marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-            {delta >= 0 ? <ArrowUp size={12} aria-hidden /> : <ArrowDown size={12} aria-hidden />} {Math.abs(delta).toFixed(0)}% <span style={{ color: 'var(--grey-500)', fontWeight: 600 }}>{deltaLabel}</span>
-          </div>
-        )}
-        {sub && <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 6 }}>{sub}</div>}
-      </div>
+    <div className="glass-panel" style={href ? { cursor: 'pointer', transition: 'all 0.2s ease', position: 'relative' } : undefined}>
+      {href ? <Link href={href} style={{ textDecoration: 'none', color: 'inherit', display: 'block', height: '100%' }}>{content}</Link> : content}
     </div>
   );
 }

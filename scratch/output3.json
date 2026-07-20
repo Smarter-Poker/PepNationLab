@@ -1,0 +1,18 @@
+{
+  "savageAgentProfiles": [
+    {
+      "id": "844dca4b-6f01-4779-bc95-bfa1e0809c0c",
+      "slug": "savagebrands",
+      "display_name": "Savage Brands Research Store"
+    }
+  ],
+  "savageProfiles": [
+    {
+      "id": "844dca4b-6f01-4779-bc95-bfa1e0809c0c",
+      "full_name": "Savage Brands",
+      "role": "super_agent"
+    }
+  ],
+  "ordersWithTotal58": null,
+  "ordersWithSubtotal58": null
+}

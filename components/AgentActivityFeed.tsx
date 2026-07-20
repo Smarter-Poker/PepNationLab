@@ -268,11 +268,12 @@ function ActivityHeatmap({ items, days }: { items: Item[]; days: number | 'all' 
 
 /* ── Summary stats bar ─────────────────────────────────────────────────── */
 function SummaryBar({
-  summary, prevSummary, days,
+  summary, prevSummary, days, onStatClick
 }: {
   summary: { totalIn: number; totalOut: number; orderCount: number; alertCount: number };
   prevSummary?: { totalIn: number; totalOut: number; orderCount: number; alertCount: number };
   days: number | 'all';
+  onStatClick?: (label: string) => void;
 }) {
   const label = days === 'all' ? 'All Time' : `${days}d`;
   const stats = [
@@ -286,9 +287,14 @@ function SummaryBar({
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 18 }}
       className="pna-stats-grid">
       {stats.map(s => (
-        <div key={s.label} style={{
+        <div key={s.label}
+          role={onStatClick ? "button" : undefined}
+          tabIndex={onStatClick ? 0 : undefined}
+          onClick={() => onStatClick?.(s.label)}
+          style={{
           background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
           borderRadius: 12, padding: '12px 14px',
+          cursor: onStatClick ? 'pointer' : 'default',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: s.color, opacity: 0.8, marginBottom: 4 }}>
             {s.icon}
@@ -702,8 +708,18 @@ export default function AgentActivityFeed() {
         </div>
       )}
 
-      {/* ── Summary stats ── */}
-      {summary && <SummaryBar summary={summary} prevSummary={prevSummary} days={days} />}
+      {/* ── Summary Stats ── */}
+      <SummaryBar
+        summary={summary}
+        prevSummary={prevSummary}
+        days={days}
+        onStatClick={(label) => {
+          if (label === 'Revenue In') setFilter('payment');
+          else if (label === 'Paid Out') setFilter('payout');
+          else if (label === 'Orders') setFilter('order');
+          else if (label === 'Alerts') setFilter('all');
+        }}
+      />
 
       {/* ── Heatmap ── */}
       {liveAndLoaded.length > 0 && (
