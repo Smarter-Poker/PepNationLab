@@ -253,40 +253,27 @@ export default function AgentAccountDetail({
   const isSubAgent = detail?.agent?.is_sub_agent === true;
 
   async function saveChanges() {
-    if (commissionMode === 'gamified') {
-      const over = customSteps.find(s => Number(s.bonus_pct) > MAX_CAP_LIMIT);
-      if (over) {
-        toast.error('Gamification Levels Cannot Exceed 40%.');
-        return;
-      }
-    }
     setSaving(true);
     try {
-      const baseVal: number = commissionMode === 'gamified'
-        ? (Number(customSteps[0].bonus_pct) || 0)
-        : (commissionPct === '' ? 0 : Number(commissionPct));
+      // NOTE: commission_pct, commission_max_pct, velocity_cap and
+      // custom_commission_scale are intentionally NOT included in this
+      // payload. This drawer has no reachable UI for editing markup - the
+      // Fixed/Gamification toggle and the commission inputs are computed
+      // into state (commissionPct/commissionMode/customSteps above) but are
+      // never rendered - so previously every save from this form silently
+      // resubmitted those fields (an empty commission input coerced to a
+      // literal 0), overwriting the agent's assigned markup on any unrelated
+      // edit (e.g. just fixing a phone number). Markup is managed by the
+      // agent create form and any future dedicated UI, not here.
       const payload: Record<string, any> = {
         full_name: `${firstName.trim()} ${lastName.trim()}`.trim(),
         email,
         phone,
         account_type: accountType,
-        commission_pct: baseVal,
         is_active: isActive,
         display_name: isSubAgent ? undefined : (displayName || undefined),
         slug: isSubAgent ? undefined : (slug || undefined),
       };
-      if (commissionMode === 'fixed') {
-        payload.commission_max_pct = baseVal;
-        payload.velocity_cap = null;
-        payload.custom_commission_scale = null;
-      } else {
-        payload.commission_max_pct = Number(customSteps[customSteps.length - 1].bonus_pct);
-        payload.velocity_cap = null;
-        payload.custom_commission_scale = customSteps.map(s => ({
-          min_volume: Number(s.min_volume) || 0,
-          bonus_pct: Math.max(0, Number(s.bonus_pct) - baseVal),
-        }));
-      }
       if (accountType === 'credit') {
         payload.credit_limit = creditLimit === '' ? 0 : Number(creditLimit);
         payload.max_auto_approve_limit = maxAutoApproveLimit === '' ? null : Number(maxAutoApproveLimit);
