@@ -2,7 +2,7 @@ import { after, NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { getEffectiveUser } from '@/lib/impersonation';
 import { CheckoutSchema } from '@/lib/schemas/order';
-import { isTierLadderV2, computeAgentCostsForAgent, resolveAgentPricingContext } from '@/lib/pricing';
+import { applyBulkPrice, isTierLadderV2, computeAgentCostsForAgent, resolveAgentPricingContext } from '@/lib/pricing';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { calculateShippingCost, getCarrierName } from '@/lib/shipping-cost';
