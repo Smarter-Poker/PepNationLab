@@ -110,6 +110,12 @@ export default function NavbarNotificationBell() {
   const [userId, setUserId]       = useState<string | null>(null);
   const dropdownRef               = useRef<HTMLDivElement>(null);
   const channelRef                = useRef<ReturnType<ReturnType<typeof createClient>['channel']> | null>(null);
+  // Unique per-mount suffix for the realtime topic. Two bells can legitimately
+  // mount at once (a page and a segment layout both rendering a Navbar); with
+  // the singleton browser client, sharing one topic returns the FIRST bell's
+  // already-subscribed channel and the second .on() throws, crashing the whole
+  // route. Distinct topics keep every mount isolated.
+  const channelInstanceId         = useRef(Math.random().toString(36).slice(2));
 
   // Inject bell CSS once
   useEffect(() => { injectBellAnim(); }, []);
@@ -178,8 +184,13 @@ export default function NavbarNotificationBell() {
       supabase.removeChannel(channelRef.current);
     }
 
-    const channel = supabase
-      .channel(`notifications:${userId}`)
+    // Realtime is strictly best-effort: if the subscription fails for any
+    // reason the bell still works via the fetch-based feed - it must never
+    // take the page down with it.
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    try {
+      channel = supabase
+      .channel(`notifications:${userId}:${channelInstanceId.current}`)
       .on(
         'postgres_changes',
         {
@@ -253,10 +264,15 @@ export default function NavbarNotificationBell() {
       )
       .subscribe();
 
-    channelRef.current = channel;
+      channelRef.current = channel;
+    } catch (err) {
+      console.error('[NavbarNotificationBell] realtime subscribe failed (bell falls back to fetch feed):', err);
+    }
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
       channelRef.current = null;
     };
   }, [userId]);
