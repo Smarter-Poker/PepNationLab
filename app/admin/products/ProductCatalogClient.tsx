@@ -11,6 +11,7 @@ export interface RawProduct {
   name: string;
   category: string;
   base_cost: number;
+  house_cost: number | null;
   is_active: boolean;
   is_banned: boolean | null;
   created_at: string;
@@ -28,6 +29,7 @@ interface GroupedProduct {
   category: string;
   /** Lowest base_cost across variants */
   baseCost: number;
+  houseCost: number;
   isActive: boolean;
   /** How many SKU rows share this product name */
   variantCount: number;
@@ -56,6 +58,7 @@ function groupByName(products: RawProduct[]): GroupedProductInternal[] {
       existing.variantCount += 1;
       existing.variantIds.push(p.id);
       existing.variants.push(p);
+      existing.houseCost = Math.min(existing.houseCost, Number(p.house_cost ?? p.base_cost));
       existing.totalInventory += p.inventory_count || 0;
       // keep the lowest base cost as the representative price
       if (Number(p.base_cost) < existing.baseCost) {
@@ -70,6 +73,7 @@ function groupByName(products: RawProduct[]): GroupedProductInternal[] {
         name: p.name,
         category: p.category,
         baseCost: Number(p.base_cost),
+        houseCost: Number(p.house_cost ?? p.base_cost),
         isActive: p.is_active,
         variantCount: 1,
         variantIds: [p.id],
@@ -592,7 +596,7 @@ export default function ProductCatalogClient({
                             whiteSpace: "nowrap",
                           }}
                         >
-                          ${(p.baseCost / 10).toFixed(2)}
+                          ${(p.houseCost / 10).toFixed(2)}
                           <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.18)', marginTop: 2, fontFamily: 'var(--font-brand)' }}>
                             2x: ${(p.baseCost * 2 / 10).toFixed(2)}
                           </div>
@@ -685,6 +689,7 @@ export default function ProductCatalogClient({
                               ? `${v.unit_size}${v.unit_measure}`
                               : (v.sku ?? "-");
                           const vCost = Number(v.base_cost);
+                          const vHouse = Number(v.house_cost ?? v.base_cost);
                           return (
                             <tr
                               key={v.id}
@@ -756,7 +761,7 @@ export default function ProductCatalogClient({
                                   whiteSpace: "nowrap",
                                 }}
                               >
-                                ${(vCost / 10).toFixed(2)}
+                                ${(vHouse / 10).toFixed(2)}
                                 <div style={{ fontSize: '0.60rem', color: 'rgba(255,255,255,0.15)', marginTop: 1, fontFamily: 'var(--font-brand)' }}>
                                   2x: ${(vCost * 2 / 10).toFixed(2)}
                                 </div>
