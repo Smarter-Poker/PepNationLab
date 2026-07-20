@@ -498,10 +498,19 @@ function NotificationsStep({ onDone }: { onDone: () => void }) {
   };
 
   const skipStep = async () => {
-    // Let the agent proceed even though notifications are blocked.
-    // The step stays marked incomplete in their checklist as a reminder to fix it later.
-    setBusy(true);
-    try { await onDone(); } finally { setBusy(false); }
+    // Let the agent proceed without web push. Some surfaces (iOS Safari/Brave
+    // tabs, in-app browsers) can never subscribe, so acknowledge the step
+    // server-side -- which both advances the wizard and lets final completion
+    // succeed -- instead of trapping them here. Push can be enabled later from
+    // the dashboard.
+    setBusy(true); setErr(null);
+    try {
+      await postOnboarding({ action: 'ack', key: 'notifications' });
+      await onDone();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Could Not Continue. Please Try Again.');
+      setBusy(false);
+    }
   };
 
   return (
@@ -545,11 +554,13 @@ function NotificationsStep({ onDone }: { onDone: () => void }) {
           {supported === false ? (
             <>
               <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', lineHeight: 1.5 }}>
-                This Browser Tab Cannot Receive Notifications Yet. Add Pep Nation To Your Home Screen Using The Steps Above, Open It From The Icon, Then Tap Re-Check.
+                This Browser Cannot Receive Notifications In A Tab. To Get Order Alerts, Add Pep Nation To Your Home Screen Using The Steps Above And Open It From The Icon. You Can Also Continue Now And Turn Notifications On Later From Your Dashboard.
               </p>
+              <ErrorLine msg={err} />
+              <PrimaryButton onClick={skipStep} busy={busy}>Continue</PrimaryButton>
               <button type="button" className="btn btn-secondary" onClick={recheck} disabled={busy}
                 style={{ width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 'var(--space-3, 12px)' }}>
-                {busy ? <Loader2 size={16} className="spin" /> : <RotateCw size={16} />} I Have Done This, Re-Check
+                {busy ? <Loader2 size={16} className="spin" /> : <RotateCw size={16} />} I Added It To My Home Screen, Re-Check
               </button>
             </>
           ) : (
@@ -559,6 +570,10 @@ function NotificationsStep({ onDone }: { onDone: () => void }) {
               <button type="button" onClick={recheck} disabled={busy}
                 style={{ width: '100%', marginTop: 10, background: 'transparent', border: 'none', color: 'var(--grey-400)', cursor: 'pointer', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                 <RotateCw size={13} /> Already Turned Them On? Re-Check
+              </button>
+              <button type="button" onClick={skipStep} disabled={busy}
+                style={{ width: '100%', marginTop: 10, background: 'transparent', border: 'none', color: 'var(--grey-500, #6B7785)', cursor: 'pointer', fontSize: '0.78rem' }}>
+                Skip For Now — I&apos;ll Enable Notifications Later
               </button>
             </>
           )}

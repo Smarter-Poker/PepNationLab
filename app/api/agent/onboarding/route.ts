@@ -24,9 +24,12 @@ export const dynamic = 'force-dynamic';
  * into protected columns (role, tier, commission_pct, balances, etc.). Every
  * write is scoped to the authenticated caller's own id.
  *
- * The notifications step is VERIFIED, not acknowledged: it is only "done" when
- * an active push_subscriptions row exists for the user (enablePush persists one
- * via /api/push/subscribe). There is no "I have done this" bypass.
+ * The notifications step is best-effort: it is "done" when an active
+ * push_subscriptions row exists for the user (enablePush persists one via
+ * /api/push/subscribe) OR the user acknowledged enabling them later. Web push
+ * cannot be created on some surfaces (iOS Safari/Brave tabs, in-app browsers),
+ * so it must never hard-gate onboarding -- doing so trapped those users on
+ * step 1 forever. They can still enable push afterward from the dashboard.
  */
 
 // Default super-agent markup (percent; stored as a decimal fraction).
@@ -85,8 +88,11 @@ function buildSteps(args: {
     steps.push({ key: 'password', label: 'Secure Your Password', done: false });
   }
 
-  // 2. Install + notifications (all roles). Verified by a real subscription.
-  steps.push({ key: 'notifications', label: 'Install The App And Turn On Notifications', done: notificationsDone });
+  // 2. Install + notifications (all roles). Done when a real subscription
+  // exists OR the user acknowledged enabling them later -- web push is
+  // impossible on iOS Safari/Brave tabs and in-app browsers, so a hard
+  // subscription requirement would trap those users on this step forever.
+  steps.push({ key: 'notifications', label: 'Install The App And Turn On Notifications', done: notificationsDone || ack('notifications_ack') });
 
   // 3. Verify profile (all roles).
   steps.push({ key: 'profile', label: 'Confirm Your Contact Details', done: profileComplete });
@@ -279,7 +285,7 @@ const WarehouseSchema = z.object({
 });
 
 const PostSchema = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('ack'), key: z.enum(['storefront', 'product_tutorial', 'downstream_tutorial', 'billing', 'share', 'compliance']) }),
+  z.object({ action: z.literal('ack'), key: z.enum(['notifications', 'storefront', 'product_tutorial', 'downstream_tutorial', 'billing', 'share', 'compliance']) }),
   z.object({ action: z.literal('profile'), data: ProfileSchema }),
   z.object({ action: z.literal('warehouse'), data: WarehouseSchema }),
   z.object({ action: z.literal('markup'), markup_pct: z.number().min(0).max(500) }),
@@ -289,6 +295,7 @@ const PostSchema = z.discriminatedUnion('action', [
 ]);
 
 const ACK_COLUMN: Record<string, string> = {
+  notifications: 'notifications_ack',
   storefront: 'storefront_ack',
   product_tutorial: 'product_tutorial_ack',
   downstream_tutorial: 'downstream_tutorial_ack',
@@ -449,8 +456,11 @@ export async function POST(req: NextRequest) {
 
     const missing: string[] = [];
     if (profile.must_change_password === true) missing.push('password');
-    // Notifications must be VERIFIED by a real subscription, not acknowledged.
-    if (!(await hasActivePushSubscription(service, gate.user.id))) missing.push('notifications');
+    // Notifications: done when a real subscription exists OR the user
+    // acknowledged enabling them later. Push cannot be created on some surfaces
+    // (iOS Safari/Brave tabs, in-app browsers); a hard requirement would make
+    // onboarding impossible to finish there. Still available from the dashboard.
+    if (!(await hasActivePushSubscription(service, gate.user.id)) && !ack('notifications_ack')) missing.push('notifications');
     const profileComplete = Boolean(
       (profile.first_name && String(profile.first_name).trim()) &&
       (profile.last_name && String(profile.last_name).trim()) &&
