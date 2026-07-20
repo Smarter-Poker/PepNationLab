@@ -116,7 +116,7 @@ export default function AgentDownlineInvoices({ isSuperAgent }: { isSuperAgent: 
           </thead>
           <tbody>
             {invoices.map(inv => (
-              <tr key={inv.id} onClick={() => window.location.href = `/wallet/print?type=agent_invoice&id=${inv.id}`} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }} className="hover:bg-white/5 transition-colors">
+              <tr key={inv.id} onClick={() => window.location.href = `/wallet/print?type=agent_invoice&id=${inv.id}`} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }} className="table-row-hover">
                 <td style={{ padding: 'var(--space-3)', color: 'var(--white)', textAlign: 'center' }}>
                   {inv.week_start} To {inv.week_end}
                 </td>

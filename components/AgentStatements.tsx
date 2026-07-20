@@ -96,7 +96,7 @@ export default function AgentStatements() {
             {statements.map(stmt => {
               const orderCount = stmt.statement_orders?.[0]?.count || 0;
               return (
-                <tr key={stmt.id} onClick={() => window.location.href = `/wallet/print?type=statement&id=${stmt.id}`} style={{ cursor: 'pointer' }} className="hover:bg-white/5 transition-colors">
+                <tr key={stmt.id} onClick={() => window.location.href = `/wallet/print?type=statement&id=${stmt.id}`} style={{ cursor: 'pointer' }} className="table-row-hover">
                   <td style={{ textAlign: 'center' }}>
                     <div style={{ fontWeight: 600, color: 'var(--white)' }}>
                       {new Date(stmt.week_start).toLocaleDateString()}

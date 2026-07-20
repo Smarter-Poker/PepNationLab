@@ -9,19 +9,14 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 async function main() {
-  const { data: products } = await supabase
-    .from('products')
-    .select('id, name, base_price, cost_price, msrp');
-    
-  const agentId = '844dca4b-6f01-4779-bc95-bfa1e0809c0c'; // Savage Brands
-  const { data: agentProducts } = await supabase
-    .from('agent_products')
-    .select('product_id, base_price, msrp, custom_image_url')
-    .eq('agent_id', agentId);
+  const { data: order } = await supabase
+    .from('orders')
+    .select('*, order_items(*)')
+    .eq('id', '770b5503-79a6-493a-8fc3-7dea78d3046a')
+    .single();
 
-  fs.writeFileSync('scratch/output10.json', JSON.stringify({
-    products,
-    agentProducts
+  fs.writeFileSync('scratch/output12.json', JSON.stringify({
+    order
   }, null, 2));
 }
 
