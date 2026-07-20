@@ -61,6 +61,11 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://pepnationlab.com';
 
 // Platform rule: the gamification Max Cap can never exceed 40%.
 const MAX_CAP_LIMIT = 40;
+// The Super-Agent-to-Agent markup (commission_pct on a non-sub-agent profile,
+// reused as base_markup by fn_agent_effective_markup) is a separate range from
+// the sub-agent recruiter commission / gamification cap above - a Super Agent
+// can mark an Agent's cost up well past 40%.
+const MARKUP_MAX = 200;
 
 /**
  * POST /api/agent/agents
@@ -135,10 +140,12 @@ export async function POST(req: NextRequest) {
 
     let commPct: number | null = null;
     if (commission_pct !== undefined && commission_pct !== null && commission_pct !== '') {
-      commPct = Number(commission_pct);
-      if (!Number.isFinite(commPct) || commPct < 0 || commPct > MAX_CAP_LIMIT) {
-        return NextResponse.json({ error: 'Commission Rate Cannot Exceed 40%' }, { status: 400 });
+      const rawMarkup = Number(commission_pct);
+      if (!Number.isFinite(rawMarkup) || rawMarkup < 0 || rawMarkup > MARKUP_MAX) {
+        return NextResponse.json({ error: 'Markup Percent Must Be Between 0 And 200' }, { status: 400 });
       }
+      // commission_pct is NUMERIC(5,2) in the DB - round to 2dp.
+      commPct = Math.round(rawMarkup * 100) / 100;
     }
     let commMax: number | null = null;
     if (commission_max_pct !== undefined && commission_max_pct !== null && commission_max_pct !== '') {
