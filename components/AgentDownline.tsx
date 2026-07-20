@@ -27,7 +27,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
   // Commission structure: 'fixed' = flat rate; 'gamified' = base climbs with
   // volume up to a max cap via the house milestone ladder.
   const [caCommissionMode, setCaCommissionMode] = useState<'fixed' | 'gamified'>('fixed');
-  const [caCommissionPct, setCaCommissionPct] = useState('');
+  const [caCommissionPct, setCaCommissionPct] = useState('50');
   // 'default' = read-only house ladder (20% -> 40%); 'custom' = fully adjustable.
   const [caScaleType, setCaScaleType] = useState<'default' | 'custom'>('default');
   const [caCustomSteps, setCaCustomSteps] = useState(freshDefaultLadder());
@@ -83,8 +83,11 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
           credit_limit: caAccountType === 'credit' ? caCreditLimit : undefined,
           prepaid_balance: caAccountType === 'prepaid' ? caPrepaidBalance : undefined,
           locale: caLocale,
-          // Store pricing is preset at the admin store price; agents do not
-          // choose a markup at onboarding, so no commission fields are sent.
+          // Markup this Super Agent earns on every order this new downline
+          // Agent sells or restocks. Sent as an explicit number (including 0)
+          // so the API can tell "no markup" apart from "use the platform
+          // default"; leaving the field at its 50 prefill sends 50.
+          commission_pct: caCommissionPct !== '' ? Number(caCommissionPct) : undefined,
         })
       });
       const data = await res.json();
@@ -101,7 +104,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
       setCaCreditLimit('');
       setCaPrepaidBalance('');
       setCaCommissionMode('fixed');
-      setCaCommissionPct('');
+      setCaCommissionPct('50');
       setCaScaleType('default');
       setCaCustomSteps(freshDefaultLadder());
       setCaLocale('en');
@@ -144,7 +147,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                   setCaCreditLimit('');
                   setCaPrepaidBalance('');
                   setCaCommissionMode('fixed');
-                  setCaCommissionPct('');
+                  setCaCommissionPct('50');
                   setCaScaleType('default');
                   setCaCustomSteps(freshDefaultLadder());
                   setCaDisplayName('');
@@ -390,6 +393,20 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                   </div>
                 )}
 
+                <div>
+                  <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Your Markup On This Agent (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="200"
+                    step="1"
+                    style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
+                    value={caCommissionPct}
+                    onChange={e => setCaCommissionPct(e.target.value)}
+                    placeholder="50"
+                  />
+                  <p style={{ marginTop: '6px', color: 'var(--grey-400)', fontSize: '0.75rem' }}>You Earn This Percent On Top Of Your Cost On Every Order This Agent Sells Or Restocks. Leave At 50 For The Platform Default.</p>
+                </div>
 
                 <button type="submit" className="btn-neon-cyan" disabled={caLoading} style={{ marginTop: 'var(--space-2)' }}>
                   {caLoading ? 'Creating...' : 'Create Agent Account'}
