@@ -9,25 +9,19 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 async function main() {
+  const { data: products } = await supabase
+    .from('products')
+    .select('id, name, base_price, cost_price, msrp');
+    
   const agentId = '844dca4b-6f01-4779-bc95-bfa1e0809c0c'; // Savage Brands
+  const { data: agentProducts } = await supabase
+    .from('agent_products')
+    .select('product_id, base_price, msrp, custom_image_url')
+    .eq('agent_id', agentId);
 
-  const { data: subAgents } = await supabase
-    .from('profiles')
-    .select('id, full_name')
-    .eq('parent_agent_id', agentId);
-
-  const allIds = [agentId, ...(subAgents ? subAgents.map(sa => sa.id) : [])];
-
-  const { data: orders } = await supabase
-    .from('orders')
-    .select('id, created_at, agent_approved_at, status, subtotal, shipping_cost, total, agent_id, order_items(product_name, quantity, unit_cost_price, unit_super_agent_cost)')
-    .in('agent_id', allIds)
-    .gte('agent_approved_at', '2026-07-13T00:00:00.000Z')
-    .order('created_at', { ascending: false });
-
-  fs.writeFileSync('scratch/output9.json', JSON.stringify({
-    allIds,
-    orders: orders
+  fs.writeFileSync('scratch/output10.json', JSON.stringify({
+    products,
+    agentProducts
   }, null, 2));
 }
 

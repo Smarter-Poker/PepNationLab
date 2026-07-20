@@ -574,6 +574,23 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
         )}
       </div>
 
+      {/* INVOICES */}
+      <div id="invoices" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', marginTop: 'var(--space-4)' }}>
+        <h2 className="metal-text" style={{ fontSize: '1.15rem', fontFamily: 'var(--font-brand)', margin: 0 }}>Invoices</h2>
+        {!isSub && (
+          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+            <h3 style={{ fontSize: '1rem', fontFamily: 'var(--font-brand)', color: 'var(--teal)', margin: '0 0 10px' }}>Bills To Pay</h3>
+            <AgentStatements />
+          </div>
+        )}
+        {(userProfile?.is_super_agent || isSub) && (
+          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+            <h3 style={{ fontSize: '1rem', fontFamily: 'var(--font-brand)', color: 'var(--teal)', margin: '0 0 10px' }}>Downline Invoices</h3>
+            <AgentDownlineInvoices isSuperAgent={!!userProfile?.is_super_agent} />
+          </div>
+        )}
+      </div>
+
       {/* GETTING STARTED (no sales yet) */}
       {!a.hasCollected && (
         <div className="glass-panel">
@@ -863,23 +880,6 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
       {/* ACCOUNTING */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
         <AgentTierWidget />
-      </div>
-
-      {/* INVOICES */}
-      <div id="invoices" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-        <h2 className="metal-text" style={{ fontSize: '1.15rem', fontFamily: 'var(--font-brand)', margin: 0 }}>Invoices</h2>
-        {!isSub && (
-          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <h3 style={{ fontSize: '1rem', fontFamily: 'var(--font-brand)', color: 'var(--teal)', margin: '0 0 10px' }}>Bills To Pay</h3>
-            <AgentStatements />
-          </div>
-        )}
-        {(userProfile?.is_super_agent || isSub) && (
-          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <h3 style={{ fontSize: '1rem', fontFamily: 'var(--font-brand)', color: 'var(--teal)', margin: '0 0 10px' }}>Downline Invoices</h3>
-            <AgentDownlineInvoices isSuperAgent={!!userProfile?.is_super_agent} />
-          </div>
-        )}
       </div>
 
       {/* RETENTION TAB */}
