@@ -32,7 +32,7 @@ export default async function AdminProductsPage() {
   const { data: products } = await supabase
     .from("products")
     .select(
-      "id, name, category, base_cost, is_active, is_banned, created_at, sku, unit_size, unit_measure, inventory_count, image_url",
+      "id, name, category, base_cost, house_cost, is_active, is_banned, created_at, sku, unit_size, unit_measure, inventory_count, image_url",
     )
     .order("created_at", { ascending: false });
 
