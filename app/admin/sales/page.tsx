@@ -7,6 +7,7 @@ import { ArrowUp, ArrowDown } from 'lucide-react';
 import Pagination from '@/components/Pagination';
 import { exportCSV, downloadCSV } from '@/lib/export';
 import type { RangePreset } from '@/lib/sales-range';
+import DownlineInvoicesSection from '@/components/admin/DownlineInvoicesSection';
 
 // ─── Lazy-loaded chart components (~400KB recharts) ───────────────────────────
 const AdminProfitTimeseriesChart = dynamic(
@@ -668,6 +669,7 @@ export default function AdminSalesPage() {
         )}
       </div>
 
+      <DownlineInvoicesSection />
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
