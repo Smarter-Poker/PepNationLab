@@ -21,10 +21,10 @@ interface Props {
   recommendations: RecommendationItem[];
   loading?: boolean;
   primaryColor?: string;
+  agentSlug?: string;
   onSelect?: (productId: string) => void;
   buildHref?: (productId: string) => string | null;
   hideWhenEmpty?: boolean;
-  agentSlug?: string;
 }
 
 
