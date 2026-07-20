@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import PrintButton from '@/components/wallet/PrintButton';
 import { chicagoMidnightIso } from '@/lib/time-cst';
 
@@ -105,26 +105,45 @@ export default async function WalletPrintPage({ searchParams }: { searchParams: 
   const shipping = Number(row.total_shipping || 0);
   const owed = Number(row.total_owed || 0);
 
-  // FETCH ORDERS (LINE ITEMS)
-  let orders: any[] = [];
+  // FETCH WEEKLY SALES DETAIL (PER-ORDER BREAKDOWN)
+  //
+  // The admin client is used here (not the RLS-bound `supabase` client above)
+  // because linked orders can belong to a downline agent (super-agent
+  // statements roll up their downlines' orders) or a sub-agent (agent
+  // invoices bill a sub-agent's own orders). The standard "agent_id =
+  // auth.uid()" RLS policy on `orders` blocks exactly those rows, which is
+  // why this section previously rendered empty for any order not placed by
+  // the caller themselves. Authorization is not widened: every order fetched
+  // below is scoped to the statement/invoice `row` that was already
+  // authorized above (via statement_orders keyed on row.id, or via
+  // row.agent_id + the invoice's own billing window).
+  const admin = createAdminClient();
+
+  let orderRows: any[] = [];
   if (type === 'statement') {
-    // Exact mapping for statements
-    const { data: stmtOrders } = await supabase
+    const { data: links } = await admin
       .from('statement_orders')
-      .select('orders(id, created_at, status, total, shipping_cost, agent_approved_at, agent_id, order_items(product_name, product_id, quantity, unit_retail_price, unit_super_agent_cost, unit_cost_price, is_wholesale_restock))')
+      .select('order_id')
       .eq('statement_id', row.id);
-    
-    if (stmtOrders) {
-      orders = stmtOrders.map((so: any) => so.orders).filter(Boolean);
+    const orderIds = (links || []).map((l: any) => l.order_id).filter(Boolean);
+    if (orderIds.length > 0) {
+      const { data: fetchedOrders } = await admin
+        .from('orders')
+        .select('id, created_at, agent_id, agent_approved_at, is_wholesale_restock, discount_amount')
+        .in('id', orderIds);
+      orderRows = fetchedOrders || [];
     }
   } else {
-    // Recreate time-window query for agent invoices
+    // Same time-window and filters as the weekly invoice generator
+    // (app/api/cron/invoices/route.ts): bill by agent_approved_at, falling
+    // back to created_at for legacy orders with no approval timestamp, and
+    // never include wholesale-restock self-buys (billed at checkout).
     const rangeStart = chicagoMidnightIso(row.week_start);
     const rangeEndExclusive = chicagoMidnightIso(addDays(row.week_start, 7));
-    
-    const { data: invOrders } = await supabase
+
+    const { data: fetchedOrders } = await admin
       .from('orders')
-      .select('id, created_at, status, total, shipping_cost, agent_approved_at, agent_id, order_items(product_name, product_id, quantity, unit_retail_price, unit_super_agent_cost, unit_cost_price, is_wholesale_restock)')
+      .select('id, created_at, agent_id, agent_approved_at, is_wholesale_restock, discount_amount, status')
       .eq('agent_id', row.agent_id)
       .neq('status', 'cancelled')
       .neq('status', 'pending_customer_payment')
@@ -134,40 +153,111 @@ export default async function WalletPrintPage({ searchParams }: { searchParams: 
         `and(agent_approved_at.gte.${rangeStart},agent_approved_at.lt.${rangeEndExclusive}),` +
         `and(agent_approved_at.is.null,created_at.gte.${rangeStart},created_at.lt.${rangeEndExclusive})`
       );
-      
-    if (invOrders) orders = invOrders;
+    orderRows = fetchedOrders || [];
   }
 
-  // Calculate order stats
-  const lineItems = orders.map(order => {
-    let orderCogs = 0;
-    let orderRetail = 0;
-    const items = order.order_items || [];
-    for (const item of items) {
-      const q = Number(item.quantity) || 0;
-      orderRetail += (Number(item.unit_retail_price) || 0) * q;
-      orderCogs += (Number(item.unit_cost_price) || 0) * q;
+  // Batch-fetch order_items for every linked order in a single query
+  // (never one query per order).
+  const orderIdList = orderRows.map((o: any) => o.id);
+  const itemsByOrder: Record<string, any[]> = {};
+  if (orderIdList.length > 0) {
+    const { data: items } = await admin
+      .from('order_items')
+      .select('order_id, quantity, unit_retail_price, unit_cost_price, unit_super_agent_cost')
+      .in('order_id', orderIdList);
+    for (const item of items || []) {
+      const key = item.order_id as string;
+      if (!itemsByOrder[key]) itemsByOrder[key] = [];
+      itemsByOrder[key].push(item);
     }
-    const orderShipping = Number(order.shipping_cost) || 0;
-    const profit = orderRetail - orderCogs - orderShipping;
-    const margin = orderRetail > 0 ? (profit / orderRetail) * 100 : 0;
-    
-    return {
-      id: order.id,
-      date: order.agent_approved_at || order.created_at,
-      retail: orderRetail,
-      cogs: orderCogs,
-      shipping: orderShipping,
-      profit,
-      margin
-    };
-  }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }
 
-  const totalRetail = lineItems.reduce((sum, li) => sum + li.retail, 0);
-  const totalLineCogs = lineItems.reduce((sum, li) => sum + li.cogs, 0);
-  const totalLineShipping = lineItems.reduce((sum, li) => sum + li.shipping, 0);
-  const totalProfit = lineItems.reduce((sum, li) => sum + li.profit, 0);
-  const avgMargin = totalRetail > 0 ? (totalProfit / totalRetail) * 100 : 0;
+  // Resolve names for orders sold by a downline agent (anyone other than the
+  // billed agent). Batched into a single query.
+  const downlineIds = Array.from(new Set(
+    orderRows.filter((o: any) => o.agent_id && o.agent_id !== row.agent_id).map((o: any) => o.agent_id as string)
+  ));
+  const sellerNames: Record<string, string> = {};
+  if (downlineIds.length > 0) {
+    const { data: sellers } = await admin
+      .from('profiles')
+      .select('id, full_name')
+      .in('id', downlineIds);
+    for (const s of sellers || []) {
+      sellerNames[s.id as string] = s.full_name || 'Downline Agent';
+    }
+  }
+
+  // Build the Weekly Sales Detail rows from the BILLED party's perspective.
+  // - Order sold by the billed agent themselves: Sold For = retail total,
+  //   Your Cost = their own cost basis, Your Profit = Sold For - discount -
+  //   Your Cost.
+  // - Order sold by a downline agent: Sold For is informational (the
+  //   downline's own retail total), Your Cost is what THIS bill charges for
+  //   it, and Your Profit is only the markup spread the billed agent earns -
+  //   the downline keeps the retail margin.
+  // - Wholesale restock orders are inventory purchases, not sales: only Cost
+  //   is shown.
+  const salesRows = orderRows.map((order: any) => {
+    const items = itemsByOrder[order.id] || [];
+    const isWholesale = order.is_wholesale_restock === true;
+    const isSelf = order.agent_id === row.agent_id;
+    const discount = Number(order.discount_amount) || 0;
+
+    let soldFor = 0;
+    let yourCost = 0;
+    let yourProfit = 0;
+
+    for (const item of items) {
+      const qty = Number(item.quantity) || 0;
+      const retail = Number(item.unit_retail_price) || 0;
+      const cost = Number(item.unit_cost_price) || 0;
+      const rawSuperCost = item.unit_super_agent_cost;
+      const superCost = rawSuperCost === null || rawSuperCost === undefined || Number.isNaN(Number(rawSuperCost))
+        ? cost
+        : Number(rawSuperCost);
+
+      soldFor += retail * qty;
+      if (isSelf) {
+        yourCost += cost * qty;
+      } else {
+        yourCost += superCost * qty;
+        yourProfit += (cost - superCost) * qty;
+      }
+    }
+
+    if (isSelf) {
+      yourProfit = soldFor - discount - yourCost;
+    }
+
+    const marginPct = yourCost > 0 ? (yourProfit / yourCost) * 100 : null;
+    const isDownlineSale = !isWholesale && !isSelf;
+
+    return {
+      id: order.id as string,
+      date: order.agent_approved_at || order.created_at,
+      sellerLabel: isWholesale ? 'Wholesale Restock' : (isSelf ? 'You' : (sellerNames[order.agent_id || ''] || 'Downline Agent')),
+      isWholesale,
+      isDownlineSale,
+      soldFor: isWholesale ? null : soldFor,
+      yourCost,
+      yourProfit: isWholesale ? null : yourProfit,
+      marginPct: isWholesale ? null : marginPct,
+    };
+  }).sort((a, b) => new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime());
+
+  const hasDownlineSales = salesRows.some(r => r.isDownlineSale);
+
+  const salesTotals = salesRows.reduce(
+    (acc, r) => {
+      acc.soldFor += r.soldFor || 0;
+      acc.cost += r.yourCost || 0;
+      acc.profit += r.yourProfit || 0;
+      return acc;
+    },
+    { soldFor: 0, cost: 0, profit: 0 }
+  );
+  const salesBlendedMargin = salesTotals.cost > 0 ? (salesTotals.profit / salesTotals.cost) * 100 : null;
 
   return (
     <html lang="en">
@@ -194,6 +284,7 @@ export default async function WalletPrintPage({ searchParams }: { searchParams: 
           table { width: 100%; border-collapse: collapse; margin-top: 20px; }
           th { background: #f3f4f6; padding: 10px 12px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
           td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; font-size: 14px; }
+          tbody tr { page-break-inside: avoid; }
           .right { text-align: right; }
           .total-row td { background: #f9fafb; font-size: 16px; font-weight: 700; border-top: 2px solid #1a1a1a; }
           .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 28px; }
@@ -207,6 +298,8 @@ export default async function WalletPrintPage({ searchParams }: { searchParams: 
           .footer { margin-top: 36px; padding-top: 18px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #6b7280; }
           .print-btn { background: #00C4BC; color: #000; padding: 10px 18px; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 13px; }
           .section-title { font-size: 16px; margin: 32px 0 12px; color: #333; font-weight: 700; border-bottom: 2px solid #e5e7eb; padding-bottom: 6px; }
+          .sales-note { color: #6b7280; font-size: 12px; margin-top: 10px; }
+          .empty-note { color: #6b7280; font-size: 14px; margin-top: 14px; }
         `}</style>
       </head>
       <body>
@@ -269,43 +362,47 @@ export default async function WalletPrintPage({ searchParams }: { searchParams: 
           </tbody>
         </table>
 
-        {lineItems.length > 0 && (
+        <div className="section-title">Weekly Sales Detail</div>
+        {salesRows.length === 0 ? (
+          <p className="empty-note">No Sales Recorded For This Week.</p>
+        ) : (
           <>
-            <div className="section-title" style={{ pageBreakBefore: 'auto' }}>Order Line Items</div>
             <table>
               <thead>
                 <tr>
-                  <th>Order ID</th>
                   <th>Date</th>
-                  <th className="right">Retail Sales</th>
-                  <th className="right">COGS</th>
-                  <th className="right">Shipping</th>
+                  <th>Order</th>
+                  <th>Sold By</th>
+                  <th className="right">Sold For</th>
+                  <th className="right">Cost Of Goods</th>
                   <th className="right">Profit</th>
                   <th className="right">Margin</th>
                 </tr>
               </thead>
               <tbody>
-                {lineItems.map(li => (
-                  <tr key={li.id}>
-                    <td style={{ fontFamily: 'monospace', fontSize: '12px' }}>{li.id.slice(0, 8).toUpperCase()}</td>
-                    <td>{fmtDate(li.date)}</td>
-                    <td className="right">{money(li.retail)}</td>
-                    <td className="right" style={{ color: '#6b7280' }}>{money(li.cogs)}</td>
-                    <td className="right" style={{ color: '#6b7280' }}>{money(li.shipping)}</td>
-                    <td className="right" style={{ color: li.profit > 0 ? '#065f46' : 'inherit' }}>{money(li.profit)}</td>
-                    <td className="right">{li.margin.toFixed(1)}%</td>
+                {salesRows.map(r => (
+                  <tr key={r.id}>
+                    <td>{fmtDate(r.date)}</td>
+                    <td style={{ fontFamily: 'monospace', fontSize: '12px' }}>{r.id.slice(0, 8).toUpperCase()}</td>
+                    <td>{r.sellerLabel}</td>
+                    <td className="right">{r.soldFor === null ? '-' : money(r.soldFor)}</td>
+                    <td className="right" style={{ color: '#6b7280' }}>{money(r.yourCost)}</td>
+                    <td className="right" style={{ color: (r.yourProfit || 0) > 0 ? '#065f46' : 'inherit' }}>{r.yourProfit === null ? '-' : money(r.yourProfit)}</td>
+                    <td className="right">{r.marginPct === null ? '-' : `${r.marginPct.toFixed(1)}%`}</td>
                   </tr>
                 ))}
                 <tr className="total-row">
-                  <td colSpan={2}>Totals for {lineItems.length} Order{lineItems.length !== 1 ? 's' : ''}</td>
-                  <td className="right">{money(totalRetail)}</td>
-                  <td className="right">{money(totalLineCogs)}</td>
-                  <td className="right">{money(totalLineShipping)}</td>
-                  <td className="right">{money(totalProfit)}</td>
-                  <td className="right">{avgMargin.toFixed(1)}%</td>
+                  <td colSpan={3}>Totals For {salesRows.length} Order{salesRows.length !== 1 ? 's' : ''}</td>
+                  <td className="right">{money(salesTotals.soldFor)}</td>
+                  <td className="right">{money(salesTotals.cost)}</td>
+                  <td className="right">{money(salesTotals.profit)}</td>
+                  <td className="right">{salesBlendedMargin === null ? '-' : `${salesBlendedMargin.toFixed(1)}%`}</td>
                 </tr>
               </tbody>
             </table>
+            {hasDownlineSales && (
+              <p className="sales-note">Downline Rows Show Your Markup Profit - The Retail Sale Belongs To The Downline Agent.</p>
+            )}
           </>
         )}
 
