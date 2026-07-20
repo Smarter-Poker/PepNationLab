@@ -236,6 +236,15 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
     const margin = lifetimeRevenue ? (lifetimeProfit / lifetimeRevenue) * 100 : 0;
     const pipeline = sum(pending, 'total');
 
+    // Super agent split: profit/sales earned on the agent's own orders vs the
+    // markup spread earned on a downline agent's orders.
+    const downlineCollected = collected.filter((o) => o.is_downline_order);
+    const ownCollected = collected.filter((o) => !o.is_downline_order);
+    const ownProfit = sum(ownCollected, 'profit');
+    const downlineProfit = sum(downlineCollected, 'profit');
+    const downlineSalesTotal = sum(downlineCollected, 'total');
+    const downlineOrderCount = downlineCollected.length;
+
     const orderCogs = (o: any) => (o.items || []).reduce((s: number, it: any) => s + (Number(it.unit_cost_price) || 0) * (Number(it.quantity) || 0), 0);
 
     // Daily aggregation (collected)
@@ -352,6 +361,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
     return {
       hasCollected: collected.length > 0,
       lifetimeRevenue, lifetimeProfit, lifetimeOrders, aov, margin, pipeline,
+      ownProfit, downlineProfit, downlineSalesTotal, downlineOrderCount,
       pendingCount: pending.length,
       rev30, revDelta30: pct(rev30, revPrev30), orders30, ordersDelta30: pct(orders30, ordersPrev30),
       monthRevenue, monthProfit, lastMonthRevenue, momDelta, projectedMonth, daysInMonth, dayOfMonth,
@@ -671,8 +681,22 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
 
       {/* KPI SNAPSHOT */}
       <div className="sa-capitalize-all" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 'var(--space-4)' }}>
-        <KpiCard label="Collected Revenue" value={fmt(a.lifetimeRevenue)} delta={a.revDelta30} deltaLabel="Vs Prior 30d" />
-        <KpiCard label="Total Profit" value={fmt(a.lifetimeProfit)} color="#00FF9D" help={PROFIT_HELP} />
+        <KpiCard
+          label="Collected Revenue"
+          value={fmt(a.lifetimeRevenue)}
+          delta={a.revDelta30}
+          deltaLabel="Vs Prior 30d"
+          sub={a.downlineOrderCount > 0 ? `Includes ${a.downlineOrderCount} Downline Orders (${fmt(a.downlineSalesTotal)})` : undefined}
+        />
+        {a.downlineOrderCount > 0 ? (
+          <>
+            <KpiCard label="My Sales Profit" value={fmt(a.ownProfit)} color="#00FF9D" help={PROFIT_HELP} />
+            <KpiCard label="Downline Profit" value={fmt(a.downlineProfit)} color="#7C5CFF" />
+            <KpiCard label="Total Profit" value={fmt(a.lifetimeProfit)} color="#00FF9D" help={PROFIT_HELP} />
+          </>
+        ) : (
+          <KpiCard label="Total Profit" value={fmt(a.lifetimeProfit)} color="#00FF9D" help={PROFIT_HELP} />
+        )}
         <KpiCard label="Orders" value={String(a.lifetimeOrders)} delta={a.ordersDelta30} deltaLabel="Vs Prior 30d" color="#00E5FF" />
         <KpiCard label="Avg Order Value" value={fmt(a.aov)} />
         <KpiCard label="Repeat Buyer Rate" value={`${Number(a.repeatRate || 0).toFixed(0)}%`} sub={`${a.distinctBuyers} Buyers`} />
@@ -828,9 +852,22 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
       {/* ACCOUNTING */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
         <AgentTierWidget />
-        {!isSub && <div style={{ animation: 'fadeIn 0.3s ease-out' }}><AgentStatements /></div>}
+      </div>
+
+      {/* INVOICES */}
+      <div id="invoices" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+        <h2 className="metal-text" style={{ fontSize: '1.15rem', fontFamily: 'var(--font-brand)', margin: 0 }}>Invoices</h2>
+        {!isSub && (
+          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+            <h3 style={{ fontSize: '1rem', fontFamily: 'var(--font-brand)', color: 'var(--teal)', margin: '0 0 10px' }}>Bills To Pay</h3>
+            <AgentStatements />
+          </div>
+        )}
         {(userProfile?.is_super_agent || isSub) && (
-          <div style={{ animation: 'fadeIn 0.3s ease-out' }}><AgentDownlineInvoices isSuperAgent={!!userProfile?.is_super_agent} /></div>
+          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+            <h3 style={{ fontSize: '1rem', fontFamily: 'var(--font-brand)', color: 'var(--teal)', margin: '0 0 10px' }}>Downline Invoices</h3>
+            <AgentDownlineInvoices isSuperAgent={!!userProfile?.is_super_agent} />
+          </div>
         )}
       </div>
 
