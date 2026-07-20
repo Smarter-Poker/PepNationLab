@@ -684,6 +684,7 @@ export default async function OrderDetailPage(
                   ...r,
                   href: agentSlug ? `/${agentSlug}?product=${encodeURIComponent(r.id)}` : '/orders',
                 }))}
+                agentSlug={agentSlug}
               />
             </div>
           )}

@@ -21,9 +21,10 @@ interface Item {
 interface Props {
   catalog: Item[];
   onAddStackToCart: (items: Item[], stackName: string) => void;
+  agentSlug?: string;
 }
 
-export default function SmartStackBuilder({ catalog, onAddStackToCart }: Props) {
+export default function SmartStackBuilder({ catalog, onAddStackToCart, agentSlug }: Props) {
   const [selectedItems, setSelectedItems] = useState<Item[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [stackName, setStackName] = useState('My Custom Stack');
@@ -112,7 +113,7 @@ export default function SmartStackBuilder({ catalog, onAddStackToCart }: Props) 
                   className="hover-lift"
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                    <Image src={item.image_url || getProductImage(null, item.category || '', item.name)} alt={item.name} width={200} height={200} unoptimized style={{ width: 32, height: 32, borderRadius: 4, objectFit: 'cover' }} />
+                    <Image src={item.image_url || getProductImage(null, item.category || '', item.name, false, agentSlug)} alt={item.name} width={200} height={200} unoptimized style={{ width: 32, height: 32, borderRadius: 4, objectFit: 'cover' }} />
                     <div>
                       <div style={{ color: 'var(--white)', fontSize: '0.9rem', fontWeight: 600 }}>{item.name}</div>
                       <div style={{ color: 'var(--silver)', fontSize: '0.75rem' }}>{item.category || 'Compound'}</div>

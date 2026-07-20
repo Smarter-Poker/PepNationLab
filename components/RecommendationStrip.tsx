@@ -24,6 +24,7 @@ interface Props {
   onSelect?: (productId: string) => void;
   buildHref?: (productId: string) => string | null;
   hideWhenEmpty?: boolean;
+  agentSlug?: string;
 }
 
 
@@ -52,6 +53,7 @@ export default function RecommendationStrip({
   onSelect,
   buildHref,
   hideWhenEmpty = true,
+  agentSlug,
 }: Props) {
   if (!loading && hideWhenEmpty && recommendations.length === 0) {
     return null;
@@ -127,9 +129,9 @@ export default function RecommendationStrip({
                       justifyContent: 'center',
                     }}
                   >
-                    {getProductImage(item.image_url, item.category || 'Other', item.name) ? (
+                    {getProductImage(item.image_url, item.category || 'Other', item.name, false, agentSlug) ? (
                       <Image
-                        src={getProductImage(item.image_url, item.category || 'Other', item.name)}
+                        src={getProductImage(item.image_url, item.category || 'Other', item.name, false, agentSlug)}
                         alt={item.name}
                         width={200}
                         height={200}
@@ -142,7 +144,7 @@ export default function RecommendationStrip({
                         }}
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
-                          const fallback = getProductImage(null, item.category || 'Other', item.name);
+                          const fallback = getProductImage(null, item.category || 'Other', item.name, false, agentSlug);
                           if (target.src !== fallback) {
                             target.src = fallback;
                           }

@@ -762,9 +762,11 @@ function BacWaterCalculator({
 function SmartRecommendationStrip({
   cart,
   onQuickAdd,
+  agentSlug,
 }: {
   cart: CartItem[];
   onQuickAdd: (rec: SmartRec) => void;
+  agentSlug?: string;
 }) {
   const [recs, setRecs] = useState<SmartRec[]>([]);
   const [loading, setLoading] = useState(true);
@@ -867,7 +869,7 @@ function SmartRecommendationStrip({
               />
             ))
           : recs.map(rec => (
-              <SmartRecCard key={rec.id} rec={rec} onQuickAdd={onQuickAdd} />
+              <SmartRecCard key={rec.id} rec={rec} onQuickAdd={onQuickAdd} agentSlug={agentSlug} />
             ))}
       </div>
     </div>
@@ -877,12 +879,14 @@ function SmartRecommendationStrip({
 function SmartRecCard({
   rec,
   onQuickAdd,
+  agentSlug,
 }: {
   rec: SmartRec;
   onQuickAdd: (rec: SmartRec) => void;
+  agentSlug?: string;
 }) {
   const [added, setAdded] = useState(false);
-  const imgSrc = getProductImage(rec.image_url, rec.category || 'Other', rec.name);
+  const imgSrc = getProductImage(rec.image_url, rec.category || 'Other', rec.name, false, agentSlug);
   const displayName = rec.unit_size
     ? `${rec.name} ${rec.unit_size}${rec.unit_measure || ''}`
     : rec.name;
@@ -935,7 +939,7 @@ function SmartRecCard({
             unoptimized
             onError={(e) => {
               const t = e.target as HTMLImageElement;
-              const fallback = getProductImage(null, rec.category || 'Other', rec.name);
+              const fallback = getProductImage(null, rec.category || 'Other', rec.name, false, agentSlug);
               if (t.src !== fallback) t.src = fallback;
             }}
           />
@@ -983,6 +987,14 @@ function SmartRecCard({
 
 function CartDrawer() {
   const router = useRouter();
+  // Derive the current agent slug from localStorage so image calls use the correct brand vials.
+  const agentSlug = (() => {
+    if (typeof window === 'undefined') return undefined;
+    try {
+      const key = Object.keys(localStorage).find(k => k.startsWith('pnl_storefront_cart_'));
+      return key ? key.replace('pnl_storefront_cart_', '') : undefined;
+    } catch { return undefined; }
+  })();
   const {
     cart,
     removeFromCart,
@@ -1263,6 +1275,7 @@ function CartDrawer() {
 
               <SmartRecommendationStrip
                 cart={cart}
+                agentSlug={agentSlug}
                 onQuickAdd={(rec) => {
                   if (cartIds.has(rec.id)) return;
                   handleQuickAdd(rec);

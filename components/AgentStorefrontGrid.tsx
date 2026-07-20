@@ -3596,6 +3596,7 @@ export default function AgentStorefrontGrid({
                       })}
                       loading={recommendationsLoading}
                       primaryColor={primaryColor}
+                      agentSlug={agentSlug}
                       onSelect={(productId) => {
                         // Find the grouped product and open its detail sheet
                         const product = products.find(p => p.product_id === productId);
@@ -4745,7 +4746,7 @@ export default function AgentStorefrontGrid({
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {resolved.members.map((m) => {
-                      const img = getProductImage(m.custom_image_url ?? m.products?.image_url ?? null, m.products?.category || 'Other', m.products?.name, !!m.custom_image_url);
+                      const img = getProductImage(m.custom_image_url ?? m.products?.image_url ?? null, m.products?.category || 'Other', m.products?.name, !!m.custom_image_url, agentSlug);
                       const name = m.custom_name || m.products?.name || 'Product';
                       const size = m.products?.unit_size ? `${m.products.unit_size}${m.products.unit_measure || ''}` : '';
                       const perVial = (Number(m.retail_price) || 0) / 10;

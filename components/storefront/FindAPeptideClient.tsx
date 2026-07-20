@@ -112,6 +112,8 @@ export default function FindAPeptideClient({
             item.custom_image_url ?? item.products?.image_url ?? null,
             item.products?.category || 'Other',
             name,
+            !!item.custom_image_url,
+            agentSlug
           ),
           variants: [],
           lowestPrice: item.retail_price || 0,

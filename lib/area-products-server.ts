@@ -177,6 +177,8 @@ export async function getAreaProducts(
         ap.custom_image_url || mp.image_url || null,
         mp.category || '',
         mp.name,
+        !!ap.custom_image_url,
+        agentSlug ?? undefined,
       ),
       unitSize: mp.unit_size || null,
       unitMeasure: mp.unit_measure || null,
