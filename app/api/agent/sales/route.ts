@@ -98,11 +98,14 @@ export async function GET(req: NextRequest) {
     //   (unit_super_agent_cost). Shipping is a pass-through re-billed to the
     //   downline, and discounts are borne by the downline's own margin, so
     //   neither factors into this agent's downline profit.
-    // Exclude agent self-buys (the buyer IS the store's own agent) from the
-    // sales view. Like wholesale restocks, these are zero-margin agent stock
-    // purchases -- an agent self-buy always prices retail == cost, so counting
-    // them showed phantom "revenue" with $0 profit/commission on the dashboard.
-    const sales = orders.filter((o: any) => o.buyer_id !== o.agent_id).map((o: any) => {
+    // Exclude ONLY the VIEWING agent's own self-buys (their own wholesale
+    // restock -- zero margin, not a sale). A DOWNLINE agent's self-buy is KEPT:
+    // it is a wholesale purchase FROM this super agent, so the super's fixed
+    // markup on it is real downline profit (spread = unit_cost_price -
+    // unit_super_agent_cost). Researcher sales (buyer != agent) always count.
+    const sales = orders
+      .filter((o: any) => !(o.buyer_id === o.agent_id && o.agent_id === agentId))
+      .map((o: any) => {
       const isDownlineOrder = o.agent_id !== agentId;
 
       let profit: number;
