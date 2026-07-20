@@ -3095,7 +3095,7 @@ export default function AgentStorefrontGrid({
 
       {/* Peptide Stacks tab: bundles as full cards (image, discount, add-to-cart). */}
       {activeCardIndex === 9 && renderableBundles.length > 0 && (
-        <div style={{ marginTop: 0 }}>
+        <div style={{ marginTop: 0, marginBottom: 'var(--space-10)' }}>
           <div style={{ margin: '0 auto 32px', textAlign: 'center', width: '100%' }}>
             <img 
               src="/images/storefront/bundle-savings-banner.png" 
