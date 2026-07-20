@@ -16,5 +16,10 @@ export default async function SalesV2Route() {
   if (!user) redirect('/login');
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
   if (!profile || !['agent', 'super_agent', 'admin'].includes(profile?.role)) redirect('/dashboard');
-  return <SalesPageV2 />;
+  return (
+    <>
+      <Navbar />
+      <SalesPageV2 />
+    </>
+  );
 }

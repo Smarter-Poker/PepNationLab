@@ -10,6 +10,7 @@ import AutoInsightsCallouts from './AutoInsightsCallouts';
 import SalesHeatmap from './SalesHeatmap';
 import SubAgentRollupTable from './SubAgentRollupTable';
 import AIWeeklySummary from './AIWeeklySummary';
+import BackButton from '@/components/ui/BackButton';
 
 export default function SalesPageV2() {
   const [preset, setPreset] = useState<RangePreset>('30d');
@@ -31,6 +32,9 @@ export default function SalesPageV2() {
   return (
     <div style={{ textTransform: 'capitalize', paddingTop: 'calc(var(--nav-offset, 60px) + 12px)', paddingRight: 12, paddingBottom: 12, paddingLeft: 12, minHeight: '100dvh', background: 'var(--black)' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ marginBottom: -8 }}>
+          <BackButton label="Back To Dashboard" />
+        </div>
         <header>
           <h1 style={{ fontSize: '1.6rem', color: 'var(--white)', margin: 0, fontFamily: 'var(--font-brand)' }}>Sales Performance</h1>
           <p style={{ color: 'var(--grey-400)', fontSize: '0.88rem', margin: '4px 0 0' }}>

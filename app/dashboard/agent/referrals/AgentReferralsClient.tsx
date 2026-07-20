@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
+import BackButton from '@/components/ui/BackButton';
 
 interface TopResearcher {
   name: string;
@@ -69,23 +70,7 @@ export default function AgentReferralsClient({ agentSlug }: AgentReferralsClient
       >
         {/* Back Link */}
         <div style={{ marginBottom: 'var(--space-6)' }}>
-          <Link
-            href="/dashboard/agent"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              color: 'var(--teal)',
-              fontSize: '0.88rem',
-              textDecoration: 'none',
-              fontWeight: 500,
-            }}
-          >
-            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-            Back To Dashboard
-          </Link>
+          <BackButton label="Back To Dashboard" />
         </div>
 
         {/* Page Header */}

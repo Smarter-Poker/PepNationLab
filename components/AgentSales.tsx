@@ -478,7 +478,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
   if (error) return <div style={{ padding: 'var(--space-6)', color: 'var(--red)' }}>Error: {error}</div>;
 
   const isSub = userProfile?.is_sub_agent === true;
-  const showCommission = !!(commission?.has || userProfile?.is_super_agent || userProfile?.is_sub_agent);
+  const showCommission = !!userProfile?.is_sub_agent;
   const tabHref = (tab: string) => `/dashboard/agent?tab=${encodeURIComponent(tab)}`;
   const PROFIT_HELP = 'Profit = what the customer paid, minus your product cost and the shipping the platform bills you.';
 
@@ -600,7 +600,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
             <GoalRing pct={goalPct} hit={goalPct >= 100} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                <div className="sa-label">Monthly Revenue Goal</div>
+                <div className="sa-label">Monthly Sales Goal</div>
                 {!editingGoal && (
                   <button onClick={() => { setGoalDraft(String(goal)); setEditingGoal(true); }} style={{ background: 'none', border: 'none', color: 'var(--teal)', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', padding: 0 }}>Edit</button>
                 )}

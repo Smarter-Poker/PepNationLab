@@ -37,7 +37,7 @@ export const EXTRACTED_C: Record<string, { 'zh-CN': string; 'zh-TW': string }> =
   "Month": { 'zh-CN': "月份", 'zh-TW': "月份" },
   "Monthly Goal Reached - Nice Work!": { 'zh-CN': "已达成月度目标 - 干得漂亮！", 'zh-TW': "已達成月度目標 - 幹得漂亮！" },
   "Monthly Profit & Loss": { 'zh-CN': "月度损益", 'zh-TW': "月度損益" },
-  "Monthly Revenue Goal": { 'zh-CN': "月度收入目标", 'zh-TW': "月度收入目標" },
+  "Monthly Sales Goal": { 'zh-CN': "月度销售目标", 'zh-TW': "月度銷售目標" },
   "Monthly Sales": { 'zh-CN': "月销售额", 'zh-TW': "月銷售額" },
   "My Invoices (Owed To Super Agent)": { 'zh-CN': "我的发票（应付超级代理）", 'zh-TW': "我的發票（應付超級代理）" },
   "My Researchers": { 'zh-CN': "我的研究员", 'zh-TW': "我的研究員" },
