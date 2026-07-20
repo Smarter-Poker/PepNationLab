@@ -210,7 +210,7 @@ export default async function WalletPrintPage({ searchParams }: { searchParams: 
         `}</style>
       </head>
       <body>
-        <div className="no-print" style={{ marginBottom: 20, display: 'flex', gap: 8 }}>
+        <div className="no-print" style={{ marginTop: 40, marginBottom: 20, display: 'flex', gap: 8 }}>
           {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
           <a href="/wallet" style={{ color: '#555', textDecoration: 'none', fontSize: 13, alignSelf: 'center' }}>&#8592; Back To Wallet</a>
           <span style={{ flex: 1 }} />
