@@ -3849,7 +3849,7 @@
       <input type="text" id="ai-chat-input" placeholder="" style="position:absolute; bottom:14%; left:16%; width:66%; height:6%; background:transparent; border:none; outline:none; color:#fff; font-size:16px; font-family:sans-serif; z-index:10;" onkeydown="if(event.key==='Enter') sendAIMessage()" />
       
       <!-- Microphone Button -->
-      <div style="position:absolute; bottom:14%; left:6%; width:8%; height:6%; cursor:pointer; z-index:10;" onclick="alert('Microphone feature coming soon')"></div>
+      <div id="mic-btn" style="position:absolute; bottom:14%; left:6%; width:8%; height:6%; cursor:pointer; z-index:10; display:flex; align-items:center; justify-content:center; border-radius:50%; transition:background 0.2s;" onclick="toggleVoiceInput()"></div>
       
       <!-- Send Button -->
       <div style="position:absolute; bottom:14%; right:6%; width:8%; height:6%; cursor:pointer; z-index:10;" onclick="sendAIMessage()"></div>
@@ -4034,6 +4034,64 @@
         input.disabled = false;
         input.focus();
       }
+    }
+    // ─── Voice Input (Web Speech API) ───────────────────────────────────────
+    let voiceRecognition = null;
+    let isListening = false;
+
+    function toggleVoiceInput() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        alert('Voice input is not supported in this browser. Please try Chrome or Safari.');
+        return;
+      }
+
+      if (isListening && voiceRecognition) {
+        voiceRecognition.stop();
+        return;
+      }
+
+      voiceRecognition = new SpeechRecognition();
+      voiceRecognition.lang = 'en-US';
+      voiceRecognition.interimResults = true;
+      voiceRecognition.continuous = false;
+
+      const micBtn = document.getElementById('mic-btn');
+      const input  = document.getElementById('ai-chat-input');
+
+      voiceRecognition.onstart = function() {
+        isListening = true;
+        if (micBtn) micBtn.style.background = 'rgba(239,68,68,0.35)';
+      };
+
+      voiceRecognition.onresult = function(event) {
+        let interim = '';
+        let final   = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) final += transcript;
+          else interim += transcript;
+        }
+        if (input) input.value = final || interim;
+      };
+
+      voiceRecognition.onend = function() {
+        isListening = false;
+        if (micBtn) micBtn.style.background = '';
+        // Auto-send if the field has text after recognition finishes
+        const inputEl = document.getElementById('ai-chat-input');
+        if (inputEl && inputEl.value.trim()) sendAIMessage();
+      };
+
+      voiceRecognition.onerror = function(event) {
+        isListening = false;
+        if (micBtn) micBtn.style.background = '';
+        if (event.error === 'not-allowed' || event.error === 'permission-denied') {
+          alert('Microphone access was denied. Please allow microphone permissions in your browser settings and try again.');
+        }
+      };
+
+      voiceRecognition.start();
     }
   </script>
 <script src="/hitbox-editor.js"></script></body>
