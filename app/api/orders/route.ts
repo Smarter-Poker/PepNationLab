@@ -700,6 +700,19 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      // Minimum-margin fail-safe (platform rule): a researcher-facing sale
+      // may never price below cost + 10%. Wholesale restocks are an agent
+      // buying stock (margin 0 by design) and manufacturer stores compute
+      // cost FROM retail, so both are exempt. The same floor exists in the
+      // price editor and as a DB clamp trigger; this is the authoritative
+      // last line because only checkout knows the agent's true chain cost.
+      if (!isWholesalePurchase && !isManufacturerStore) {
+        const minMarginRetail = Math.round(costPrice * 1.10 * 100) / 100;
+        if (retailPrice < minMarginRetail) {
+          retailPrice = minMarginRetail;
+        }
+      }
+
       // Wholesale buyers always pay tier cost flat. retailPrice collapses to
       // costPrice so the order line records what they actually paid. Spread on
       // a sub-agent's sale to a researcher flows via accrue_sub_agent_commission.
@@ -957,6 +970,21 @@ export async function POST(request: NextRequest) {
     if (discountSource === null && autoDisc > 0) {
       discountAmount = autoDisc;
       discountSource = autoSource;
+    }
+
+    // Minimum-margin fail-safe, discount leg: promotional discounts (coupon /
+    // flash sale / quantity) are order-level and invisible to the per-unit
+    // floor above. Cap the applied discount so the blended order margin can
+    // never drop below 10% over the agent's cost.
+    if (!(isAgentSelfBuy || isSubAgent) && !isManufacturerStore && discountAmount > 0) {
+      const orderCostBasis = computedItems.reduce(
+        (sum, i: any) => sum + (Number(i.unit_cost_price) || 0) * (Number(i.quantity) || 0),
+        0
+      );
+      const maxDiscount = Math.max(0, Math.round((subtotal - orderCostBasis * 1.10) * 100) / 100);
+      if (discountAmount > maxDiscount) {
+        discountAmount = maxDiscount;
+      }
     }
 
     // Roll back everything committed before the order row exists - reserved
