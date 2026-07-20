@@ -9,8 +9,6 @@ import {
 import Link from 'next/link';
 import AgentOrders from './AgentOrders';
 import { createClient } from '@/lib/supabase/client';
-import AgentStatements from './AgentStatements';
-import AgentDownlineInvoices from './AgentDownlineInvoices';
 import AgentTierWidget from './AgentTierWidget';
 import { Star, ArrowUp, ArrowDown } from 'lucide-react';
 
@@ -515,6 +513,9 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
           <Link href="/dashboard/agent/analytics" className="btn-silver" style={{ textDecoration: 'none' }}>
             Storefront Analytics
           </Link>
+          <Link href="/dashboard/agent/invoices" className="btn-silver" style={{ textDecoration: 'none' }}>
+            Invoices
+          </Link>
           <Link href="/dashboard/agent/sales-v2" className="btn-neon-cyan" style={{ textDecoration: 'none' }}>
             Sales Performance
           </Link>
@@ -574,22 +575,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
         )}
       </div>
 
-      {/* INVOICES */}
-      <div id="invoices" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', marginTop: 'var(--space-4)' }}>
-        <h2 className="metal-text" style={{ fontSize: '1.15rem', fontFamily: 'var(--font-brand)', margin: 0 }}>Invoices</h2>
-        {!isSub && (
-          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <h3 style={{ fontSize: '1rem', fontFamily: 'var(--font-brand)', color: 'var(--teal)', margin: '0 0 10px' }}>Bills To Pay</h3>
-            <AgentStatements />
-          </div>
-        )}
-        {(userProfile?.is_super_agent || isSub) && (
-          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <h3 style={{ fontSize: '1rem', fontFamily: 'var(--font-brand)', color: 'var(--teal)', margin: '0 0 10px' }}>Downline Invoices</h3>
-            <AgentDownlineInvoices isSuperAgent={!!userProfile?.is_super_agent} />
-          </div>
-        )}
-      </div>
+
 
       {/* GETTING STARTED (no sales yet) */}
       {!a.hasCollected && (
