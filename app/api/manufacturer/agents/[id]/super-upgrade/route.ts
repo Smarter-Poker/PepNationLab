@@ -60,6 +60,11 @@ export async function POST(
       is_super_agent,
       role: newRole,
       onboarding_completed_at: is_super_agent ? null : undefined, // Re-trigger onboarding on upgrade
+      // Clear stale step acknowledgments on upgrade so the new super-agent does
+      // not skip the super-agent-specific steps (house markup + default agent
+      // markup) with acks left over from their prior agent onboarding. Mirrors
+      // the admin super-upgrade route + promote-subagent.
+      onboarding_progress: is_super_agent ? {} : undefined,
       updated_at: new Date().toISOString(),
     })
     .eq('id', agentId);
