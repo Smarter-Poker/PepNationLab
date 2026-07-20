@@ -35,11 +35,12 @@ export async function GET(_req: NextRequest) {
         account_type, credit_limit, prepaid_balance,
         created_at, is_active,
         last_sign_in_at, first_sign_in_at,
+        is_super_agent,
         agent_profiles(slug, display_name)
       `)
       .eq('parent_agent_id', callerId)
       .eq('is_sub_agent', false)
-      .eq('role', 'agent')
+      .in('role', ['agent', 'super_agent'])
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -71,6 +72,14 @@ const MARKUP_MAX = 200;
  * POST /api/agent/agents
  *
  * Creates a brand new full Agent Account under the calling Super Agent.
+ *
+ * Nested Super Agents: when the caller passes `is_super_agent: true`, the new
+ * downline account is provisioned as a Super Agent in its own right (role =
+ * 'super_agent', is_super_agent = true) while still sitting under the caller
+ * in the billing chain (parent_agent_id = callerId). This mirrors the pattern
+ * already used by /api/manufacturer/agents (make_super_agent) and the DB's
+ * chk_super_agent_role_sync constraint, which requires role = 'super_agent'
+ * whenever is_super_agent = true - role can never stay 'agent' here.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -115,7 +124,13 @@ export async function POST(req: NextRequest) {
       velocity_cap,
       custom_commission_scale,
       locale,
+      is_super_agent,
     } = body;
+
+    // Only the caller's own explicit choice makes the new downline a Super
+    // Agent. Already gated above: only an existing Super Agent (or an admin
+    // impersonating one via requireAgent) can reach this handler at all.
+    const makeSuperAgent = is_super_agent === true;
 
     if (!full_name || !username || !password || !account_type || !slug || !display_name) {
       return NextResponse.json({ error: 'Missing Required Fields (Name, Username, Password, Billing, Slug, User Name)' }, { status: 400 });
@@ -188,11 +203,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'This Storefront Slug Is Already Taken' }, { status: 400 });
     }
 
+    // The new profile's role must match is_super_agent per chk_super_agent_role_sync
+    // (a DB check constraint requires role = 'super_agent' whenever is_super_agent =
+    // true, and role = 'agent' otherwise) - keep the auth JWT's app_metadata.role in
+    // sync too, since several permission gates check role === 'super_agent' there.
+    const newProfileRole = makeSuperAgent ? 'super_agent' : 'agent';
+
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: internalEmail,
       password,
       email_confirm: true,
-      app_metadata: { role: 'agent' }
+      app_metadata: { role: newProfileRole, is_super_agent: makeSuperAgent }
     });
 
     if (authError || !authData.user) {
@@ -206,7 +227,8 @@ export async function POST(req: NextRequest) {
       email: null,
       username: usernameClean,
       full_name,
-      role: 'agent',
+      role: newProfileRole,
+      is_super_agent: makeSuperAgent,
       is_sub_agent: false,
       parent_agent_id: callerId,
       referring_agent_id: callerId,
@@ -281,7 +303,13 @@ export async function POST(req: NextRequest) {
       console.error('Failed to auto-provision agent products:', provisionErr);
     }
 
-    return NextResponse.json({ success: true, userId, username: usernameClean, role: 'Agent Account' });
+    return NextResponse.json({
+      success: true,
+      userId,
+      username: usernameClean,
+      role: makeSuperAgent ? 'Super Agent Account' : 'Agent Account',
+      is_super_agent: makeSuperAgent,
+    });
   } catch (error) {
     console.error('[POST create-agent] unexpected error:', error);
     return NextResponse.json({ error: 'Internal Server Error.' }, { status: 500 });
