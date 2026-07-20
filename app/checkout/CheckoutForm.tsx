@@ -265,35 +265,175 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const [smartPeptideVials, setSmartPeptideVials] = useState<number | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     (async () => {
+      // Resolve the BAC Water + Acetic Acid diluents for the CURRENT user with a
+      // GUARANTEED result so the smart reconstitution estimator + one-click add
+      // renders for EVERY role and store -- researcher, agent, super-agent,
+      // manufacturer (agent-direct pricing), and admin alike. Resolution order,
+      // most-specific/correct price first:
+      //   1. Agent self-buy  -> /api/agent/products (their true agent-direct cost)
+      //   2. Store context    -> that store's agent_products retail price
+      //   3. Global catalog   -> products table fallback so it ALWAYS resolves,
+      //                          even when a store hasn't added the diluent
+      // Previously self-buy accounts returned early after step 1 and step 1
+      // filtered on products.compound_slug -- which /api/agent/products did not
+      // return -- so bacProduct stayed null and the estimator never showed for
+      // agents/super-agents. Now each step only fills what's still missing.
+      type Diluent = {
+        id: string; agentProductId: string; name: string;
+        retailPrice: number; costPrice: number; weightOz: number;
+        unitSize: string | null; unitMeasure: string | null; imageUrl: string | null;
+      };
+      let bac: Diluent | null = null;
+      let acetic: Diluent | null = null;
+      const supabase = createClient();
+
       try {
-        if (!agentSlug) {
-          const supabase = createClient();
+        // 1) Agent self-buy: agent-direct cost basis from /api/agent/products.
+        if (isAgentSelfBuy) {
+          try {
+            const res = await fetch('/api/agent/products');
+            if (res.ok) {
+              const json = await res.json();
+              const items = json.data || [];
+
+              const bacMatches = items.filter((item: any) => item.products?.compound_slug === 'bac-water');
+              const matched = bacMatches.find((item: any) => String(item.products?.unit_size) === '10') ?? bacMatches[0];
+              if (matched) {
+                const retail = matched.retail_price / 10;
+                const cost = matched.agent_cost != null ? matched.agent_cost / 10 : retail;
+                const sizeLabel = matched.products?.unit_size
+                  ? `(${matched.products.unit_size}${matched.products.unit_measure || ''})`
+                  : '';
+                bac = {
+                  id: matched.product_id,
+                  agentProductId: matched.id,
+                  name: `${matched.products?.name || 'Bac. Water'} ${sizeLabel}`.trim(),
+                  retailPrice: retail,
+                  costPrice: cost,
+                  weightOz: Number(matched.products?.weight_oz) || 0.5,
+                  unitSize: matched.products?.unit_size ?? null,
+                  unitMeasure: matched.products?.unit_measure ?? null,
+                  imageUrl: matched.custom_image_url || matched.products?.image_url || null,
+                };
+              }
+
+              const matchedAcetic = items.find((item: any) => (item.products?.name || '').toLowerCase().includes('acetic acid'));
+              if (matchedAcetic) {
+                const retail = matchedAcetic.retail_price / 10;
+                const cost = matchedAcetic.agent_cost != null ? matchedAcetic.agent_cost / 10 : retail;
+                const sizeLabel = matchedAcetic.products?.unit_size
+                  ? `(${matchedAcetic.products.unit_size}${matchedAcetic.products.unit_measure || ''})`
+                  : '';
+                acetic = {
+                  id: matchedAcetic.product_id,
+                  agentProductId: matchedAcetic.id,
+                  name: `${matchedAcetic.products?.name || 'Acetic Acid'} ${sizeLabel}`.trim(),
+                  retailPrice: retail,
+                  costPrice: cost,
+                  weightOz: Number(matchedAcetic.products?.weight_oz) || 0.5,
+                  unitSize: matchedAcetic.products?.unit_size ?? null,
+                  unitMeasure: matchedAcetic.products?.unit_measure ?? null,
+                  imageUrl: matchedAcetic.custom_image_url || matchedAcetic.products?.image_url || null,
+                };
+              }
+            }
+          } catch { /* fall through to store / global resolution */ }
+        }
+
+        // 2) Store context: per-store retail price from agent_products. Runs for
+        //    any agentSlug (researcher/admin buying a store's catalog) and also
+        //    backfills a self-buy account whose /api/agent/products lacked the
+        //    diluent. Only fills what step 1 did not already resolve.
+        if ((!bac || !acetic) && agentSlug) {
+          const { data: agentProfile } = await supabase
+            .from('agent_profiles')
+            .select('id')
+            .eq('slug', agentSlug)
+            .maybeSingle();
+
+          if (agentProfile) {
+            if (!bac) {
+              const { data: apRows } = await supabase
+                .from('agent_products')
+                .select(`id, product_id, retail_price, products!inner ( name, unit_size, unit_measure, weight_oz, compound_slug, image_url )`)
+                .eq('agent_id', agentProfile.id)
+                .eq('is_visible', true)
+                .eq('products.compound_slug', 'bac-water')
+                .limit(5);
+              const ap = (apRows ?? []).find((row: any) => {
+                const pr = (Array.isArray(row.products) ? row.products[0] : row.products) as any;
+                return String(pr?.unit_size) === '10';
+              }) ?? (apRows ?? [])[0] ?? null;
+              if (ap) {
+                const retail = ap.retail_price / 10;
+                const prod = (Array.isArray(ap.products) ? ap.products[0] : ap.products) as any;
+                const sizeLabel = prod?.unit_size ? `(${prod.unit_size}${prod.unit_measure || ''})` : '';
+                bac = {
+                  id: ap.product_id, agentProductId: ap.id,
+                  name: `${prod?.name || 'Bac. Water'} ${sizeLabel}`.trim(),
+                  retailPrice: retail, costPrice: retail,
+                  weightOz: Number(prod?.weight_oz) || 0.5,
+                  unitSize: prod?.unit_size ?? null, unitMeasure: prod?.unit_measure ?? null,
+                  imageUrl: prod?.image_url ?? null,
+                };
+              }
+            }
+
+            if (!acetic) {
+              const { data: apAcetic } = await supabase
+                .from('agent_products')
+                .select(`id, product_id, retail_price, products!inner ( name, unit_size, unit_measure, weight_oz, compound_slug, image_url )`)
+                .eq('agent_id', agentProfile.id)
+                .eq('is_visible', true)
+                .ilike('products.name', '%acetic acid%')
+                .limit(1)
+                .maybeSingle();
+              if (apAcetic) {
+                const retail = apAcetic.retail_price / 10;
+                const prod = (Array.isArray(apAcetic.products) ? apAcetic.products[0] : apAcetic.products) as any;
+                const sizeLabel = prod?.unit_size ? `(${prod.unit_size}${prod.unit_measure || ''})` : '';
+                acetic = {
+                  id: apAcetic.product_id, agentProductId: apAcetic.id,
+                  name: `${prod?.name || 'Acetic Acid'} ${sizeLabel}`.trim(),
+                  retailPrice: retail, costPrice: retail,
+                  weightOz: Number(prod?.weight_oz) || 0.5,
+                  unitSize: prod?.unit_size ?? null, unitMeasure: prod?.unit_measure ?? null,
+                  imageUrl: prod?.image_url ?? null,
+                };
+              }
+            }
+          }
+        }
+
+        // 3) Global catalog fallback: guarantees a diluent product for EVERY user
+        //    even with no store context or a store that never added it. Uses the
+        //    canonical catalog price (base_cost) as the last resort.
+        if (!bac) {
           const { data: bacRows } = await supabase
             .from('products')
-            .select('id, name, base_cost, weight_oz, unit_size, unit_measure, image_url')
+            .select('id, name, base_cost, max_retail_price, weight_oz, unit_size, unit_measure, image_url')
             .eq('compound_slug', 'bac-water')
             .limit(5);
-          // Deterministically prefer the 10 mL vial. `.limit(1)` with no ORDER BY
-          // returned whichever bac-water row Postgres yielded first (3 mL or
-          // 10 mL), silently changing the suggested product and price.
           const p = (bacRows ?? []).find(r => String(r.unit_size) === '10') ?? (bacRows ?? [])[0] ?? null;
           if (p) {
-            const basePrice = Number(p.base_cost) || 0;
+            // Canonical per-vial retail is the admin ceiling price (max_retail_price,
+            // stored per 10-pack) / 10 -- e.g. $89.70/pack -> $8.97/vial. Only if
+            // that's unset do we fall back to base_cost.
+            const perVial = Number(p.max_retail_price) > 0 ? Number(p.max_retail_price) / 10 : (Number(p.base_cost) || 0);
             const sizeLabel = p.unit_size ? `(${p.unit_size}${p.unit_measure || ''})` : '';
-            setBacProduct({
-              id: p.id,
-              agentProductId: p.id,
+            bac = {
+              id: p.id, agentProductId: p.id,
               name: `${p.name} ${sizeLabel}`.trim(),
-              retailPrice: basePrice,
-              costPrice: basePrice,
+              retailPrice: perVial, costPrice: perVial,
               weightOz: Number(p.weight_oz) || 0.5,
-              unitSize: p.unit_size ?? null,
-              unitMeasure: p.unit_measure ?? null,
+              unitSize: p.unit_size ?? null, unitMeasure: p.unit_measure ?? null,
               imageUrl: p.image_url ?? null,
-            });
+            };
           }
-
+        }
+        if (!acetic) {
           const { data: pAcetic } = await supabase
             .from('products')
             .select('id, name, base_cost, weight_oz, unit_size, unit_measure, image_url')
@@ -303,169 +443,25 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
           if (pAcetic) {
             const basePrice = Number(pAcetic.base_cost) || 0;
             const sizeLabel = pAcetic.unit_size ? `(${pAcetic.unit_size}${pAcetic.unit_measure || ''})` : '';
-            setAceticProduct({
-              id: pAcetic.id,
-              agentProductId: pAcetic.id,
+            acetic = {
+              id: pAcetic.id, agentProductId: pAcetic.id,
               name: `${pAcetic.name} ${sizeLabel}`.trim(),
-              retailPrice: basePrice,
-              costPrice: basePrice,
+              retailPrice: basePrice, costPrice: basePrice,
               weightOz: Number(pAcetic.weight_oz) || 0.5,
-              unitSize: pAcetic.unit_size ?? null,
-              unitMeasure: pAcetic.unit_measure ?? null,
+              unitSize: pAcetic.unit_size ?? null, unitMeasure: pAcetic.unit_measure ?? null,
               imageUrl: pAcetic.image_url ?? null,
-            });
-          }
-          return;
-        }
-
-        if (isAgentSelfBuy) {
-          const res = await fetch('/api/agent/products');
-          if (res.ok) {
-            const json = await res.json();
-            const items = json.data || [];
-            
-            const bacMatches = items.filter((item: any) => item.products?.compound_slug === 'bac-water');
-            // Prefer the 10 mL vial (see the guest-path note above).
-            const matched = bacMatches.find((item: any) => String(item.products?.unit_size) === '10') ?? bacMatches[0];
-            if (matched) {
-              const retail = matched.retail_price / 10;
-              const cost = matched.agent_cost != null ? matched.agent_cost / 10 : retail;
-              const sizeLabel = matched.products?.unit_size
-                ? `(${matched.products.unit_size}${matched.products.unit_measure || ''})`
-                : '';
-              setBacProduct({
-                id: matched.product_id,
-                agentProductId: matched.id,
-                name: `${matched.products?.name || 'Bac. Water'} ${sizeLabel}`.trim(),
-                retailPrice: retail,
-                costPrice: cost,
-                weightOz: Number(matched.products?.weight_oz) || 0.5,
-                unitSize: matched.products?.unit_size ?? null,
-                unitMeasure: matched.products?.unit_measure ?? null,
-                imageUrl: matched.custom_image_url || matched.products?.image_url || null,
-              });
-            }
-
-            const matchedAcetic = items.find((item: any) => (item.products?.name || '').toLowerCase().includes('acetic acid'));
-            if (matchedAcetic) {
-              const retail = matchedAcetic.retail_price / 10;
-              const cost = matchedAcetic.agent_cost != null ? matchedAcetic.agent_cost / 10 : retail;
-              const sizeLabel = matchedAcetic.products?.unit_size
-                ? `(${matchedAcetic.products.unit_size}${matchedAcetic.products.unit_measure || ''})`
-                : '';
-              setAceticProduct({
-                id: matchedAcetic.product_id,
-                agentProductId: matchedAcetic.id,
-                name: `${matchedAcetic.products?.name || 'Acetic Acid'} ${sizeLabel}`.trim(),
-                retailPrice: retail,
-                costPrice: cost,
-                weightOz: Number(matchedAcetic.products?.weight_oz) || 0.5,
-                unitSize: matchedAcetic.products?.unit_size ?? null,
-                unitMeasure: matchedAcetic.products?.unit_measure ?? null,
-                imageUrl: matchedAcetic.custom_image_url || matchedAcetic.products?.image_url || null,
-              });
-            }
-            return;
+            };
           }
         }
 
-        const supabase = createClient();
-        const { data: agentProfile } = await supabase
-          .from('agent_profiles')
-          .select('id')
-          .eq('slug', agentSlug)
-          .maybeSingle();
-
-        if (agentProfile) {
-          const { data: apRows } = await supabase
-            .from('agent_products')
-            .select(`
-              id,
-              product_id,
-              retail_price,
-              products!inner (
-                name,
-                unit_size,
-                unit_measure,
-                weight_oz,
-                compound_slug,
-                image_url
-              )
-            `)
-            .eq('agent_id', agentProfile.id)
-            .eq('is_visible', true)
-            .eq('products.compound_slug', 'bac-water')
-            .limit(5);
-
-          // Prefer the 10 mL vial (see the guest-path note above).
-          const ap = (apRows ?? []).find((row: any) => {
-            const pr = (Array.isArray(row.products) ? row.products[0] : row.products) as any;
-            return String(pr?.unit_size) === '10';
-          }) ?? (apRows ?? [])[0] ?? null;
-
-          if (ap) {
-            const retail = ap.retail_price / 10;
-            const prod = (Array.isArray(ap.products) ? ap.products[0] : ap.products) as any;
-            const sizeLabel = prod?.unit_size
-              ? `(${prod.unit_size}${prod.unit_measure || ''})`
-              : '';
-            setBacProduct({
-              id: ap.product_id,
-              agentProductId: ap.id,
-              name: `${prod?.name || 'Bac. Water'} ${sizeLabel}`.trim(),
-              retailPrice: retail,
-              costPrice: retail,
-              weightOz: Number(prod?.weight_oz) || 0.5,
-              unitSize: prod?.unit_size ?? null,
-              unitMeasure: prod?.unit_measure ?? null,
-              imageUrl: prod?.image_url ?? null,
-            });
-          }
-
-          const { data: apAcetic } = await supabase
-            .from('agent_products')
-            .select(`
-              id,
-              product_id,
-              retail_price,
-              products!inner (
-                name,
-                unit_size,
-                unit_measure,
-                weight_oz,
-                compound_slug,
-                image_url
-              )
-            `)
-            .eq('agent_id', agentProfile.id)
-            .eq('is_visible', true)
-            .ilike('products.name', '%acetic acid%')
-            .limit(1)
-            .maybeSingle();
-
-          if (apAcetic) {
-            const retail = apAcetic.retail_price / 10;
-            const prod = (Array.isArray(apAcetic.products) ? apAcetic.products[0] : apAcetic.products) as any;
-            const sizeLabel = prod?.unit_size
-              ? `(${prod.unit_size}${prod.unit_measure || ''})`
-              : '';
-            setAceticProduct({
-              id: apAcetic.product_id,
-              agentProductId: apAcetic.id,
-              name: `${prod?.name || 'Acetic Acid'} ${sizeLabel}`.trim(),
-              retailPrice: retail,
-              costPrice: retail,
-              weightOz: Number(prod?.weight_oz) || 0.5,
-              unitSize: prod?.unit_size ?? null,
-              unitMeasure: prod?.unit_measure ?? null,
-              imageUrl: prod?.image_url ?? null,
-            });
-          }
-        }
+        if (cancelled) return;
+        if (bac) setBacProduct(bac);
+        if (acetic) setAceticProduct(acetic);
       } catch (err) {
         console.error('Error fetching reconstitution products:', err);
       }
     })();
+    return () => { cancelled = true; };
   }, [agentSlug, isAgentSelfBuy]);
 
   // Ask the server exactly how much BAC water this cart needs, based on each
