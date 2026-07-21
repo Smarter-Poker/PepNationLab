@@ -293,6 +293,31 @@ async function resolveChain(
 }
 
 /**
+ * Detailed variant powering resolveChainAwareV2Markup() below: also returns
+ * the top-of-chain ancestor's own markup and the pure hop-compounding
+ * factor, so a caller that needs the TOP ancestor's ladder cost (not the
+ * full chain-compounded cost - see computeAgentTopOfChainCostsForAgent
+ * further down) can derive it without re-walking the chain. For a
+ * top-of-chain agent (no parent), topMarkup === markup and chainFactor === 1.
+ */
+async function resolveChainAwareV2MarkupDetailed(
+  supabase: ServiceClient,
+  agentId: string,
+): Promise<{ markup: number; topMarkup: number; chainFactor: number }> {
+  try {
+    const { topId, hopMarkups } = await resolveChain(supabase, agentId);
+    const topMarkup = await resolveV2Markup(supabase, topId);
+    if (hopMarkups.length === 0) return { markup: topMarkup, topMarkup, chainFactor: 1 };
+    const chainFactor = hopMarkups.reduce((acc, m) => acc * (1 + m / 100), 1);
+    return { markup: (1 + topMarkup) * chainFactor - 1, topMarkup, chainFactor };
+  } catch (err) {
+    console.warn(`[pricing] chain resolution failed for agent ${agentId}, falling back to direct ladder markup:`, err);
+    const markup = await resolveV2Markup(supabase, agentId);
+    return { markup, topMarkup: markup, chainFactor: 1 };
+  }
+}
+
+/**
  * Chain-aware replacement for resolveV2Markup(): for a top-of-chain agent
  * (no parent_agent_id) this returns exactly resolveV2Markup(agentId) - byte
  * identical, zero behavior change. For a parented agent, it returns the
@@ -304,16 +329,7 @@ async function resolveChain(
  * arbitrarily nested Super Agents.
  */
 async function resolveChainAwareV2Markup(supabase: ServiceClient, agentId: string): Promise<number> {
-  try {
-    const { topId, hopMarkups } = await resolveChain(supabase, agentId);
-    const topMarkup = await resolveV2Markup(supabase, topId);
-    if (hopMarkups.length === 0) return topMarkup;
-    const chainFactor = hopMarkups.reduce((acc, m) => acc * (1 + m / 100), 1);
-    return (1 + topMarkup) * chainFactor - 1;
-  } catch (err) {
-    console.warn(`[pricing] chain resolution failed for agent ${agentId}, falling back to direct ladder markup:`, err);
-    return resolveV2Markup(supabase, agentId);
-  }
+  return (await resolveChainAwareV2MarkupDetailed(supabase, agentId)).markup;
 }
 
 /** v2 wholesale cost for a House-facing agent: cost = base * (1 + markup(level)), chain-aware. */
@@ -349,7 +365,7 @@ export async function computeAgentCostForAgent(
    and rounding as the per-product path. */
 
 export type AgentPricingContext =
-  | { ladderV2: true; markup: number }
+  | { ladderV2: true; markup: number; topMarkup: number; chainFactor: number }
   | { ladderV2: false; tier: AgentTier; defaultMultiplier: number };
 
 /** Resolve the per-agent pricing constants once (flag-aware, TTL-cached). */
@@ -359,7 +375,8 @@ export async function resolveAgentPricingContext(
   legacyTier: AgentTier,
 ): Promise<AgentPricingContext> {
   if (isTierLadderV2()) {
-    return { ladderV2: true, markup: await resolveChainAwareV2Markup(supabase, agentId) };
+    const { markup, topMarkup, chainFactor } = await resolveChainAwareV2MarkupDetailed(supabase, agentId);
+    return { ladderV2: true, markup, topMarkup, chainFactor };
   }
   return {
     ladderV2: false,
@@ -431,6 +448,46 @@ export async function computeAgentCostsForAgent(
   if (context.ladderV2) {
     for (const p of products) {
       costs.set(p.id, applyHouseMarkup(Number(p.base_cost), context.markup));
+    }
+    return costs;
+  }
+  const overrides = await getProductOverrideMultipliers(
+    supabase,
+    products.map((p) => p.id),
+    context.tier,
+  );
+  for (const p of products) {
+    const override = overrides.get(p.id) ?? null;
+    costs.set(p.id, applyLegacyMultiplier(Number(p.base_cost), override !== null ? override : context.defaultMultiplier));
+  }
+  return costs;
+}
+
+/**
+ * Batch top-of-chain cost lookup (2026-07-21): for a parented agent, returns
+ * the TOP ancestor's own ladder cost per product (base * (1 + topMarkup)) -
+ * i.e. the house's true cost basis, ignoring every downstream hop's markup.
+ * For a top-of-chain agent (no parent) this is numerically identical to
+ * computeAgentCostsForAgent()'s output for the same agent/products, since
+ * topMarkup === markup when chainFactor === 1.
+ *
+ * Legacy (v1, non-ladder) pricing has no chain concept - an agent's cost is
+ * never influenced by a parent there, so "top of chain" degenerates to the
+ * agent's own tier cost (identical to computeAgentCostsForAgent's legacy
+ * branch).
+ */
+export async function computeAgentTopOfChainCostsForAgent(
+  supabase: ServiceClient,
+  agentId: string,
+  legacyTier: AgentTier,
+  products: ReadonlyArray<{ id: string; base_cost: number }>,
+): Promise<Map<string, number>> {
+  const costs = new Map<string, number>();
+  if (products.length === 0) return costs;
+  const context = await resolveAgentPricingContext(supabase, agentId, legacyTier);
+  if (context.ladderV2) {
+    for (const p of products) {
+      costs.set(p.id, applyHouseMarkup(Number(p.base_cost), context.topMarkup));
     }
     return costs;
   }
