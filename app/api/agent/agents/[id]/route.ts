@@ -174,6 +174,11 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
         commission_active_since: agent.commission_active_since,
         is_active: !!agent.is_active,
         is_sub_agent: (agent as { is_sub_agent?: boolean }).is_sub_agent === true,
+        // Exposed so the detail drawer can tell a top-level account (house
+        // tier ladder is its real pricing) from a parented downline account
+        // (chain-aware commission_pct is its real pricing - see
+        // lib/pricing.ts's resolveChainAwareV2Markup).
+        parent_agent_id: (agent as { parent_agent_id?: string | null }).parent_agent_id ?? null,
         created_at: agent.created_at,
         last_sign_in_at: (agent as { last_sign_in_at?: string | null }).last_sign_in_at ?? null,
         first_sign_in_at: (agent as { first_sign_in_at?: string | null }).first_sign_in_at ?? null,
