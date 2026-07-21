@@ -164,6 +164,16 @@ const POPULAR_ORDER: string[] = [
   'Selank',
 ];
 
+// Base names excluded from the storefront "Top 10 Best Peptides" card.
+// Removing them frees slots so Tirzepatide + Retatrutide (already ranked
+// next in POPULAR_ORDER) surface. Stacks otherwise get a +20000 rank bonus,
+// so they must be filtered here rather than merely dropped from POPULAR_ORDER.
+const TOP10_EXCLUDE = new Set<string>([
+  'SEMAGLUTIDE',
+  'THE FURNACE STACK',
+  'THE LIPOLYSIS STACK',
+]);
+
 const CARD_MAPPINGS = [
   { index: 1, label: 'Top 10 Best Peptides', query: '' },
   { index: 2, label: 'Weight Loss & Metabolism', query: 'weight loss' },
@@ -1844,6 +1854,7 @@ export default function AgentStorefrontGrid({
       const seenBaseNames = new Map<string, typeof result[0]>();
       for (const item of result) {
         const baseName = item.g.name.replace(/\s*\(.*\)\s*$/, '').trim().toUpperCase();
+        if (TOP10_EXCLUDE.has(baseName)) continue;
         if (!seenBaseNames.has(baseName)) {
           seenBaseNames.set(baseName, item);
         }
