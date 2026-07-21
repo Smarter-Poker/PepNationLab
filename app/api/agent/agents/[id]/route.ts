@@ -57,6 +57,12 @@ const num = (v: unknown): number => {
 
 // Platform rule: the gamification Max Cap can never exceed 40%.
 const MAX_CAP_LIMIT = 40;
+// commission_pct on a NON-sub-agent target is a chain markup (this account's
+// cost = upline chain cost x (1 + commission_pct/100)), not a recruiter
+// commission - DB CHECK profiles_commission_pct_range allows 0-200 for
+// non-sub-agents. Sub-agent targets keep the 0-40 recruiter-commission range
+// above (MAX_CAP_LIMIT).
+const MARKUP_MAX = 200;
 
 export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
@@ -258,7 +264,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 
     const { data: target } = await supabase
       .from('profiles')
-      .select('id, parent_agent_id, account_type, credit_limit, is_active, full_name, commission_pct, commission_max_pct')
+      .select('id, parent_agent_id, account_type, credit_limit, is_active, full_name, commission_pct, commission_max_pct, is_sub_agent')
       .eq('id', id)
       .maybeSingle();
 
@@ -331,16 +337,26 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 
     if (body.commission_pct !== undefined && body.commission_pct !== null && body.commission_pct !== '') {
       const pct = Number(body.commission_pct);
-      // DB CHECK profiles_commission_pct_range caps commission_pct at 40 (the
-      // platform's hard 40% rule). Validate here so an out-of-range value gives a
-      // clean 400 instead of a constraint-violation 500 on the profile update.
-      if (!Number.isFinite(pct) || pct < 0 || pct > MAX_CAP_LIMIT) {
-        return NextResponse.json({ error: 'Commission Rate Cannot Exceed 40%.' }, { status: 400 });
+      const targetIsSubAgent = target.is_sub_agent === true;
+      // DB CHECK profiles_commission_pct_range splits the allowed range by
+      // is_sub_agent: sub-agents (recruiter payout percent) stay 0-40 (the
+      // platform's hard 40% rule); everyone else (chain markup: this
+      // account's cost = upline chain cost x (1 + commission_pct/100)) gets
+      // 0-200. Validate here so an out-of-range value gives a clean 400
+      // instead of a constraint-violation 500 on the profile update.
+      const maxAllowed = targetIsSubAgent ? MAX_CAP_LIMIT : MARKUP_MAX;
+      if (!Number.isFinite(pct) || pct < 0 || pct > maxAllowed) {
+        return NextResponse.json(
+          { error: targetIsSubAgent ? 'Commission Rate Cannot Exceed 40%.' : 'Markup Percent Must Be Between 0 And 200%.' },
+          { status: 400 },
+        );
       }
 
-      updates.commission_pct = pct;
-      updates.commission_rate = pct;
-      changes.commission_pct = pct;
+      // commission_pct is NUMERIC(5,2) in the DB - round to 2dp.
+      const roundedPct = Math.round(pct * 100) / 100;
+      updates.commission_pct = roundedPct;
+      updates.commission_rate = roundedPct;
+      changes.commission_pct = roundedPct;
     }
 
     // Commission structure: gamification cap + velocity.
@@ -369,7 +385,11 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     }
 
     // Safeguard: Ensure the newly set commission (base or cap, whichever is higher) doesn't violate the 10% hard floor.
-    if (updates.commission_pct !== undefined || updates.commission_max_pct !== undefined) {
+    // Sub-agent semantics only - this compares the target's payout against the
+    // caller's own margin, which only means something for a recruiter
+    // commission. A non-sub-agent target's commission_pct is a chain markup
+    // (upline cost x (1 + pct/100)), so this safeguard does not apply to it.
+    if (target.is_sub_agent === true && (updates.commission_pct !== undefined || updates.commission_max_pct !== undefined)) {
       const { verifyCommissionSafeguard } = await import('@/lib/pricing');
       
       // If we are updating commission_max_pct, we check that. If not, we check commission_pct. 
