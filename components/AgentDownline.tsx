@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import AgentAccountDetail from '@/components/AgentAccountDetail';
-import { freshDefaultLadder, GAMIFICATION_MAX_PCT } from '@/lib/gamification';
 
 export default function AgentDownline({ agentId }: { agentId?: string }) {
   const [agents, setAgents] = useState<any[]>([]);
@@ -28,14 +27,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
   const [caAccountType, setCaAccountType] = useState<'credit' | 'prepaid'>('prepaid');
   const [caCreditLimit, setCaCreditLimit] = useState('');
   const [caPrepaidBalance, setCaPrepaidBalance] = useState('');
-  // Commission structure: 'fixed' = flat rate; 'gamified' = base climbs with
-  // volume up to a max cap via the house milestone ladder.
-  const [caCommissionMode, setCaCommissionMode] = useState<'fixed' | 'gamified'>('fixed');
   const [caCommissionPct, setCaCommissionPct] = useState('50');
-  // 'default' = read-only house ladder (20% -> 40%); 'custom' = fully adjustable.
-  const [caScaleType, setCaScaleType] = useState<'default' | 'custom'>('default');
-  const [caCustomSteps, setCaCustomSteps] = useState(freshDefaultLadder());
-  const [showGamificationInfo, setShowGamificationInfo] = useState(false);
   const [caLoading, setCaLoading] = useState(false);
   const [caError, setCaError] = useState('');
   // Default UI language for the new agent (English / Simplified / Traditional).
@@ -112,10 +104,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
       setCaIsSuperAgent(false);
       setCaCreditLimit('');
       setCaPrepaidBalance('');
-      setCaCommissionMode('fixed');
       setCaCommissionPct('50');
-      setCaScaleType('default');
-      setCaCustomSteps(freshDefaultLadder());
       setCaLocale('en');
       fetchData();
     } catch (err: any) {
@@ -156,10 +145,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                   setCaIsSuperAgent(false);
                   setCaCreditLimit('');
                   setCaPrepaidBalance('');
-                  setCaCommissionMode('fixed');
                   setCaCommissionPct('50');
-                  setCaScaleType('default');
-                  setCaCustomSteps(freshDefaultLadder());
                   setCaDisplayName('');
                   setCaSlug('');
                   setCaError('');
