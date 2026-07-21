@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
 
   const svc = await createServiceClient();
 
-  const { data: target } = await svc.from('profiles').select('id, role, parent_agent_id').eq('id', agentId).maybeSingle();
+  const { data: target } = await svc.from('profiles').select('id, role, parent_agent_id, is_sub_agent').eq('id', agentId).maybeSingle();
   if (!target || !['agent', 'super_agent'].includes(String(target.role))) {
     return NextResponse.json({ error: 'Agent Not Found.' }, { status: 404 });
   }
@@ -110,6 +110,18 @@ export async function POST(req: NextRequest) {
     if (target.parent_agent_id !== gate.userId) {
       return NextResponse.json({ error: 'Forbidden. You do not own this agent.' }, { status: 403 });
     }
+  }
+
+  // Chain-priced guard: a parented non-sub-agent's cost is derived from its
+  // upline chain cost x (1 + commission_pct/100) - a tier lock or flat
+  // custom_markup_override written here is never read by lib/pricing for such
+  // an account (the UI already hides this control for them; this is the
+  // server-side backstop so the admin API can't silently no-op the same way).
+  if (target.parent_agent_id && target.is_sub_agent !== true) {
+    return NextResponse.json(
+      { error: 'This Account Is Chain-Priced. Its Cost Comes From Its Upline Cost Plus The Assigned Markup - Set The Markup Instead Of A Tier Override.' },
+      { status: 409 },
+    );
   }
 
   const update: Record<string, unknown> = {
