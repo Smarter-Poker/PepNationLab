@@ -1110,6 +1110,7 @@ export async function POST(request: NextRequest) {
     if (agentSlug === DEFAULT_STORE_SLUG && actualShippingOption !== 'agent_pickup' && subtotal >= 100) {
       shippingCost = 0;
     }
+
     const grossTotal = Math.round((Math.max(0, subtotal - discountAmount) + shippingCost) * 100) / 100;
     const total = Math.max(0, grossTotal);
 
