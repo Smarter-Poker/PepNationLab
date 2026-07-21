@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
+import AgentAccountDetail from '@/components/AgentAccountDetail';
 
 /* ─── Types ─────────────────────────────────────────────────────────────── */
 interface NetNode {
@@ -14,6 +15,8 @@ interface NetNode {
   revenue: number;
   order_count: number;
   pending_commission: number;
+  agent_count: number;
+  researcher_count: number;
 }
 
 interface NetTotals {
@@ -50,6 +53,7 @@ export default function AgentNetworkMap() {
   const [data, setData] = useState<NetData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState<{ id: string; name: string } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -142,7 +146,13 @@ export default function AgentNetworkMap() {
                 <div key={n.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   {/* Stub connector up to the bus */}
                   <div style={{ width: 2, height: 16, background: 'rgba(192,184,168,0.25)', marginBottom: -1 }} />
-                  <div style={{
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    title={`Open ${n.full_name || 'agent'}'s account`}
+                    onClick={() => setSelectedAgent({ id: n.id, name: n.full_name || n.username || 'Agent' })}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedAgent({ id: n.id, name: n.full_name || n.username || 'Agent' }); } }}
+                    style={{
                     width: '100%',
                     background: 'var(--surface-2, #162230)',
                     border: isTop ? '1.5px solid var(--teal)' : '1px solid rgba(192,184,168,0.15)',
@@ -150,6 +160,7 @@ export default function AgentNetworkMap() {
                     padding: 'var(--space-4)',
                     boxShadow: isTop ? '0 0 18px rgba(0,196,188,0.2)' : 'none',
                     position: 'relative',
+                    cursor: 'pointer',
                   }}>
                     {isTop && (
                       <div style={{
@@ -191,7 +202,13 @@ export default function AgentNetworkMap() {
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.76rem', color: 'var(--silver-light)', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 8 }}>
                       <span>{n.order_count} Orders</span>
-                      <span>{n.commission_pct}% Rate</span>
+                      <span>{n.commission_pct}% Markup</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.76rem', color: 'var(--silver-light)', marginTop: 4 }}>
+                      <span style={{ color: 'var(--grey-400)' }}>Downline</span>
+                      <span style={{ color: 'var(--silver-light)' }}>
+                        {n.agent_count} Agent{n.agent_count === 1 ? '' : 's'} &middot; {n.researcher_count} Researcher{n.researcher_count === 1 ? '' : 's'}
+                      </span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.76rem', color: 'var(--silver-light)', marginTop: 4 }}>
                       <span style={{ color: 'var(--grey-400)' }}>Pending</span>
@@ -205,6 +222,15 @@ export default function AgentNetworkMap() {
             })}
           </div>
         </div>
+      )}
+
+      {selectedAgent && (
+        <AgentAccountDetail
+          agentId={selectedAgent.id}
+          agentName={selectedAgent.name}
+          onClose={() => setSelectedAgent(null)}
+          onChanged={load}
+        />
       )}
     </div>
   );
