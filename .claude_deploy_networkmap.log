@@ -1,0 +1,16 @@
+=== network-map deploy started ===
+From https://github.com/Smarter-Poker/PepNationLab
+ * branch              main       -> FETCH_HEAD
+   e10f8c5b..ad1c7767  main       -> origin/main
+Preparing worktree (detached HEAD ad1c7767)
+Updating files:  79% (2591/3258)Updating files:  80% (2607/3258)Updating files:  81% (2639/3258)Updating files:  82% (2672/3258)Updating files:  83% (2705/3258)Updating files:  84% (2737/3258)Updating files:  85% (2770/3258)Updating files:  86% (2802/3258)Updating files:  87% (2835/3258)Updating files:  88% (2868/3258)Updating files:  89% (2900/3258)Updating files:  90% (2933/3258)Updating files:  91% (2965/3258)Updating files:  92% (2998/3258)Updating files:  93% (3030/3258)Updating files:  94% (3063/3258)Updating files:  95% (3096/3258)Updating files:  96% (3128/3258)Updating files:  97% (3161/3258)Updating files:  98% (3193/3258)Updating files:  99% (3226/3258)Updating files: 100% (3258/3258)Updating files: 100% (3258/3258), done.
+HEAD is now at ad1c7767 Downline balances: include nested Super Agents in the upline's running-totals snapshot
+OK: patched app/api/agent/sub-agents/network/route.ts (3 edits)
+OK: patched components/AgentNetworkMap.tsx (6 edits)
+PATCH_DONE
+[detached HEAD 719d383e] Network Map: clickable cards, downline counts, and honest markup label
+ 2 files changed, 49 insertions(+), 4 deletions(-)
+To https://github.com/Smarter-Poker/PepNationLab.git
+   ad1c7767..719d383e  HEAD -> main
+PUSHED 719d383e7cae940786592be5e5621d6e6f215884
+DEPLOY_OK

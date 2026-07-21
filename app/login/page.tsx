@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Key } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { safeRelativePath } from '@/lib/safe-redirect';
-import { LanguageProvider, LanguageToggle, useI18n } from '@/lib/i18n';
+import { LanguageProvider, useI18n } from '@/lib/i18n';
 
 function LoginPageInner() {
   const { t } = useI18n();
@@ -227,9 +227,7 @@ function LoginPageInner() {
 
       <div style={{ width: '100%', maxWidth: 420, position: 'relative' }}>
         <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-8)', boxShadow: '0 0 40px rgba(104,211,145,0.05)' }}>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--space-4)' }}>
-            <LanguageToggle compact />
-          </div>
+
           <h1 className="animated-gradient-text" style={{ marginBottom: 'var(--space-2)', fontSize: '1.4rem', textAlign: 'center' }}>{t('login_button')}</h1>
           <p style={{ marginBottom: 'var(--space-6)', fontSize: '0.85rem', color: 'var(--grey-400)', textAlign: 'center' }}>
             {t('login_subtitle')}
