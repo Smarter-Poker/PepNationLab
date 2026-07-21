@@ -1149,6 +1149,7 @@ export default function AgentDashboardClient({
 
               <AgentResearcherCRMv2
                 isSuperAgent={userProfile.is_super_agent}
+                isSubAgent={userProfile.is_sub_agent}
                 onResetPassword={setResetPwUser}
                 onPromote={(r: any) => setPromoteResearcher(r)}
                 onToggleAutoApprove={handleToggleTrust}

@@ -92,16 +92,27 @@ const POPULAR_ORDER: string[] = [
   'Selank',
 ];
 
+<<<<<<< HEAD
 // Base names excluded from the storefront "Top 10 Best Peptides" card.
 // Removing them frees slots so Tirzepatide + Retatrutide (already ranked
 // next in POPULAR_ORDER) surface. Stacks otherwise get a +20000 rank bonus,
 // so they must be filtered here rather than merely dropped from POPULAR_ORDER.
+=======
+// Explicit Top 10 removals (owner-curated 2026-07-20). Base names (trailing
+// parenthetical stripped, UPPERCASE) that must NEVER appear in the Top 10 card,
+// even though stacks otherwise get a large ranking premium. Removing these frees
+// slots so Tirzepatide + Retatrutide (already ranked next) surface in the Top 10.
+>>>>>>> 688af549 (feat: hide commission box for super agents and update sales goal label)
 const TOP10_EXCLUDE = new Set<string>([
   'SEMAGLUTIDE',
   'THE FURNACE STACK',
   'THE LIPOLYSIS STACK',
 ]);
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 688af549 (feat: hide commission box for super agents and update sales goal label)
 const isBacWaterItem = (name: string | null | undefined, slug: string | null | undefined) =>
   slug === 'bac-water' || /bac\.?\s*water/i.test(name || '');
 

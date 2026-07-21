@@ -836,7 +836,7 @@ function GettingStarted({ slug, researcherCount }: { slug: string | null; resear
 ----------------------------------------------------------------------- */
 
 export default function AgentResearcherCRMv2({
-  isSuperAgent, onResetPassword, onPromote, onToggleAutoApprove,
+  isSuperAgent, isSubAgent, onResetPassword, onPromote, onToggleAutoApprove,
 }: CRMExternalProps) {
   const router = useRouter();
   const [data, setData] = useState<Payload | null>(null);
@@ -1100,7 +1100,9 @@ export default function AgentResearcherCRMv2({
         <KpiCard label="New This Month" value={fmtInt(k.new_this_month.value)} spark={k.new_this_month.spark ?? []} delta={k.new_this_month.delta_pct} onClick={() => { setTab('list'); setFilter('new'); }} />
         <KpiCard label="At Risk" value={fmtInt(k.at_risk.value)} spark={k.at_risk.spark ?? []} delta={k.at_risk.delta_pct} color="#F87171" onClick={() => { setTab('list'); setFilter('at_risk'); }} muted={safe(k.at_risk.value) === 0} />
         <KpiCard label="Best Researcher" value={k.best_customer?.label || '-'} spark={k.best_customer?.spark ?? []} delta={k.best_customer?.delta_pct} color="#D0DAE4" subtitle={(k.best_customer?.value ?? 0) > 0 ? fmtUSD(k.best_customer!.value) : undefined} muted={!k.best_customer?.label} />
-        <KpiCard label="Commission Earned" value={fmtUSD(k.lifetime_commission.value)} spark={k.lifetime_commission.spark ?? []} delta={k.lifetime_commission.delta_pct} color="#2DD4BF" />
+        {isSubAgent && (
+          <KpiCard label="Commission Earned" value={fmtUSD(k.lifetime_commission.value)} spark={k.lifetime_commission.spark ?? []} delta={k.lifetime_commission.delta_pct} color="#2DD4BF" />
+        )}
       </div>
 
       {/* Tab bar */}
