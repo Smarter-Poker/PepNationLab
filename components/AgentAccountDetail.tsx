@@ -47,6 +47,11 @@ type Detail = {
     commission_active_since: string | null;
     is_active: boolean;
     is_sub_agent?: boolean;
+    // Present when this account is a parented downline (non-sub-agent).
+    // Chain-aware pricing means ITS cost is commission_pct compounded on its
+    // parent's cost - the Global Pricing Override (house tier / flat
+    // custom_markup_override) below only applies to a TOP-LEVEL account.
+    parent_agent_id?: string | null;
     // Invoice v2 - freeze state surfaced on the detail row so the panel
     // shows the current toggle position without a separate request.
     is_transactions_frozen?: boolean;
@@ -530,8 +535,29 @@ export default function AgentAccountDetail({
                     </div>
 
                     <div style={{ marginTop: 'var(--space-4)', padding: 'var(--space-3)', background: 'var(--surface-2)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)' }}>
-                      <label style={{ ...labelStyle, marginBottom: 8, display: 'block' }}>Global Pricing Override</label>
-                      <AdminTierOverrideControl agentId={agentId} />
+                      {!isSubAgent && detail.agent.parent_agent_id ? (
+                        // Chain-aware pricing (2026-07-21): a parented account's
+                        // real cost is commission_pct (the "Your Markup On This
+                        // Agent" % set when this account was created) compounded
+                        // on its parent's cost - a house-tier / flat-markup
+                        // override here would be silently ignored by the chain,
+                        // so show what actually prices this account instead.
+                        <>
+                          <label style={{ ...labelStyle, marginBottom: 8, display: 'block' }}>Pricing</label>
+                          <div style={{ fontSize: '0.85rem', color: 'var(--silver)' }}>
+                            Pays Your Cost Plus{' '}
+                            <span style={{ color: '#00C4BC', fontWeight: 700 }}>
+                              {detail.agent.commission_pct != null ? fmtPct(Number(detail.agent.commission_pct)) : '50% (Default)'}
+                            </span>
+                            {' '}Markup.
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <label style={{ ...labelStyle, marginBottom: 8, display: 'block' }}>Global Pricing Override</label>
+                          <AdminTierOverrideControl agentId={agentId} />
+                        </>
+                      )}
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-4)' }}>
