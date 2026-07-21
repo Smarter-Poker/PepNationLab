@@ -93,21 +93,13 @@ export async function POST(req: NextRequest) {
 
     const { data: callerProfile } = await supabase
       .from('profiles')
-      .select('role, is_super_agent, is_sub_agent, default_agent_markup_pct, default_agent_pricing_mode')
+      .select('role, is_super_agent, is_sub_agent')
       .eq('id', callerId)
       .maybeSingle();
 
     if (!callerProfile || !callerProfile.is_super_agent) {
       return NextResponse.json({ error: 'Forbidden. Only Super Agents can create Agent Accounts.' }, { status: 403 });
     }
-
-    const callerPricing = callerProfile as { default_agent_markup_pct?: number | null; default_agent_pricing_mode?: string | null };
-    const defaultAgentMarkupOverride: number | null | undefined =
-      callerPricing.default_agent_pricing_mode === 'gamified'
-        ? null
-        : callerPricing.default_agent_markup_pct != null
-          ? Math.round((Number(callerPricing.default_agent_markup_pct) / 100) * 10000) / 10000
-          : undefined;
 
     const body = await req.json().catch(() => ({}));
     const {
@@ -248,7 +240,16 @@ export async function POST(req: NextRequest) {
       commission_max_pct: commMax,
       velocity_cap: velCap,
       commission_ladder_config: Array.isArray(custom_commission_scale) ? custom_commission_scale : undefined,
-      custom_markup_override: defaultAgentMarkupOverride,
+      // custom_markup_override is intentionally NOT set here (2026-07-21):
+      // every account this route creates is nested (parent_agent_id =
+      // callerId), and under chain-aware pricing (lib/pricing.ts) a parented
+      // profile's cost is always commission_pct (this form's "Your Markup On
+      // This Agent") compounded through its upline - custom_markup_override
+      // on a parented profile is now ignored by design. Previously this was
+      // seeded from the caller's own default_agent_markup_pct, which had
+      // nothing to do with the commission_pct assigned above and was the
+      // dead weight behind rows showing custom_markup_override=1 on nested
+      // Super Agents that otherwise looked correctly configured.
       // New agent's default UI language (English / Simplified / Traditional)
       // chosen on the create form; seeded into their session on first login.
       locale: ['en', 'zh-CN', 'zh-TW'].includes(locale) ? locale : 'en',
