@@ -54,7 +54,10 @@ export async function GET() {
       .from('profiles')
       .select('id, full_name, account_type, prepaid_balance, credit_used, credit_limit')
       .eq('parent_agent_id', callerId)
-      .eq('role', 'agent')
+      // Nested Super Agents (role='super_agent' with a parent) are downlines
+      // too - their upline needs their running totals and open invoices in
+      // the same snapshot as standard agents.
+      .in('role', ['agent', 'super_agent'])
       .limit(200),
     svc
       .from('profiles')
