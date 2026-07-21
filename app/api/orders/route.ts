@@ -2,7 +2,7 @@ import { after, NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { getEffectiveUser } from '@/lib/impersonation';
 import { CheckoutSchema } from '@/lib/schemas/order';
-import { applyBulkPrice, isTierLadderV2, computeAgentCostsForAgent, resolveAgentPricingContext } from '@/lib/pricing';
+import { applyBulkPrice, isTierLadderV2, computeAgentCostsForAgent, computeAgentTopOfChainCostsForAgent, resolveAgentPricingContext } from '@/lib/pricing';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { calculateShippingCost, getCarrierName } from '@/lib/shipping-cost';
@@ -440,6 +440,16 @@ export async function POST(request: NextRequest) {
     if (superAgentProfile && !isManufacturerStore) {
       superAgentCosts = await computeAgentCostsForAgent(serviceSupabase, superAgentProfile.id, superAgentTier || 'tier_3', productListForPricing);
     }
+    // Fix 3 (2026-07-21): top-of-chain cost basis for order_items.unit_house_cost.
+    // For a chain sale (agentProfile has a parent -- superAgentProfile is set),
+    // the immediate parent's cost (superAgentCosts above) is NOT the house's true
+    // cost basis under 3+ level chains -- it's just the next hop up. Resolving
+    // agentProfile's own chain to its top ancestor gives the actual house cost,
+    // regardless of how many Super Agent hops sit in between.
+    let topOfChainCosts = new Map<string, number>();
+    if (superAgentProfile && agentProfile && !isManufacturerStore) {
+      topOfChainCosts = await computeAgentTopOfChainCostsForAgent(serviceSupabase, agentProfile.id, agentTier, productListForPricing);
+    }
 
     let flashSaleDiscountPct = 0;
     if (flashSaleEligible && activeSale) {
@@ -637,6 +647,7 @@ export async function POST(request: NextRequest) {
 
       let costPrice = retailPrice;
       let superAgentCost = null;
+      let houseCost: number | null = null;
       // Wholesale buyers (agent self-buy + sub-agents) always pay flat tier
       // cost - no volume/bulk discount and no retail markup. Dynamic pricing
       // applies to researchers only.
@@ -801,6 +812,23 @@ export async function POST(request: NextRequest) {
         superAgentCost = isFinite(superAgentCost) ? Math.round(superAgentCost * 100) / 100 : null;
       }
 
+      // Fix 3 (2026-07-21): capture the TOP-of-chain house cost per unit at
+      // sale time. Chain sale (agent has a parent) -> the top ancestor's own
+      // ladder cost, ignoring every downstream hop's markup. Top-level agent
+      // sale (no parent) -> the agent's own (already fully adjusted & rounded)
+      // cost IS the house edge. Manufacturer branch and no-agent (direct/house)
+      // orders leave this NULL.
+      if (agentProfile && !isManufacturerStore) {
+        if (superAgentProfile) {
+          const topRaw = topOfChainCosts.get(dbProduct.id);
+          houseCost = topRaw !== undefined && topRaw !== null
+            ? Math.round((topRaw / 10) * 100) / 100
+            : null;
+        } else {
+          houseCost = costPrice;
+        }
+      }
+
       const finalProductName = isBundleLine ? `${dbProduct.name} [Part of: ${cartItem.bundleName}]` : dbProduct.name;
 
       const split = itemSplits[idx];
@@ -817,6 +845,7 @@ export async function POST(request: NextRequest) {
           unit_retail_price: retailPrice,
           unit_cost_price: costPrice,                                           // use real cost, not 0 -- zero corrupts COGS reporting
           unit_super_agent_cost: superAgentCost,                               // use real super-agent cost, not 0
+          unit_house_cost: houseCost,                                          // top-of-chain house cost basis (Fix 3)
           isLocalFulfillment: true
         } as any);
       }
@@ -831,6 +860,7 @@ export async function POST(request: NextRequest) {
           unit_retail_price: retailPrice,
           unit_cost_price: costPrice,
           unit_super_agent_cost: superAgentCost,
+          unit_house_cost: houseCost,
           isLocalFulfillment: false
         } as any);
       }
@@ -845,6 +875,7 @@ export async function POST(request: NextRequest) {
           unit_retail_price: retailPrice,
           unit_cost_price: costPrice,
           unit_super_agent_cost: superAgentCost,
+          unit_house_cost: houseCost,
           isLocalFulfillment: false
         } as any);
       }
@@ -1079,7 +1110,6 @@ export async function POST(request: NextRequest) {
     if (agentSlug === DEFAULT_STORE_SLUG && actualShippingOption !== 'agent_pickup' && subtotal >= 100) {
       shippingCost = 0;
     }
-
     const grossTotal = Math.round((Math.max(0, subtotal - discountAmount) + shippingCost) * 100) / 100;
     const total = Math.max(0, grossTotal);
 
@@ -1444,6 +1474,7 @@ export async function POST(request: NextRequest) {
       unit_retail_price: item.unit_retail_price,
       unit_cost_price: item.unit_cost_price,
       unit_super_agent_cost: item.unit_super_agent_cost,
+      unit_house_cost: (item as any).unit_house_cost ?? null,
       // Tag agent-local lines so a later cancel restores exactly what
       // reserve_inventory took from agent_inventory (China is never tracked).
       fulfilled_locally: (item as any).isLocalFulfillment === true,
