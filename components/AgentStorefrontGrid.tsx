@@ -137,28 +137,30 @@ interface GroupedProduct {
 }
 
 const POPULAR_ORDER: string[] = [
-  'The Appetite Crusher Stack (Cagrilintide 5mg + Semaglutide 5mg)',
-  'GH Synergy Stack (CJC 5mg + IPA 5mg)',
-  'The Wolverine Stack (BPC 10mg + TB 10mg)',
-  'The Wolverine Stack (BPC 5mg + TB 5mg)',
-  'Glow Stack (TB10 + BPC10 + GHK50)',
-  'KLOW STACK (TB10+BPC10+GHK50+KPV10)',
-  'The Furnace Stack (L-Carnitine Blend)',
-  'The Lipolysis Stack (Lemon Bottle)',
-  'Limitless Stack (Semax + Selank)',
-  'Shred Stack (Tirzepatide + AOD9604)',
-  'Semaglutide',
   'Tirzepatide',
   'Retatrutide',
+  'KLOW STACK (TB10+BPC10+GHK50+KPV10)',
+  'Glow Stack (TB10 + BPC10 + GHK50)',
   'BPC 157',
+  'Limitless Stack (Semax + Selank)',
+  'Semaglutide',
+  'The Wolverine Stack (BPC 10mg + TB 10mg)',
+  'The Wolverine Stack (BPC 5mg + TB 5mg)',
   'TB500 (Thymosin B4 Acetate)',
   'Sermorelin Acetate',
-  'Ipamorelin',
-  'GHK-CU',
-  'NAD+',
-  'AOD9604',
+  'Shred Stack (Tirzepatide + AOD9604)',
   'CJC-1295 Without DAC',
   'CJC-1295 With DAC',
+  'GHK-CU',
+  'AOD9604',
+  'BAC Water',
+  'Bacteriostatic Water',
+  'The Appetite Crusher Stack (Cagrilintide 5mg + Semaglutide 5mg)',
+  'GH Synergy Stack (CJC 5mg + IPA 5mg)',
+  'The Furnace Stack (L-Carnitine Blend)',
+  'The Lipolysis Stack (Lemon Bottle)',
+  'Ipamorelin',
+  'NAD+',
   'KPV',
   'Semax',
   'Selank',
@@ -169,7 +171,6 @@ const POPULAR_ORDER: string[] = [
 // even though stacks otherwise get a large ranking premium. Removing these frees
 // slots so Tirzepatide + Retatrutide (already ranked next) surface in the Top 10.
 const TOP10_EXCLUDE = new Set<string>([
-  'SEMAGLUTIDE',
   'THE FURNACE STACK',
   'THE LIPOLYSIS STACK',
 ]);
@@ -1818,7 +1819,11 @@ export default function AgentStorefrontGrid({
       }
 
       // 5. Popularity ranking (2nd priority)
-      score += (1000 - g.popularity);
+      if (g.popularity !== 999) {
+        score += (1000 - g.popularity) * 1000000;
+      } else {
+        score += (1000 - g.popularity);
+      }
 
       // 6. Likelihood to Sell to the Researcher:
       if (compound) {
