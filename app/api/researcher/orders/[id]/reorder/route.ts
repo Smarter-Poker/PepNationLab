@@ -4,6 +4,7 @@ import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { getEffectiveUser } from '@/lib/impersonation';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit } from '@/lib/rate-limit';
+import { computeAgentCostsForAgent, computeAgentTopOfChainCostsForAgent, type AgentTier } from '@/lib/pricing';
 
 /**
  * Researcher Reorder.
@@ -13,6 +14,12 @@ import { rateLimit } from '@/lib/rate-limit';
  * trust the previous unit price because the agent may have repriced since.
  * Items whose product has been banned, removed from the catalog, or hidden
  * from the agent's storefront are dropped and returned in `skipped[]`.
+ *
+ * Cost basis (unit_cost_price / unit_super_agent_cost / unit_house_cost) is
+ * re-resolved through the same chain-aware pricing engine checkout uses
+ * (lib/pricing.ts computeAgentCostsForAgent) - NOT products.base_cost - so a
+ * reorder bills the full agent (and, when parented, super-agent) chain cost
+ * instead of the platform's raw wholesale cost.
  *
  * The new order lands in `pending_customer_payment` state with the same
  * shipping address and payment method copied across; the buyer can then
@@ -102,6 +109,67 @@ export async function POST(
     );
   }
 
+  // Resolve the storefront agent's chain-aware cost basis (mirrors checkout's
+  // manufacturer / super-agent / plain-agent branches in app/api/orders/route.ts).
+  // Previously this route priced every line off raw products.base_cost / 10,
+  // recording it as unit_cost_price with no unit_super_agent_cost at all -
+  // bypassing every markup hop in the chain.
+  let agentRow: {
+    id: string;
+    tier: AgentTier | null;
+    parent_agent_id: string | null;
+    is_sub_agent: boolean | null;
+    is_manufacturer: boolean | null;
+    manufacturer_commission_pct: number | null;
+  } | null = null;
+  let isManufacturerStore = false;
+  let manufacturerCommissionPct = 0;
+  let agentCosts = new Map<string, number>();
+  let superAgentCosts = new Map<string, number>();
+  let topOfChainCosts = new Map<string, number>();
+  let superAgentHasParent = false;
+
+  if (source.agent_id) {
+    const { data: ap } = await service
+      .from('profiles')
+      .select('id, tier, parent_agent_id, is_sub_agent, is_manufacturer, manufacturer_commission_pct')
+      .eq('id', source.agent_id)
+      .maybeSingle();
+    agentRow = ap as typeof agentRow;
+
+    if (agentRow) {
+      isManufacturerStore = agentRow.is_manufacturer === true;
+      manufacturerCommissionPct = isManufacturerStore
+        ? Math.min(Math.max(Number(agentRow.manufacturer_commission_pct ?? 10) || 10, 0), 100)
+        : 0;
+
+      if (!isManufacturerStore) {
+        const productListForPricing = (products ?? [])
+          .filter((p) => p.base_cost != null)
+          .map((p) => ({ id: p.id, base_cost: Number(p.base_cost) }));
+
+        const agentTier: AgentTier = (agentRow.tier as AgentTier | null) ?? 'tier_3';
+        agentCosts = await computeAgentCostsForAgent(service, agentRow.id, agentTier, productListForPricing);
+        topOfChainCosts = await computeAgentTopOfChainCostsForAgent(service, agentRow.id, agentTier, productListForPricing);
+
+        // Non-sub-agent with an upline: also resolve the direct parent's
+        // chain cost for unit_super_agent_cost, same as checkout.
+        superAgentHasParent = Boolean(agentRow.parent_agent_id) && agentRow.is_sub_agent !== true;
+        if (superAgentHasParent && agentRow.parent_agent_id) {
+          const { data: parentProfile } = await service
+            .from('profiles')
+            .select('id, tier')
+            .eq('id', agentRow.parent_agent_id)
+            .maybeSingle();
+          if (parentProfile) {
+            const parentTier: AgentTier = (parentProfile.tier as AgentTier | null) ?? 'tier_3';
+            superAgentCosts = await computeAgentCostsForAgent(service, parentProfile.id, parentTier, productListForPricing);
+          }
+        }
+      }
+    }
+  }
+
   const skipped: Array<{ product_name: string; reason: string }> = [];
   const computed: Array<{
     agent_product_id: string | null;
@@ -110,6 +178,8 @@ export async function POST(
     quantity: number;
     unit_retail_price: number;
     unit_cost_price: number;
+    unit_super_agent_cost: number | null;
+    unit_house_cost: number | null;
   }> = [];
 
   for (const it of sourceItems) {
@@ -127,7 +197,6 @@ export async function POST(
       continue;
     }
 
-    const baseCost = Number(product.base_cost) || 0;
     const apMatch = source.agent_id ? agentPriceMap.get(it.product_id) : null;
 
     if (source.agent_id && !apMatch) {
@@ -141,14 +210,62 @@ export async function POST(
 
     // NOTE: retail_price / base_cost in DB are per-10-vial-pack, but order
     // quantity is number of individual vials. Divide by 10 → per-vial unit.
-    const retailPrice = apMatch ? apMatch.price / 10 : baseCost / 10;
+    let retailPrice = apMatch ? apMatch.price / 10 : Number(product.base_cost) / 10;
+
+    let costPrice: number;
+    let superAgentCost: number | null = null;
+    let houseCost: number | null = null;
+
+    if (!source.agent_id) {
+      // Direct/house order (no storefront agent) - mirrors checkout: cost
+      // collapses to retail, there is no chain to price against.
+      costPrice = retailPrice;
+    } else if (isManufacturerStore) {
+      // Manufacturer stores: mirror checkout - the platform's take is the
+      // commission slice of the manufacturer's own retail price, not a
+      // markup on top of it. No min-margin floor below (cost is derived
+      // FROM retail here, so a floor would be circular). unit_house_cost
+      // stays null, same as checkout.
+      costPrice = Math.round(retailPrice * (manufacturerCommissionPct / 100) * 100) / 100;
+    } else {
+      const raw = agentCosts.get(it.product_id);
+      costPrice = raw !== undefined && raw !== null ? raw / 10 : Number(product.base_cost) / 10;
+      costPrice = isFinite(costPrice) ? Math.round(costPrice * 100) / 100 : 0;
+
+      if (superAgentHasParent) {
+        const superRaw = superAgentCosts.get(it.product_id);
+        superAgentCost = superRaw !== undefined && superRaw !== null
+          ? Math.round((superRaw / 10) * 100) / 100
+          : null;
+
+        const topRaw = topOfChainCosts.get(it.product_id);
+        houseCost = topRaw !== undefined && topRaw !== null
+          ? Math.round((topRaw / 10) * 100) / 100
+          : null;
+      } else {
+        // Top-of-chain (or unparented) agent: their own cost IS the house edge.
+        houseCost = costPrice;
+      }
+
+      // Platform rule: researcher-facing lines floored at cost x 1.10 - same
+      // fail-safe checkout applies as the authoritative last step.
+      const minMarginRetail = Math.round(costPrice * 1.10 * 100) / 100;
+      if (retailPrice < minMarginRetail) {
+        retailPrice = minMarginRetail;
+      }
+    }
+
+    retailPrice = isFinite(retailPrice) ? Math.round(retailPrice * 100) / 100 : 0;
+
     computed.push({
       agent_product_id: apMatch ? apMatch.agent_product_id : null,
       product_id: it.product_id,
       product_name: product.name,
       quantity: it.quantity,
       unit_retail_price: retailPrice,
-      unit_cost_price: baseCost / 10,
+      unit_cost_price: costPrice,
+      unit_super_agent_cost: superAgentCost,
+      unit_house_cost: houseCost,
     });
   }
 
@@ -196,6 +313,8 @@ export async function POST(
     quantity: c.quantity,
     unit_retail_price: c.unit_retail_price,
     unit_cost_price: c.unit_cost_price,
+    unit_super_agent_cost: c.unit_super_agent_cost,
+    unit_house_cost: c.unit_house_cost,
   }));
 
   const { error: itemErr } = await service
