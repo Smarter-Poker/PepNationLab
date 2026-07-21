@@ -320,7 +320,7 @@ export async function POST(req: NextRequest) {
   const service = createAdminClient();
   const { data: profile } = await service
     .from('profiles')
-    .select('id, role, is_super_agent, is_sub_agent, onboarding_progress, must_change_password, first_name, last_name, email, phone, custom_markup_override')
+    .select('id, role, is_super_agent, is_sub_agent, parent_agent_id, onboarding_progress, must_change_password, first_name, last_name, email, phone, custom_markup_override')
     .eq('id', gate.user.id)
     .maybeSingle();
   if (!profile) return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
@@ -391,17 +391,24 @@ export async function POST(req: NextRequest) {
     if (role !== 'super_agent') {
       return NextResponse.json({ error: 'only_super_agents_set_markup' }, { status: 403 });
     }
-    // Store as a decimal fraction (50% -> 0.50) in the uncapped override column.
-    const fraction = Math.round((parsed.data.markup_pct / 100) * 10000) / 10000;
     // Atomically also mark the product tutorial acknowledged. The super-agent
     // markup step IS the product-pricing tutorial; the client previously sent a
     // separate ack POST after this one, so a failure of that second call left the
     // markup saved but the step incomplete. Persisting both here closes that
     // partial-write window (the client's follow-up ack is then idempotent).
     const mergedProgress = { ...((profile.onboarding_progress as Record<string, unknown>) ?? {}), product_tutorial_ack: true };
+    const update: Record<string, unknown> = { onboarding_progress: mergedProgress };
+    // Parented accounts are chain-priced via commission_pct on their upline
+    // chain, so custom_markup_override only applies to top-level accounts --
+    // lib/pricing ignores it for a parented (non-sub-agent) profile. Skip the
+    // dead write here for a nested Super Agent and just complete the step.
+    if (!profile.parent_agent_id) {
+      // Store as a decimal fraction (50% -> 0.50) in the uncapped override column.
+      update.custom_markup_override = Math.round((parsed.data.markup_pct / 100) * 10000) / 10000;
+    }
     const { error } = await service
       .from('profiles')
-      .update({ custom_markup_override: fraction, onboarding_progress: mergedProgress })
+      .update(update)
       .eq('id', gate.user.id);
     if (error) return NextResponse.json({ error: 'markup_update_failed' }, { status: 500 });
     return NextResponse.json({ ok: true, markup_pct: parsed.data.markup_pct });
