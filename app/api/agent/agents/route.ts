@@ -234,7 +234,13 @@ export async function POST(req: NextRequest) {
       updated_at: new Date().toISOString(),
       tier: 'tier_3',
       account_type: account_type,
-      credit_limit: account_type === 'credit' ? (Number(credit_limit) || null) : null,
+      // `Number(x) || null` coerced an explicit 0 credit limit to NULL (0 is
+      // falsy) -- an agent set up with $0 credit ended up with an unlimited
+      // (null) limit instead. Number.isFinite preserves 0 while still mapping
+      // unset/blank input to NULL.
+      credit_limit: account_type === 'credit'
+        ? (credit_limit === undefined || credit_limit === null || credit_limit === '' ? null : (Number.isFinite(Number(credit_limit)) ? Number(credit_limit) : null))
+        : null,
       prepaid_balance: account_type === 'prepaid' ? (Number(prepaid_balance) || 0) : 0,
       commission_pct: commPct,
       commission_max_pct: commMax,
