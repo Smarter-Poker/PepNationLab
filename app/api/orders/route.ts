@@ -663,8 +663,16 @@ export async function POST(request: NextRequest) {
                 dbProduct.admin_bulk_threshold
               );
 
+          // Fix 2 (2026-07-21): track whether an explicit admin/super-configured
+          // baseline_cost override applies to this product. That override is
+          // authoritative and must survive the Gamification Markup step below --
+          // previously the markup step unconditionally overwrote costPrice with
+          // the dynamic chain cost for every non-sub-agent, silently discarding
+          // any baseline_cost the super agent had explicitly set.
+          let baselineApplied = false;
           const saConfig = superAgentBaselines[dbProduct.id];
           if (saConfig) {
+             baselineApplied = true;
              // Sub-agents do not get the bulk_baseline_cost break; they always
              // pay the baseline tier their parent has set.
              // baseline_cost / bulk_baseline_cost are stored PER-10-VIAL PACK, so
@@ -683,7 +691,10 @@ export async function POST(request: NextRequest) {
           // Gamification Markup (Super Agent -> Agent)
           // The Agent pays the Super Agent's cost + Markup.
           // Sub-agent wholesale orders are exempt -- they pay baseline_cost.
-          if (agentProfile && !agentProfile.is_sub_agent && !isSubAgent) {
+          // Skipped entirely when a super_agent_pricing baseline_cost override
+          // was applied above -- an explicit baseline is authoritative and must
+          // never be clobbered by the dynamic chain/ladder cost.
+          if (!baselineApplied && agentProfile && !agentProfile.is_sub_agent && !isSubAgent) {
              if (isTierLadderV2()) {
                const aCostRaw = agentCosts.get(dbProduct.id);
                if (aCostRaw !== undefined && aCostRaw !== null) {
