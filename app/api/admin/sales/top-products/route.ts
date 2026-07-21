@@ -27,6 +27,7 @@ export async function GET(req: NextRequest) {
         unit_retail_price,
         unit_cost_price,
         unit_super_agent_cost,
+        unit_house_cost,
         products ( base_cost ),
         orders!inner(created_at, status, agent_id)
       `)
@@ -47,7 +48,12 @@ export async function GET(req: NextRequest) {
       const ucp = Number(item.unit_cost_price || 0);
       // Chained orders: house collects unit_super_agent_cost (see kpis route).
       const usc = Number(item.unit_super_agent_cost || 0);
-      const houseCollect = usc > 0 ? usc : ucp;
+      // unit_house_cost (top-of-chain cost, captured at checkout) is the
+      // correct house collect under 3+ level chains (see kpis route).
+      // Historical rows predate the column (NULL) and are 2-level sales,
+      // where usc is correct -- the usc fallback keeps them unchanged.
+      const uhc = Number(item.unit_house_cost || 0);
+      const houseCollect = uhc > 0 ? uhc : (usc > 0 ? usc : ucp);
       const baseCostPer10 = Number((item.products as any)?.base_cost || 0);
       const baseCostPerVial = baseCostPer10 / 10;
       
