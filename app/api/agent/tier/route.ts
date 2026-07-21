@@ -25,7 +25,7 @@ export async function GET() {
   const svc = await createServiceClient();
 
   const [{ data: profile }, tiers, level, volRes] = await Promise.all([
-    svc.from('profiles').select('fixed_scale_override, locked_tier_level, tier_grace_period_expires_at, parent_agent_id, commission_pct').eq('id', agentId).maybeSingle(),
+    svc.from('profiles').select('fixed_scale_override, locked_tier_level, tier_grace_period_expires_at, parent_agent_id, commission_pct, is_sub_agent').eq('id', agentId).maybeSingle(),
     getHouseTiers(svc),
     resolveHouseTierLevel(svc, agentId),
     svc.rpc('fn_agent_volume_30d', { p_agent: agentId }),
@@ -37,9 +37,14 @@ export async function GET() {
   // tier ladder. Showing "Rookie / Level 1" gamification copy here for a
   // chain-priced account is exactly the "auto defaults to Tier 3" complaint;
   // surface the actual markup instead. Top-level accounts (no parent) are
-  // unaffected and keep the ladder below.
+  // unaffected and keep the ladder below. Sub-agents are EXCLUDED even when
+  // parented: their commission_pct is a recruiter payout percent (paid by
+  // their parent), never a cost markup, so they must keep the ladder/commission
+  // behavior below - this guards against them rendering as chain-priced if the
+  // commission API fetch ever fails.
   const parentAgentId = (profile as { parent_agent_id?: string | null } | null)?.parent_agent_id ?? null;
-  if (parentAgentId) {
+  const isSubAgent = (profile as { is_sub_agent?: boolean | null } | null)?.is_sub_agent === true;
+  if (parentAgentId && !isSubAgent) {
     const rawCommissionPct = (profile as { commission_pct?: number | null } | null)?.commission_pct;
     const markupIsDefault = rawCommissionPct == null;
     const markupPct = markupIsDefault ? 50 : Number(rawCommissionPct);
