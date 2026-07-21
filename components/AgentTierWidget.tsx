@@ -12,6 +12,13 @@ interface TierState {
   progress?: number;
   next?: { level: number; name: string; dollarsToNext: number } | null;
   ladder?: { level: number; name: string; min_volume: number; max_volume: number | null }[];
+  // Chain pricing (2026-07-21): set instead of the ladder fields above for a
+  // downline account under a Super Agent - its cost is the assigned markup
+  // (or the 50% platform default) compounded on its parent's cost, not a
+  // house tier level. See /api/agent/tier.
+  chainPriced?: boolean;
+  markupPct?: number;
+  markupIsDefault?: boolean;
 }
 
 interface CommissionState {
@@ -83,11 +90,25 @@ export default function AgentTierWidget() {
   if (!loaded || !tier?.enabled) return null;
 
   const isSub = comm?.enabled && comm.applicable;
+  const isChainPriced = !isSub && tier.chainPriced === true;
 
   return (
     <div className="glass-panel" style={{ marginBottom: 'var(--space-6)' }}>
       <div className="" style={{ padding: 'var(--space-6)' }}>
-        {isSub ? (
+        {isChainPriced ? (
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--space-6)' }}>
+            <ProgressRing progress={1} label={`${tier.markupPct ?? 50}%`} sub="Markup" />
+            <div style={{ flex: 1, minWidth: 220 }}>
+              <h3 style={{ fontSize: '1.05rem', color: 'var(--white)', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', textTransform: 'uppercase', margin: '0 0 6px' }}>
+                Your Pricing
+              </h3>
+              <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem', margin: 0 }}>
+                You Pay Your Super Agent&apos;s Cost Plus A <span style={{ color: 'var(--teal)', fontWeight: 700 }}>{tier.markupPct ?? 50}% Markup</span>
+                {tier.markupIsDefault ? ' (Platform Default)' : ''}.
+              </p>
+            </div>
+          </div>
+        ) : isSub ? (
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--space-6)' }}>
             <ProgressRing
               progress={comm!.cap_pct && comm!.cap_pct > 0 ? (comm!.effective_pct ?? 0) / comm!.cap_pct : 1}
