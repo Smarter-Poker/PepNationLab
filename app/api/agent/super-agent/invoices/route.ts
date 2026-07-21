@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { computeSubAgentBaselineCost } from '@/lib/pricing';
+import { computeSuperDownlineSubtreeBilling } from '@/lib/statements';
 import { assertSameOrigin } from '@/lib/csrf';
 import { notifyInvoiceGenerated } from '@/lib/notify';
 import { chicagoMidnightIso } from '@/lib/time-cst';
@@ -87,7 +88,7 @@ export async function POST(req: NextRequest) {
     // Check if the Sub-Agent actually belongs to this Super Agent.
     const { data: subAgent } = await supabase
       .from('profiles')
-      .select('id')
+      .select('id, is_super_agent')
       .eq('id', sub_agent_id)
       .eq('parent_agent_id', superAgentId)
       .maybeSingle();
@@ -174,8 +175,22 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Sub-agents collected shipping at retail from customers. Since the Admin 
-    // bills the Super Agent for this shipping cost on their weekly statement, 
+    // If the billed downline is a NESTED Super Agent, their invoice also
+    // covers their entire subtree's orders at the nested Super's own cost
+    // basis - the hop-by-hop weekly trickle-down. (The subtree helper keys
+    // on agent_approved_at with a created_at fallback, matching the cron;
+    // it also excludes not-yet-approved statuses.)
+    if (subAgent.is_super_agent) {
+      const subtree = await computeSuperDownlineSubtreeBilling(supabase, sub_agent_id, {
+        rangeStart,
+        rangeEndExclusive,
+      });
+      totalCogs += subtree.cogs;
+      totalShipping += subtree.shipping;
+    }
+
+    // Sub-agents collected shipping at retail from customers. Since the Admin
+    // bills the Super Agent for this shipping cost on their weekly statement,
     // the Super Agent MUST re-bill shipping to the Sub-Agent here, otherwise
     // the Super Agent loses money paying for the Sub-Agent's shipping.
     const cogsRound = Math.round(totalCogs * 100) / 100;
