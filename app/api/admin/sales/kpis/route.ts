@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
         .from('orders')
         .select(`
           id, total, status, agent_id, created_at,
-          order_items ( quantity, unit_cost_price, unit_retail_price, unit_super_agent_cost, products ( base_cost ) )
+          order_items ( quantity, unit_cost_price, unit_retail_price, unit_super_agent_cost, unit_house_cost, products ( base_cost ) )
         `)
         .gte('created_at', from.toISOString())
         .lt('created_at', to.toISOString())
@@ -57,7 +57,14 @@ export async function GET(req: NextRequest) {
            // collects unit_super_agent_cost from the super; unit_cost_price -
            // unit_super_agent_cost is the SUPER's markup profit, not ours.
            const usc = Number(item.unit_super_agent_cost || 0);
-           const houseCollect = usc > 0 ? usc : ucp;
+           // unit_house_cost (top-of-chain cost, captured at checkout) is the
+           // correct house collect under 3+ level chains, where usc only
+           // reflects the immediate parent, not the true top ancestor.
+           // Historical rows predate the column (NULL) and are 2-level sales,
+           // where usc IS the correct house collect -- the usc fallback keeps
+           // them unchanged.
+           const uhc = Number(item.unit_house_cost || 0);
+           const houseCollect = uhc > 0 ? uhc : (usc > 0 ? usc : ucp);
            const baseCostPer10 = Number(item.products?.base_cost || 0);
            const baseCostPerVial = baseCostPer10 / 10;
            
