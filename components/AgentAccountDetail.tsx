@@ -695,7 +695,10 @@ export default function AgentAccountDetail({
                             <span style={{ fontFamily: 'monospace', color: 'var(--teal)', fontWeight: 700, fontSize: '0.82rem' }}>{a.username || '-'}</span>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ color: '#00C4BC', fontWeight: 700, fontSize: '0.82rem' }}>{a.commission_pct ?? 0}% Markup</span>
+                            {/* NULL means the 50% platform default, not 0 -- match the Overview
+                                Pricing block's own copy so this list doesn't understate the
+                                assigned markup for accounts left on the default. */}
+                            <span style={{ color: '#00C4BC', fontWeight: 700, fontSize: '0.82rem' }}>{a.commission_pct != null ? fmtPct(Number(a.commission_pct)) : '50% (Default)'} Markup</span>
                           </div>
                         </div>
                       ))}
