@@ -134,9 +134,9 @@ export default function CallButton({ conversationId, onCallStarted }: Props) {
         aria-label="Start Voice Call"
         title="Start Voice Call"
         className="hover-lift call-icon-btn"
-        style={{ ...iconBtn, minWidth: 44, minHeight: 44, overflow: 'visible' }}
+        style={{ ...iconBtn, minWidth: 48, minHeight: 48, overflow: 'visible' }}
       >
-        <Image src="/messenger-icons/phone-icon.png" alt="Voice Call" width={48} height={48} unoptimized style={{ width: 44, height: 44, objectFit: 'contain' }} />
+        <Image src="/messenger-icons/phone-icon.png" alt="Voice Call" width={48} height={48} unoptimized style={{ width: 48, height: 48, objectFit: 'contain' }} />
       </button>
       <button
         type="button"
@@ -145,9 +145,9 @@ export default function CallButton({ conversationId, onCallStarted }: Props) {
         aria-label="Start Video Call"
         title="Start Video Call"
         className="hover-lift call-icon-btn"
-        style={{ ...iconBtn, minWidth: 44, minHeight: 44, overflow: 'visible' }}
+        style={{ ...iconBtn, minWidth: 48, minHeight: 48, overflow: 'visible' }}
       >
-        <Image src="/messenger-icons/video-icon.png" alt="Video Call" width={48} height={48} unoptimized style={{ width: 44, height: 44, objectFit: 'contain' }} />
+        <Image src="/messenger-icons/video-icon.png" alt="Video Call" width={48} height={48} unoptimized style={{ width: 48, height: 48, objectFit: 'contain' }} />
       </button>
     </div>
   );
