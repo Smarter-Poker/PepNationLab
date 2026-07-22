@@ -19,7 +19,7 @@ const AvailabilityIndicator = ({ status }: { status: 'idle' | 'checking' | 'avai
   if (status === 'available') {
     return (
       <span style={{ fontSize: '0.8rem', color: 'var(--green)', marginTop: 4, display: 'block', fontWeight: 600 }}>
-        That Name Is Available
+        That Name Is available
       </span>
     );
   }
