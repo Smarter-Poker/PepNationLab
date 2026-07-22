@@ -280,57 +280,48 @@ export async function POST(
 
   const idempotencyKey = crypto.randomUUID();
 
-  const { data: newOrder, error: insertErr } = await service
-    .from('orders')
-    .insert({
-      buyer_id: user.id,
-      agent_id: source.agent_id,
-      status: 'pending_customer_payment',
-      fulfillment_method: source.fulfillment_method,
-      payment_method: source.payment_method,
-      shipping_address: source.shipping_address,
-      shipping_cost: 0,
-      subtotal,
-      discount_amount: 0,
-      coupon_code: null,
-      total: subtotal,
-      idempotency_key: idempotencyKey,
-    })
-    .select('id, total')
-    .maybeSingle();
+  // Create the reorder header AND its line items atomically in one transaction
+  // (create_order_with_items_atomic) - previously two separate inserts, where a
+  // crash between them could leave a headerless order that the stale-order cron
+  // would later have to clean up.
+  const { data: atomicResult, error: atomicError } = await service
+    .rpc('create_order_with_items_atomic', {
+      p_order: {
+        buyer_id: user.id,
+        agent_id: source.agent_id,
+        status: 'pending_customer_payment',
+        fulfillment_method: source.fulfillment_method,
+        payment_method: source.payment_method,
+        shipping_address: source.shipping_address,
+        shipping_cost: 0,
+        subtotal,
+        discount_amount: 0,
+        coupon_code: null,
+        total: subtotal,
+        idempotency_key: idempotencyKey,
+      },
+      p_items: computed.map((c) => ({
+        agent_product_id: c.agent_product_id,
+        product_id: c.product_id,
+        product_name: c.product_name,
+        quantity: c.quantity,
+        unit_retail_price: c.unit_retail_price,
+        unit_cost_price: c.unit_cost_price,
+        unit_super_agent_cost: c.unit_super_agent_cost,
+        unit_house_cost: c.unit_house_cost,
+      })),
+    });
 
-  if (insertErr || !newOrder) {
+  if (atomicError || !atomicResult) {
+    // The whole transaction rolled back - nothing partial persisted.
     // eslint-disable-next-line no-console
-    console.error('[reorder] order insert failed', insertErr);
-    return NextResponse.json({ error: 'Failed To Create Reorder.' }, { status: 500 });
-  }
-
-  const itemsToInsert = computed.map((c) => ({
-    order_id: newOrder.id,
-    agent_product_id: c.agent_product_id,
-    product_id: c.product_id,
-    product_name: c.product_name,
-    quantity: c.quantity,
-    unit_retail_price: c.unit_retail_price,
-    unit_cost_price: c.unit_cost_price,
-    unit_super_agent_cost: c.unit_super_agent_cost,
-    unit_house_cost: c.unit_house_cost,
-  }));
-
-  const { error: itemErr } = await service
-    .from('order_items')
-    .insert(itemsToInsert);
-
-  if (itemErr) {
-    // eslint-disable-next-line no-console
-    console.error('[reorder] order_items insert failed', itemErr);
-    await service.from('orders').delete().eq('id', newOrder.id);
+    console.error('[reorder] atomic order create failed', atomicError);
     return NextResponse.json({ error: 'Failed To Create Reorder.' }, { status: 500 });
   }
 
   return NextResponse.json({
     success: true,
-    orderId: newOrder.id,
+    orderId: (atomicResult as any).order_id,
     skipped,
   });
 }
