@@ -280,6 +280,17 @@ export async function POST(
 
   const idempotencyKey = crypto.randomUUID();
 
+  // Denormalized buyer fields for the new order, same as checkout populates
+  // them (buyer_name from the profile, buyer_email from the auth user). The
+  // buyer is the verified owner of the source order (checked above), so this
+  // is the reordering researcher. Without these, reorders showed a blank buyer
+  // name/email in admin + agent order views.
+  const { data: buyerProfile } = await service
+    .from('profiles')
+    .select('full_name')
+    .eq('id', user.id)
+    .maybeSingle();
+
   // Create the reorder header AND its line items atomically in one transaction
   // (create_order_with_items_atomic) - previously two separate inserts, where a
   // crash between them could leave a headerless order that the stale-order cron
@@ -288,6 +299,8 @@ export async function POST(
     .rpc('create_order_with_items_atomic', {
       p_order: {
         buyer_id: user.id,
+        buyer_name: buyerProfile?.full_name ?? null,
+        buyer_email: user.email ?? null,
         agent_id: source.agent_id,
         status: 'pending_customer_payment',
         fulfillment_method: source.fulfillment_method,
