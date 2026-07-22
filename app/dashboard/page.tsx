@@ -32,19 +32,10 @@ export default async function DashboardPage({
   // owner request 2026-07-15. Their pricing/ledger differences live in DB
   // triggers; the legacy /dashboard/manufacturer page stays reachable by URL.
 
-  // Onboarding gate: new + promoted agent-type accounts must finish the guided
-  // setup wizard before reaching any dashboard. Admins/shipping above are
-  // exempt; researchers (handled below) are never gated.
-  // See migration 20260608000050 + /onboarding.
-  {
-    const isSubAgent = (profile as { is_sub_agent?: boolean | null })?.is_sub_agent === true;
-    const isAgentType =
-      isSubAgent || role === 'agent' || role === 'super_agent' ||
-      (profile as { is_super_agent?: boolean | null })?.is_super_agent === true;
-    if (isAgentType && !(profile as { onboarding_completed_at?: string | null })?.onboarding_completed_at) {
-      redirect('/onboarding');
-    }
-  }
+  // NOTE: The guided setup wizard at /onboarding is optional and no longer
+  // gates dashboard access -- agent-type accounts route straight to their
+  // dashboard below and can visit /onboarding later if they choose.
+
   // Admin Accounts get their own dedicated Command Center dashboard (network
   // tools, agent management, recruiting) -- separate from the manufacturer page.
   if ((profile as { is_admin_account?: boolean | null })?.is_admin_account === true) {
