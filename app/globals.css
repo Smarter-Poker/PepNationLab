@@ -3459,17 +3459,16 @@ body > * {
   .messenger-main .msg-composer button[aria-label="Schedule Send"] {
     display: none !important;
   }
-  .messenger-shell {
-    margin-top: calc(0px - var(--safe-top, 0px)) !important;
-  }
+  /* ROUND 15 NOTE: the negative margin-top and the spacer height:60px
+     override have been removed. They stripped env(safe-area-inset-top)
+     on notched iPhones, causing the top of the messenger (conversation
+     list header, phone/video call buttons) to be hidden behind the iOS
+     status bar / Dynamic Island. The layout spacer must use the full
+     --nav-offset (60px + safe-top) so content starts below the notch. */
   .messenger-main header,
   .messenger-main > div > header {
     margin-top: 0 !important;
     padding-top: 4px !important;
-  }
-  .messenger-layout-root > div[style*="height: var(--nav-offset"],
-  .messenger-layout-root > div[style*="height:var(--nav-offset"] {
-    height: 60px !important;
   }
   .pnl-navbar a img.dashboard-icon {
     width: 110px !important;
