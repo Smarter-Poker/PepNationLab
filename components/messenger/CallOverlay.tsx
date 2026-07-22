@@ -673,7 +673,14 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
   const conversations = useMessengerStore((s) => s.conversations);
   const [counterpartyId, setCounterpartyId] = useState<string | null>(null);
   const [counterpartyName, setCounterpartyName] = useState<string>(call.caller_name ?? 'Someone');
-  const [counterpartyAvatar, setCounterpartyAvatar] = useState<string | null>(call.caller_avatar ?? null);
+  // The initiator's "counterparty" is the person being CALLED, so their own
+  // caller_avatar must NOT seed it (that would show the caller their own face).
+  // Receivers see the caller, so caller_avatar is the correct seed for them.
+  const [counterpartyAvatar, setCounterpartyAvatar] = useState<string | null>(
+    call.initiator_id === selfId ? null : (call.caller_avatar ?? null)
+  );
+  // Falls back to initials when the avatar is missing or fails to load.
+  const [avatarError, setAvatarError] = useState(false);
   const [isSignaling, setIsSignaling] = useState(false);
   const userClosedRef = useRef(false);
 
@@ -731,7 +738,10 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
         const other = (json.participants ?? []).find((p) => p.user_id !== selfId);
         if (other && !cancelled) {
           setCounterpartyName((cur) => other.full_name ?? other.username ?? cur);
-          if (other.avatar_url) setCounterpartyAvatar(other.avatar_url);
+          // Always set (even to null) so a missing avatar clears any stale seed
+          // and falls back to the initials placeholder, never the wrong face.
+          setCounterpartyAvatar(other.avatar_url ?? null);
+          setAvatarError(false);
         }
       } catch (err) {
         captureCallError(err, 'overlay', { stage_detail: 'resolve_counterparty_profile' });
@@ -1025,15 +1035,28 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
           <div className="pnl-ringing-glow" />
           <div className="pnl-ringing-card">
             <div className="pnl-ringing-status" aria-live="polite">
-              {isVideo ? 'Incoming Video Call' : 'Incoming Voice Call'}
+              {isInitiator
+                ? (isVideo ? 'Outgoing Video Call' : 'Outgoing Voice Call')
+                : (isVideo ? 'Incoming Video Call' : 'Incoming Voice Call')}
             </div>
-            <div className="pnl-pulse-avatar-ring" style={{ display: 'inline-block', borderRadius: '50%' }}>
-              {counterpartyAvatar ? (
-                <Image src={counterpartyAvatar} alt={counterpartyName} width={120} height={120} unoptimized className="pnl-avatar-img" />
-              ) : (
-                <div className="pnl-avatar-placeholder">{initials}</div>
-              )}
-            </div>
+            {/* Pulse is applied directly to the 120x120 square avatar so the ring
+                is a perfect circle (the old inline-block wrapper included the
+                avatar's 32px bottom margin, making the box-shadow ring an oval).
+                onError falls the broken/missing avatar back to the initials
+                placeholder instead of the browser's broken-image icon. */}
+            {counterpartyAvatar && !avatarError ? (
+              <Image
+                src={counterpartyAvatar}
+                alt={counterpartyName}
+                width={120}
+                height={120}
+                unoptimized
+                onError={() => setAvatarError(true)}
+                className="pnl-avatar-img pnl-pulse-avatar-ring"
+              />
+            ) : (
+              <div className="pnl-avatar-placeholder pnl-pulse-avatar-ring">{initials}</div>
+            )}
             <div className="pnl-ringing-name">{counterpartyName}</div>
             <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.95rem', marginBottom: 32 }} aria-live="polite">
               {isInitiator ? 'Calling...' : 'Ringing...'}
