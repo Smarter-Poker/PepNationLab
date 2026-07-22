@@ -3315,6 +3315,25 @@ body > * {
    ROUND 14 — KILL HORIZONTAL OVERFLOW ON MOBILE
    ============================================================ */
 
+/* Protect call/action icon groups in the messenger header — these must
+   never be clipped by overflow:hidden or capped by max-width:100vw.
+   The .call-btn-group wrapper and .call-icon-btn buttons are explicitly
+   exempted from the blast rules below. */
+.call-btn-group,
+.call-btn-group * {
+  overflow: visible !important;
+  max-width: none !important;
+}
+.call-icon-btn {
+  flex-shrink: 0 !important;
+}
+/* Ensure the messenger header button row doesn't clip its children */
+.messenger-main header > div:last-child,
+.messenger-main > div > header > div:last-child {
+  overflow: visible !important;
+  flex-shrink: 0 !important;
+}
+
 @media (max-width: 768px) {
   .messenger-shell,
   .messenger-shell *,

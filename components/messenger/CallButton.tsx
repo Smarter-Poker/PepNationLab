@@ -126,17 +126,17 @@ export default function CallButton({ conversationId, onCallStarted }: Props) {
   };
 
   return (
-    <div style={{ display: 'inline-flex', gap: 6 }}>
+    <div className="call-btn-group" style={{ display: 'inline-flex', gap: 6, overflow: 'visible', flexShrink: 0 }}>
       <button
         type="button"
         onClick={() => void startCall('audio')}
         disabled={busy}
         aria-label="Start Voice Call"
         title="Start Voice Call"
-        className="hover-lift"
-        style={iconBtn}
+        className="hover-lift call-icon-btn"
+        style={{ ...iconBtn, minWidth: 44, minHeight: 44, overflow: 'visible' }}
       >
-        <Image src="/messenger-icons/phone-icon.png" alt="Voice Call" width={48} height={48} unoptimized style={{ width: 48, height: 48, objectFit: 'contain', transform: 'scale(1.6)' }} />
+        <Image src="/messenger-icons/phone-icon.png" alt="Voice Call" width={48} height={48} unoptimized style={{ width: 44, height: 44, objectFit: 'contain' }} />
       </button>
       <button
         type="button"
@@ -144,10 +144,10 @@ export default function CallButton({ conversationId, onCallStarted }: Props) {
         disabled={busy}
         aria-label="Start Video Call"
         title="Start Video Call"
-        className="hover-lift"
-        style={iconBtn}
+        className="hover-lift call-icon-btn"
+        style={{ ...iconBtn, minWidth: 44, minHeight: 44, overflow: 'visible' }}
       >
-        <Image src="/messenger-icons/video-icon.png" alt="Video Call" width={48} height={48} unoptimized style={{ width: 48, height: 48, objectFit: 'contain', transform: 'scale(1.6)' }} />
+        <Image src="/messenger-icons/video-icon.png" alt="Video Call" width={48} height={48} unoptimized style={{ width: 44, height: 44, objectFit: 'contain' }} />
       </button>
     </div>
   );

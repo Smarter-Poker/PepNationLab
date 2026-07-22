@@ -1389,68 +1389,80 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Cart Items Could Not Be Processed. Please Try Again.' }, { status: 400 });
     }
 
-    // Create checkout order
-    const { data: order, error: orderError } = await serviceSupabase
-      .from('orders')
-      .insert({
-        buyer_id: user.id,
-        buyer_name: (profile as any).full_name || null,
-        buyer_email: user.email || null,
-        // agent_id = the storefront owner whose sales this order credits.
-        // For an agent self-buy, that IS the buyer (agentProfile.id == profile.id).
-        // Previously this was incorrectly set to superAgentProfile.id, making the
-        // order invisible in the agent's own sales dashboard. superAgentProfile is
-        // used only for pricing/billing-chain — it does NOT own the sale.
-        agent_id: agentProfile?.id || null,
-        is_wholesale_restock: isWholesaleRestock,
-        status: initialStatus,
-        fulfillment_method: fulfillmentMethod,
-        payment_method: paymentMethod,
-        shipping_address: shippingAddress ?? null,
-        shipping_cost: shippingCost,
-        carrier: getCarrierName(actualShippingOption),
-        subtotal: subtotal,
-        discount_amount: discountAmount,
-        discount_source: discountSource,
-        coupon_code: appliedCouponCode,
-        total: total,
-        // Route owns this order's inventory (reserve_inventory ran above with a
-        // precise local/China split). The approval trigger skips reserved orders
-        // so stock is never deducted a second time on approval.
-        inventory_reserved: localReserved || chinaReserved,
-        idempotency_key: idempotencyKey ?? null,
-      })
-      .select('id, total')
-      .maybeSingle();
+    // Create the order header AND all line items atomically in one
+    // transaction (create_order_with_items_atomic). Previously these were two
+    // separate inserts; a crash between them could leave a headerless order
+    // row. The RPC also resolves the idempotency-key race inside the same
+    // transaction, returning replayed=true when a concurrent request with the
+    // same key won the insert -- so nothing partial can ever persist.
+    const orderPayload = {
+      buyer_id: user.id,
+      buyer_name: (profile as any).full_name || null,
+      buyer_email: user.email || null,
+      // agent_id = the storefront owner whose sales this order credits.
+      // For an agent self-buy, that IS the buyer (agentProfile.id == profile.id).
+      // superAgentProfile is used only for pricing/billing-chain -- it does NOT
+      // own the sale.
+      agent_id: agentProfile?.id || null,
+      is_wholesale_restock: isWholesaleRestock,
+      status: initialStatus,
+      fulfillment_method: fulfillmentMethod,
+      payment_method: paymentMethod,
+      shipping_address: shippingAddress ?? null,
+      shipping_cost: shippingCost,
+      carrier: getCarrierName(actualShippingOption),
+      subtotal: subtotal,
+      discount_amount: discountAmount,
+      discount_source: discountSource,
+      coupon_code: appliedCouponCode,
+      total: total,
+      // Route owns this order's inventory (reserve_inventory ran above with a
+      // precise local/China split). The approval trigger skips reserved orders
+      // so stock is never deducted a second time on approval.
+      inventory_reserved: localReserved || chinaReserved,
+      idempotency_key: idempotencyKey ?? null,
+    };
 
-    if (orderError || !order) {
-      // Handle unique constraint violation on idempotency_key (race between two
-      // concurrent requests with the same key -- the loser returns the winner's order)
-      if (orderError && (orderError as any).code === '23505' && idempotencyKey) {
-        const { data: existing } = await serviceSupabase
-          .from('orders')
-          .select('id, total')
-          .eq('idempotency_key', idempotencyKey)
-          .eq('buyer_id', user.id)
-          .maybeSingle();
-        if (existing) {
-          // This duplicate (same idempotency_key) request lost the INSERT race
-          // but already re-ran reserve / redeem / prepaid-deduct above. Undo ALL
-          // of THIS attempt's side effects before returning the original order.
-          await compensateFailedAttempt();
-          return NextResponse.json({
-            success: true,
-            orderId: existing.id,
-            total: Number(existing.total) || 0,
-            replayed: true,
-          });
-        }
-      }
+    const itemsPayload = computedItems.map(item => ({
+      product_id: item.product_id,
+      product_name: item.product_name ?? 'Unknown Product',
+      quantity: item.quantity,
+      unit_retail_price: item.unit_retail_price,
+      unit_cost_price: item.unit_cost_price,
+      unit_super_agent_cost: item.unit_super_agent_cost,
+      unit_house_cost: (item as any).unit_house_cost ?? null,
+      // Tag agent-local lines so a later cancel restores exactly what
+      // reserve_inventory took from agent_inventory (China is never tracked).
+      fulfilled_locally: (item as any).isLocalFulfillment === true,
+    }));
+
+    const { data: atomicResult, error: atomicError } = await serviceSupabase
+      .rpc('create_order_with_items_atomic', { p_order: orderPayload, p_items: itemsPayload });
+
+    if (atomicError || !atomicResult) {
+      // The whole transaction rolled back -- nothing partial persisted. Undo
+      // this attempt's inventory/coupon/prepaid side effects and fail.
       await compensateFailedAttempt();
-      logError('orders.POST.order_insert', { userId: user.id, idempotencyKey: idempotencyKey ?? null }, orderError);
-      captureError(orderError, { context: 'orders.POST.order_insert', userId: user.id, idempotencyKey: idempotencyKey ?? null });
+      logError('orders.POST.order_atomic_insert', { userId: user.id, idempotencyKey: idempotencyKey ?? null }, atomicError);
+      captureError(atomicError, { context: 'orders.POST.order_atomic_insert', userId: user.id, idempotencyKey: idempotencyKey ?? null });
       return NextResponse.json({ error: 'Failed To Save Order Transaction.' }, { status: 500 });
     }
+
+    // The RPC returns { order_id, total, replayed }.
+    if ((atomicResult as any).replayed === true) {
+      // A concurrent request with the same idempotency_key won the insert race.
+      // This attempt already re-ran reserve / redeem / prepaid-deduct above --
+      // undo ALL of its side effects before returning the original order.
+      await compensateFailedAttempt();
+      return NextResponse.json({
+        success: true,
+        orderId: (atomicResult as any).order_id,
+        total: Number((atomicResult as any).total) || 0,
+        replayed: true,
+      });
+    }
+
+    const order = { id: (atomicResult as any).order_id as string, total: Number((atomicResult as any).total) || 0 };
 
     // Back-fill order_id on the disclaimer acceptance row for compliance audit joins.
     // Must not block the response -- wrap in non-throwing promise chain.
@@ -1467,39 +1479,8 @@ export async function POST(request: NextRequest) {
       console.error('[orders] disclaimer order_id backfill threw:', e instanceof Error ? e.message : String(e));
     });
 
-    const itemsToInsert = computedItems.map(item => ({
-      order_id: order.id,
-      product_id: item.product_id,
-      product_name: item.product_name ?? 'Unknown Product',
-      quantity: item.quantity,
-      unit_retail_price: item.unit_retail_price,
-      unit_cost_price: item.unit_cost_price,
-      unit_super_agent_cost: item.unit_super_agent_cost,
-      unit_house_cost: (item as any).unit_house_cost ?? null,
-      // Tag agent-local lines so a later cancel restores exactly what
-      // reserve_inventory took from agent_inventory (China is never tracked).
-      fulfilled_locally: (item as any).isLocalFulfillment === true,
-    }));
-
-    const { error: itemsError } = await serviceSupabase
-      .from('order_items')
-      .insert(itemsToInsert);
-
-    if (itemsError) {
-      logError('orders.POST.order_items_insert', { userId: user.id, orderId: order.id }, itemsError);
-      captureError(itemsError, { context: 'orders.POST.order_items_insert', userId: user.id, orderId: order.id });
-      const { error: deleteErr } = await serviceSupabase.from('orders').delete().eq('id', order.id);
-      if (deleteErr) {
-        // Orphan order row (no items). The stale-order cron will cancel it,
-        // but report it so the pattern is visible.
-        captureError(deleteErr, { context: 'orders.POST.compensation.orphan_order_delete', orderId: order.id });
-      }
-      await compensateFailedAttempt();
-
-      return NextResponse.json({ error: 'An Unexpected Error Occurred While Saving Order Items.' }, { status: 500 });
-    }
-    // The order + items now exist: the outer catch must no longer roll back
-    // inventory/coupon/prepaid -- those belong to this order.
+    // The order + items now exist atomically: the outer catch must no longer
+    // roll back inventory/coupon/prepaid -- those belong to this order.
     orderCommitted = true;
     compensateOnThrow = null;
 
