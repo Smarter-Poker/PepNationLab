@@ -232,7 +232,7 @@ export function availabilityMessage(r: AvailabilityResult): {
     case 'checking':
       return { color: 'var(--silver, #C0B8A8)', text: 'Checking Availability…', tone: 'info' };
     case 'available':
-      return { color: '#34D399', text: 'This Name Is Available', tone: 'success' };
+      return { color: '#34D399', text: 'This Name Is available', tone: 'success' };
     case 'similar':
       // Platform rule: if the server confirmed the name is available, the user
       // can have it. We do NOT surface the "Very Close To..." soft warning any
@@ -240,7 +240,7 @@ export function availabilityMessage(r: AvailabilityResult): {
       // This is the belt-and-suspenders guard - the hook above no longer
       // transitions into 'similar', but if any caller produces it out-of-band
       // (or a stale bundle is still running), the message stays green.
-      return { color: '#34D399', text: 'This Name Is Available', tone: 'success' };
+      return { color: '#34D399', text: 'This Name Is available', tone: 'success' };
     case 'taken':
       return { color: '#FC8181', text: r.reason || 'Already Taken - Try Another.', tone: 'error' };
     case 'reserved':
