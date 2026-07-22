@@ -270,16 +270,10 @@ export default function AgentAccountDetail({
   async function saveChanges() {
     setSaving(true);
     try {
-      // NOTE: commission_pct, commission_max_pct, velocity_cap and
-      // custom_commission_scale are intentionally NOT included in this
-      // payload. This drawer has no reachable UI for editing markup - the
-      // Fixed/Gamification toggle and the commission inputs are computed
-      // into state (commissionPct/commissionMode/customSteps above) but are
-      // never rendered - so previously every save from this form silently
-      // resubmitted those fields (an empty commission input coerced to a
-      // literal 0), overwriting the agent's assigned markup on any unrelated
-      // edit (e.g. just fixing a phone number). Markup is managed by the
-      // agent create form and any future dedicated UI, not here.
+      // Markup (commission_pct) is editable below for parented full agents and
+      // is added to the payload further down, but ONLY when a value is present,
+      // so an unrelated edit (e.g. fixing a phone number) can never clobber an
+      // unset (50% default) markup by coercing an empty input to 0.
       const payload: Record<string, any> = {
         full_name: `${firstName.trim()} ${lastName.trim()}`.trim(),
         email,
@@ -292,6 +286,19 @@ export default function AgentAccountDetail({
       if (accountType === 'credit') {
         payload.credit_limit = creditLimit === '' ? 0 : Number(creditLimit);
         payload.max_auto_approve_limit = maxAutoApproveLimit === '' ? null : Number(maxAutoApproveLimit);
+      }
+
+      // Fixed markup for a parented full agent: persist the % the admin/super
+      // entered. Sending commission_max_pct === commission_pct puts the agent on
+      // a FLAT fixed markup (the volume ladder is fully neutralized). Only sent
+      // for parented non-sub-agents, and only when a value is present, so an
+      // unrelated edit never overwrites an unset (50% default) markup.
+      if (!isSubAgent && detail?.agent?.parent_agent_id && commissionPct.trim() !== '') {
+        const pct = Number(commissionPct);
+        if (Number.isFinite(pct) && pct >= 0 && pct <= 200) {
+          payload.commission_pct = pct;
+          payload.commission_max_pct = pct;
+        }
       }
 
       const res = await fetch(`/api/agent/agents/${agentId}`, {
@@ -536,20 +543,28 @@ export default function AgentAccountDetail({
 
                     <div style={{ marginTop: 'var(--space-4)', padding: 'var(--space-3)', background: 'var(--surface-2)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)' }}>
                       {!isSubAgent && detail.agent.parent_agent_id ? (
-                        // Chain-aware pricing (2026-07-21): a parented account's
-                        // real cost is commission_pct (the "Your Markup On This
-                        // Agent" % set when this account was created) compounded
-                        // on its parent's cost - a house-tier / flat-markup
-                        // override here would be silently ignored by the chain,
-                        // so show what actually prices this account instead.
+                        // Chain-aware pricing (2026-07-21, editable 2026-07-22):
+                        // a parented account's real cost is commission_pct, a
+                        // FIXED markup over its super's cost. It is editable here;
+                        // saving sends commission_max_pct === commission_pct so the
+                        // agent stays on a flat fixed markup (no volume ladder).
                         <>
-                          <label style={{ ...labelStyle, marginBottom: 8, display: 'block' }}>Pricing</label>
-                          <div style={{ fontSize: '0.85rem', color: 'var(--silver)' }}>
-                            Pays Your Cost Plus{' '}
-                            <span style={{ color: '#00C4BC', fontWeight: 700 }}>
-                              {detail.agent.commission_pct != null ? fmtPct(Number(detail.agent.commission_pct)) : '50% (Default)'}
-                            </span>
-                            {' '}Markup.
+                          <label style={{ ...labelStyle, marginBottom: 8, display: 'block' }}>Agent Markup % (Over Your Cost)</label>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <input
+                              style={{ ...inputStyle, width: 120 }}
+                              type="number"
+                              min="0"
+                              max="200"
+                              step="1"
+                              value={commissionPct}
+                              onChange={(e) => setCommissionPct(e.target.value.replace(/[^0-9.]/g, ''))}
+                              placeholder="50"
+                            />
+                            <span style={{ fontSize: '0.85rem', color: 'var(--silver)' }}>% Markup</span>
+                          </div>
+                          <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginTop: 6 }}>
+                            This Agent Pays Your Cost Plus This Fixed Markup. Leave Blank For The 50% Default.
                           </div>
                         </>
                       ) : (
