@@ -160,6 +160,24 @@ export async function POST(req: NextRequest) {
       };
       await enqueueCallRingPush(pushInput);
       await sendCallRingPushNow(pushInput);
+
+      // Durable in-app notification so an incoming call ALWAYS lands in the
+      // recipient's notification bell -- even when the app is closed, realtime
+      // is not connected, or web-push is unavailable. Before this, a call left
+      // no trace anywhere off-app. Service client bypasses RLS. Best-effort:
+      // a notify failure must never break call setup.
+      try {
+        const callTypeLabel = (inserted as CallRow).call_type === 'video' ? 'Video' : 'Voice';
+        await svc.from('notifications').insert(
+          otherList.map((p) => ({
+            user_id: p.user_id,
+            type: 'incoming_call',
+            title: `Incoming ${callTypeLabel} Call`,
+            body: `${callerName} Is Calling You`,
+            url: '/messenger',
+          }))
+        );
+      } catch { /* in-app notification is best-effort */ }
     }
 
     return NextResponse.json({ call: inserted });

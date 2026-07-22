@@ -51,17 +51,22 @@ export async function enqueuePush(
       .eq('user_id', userId)
       .maybeSingle();
 
-    // No prefs row, or push not turned on, or globally muted → drop silently.
-    if (!prefs) return null;
-    if (prefs.mute_all) return null;
-    if (!prefs.push_enabled) return null;
+    // A MISSING prefs row means the user never opened the preferences page.
+    // Default to ALLOWING push (opt-out, not opt-in) so notifications work out
+    // of the box and match the calls path (callPush treats a missing row as
+    // allowed). An explicit row still fully governs: mute_all or
+    // push_enabled=false suppresses, and per-event opt-outs are honoured.
+    if (prefs) {
+      if (prefs.mute_all) return null;
+      if (!prefs.push_enabled) return null;
 
-    // Per-event opt-out (Notification Preferences page) is the single delivery
-    // gate. Test events map to a null key and are never gated here so the Send
-    // Test button always works.
-    const typeKey = eventToTypeKey(String(event));
-    if (typeKey && !pushTypeAllowed(prefs.push_type_prefs as Record<string, boolean> | null, typeKey)) {
-      return null;
+      // Per-event opt-out (Notification Preferences page) is the single delivery
+      // gate. Test events map to a null key and are never gated here so the Send
+      // Test button always works.
+      const typeKey = eventToTypeKey(String(event));
+      if (typeKey && !pushTypeAllowed(prefs.push_type_prefs as Record<string, boolean> | null, typeKey)) {
+        return null;
+      }
     }
 
     const { data, error } = await supabase
