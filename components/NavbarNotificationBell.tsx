@@ -160,6 +160,25 @@ export default function NavbarNotificationBell() {
     } catch { /* ignore */ }
   }, [items]);
 
+  // ── Mark ONE notification read (fires when the user taps it) ────────
+  // Tapping a notification navigates away, which cancels the open-panel
+  // auto-mark timer, so the tapped row must persist its OWN read state or it
+  // reappears unread on the next feed load. Optimistic update + best-effort
+  // POST with keepalive so the request survives the navigation.
+  const markOneRead = useCallback((id: string) => {
+    const wasUnread = items.some(n => String(n.id) === id && !n.read_at);
+    setItems(prev => prev.map(n => String(n.id) === id ? { ...n, read_at: n.read_at ?? new Date().toISOString() } : n));
+    if (wasUnread) setUnread(prev => Math.max(0, prev - 1));
+    try {
+      void fetch('/api/account/notifications/mark-read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: [Number(id)] }),
+        keepalive: true,
+      });
+    } catch { /* best-effort */ }
+  }, [items]);
+
   // ── Get current userId for Realtime subscription ──────────────────────────
   useEffect(() => {
     const supabase = createClient();
@@ -459,7 +478,7 @@ export default function NavbarNotificationBell() {
                 <Link
                   key={n.id}
                   href={n.url || '/dashboard'}
-                  onClick={() => setOpen(false)}
+                  onClick={() => { markOneRead(String(n.id)); setOpen(false); }}
                   className="pnl-notif-item"
                   style={{
                     display: 'flex',
