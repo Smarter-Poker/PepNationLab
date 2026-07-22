@@ -1924,7 +1924,59 @@ function CustomerSupportWidgetInner() {
               }}
             >
               {messengerActiveId && adminIdRef.current && supportThreadIds.has(messengerActiveId) ? (
-                <MessagePane userId={adminIdRef.current} />
+                <>
+                  {/* Mark Resolved banner — always visible in the right pane so the
+                      button is accessible even when the left inbox sidebar is collapsed. */}
+                  {focusedRow && focusedRow.support_status !== 'resolved' && (
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'flex-end',
+                        gap: 8,
+                        padding: '6px 12px',
+                        borderBottom: '1px solid rgba(80,200,120,0.18)',
+                        background: 'rgba(80,200,120,0.06)',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <span style={{ color: 'var(--silver, #C0B8A8)', fontSize: '0.72rem', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {focusedRow.counterparty_full_name || focusedRow.counterparty_username || 'Support Thread'}
+                        {' — '}
+                        <span style={{ textTransform: 'capitalize' }}>{(focusedRow.support_status || 'open').replace(/_/g, ' ')}</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await setStatus(focusedRow.conversation_id, 'resolved');
+                          setMessengerActive(null);
+                        }}
+                        title="Mark This Thread Resolved"
+                        style={{
+                          background: 'rgba(80,200,120,0.18)',
+                          border: '1px solid rgba(80,200,120,0.55)',
+                          color: '#9BE3B4',
+                          padding: '5px 12px',
+                          borderRadius: 6,
+                          fontSize: '0.72rem',
+                          fontWeight: 800,
+                          letterSpacing: '0.02em',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 5,
+                          whiteSpace: 'nowrap',
+                          flexShrink: 0,
+                        }}
+                      >
+                        <CheckCircle2 size={13} aria-hidden="true" />
+                        Mark Resolved
+                      </button>
+                    </div>
+                  )}
+                  <MessagePane userId={adminIdRef.current} />
+                </>
+
               ) : (
                 <div
                   style={{
