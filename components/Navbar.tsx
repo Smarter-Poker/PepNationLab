@@ -230,11 +230,16 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
     }
   }, [closeDrawer]);
 
+  const isPlatformAdmin = isPlatformAdminId(user?.id) || profile?.is_admin_account === true;
+  // If a platform admin is actively browsing an /admin route, flip their mobile hamburger menu
+  // to show the full admin navigation instead of their regular agent navigation.
+  const effectiveMenuRole = (isPlatformAdmin && pathname.startsWith('/admin')) ? 'admin' : role;
+
   const roleLinks = user
-    ? getRoleNavLinks(role, {
+    ? getRoleNavLinks(effectiveMenuRole, {
         isSuperAgent: profile?.is_super_agent === true,
         isSubAgent: profile?.is_sub_agent === true,
-        isPlatformAdmin: isPlatformAdminId(user?.id),
+        isPlatformAdmin,
         storefrontHref: activeAgentSlug ? `/${activeAgentSlug}` : '/dashboard/agent',
         storefrontName: agentName || undefined,
         pathname,
