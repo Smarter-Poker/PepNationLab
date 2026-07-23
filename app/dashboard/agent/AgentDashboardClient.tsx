@@ -217,6 +217,7 @@ export default function AgentDashboardClient({
   const [promotePaymentModel, setPromotePaymentModel] = useState<'credit'|'prepaid'>('prepaid');
   const [promoteCreditLimit, setPromoteCreditLimit] = useState('0');
   const [promoteLoading, setPromoteLoading] = useState(false);
+  const [promoteTargetRole, setPromoteTargetRole] = useState<'agent'|'super_agent'>('agent');
 
   const handleToggleTrust = async (targetUserId: string, currentStatus: boolean, isSubAgent: boolean = false) => {
     setTogglingTrust(targetUserId);
@@ -291,6 +292,7 @@ export default function AgentDashboardClient({
         body: JSON.stringify({ 
           researcherId: promoteResearcher.id,
           markupPct: promoteCommission,
+          isSuperAgent: userProfile.is_super_agent ? promoteTargetRole === 'super_agent' : false,
           paymentModel: promotePaymentModel,
           creditLimit: promoteCreditLimit
         })
@@ -710,7 +712,7 @@ export default function AgentDashboardClient({
                           textShadow: '0 1px 3px rgba(0,0,0,0.6)',
                           fontFamily: 'var(--font-brand)',
                         }}>
-                          {userProfile.is_super_agent ? 'Promote To Agent' : 'Promote To Sub-Agent'}
+                          {userProfile.is_super_agent ? `Promote To ${promoteTargetRole === 'super_agent' ? 'Super Agent' : 'Agent'}` : 'Promote To Sub-Agent'}
                         </h3>
                       </div>
                       <button
@@ -730,9 +732,24 @@ export default function AgentDashboardClient({
                       </button>
                     </div>
 
-                    <p style={{ color: '#d0d8e4', fontSize: '0.95rem', marginBottom: 20, lineHeight: 1.5 }}>
-                      {userProfile.is_super_agent ? 'Promote This Researcher To An Agent?' : 'Promote This Researcher To A Sub-Agent? They Will Be Able To Set Prices For Their Own Downline.'}
-                    </p>
+                    {userProfile.is_super_agent ? (
+                      <div className="form-group" style={{ marginBottom: 16 }}>
+                        <label className="form-label" style={{ color: '#8a9ab0', fontSize: '0.8rem', fontWeight: 600 }}>Role To Assign</label>
+                        <select className="form-input" value={promoteTargetRole} onChange={e => setPromoteTargetRole(e.target.value as 'agent' | 'super_agent')}>
+                          <option value="agent">Agent</option>
+                          <option value="super_agent">Super Agent</option>
+                        </select>
+                        <div style={{ fontSize: '0.75rem', color: '#8a9ab0', marginTop: 4 }}>
+                          {promoteTargetRole === 'agent' 
+                            ? 'Sells on their own storefront under your network. Sets their own prices within their markup.'
+                            : 'Full agent with the ability to recruit and manage their own downline of agents.'}
+                        </div>
+                      </div>
+                    ) : (
+                      <p style={{ color: '#d0d8e4', fontSize: '0.95rem', marginBottom: 20, lineHeight: 1.5 }}>
+                        Promote This Researcher To A Sub-Agent? They Will Be Able To Set Prices For Their Own Downline.
+                      </p>
+                    )}
 
                     <div className="form-group" style={{ marginBottom: 16 }}>
                       <label className="form-label" style={{ color: '#8a9ab0', fontSize: '0.8rem', fontWeight: 600 }}>Markup % On Your Base Cost (10–200%)</label>
@@ -770,7 +787,7 @@ export default function AgentDashboardClient({
                         onClick={handlePromoteResearcher}
                         disabled={promoteLoading}
                       >
-                        {promoteLoading ? 'Promoting...' : (userProfile.is_super_agent ? 'Promote To Agent' : 'Promote To Sub-Agent')}
+                        {promoteLoading ? 'Promoting...' : (userProfile.is_super_agent ? `Promote To ${promoteTargetRole === 'super_agent' ? 'Super Agent' : 'Agent'}` : 'Promote To Sub-Agent')}
                       </button>
                     </div>
                   </div>

@@ -162,10 +162,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Only super-agents can promote to Super Agent; regular agents can only create Agents.
-    const callerIsSuperAgent = callerProfile.is_super_agent === true || callerProfile.role === 'super_agent';
+    const callerIsSuperAgent = callerProfile.is_super_agent === true || callerProfile.role === 'super_agent' || callerProfile.role === 'admin';
     // isPromotingToFullAgent: true for both Agent and Super Agent (both get storefronts)
-    const isPromotingToFullAgent = true;
+    const isPromotingToSubAgent = !callerIsSuperAgent;
+    const isPromotingToFullAgent = callerIsSuperAgent;
     // Determine if the new account should have super_agent privileges
     const newIsSuperAgent = isSuperAgentRequest && callerIsSuperAgent;
 
@@ -227,13 +227,10 @@ export async function POST(req: NextRequest) {
     // role='agent', so disambiguate via is_super_agent for the dashboard.
     const createdByRole = callerProfile.is_super_agent === true ? 'super_agent' : 'agent';
 
-    // is_sub_agent flag is derived from isPromotingToFullAgent (declared above):
-    // super-agent caller promotes to a full Agent (is_sub_agent: false);
-    // a regular agent caller promotes to a Sub-Agent (is_sub_agent: true).
     const now = new Date().toISOString();
     const updatePayload: Record<string, unknown> = {
-      role: 'agent',
-      is_sub_agent: false,  // All promotions from this form are full agents
+      role: isPromotingToSubAgent ? 'sub_agent' : 'agent',
+      is_sub_agent: isPromotingToSubAgent,
       is_super_agent: newIsSuperAgent,
       parent_agent_id: callerId,
       created_by_agent_id: callerId,

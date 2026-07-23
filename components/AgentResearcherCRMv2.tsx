@@ -537,8 +537,8 @@ function ResearcherRow({ r, expanded, onExpand, selected, onToggleSelect, onMess
         <span style={{ color: '#B0B8C4', fontSize: '0.80rem', textAlign: 'right' }}>{fmtInt(r.orders_count)}</span>
 
         {/* Last Login */}
-        <span style={{ color: lastLogin ? '#B0B8C4' : '#EF4444', fontSize: '0.75rem', fontStyle: lastLogin ? 'normal' : 'italic' }}>
-          {daysAgo(lastLogin)}
+        <span style={{ color: lastLogin ? '#B0B8C4' : 'var(--grey-500)', fontSize: '0.75rem', fontStyle: lastLogin ? 'normal' : 'italic' }}>
+          {lastLogin ? new Date(lastLogin).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Never Logged In'}
         </span>
 
         {/* Status */}
@@ -575,14 +575,14 @@ function ResearcherRow({ r, expanded, onExpand, selected, onToggleSelect, onMess
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 16, marginBottom: 20 }}>
             {[
               { label: 'Joined', value: daysAgo(r.joined_at) },
-              { label: 'Last Login', value: daysAgo(lastLogin), warn: !lastLogin },
+              { label: 'Last Login', value: lastLogin ? new Date(lastLogin).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Never Logged In', warn: !lastLogin },
               { label: 'Last Contacted', value: daysAgo(r.last_contacted_at) },
               { label: 'Last Order', value: daysAgo(r.last_order_at) },
               { label: 'Source', value: r.acquisition_source || 'Direct' },
             ].map(({ label, value, warn }) => (
               <div key={label}>
                 <div style={{ fontSize: '0.63rem', color: '#5A6A7A', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 3 }}>{label}</div>
-                <div style={{ fontSize: '0.84rem', color: warn ? '#EF4444' : '#FFFFFF', fontWeight: 600 }}>{value}</div>
+                <div style={{ fontSize: '0.84rem', color: warn ? 'var(--grey-500)' : '#FFFFFF', fontWeight: 600, fontStyle: warn ? 'italic' : 'normal' }}>{value}</div>
               </div>
             ))}
             {r.email && (
