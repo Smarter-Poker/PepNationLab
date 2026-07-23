@@ -54,10 +54,12 @@ const ICONS: Record<string, React.ReactNode> = {
   network: <svg {...ip}><circle cx="12" cy="5" r="3" /><circle cx="5" cy="19" r="3" /><circle cx="19" cy="19" r="3" /><line x1="12" y1="8" x2="5" y2="16" /><line x1="12" y1="8" x2="19" y2="16" /></svg>,
   flash: <svg {...ip}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>,
   admin: <svg {...ip}><rect x="3" y="3" width="7" height="9" /><rect x="14" y="3" width="7" height="5" /><rect x="14" y="12" width="7" height="9" /><rect x="3" y="16" width="7" height="5" /></svg>,
+  traffic: <svg {...ip}><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>,
 };
 
 const TOOLS: { href: string; key: string; label: string; desc: string }[] = [
   { href: '/admin', key: 'admin', label: 'Full Admin Panel', desc: 'Global platform metrics & overview' },
+  { href: '/admin/traffic', key: 'traffic', label: 'Site Traffic', desc: 'Live visitors & abandoned carts' },
   { href: '/admin/agents', key: 'agents', label: 'Agents', desc: 'Create, promote & manage your downline' },
   { href: '/admin/orders', key: 'orders', label: 'Orders & Fulfillment', desc: 'Approve, ship & track every order' },
   { href: '/admin/pricing', key: 'pricing', label: 'Pricing', desc: 'Set catalog & tier pricing' },
