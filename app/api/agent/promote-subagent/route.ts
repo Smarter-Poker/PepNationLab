@@ -228,8 +228,11 @@ export async function POST(req: NextRequest) {
     const createdByRole = callerProfile.is_super_agent === true ? 'super_agent' : 'agent';
 
     const now = new Date().toISOString();
+    let newRole = isPromotingToSubAgent ? 'sub_agent' : 'agent';
+    if (newIsSuperAgent) newRole = 'super_agent';
+
     const updatePayload: Record<string, unknown> = {
-      role: isPromotingToSubAgent ? 'sub_agent' : 'agent',
+      role: newRole,
       is_sub_agent: isPromotingToSubAgent,
       is_super_agent: newIsSuperAgent,
       parent_agent_id: callerId,
