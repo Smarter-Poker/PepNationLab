@@ -1,10 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import SiteTrafficDrilldownDrawer from './SiteTrafficDrilldownDrawer';
 
 interface Totals {
   pageviews: number; visitors: number; product_views: number; searches: number;
   add_to_cart: number; checkout_start: number; orders: number; signups: number; gmv_cents: number;
+  abandoned_carts?: number;
 }
 interface TrafficData {
   days: number;
@@ -26,6 +28,10 @@ export default function TrafficDashboard({ endpoint, heading, subheading }: { en
   const [data, setData] = useState<TrafficData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Drilldown state
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedMetric, setSelectedMetric] = useState<any>(null);
 
   const load = useCallback(async (d: number) => {
     setLoading(true); setError(null);
@@ -45,17 +51,18 @@ export default function TrafficDashboard({ endpoint, heading, subheading }: { en
   const convRate = t && t.visitors > 0 ? ((t.orders / t.visitors) * 100) : 0;
   const maxPv = Math.max(1, ...(data?.trend ?? []).map(d => d.pageviews));
 
-  const tiles: Array<{ label: string; value: string; accent?: boolean }> = t ? [
-    { label: 'Unique Visitors', value: nf(t.visitors), accent: true },
-    { label: 'Pageviews', value: nf(t.pageviews) },
-    { label: 'New Sign-Ups', value: nf(t.signups), accent: true },
-    { label: 'Product Views', value: nf(t.product_views) },
-    { label: 'Searches', value: nf(t.searches) },
-    { label: 'Add To Cart', value: nf(t.add_to_cart) },
-    { label: 'Checkouts Started', value: nf(t.checkout_start) },
-    { label: 'Orders', value: nf(t.orders) },
-    { label: 'GMV', value: money(t.gmv_cents) },
-    { label: 'Visitor → Order', value: `${convRate.toFixed(1)}%` },
+  const tiles: Array<{ id: string; label: string; value: string; accent?: boolean; clickable?: boolean }> = t ? [
+    { id: 'visitors', label: 'Unique Visitors', value: nf(t.visitors), accent: true, clickable: true },
+    { id: 'pageviews', label: 'Pageviews', value: nf(t.pageviews), clickable: true },
+    { id: 'signups', label: 'New Sign-Ups', value: nf(t.signups), accent: true, clickable: true },
+    { id: 'product_views', label: 'Product Views', value: nf(t.product_views), clickable: true },
+    { id: 'searches', label: 'Searches', value: nf(t.searches), clickable: true },
+    { id: 'add_to_cart', label: 'Add To Cart', value: nf(t.add_to_cart), clickable: true },
+    { id: 'checkout_start', label: 'Checkouts Started', value: nf(t.checkout_start), clickable: true },
+    { id: 'orders', label: 'Orders', value: nf(t.orders), clickable: true },
+    { id: 'abandoned_carts', label: 'Abandoned Carts', value: nf(t.abandoned_carts || 0), accent: true, clickable: true },
+    { id: 'gmv', label: 'GMV', value: money(t.gmv_cents), clickable: false },
+    { id: 'conversion', label: 'Visitor → Order', value: `${convRate.toFixed(1)}%`, clickable: false },
   ] : [];
 
   const funnel = t ? [
@@ -68,6 +75,12 @@ export default function TrafficDashboard({ endpoint, heading, subheading }: { en
   const funnelMax = Math.max(1, ...funnel.map(f => f.value));
 
   const card: React.CSSProperties = { background: 'rgba(255,255,255,0.02)', border: '1px solid var(--silver-dark)', borderRadius: 12, padding: 'var(--space-4)' };
+
+  const handleTileClick = (tile: any) => {
+    if (!tile.clickable) return;
+    setSelectedMetric(tile.id);
+    setDrawerOpen(true);
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
@@ -97,9 +110,32 @@ export default function TrafficDashboard({ endpoint, heading, subheading }: { en
           {/* Stat tiles */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 'var(--space-3)' }}>
             {tiles.map(s => (
-              <div key={s.label} style={{ ...card, textAlign: 'center' }}>
+              <div 
+                key={s.label} 
+                onClick={() => handleTileClick(s)}
+                style={{ 
+                  ...card, 
+                  textAlign: 'center', 
+                  cursor: s.clickable ? 'pointer' : 'default',
+                  transition: 'transform 0.15s ease, background 0.15s ease',
+                }}
+                onMouseEnter={e => {
+                  if (s.clickable) {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (s.clickable) {
+                    e.currentTarget.style.transform = 'none';
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
+                  }
+                }}
+              >
                 <div style={{ color: s.accent ? 'var(--teal)' : 'var(--white)', fontWeight: 800, fontSize: '1.5rem' }}>{s.value}</div>
-                <div style={{ color: 'var(--grey-400)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 4 }}>{s.label}</div>
+                <div style={{ color: 'var(--grey-400)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 4 }}>
+                  {s.label} {s.clickable && '↗'}
+                </div>
               </div>
             ))}
           </div>
@@ -175,6 +211,14 @@ export default function TrafficDashboard({ endpoint, heading, subheading }: { en
           <p style={{ color: 'var(--grey-500)', fontSize: '0.72rem', margin: 0 }}>
             Since the account-required lockdown, visitors are researchers who have signed in. Data updates in real time from storefront events.
           </p>
+
+          <SiteTrafficDrilldownDrawer 
+            isOpen={drawerOpen} 
+            onClose={() => setDrawerOpen(false)} 
+            metric={selectedMetric}
+            days={days}
+            agentId={data.scope === 'agent' ? endpoint.includes('agent') ? undefined : undefined : undefined} 
+          />
         </>
       )}
     </div>
