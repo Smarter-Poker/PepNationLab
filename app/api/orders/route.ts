@@ -1259,7 +1259,8 @@ export async function POST(request: NextRequest) {
           // billed orders; this guard keeps the computed sum exact regardless.
           const links = (o.statement_orders as unknown) as Array<{ statement_id: string | null }> | null;
           if (Array.isArray(links) && links.some((l) => l?.statement_id)) continue;
-          const ship = Number((o as { shipping_cost?: unknown }).shipping_cost) || 0;
+          // Shipping is agent-owned (labels bought by the shipping party, fee
+          // paid direct); it never enters platform credit math.
           const its = ((o as { order_items?: unknown }).order_items ?? []) as Array<{ quantity: number; unit_cost_price: number | null; unit_super_agent_cost: number | null; }>;
           let orderCogs = 0;
           for (const it of its) {
@@ -1270,7 +1271,7 @@ export async function POST(request: NextRequest) {
             const cost = isSubOrder ? (Number.isFinite(superCost) && superCost > 0 ? superCost : agentCost) : agentCost;
             orderCogs += (Number.isFinite(cost) && cost > 0 ? cost : 0) * qty;
           }
-          inFlight += orderCogs + ship;
+          inFlight += orderCogs;
         }
 
         const creditLimit = Number(saProfile.credit_limit) || 0;
@@ -1322,7 +1323,7 @@ export async function POST(request: NextRequest) {
           for (const item of computedItems) {
             wholesaleCogs += (item.unit_super_agent_cost !== null ? item.unit_super_agent_cost : item.unit_cost_price) * item.quantity;
           }
-          wholesaleCogs += shippingCost;
+          // Shipping is agent-owned; platform credit math bills COGS only.
 
           const res = await checkSuperAgentCredit(superAgentProfile, wholesaleCogs);
           if (res.error) { await rollbackPreOrder(); return NextResponse.json({ error: res.error }, { status: res.status }); }
@@ -1345,7 +1346,7 @@ export async function POST(request: NextRequest) {
               const cost = item.unit_super_agent_cost !== null ? item.unit_super_agent_cost : item.unit_cost_price;
               retailCogs += cost * item.quantity;
             }
-            retailCogs += shippingCost;
+            // Shipping is agent-owned; platform credit math bills COGS only.
 
             const res = await checkSuperAgentCredit(superAgentProfile, retailCogs);
             if (res.error) { await rollbackPreOrder(); return NextResponse.json({ error: res.error }, { status: res.status }); }
@@ -1363,7 +1364,7 @@ export async function POST(request: NextRequest) {
           for (const item of computedItems) {
              retailCogs += item.unit_cost_price * item.quantity;
           }
-          retailCogs += shippingCost;
+          // Shipping is agent-owned; platform credit math bills COGS only.
 
           const res = await checkSuperAgentCredit(agentProfile, retailCogs);
           if (res.error) { await rollbackPreOrder(); return NextResponse.json({ error: res.error }, { status: res.status }); }

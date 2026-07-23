@@ -271,7 +271,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const shippingCost = Number(order.shipping_cost) || 0;
+    // Shipping is agent-owned: agents buy their own labels (Pirate Ship etc.)
+    // and the researcher-paid shipping fee already goes to the agent directly,
+    // so the platform never bills shipping. COGS only.
+    const shippingCost = 0;
     const totalOwed = totalCogs + shippingCost;
 
     const { data: primaryProfile, error: profileError } = await supabase
