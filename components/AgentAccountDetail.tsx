@@ -142,17 +142,17 @@ export default function AgentAccountDetail({
   onViewDownline?: (agent: any) => void;
 }) {
   const [detail, setDetail] = useState<Detail | null>(null);
-  // PLATFORM RULE: super agents may ONLY promote researchers in their own
-  // downline to full Agent. Granting or revoking SUPER agent status is an
-  // admin-only action (the API already rejects non-admins), so the Make
-  // Super button must only render for admin viewers.
+  // Promote/demote is available to admins AND super-agents (for their own downline).
   const [viewerIsAdmin, setViewerIsAdmin] = useState(false);
+  const [viewerIsSuperAgent, setViewerIsSuperAgent] = useState(false);
+  const [roleChanging, setRoleChanging] = useState(false);
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
-      const { data } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+      const { data } = await supabase.from('profiles').select('role, is_super_agent').eq('id', user.id).maybeSingle();
       setViewerIsAdmin(data?.role === 'admin');
+      setViewerIsSuperAgent(data?.is_super_agent === true || data?.role === 'super_agent');
     });
   }, []);
   const [loading, setLoading] = useState(true);
@@ -339,6 +339,27 @@ export default function AgentAccountDetail({
     }
   }
 
+  async function changeRole(makeSuperAgent: boolean) {
+    if (!detail) return;
+    setRoleChanging(true);
+    try {
+      const res = await fetch('/api/admin/agents/super-upgrade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agentId: detail.agent.id, is_super_agent: makeSuperAgent }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed To Update Role.');
+      toast.success(makeSuperAgent ? `${detail.agent.full_name || 'Agent'} Promoted To Super Agent` : `${detail.agent.full_name || 'Agent'} Demoted To Agent`);
+      await load();
+      onChanged();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed To Update Role.');
+    } finally {
+      setRoleChanging(false);
+    }
+  }
+
   return (
     <>
     <div
@@ -367,28 +388,14 @@ export default function AgentAccountDetail({
                   View Downline
                 </button>
               )}
-              {detail && viewerIsAdmin && (
-                <button 
-                  onClick={async () => {
-                    try {
-                      const res = await fetch('/api/admin/agents/super-upgrade', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ agentId: detail.agent.id, is_super_agent: !detail.agent.is_super_agent })
-                      });
-                      const json = await res.json();
-                      if (!res.ok) throw new Error(json.error);
-                      toast.success(detail.agent.is_super_agent ? 'Super Agent Status Revoked' : 'Promoted To Super Agent');
-                      load();
-                      onChanged();
-                    } catch (err: any) {
-                      toast.error(err.message || 'Failed To Update Super Agent Status');
-                    }
-                  }}
-                  className="btn-silver" style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-                  disabled={detail.agent.is_sub_agent}
+              {detail && (viewerIsAdmin || viewerIsSuperAgent) && !detail.agent.is_sub_agent && (
+                <button
+                  onClick={() => changeRole(!detail.agent.is_super_agent)}
+                  className={detail.agent.is_super_agent ? 'btn-secondary' : 'btn-neon-cyan'}
+                  style={{ padding: '6px 14px', fontSize: '0.8rem', fontWeight: 700 }}
+                  disabled={roleChanging}
                 >
-                  {detail.agent.is_super_agent ? 'Revoke Super' : 'Make Super'}
+                  {roleChanging ? '...' : detail.agent.is_super_agent ? '⬇ Demote To Agent' : '⬆ Make Super Agent'}
                 </button>
               )}
               {detail && (
