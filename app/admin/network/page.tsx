@@ -37,8 +37,8 @@ export default async function AdminNetworkPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
-  const { data: profile } = await supabase.from('profiles').select('role, is_active').eq('id', user.id).maybeSingle();
-  if (!isEffectiveAdmin(user.id, profile?.role) || profile?.is_active === false) redirect('/dashboard');
+  const { data: profile } = await supabase.from('profiles').select('role, is_active, is_admin_account').eq('id', user.id).maybeSingle();
+  if (!isEffectiveAdmin(user.id, profile?.role) && profile?.is_admin_account !== true || profile?.is_active === false) redirect('/dashboard');
 
   const svc = await createServiceClient();
   const { data, error } = await svc.rpc('fn_admin_downline_tree', { p_days: 30 });

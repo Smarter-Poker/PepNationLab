@@ -11,8 +11,8 @@ export default async function AdminTrafficPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
-  if (!isEffectiveAdmin(user.id, profile?.role)) redirect('/dashboard');
+  const { data: profile } = await supabase.from('profiles').select('role, is_admin_account').eq('id', user.id).maybeSingle();
+  if (!isEffectiveAdmin(user.id, profile?.role) && profile?.is_admin_account !== true) redirect('/dashboard');
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '1.5rem 1rem 3rem' }}>

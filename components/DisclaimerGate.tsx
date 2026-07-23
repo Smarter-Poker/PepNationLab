@@ -152,7 +152,7 @@ export default function DisclaimerGate({ onAccept }: DisclaimerGateProps) {
         {/* Action buttons */}
         <div style={{ display: 'flex', gap: 'var(--space-4)', flexDirection: 'column', alignItems: 'center' }}>
           <button
-            className="btn btn-primary btn-xl w-full"
+            className="btn btn-primary btn-xl"
             onClick={onAccept}
             disabled={!allChecked}
             style={{
@@ -160,15 +160,17 @@ export default function DisclaimerGate({ onAccept }: DisclaimerGateProps) {
               cursor: allChecked ? 'pointer' : 'not-allowed',
               fontSize: '1rem',
               fontFamily: 'var(--font-brand)',
-              letterSpacing: '0.05em'
+              letterSpacing: '0.05em',
+              textAlign: 'center',
+              justifyContent: 'center'
             }}
           >
             I Understand And Agree - Enter Site
           </button>
           <button
-            className="btn btn-ghost w-full"
+            className="btn btn-ghost"
             onClick={() => { try { window.close(); } catch (_) { /* browser may block */ } window.location.href = 'about:blank'; }}
-            style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}
+            style={{ fontSize: '0.85rem', color: 'var(--grey-400)', textAlign: 'center', justifyContent: 'center' }}
           >
             I Do Not Agree - Exit
           </button>

@@ -38,11 +38,11 @@ export async function requireAdmin(): Promise<
   const service = await createServiceClient();
   const { data: profile } = await service
     .from('profiles')
-    .select('role')
+    .select('role, is_admin_account')
     .eq('id', user.id)
     .maybeSingle();
 
-  if (!isEffectiveAdmin(user.id, profile?.role)) {
+  if (!isEffectiveAdmin(user.id, profile?.role) && profile?.is_admin_account !== true) {
     return {
       ok: false,
       response: NextResponse.json(
@@ -75,18 +75,20 @@ export async function requireOrdersAccess(): Promise<
   const service = await createServiceClient();
   const { data: profile } = await service
     .from('profiles')
-    .select('role')
+    .select('role, is_admin_account')
     .eq('id', user.id)
     .maybeSingle();
 
-  if (!isEffectiveAdmin(user.id, profile?.role) && profile?.role !== 'shipping') {
+  const isAdmin = isEffectiveAdmin(user.id, profile?.role) || profile?.is_admin_account === true;
+
+  if (!isAdmin && profile?.role !== 'shipping') {
     return {
       ok: false,
       response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }),
     };
   }
 
-  return { ok: true, userId: user.id, role: profile?.role || 'user', isAdmin: isEffectiveAdmin(user.id, profile?.role) };
+  return { ok: true, userId: user.id, role: profile?.role || 'user', isAdmin };
 }
 
 /**

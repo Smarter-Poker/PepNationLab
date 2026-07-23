@@ -217,6 +217,7 @@ export default function TrafficDashboard({ endpoint, heading, subheading }: { en
             onClose={() => setDrawerOpen(false)} 
             metric={selectedMetric}
             days={days}
+            drilldownEndpoint={`${endpoint}/drilldown`}
             agentId={data.scope === 'agent' ? endpoint.includes('agent') ? undefined : undefined : undefined} 
           />
         </>

@@ -17,10 +17,10 @@ export default async function AdminShippingSettingsPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, is_admin_account')
     .eq('id', user.id)
     .maybeSingle();
-  if (!isEffectiveAdmin(user.id, profile?.role)) redirect('/dashboard');
+  if (!isEffectiveAdmin(user.id, profile?.role) && profile?.is_admin_account !== true) redirect('/dashboard');
 
   return <AdminShippingSettingsClient />;
 }

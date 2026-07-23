@@ -17,11 +17,11 @@ export default async function AdminSettingsPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, full_name, role, avatar_url')
+    .select('id, full_name, role, avatar_url, is_admin_account')
     .eq('id', user.id)
     .maybeSingle();
 
-  if (!profile || !isEffectiveAdmin(user.id, profile.role)) {
+  if (!profile || !isEffectiveAdmin(user.id, profile.role) && profile?.is_admin_account !== true) {
     redirect('/dashboard');
   }
 

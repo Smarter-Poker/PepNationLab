@@ -51,7 +51,6 @@ export default async function NetworkDashboardPage() {
       commission_pct, tier, account_type, created_at,
       agent_profiles ( slug, display_name )
     `)
-    .eq('parent_agent_id', user.id)
     .in('role', ['agent', 'super_agent'])
     .order('created_at', { ascending: false });
 

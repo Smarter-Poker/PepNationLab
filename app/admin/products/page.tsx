@@ -17,11 +17,11 @@ export default async function AdminProductsPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select('role, is_admin_account')
     .eq("id", user.id)
     .maybeSingle();
 
-  if (!profile || (!isEffectiveAdmin(user.id, profile.role) && profile.role !== "shipping")) {
+  if (!profile || (!isEffectiveAdmin(user.id, profile.role) && profile?.is_admin_account !== true && profile.role !== "shipping")) {
     return redirect("/dashboard");
   }
 

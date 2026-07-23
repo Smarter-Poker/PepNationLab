@@ -41,9 +41,9 @@ export default async function AdminDashboard() {
   const { user } = await getCachedUser();
   if (!user) redirect('/login');
 
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+  const { data: profile } = await supabase.from('profiles').select('role, is_admin_account').eq('id', user.id).maybeSingle();
 
-  if (!isEffectiveAdmin(user.id, profile?.role)) {
+  if (!isEffectiveAdmin(user.id, profile?.role) && profile?.is_admin_account !== true) {
     return redirect('/dashboard');
   }
 

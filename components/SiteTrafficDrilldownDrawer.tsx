@@ -10,9 +10,10 @@ interface DrilldownDrawerProps {
   metric: DrilldownMetric | null;
   days: number;
   agentId?: string;
+  drilldownEndpoint?: string;
 }
 
-export default function SiteTrafficDrilldownDrawer({ isOpen, onClose, metric, days, agentId }: DrilldownDrawerProps) {
+export default function SiteTrafficDrilldownDrawer({ isOpen, onClose, metric, days, agentId, drilldownEndpoint = '/api/admin/traffic/drilldown' }: DrilldownDrawerProps) {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +22,7 @@ export default function SiteTrafficDrilldownDrawer({ isOpen, onClose, metric, da
     if (isOpen && metric) {
       setLoading(true);
       setError(null);
-      let url = `/api/admin/traffic/drilldown?metric=${metric}&days=${days}`;
+      let url = `${drilldownEndpoint}?metric=${metric}&days=${days}`;
       if (agentId) url += `&agent_id=${agentId}`;
 
       fetch(url)

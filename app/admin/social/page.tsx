@@ -26,11 +26,11 @@ export default async function AdminSocialPage() {
   const service = await createServiceClient();
   const { data: profile } = await service
     .from('profiles')
-    .select('role')
+    .select('role, is_admin_account')
     .eq('id', user.id)
     .maybeSingle();
 
-  if (!isEffectiveAdmin(user.id, (profile as { role?: string } | null)?.role)) redirect('/dashboard');
+  if (!isEffectiveAdmin(user.id, (profile as any)?.role) && (profile as any)?.is_admin_account !== true) redirect('/dashboard');
 
   const [status, posts] = await Promise.all([getSocialStatus(), getSocialQueue(null, 50)]);
 
