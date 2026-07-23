@@ -150,7 +150,7 @@ export default function DisclaimerGate({ onAccept }: DisclaimerGateProps) {
         </div>
 
         {/* Action buttons */}
-        <div style={{ display: 'flex', gap: 'var(--space-4)', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', gap: 'var(--space-4)', flexDirection: 'column', alignItems: 'center' }}>
           <button
             className="btn btn-primary btn-xl w-full"
             onClick={onAccept}
