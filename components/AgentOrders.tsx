@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { ClipboardCopy, Download, Ship, Upload } from 'lucide-react';
+import { ClipboardCopy, Download, Ship, Upload, Zap, Undo2 } from 'lucide-react';
 import AgentManualOrder from './AgentManualOrder';
 import { carrierInfo } from '@/lib/carrier';
 import AgentPaymentProofs from './AgentPaymentProofs';
@@ -63,6 +63,16 @@ interface OrderItem {
 interface AgentOrdersProps {
   orders: Order[];
   setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
+}
+
+/** Rate option returned by GET /api/agent/shipping/rates (EasyPost Forge). */
+interface ForgeRateOption {
+  rateId: string;
+  carrier: string;
+  serviceLevelToken: string;
+  serviceLevelName: string;
+  amountCents: number;
+  estimatedDays: number | null;
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -158,8 +168,35 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
   }, [detailOrder]);
 
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
+    let cancelReason = '';
+    if (newStatus === 'cancelled') {
+      cancelReason = window.prompt('Please provide a reason for cancellation (Required):') || '';
+      if (!cancelReason.trim()) {
+        toast.error('Cancellation Reason Is Required.');
+        return;
+      }
+    }
+
     setLoadingOrderId(orderId);
     try {
+      if (newStatus === 'cancelled') {
+        const res = await fetch('/api/agent/orders/cancel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId, reason: cancelReason.trim() }),
+        });
+        const data = await res.json().catch(() => ({} as { error?: string }));
+        if (!res.ok) throw new Error(data.error || 'Failed To Cancel Order.');
+        
+        setOrders((prev) =>
+          prev.map((o) =>
+            o.id === orderId ? { ...o, status: 'cancelled' } : o
+          )
+        );
+        toast.success('Order Cancelled Successfully.');
+        return;
+      }
+
       const tracking = trackingNumbers[orderId] || null;
       const idemKey = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
       const res = await fetch('/api/agent/orders/approve', {
@@ -334,101 +371,309 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
     order.fulfillment_method === 'ship' &&
     (order.status === 'approved_ship' || order.status === 'in_fulfillment');
 
+  // -------------------------------------------------------------------------
+  // EasyPost Forge: one-click label buying from the agent's own shipping
+  // account. Checked once per mount, and only when an order could use it -
+  // with the admin toggle off (available:false) or no active card, nothing
+  // in this panel changes.
+  // -------------------------------------------------------------------------
+  const [forgeActive, setForgeActive] = useState(false);
+  const forgeCheckedRef = useRef(false);
+  const [forgeRates, setForgeRates] = useState<Record<string, ForgeRateOption[]>>({});
+  const [ratesLoadingId, setRatesLoadingId] = useState<string | null>(null);
+  const [buyingRateKey, setBuyingRateKey] = useState<string | null>(null);
+  const [refundingOrderId, setRefundingOrderId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (forgeCheckedRef.current) return;
+    const relevant = orders.some(
+      (o) => isShipReady(o) || (o.status === 'shipped' && !!o.label_url)
+    );
+    if (!relevant) return;
+    forgeCheckedRef.current = true;
+    (async () => {
+      try {
+        const res = await fetch('/api/agent/shipping/account');
+        if (!res.ok) return;
+        const data = await res.json();
+        setForgeActive(!!data.available && data.billingStatus === 'active');
+      } catch {
+        /* forge stays hidden on failure */
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orders]);
+
+  const handleGetRates = async (orderId: string) => {
+    setRatesLoadingId(orderId);
+    try {
+      const res = await fetch(`/api/agent/shipping/rates?orderId=${encodeURIComponent(orderId)}`);
+      const data = await res.json().catch(() => ({} as { error?: string; rates?: ForgeRateOption[] }));
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed To Fetch Shipping Rates.');
+      }
+      setForgeRates((prev) => ({ ...prev, [orderId]: data.rates ?? [] }));
+      if ((data.rates ?? []).length === 0) {
+        toast.error('No Carriers Returned A Rate For This Address.');
+      }
+    } catch (err: any) {
+      toast.error(err.message ?? 'An Error Occurred Fetching Shipping Rates.');
+    } finally {
+      setRatesLoadingId(null);
+    }
+  };
+
+  const handleBuyLabel = async (orderId: string, rate: ForgeRateOption) => {
+    const rateKey = `${orderId}:${rate.rateId}`;
+    setBuyingRateKey(rateKey);
+    try {
+      const idemKey = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const res = await fetch('/api/agent/shipping/buy-label', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Idempotency-Key': idemKey,
+        },
+        body: JSON.stringify({ orderId, serviceLevel: rate.serviceLevelToken }),
+      });
+      const data = await res.json().catch(() => ({} as { error?: string; trackingNumber?: string; labelUrl?: string; carrier?: string }));
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed To Buy The Label.');
+      }
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === orderId
+            ? {
+                ...o,
+                status: 'shipped',
+                tracking_number: data.trackingNumber || o.tracking_number,
+                label_url: data.labelUrl || o.label_url,
+              }
+            : o
+        )
+      );
+      setForgeRates((prev) => {
+        const next = { ...prev };
+        delete next[orderId];
+        return next;
+      });
+      if (data.labelUrl) setLabelModalUrl(data.labelUrl);
+      toast.success(`Label Purchased Via ${data.carrier || rate.carrier}. The Buyer Has Been Notified.`);
+    } catch (err: any) {
+      toast.error(err.message ?? 'An Error Occurred Buying The Label.');
+    } finally {
+      setBuyingRateKey(null);
+    }
+  };
+
+  const handleRefundLabel = async (orderId: string) => {
+    if (!confirm('Request A Refund For This Label? The Label Becomes Void Once The Carrier Approves The Refund.')) return;
+    setRefundingOrderId(orderId);
+    try {
+      const res = await fetch('/api/agent/shipping/refund-label', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId }),
+      });
+      const data = await res.json().catch(() => ({} as { error?: string }));
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed To Request The Label Refund.');
+      }
+      toast.success('Label Refund Requested. EasyPost Credits Your Wallet Once The Carrier Approves It.');
+    } catch (err: any) {
+      toast.error(err.message ?? 'An Error Occurred Requesting The Refund.');
+    } finally {
+      setRefundingOrderId(null);
+    }
+  };
+
   // Ship It panel: shown on ship-ready orders in the row and mirrored in the
-  // detail modal. Agents buy the label themselves (Pirate Ship), then paste
-  // the tracking number and mark the order shipped.
-  const renderShipPanel = (order: Order) => (
-    <div
-      onClick={(e) => e.stopPropagation()}
-      style={{
-        marginTop: '8px',
-        padding: '16px 20px',
-        borderRadius: '12px',
-        background: 'rgba(0,196,188,0.06)',
-        border: '1px solid rgba(0,196,188,0.25)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '12px',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--teal)', fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-        <Ship size={16} />
-        Ship It
+  // detail modal. With an active Forge shipping account the agent buys the
+  // label in one click; the Pirate Ship paste-back remains as the fallback.
+  const renderShipPanel = (order: Order) => {
+    const orderRates = forgeRates[order.id];
+
+    // Existing paste-back flow (Pirate Ship). Primary when Forge is off;
+    // collapsed secondary fallback when the agent has one-click labels.
+    const pasteBackSection = (
+      <>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => handleCopyAddress(order)}
+            style={{ padding: '8px 14px', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            <ClipboardCopy size={14} />
+            Copy Address
+          </button>
+          <IframeLink
+            href="https://ship.pirateship.com/ship"
+            className="btn btn-secondary"
+            style={{
+              padding: '8px 14px',
+              fontSize: '0.85rem',
+              fontWeight: 600,
+              textDecoration: 'none',
+              background: 'rgba(0,196,188,0.15)',
+              border: '1px solid var(--teal)',
+              color: 'var(--teal)',
+              borderRadius: '8px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            Open Pirate Ship
+          </IframeLink>
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+          <input
+            type="text"
+            placeholder="Paste Tracking Number"
+            className="form-input"
+            value={trackingNumbers[order.id] || ''}
+            onChange={(e) =>
+              setTrackingNumbers((prev) => ({ ...prev, [order.id]: e.target.value }))
+            }
+            style={{ padding: '10px 16px', fontSize: '0.95rem', height: 44, flex: '1 1 220px', minWidth: 180, borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)' }}
+          />
+          <select
+            className="form-input"
+            value={shipCarriers[order.id] || ''}
+            onChange={(e) =>
+              setShipCarriers((prev) => ({ ...prev, [order.id]: e.target.value }))
+            }
+            style={{ padding: '10px 12px', fontSize: '0.9rem', height: 44, borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--white)' }}
+          >
+            <option value="">Auto Detect</option>
+            <option value="USPS">USPS</option>
+            <option value="UPS">UPS</option>
+            <option value="FedEx">FedEx</option>
+            <option value="DHLExpress">DHL Express</option>
+          </select>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => handleMarkShipped(order.id)}
+            disabled={shippingOrderId === order.id || !(trackingNumbers[order.id] || '').trim()}
+            style={{ padding: '10px 20px', fontSize: '0.9rem', fontWeight: 700, borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}
+          >
+            {shippingOrderId === order.id ? 'Marking Shipped...' : 'Mark Shipped'}
+          </button>
+        </div>
+        <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)' }}>
+          Buy The Label With Your Own Carrier Account (We Recommend Pirate Ship), Then Paste The Tracking Number Here. The Buyer Gets Live Tracking Automatically.
+        </div>
+      </>
+    );
+
+    return (
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          marginTop: '8px',
+          padding: '16px 20px',
+          borderRadius: '12px',
+          background: 'rgba(0,196,188,0.06)',
+          border: '1px solid rgba(0,196,188,0.25)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--teal)', fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          <Ship size={16} />
+          Ship It
+        </div>
+        <div style={{ fontSize: '0.9rem', color: 'var(--silver)', lineHeight: 1.5 }}>
+          {order.buyer_name && <div style={{ color: 'var(--white)', fontWeight: 600 }}>{order.buyer_name}</div>}
+          {formatAddress(order.shipping_address)}
+        </div>
+
+        {forgeActive && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {!orderRates && (
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => handleGetRates(order.id)}
+                disabled={ratesLoadingId === order.id}
+                style={{ alignSelf: 'flex-start', padding: '10px 20px', fontSize: '0.9rem', fontWeight: 700, borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}
+              >
+                <Zap size={15} />
+                {ratesLoadingId === order.id ? 'Fetching Rates...' : 'Buy Label'}
+              </button>
+            )}
+            {orderRates && orderRates.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ fontSize: '0.78rem', color: 'var(--teal)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  Pick A Rate
+                </div>
+                {orderRates.map((rate) => {
+                  const rateKey = `${order.id}:${rate.rateId}`;
+                  return (
+                    <div
+                      key={rate.rateId}
+                      style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                        gap: '10px',
+                        padding: '10px 14px',
+                        borderRadius: '10px',
+                        background: 'rgba(0,0,0,0.25)',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                      }}
+                    >
+                      <div style={{ flex: '1 1 200px', minWidth: 160 }}>
+                        <div style={{ color: 'var(--white)', fontWeight: 700, fontSize: '0.9rem' }}>
+                          {rate.serviceLevelName || `${rate.carrier} ${rate.serviceLevelToken}`}
+                        </div>
+                        <div style={{ color: 'var(--grey-400)', fontSize: '0.78rem' }}>
+                          {rate.estimatedDays
+                            ? `Estimated ${rate.estimatedDays} Day${rate.estimatedDays === 1 ? '' : 's'}`
+                            : 'Delivery Estimate Unavailable'}
+                        </div>
+                      </div>
+                      <div style={{ color: 'var(--teal)', fontWeight: 800, fontSize: '1rem' }}>
+                        {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(rate.amountCents / 100)}
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={() => handleBuyLabel(order.id, rate)}
+                        disabled={buyingRateKey !== null}
+                        style={{ padding: '8px 18px', fontSize: '0.85rem', fontWeight: 700, borderRadius: '8px' }}
+                      >
+                        {buyingRateKey === rateKey ? 'Buying...' : 'Buy'}
+                      </button>
+                    </div>
+                  );
+                })}
+                <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)' }}>
+                  The Label Is Charged To Your Card By EasyPost And The Order Is Marked Shipped Automatically.
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {forgeActive ? (
+          <details style={{ marginTop: '2px' }}>
+            <summary style={{ cursor: 'pointer', color: 'var(--grey-400)', fontSize: '0.82rem', fontWeight: 600 }}>
+              Or Paste A Tracking Number From Another Service
+            </summary>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
+              {pasteBackSection}
+            </div>
+          </details>
+        ) : (
+          pasteBackSection
+        )}
       </div>
-      <div style={{ fontSize: '0.9rem', color: 'var(--silver)', lineHeight: 1.5 }}>
-        {order.buyer_name && <div style={{ color: 'var(--white)', fontWeight: 600 }}>{order.buyer_name}</div>}
-        {formatAddress(order.shipping_address)}
-      </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={() => handleCopyAddress(order)}
-          style={{ padding: '8px 14px', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}
-        >
-          <ClipboardCopy size={14} />
-          Copy Address
-        </button>
-        <IframeLink
-          href="https://ship.pirateship.com/ship"
-          className="btn btn-secondary"
-          style={{
-            padding: '8px 14px',
-            fontSize: '0.85rem',
-            fontWeight: 600,
-            textDecoration: 'none',
-            background: 'rgba(0,196,188,0.15)',
-            border: '1px solid var(--teal)',
-            color: 'var(--teal)',
-            borderRadius: '8px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-          }}
-        >
-          Open Pirate Ship
-        </IframeLink>
-      </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
-        <input
-          type="text"
-          placeholder="Paste Tracking Number"
-          className="form-input"
-          value={trackingNumbers[order.id] || ''}
-          onChange={(e) =>
-            setTrackingNumbers((prev) => ({ ...prev, [order.id]: e.target.value }))
-          }
-          style={{ padding: '10px 16px', fontSize: '0.95rem', height: 44, flex: '1 1 220px', minWidth: 180, borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)' }}
-        />
-        <select
-          className="form-input"
-          value={shipCarriers[order.id] || ''}
-          onChange={(e) =>
-            setShipCarriers((prev) => ({ ...prev, [order.id]: e.target.value }))
-          }
-          style={{ padding: '10px 12px', fontSize: '0.9rem', height: 44, borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--white)' }}
-        >
-          <option value="">Auto Detect</option>
-          <option value="USPS">USPS</option>
-          <option value="UPS">UPS</option>
-          <option value="FedEx">FedEx</option>
-          <option value="DHLExpress">DHL Express</option>
-        </select>
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={() => handleMarkShipped(order.id)}
-          disabled={shippingOrderId === order.id || !(trackingNumbers[order.id] || '').trim()}
-          style={{ padding: '10px 20px', fontSize: '0.9rem', fontWeight: 700, borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}
-        >
-          {shippingOrderId === order.id ? 'Marking Shipped...' : 'Mark Shipped'}
-        </button>
-      </div>
-      <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)' }}>
-        Buy The Label With Your Own Carrier Account (We Recommend Pirate Ship), Then Paste The Tracking Number Here. The Buyer Gets Live Tracking Automatically.
-      </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="glass-panel" style={{ marginBottom: 'var(--space-6)' }}>
@@ -1357,6 +1602,34 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                   >
                     View Shipping Label
                   </IframeLink>
+                )}
+
+                {/* EasyPost Forge: refund an agent-paid label while the order
+                    is shipped but not yet delivered. The server verifies the
+                    label was actually bought on this agent's account. */}
+                {forgeActive && detailOrder.status === 'shipped' && detailOrder.label_url && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => handleRefundLabel(detailOrder.id)}
+                    disabled={refundingOrderId === detailOrder.id}
+                    style={{
+                      marginTop: 'var(--space-3)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      fontSize: '0.85rem',
+                      padding: '8px 16px',
+                      fontWeight: 600,
+                      color: '#FFAAAA',
+                      border: '1px solid rgba(252,129,129,0.4)',
+                      background: 'rgba(229,62,62,0.08)',
+                      borderRadius: '8px',
+                    }}
+                  >
+                    <Undo2 size={14} />
+                    {refundingOrderId === detailOrder.id ? 'Requesting Refund...' : 'Refund Label'}
+                  </button>
                 )}
 
                 <div

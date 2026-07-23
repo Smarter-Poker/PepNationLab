@@ -15,6 +15,7 @@ import AgentInventory from '@/components/AgentInventory';
 import AgentDownline from '@/components/AgentDownline';
 import AgentOverview from '@/components/AgentOverview';
 import AgentStorefrontConfig from '@/components/AgentStorefrontConfig';
+import AgentShippingAccountCard from '@/components/AgentShippingAccountCard';
 import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
 import AgentOrders from '@/components/AgentOrders';
 import AgentBundles from '@/components/AgentBundles';
@@ -1219,6 +1220,9 @@ export default function AgentDashboardClient({
                 ) : null
               }
             />
+            {/* EasyPost Forge white-label shipping account. Renders nothing
+                while the admin Forge toggle is off. */}
+            <AgentShippingAccountCard />
           </div>
         )}
 
