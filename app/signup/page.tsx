@@ -89,13 +89,16 @@ function SignupForm() {
   const rawRedirect = searchParams.get('redirect') ?? '';
   const redirectTo = /^\/(?!\/|\\)/.test(rawRedirect) ? rawRedirect : '/dashboard';
 
-  // Referral code from a shared link/QR (/signup?ref=CODE) prefills the field
-  // but stays editable. A referral code is a referrer's username OR a researcher
-  // referral code. Applied server-side after account creation; invalid codes
-  // never block signup. An optional ?promo=CODE prefills the promo field too.
+  // Capture ?ref= from the URL. When present, the referral is LOCKED — the
+  // field is pre-filled and read-only so the agent attribution cannot be
+  // removed or changed by the person signing up.
+  const [lockedRef, setLockedRef] = useState<string | null>(null);
   useEffect(() => {
     const rawRef = (searchParams.get('ref') ?? '').trim();
-    if (rawRef && /^[A-Za-z0-9_-]{2,50}$/.test(rawRef)) setReferralInput(rawRef);
+    if (rawRef && /^[A-Za-z0-9_-]{2,50}$/.test(rawRef)) {
+      setReferralInput(rawRef);
+      setLockedRef(rawRef); // lock it — cannot be changed
+    }
     const rawPromo = (searchParams.get('promo') ?? '').trim();
     if (rawPromo && /^[A-Za-z0-9_-]{2,40}$/.test(rawPromo)) setPromoInput(rawPromo);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -533,16 +536,41 @@ function SignupForm() {
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="referralCode">Referral Code (Optional)</label>
-              <input
-                id="referralCode" type="text" className="form-input"
-                placeholder="Agent Or Researcher Username / Code"
-                value={referralInput}
-                onChange={e => setReferralInput(e.target.value.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 50))}
-                maxLength={50} autoCapitalize="none" spellCheck={false}
-              />
-              <p style={{ fontSize: '0.72rem', marginTop: 4, color: 'var(--grey-500)' }}>
-                Enter the username of the agent or researcher who referred you, or their referral code.
+              <label className="form-label" htmlFor="referralCode">
+                {lockedRef ? 'Referred By (Locked)' : 'Referral Code (Optional)'}
+              </label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  id="referralCode" type="text" className="form-input"
+                  placeholder="Agent Or Researcher Username / Code"
+                  value={referralInput}
+                  onChange={lockedRef ? undefined : (e => setReferralInput(e.target.value.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 50)))}
+                  readOnly={!!lockedRef}
+                  maxLength={50} autoCapitalize="none" spellCheck={false}
+                  style={lockedRef ? {
+                    paddingRight: 36,
+                    background: 'rgba(0,196,188,0.06)',
+                    border: '1px solid rgba(0,196,188,0.35)',
+                    color: 'var(--teal)',
+                    cursor: 'default',
+                  } : undefined}
+                />
+                {lockedRef && (
+                  <span style={{
+                    position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+                    color: 'var(--teal)', display: 'inline-flex', pointerEvents: 'none',
+                  }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                  </span>
+                )}
+              </div>
+              <p style={{ fontSize: '0.72rem', marginTop: 4, color: lockedRef ? 'var(--teal)' : 'var(--grey-500)' }}>
+                {lockedRef
+                  ? `You were referred by @${lockedRef}. This cannot be changed.`
+                  : 'Enter the username of the agent or researcher who referred you, or their referral code.'}
               </p>
             </div>
 
@@ -677,9 +705,12 @@ function SignupForm() {
                     className="btn btn-primary"
                     disabled={!allAcked || googleLoading}
                     onClick={() => {
-                      // After acks: if agent already known from QR, skip referral step
+                      // After acks: if agent already known from QR or locked ?ref=, skip referral step
                       if (capturedAgentSlug) {
                         proceedWithGoogle(capturedAgentSlug);
+                      } else if (lockedRef) {
+                        // Referral is locked from the URL — go straight through, no editable step
+                        proceedWithGoogle(lockedRef);
                       } else {
                         // Pre-fill from ?ref= if present
                         if (referralInput && !googleReferralInput) setGoogleReferralInput(referralInput);
@@ -721,15 +752,26 @@ function SignupForm() {
                     type="text"
                     className="form-input"
                     value={googleReferralInput}
-                    onChange={e => setGoogleReferralInput(e.target.value.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 50))}
+                    onChange={lockedRef
+                      ? undefined
+                      : (e => setGoogleReferralInput(e.target.value.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 50)))}
+                    readOnly={!!lockedRef}
                     maxLength={50}
                     autoCapitalize="none"
                     spellCheck={false}
                     autoFocus
-                    style={{ width: '100%' }}
+                    style={lockedRef ? {
+                      background: 'rgba(0,196,188,0.06)',
+                      border: '1px solid rgba(0,196,188,0.35)',
+                      color: 'var(--teal)',
+                      cursor: 'default',
+                      width: '100%',
+                    } : { width: '100%' }}
                   />
-                  <p style={{ fontSize: '0.72rem', marginTop: 6, color: 'var(--grey-500)' }}>
-                    Not sure? Leave it blank and tap Skip. You can update this later from your account settings.
+                  <p style={{ fontSize: '0.72rem', marginTop: 6, color: lockedRef ? 'var(--teal)' : 'var(--grey-500)' }}>
+                    {lockedRef
+                      ? `You were referred by @${lockedRef}. This cannot be changed.`
+                      : 'Not sure? Leave it blank and tap Skip. You can update this later from your account settings.'}
                   </p>
                 </div>
 
