@@ -165,7 +165,11 @@ export async function computeSuperDownlineSubtreeBilling(
 
   for (const order of orders) {
     orderIds.push(order.id as string);
-    shipping += Number(order.shipping_cost) || 0;
+    // Shipping is agent-owned as of 2026-07-23: agents buy their own labels
+    // (Pirate Ship) and the researcher-paid shipping fee already goes to the
+    // selling agent directly, so hop-by-hop invoices bill COGS only. The
+    // shipping accumulator is kept (at 0) so the result shape is unchanged.
+    shipping += 0;
     const isDirect = directChildren.has(order.agent_id as string);
     const items = (order.order_items as unknown) as ItemRow[];
 
@@ -285,7 +289,12 @@ export async function computeStatement(
 
   for (const order of orders ?? []) {
     orderIds.push(order.id as string);
-    totalShipping += Number(order.shipping_cost) || 0;
+    // Shipping is agent-owned as of 2026-07-23: agents buy their own labels
+    // (Pirate Ship) and the researcher-paid shipping fee already goes to the
+    // agent directly, so admin statements bill COGS only. totalShipping is
+    // kept (at 0) so totalOwed math and the persisted total_shipping column
+    // stay shape-compatible.
+    totalShipping += 0;
 
     const items = (order.order_items as unknown) as Array<{
       quantity: number;

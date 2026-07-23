@@ -26,7 +26,7 @@ const SECTIONS: Section[] = [
       'Open the Storefront Config tab. Required fields: Slug (the URL segment, e.g. "midway"), User Name (what researchers see at the top of the page), Warehouse Address (where you physically ship from - used as the ship-from address on carrier labels), and at least one Payment Handle (Zelle / Venmo / Cash App / Apple Pay - researchers see these at checkout).',
       'Optional but recommended: upload a Logo.',
       'Your storefront is automatically activated once created. The URL is ready to share immediately.',
-      'Shipping: shipping labels are handled by the platform automatically - there is nothing to configure. Label costs are charged under a platform-pays model and show up on your weekly statement.',
+      'Shipping: you buy your own shipping labels. Create a free account at pirateship.com for deeply discounted USPS and UPS labels, buy the label there, and paste the tracking number into the order. The shipping fee researchers pay at checkout goes to you directly, and labels never appear on your weekly statement.',
     ],
   },
   {
@@ -55,7 +55,7 @@ const SECTIONS: Section[] = [
     id: 'ledger',
     title: '4. Weekly Ledger & Statements',
     body: [
-      'Every Sunday at 23:59 UTC the invoice cron runs. It groups your week\'s orders, computes total COGS (cost of goods sold at your wholesale tier) + shipping owed, and writes a weekly_statement row.',
+      'Every Sunday at 23:59 UTC the invoice cron runs. It groups your week\'s orders, computes total COGS (cost of goods sold at your wholesale tier), and writes a weekly_statement row. Shipping is NOT billed on statements - you buy your own labels and keep the shipping fee researchers pay you.',
       'You see this on your Sales & Accounting tab: status moves from Open → Pending Payment → Paid. The admin marks Paid once funds clear.',
       'Your prepaid or credit account: if account_type = prepaid, you fund your balance ahead of time and orders draw from it. If account_type = credit, you have a credit_limit and settle weekly. Your dashboard shows the available balance and the limit.',
       'Real-time visibility: every approved order writes a balance_transactions row in the ledger. The Agent Ledger view lists each charge with order id, amount, and timestamp.',
@@ -90,8 +90,8 @@ const SECTIONS: Section[] = [
     body: [
       'When a researcher checks out, their order lands in your Orders tab with status pending_customer_payment. They send you payment via the handle you configured (Zelle / Venmo / Cash App / Apple Pay).',
       'Once you confirm receipt of funds, you change status to approved_ship (or approved_pickup for local). At this point the order is committed - inventory has already been deducted and the commission trigger fires for any sub-agent attribution.',
-      'Shipping: open the order detail and click Generate Label. The label-jobs cron picks up the job, hits EasyPost, and writes a label PDF + tracking number back to the order. Order status moves to in_fulfillment → shipped (when the carrier scans it) → delivered (when EasyPost confirms delivery).',
-      'Bookkeeping: each label_purchases row captures the carrier, service level, parcel weight, label cost, and amount you were charged. Your weekly statement includes shipping spend so you can see margin by week.',
+      'Shipping: you buy the label yourself with your own carrier account - we recommend a free Pirate Ship account (pirateship.com) for discounted USPS and UPS rates. Once an admin releases the order to approved_ship, open it and use the Ship It panel: Copy Address into Pirate Ship, buy the label, paste the tracking number back, and tap Mark Shipped. The order moves to shipped and on to delivered as the carrier scans it.',
+      'Batches: use Export To Pirate Ship on the Orders tab to download a CSV of every unshipped order, import it into Pirate Ship to buy all labels at once, then upload Pirate Ship\'s shipment export via Import Tracking CSV - every matched order is marked shipped in one pass. Tracking updates appear on the researcher\'s order automatically.',
       'Cancellations and missed payments: pending orders that go unpaid for more than 72h are auto-cancelled by the cancel_stale_pending_orders RPC. Cancelled orders refund inventory and void any sub-agent commission row.',
     ],
   },

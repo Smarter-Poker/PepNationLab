@@ -280,13 +280,13 @@ export default function NetworkDashboardClient({
             <h1 style={{ margin: '4px 0 0', fontSize: '1.7rem', fontWeight: 900, lineHeight: 1.1 }}>{initialName}</h1>
             <div style={{ marginTop: 4, fontSize: '0.85rem', color: SILVER }}>Manage your network, agents, and the full platform.</div>
           </div>
-          <Link href="/admin" style={{
+          <a href="/admin" style={{
             display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none',
             background: TEAL, color: '#050A0F', fontWeight: 800, fontSize: '0.85rem',
             padding: '10px 18px', borderRadius: 10, whiteSpace: 'nowrap',
           }}>
             <span style={{ display: 'inline-flex' }}>{ICONS.admin}</span> Full Admin Panel
-          </Link>
+          </a>
         </header>
 
         {/* Sparkline & KPIs */}
@@ -310,21 +310,38 @@ export default function NetworkDashboardClient({
           <span style={{ fontSize: '0.75rem', color: SILVER }}>Everything, one tap away</span>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12, marginBottom: 28 }}>
-          {TOOLS.map(tool => (
-            <Link key={tool.href} href={tool.href} className="cc-tool" style={{
+          {TOOLS.map(tool => {
+            const commonStyle = {
               ...card, display: 'flex', gap: 13, alignItems: 'flex-start', textDecoration: 'none', color: '#FFFFFF',
               transition: 'transform 0.14s ease, border-color 0.14s ease, background 0.14s ease',
-            }}>
-              <span style={{
-                flexShrink: 0, width: 40, height: 40, borderRadius: 10, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                background: 'rgba(192,184,168,0.12)', color: TEAL,
-              }}>{ICONS[tool.key]}</span>
-              <span style={{ minWidth: 0 }}>
-                <span style={{ display: 'block', fontWeight: 800, fontSize: '0.92rem' }}>{tool.label}</span>
-                <span style={{ display: 'block', fontSize: '0.75rem', color: SILVER, marginTop: 2, lineHeight: 1.35 }}>{tool.desc}</span>
-              </span>
-            </Link>
-          ))}
+            };
+            const inner = (
+              <>
+                <span style={{
+                  flexShrink: 0, width: 40, height: 40, borderRadius: 10, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  background: 'rgba(192,184,168,0.12)', color: TEAL,
+                }}>{ICONS[tool.key]}</span>
+                <span style={{ minWidth: 0 }}>
+                  <span style={{ display: 'block', fontWeight: 800, fontSize: '0.92rem' }}>{tool.label}</span>
+                  <span style={{ display: 'block', fontSize: '0.75rem', color: SILVER, marginTop: 2, lineHeight: 1.35 }}>{tool.desc}</span>
+                </span>
+              </>
+            );
+            // /admin requires a hard navigation so the server-side platform-admin
+            // gate in app/admin/layout.tsx fires properly for Savage Brands.
+            if (tool.href === '/admin') {
+              return (
+                <a key={tool.href} href={tool.href} className="cc-tool" style={commonStyle}>
+                  {inner}
+                </a>
+              );
+            }
+            return (
+              <Link key={tool.href} href={tool.href} className="cc-tool" style={commonStyle}>
+                {inner}
+              </Link>
+            );
+          })}
         </div>
 
         {/* Broadcast Form */}

@@ -11,6 +11,7 @@ import OrderTrackingTimeline, { type TrackingEvent } from '@/components/OrderTra
 import OrderStageTimeline from '@/components/OrderStageTimeline';
 import OrderActivityFeed, { type OrderActivityEvent } from '@/components/OrderActivityFeed';
 import ReorderOrderButton from './ReorderOrderButton';
+import CancelOrderButton from './CancelOrderButton';
 import ReorderStackButton from './ReorderStackButton';
 import ChangePaymentMethod from '@/components/ChangePaymentMethod';
 import { paymentMethodLabel } from '@/lib/payment-method-labels';
@@ -108,6 +109,15 @@ export default async function OrderDetailPage(
   if (!user) {
     redirect(`/login?redirect=/orders/${id}`);
   }
+
+  // Determine viewer role to conditionally show admin/agent controls.
+  const { data: viewerProfile } = await supabase
+    .from('profiles')
+    .select('role, is_sub_agent, is_super_agent')
+    .eq('id', user.id)
+    .maybeSingle();
+  const viewerRole = viewerProfile?.role ?? 'researcher';
+  const canCancelOrder = viewerRole === 'admin' || viewerRole === 'agent';
 
   // RLS enforces buyer_id = auth.uid() for researchers; admins/agents may also pass.
   const { data: orderData, error } = await supabase
@@ -418,6 +428,13 @@ export default async function OrderDetailPage(
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
                 <ReorderOrderButton orderId={order.id} />
+                {canCancelOrder && (
+                  <CancelOrderButton
+                    orderId={order.id}
+                    currentStatus={order.status}
+                    viewerRole={viewerRole === 'admin' ? 'admin' : 'agent'}
+                  />
+                )}
                 <ReceiptButton
                   orderId={order.id}
                   createdAt={order.created_at}

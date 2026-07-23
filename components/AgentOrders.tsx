@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { ClipboardCopy, Download, Ship, Upload } from 'lucide-react';
 import AgentManualOrder from './AgentManualOrder';
 import { carrierInfo } from '@/lib/carrier';
 import AgentPaymentProofs from './AgentPaymentProofs';
@@ -92,9 +93,13 @@ function formatAddress(address: ShippingAddress | null): string {
 export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
   const [loadingOrderId, setLoadingOrderId] = useState<string | null>(null);
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
-  const [buyingLabelId, setBuyingLabelId] = useState<string | null>(null);
+  // labelModalUrl is still used to view historical label PDFs on old orders.
   const [labelModalUrl, setLabelModalUrl] = useState<string | null>(null);
   const [trackingNumbers, setTrackingNumbers] = useState<Record<string, string>>({});
+  const [shipCarriers, setShipCarriers] = useState<Record<string, string>>({});
+  const [shippingOrderId, setShippingOrderId] = useState<string | null>(null);
+  const [importingCsv, setImportingCsv] = useState(false);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
   const [showManualOrder, setShowManualOrder] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -193,41 +198,101 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
     }
   };
 
-  const handleBuyShippingLabel = async (orderId: string) => {
-    setBuyingLabelId(orderId);
+  // Agents ship with their own carrier account (Pirate Ship) and paste
+  // tracking here. This copies the recipient block for pasting into Pirate
+  // Ship's ship form.
+  const handleCopyAddress = async (order: Order) => {
+    const addr = order.shipping_address;
+    const cityLine = [
+      addr?.city,
+      [addr?.state, addr?.zip || addr?.postal_code].filter(Boolean).join(' '),
+    ].filter(Boolean).join(', ');
+    const lines = [
+      order.buyer_name,
+      addr?.street || addr?.line1,
+      addr?.line2,
+      cityLine,
+    ].filter((l) => l && String(l).trim().length > 0);
     try {
-      const res = await fetch('/api/agent/shipping/purchase', {
+      await navigator.clipboard.writeText(lines.join('\n'));
+      toast.success('Address Copied. Paste It Into Pirate Ship.');
+    } catch {
+      toast.error('Could Not Copy The Address. Please Copy It Manually.');
+    }
+  };
+
+  const handleMarkShipped = async (orderId: string) => {
+    const tracking = (trackingNumbers[orderId] || '').trim();
+    if (!tracking) {
+      toast.error('Paste The Tracking Number First.');
+      return;
+    }
+    setShippingOrderId(orderId);
+    try {
+      const idemKey = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const carrier = shipCarriers[orderId] || '';
+      const res = await fetch('/api/agent/orders/ship', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Idempotency-Key': idemKey,
+        },
+        body: JSON.stringify({
+          orderId,
+          trackingNumber: tracking,
+          ...(carrier ? { carrier } : {}),
+        }),
       });
-
-      const data = await res.json();
+      const data = await res.json().catch(() => ({} as { error?: string; trackingNumber?: string; carrier?: string }));
       if (!res.ok) {
-        throw new Error(data.error || 'Failed To Purchase Shipping Label.');
+        throw new Error(data.error || 'Failed To Mark Order Shipped.');
       }
-
-      toast.success('Shipping Label Purchased Successfully');
-      if (data.labelUrl) {
-        setLabelModalUrl(data.labelUrl);
-      }
-
       setOrders((prev) =>
         prev.map((o) =>
           o.id === orderId
-            ? {
-                ...o,
-                status: 'shipped',
-                tracking_number: data.trackingNumber,
-                label_url: data.labelUrl,
-              }
+            ? { ...o, status: 'shipped', tracking_number: data.trackingNumber || tracking }
             : o
         )
       );
+      toast.success(`Order Marked Shipped Via ${data.carrier || 'Carrier'}. The Buyer Has Been Notified.`);
     } catch (err: any) {
-      toast.error(err.message ?? 'An Error Occurred Purchasing Shipping Label.');
+      toast.error(err.message ?? 'An Error Occurred Marking The Order Shipped.');
     } finally {
-      setBuyingLabelId(null);
+      setShippingOrderId(null);
+    }
+  };
+
+  const handleImportTrackingFile = async (file: File) => {
+    setImportingCsv(true);
+    try {
+      const csv = await file.text();
+      const res = await fetch('/api/agent/shipping/import-tracking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ csv }),
+      });
+      const data = await res.json().catch(() => ({} as { error?: string }));
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed To Import Tracking CSV.');
+      }
+      const results: Array<{ orderId: string; ok: boolean; trackingNumber?: string }> = data.results ?? [];
+      const okById = new Map(results.filter((r) => r.ok).map((r) => [r.orderId, r]));
+      if (okById.size > 0) {
+        setOrders((prev) =>
+          prev.map((o) => {
+            const hit = okById.get(o.id);
+            return hit
+              ? { ...o, status: 'shipped', tracking_number: hit.trackingNumber || o.tracking_number }
+              : o;
+          })
+        );
+      }
+      toast.success(`${data.shipped ?? okById.size} Orders Marked Shipped, ${data.skipped ?? 0} Skipped`);
+    } catch (err: any) {
+      toast.error(err.message ?? 'An Error Occurred Importing The Tracking CSV.');
+    } finally {
+      setImportingCsv(false);
+      if (importInputRef.current) importInputRef.current.value = '';
     }
   };
 
@@ -265,6 +330,106 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
     0
   );
 
+  const isShipReady = (order: Order) =>
+    order.fulfillment_method === 'ship' &&
+    (order.status === 'approved_ship' || order.status === 'in_fulfillment');
+
+  // Ship It panel: shown on ship-ready orders in the row and mirrored in the
+  // detail modal. Agents buy the label themselves (Pirate Ship), then paste
+  // the tracking number and mark the order shipped.
+  const renderShipPanel = (order: Order) => (
+    <div
+      onClick={(e) => e.stopPropagation()}
+      style={{
+        marginTop: '8px',
+        padding: '16px 20px',
+        borderRadius: '12px',
+        background: 'rgba(0,196,188,0.06)',
+        border: '1px solid rgba(0,196,188,0.25)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '12px',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--teal)', fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+        <Ship size={16} />
+        Ship It
+      </div>
+      <div style={{ fontSize: '0.9rem', color: 'var(--silver)', lineHeight: 1.5 }}>
+        {order.buyer_name && <div style={{ color: 'var(--white)', fontWeight: 600 }}>{order.buyer_name}</div>}
+        {formatAddress(order.shipping_address)}
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={() => handleCopyAddress(order)}
+          style={{ padding: '8px 14px', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}
+        >
+          <ClipboardCopy size={14} />
+          Copy Address
+        </button>
+        <IframeLink
+          href="https://ship.pirateship.com/ship"
+          className="btn btn-secondary"
+          style={{
+            padding: '8px 14px',
+            fontSize: '0.85rem',
+            fontWeight: 600,
+            textDecoration: 'none',
+            background: 'rgba(0,196,188,0.15)',
+            border: '1px solid var(--teal)',
+            color: 'var(--teal)',
+            borderRadius: '8px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+          }}
+        >
+          Open Pirate Ship
+        </IframeLink>
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+        <input
+          type="text"
+          placeholder="Paste Tracking Number"
+          className="form-input"
+          value={trackingNumbers[order.id] || ''}
+          onChange={(e) =>
+            setTrackingNumbers((prev) => ({ ...prev, [order.id]: e.target.value }))
+          }
+          style={{ padding: '10px 16px', fontSize: '0.95rem', height: 44, flex: '1 1 220px', minWidth: 180, borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)' }}
+        />
+        <select
+          className="form-input"
+          value={shipCarriers[order.id] || ''}
+          onChange={(e) =>
+            setShipCarriers((prev) => ({ ...prev, [order.id]: e.target.value }))
+          }
+          style={{ padding: '10px 12px', fontSize: '0.9rem', height: 44, borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--white)' }}
+        >
+          <option value="">Auto Detect</option>
+          <option value="USPS">USPS</option>
+          <option value="UPS">UPS</option>
+          <option value="FedEx">FedEx</option>
+          <option value="DHLExpress">DHL Express</option>
+        </select>
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => handleMarkShipped(order.id)}
+          disabled={shippingOrderId === order.id || !(trackingNumbers[order.id] || '').trim()}
+          style={{ padding: '10px 20px', fontSize: '0.9rem', fontWeight: 700, borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}
+        >
+          {shippingOrderId === order.id ? 'Marking Shipped...' : 'Mark Shipped'}
+        </button>
+      </div>
+      <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)' }}>
+        Buy The Label With Your Own Carrier Account (We Recommend Pirate Ship), Then Paste The Tracking Number Here. The Buyer Gets Live Tracking Automatically.
+      </div>
+    </div>
+  );
+
   return (
     <div className="glass-panel" style={{ marginBottom: 'var(--space-6)' }}>
       {labelModalUrl && (
@@ -293,12 +458,42 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
           Manage Orders Registered By Your Clients. Click A Row To Open The Detail View. Coordinate
           Cash Settlements Offline And Release For System Fulfillment.
         </p>
-        <button
-          className="btn btn-primary btn-sm"
-          onClick={() => setShowManualOrder(!showManualOrder)}
-        >
-          {showManualOrder ? 'View Order Ledger' : 'Create Manual Order'}
-        </button>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'flex-end' }}>
+          {/* Same-origin API download, not an external link - a plain anchor is fine here. */}
+          <a
+            href="/api/agent/shipping/export"
+            className="btn btn-secondary btn-sm"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}
+          >
+            <Download size={14} />
+            Export To Pirate Ship
+          </a>
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={() => importInputRef.current?.click()}
+            disabled={importingCsv}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          >
+            <Upload size={14} />
+            {importingCsv ? 'Importing...' : 'Import Tracking CSV'}
+          </button>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            style={{ display: 'none' }}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleImportTrackingFile(file);
+            }}
+          />
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => setShowManualOrder(!showManualOrder)}
+          >
+            {showManualOrder ? 'View Order Ledger' : 'Create Manual Order'}
+          </button>
+        </div>
       </div>
 
       {showManualOrder ? (
@@ -621,7 +816,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                           alignItems: 'center',
                           gap: '8px'
                         }}
-                        disabled={loadingOrderId === order.id || buyingLabelId === order.id}
+                        disabled={loadingOrderId === order.id}
                       >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                         {loadingOrderId === order.id ? 'Processing...' : 'Mark As Paid'}
@@ -655,12 +850,16 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                       </button>
                     )}
 
-                    {/* Buy-label removed: agents no longer purchase labels before
-                        the admin-approval gate. After an admin releases the order to
-                        approved_ship, the label is auto-enqueued (shipping_enqueue_label_job)
-                        and drained by the label-jobs cron, or bought by admin/shipping. */}
+                    {/* Agents ship with their own carrier account (Pirate Ship)
+                        and paste tracking here. The platform no longer buys
+                        labels; once an admin releases the order to approved_ship,
+                        the Ship It panel below collects the tracking number and
+                        marks the order shipped. */}
                   </div>
                 )}
+
+                {/* Ship It panel: agent-owned shipping for admin-released orders */}
+                {isShipReady(order) && renderShipPanel(order)}
               </div>
             </div>
             );
@@ -1259,6 +1458,13 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                 </div>
               </div>
             </div>
+
+            {/* Ship It panel mirror: agent-owned shipping from the detail view */}
+            {isShipReady(detailOrder) && (
+              <div style={{ marginBottom: 'var(--space-6)' }}>
+                {renderShipPanel(detailOrder)}
+              </div>
+            )}
 
             <div
               className="agent-order-modal-actions"
