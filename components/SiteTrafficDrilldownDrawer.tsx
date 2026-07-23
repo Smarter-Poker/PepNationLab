@@ -90,14 +90,34 @@ export default function SiteTrafficDrilldownDrawer({ isOpen, onClose, metric, da
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
             {metric === 'abandoned_carts' && data.map((cart: any, i: number) => (
               <div key={i} style={{ padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)' }}>
-                <div style={{ fontSize: '0.8rem', color: 'var(--silver)', marginBottom: 8 }}>
-                  Last Active: {new Date(cart.last_active).toLocaleString()}
-                  <br />
-                  Session: <span style={{ fontFamily: 'monospace' }}>{cart.session_id.substring(0, 8)}...</span>
+                <div style={{ fontSize: '0.8rem', color: 'var(--silver)', marginBottom: 8, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                  <div>
+                    Last Active: {new Date(cart.last_active).toLocaleString()}
+                    <br />
+                    Session: <span style={{ fontFamily: 'monospace' }}>{cart.session_id.substring(0, 8)}...</span>
+                  </div>
+                  {(cart.user_name || cart.user_email) && (
+                    <div style={{ textAlign: 'right' }}>
+                      <span style={{ color: 'var(--white)', fontWeight: 'bold' }}>{cart.user_name || 'Guest'}</span>
+                      {cart.user_email && (
+                        <>
+                          <br />
+                          <span style={{ color: 'var(--grey-400)' }}>{cart.user_email}</span>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <ul style={{ margin: 0, paddingLeft: '1rem', color: 'var(--white)', fontSize: '0.9rem' }}>
                   {cart.items.map((item: any, j: number) => (
-                    <li key={j}>{item.quantity}x {item.name}</li>
+                    <li key={j}>
+                      {item.quantity}x {item.name}
+                      {item.added_at && (
+                        <span style={{ color: 'var(--grey-500)', fontSize: '0.75rem', marginLeft: '8px' }}>
+                          (Added: {new Date(item.added_at).toLocaleString()})
+                        </span>
+                      )}
+                    </li>
                   ))}
                 </ul>
               </div>
