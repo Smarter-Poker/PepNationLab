@@ -289,7 +289,7 @@ export default function AgentDashboardClient({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           researcherId: promoteResearcher.id,
-          commissionPct: promoteCommission,
+          markupPct: promoteCommission,
           paymentModel: promotePaymentModel,
           creditLimit: promoteCreditLimit
         })
@@ -734,8 +734,9 @@ export default function AgentDashboardClient({
                     </p>
 
                     <div className="form-group" style={{ marginBottom: 16 }}>
-                      <label className="form-label" style={{ color: '#8a9ab0', fontSize: '0.8rem', fontWeight: 600 }}>Commission Percentage (% Of Total Sales)</label>
-                      <input type="number" className="form-input" min="0" max="40" value={promoteCommission} onChange={e => setPromoteCommission(e.target.value)} />
+                      <label className="form-label" style={{ color: '#8a9ab0', fontSize: '0.8rem', fontWeight: 600 }}>Markup % On Your Base Cost (10–200%)</label>
+                      <input type="number" className="form-input" min="10" max="200" step="5" value={promoteCommission} onChange={e => setPromoteCommission(e.target.value)} />
+                      <div style={{ fontSize: '0.75rem', color: '#8a9ab0', marginTop: 4 }}>Agent pays your cost + this markup and sets their own retail price on top.</div>
                     </div>
 
                     <div className="form-group" style={{ marginBottom: 16 }}>
