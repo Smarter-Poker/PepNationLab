@@ -67,6 +67,10 @@ const PUBLIC_ROUTES = [
   '/privacy',
   '/compliance',
   '/disclaimer',
+  // Public Certificate-of-Analysis verification (lot-number lookup).
+  // Indexable trust surface linked from vial lot numbers, the footer and
+  // the sitemap; renders via service client from public COA data (no PII).
+  '/coa',
   // Auth + signup APIs (called while logged out)
   '/api/auth/resolve',
   '/api/auth/signout',

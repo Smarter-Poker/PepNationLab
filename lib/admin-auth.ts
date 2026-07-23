@@ -116,12 +116,12 @@ export async function requireAgent(): Promise<
     .maybeSingle();
 
   // Admin "View As" (product decision: FULLY act as the agent -- reads AND
-  // writes, including money). A true admin OR a platform admin (e.g. Savage
-  // Brands, who has role='super_agent' but is in PLATFORM_ADMIN_IDS) never
-  // passes as an agent on their own, but WITH a validated active impersonation
-  // session on an agent/super_agent target, act as that target for the whole
-  // request.
-  if (profile?.role === 'admin' || isPlatformAdminId(user.id)) {
+  // writes, including money). Only a TRUE admin (role='admin') who has no
+  // storefront of their own should be transparently proxied via impersonation
+  // in agent-scoped routes. Platform admins (e.g. Savage Brands) keep
+  // role='super_agent' and ARE real agents — their own agent-route calls MUST
+  // resolve to their own user ID, never the ViewAs target.
+  if (profile?.role === 'admin') {
     const imp = await getImpersonationContext();
     if (imp && imp.impersonatorId === user.id &&
         (imp.targetRole === 'agent' || imp.targetRole === 'super_agent')) {
@@ -132,7 +132,7 @@ export async function requireAgent(): Promise<
   // BUG 7 fix: removed 'admin' from the allowed set. Admins are not agents and
   // must not pass agent-scoped ownership checks with a mismatched callerId.
   // Platform admins (isPlatformAdminId) keep role='super_agent' so they pass
-  // the check below naturally.
+  // the check below naturally as themselves.
   if (profile?.role !== 'agent' && profile?.role !== 'super_agent') {
     return {
       ok: false,
