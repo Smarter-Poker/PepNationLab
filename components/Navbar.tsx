@@ -273,7 +273,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
         // Database types (same pattern as the server clients).
         const { data } = await (supabase as unknown as SupabaseClient)
           .from('profiles')
-          .select('full_name, role, referring_agent_id, is_super_agent, is_sub_agent, is_manufacturer, locale')
+          .select('full_name, role, referring_agent_id, is_super_agent, is_sub_agent, is_manufacturer, is_admin_account, locale')
           .eq('id', userId)
           .maybeSingle();
         if (data) {

@@ -55,6 +55,7 @@ const ICONS: Record<string, React.ReactNode> = {
   flash: <svg {...ip}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>,
   admin: <svg {...ip}><rect x="3" y="3" width="7" height="9" /><rect x="14" y="3" width="7" height="5" /><rect x="14" y="12" width="7" height="9" /><rect x="3" y="16" width="7" height="5" /></svg>,
   traffic: <svg {...ip}><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>,
+  cart_recovery: <svg {...ip}><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" /></svg>,
 };
 
 const TOOLS: { href: string; key: string; label: string; desc: string }[] = [
@@ -69,6 +70,7 @@ const TOOLS: { href: string; key: string; label: string; desc: string }[] = [
   { href: '/admin/statements', key: 'statements', label: 'Statements', desc: 'Weekly agent settlements' },
   { href: '/admin/network', key: 'network', label: 'Network', desc: 'Full downline tree & reparenting' },
   { href: '/admin/flash-sales', key: 'flash', label: 'Flash Sales', desc: 'Time-boxed store-wide deals' },
+  { href: '/admin/cart-recovery', key: 'cart_recovery', label: 'Cart Recovery', desc: 'Manage abandoned cart reminders' },
 ];
 
 interface Props {
