@@ -26,7 +26,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const service = createAdminClient();
   const { data: profile } = await service
     .from('profiles')
-    .select('role, full_name')
+    .select('role, full_name, is_admin_account')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -34,7 +34,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect('/shipping');
   }
 
-  if (!isEffectiveAdmin(user.id, profile?.role)) {
+  // Two independent pathways to admin access:
+  // 1. isEffectiveAdmin: role='admin' OR user ID in PLATFORM_ADMIN_IDS allowlist
+  // 2. is_admin_account=true: DB flag set directly on the profile (e.g. Savage Brands)
+  if (!isEffectiveAdmin(user.id, profile?.role) && profile?.is_admin_account !== true) {
     redirect('/dashboard');
   }
 
