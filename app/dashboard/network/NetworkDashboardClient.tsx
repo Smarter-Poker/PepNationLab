@@ -66,7 +66,6 @@ const TOOLS: { href: string; key: string; label: string; desc: string }[] = [
   { href: '/admin/statements', key: 'statements', label: 'Statements', desc: 'Weekly agent settlements' },
   { href: '/admin/network', key: 'network', label: 'Network', desc: 'Full downline tree & reparenting' },
   { href: '/admin/flash-sales', key: 'flash', label: 'Flash Sales', desc: 'Time-boxed store-wide deals' },
-  { href: '/admin', key: 'admin', label: 'Full Admin Panel', desc: 'Every platform control' },
 ];
 
 interface Props {
@@ -280,13 +279,7 @@ export default function NetworkDashboardClient({
             <h1 style={{ margin: '4px 0 0', fontSize: '1.7rem', fontWeight: 900, lineHeight: 1.1 }}>{initialName}</h1>
             <div style={{ marginTop: 4, fontSize: '0.85rem', color: SILVER }}>Manage your network, agents, and the full platform.</div>
           </div>
-          <a href="/admin" style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none',
-            background: TEAL, color: '#050A0F', fontWeight: 800, fontSize: '0.85rem',
-            padding: '10px 18px', borderRadius: 10, whiteSpace: 'nowrap',
-          }}>
-            <span style={{ display: 'inline-flex' }}>{ICONS.admin}</span> Full Admin Panel
-          </a>
+
         </header>
 
         {/* Sparkline & KPIs */}
@@ -327,15 +320,7 @@ export default function NetworkDashboardClient({
                 </span>
               </>
             );
-            // /admin requires a hard navigation so the server-side platform-admin
-            // gate in app/admin/layout.tsx fires properly for Savage Brands.
-            if (tool.href === '/admin') {
-              return (
-                <a key={tool.href} href={tool.href} className="cc-tool" style={commonStyle}>
-                  {inner}
-                </a>
-              );
-            }
+
             return (
               <Link key={tool.href} href={tool.href} className="cc-tool" style={commonStyle}>
                 {inner}

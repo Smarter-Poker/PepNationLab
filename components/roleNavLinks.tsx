@@ -220,7 +220,12 @@ export function getRoleNavLinks(
     // gain one Admin entry pinned to the very top that opens the /admin dashboard.
     // role stays super_agent, so nothing else about their account changes.
     if (opts.isPlatformAdmin) {
-      links.unshift({ href: '/admin', label: 'Admin', icon: <svg {...ip}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M9 12l2 2 4-4" /></svg> });
+      // Admin accounts (e.g. Savage Brands) get two pinned top-level entries:
+      // the network Command Center and the platform-wide Admin Panel.
+      links.unshift(
+        { href: '/dashboard/network', label: 'Command Center', icon: <svg {...ip}><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18" /><path d="M9 21V9" /></svg> },
+        { href: '/admin', label: 'Admin Panel', icon: <svg {...ip}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M9 12l2 2 4-4" /></svg> },
+      );
     }
     return links;
   }
