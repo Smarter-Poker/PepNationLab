@@ -479,5 +479,6 @@ export async function GET(req: Request) {
     truncated: allSorted.length >= TOTAL_CAP,
     generatedAt: new Date().toISOString(),
     summary: { totalIn, totalOut, orderCount, alertCount },
+    summary: { totalIn, totalOut, orderCount, alertCount },
   });
 }

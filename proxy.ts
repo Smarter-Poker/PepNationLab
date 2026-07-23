@@ -230,7 +230,7 @@ export default async function proxy(request: NextRequest) {
 
   let { data: profile, error: profileErr } = await supabase
     .from('profiles')
-    .select('is_active, role, must_change_password')
+    .select('is_active, role, must_change_password, disclaimer_v1_accepted')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -238,7 +238,7 @@ export default async function proxy(request: NextRequest) {
     // One retry for transient blips before deciding anything.
     const retry = await supabase
       .from('profiles')
-      .select('is_active, role, must_change_password')
+      .select('is_active, role, must_change_password, disclaimer_v1_accepted')
       .eq('id', user.id)
       .maybeSingle();
     profile = retry.data;
@@ -293,6 +293,36 @@ export default async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = '/account/change-password';
     url.search = '';
+    return redirectWithCookies(url);
+  }
+
+  // Mandatory Research-Only acknowledgment gate. A first-time user -- or any
+  // account created without the sign-up disclaimer (agent-created researchers,
+  // OAuth sign-ups, legacy accounts) -- must accept the 3-box Research-Only
+  // acknowledgment before reaching any authenticated surface. Mirrors the
+  // must_change_password gate above. Exempt: the acceptance page + its API,
+  // sign-out, the password-change gate, and the legal content pages linked
+  // from within the acknowledgment.
+  const disclaimerExempt =
+    pathname === '/accept-disclaimer' ||
+    pathname === '/api/disclaimer/accept' ||
+    pathname === '/api/auth/signout' ||
+    pathname === '/account/change-password' ||
+    pathname === '/api/agent/onboarding' ||
+    pathname === '/terms' ||
+    pathname === '/privacy' ||
+    pathname === '/compliance' ||
+    pathname === '/disclaimer';
+  if (
+    (profile as { disclaimer_v1_accepted?: boolean } | null)?.disclaimer_v1_accepted !== true &&
+    !disclaimerExempt
+  ) {
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Research-Only acknowledgment required.' }, { status: 403 });
+    }
+    const url = request.nextUrl.clone();
+    url.pathname = '/accept-disclaimer';
+    url.searchParams.set('redirect', pathname + request.nextUrl.search);
     return redirectWithCookies(url);
   }
 

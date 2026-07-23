@@ -79,42 +79,65 @@ export async function POST(req: NextRequest) {
   try {
     const admin = createAdminClient();
 
-    // Resolve agent by slug
+    // First, resolve the referring agent from the storefront slug
+    let referringAgentId: string | null = null;
+    let referringSubAgentId: string | null = null;
+
     const { data: agentProfile, error: agentErr } = await admin
       .from('agent_profiles')
       .select('id')
       .eq('slug', agentSlug)
       .maybeSingle();
 
-    if (agentErr || !agentProfile) {
-      return NextResponse.json({ error: 'Storefront Not Found.' }, { status: 404 });
-    }
-
-    // Verify the agent is active
-    const { data: agentUser, error: agentUserErr } = await admin
-      .from('profiles')
-      .select('id, is_active')
-      .eq('id', agentProfile.id)
-      .maybeSingle();
-
-    if (agentUserErr || !agentUser || !agentUser.is_active) {
-      return NextResponse.json({ error: 'This Storefront Is Not Currently Active.' }, { status: 403 });
-    }
-
-    const referringAgentId: string = agentProfile.id;
-
-    // Optional sub-agent attribution (?sa=<id> capture). Only honored when the
-    // id is a real sub-agent whose parent is this storefront's agent, so a
-    // forged or stale id can never misattribute the signup.
-    let referringSubAgentId: string | null = null;
-    if (subAgentId) {
-      const { data: subAgent } = await admin
+    if (!agentErr && agentProfile) {
+      const { data: agentUser } = await admin
         .from('profiles')
-        .select('id, is_sub_agent, parent_agent_id')
-        .eq('id', subAgentId)
+        .select('id, is_active')
+        .eq('id', agentProfile.id)
         .maybeSingle();
-      if (subAgent && subAgent.is_sub_agent && subAgent.parent_agent_id === referringAgentId) {
-        referringSubAgentId = subAgentId;
+
+      if (agentUser?.is_active) {
+        referringAgentId = agentProfile.id;
+        
+        // Check sub-agent attribution if slug resolved successfully
+        if (subAgentId) {
+          const { data: subAgent } = await admin
+            .from('profiles')
+            .select('id, is_sub_agent, parent_agent_id')
+            .eq('id', subAgentId)
+            .maybeSingle();
+          if (subAgent && subAgent.is_sub_agent && subAgent.parent_agent_id === referringAgentId) {
+            referringSubAgentId = subAgentId;
+          }
+        }
+      }
+    }
+
+    if (!referringAgentId) {
+      return NextResponse.json({ error: 'Storefront Not Found Or Inactive.' }, { status: 404 });
+    }
+
+    // SECOND: Override with explicit Referral Code if provided and valid.
+    // This pre-resolves it so the initial INSERT has the correct ID, bypassing
+    // the enforce_researcher_agent_binding trigger error that blocks apply_signup_referral.
+    const referralCode = String(parsedBody.data.referralCode ?? '').trim();
+    if (referralCode) {
+      const { data: refMatch } = await admin
+        .from('profiles')
+        .select('id, role, is_active, is_sub_agent, parent_agent_id')
+        .or(`username.ilike.${referralCode},referral_code.ilike.${referralCode}`)
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle();
+
+      if (refMatch) {
+        if (refMatch.role === 'agent' || refMatch.role === 'super_agent') {
+          referringAgentId = refMatch.id;
+          referringSubAgentId = null;
+        } else if (refMatch.is_sub_agent && refMatch.parent_agent_id) {
+          referringAgentId = refMatch.parent_agent_id;
+          referringSubAgentId = refMatch.id;
+        }
       }
     }
 

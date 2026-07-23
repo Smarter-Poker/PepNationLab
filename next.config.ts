@@ -141,12 +141,18 @@ const nextConfig = {
               // none call eval/new Function at runtime. 'unsafe-inline' stays
               // for now because the app ships inline <style>/JSON-LD blocks that
               // would need nonces/hashes before it can be dropped.
-              "script-src 'self' 'unsafe-inline'; " +
+              // js.stripe.com: Stripe.js v3, loaded at runtime by the agent
+              // Forge shipping-account card form (EasyPost white-label billing).
+              "script-src 'self' 'unsafe-inline' https://js.stripe.com; " +
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
               "font-src 'self' data: https://fonts.gstatic.com; " +
+              // api.stripe.com: Stripe.js tokenization calls for the Forge card form.
               "connect-src 'self' https://*.supabase.co https://easypost-files.s3.us-west-2.amazonaws.com https://easypost-files.s3-us-west-2.amazonaws.com wss://*.supabase.co " +
-                "wss://*.livekit.cloud https://*.livekit.cloud " +
+                "wss://*.livekit.cloud https://*.livekit.cloud https://api.stripe.com " +
                 "https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.us.sentry.io; " +
+              // frame-src was previously governed by default-src 'self'; keep
+              // 'self' (the /api/proxy iframes) and add Stripe Elements frames.
+              "frame-src 'self' https://js.stripe.com; " +
               "worker-src 'self' blob:; " +
               // object-src 'none': block Flash/Java-era plugin embeds entirely.
               "object-src 'none'; " +

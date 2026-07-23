@@ -24,10 +24,18 @@ export async function GET() {
 
   const { data: row } = await supabase
     .from('shipping_provider_credentials')
-    .select('id, mode, api_key_last4, is_active, connected_at, last_validated_at, last_validation_error, webhook_secret_ciphertext')
+    .select('id, mode, api_key_last4, is_active, connected_at, last_validated_at, last_validation_error, webhook_secret_ciphertext, forge_enabled')
     .eq('provider', 'easypost')
     .eq('is_active', true)
     .maybeSingle();
+
+  // EasyPost Forge (white-label agent shipping accounts): expose the toggle
+  // state plus how many agent sub-accounts have been provisioned so far.
+  const { count: forgeAccounts } = await supabase
+    .from('agent_shipping_accounts')
+    .select('id', { count: 'exact', head: true })
+    .eq('provider', 'easypost')
+    .eq('is_active', true);
 
   if (!row) {
     return NextResponse.json({
@@ -38,6 +46,8 @@ export async function GET() {
       last_validation_error: null,
       webhook_configured: false,
       connected_at: null,
+      forge_enabled: false,
+      forge_agent_accounts: forgeAccounts ?? 0,
     });
   }
 
@@ -50,5 +60,7 @@ export async function GET() {
     webhook_configured: !!row.webhook_secret_ciphertext,
     connected_at: row.connected_at as string,
     credentials_id: row.id as string,
+    forge_enabled: !!row.forge_enabled,
+    forge_agent_accounts: forgeAccounts ?? 0,
   });
 }

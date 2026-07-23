@@ -16,11 +16,16 @@
  * the bookkeeping columns on `orders`.
  *
  * Public surface:
- *   getActiveKey(agentId?)        - resolve {token, mode, source}
+ *   getActiveKey(agentId?)        - resolve {token, mode, source}; with an
+ *                                   agentId, the agent's own EasyPost Forge
+ *                                   sub-account key wins when Forge is enabled
+ *                                   and the agent's billing is active
  *   validateAddress(addr)         - POST /addresses with verify:['delivery']
  *   quoteRates(input)             - POST /shipments, filtered/sorted rates
+ *   quoteRatesForOrder(input)     - agent-facing order quote (ownership +
+ *                                   ship-ready checks; agent Forge key)
  *   buyLabel(input)               - POST /shipments/:id/buy, idempotent on order_id
- *   refundLabel(shipmentId)       - POST /shipments/:id/refund
+ *   refundLabel(shipmentId, agentId?) - POST /shipments/:id/refund
  *   subscribeTracking(tracking, carrier) - POST /trackers
  *   getTracking(tracking, carrier)       - GET  /trackers?tracking_code=...
  *   purchaseLabelForOrder(...)    - back-compat shim used by admin bulk route
@@ -79,8 +84,8 @@ export interface ActiveKey {
   token: string;
   /** 'test' or 'live' - inferred from the key prefix (EZTK vs EZAK). */
   mode: ShippingMode;
-  /** Source of truth - admin DB row or env bootstrap. */
-  source: 'platform_db' | 'env';
+  /** Source of truth - agent Forge sub-account, admin DB row, or env bootstrap. */
+  source: 'agent_forge' | 'platform_db' | 'env';
 }
 
 export interface AddressInput {
@@ -244,20 +249,94 @@ export function invalidateActiveKeyCache(): void {
 }
 
 /**
+ * Supabase/PostgREST can hand bytea back as a Buffer, a Uint8Array, a base64
+ * string, or a "\\x.." hex string depending on transport. Normalise so
+ * decryptSecret always receives real bytes. (Local copy of the helper in
+ * lib/shipping-webhook.ts - importing that module here would drag its
+ * notify/email dependency tree into every shipping call site.)
+ */
+function coerceByteaColumn(input: unknown): Buffer | null {
+  if (input == null) return null;
+  if (Buffer.isBuffer(input)) return input;
+  if (input instanceof Uint8Array) return Buffer.from(input);
+  if (typeof input === 'string') {
+    if (input.startsWith('\\x')) return Buffer.from(input.slice(2), 'hex');
+    if (input.startsWith('0x')) return Buffer.from(input.slice(2), 'hex');
+    return Buffer.from(input, 'base64');
+  }
+  return null;
+}
+
+/**
+ * EasyPost Forge: when the agent has an ACTIVE white-label sub-account
+ * (agent_shipping_accounts, billing_status 'active') AND the admin Forge
+ * toggle is on, their own referral key is used - labels are then paid from
+ * the agent's EasyPost wallet, never by the platform. Returns null in every
+ * other case so the caller falls through to the platform key. The table is
+ * queried directly here (rather than through lib/forge) to avoid a circular
+ * import.
+ */
+async function resolveAgentForgeKey(agentId: string): Promise<ActiveKey | null> {
+  const cacheKey = `easypost:agent:${agentId}`;
+  const cached = getCachedActiveKey(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const admin = getAdminClient();
+
+    const { data: cred } = await admin
+      .from('shipping_provider_credentials')
+      .select('forge_enabled')
+      .eq('is_active', true)
+      .maybeSingle();
+    if (!cred?.forge_enabled) return null;
+
+    const { data: row } = await admin
+      .from('agent_shipping_accounts')
+      .select('api_key_ciphertext, api_key_iv, api_key_tag')
+      .eq('agent_id', agentId)
+      .eq('provider', 'easypost')
+      .eq('is_active', true)
+      .eq('billing_status', 'active')
+      .maybeSingle();
+
+    const ciphertext = coerceByteaColumn(row?.api_key_ciphertext);
+    const iv = coerceByteaColumn(row?.api_key_iv);
+    const tag = coerceByteaColumn(row?.api_key_tag);
+    if (!ciphertext || !iv || !tag) return null;
+
+    const plaintext = decryptSecret({ ciphertext, iv, tag });
+    // Referral customer keys are always PRODUCTION keys (created under the
+    // partner production key), so mode is 'live' by construction.
+    return setActiveKeyCache(cacheKey, {
+      token: plaintext,
+      mode: 'live',
+      source: 'agent_forge',
+    });
+  } catch (err) {
+    console.warn('[shipping] agent forge key lookup failed; falling through to platform:', err);
+    return null;
+  }
+}
+
+/**
  * Resolve the active EasyPost API key in priority order:
- *   1. Active row in `shipping_provider_credentials` (admin-connected).
- *   2. Env bootstrap: NEXT_PUBLIC_SHIPPING_MODE picks EASYPOST_API_KEY (live)
+ *   1. With an `agentId`: the agent's own Forge sub-account key, when the
+ *      admin Forge toggle is on AND the agent's billing is active
+ *      (source 'agent_forge' - agent-paid labels).
+ *   2. Active row in `shipping_provider_credentials` (admin-connected).
+ *   3. Env bootstrap: NEXT_PUBLIC_SHIPPING_MODE picks EASYPOST_API_KEY (live)
  *      vs EASYPOST_TEST_KEY (test), falling back to whichever exists.
  *
  * Mode is inferred from the key prefix: `EZAK...` -> 'live', `EZTK...` -> 'test'.
  *
- * The `agentId` parameter is accepted for call-site compatibility but unused -
- * the legacy per-agent key path was removed with the provider swap.
- *
  * Throws if no key can be found at all (caller handles as 503).
  */
 export async function getActiveKey(agentId?: string): Promise<ActiveKey> {
-  void agentId; // per-agent keys no longer exist; parameter kept for API parity
+  if (agentId) {
+    const forgeKey = await resolveAgentForgeKey(agentId);
+    if (forgeKey) return forgeKey;
+  }
 
   const cacheProvider = 'easypost';
   const cached = getCachedActiveKey(cacheProvider);
@@ -532,8 +611,15 @@ export async function quoteRates(input: {
   async?: boolean;
   /** EasyPost label format set at shipment creation ('PDF' | 'PNG' | 'ZPL'). */
   labelFormat?: 'PDF' | 'PNG' | 'ZPL';
+  /**
+   * When set, the agent's own Forge sub-account key is preferred (falls back
+   * to the platform key when Forge is off or the agent has no active card).
+   * The shipment - and therefore its rates and the later buy - lives on
+   * whichever account created it, so buyLabel passes the same agentId.
+   */
+  agentId?: string | null;
 }): Promise<{ ok: true; result: QuoteResult } | { ok: false; status: number; error: string }> {
-  const key = await getActiveKey();
+  const key = await getActiveKey(input.agentId ?? undefined);
   const resp = await callEasyPost<EasyPostShipment>({
     method: 'POST',
     path: '/shipments',
@@ -623,6 +709,7 @@ interface ResolvedShipmentContext {
     id: string;
     agentId: string;
     status: OrderStatus;
+    fulfillmentMethod: string | null;
   };
 }
 
@@ -660,6 +747,9 @@ export async function buyLabel(input: BuyLabelInput): Promise<BuyLabelResult> {
     to: resolved.to,
     parcel: resolved.parcel,
     labelFormat: toEasyPostLabelFormat(input.labelFileType),
+    // The shipment must be created on the SAME account that buys it - with an
+    // active Forge sub-account this is the agent's own EasyPost account.
+    agentId: input.agentId,
   });
   if (!quote.ok) {
     return { ok: false, status: quote.status || 502, error: quote.error, code: 'RATE_QUOTE_FAILED' };
@@ -707,6 +797,10 @@ export async function buyLabel(input: BuyLabelInput): Promise<BuyLabelResult> {
     ? Math.round(parseFloat(selectedRateStr) * 100)
     : chosen.amountCents;
 
+  // Forge sub-account purchases are charged to the AGENT's EasyPost wallet;
+  // everything else is paid by the platform account.
+  const paidBy = key.source === 'agent_forge' ? 'agent' : 'platform';
+
   const { error: ledgerErr } = await admin.from('shipping_label_purchases').insert({
     order_id: input.orderId,
     agent_id: input.agentId,
@@ -725,7 +819,7 @@ export async function buyLabel(input: BuyLabelInput): Promise<BuyLabelResult> {
     agent_charged_cents: labelCostCents,
     parcel_weight_oz: resolved.parcel.weightOz,
     parcel_template: resolved.parcel.template || null,
-    paid_by: 'platform',
+    paid_by: paidBy,
     mode: key.mode,
     label_job_id: input.labelJobId ?? null,
   });
@@ -751,7 +845,7 @@ export async function buyLabel(input: BuyLabelInput): Promise<BuyLabelResult> {
     service_level: chosen.serviceLevelToken,
     label_cost_cents: labelCostCents,
     agent_charged_cents: labelCostCents,
-    shipping_paid_by: 'platform',
+    shipping_paid_by: paidBy,
     shipping_origin_id: resolved.origin.id,
     status: nextStatus,
     updated_at: new Date().toISOString(),
@@ -797,7 +891,7 @@ async function resolveShipmentContext(
 ): Promise<ResolvedShipmentContext | BuyLabelErr> {
   const { data: order, error: orderErr } = await admin
     .from('orders')
-    .select('id, agent_id, status, shipping_address, profiles!orders_agent_id_fkey(parent_agent_id), buyer:profiles!orders_buyer_id_fkey(full_name, email)')
+    .select('id, agent_id, status, fulfillment_method, shipping_address, profiles!orders_agent_id_fkey(parent_agent_id), buyer:profiles!orders_buyer_id_fkey(full_name, email)')
     .eq('id', input.orderId)
     .maybeSingle();
   if (orderErr || !order) {
@@ -853,7 +947,107 @@ async function resolveShipmentContext(
     origin: { id: origin.id, address: origin.address },
     to,
     parcel: { lengthIn, widthIn, heightIn, weightOz, template },
-    order: { id: order.id, agentId: order.agent_id, status: order.status as OrderStatus },
+    order: {
+      id: order.id,
+      agentId: order.agent_id,
+      status: order.status as OrderStatus,
+      fulfillmentMethod: (order.fulfillment_method as string | null) ?? null,
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Agent-facing order quote (EasyPost Forge)
+// ---------------------------------------------------------------------------
+
+const AGENT_QUOTABLE_STATUSES: OrderStatus[] = ['approved_ship', 'in_fulfillment'];
+
+export interface QuoteForOrderOk {
+  ok: true;
+  rates: RateOption[];
+  shipmentId: string;
+  mode: ShippingMode;
+  parcelWeightOz: number;
+  /** Destination summary for display; never the full address. */
+  toCity: string;
+  toState: string;
+}
+
+export type QuoteForOrderResult = QuoteForOrderOk | BuyLabelErr;
+
+/**
+ * Quote live carrier rates for an order the agent is about to ship, using
+ * the agent's own Forge key (falls back to the platform key when Forge is
+ * off - callers gate on Forge status before exposing this to the UI).
+ *
+ * Keeps resolveShipmentContext module-private: ownership (agent or parent
+ * super-agent) is enforced inside it, and this wrapper additionally requires
+ * a ship-fulfillment order in approved_ship | in_fulfillment with no
+ * unrefunded label already purchased.
+ */
+export async function quoteRatesForOrder(input: {
+  orderId: string;
+  agentId: string;
+}): Promise<QuoteForOrderResult> {
+  const admin = getAdminClient();
+
+  const { data: existing } = await admin
+    .from('shipping_label_purchases')
+    .select('id')
+    .eq('order_id', input.orderId)
+    .eq('refunded', false)
+    .maybeSingle();
+  if (existing) {
+    return {
+      ok: false,
+      status: 409,
+      error: 'A Label Has Already Been Purchased For This Order.',
+      code: 'ALREADY_LABELED',
+    };
+  }
+
+  const ctx = await resolveShipmentContext(admin, { orderId: input.orderId, agentId: input.agentId });
+  if ('ok' in ctx && ctx.ok === false) return ctx;
+  const resolved = ctx as ResolvedShipmentContext;
+
+  if (resolved.order.fulfillmentMethod !== 'ship') {
+    return {
+      ok: false,
+      status: 409,
+      error: 'Pickup Orders Do Not Ship. Mark Them Delivered At Handoff Instead.',
+      code: 'NOT_SHIP_FULFILLMENT',
+    };
+  }
+  if (!AGENT_QUOTABLE_STATUSES.includes(resolved.order.status)) {
+    return {
+      ok: false,
+      status: 409,
+      error: 'This Order Is Not Ready To Ship. Only Approved Ship Or In Fulfillment Orders Can Be Quoted.',
+      code: 'NOT_SHIP_READY',
+    };
+  }
+
+  const quote = await quoteRates({
+    from: resolved.origin.address,
+    to: resolved.to,
+    parcel: resolved.parcel,
+    agentId: input.agentId,
+  });
+  if (!quote.ok) {
+    return { ok: false, status: quote.status || 502, error: quote.error, code: 'RATE_QUOTE_FAILED' };
+  }
+  if (quote.result.rates.length === 0) {
+    return { ok: false, status: 422, error: 'No Carriers Returned A Rate For This Address.', code: 'RATE_NONE' };
+  }
+
+  return {
+    ok: true,
+    rates: quote.result.rates,
+    shipmentId: quote.result.shipmentId,
+    mode: quote.result.mode,
+    parcelWeightOz: resolved.parcel.weightOz,
+    toCity: resolved.to.city,
+    toState: resolved.to.state,
   };
 }
 
@@ -978,12 +1172,17 @@ export function normalizeShippingAddress(
  * Request a refund for a purchased label. `providerTransactionId` is the
  * EasyPost shipment id (shp_...) stored at purchase time.
  *
+ * Pass the same `agentId` used at purchase time for Forge labels - the
+ * shipment lives on the agent's sub-account, so the refund must be requested
+ * with the agent's key. Platform labels omit it (existing call sites compile
+ * unchanged).
+ *
  * EasyPost refund_status mapping keeps the existing status vocabulary:
  *   submitted -> QUEUED, refunded -> SUCCESS, rejected -> ERROR.
  */
-export async function refundLabel(providerTransactionId: string): Promise<RefundResult> {
+export async function refundLabel(providerTransactionId: string, agentId?: string): Promise<RefundResult> {
   if (!providerTransactionId) return { ok: false, error: 'Missing transaction id' };
-  const key = await getActiveKey();
+  const key = await getActiveKey(agentId);
   const resp = await callEasyPost<{
     id?: string;
     refund_status?: string | null;

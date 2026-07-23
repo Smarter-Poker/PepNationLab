@@ -52,6 +52,88 @@ export type ShipWithTrackingResult =
   | { ok: true; trackingNumber: string; carrier: DetectedCarrier }
   | { ok: false; status: number; error: string };
 
+export interface ShippedSideEffectsInput {
+  orderId: string;
+  /** The authenticated agent that performed the ship transition. */
+  actorId: string;
+  buyerId: string | null;
+  trackingNumber: string;
+  /** Carrier string as stored on the order (USPS / UPS / FedEx / ...). */
+  carrier: string;
+  /** Provenance recorded on the timeline event. */
+  via: 'agent_tracking' | 'agent_forge_label';
+}
+
+/**
+ * The shipped side-effect set every ship path must fire, extracted so the
+ * paste-back flow (shipOrderWithTracking below) and the Forge buy-label route
+ * dispatch the exact same sequence: EasyPost tracker subscription (platform
+ * key, buyer-facing tracking), buyer in-app/push notification, order timeline
+ * event, shipped email, and the order.shipped webhook. Every step is
+ * best-effort - none may fail the ship, so this never throws.
+ */
+export async function fireShippedSideEffects(
+  supabase: ServiceClient,
+  input: ShippedSideEffectsInput,
+): Promise<void> {
+  const { orderId, actorId, buyerId, trackingNumber, carrier, via } = input;
+
+  // Subscribe a platform EasyPost tracker so the researcher order page gets
+  // live shipping_tracking_events for the number. (Forge purchases already
+  // carry a tracker on the agent sub-account; the duplicate-event guard in
+  // lib/shipping-webhook.ts dedupes overlapping updates.)
+  try {
+    await subscribeTracking(trackingNumber, carrier);
+  } catch { /* tracker subscription must not break shipping */ }
+
+  if (buyerId) {
+    try {
+      const short = shortOrderId(orderId);
+      await notifyOrderShipped(supabase, buyerId, orderId, short, trackingNumber);
+    } catch { /* notification failures must not break shipping */ }
+
+    try {
+      await logOrderEvent(supabase, {
+        orderId,
+        event: 'shipped',
+        actorId,
+        actorRole: 'agent',
+        payload: { tracking_number: trackingNumber, carrier, via },
+      });
+    } catch { /* timeline must not break shipping */ }
+
+    try {
+      if (emailConfigured()) {
+        const { data: buyer } = await supabase
+          .from('profiles')
+          .select('full_name, contact_email, email_verified')
+          .eq('id', buyerId)
+          .maybeSingle();
+        if (buyer?.contact_email && buyer.email_verified) {
+          await sendOrderShippedEmail({
+            to: buyer.contact_email,
+            fullName: buyer.full_name,
+            orderId,
+            trackingNumber,
+          });
+        }
+      }
+    } catch { /* email failures must not break shipping */ }
+  }
+
+  try {
+    const orderPayload = await fetchOrderForWebhook(supabase, orderId);
+    if (orderPayload) {
+      await enqueueWebhook(supabase, {
+        event: 'order.shipped',
+        agentId: (orderPayload as { agent_id?: string | null }).agent_id ?? null,
+        payload: { order: orderPayload },
+        relatedOrderId: orderId,
+      });
+    }
+  } catch { /* webhook errors must not break shipping */ }
+}
+
 /** Map a user/CSV-supplied carrier string onto a supported carrier, if any. */
 export function normalizeCarrierInput(raw: string | null | undefined): DetectedCarrier | null {
   const cleaned = String(raw ?? '').trim().replace(/[\s_-]+/g, '').toUpperCase();
@@ -135,61 +217,17 @@ export async function shipOrderWithTracking(
   }
 
   // ------------------------------------------------------------------
-  // Best-effort side effects - none may fail the ship.
+  // Best-effort side effects - none may fail the ship. Shared with the
+  // Forge buy-label route via fireShippedSideEffects above.
   // ------------------------------------------------------------------
-
-  // Subscribe a platform EasyPost tracker so the researcher order page gets
-  // live shipping_tracking_events for the pasted number.
-  try {
-    await subscribeTracking(tracking, carrier);
-  } catch { /* tracker subscription must not break shipping */ }
-
-  if (order.buyer_id) {
-    try {
-      const short = shortOrderId(orderId);
-      await notifyOrderShipped(supabase, order.buyer_id, orderId, short, tracking);
-    } catch { /* notification failures must not break shipping */ }
-
-    try {
-      await logOrderEvent(supabase, {
-        orderId,
-        event: 'shipped',
-        actorId,
-        actorRole: 'agent',
-        payload: { tracking_number: tracking, carrier, via: 'agent_tracking' },
-      });
-    } catch { /* timeline must not break shipping */ }
-
-    try {
-      if (emailConfigured()) {
-        const { data: buyer } = await supabase
-          .from('profiles')
-          .select('full_name, contact_email, email_verified')
-          .eq('id', order.buyer_id)
-          .maybeSingle();
-        if (buyer?.contact_email && buyer.email_verified) {
-          await sendOrderShippedEmail({
-            to: buyer.contact_email,
-            fullName: buyer.full_name,
-            orderId,
-            trackingNumber: tracking,
-          });
-        }
-      }
-    } catch { /* email failures must not break shipping */ }
-  }
-
-  try {
-    const orderPayload = await fetchOrderForWebhook(supabase, orderId);
-    if (orderPayload) {
-      await enqueueWebhook(supabase, {
-        event: 'order.shipped',
-        agentId: (orderPayload as { agent_id?: string | null }).agent_id ?? null,
-        payload: { order: orderPayload },
-        relatedOrderId: orderId,
-      });
-    }
-  } catch { /* webhook errors must not break shipping */ }
+  await fireShippedSideEffects(supabase, {
+    orderId,
+    actorId,
+    buyerId: (order.buyer_id as string | null) ?? null,
+    trackingNumber: tracking,
+    carrier,
+    via: 'agent_tracking',
+  });
 
   return { ok: true, trackingNumber: tracking, carrier };
 }

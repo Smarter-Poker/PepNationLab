@@ -478,7 +478,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
   if (error) return <div style={{ padding: 'var(--space-6)', color: 'var(--red)' }}>Error: {error}</div>;
 
   const isSub = userProfile?.is_sub_agent === true;
-  const showCommission = !!userProfile?.is_sub_agent;
+  const showCommission = false;
   const tabHref = (tab: string) => `/dashboard/agent?tab=${encodeURIComponent(tab)}`;
   const PROFIT_HELP = 'Profit = what the customer paid, minus your product cost and the shipping the platform bills you.';
 
@@ -562,83 +562,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
             </div>
           </Link>
         </div>
-        {showCommission && (
-          <div className="glass-panel" style={{ cursor: 'pointer', transition: 'all 0.2s ease', position: 'relative' }}>
-            <Link href="/wallet" style={{ textDecoration: 'none', color: 'inherit', display: 'block', height: '100%' }}>
-              <div className=" sa-box-centered" style={{ padding: 'var(--space-5)' }}>
-                <div className="sa-label">Commission Earned</div>
-                <div className="sa-stat" style={{ color: '#7C5CFF', marginTop: 6 }}>{fmt(commission?.thisMonth ?? 0)}</div>
-                <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>This Month · {fmt(commission?.lifetime ?? 0)} Lifetime</div>
-              </div>
-            </Link>
-          </div>
-        )}
-      </div>
-
-
-
-      {/* GETTING STARTED (no sales yet) */}
-      {!a.hasCollected && (
-        <div className="glass-panel">
-          <div className="" style={{ padding: 'var(--space-6)' }}>
-            <h2 className="metal-text" style={{ fontSize: '1.15rem', fontFamily: 'var(--font-brand)', margin: '0 0 6px' }}>Let&apos;s Get Your First Sale</h2>
-            <p style={{ color: 'var(--silver)', fontSize: '0.88rem', margin: '0 0 14px' }}>Your Stats, Charts, Streak, And Goal All Come Alive Once Orders Start Landing. A Few Good First Moves:</p>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <a className="sa-cta" href={tabHref('Storefront Config')} style={{ background: 'var(--teal)', color: '#04201f' }}>Set Up Storefront</a>
-              <a className="sa-cta" href={tabHref('Store Products')} style={{ background: 'rgba(255,255,255,0.07)', color: 'var(--white)', border: '1px solid rgba(255,255,255,0.18)' }}>Add Products</a>
-              <a className="sa-cta" href={tabHref('Coupons')} style={{ background: 'rgba(255,255,255,0.07)', color: 'var(--white)', border: '1px solid rgba(255,255,255,0.18)' }}>Create A Coupon</a>
-              <a className="sa-cta" href={tabHref('Researchers')} style={{ background: 'rgba(255,255,255,0.07)', color: 'var(--white)', border: '1px solid rgba(255,255,255,0.18)' }}>Invite Researchers</a>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* GOAL + STREAK + FORECAST */}
-      <div className="sa-capitalize-all" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--space-4)' }}>
-        <div className="glass-panel" style={goal > 0 && goalPct >= 100 ? { animation: 'sa-pulse 2.4s ease-in-out infinite' } : undefined}>
-          <div className="" style={{ padding: 'var(--space-6)', display: 'flex', gap: 'var(--space-5)', alignItems: 'center' }}>
-            <GoalRing pct={goalPct} hit={goalPct >= 100} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                <div className="sa-label">Monthly Sales Goal</div>
-                {!editingGoal && (
-                  <button onClick={() => { setGoalDraft(String(goal)); setEditingGoal(true); }} style={{ background: 'none', border: 'none', color: 'var(--teal)', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', padding: 0 }}>Edit</button>
-                )}
-              </div>
-              {editingGoal ? (
-                <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-                  <input type="number" min="0" value={goalDraft} onChange={(e) => setGoalDraft(e.target.value)}
-                    style={{ width: 120, background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, color: 'var(--white)', padding: '6px 8px', fontSize: '0.9rem' }} />
-                  <button onClick={() => { saveGoal(Number(goalDraft) || 0); setEditingGoal(false); }} style={{ background: 'var(--teal)', color: '#04201f', border: 'none', borderRadius: 8, padding: '6px 12px', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer' }}>Save</button>
-                </div>
-              ) : (
-                <>
-                  <div className="sa-stat" style={{ marginTop: 6 }}>{fmt(a.monthRevenue)}</div>
-                  <div style={{ color: 'var(--grey-400)', fontSize: '0.8rem', marginTop: 2 }}>Of {fmt(goal)} Target</div>
-                  <div style={{ marginTop: 8, fontSize: '0.8rem', fontWeight: 700, color: onTrack ? '#00FF9D' : '#FFB020' }}>
-                    {goal <= 0 ? 'Set A Goal To Track Pace' : onTrack ? `On Track - Ahead By ${fmt(paceGap)}` : `Behind Pace By ${fmt(paceGap)}`}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="glass-panel">
-          <div className="" style={{ padding: 'var(--space-6)' }}>
-            <div className="sa-label">Selling Streak</div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 6 }}>
-              <span className="sa-stat" style={{ color: a.streak > 0 ? '#FFB020' : 'var(--grey-500)' }}>{a.streak}</span>
-              <span style={{ color: 'var(--silver)', fontWeight: 700 }}>{a.streak === 1 ? 'Day' : 'Days'} In A Row</span>
-            </div>
-            <div style={{ color: 'var(--grey-400)', fontSize: '0.8rem', marginTop: 8 }}>
-              {a.streak > 0 ? 'Make A Sale Today To Keep It Alive' : 'Make A Sale To Start A Streak'}
-            </div>
-            <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '14px 0' }} />
-            <div className="sa-label">Personal Best Day</div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 6 }}>
-              <span style={{ fontSize: '1.3rem', fontWeight: 800, color: '#00E5FF', fontFamily: 'var(--font-brand)' }}>{a.best.revenue > 0 ? fmt(a.best.revenue) : '-'}</span>
-              {a.best.date && <span style={{ color: 'var(--grey-400)', fontSize: '0.78rem' }}>On {new Date(a.best.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+        }</span>}
             </div>
           </div>
         </div>

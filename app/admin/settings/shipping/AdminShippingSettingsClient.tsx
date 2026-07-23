@@ -17,6 +17,7 @@ import {
   Shield,
   Package,
   DollarSign,
+  Zap,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -32,6 +33,8 @@ interface ProviderStatus {
   webhook_configured: boolean;
   connected_at: string | null;
   credentials_id?: string;
+  forge_enabled?: boolean;
+  forge_agent_accounts?: number;
 }
 
 interface WebhookActivityEvent {
@@ -140,6 +143,9 @@ export default function AdminShippingSettingsClient() {
   const [rotateWebhook, setRotateWebhook] = useState('');
   const [rotateLoading, setRotateLoading] = useState(false);
   const [showRotate, setShowRotate] = useState(false);
+
+  // Forge (white-label agent shipping accounts) toggle state
+  const [forgeLoading, setForgeLoading] = useState(false);
 
   // Origin form state
   const [showOriginForm, setShowOriginForm] = useState(false);
@@ -278,6 +284,33 @@ export default function AdminShippingSettingsClient() {
       showToast(err instanceof Error ? err.message : 'Rotation Failed.', 'err');
     } finally {
       setRotateLoading(false);
+    }
+  }
+
+  async function handleToggleForge() {
+    if (!status?.connected) return;
+    const next = !status.forge_enabled;
+    if (
+      next &&
+      !confirm('Enable Forge White Label Shipping? Agents Will Be Able To Create Their Own EasyPost Sub-Accounts And Buy Labels On Their Own Cards. Only Enable After The EasyPost Partner Approval Lands.')
+    ) {
+      return;
+    }
+    setForgeLoading(true);
+    try {
+      const r = await fetch('/api/admin/shipping-provider/forge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: next }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error ?? 'Toggle Failed');
+      showToast(next ? 'Forge White Label Shipping Enabled.' : 'Forge White Label Shipping Disabled.', 'ok');
+      await fetchStatus();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Toggle Failed.', 'err');
+    } finally {
+      setForgeLoading(false);
     }
   }
 
@@ -634,6 +667,60 @@ export default function AdminShippingSettingsClient() {
               {connectLoading ? 'Connecting...' : 'Connect EasyPost'}
             </button>
           </form>
+        )}
+      </section>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* CARD 1.5 - Forge White Label Shipping                               */}
+      {/* ------------------------------------------------------------------ */}
+      <section className="card" style={{ marginBottom: 'var(--space-5)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+          <Zap size={20} color={status?.forge_enabled ? 'var(--teal)' : 'var(--silver)'} />
+          <h2 style={{ color: 'var(--white)', fontSize: '1.1rem', fontWeight: 700 }}>
+            Forge White Label Shipping
+          </h2>
+          <span style={{
+            background: status?.forge_enabled ? 'rgba(0,196,188,0.1)' : 'rgba(168,180,192,0.1)',
+            color: status?.forge_enabled ? 'var(--teal)' : 'var(--silver)',
+            fontSize: '0.7rem',
+            fontWeight: 700,
+            padding: '2px 10px',
+            borderRadius: 100,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+          }}>
+            {status?.forge_enabled ? 'Enabled' : 'Disabled'}
+          </span>
+        </div>
+        <div style={{ color: 'var(--silver)', fontSize: '0.88rem', lineHeight: 1.6 }}>
+          <p style={{ margin: '0 0 var(--space-3)' }}>
+            Forge White Label Shipping: Agents Get Their Own EasyPost Sub-Account And Pay For
+            Their Own Labels. Requires EasyPost Partner Approval. While Disabled, Nothing
+            Changes For Agents - The Setup Card And One-Click Label Buying Stay Hidden.
+          </p>
+          <p style={{ margin: '0 0 var(--space-4)' }}>
+            Provisioned Agent Accounts:{' '}
+            <strong style={{ color: 'var(--white)' }}>{status?.forge_agent_accounts ?? 0}</strong>
+          </p>
+        </div>
+        <button
+          id="btn-forge-toggle"
+          className={status?.forge_enabled ? 'btn-danger' : 'btn-primary'}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}
+          onClick={handleToggleForge}
+          disabled={forgeLoading || !status?.connected}
+        >
+          <Zap size={14} />
+          {forgeLoading
+            ? 'Saving...'
+            : status?.forge_enabled
+            ? 'Disable Forge Shipping'
+            : 'Enable Forge Shipping'}
+        </button>
+        {!status?.connected && (
+          <div style={{ color: 'var(--silver)', fontSize: '0.8rem', marginTop: 'var(--space-2)' }}>
+            Connect EasyPost First To Manage Forge.
+          </div>
         )}
       </section>
 
