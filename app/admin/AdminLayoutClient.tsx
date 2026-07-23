@@ -82,31 +82,53 @@ export function AdminLayoutClient({
 }) {
   const pathname = usePathname();
   const [showQRModal, setShowQRModal] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
     <>
       {/* fix-57 #7: global admin Realtime refresher - server components re-fetch on orders/notifications events. */}
       <AdminRealtimeRefresher />
 
-      <Navbar />
+      <Navbar onMenuClick={() => setDrawerOpen((o) => !o)} isOpen={drawerOpen} />
 
       <div style={{ minHeight: '100dvh', background: 'var(--black)', display: 'flex', paddingTop: 'var(--nav-offset, 60px)' }}>
 
+      {drawerOpen && (
+        <div
+          onClick={() => setDrawerOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(5,10,15,0.6)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+            zIndex: 400,
+            animation: 'navBackdropIn 0.2s ease',
+          }}
+        />
+      )}
+
       <aside
         className="admin-sidebar"
+        inert={!drawerOpen}
+        aria-hidden={!drawerOpen}
         style={{
-          width: 240,
+          width: 280,
           background: 'var(--black-2)',
           borderRight: '1px solid rgba(192,184,168,0.12)',
           padding: 'var(--space-4) 0',
-          position: 'sticky',
-          top: 'var(--nav-offset, 60px)',
-          alignSelf: 'flex-start',
-          height: 'calc(100dvh - var(--nav-offset, 60px))',
+          position: 'fixed',
+          top: 'calc(60px + var(--safe-top, 0px))',
+          left: 0,
+          bottom: 0,
           overflowY: 'auto',
           zIndex: 500,
           display: 'flex',
           flexDirection: 'column',
+          transform: drawerOpen ? 'translateX(0)' : 'translateX(-100%)',
+          transition: 'transform 0.28s cubic-bezier(0.4,0,0.2,1)',
+          willChange: 'transform',
+          boxShadow: drawerOpen ? '4px 0 40px rgba(0,0,0,0.6)' : 'none',
         }}
       >
         <div style={{ padding: '0 var(--space-4) var(--space-3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -134,14 +156,14 @@ export function AdminLayoutClient({
               display: 'flex',
               alignItems: 'center',
               gap: 10,
-              padding: '8px 12px',
+              padding: '10px 14px',
               borderRadius: 8,
               color: active ? 'var(--teal)' : 'var(--ivory)',
               background: active ? 'rgba(192,184,168,0.14)' : 'transparent',
               boxShadow: active ? 'inset 3px 0 0 var(--teal)' : 'inset 3px 0 0 transparent',
               transition: 'background 0.15s ease, box-shadow 0.15s ease, color 0.15s ease',
               textDecoration: 'none',
-              fontSize: '0.88rem',
+              fontSize: '0.92rem',
               fontWeight: active ? 600 : 500,
               cursor: 'pointer',
               border: 'none',
@@ -153,8 +175,8 @@ export function AdminLayoutClient({
             if (item.action === 'logout') {
               return (
                 <form key={item.href} action={item.href} method="POST">
-                  <button type="submit" style={commonStyle}>
-                    <span style={{ display: 'inline-flex', width: 18, justifyContent: 'center' }}>
+                  <button type="submit" style={commonStyle} onClick={() => setDrawerOpen(false)}>
+                    <span style={{ display: 'inline-flex', width: 20, justifyContent: 'center' }}>
                       {item.icon}
                     </span>
                     <span>{item.label}</span>
@@ -167,10 +189,10 @@ export function AdminLayoutClient({
               return (
                 <button
                   key={item.href}
-                  onClick={(e) => { e.preventDefault(); setShowQRModal(true); }}
+                  onClick={(e) => { e.preventDefault(); setShowQRModal(true); setDrawerOpen(false); }}
                   style={commonStyle}
                 >
-                  <span style={{ display: 'inline-flex', width: 18, justifyContent: 'center' }}>
+                  <span style={{ display: 'inline-flex', width: 20, justifyContent: 'center' }}>
                     {item.icon}
                   </span>
                   <span>{item.label}</span>
@@ -183,8 +205,9 @@ export function AdminLayoutClient({
                 key={item.href}
                 href={item.href}
                 style={commonStyle}
+                onClick={() => setDrawerOpen(false)}
               >
-                <span style={{ display: 'inline-flex', width: 18, justifyContent: 'center' }}>
+                <span style={{ display: 'inline-flex', width: 20, justifyContent: 'center' }}>
                   {item.icon}
                 </span>
                 <span>{item.label}</span>
