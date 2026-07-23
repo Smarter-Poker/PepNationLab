@@ -78,7 +78,7 @@ export default function TrafficDashboard({ endpoint, heading, subheading }: { en
 
   const handleTileClick = (tile: any) => {
     if (!tile.clickable) return;
-    if (tile.id === 'abandoned_carts') {
+    if (tile.id === 'abandoned_carts' || tile.id === 'checkout_start') {
       if (endpoint.includes('admin')) {
         window.location.href = '/admin/abandoned-carts';
       } else {
