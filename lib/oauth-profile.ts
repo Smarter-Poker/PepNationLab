@@ -114,22 +114,44 @@ export async function ensureOAuthResearcherProfile(
     // deactivated storefront can never keep collecting new researchers through
     // a stale QR code or share link.
     let namedAgentId: string | null = null;
+    let referringSubAgentId: string | null = null;
+
     if (agentSlug && /^[a-z0-9_-]{2,80}$/i.test(agentSlug)) {
-      const { data: namedAgent } = await admin
-        .from('agent_profiles')
-        .select('id')
-        .eq('slug', agentSlug.toLowerCase())
+      // First try robust matching (username/referral code) like register form
+      const { data: refMatch } = await admin
+        .from('profiles')
+        .select('id, role, is_active, is_sub_agent, parent_agent_id')
+        .or(`username.ilike.${agentSlug},referral_code.ilike.${agentSlug}`)
+        .eq('is_active', true)
+        .limit(1)
         .maybeSingle();
-      if (namedAgent?.id) {
-        // Activity gate mirrors /api/storefront/register: the agent's ACCOUNT
-        // row (profiles.is_active) controls whether they accept new signups.
-        const { data: agentAccount } = await admin
-          .from('profiles')
-          .select('id, is_active')
-          .eq('id', namedAgent.id)
+
+      if (refMatch) {
+        if (refMatch.role === 'agent' || refMatch.role === 'super_agent') {
+          namedAgentId = refMatch.id;
+        } else if (refMatch.is_sub_agent && refMatch.parent_agent_id) {
+          namedAgentId = refMatch.parent_agent_id;
+          referringSubAgentId = refMatch.id;
+        }
+      }
+
+      // Fallback to strict slug matching if the above didn't find anything
+      if (!namedAgentId) {
+        const { data: namedAgent } = await admin
+          .from('agent_profiles')
+          .select('id')
+          .eq('slug', agentSlug.toLowerCase())
           .maybeSingle();
-        if (agentAccount?.is_active === true) {
-          namedAgentId = namedAgent.id;
+        if (namedAgent?.id) {
+          // Activity gate mirrors /api/storefront/register
+          const { data: agentAccount } = await admin
+            .from('profiles')
+            .select('id, is_active')
+            .eq('id', namedAgent.id)
+            .maybeSingle();
+          if (agentAccount?.is_active === true) {
+            namedAgentId = namedAgent.id;
+          }
         }
       }
     }
@@ -138,21 +160,15 @@ export async function ensureOAuthResearcherProfile(
     // Optional sub-agent attribution (QR ?sa= capture, forwarded through the
     // OAuth round-trip as subAgentRef). Only honored when the id is a real
     // sub-agent whose parent is the resolved referring agent - the exact
-    // validation POST /api/storefront/register performs - so a forged or
-    // stale id can never misattribute a signup.
-    let referringSubAgentId: string | null = null;
-    if (
-      subAgentId &&
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(subAgentId) &&
-      referringAgentId
-    ) {
+    // same check as POST /api/storefront/register.
+    if (subAgentRef && namedAgentId) {
       const { data: subAgent } = await admin
         .from('profiles')
         .select('id, is_sub_agent, parent_agent_id')
-        .eq('id', subAgentId)
+        .eq('id', subAgentRef)
         .maybeSingle();
-      if (subAgent && subAgent.is_sub_agent && subAgent.parent_agent_id === referringAgentId) {
-        referringSubAgentId = subAgentId;
+      if (subAgent && subAgent.is_sub_agent && subAgent.parent_agent_id === namedAgentId) {
+        referringSubAgentId = subAgentRef;
       }
     }
 

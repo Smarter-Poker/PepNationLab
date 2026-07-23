@@ -1,12 +1,9 @@
 const { createClient } = require('@supabase/supabase-js');
-const fs = require('fs');
-const env = fs.readFileSync('.env.local', 'utf8');
-const url = env.match(/NEXT_PUBLIC_SUPABASE_URL=(.*)/)[1].trim();
-const key = env.match(/SUPABASE_SERVICE_ROLE_KEY=(.*)/)[1].trim();
-const supabase = createClient(url, key);
-
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 async function run() {
-  await supabase.from('orders').update({ agent_id: '844dca4b-6f01-4779-bc95-bfa1e0809c0c' }).eq('buyer_id', '2db791ef-00fe-43b5-af40-e8c07c93fe1f');
-  console.log("Updated Anna's orders to belong to Savage Brands");
+  const { data } = await supabase.from('agent_profiles').select('*').eq('slug', 'savagebrands').maybeSingle();
+  console.log(data);
+  const { data: p } = await supabase.from('profiles').select('username, referral_code').eq('username', 'savagebrands').maybeSingle();
+  console.log(p);
 }
 run();

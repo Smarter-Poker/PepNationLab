@@ -378,8 +378,8 @@ a:hover { color: var(--teal-dark); }
   padding: 0 var(--space-6);
 }
 
-.container-sm { max-width: 900px; margin: 0 auto; padding: 0 var(--space-6); }
-.container-xs { max-width: 640px; margin: 0 auto; padding: 0 var(--space-6); }
+.container-sm { width: 100%; max-width: 900px; margin: 0 auto; padding: 0 var(--space-6); }
+.container-xs { width: 100%; max-width: 640px; margin: 0 auto; padding: 0 var(--space-6); }
 
 .section {
   padding: var(--space-16) 0;
