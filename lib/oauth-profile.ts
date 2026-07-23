@@ -161,14 +161,14 @@ export async function ensureOAuthResearcherProfile(
     // OAuth round-trip as subAgentRef). Only honored when the id is a real
     // sub-agent whose parent is the resolved referring agent - the exact
     // same check as POST /api/storefront/register.
-    if (subAgentRef && namedAgentId) {
+    if (subAgentId && namedAgentId) {
       const { data: subAgent } = await admin
         .from('profiles')
         .select('id, is_sub_agent, parent_agent_id')
-        .eq('id', subAgentRef)
+        .eq('id', subAgentId)
         .maybeSingle();
       if (subAgent && subAgent.is_sub_agent && subAgent.parent_agent_id === namedAgentId) {
-        referringSubAgentId = subAgentRef;
+        referringSubAgentId = subAgentId;
       }
     }
 
