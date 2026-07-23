@@ -78,6 +78,13 @@ export default function TrafficDashboard({ endpoint, heading, subheading }: { en
 
   const handleTileClick = (tile: any) => {
     if (!tile.clickable) return;
+    if (tile.id === 'abandoned_carts') {
+      if (endpoint.includes('admin')) {
+        window.location.href = '/admin/abandoned-carts';
+        return;
+      }
+      // If it's an agent, they can keep using the drawer (fallback)
+    }
     setSelectedMetric(tile.id);
     setDrawerOpen(true);
   };

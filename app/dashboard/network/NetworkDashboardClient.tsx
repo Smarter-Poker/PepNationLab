@@ -60,8 +60,9 @@ const ICONS: Record<string, React.ReactNode> = {
 
 const TOOLS: { href: string; key: string; label: string; desc: string }[] = [
   { href: '/admin', key: 'admin', label: 'Full Admin Panel', desc: 'Global platform metrics & overview' },
-  { href: '/admin/traffic', key: 'traffic', label: 'Site Traffic', desc: 'Live visitors & abandoned carts' },
-  { href: '/admin/agents', key: 'agents', label: 'Agents', desc: 'Create, promote & manage your downline' },
+  { href: '/admin/traffic', key: 'traffic', label: 'Site Traffic', desc: 'Live visitors & analytics' },
+  { href: '/admin/abandoned-carts', key: 'abandoned_carts', label: 'Abandoned Carts', desc: 'View abandoned carts' },
+  { href: '/admin/agents', key: 'agents', label: 'My Agents', desc: 'Manage downline agent accounts' },
   { href: '/admin/orders', key: 'orders', label: 'Orders & Fulfillment', desc: 'Approve, ship & track every order' },
   { href: '/admin/pricing', key: 'pricing', label: 'Pricing', desc: 'Set catalog & tier pricing' },
   { href: '/admin/products', key: 'products', label: 'Products', desc: 'Manage the product catalog' },
@@ -70,7 +71,6 @@ const TOOLS: { href: string; key: string; label: string; desc: string }[] = [
   { href: '/admin/statements', key: 'statements', label: 'Statements', desc: 'Weekly agent settlements' },
   { href: '/admin/network', key: 'network', label: 'Network', desc: 'Full downline tree & reparenting' },
   { href: '/admin/flash-sales', key: 'flash', label: 'Flash Sales', desc: 'Time-boxed store-wide deals' },
-  { href: '/admin/cart-recovery', key: 'cart_recovery', label: 'Cart Recovery', desc: 'Manage abandoned cart reminders' },
 ];
 
 interface Props {
