@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { isEffectiveAdmin } from '@/lib/platform-admins';
+import { isEffectiveAdmin, isPlatformAdminId } from '@/lib/platform-admins';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { getImpersonationContext } from '@/lib/impersonation';
 
@@ -116,10 +116,12 @@ export async function requireAgent(): Promise<
     .maybeSingle();
 
   // Admin "View As" (product decision: FULLY act as the agent -- reads AND
-  // writes, including money). An admin never passes as an agent on their own,
-  // but WITH a validated active impersonation session on an agent/super_agent
-  // target, act as that target for the whole request.
-  if (profile?.role === 'admin') {
+  // writes, including money). A true admin OR a platform admin (e.g. Savage
+  // Brands, who has role='super_agent' but is in PLATFORM_ADMIN_IDS) never
+  // passes as an agent on their own, but WITH a validated active impersonation
+  // session on an agent/super_agent target, act as that target for the whole
+  // request.
+  if (profile?.role === 'admin' || isPlatformAdminId(user.id)) {
     const imp = await getImpersonationContext();
     if (imp && imp.impersonatorId === user.id &&
         (imp.targetRole === 'agent' || imp.targetRole === 'super_agent')) {
@@ -129,6 +131,8 @@ export async function requireAgent(): Promise<
 
   // BUG 7 fix: removed 'admin' from the allowed set. Admins are not agents and
   // must not pass agent-scoped ownership checks with a mismatched callerId.
+  // Platform admins (isPlatformAdminId) keep role='super_agent' so they pass
+  // the check below naturally.
   if (profile?.role !== 'agent' && profile?.role !== 'super_agent') {
     return {
       ok: false,
@@ -182,7 +186,9 @@ export async function requireAgentOrAdmin(): Promise<
 
   // Admin "View As": act as the impersonated agent (isAdmin=false, id=target) so
   // house-store-vs-agent logic follows the viewed agent, not the admin.
-  if (role === 'admin') {
+  // Also applies for platform admins (isPlatformAdminId) who have role='super_agent'
+  // — they must be proxied through impersonation too.
+  if (role === 'admin' || isPlatformAdminId(user.id)) {
     const imp = await getImpersonationContext();
     if (imp && imp.impersonatorId === user.id &&
         (imp.targetRole === 'agent' || imp.targetRole === 'super_agent')) {

@@ -82,8 +82,10 @@ function ResearchersAdminPageInner() {
   // Researcher-ownership filter (Researchers tab only): 'house' shows only
   // researchers still owned by the admin / house store, 'assigned' shows only
   // those handed to a real agent, 'all' shows everyone.
+  // Default: 'all' — both the super-admin and platform admins (e.g. Savage Brands)
+  // need to see the full global list on first visit. Use ?owner=house to narrow down.
   const [ownerFilter, setOwnerFilter] = useState<'house' | 'assigned' | 'all'>(
-    (searchParams.get('owner') as 'house' | 'assigned' | 'all') ?? 'house'
+    (searchParams.get('owner') as 'house' | 'assigned' | 'all') ?? 'all'
   );
   // Assign-to-agent modal state.
   const [assignAgentId, setAssignAgentId] = useState('');
@@ -151,7 +153,10 @@ function ResearchersAdminPageInner() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/admin/researchers');
+      // Limit=500 so all agents appear in the Assign modal dropdown even for
+      // large networks. The API caps at 500 per call which covers all realistic
+      // platform sizes.
+      const res = await fetch('/api/admin/researchers?limit=500');
       const json = await res.json();
       if (res.ok) {
         setProfiles(json.data || []);
@@ -451,7 +456,7 @@ function ResearchersAdminPageInner() {
     if (tierFilter !== 'all') params.set('tier', tierFilter);
     if (accountTypeFilter !== 'all') params.set('accountType', accountTypeFilter);
     if (outstandingOnly) params.set('outstanding', '1');
-    if (ownerFilter !== 'house') params.set('owner', ownerFilter);
+    if (ownerFilter !== 'all') params.set('owner', ownerFilter);
     const qs = params.toString();
     router.replace(qs ? `/admin/researchers?${qs}` : '/admin/researchers', { scroll: false });
   }, [searchQuery, activeTab, roleFilter, activeFilter, tierFilter, accountTypeFilter, outstandingOnly, ownerFilter, router]);
@@ -539,7 +544,7 @@ function ResearchersAdminPageInner() {
     setTierFilter('all');
     setAccountTypeFilter('all');
     setOutstandingOnly(false);
-    setOwnerFilter('house');
+    setOwnerFilter('all');
   }
 
   const inputStyle = { accentColor: 'var(--teal)', width: 18, height: 18 };
@@ -649,7 +654,7 @@ function ResearchersAdminPageInner() {
             </label>
           </>
         )}
-        {(searchQuery || roleFilter !== 'all' || activeFilter !== 'all' || tierFilter !== 'all' || accountTypeFilter !== 'all' || outstandingOnly || (activeTab === 'researchers' && ownerFilter !== 'house')) && (
+        {(searchQuery || roleFilter !== 'all' || activeFilter !== 'all' || tierFilter !== 'all' || accountTypeFilter !== 'all' || outstandingOnly || (activeTab === 'researchers' && ownerFilter !== 'all')) && (
           <button type="button" onClick={resetResearcherFilters}
             style={{ fontSize: '0.78rem', color: 'var(--grey-400)', background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '5px 12px', cursor: 'pointer' }}>
             Clear Filters

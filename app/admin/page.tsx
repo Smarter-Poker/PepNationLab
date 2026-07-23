@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-import { createClient, getCachedUser } from '@/lib/supabase/server';
+import { createClient, createServiceClient, getCachedUser } from '@/lib/supabase/server';
 import { isEffectiveAdmin } from '@/lib/platform-admins';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
@@ -77,6 +77,15 @@ export default async function AdminDashboard() {
   }
 
   const delta = computeGmvDelta(metrics.gmvLast7, metrics.gmvPrior7);
+
+  // Site traffic snapshot (last 7 days) for the Site Traffic KPI box.
+  let traffic7 = { visitors: 0, signups: 0, pageviews: 0 };
+  try {
+    const svc = await createServiceClient();
+    const { data: tr } = await svc.rpc('site_traffic_summary', { p_agent_id: null, p_days: 7 });
+    const tt = (tr && typeof tr === 'object' ? (tr as { totals?: Record<string, number> }).totals : null) ?? {};
+    traffic7 = { visitors: Number(tt.visitors) || 0, signups: Number(tt.signups) || 0, pageviews: Number(tt.pageviews) || 0 };
+  } catch (e) { console.error('[admin/page] traffic snapshot failed:', e); }
   const impersonation = await getImpersonationContext();
   const activeImpersonation =
     impersonation && impersonation.impersonatorId === user.id ? impersonation : null;
@@ -194,6 +203,14 @@ export default async function AdminDashboard() {
       href: '/admin/sales',
       color: delta.direction === 'up' ? '#68D391' : delta.direction === 'down' ? 'var(--red)' : 'var(--grey-400)',
       icon: <svg {...ICON_PROPS}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>,
+    },
+    {
+      label: 'Site Traffic',
+      value: String(traffic7.visitors),
+      sub: `Visitors \u00b7 7d \u00b7 ${traffic7.signups} New Sign-Ups`,
+      href: '/admin/traffic',
+      color: 'var(--teal)',
+      icon: <svg {...ICON_PROPS}><path d="M3 3v18h18" /><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3" /></svg>,
     },
   ];
 

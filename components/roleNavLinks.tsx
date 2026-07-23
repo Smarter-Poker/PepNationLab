@@ -108,6 +108,7 @@ const ADMIN_LINKS: RoleNavLink[] = [
   { href: '/admin/audit', label: 'Audit Log', icon: <svg {...ip}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
   { href: '/admin/referrals', label: 'Referrals', icon: <svg {...ip}><path d="M17 11a4 4 0 1 0-8 0M3 21h18M5 21a7 7 0 0 1 14 0"/></svg> },
   { href: '/admin/signup-promos', label: 'Signup Promos', icon: <svg {...ip}><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> },
+  { href: '/admin/traffic', label: 'Site Traffic', icon: <svg {...ip}><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg> },
   { href: '/admin/settings', label: 'Account Settings', icon: ICON.gear },
 ];
 
@@ -147,6 +148,11 @@ function agentLinks(isSuper: boolean, storefrontHref: string, pathname?: string)
     { href: '#SHOW_QR', label: 'Referral Codes', icon: ICON.qr },
     { href: '/account', label: 'Account Settings', icon: ICON.gear }
   );
+  // Storefront traffic (visitors, funnel) -- scoped to this agent's storefront.
+  links.splice(links.length - 1, 0, {
+    href: '/dashboard/agent/traffic', label: 'Site Traffic',
+    icon: <svg {...ip}><path d="M3 3v18h18" /><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3" /></svg>,
+  });
   // Super-agents can create signup promo codes; regular agents cannot.
   if (isSuper) {
     links.splice(links.length - 1, 0, {
