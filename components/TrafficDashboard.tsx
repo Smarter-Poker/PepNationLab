@@ -81,9 +81,10 @@ export default function TrafficDashboard({ endpoint, heading, subheading }: { en
     if (tile.id === 'abandoned_carts') {
       if (endpoint.includes('admin')) {
         window.location.href = '/admin/abandoned-carts';
-        return;
+      } else {
+        window.location.href = '/dashboard/agent/abandoned-carts';
       }
-      // If it's an agent, they can keep using the drawer (fallback)
+      return;
     }
     setSelectedMetric(tile.id);
     setDrawerOpen(true);
