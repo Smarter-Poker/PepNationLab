@@ -4,7 +4,7 @@ import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { getSupabaseUrl } from '@/lib/supabase/url';
 import { captureError } from '@/lib/sentry';
 
-// ─── Global API Rate Limiting ──────────────────────────────────────────────
+// ─── Global API Rate Limiting ─────────────────────────────────────────────────
 // Edge-level backstop against scrape bots and abuse across all ~80 /api/*
 // endpoints. Individual hot routes keep their own tighter limits (register,
 // orders, disclaimer-log, research search) — this is the outer wall.
@@ -45,191 +45,54 @@ async function applyApiRateLimit(request: NextRequest, pathname: string): Promis
   );
 }
 
-// --- PUBLIC LANDING + HOUSE-STORE SIGNUP ---
-// The landing page (/) is public. New accounts are created through /signup
-// (or Google sign-in) and are always linked to the house storefront
-// (see lib/default-store.ts). Legacy /register redirects to /signup.
-// Guests may browse agent storefronts and research pages; everything else
-// still requires authentication.
+// --- RESTRICTED ACCESS: ACCOUNT REQUIRED FOR EVERYTHING ---
+// The guest view has been removed. Nothing is browsable without an account.
+// Only the logged-out account-creation + sign-in flow, the legal pages linked
+// from the signup acknowledgements, and non-user infra callers (external
+// webhooks, scheduled crons, uptime/health, PWA assets) remain public. Every
+// other route -- the landing page, agent storefronts, research, cart, and all
+// marketing pages -- now requires authentication (redirects to /login).
 
 // Routes that are always public (no auth required)
 const PUBLIC_ROUTES = [
-  '/',
-  '/signup',
-  '/auth/callback',
+  // Account creation + sign-in (logged-out pages)
   '/login',
+  '/signup',
   '/forgot-password',
-  '/become-agent',
-  '/about',
-  '/contact',
+  '/auth/callback',
+  '/invite',                    // invite acceptance -> creates an account
+  '/account/change-password',   // forced password-reset page
+  // Legal / compliance pages linked from the signup acknowledgements
   '/terms',
   '/privacy',
   '/compliance',
   '/disclaimer',
-  // Public Certificate Of Analysis verification. A researcher holding a vial
-  // must be able to check its lot number and view the certificate without an
-  // account. Covers /coa, /coa?lot=..., and /coa/<lot>/certificate.
-  '/coa',
-  // Public Help Center hub (indexable support directory).
-  '/help',
-  '/account/change-password',
+  // Auth + signup APIs (called while logged out)
   '/api/auth/resolve',
   '/api/auth/signout',
   '/api/auth/change-password',
-  // Public signup email-verification code issuer (rate-limited inside the route).
   '/api/auth/request-code',
-  // Public one-click marketing-email unsubscribe (CAN-SPAM / RFC 8058).
-  // Token-gated inside the route via a per-user HMAC.
-  '/api/unsubscribe',
-  // Public code-based password reset (both steps are for logged-out users;
-  // each is rate-limited + CSRF-checked inside its route).
   '/api/auth/reset-password',
   '/api/auth/verify-agent-access',
+  '/api/auth/events',               // login security-event logging (logged out)
+  '/api/availability',              // signup username / slug availability check
+  '/api/storefront/register',       // creates the account
+  '/api/disclaimer-log',            // registration disclaimer log
+  '/api/agent-invitations/redeem',  // invite acceptance
+  // External / infra callers that are not user sessions
+  '/api/webhooks',            // signed external webhooks (verified in-route)
+  '/api/unsubscribe',         // CAN-SPAM one-click unsubscribe (token-gated)
+  '/api/seo/indexnow',        // daily cron trigger (CRON_SECRET in-route)
+  '/api/social/ingest',       // GitHub Actions batch enqueue (CRON_SECRET in-route)
   '/api/health',
-  '/api/availability',
-  '/api/disclaimer-log',
-  '/api/storefront/register',
-  '/api/storefront/search',
-  '/api/storefront/recommendations',
-  // Public-by-design storefront + social-proof endpoints. These are called
-  // with credentials: 'omit' from guest-facing components (storefront grid
-  // cache refresh, semantic search, GuestCTA member count) and were being
-  // 401'd by this proxy before they could reach their own rate-limited,
-  // service-client handlers.
-  '/api/storefront/catalog',
-  '/api/storefront/semantic',
-  '/api/stats/member-count',
-  // Guest cart endpoints. The global CartProvider runs on the guest
-  // storefront and calls these; each is either a service-client price/data
-  // lookup (refresh, recommendations, bac-water) or explicitly falls back to
-  // the house 'researchstore' storefront for anonymous visitors
-  // (resolve-name). Blocking them 401'd guest cart pricing/recs and made the
-  // add-by-name button show a misleading "Unauthorized" error toast.
-  // NOTE: /api/cart/sync is intentionally NOT here — it persists to the
-  // user's profile and is user-only by design (its 401 is caught silently;
-  // the guest cart still persists to localStorage).
-  '/api/cart/refresh',
-  '/api/cart/resolve-name',
-  '/api/cart/recommendations',
-  '/api/cart/bac-water',
-  '/research',
-  // Local SEO city landing pages — /peptides, /peptides/[state], AND
-  // /peptides/[state]/[city]. The 3-segment city URLs are NOT covered by
-  // isPublicDynamicRoute (it only allows 1-2 segments), so without this
-  // prefix guests hitting a city landing page were bounced to /login.
-  '/peptides',
-  '/find-a-peptide',
-  '/peptide-101',
-  '/api/research/ask',
-  '/api/research/cart-warnings',
-  '/api/research/match',
-  '/api/research/search',
-  '/api/research/suggest',
-  '/api/research/instant-answer',
-  '/api/research/click',
-  // Guest-safe research data endpoints. These are stateless (NLP) or read
-  // public compound data with no per-user gating, and are called by
-  // guest-facing surfaces: the storefront AI discovery hero + /research/match
-  // (ai-match), the compare drawer + calculators (compounds-list), and the
-  // /research/catalog browser (products). Previously 401'd before they ran,
-  // silently breaking those headline guest features.
-  '/api/research/ai-match',
-  '/api/research/compounds-list',
-  '/api/research/products',
-  // Research Library v3 Wave 2 public API (bearer-token auth handled in route)
-  '/api/research/public',
-  // Research Library v3 Wave 2 embed widget (iframe-able knowledge card)
-  '/api/research/widget',
-  // Research Library v3 Wave 2 public API docs page
-  '/research/api-docs',
-  // /lab-tools redirects to /research/calculators (which is already public via /research prefix)
-  '/lab-tools',
-  // Allow proxy route for full-screen iframes
-  '/api/proxy',
-  // SEO surfaces
-  '/sitemap.xml',
-  '/feed.xml',
-  // IndexNow submission trigger — hit by the daily cron (vercel.json); it only
-  // submits our own canonical URLs to Bing/Yandex. Public so the cron reaches it.
-  '/api/seo/indexnow',
-  // AI/LLM discoverability — llms.txt and robots.ts advertise these
-  // machine-readable markdown endpoints to anonymous crawlers (GPTBot,
-  // ClaudeBot, PerplexityBot), so they must not require auth.
-  '/llms.txt',
-  '/llms-full.txt',
-  '/api/llm',
-  '/api/analytics/faq-click',
-  // Web Vitals RUM sink -- guests on the landing page report Core Web Vitals.
-  '/api/vitals',
-  '/invite',
-  '/api/agent-invitations/redeem',
-  '/api/cron/invoices',
-  '/api/cron/reminders',
-  // Back-in-stock / price-drop alert dispatch (CRON_SECRET enforced in-route).
-  '/api/cron/product-alerts',
-  // Daily auth flow canary — CRON_SECRET enforced in-route (lib/cron.ts).
-  '/api/cron/auth-canary',
-  // Social autoposter cron — CRON_SECRET enforced in-route; gated by SOCIAL_AUTOPOST_ENABLED.
-  '/api/cron/social-autopost',
-  // Generator -> queue batch enqueue, called by GitHub Actions with no user
-  // session. CRON_SECRET is enforced inside the route (see app/api/social/ingest).
-  // NOTE: this exact path only — /api/social/oauth/* stays admin-gated.
-  '/api/social/ingest',
-  '/api/cron/sms-dispatch',
-  '/api/cron/abandoned-cart-recovery',
-  '/api/cron/apply-price-changes',
-  '/api/cron/subscriptions-process',
-  '/api/cron/referrals-fulfil',
-  '/api/cron/rma-stale',
-  '/api/cron/push-dispatch',
-  '/api/cron/recommendations-refresh',
-  '/api/cron/webhooks-dispatch',
-  '/api/cron/search-refresh',
-  '/api/cron/pubmed-sync',
-  '/api/cron/trials-sync',
-  // Research Library v3 Wave 2 evidence-sync crons (CRON_SECRET enforced inside each route)
-  '/api/cron/uniprot-sync',
-  '/api/cron/chembl-sync',
-  '/api/cron/fda-drugs-sync',
-  '/api/cron/dailymed-sync',
-  '/api/cron/patents-sync',
-  '/api/cron/rxnorm-sync',
-  '/api/cron/europepmc-sync',
-  '/api/cron/biorxiv-watch',
-  '/api/cron/retraction-watch',
-  '/api/cron/companion-papers-compute',
-  '/api/cron/broken-link-crawler',
-  '/api/cron/label-jobs',
-  '/api/cron/shipping-reconcile',
-  '/api/cron/shipping-webhook-retry',
-  '/api/messenger/cron',
-  '/api/webhooks/easypost',
+  '/api/status',
+  // PWA / static infra
   '/manifest.webmanifest',
   '/sw.js',
-  '/api/push/vapid-public-key',
-  '/api/status',
-  '/status',
-  '/api/storefront/events',
-  '/api/shipping/quote',
-  '/api/shipping/validate-address',
-  '/api/messenger/call-signal-unload-broadcast',
+  '/sitemap.xml',
+  // NOTE: /api/cron/* and /api/messenger/cron/* are exempted by prefix in the
+  // handler below (CRON_SECRET enforced in each route), so they are not listed.
 ];
-
-// Dynamic route check — agent storefronts are public
-// e.g. /midway, /orlando-peps, etc. (but NOT /admin, /dashboard, /api, etc.)
-// Also allows /[slug]/[productId] for storefront product detail pages.
-function isPublicDynamicRoute(pathname: string): boolean {
-  // Exclude known protected prefixes
-  const protectedPrefixes = [
-    '/admin', '/dashboard', '/api', '/orders', '/products', '/account',
-    '/checkout', '/messages', '/messenger', '/register', '/signup', '/auth', '/login', '/forgot-password',
-    '/become-agent', '/about', '/contact', '/terms', '/privacy', '/compliance',
-    '/disclaimer', '/shipping', '/invite',
-  ];
-  if (protectedPrefixes.some(p => pathname.startsWith(p))) return false;
-  const segments = pathname.split('/').filter(Boolean);
-  return segments.length === 1 || segments.length === 2;
-}
 
 export default async function proxy(request: NextRequest) {
   if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
@@ -267,38 +130,12 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.next({ request });
   }
 
-  if (isPublicDynamicRoute(pathname)) {
-    let storeResponse = NextResponse.next({ request });
-    try {
-      const storeSupabase = createServerClient(
-        getSupabaseUrl(),
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-          cookies: {
-            getAll() { return request.cookies.getAll(); },
-            setAll(cookiesToSet) {
-              cookiesToSet.forEach(({ name, value, options }) => {
-                request.cookies.set({ name, value, ...options });
-              });
-              storeResponse = NextResponse.next({ request });
-              cookiesToSet.forEach(({ name, value, options }) => {
-                storeResponse.cookies.set({ name, value, ...options });
-              });
-            },
-          },
-        },
-      );
-      await storeSupabase.auth.getUser();
-    } catch { /* ignore — unauthenticated visitors are fine */ }
-    return storeResponse;
-  }
-
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon') ||
     pathname === '/robots.txt' ||
     pathname === '/sitemap.xml' ||
-    pathname.match(/\.(png|jpg|jpeg|svg|webp|ico|gif|css|js|map|txt)$/)
+    pathname.match(/\\.(png|jpg|jpeg|svg|webp|ico|gif|css|js|map|txt)$/)
   ) {
     return NextResponse.next({ request });
   }
@@ -331,8 +168,8 @@ export default async function proxy(request: NextRequest) {
     const { data } = await supabase.auth.getUser();
     user = data?.user ?? null;
   } catch (err) {
-    // Supabase auth outage / network blip. This is NOT the same as "no
-    // session": treating it as logged-out silently 401s every user site-wide
+    // Supabase auth outage / network blip. This is NOT the same as \"no
+    // session\": treating it as logged-out silently 401s every user site-wide
     // and looks like a mass logout instead of a backend incident.
     authBackendDown = true;
     console.error('[proxy] AUTH_BACKEND_ERROR - auth.getUser() threw:', err);
@@ -357,9 +194,9 @@ export default async function proxy(request: NextRequest) {
       );
     }
     return new NextResponse(
-      '<!DOCTYPE html><html><head><title>Temporarily Unavailable</title><meta http-equiv="refresh" content="8"></head>'
-      + '<body style="background:#050A0F;color:#D0DAE4;font-family:Inter,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center">'
-      + '<div><h1 style="color:#00C4BC">One Moment</h1><p>We Are Having Trouble Reaching The Sign-In Service.<br>This Page Will Retry Automatically.</p></div></body></html>',
+      '<!DOCTYPE html><html><head><title>Temporarily Unavailable</title><meta http-equiv=\"refresh\" content=\"8\"></head>'
+      + '<body style=\"background:#050A0F;color:#D0DAE4;font-family:Inter,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center\">'
+      + '<div><h1 style=\"color:#00C4BC\">One Moment</h1><p>We Are Having Trouble Reaching The Sign-In Service.<br>This Page Will Retry Automatically.</p></div></body></html>',
       { status: 503, headers: { 'Content-Type': 'text/html', 'Retry-After': '10' } },
     );
   }
@@ -408,9 +245,9 @@ export default async function proxy(request: NextRequest) {
       );
     }
     return new NextResponse(
-      '<!DOCTYPE html><html><head><title>Temporarily Unavailable</title><meta http-equiv="refresh" content="8"></head>'
-      + '<body style="background:#050A0F;color:#D0DAE4;font-family:Inter,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center">'
-      + '<div><h1 style="color:#00C4BC">One Moment</h1><p>We Are Having Trouble Loading Your Account.<br>This Page Will Retry Automatically.</p></div></body></html>',
+      '<!DOCTYPE html><html><head><title>Temporarily Unavailable</title><meta http-equiv=\"refresh\" content=\"8\"></head>'
+      + '<body style=\"background:#050A0F;color:#D0DAE4;font-family:Inter,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center\">'
+      + '<div><h1 style=\"color:#00C4BC\">One Moment</h1><p>We Are Having Trouble Loading Your Account.<br>This Page Will Retry Automatically.</p></div></body></html>',
       { status: 503, headers: { 'Content-Type': 'text/html', 'Retry-After': '10' } },
     );
   }
@@ -430,8 +267,8 @@ export default async function proxy(request: NextRequest) {
   // /account/change-password is the standalone reset page, and
   // /api/agent/onboarding backs the /onboarding wizard, whose FIRST step is
   // the in-wizard password change. Without the API exemption a flagged agent
-  // landing directly on /onboarding got a permanent "Could Not Load Your
-  // Setup" dead end (the wizard's initial GET was 403'd before it could even
+  // landing directly on /onboarding got a permanent \"Could Not Load Your
+  // Setup\" dead end (the wizard's initial GET was 403'd before it could even
   // render the password step).
   const mustChangePasswordExempt =
     pathname === '/account/change-password' || pathname === '/api/agent/onboarding';
@@ -495,6 +332,6 @@ export default async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|logo.*|.*\.(?:png|jpg|jpeg|gif|webp|svg|ico|woff|woff2|css|js|map|txt)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|logo.*|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|woff|woff2|css|js|map|txt)$).*)',
   ],
 };
