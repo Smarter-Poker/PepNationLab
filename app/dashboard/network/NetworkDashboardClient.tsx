@@ -59,7 +59,6 @@ const ICONS: Record<string, React.ReactNode> = {
 };
 
 const TOOLS: { href: string; key: string; label: string; desc: string }[] = [
-  { href: '/admin', key: 'admin', label: 'Full Admin Panel', desc: 'Global platform metrics & overview' },
   { href: '/admin/traffic', key: 'traffic', label: 'Site Traffic', desc: 'Live visitors & analytics' },
   { href: '/admin/abandoned-carts', key: 'abandoned_carts', label: 'Abandoned Carts', desc: 'View abandoned carts' },
   { href: '/admin/agents', key: 'agents', label: 'My Agents', desc: 'Manage downline agent accounts' },
