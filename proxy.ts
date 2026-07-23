@@ -4,17 +4,17 @@ import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { getSupabaseUrl } from '@/lib/supabase/url';
 import { captureError } from '@/lib/sentry';
 
-// ─── Global API Rate Limiting ─────────────────────────────────────────────────
+// --- Global API Rate Limiting ---
 // Edge-level backstop against scrape bots and abuse across all ~80 /api/*
 // endpoints. Individual hot routes keep their own tighter limits (register,
-// orders, disclaimer-log, research search) — this is the outer wall.
+// orders, disclaimer-log, research search) -- this is the outer wall.
 // Uses lib/rate-limit.ts: Upstash when UPSTASH_REDIS_REST_* is configured,
 // otherwise per-instance in-memory sliding window (fails open, never locks
 // out real users because of limiter infrastructure problems).
 const RL_EXEMPT_PREFIXES = [
-  '/api/cron/', // Vercel cron — authenticated via CRON_SECRET inside each route
+  '/api/cron/', // Vercel cron -- authenticated via CRON_SECRET inside each route
   '/api/messenger/cron/', // same
-  '/api/webhooks/', // signed webhooks (EasyPost) — verified in-route, may burst on retry
+  '/api/webhooks/', // signed webhooks (EasyPost) -- verified in-route, may burst on retry
   '/api/health', // uptime probe
 ];
 
@@ -101,7 +101,7 @@ export default async function proxy(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // Global API rate limit — runs before auth so bots can't even burn a
+  // Global API rate limit -- runs before auth so bots can't even burn a
   // Supabase auth.getUser() round trip per request.
   const limited = await applyApiRateLimit(request, pathname);
   if (limited) return limited;
