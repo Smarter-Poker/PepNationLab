@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { getSupabaseUrl } from '@/lib/supabase/url';
 import { captureError } from '@/lib/sentry';
+import { isEffectiveAdmin } from '@/lib/platform-admins';
 
 // --- Global API Rate Limiting ---
 // Edge-level backstop against scrape bots and abuse across all ~80 /api/*
@@ -149,7 +150,7 @@ export default async function proxy(request: NextRequest) {
     pathname.startsWith('/favicon') ||
     pathname === '/robots.txt' ||
     pathname === '/sitemap.xml' ||
-    pathname.match(/\\.(png|jpg|jpeg|svg|webp|ico|gif|css|js|map|txt)$/)
+    pathname.match(/\.(png|jpg|jpeg|svg|webp|ico|gif|css|js|map|txt)$/)
   ) {
     return NextResponse.next({ request });
   }
@@ -182,8 +183,8 @@ export default async function proxy(request: NextRequest) {
     const { data } = await supabase.auth.getUser();
     user = data?.user ?? null;
   } catch (err) {
-    // Supabase auth outage / network blip. This is NOT the same as \"no
-    // session\": treating it as logged-out silently 401s every user site-wide
+    // Supabase auth outage / network blip. This is NOT the same as "no
+    // session": treating it as logged-out silently 401s every user site-wide
     // and looks like a mass logout instead of a backend incident.
     authBackendDown = true;
     console.error('[proxy] AUTH_BACKEND_ERROR - auth.getUser() threw:', err);
@@ -208,9 +209,9 @@ export default async function proxy(request: NextRequest) {
       );
     }
     return new NextResponse(
-      '<!DOCTYPE html><html><head><title>Temporarily Unavailable</title><meta http-equiv=\"refresh\" content=\"8\"></head>'
-      + '<body style=\"background:#050A0F;color:#D0DAE4;font-family:Inter,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center\">'
-      + '<div><h1 style=\"color:#00C4BC\">One Moment</h1><p>We Are Having Trouble Reaching The Sign-In Service.<br>This Page Will Retry Automatically.</p></div></body></html>',
+      '<!DOCTYPE html><html><head><title>Temporarily Unavailable</title><meta http-equiv="refresh" content="8"></head>'
+      + '<body style="background:#050A0F;color:#D0DAE4;font-family:Inter,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center">'
+      + '<div><h1 style="color:#00C4BC">One Moment</h1><p>We Are Having Trouble Reaching The Sign-In Service.<br>This Page Will Retry Automatically.</p></div></body></html>',
       { status: 503, headers: { 'Content-Type': 'text/html', 'Retry-After': '10' } },
     );
   }
@@ -230,7 +231,7 @@ export default async function proxy(request: NextRequest) {
 
   let { data: profile, error: profileErr } = await supabase
     .from('profiles')
-    .select('is_active, role, must_change_password, disclaimer_v1_accepted')
+    .select('is_active, role, must_change_password, disclaimer_v1_accepted, is_admin_account')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -238,7 +239,7 @@ export default async function proxy(request: NextRequest) {
     // One retry for transient blips before deciding anything.
     const retry = await supabase
       .from('profiles')
-      .select('is_active, role, must_change_password, disclaimer_v1_accepted')
+      .select('is_active, role, must_change_password, disclaimer_v1_accepted, is_admin_account')
       .eq('id', user.id)
       .maybeSingle();
     profile = retry.data;
@@ -259,9 +260,9 @@ export default async function proxy(request: NextRequest) {
       );
     }
     return new NextResponse(
-      '<!DOCTYPE html><html><head><title>Temporarily Unavailable</title><meta http-equiv=\"refresh\" content=\"8\"></head>'
-      + '<body style=\"background:#050A0F;color:#D0DAE4;font-family:Inter,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center\">'
-      + '<div><h1 style=\"color:#00C4BC\">One Moment</h1><p>We Are Having Trouble Loading Your Account.<br>This Page Will Retry Automatically.</p></div></body></html>',
+      '<!DOCTYPE html><html><head><title>Temporarily Unavailable</title><meta http-equiv="refresh" content="8"></head>'
+      + '<body style="background:#050A0F;color:#D0DAE4;font-family:Inter,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center">'
+      + '<div><h1 style="color:#00C4BC">One Moment</h1><p>We Are Having Trouble Loading Your Account.<br>This Page Will Retry Automatically.</p></div></body></html>',
       { status: 503, headers: { 'Content-Type': 'text/html', 'Retry-After': '10' } },
     );
   }
@@ -281,8 +282,8 @@ export default async function proxy(request: NextRequest) {
   // /account/change-password is the standalone reset page, and
   // /api/agent/onboarding backs the /onboarding wizard, whose FIRST step is
   // the in-wizard password change. Without the API exemption a flagged agent
-  // landing directly on /onboarding got a permanent \"Could Not Load Your
-  // Setup\" dead end (the wizard's initial GET was 403'd before it could even
+  // landing directly on /onboarding got a permanent "Could Not Load Your
+  // Setup" dead end (the wizard's initial GET was 403'd before it could even
   // render the password step).
   const mustChangePasswordExempt =
     pathname === '/account/change-password' || pathname === '/api/agent/onboarding';
@@ -332,7 +333,18 @@ export default async function proxy(request: NextRequest) {
     return redirectWithCookies(url);
   }
 
-  if (pathname.startsWith('/admin') && profile?.role !== 'admin') {
+  // Admin PANEL access gate. MUST mirror app/admin/layout.tsx exactly, or this
+  // edge check silently bounces an allowlisted admin to /dashboard before the
+  // layout ever runs. Three independent pathways grant /admin:
+  //   1. role === 'admin'          -- real platform admin
+  //   2. id in PLATFORM_ADMIN_IDS  -- isEffectiveAdmin allowlist
+  //   3. is_admin_account === true -- DB flag (e.g. Savage Brands, a
+  //                                   super_agent with full admin parity)
+  if (
+    pathname.startsWith('/admin') &&
+    !isEffectiveAdmin(user.id, profile?.role) &&
+    (profile as { is_admin_account?: boolean } | null)?.is_admin_account !== true
+  ) {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
     return redirectWithCookies(url);
