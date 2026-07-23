@@ -162,7 +162,7 @@ function formatCallDuration(ms: number): string {
   return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
 }
 
-const ALONE_HANGUP_GRACE_MS = 15_000;
+const ALONE_HANGUP_GRACE_MS = 500;
 const TOOLBAR_HIDE_AFTER_MS = 5_000;
 
 function SignalBars({ quality }: { quality: ConnectionQuality | undefined }) {

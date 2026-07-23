@@ -146,8 +146,11 @@ function LoginPageInner() {
 
       // Hard navigation ensures that the browser sends the new session cookie to the server
       // and completely bypasses any Next.js client-side router cache that might be stale.
-      // Using .replace() keeps the login page out of the history stack, so the back button works perfectly.
-      window.location.replace(redirectTo);
+      // We use setTimeout and window.location.href to bypass a WebKit bug where
+      // setting document.cookie immediately before location.replace drops the cookie.
+      setTimeout(() => {
+        window.location.href = redirectTo;
+      }, 150);
     } catch (err) {
       setError(t('login_generic_error'));
     } finally {

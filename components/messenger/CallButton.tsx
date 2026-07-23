@@ -67,6 +67,20 @@ export default function CallButton({ conversationId, onCallStarted }: Props) {
     if (busy) return;
     setBusy(true);
     triggerStartHaptics();
+
+    // pre-acquire mic/cam permissions INSIDE the user-gesture context so Safari caches the grant
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: callType === 'video',
+      });
+      stream.getTracks().forEach((t) => t.stop());
+    } catch (err) {
+      toast.error('Camera And Microphone Required. Please Allow Access To Start The Call.');
+      setBusy(false);
+      return;
+    }
+
     try {
       const res = await fetch('/api/messenger/call-signal', {
         method: 'POST',
@@ -136,7 +150,7 @@ export default function CallButton({ conversationId, onCallStarted }: Props) {
         className="hover-lift call-icon-btn"
         style={{ ...iconBtn, minWidth: 48, minHeight: 48, overflow: 'visible' }}
       >
-        <Image src="/messenger-icons/phone-icon.png" alt="Voice Call" width={48} height={48} unoptimized style={{ width: 48, height: 48, objectFit: 'contain' }} />
+        <Image src="/messenger-icons/phone-icon.png" alt="Voice Call" width={48} height={48} unoptimized style={{ width: 48, height: 48, objectFit: 'contain', transform: 'scale(1.4)' }} />
       </button>
       <button
         type="button"
@@ -147,7 +161,7 @@ export default function CallButton({ conversationId, onCallStarted }: Props) {
         className="hover-lift call-icon-btn"
         style={{ ...iconBtn, minWidth: 48, minHeight: 48, overflow: 'visible' }}
       >
-        <Image src="/messenger-icons/video-icon.png" alt="Video Call" width={48} height={48} unoptimized style={{ width: 48, height: 48, objectFit: 'contain' }} />
+        <Image src="/messenger-icons/video-icon.png" alt="Video Call" width={48} height={48} unoptimized style={{ width: 48, height: 48, objectFit: 'contain', transform: 'scale(1.4)' }} />
       </button>
     </div>
   );
