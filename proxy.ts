@@ -56,6 +56,10 @@ async function applyApiRateLimit(request: NextRequest, pathname: string): Promis
 
 // Routes that are always public (no auth required)
 const PUBLIC_ROUTES = [
+  // Public landing page — always accessible to unauthenticated visitors.
+  // Without this, pepnationlab.com redirects every guest to /login instead
+  // of showing the landing artwork.
+  '/',
   // Account creation + sign-in (logged-out pages)
   '/login',
   '/signup',
