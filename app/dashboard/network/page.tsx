@@ -1,8 +1,9 @@
 import { redirect } from 'next/navigation';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient, createAdminClient } from '@/lib/supabase/server';
 import NetworkDashboardClient from './NetworkDashboardClient';
 import Navbar from '@/components/Navbar';
 import { generateQrDataUrl } from '@/lib/qr';
+import { buildDownlineTree, collectAgentIds } from '@/lib/downline';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,18 +44,31 @@ export default async function NetworkDashboardPage() {
      try { qr = await generateQrDataUrl(`${APP_URL}/${agentProfile.slug}`); } catch {}
   }
 
-  // Get Agents
-  const { data: agentsData } = await service
-    .from('profiles')
-    .select(`
-      id, username, full_name, role, is_super_agent, is_active,
-      commission_pct, tier, account_type, created_at,
-      agent_profiles ( slug, display_name )
-    `)
-    .in('role', ['agent', 'super_agent'])
-    .order('created_at', { ascending: false });
-
-  const agentIds = (agentsData ?? []).map(a => a.id);
+  // Get Full Downline Tree
+  const admin = createAdminClient();
+  const tree = await buildDownlineTree(admin, user.id);
+  const agentIds = tree ? collectAgentIds(tree) : [];
+  
+  // Flatten tree for the client component
+  const agentsMap = new Map<string, any>();
+  if (tree) {
+    const walk = (node: any) => {
+      if (node.id !== user.id) {
+        agentsMap.set(node.id, {
+          id: node.id,
+          username: node.username,
+          fullName: node.full_name,
+          role: node.role,
+          isSuperAgent: node.is_super_agent,
+          isActive: node.is_active,
+          slug: node.slug,
+          displayName: node.display_name,
+        });
+      }
+      node.children.forEach(walk);
+    };
+    walk(tree);
+  }
   
   // Get Orders, GMV, and Sparkline
   let orderCount = 0;
@@ -102,21 +116,32 @@ export default async function NetworkDashboardPage() {
       }
   }
 
-  const agents = (agentsData ?? []).map((a) => ({
-    id: a.id,
-    username: a.username,
-    fullName: a.full_name,
-    role: a.role,
-    isSuperAgent: a.is_super_agent,
-    isActive: a.is_active,
-    commissionPct: a.commission_pct,
-    tier: a.tier,
-    accountType: a.account_type,
-    createdAt: a.created_at,
-    slug: Array.isArray(a.agent_profiles) ? a.agent_profiles[0]?.slug ?? null : (a.agent_profiles as any)?.slug ?? null,
-    displayName: Array.isArray(a.agent_profiles) ? a.agent_profiles[0]?.display_name ?? null : (a.agent_profiles as any)?.display_name ?? null,
-    gmv30d: gmvMap[a.id] ?? 0,
-  }));
+  // We need additional profile details not included in the standard DownlineTree model
+  const { data: profilesData } = await service
+    .from('profiles')
+    .select('id, commission_pct, tier, account_type, created_at')
+    .in('id', agentIds);
+  
+  const profilesMap = new Map((profilesData ?? []).map(p => [p.id, p]));
+
+  const agents = Array.from(agentsMap.values()).map((a) => {
+    const p = profilesMap.get(a.id) || {};
+    return {
+      id: a.id,
+      username: a.username,
+      fullName: a.fullName,
+      role: a.role,
+      isSuperAgent: a.isSuperAgent,
+      isActive: a.isActive,
+      commissionPct: p.commission_pct ?? null,
+      tier: p.tier ?? null,
+      accountType: p.account_type ?? null,
+      createdAt: p.created_at ?? null,
+      slug: a.slug ?? null,
+      displayName: a.displayName ?? null,
+      gmv30d: gmvMap[a.id] ?? 0,
+    };
+  });
 
   const name = profile.full_name || profile.username || 'Admin';
 
