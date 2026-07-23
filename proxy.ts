@@ -86,6 +86,16 @@ const PUBLIC_ROUTES = [
   '/api/social/ingest',       // GitHub Actions batch enqueue (CRON_SECRET in-route)
   '/api/health',
   '/api/status',
+  // Public storefront read-data endpoints (service-client, no user PII).
+  // The storefront PAGES are gated, so guests still cannot browse the UI --
+  // these keep logged-in shopping (catalog grid, search, recommendations)
+  // and the research article iframe proxy working. They are fetched with
+  // credentials:'omit' and are edge-cacheable public product data.
+  '/api/storefront/catalog',
+  '/api/storefront/semantic',
+  '/api/storefront/recommendations',
+  '/api/storefront/search',
+  '/api/proxy',
   // PWA / static infra
   '/manifest.webmanifest',
   '/sw.js',
