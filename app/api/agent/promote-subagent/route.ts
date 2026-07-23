@@ -86,30 +86,19 @@ async function provisionAgentStorefront(
 /**
  * POST /api/agent/promote-subagent
  *
- * SACA Phase 2: Promotes a researcher in the caller's downline into a sub-agent.
- *
- * New model (2026-05-30):
- *  - Sub-agents do NOT get their own storefront. They sell on the parent's
- *    storefront at the parent's prices. No agent_profiles row is created.
- *  - Sub-agent has a commission_pct (0-40), set at promote time, changeable
- *    later via PATCH /api/agent/sub-agents/[id]/commission-rate.
- *  - Sub-agent has a payment model (credit or prepaid) and credit_limit set
- *    by the parent - virtual cap, parent's own admin credit is the real ceiling.
- *  - Sub-agent's referring_agent_id is preserved (storefront access tag).
- *  - parent_agent_id is set to the caller so the sub-agent appears in the
- *    caller's downline.
- *  - Sub-agents cannot have sub-agents (DB trigger enforces, route checks too).
+ * Promotes a researcher in the caller's downline into an Agent or Super Agent.
  *
  * Body:
  *   {
  *     researcherId: UUID,
- *     commissionPct: number (0..40 inclusive),
+ *     markupPct: number (10..200 inclusive) — markup on base cost, NOT commission on gross sales,
+ *     isSuperAgent: boolean — true = Super Agent, false = regular Agent,
  *     paymentModel: 'credit' | 'prepaid',
  *     creditLimit?: number (required when paymentModel='credit', >= 0)
  *   }
  *
  * Response on success also includes parent_slug + share_link so the UI can
- * render a copyable invite URL the parent gives the sub-agent.
+ * render a copyable invite URL the parent gives the new agent.
  */
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -147,44 +136,38 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json().catch(() => ({}));
     const researcherId: unknown = body?.researcherId;
-    const commissionPctRaw: unknown = body?.commissionPct;
+    // Accept both new markupPct and legacy commissionPct for backwards compat
+    const markupPctRaw: unknown = body?.markupPct ?? body?.commissionPct;
+    const isSuperAgentRequest: boolean = body?.isSuperAgent === true;
     const paymentModel: unknown = body?.paymentModel;
     const creditLimitRaw: unknown = body?.creditLimit;
 
     if (typeof researcherId !== 'string' || researcherId.length === 0) {
       return NextResponse.json({ error: 'researcherId Is Required.' }, { status: 400 });
     }
-    // When the caller does not specify a rate, fall back to the parent's
-    // onboarding default commission (default_sub_commission_pct) so new
-    // sub-agents inherit the rate the parent configured during setup.
-    let commissionPct: number;
-    if (commissionPctRaw === undefined || commissionPctRaw === null || commissionPctRaw === '') {
-      commissionPct = Number((callerProfile as { default_sub_commission_pct?: number | null }).default_sub_commission_pct ?? 0);
+
+    // markupPct: the margin the new agent earns above YOUR base cost (10-200%).
+    // Falls back to caller's default_agent_markup_pct if not specified.
+    let markupPct: number;
+    if (markupPctRaw === undefined || markupPctRaw === null || markupPctRaw === '') {
+      const cp = callerProfile as { default_agent_markup_pct?: number | null; default_sub_commission_pct?: number | null };
+      markupPct = Number(cp.default_agent_markup_pct ?? cp.default_sub_commission_pct ?? 50);
     } else {
-      commissionPct = Number(commissionPctRaw);
+      markupPct = Number(markupPctRaw);
     }
-    if (!Number.isFinite(commissionPct) || commissionPct < 0 || commissionPct > 40) {
+    if (!Number.isFinite(markupPct) || markupPct < 10 || markupPct > 200) {
       return NextResponse.json(
-        { error: 'commissionPct Must Be Between 0 And 40 Inclusive.' },
+        { error: 'markupPct Must Be Between 10 And 200 Inclusive.' },
         { status: 400 },
       );
     }
 
-    const isPromotingToFullAgent = callerProfile.is_super_agent === true || callerProfile.role === 'super_agent';
-    if (!isPromotingToFullAgent) {
-      const safeguard = await verifyCommissionSafeguard(admin, callerId, commissionPct);
-      if (!safeguard.safe) {
-        return NextResponse.json({ error: safeguard.error }, { status: 400 });
-      }
-      if (safeguard.warning) {
-        // Fire notification asynchronously, don't await it
-        import('@/lib/notify').then(({ notifyMarginWarning }) => {
-          notifyMarginWarning(admin, callerId).catch(err => {
-            console.error('[promote-subagent] Failed to fire margin warning:', err);
-          });
-        });
-      }
-    }
+    // Only super-agents can promote to Super Agent; regular agents can only create Agents.
+    const callerIsSuperAgent = callerProfile.is_super_agent === true || callerProfile.role === 'super_agent';
+    // isPromotingToFullAgent: true for both Agent and Super Agent (both get storefronts)
+    const isPromotingToFullAgent = true;
+    // Determine if the new account should have super_agent privileges
+    const newIsSuperAgent = isSuperAgentRequest && callerIsSuperAgent;
 
     if (paymentModel !== 'credit' && paymentModel !== 'prepaid') {
       return NextResponse.json(
@@ -250,43 +233,24 @@ export async function POST(req: NextRequest) {
     const now = new Date().toISOString();
     const updatePayload: Record<string, unknown> = {
       role: 'agent',
-      is_sub_agent: !isPromotingToFullAgent,
-      // P1: Explicitly clear is_super_agent so a promoted user cannot
-      // inherit or retain super-agent privileges from a previous state.
-      is_super_agent: false,
-      // P1: Bind the promoted user to the calling agent's downline.
+      is_sub_agent: false,  // All promotions from this form are full agents
+      is_super_agent: newIsSuperAgent,
       parent_agent_id: callerId,
       created_by_agent_id: callerId,
       created_by_role: createdByRole,
-      commission_pct: commissionPct,
+      // markupPct stored as a decimal fraction in custom_markup_override
+      // e.g. 50% markup = 0.50 override on top of base cost
+      custom_markup_override: Math.round((markupPct / 100) * 10000) / 10000,
+      // commission_pct kept for backwards compat with existing queries
+      commission_pct: 0,
       commission_active_since: now,
       account_type: paymentModel,
-      // SACA 2026-05-31: clear any prior referring_sub_agent_id tag on the
-      // researcher being promoted. A sub-agent cannot itself be tagged to
-      // another sub-agent (no nested sub-agents), and an existing tag from
-      // when they were a researcher would now be inconsistent.
       referring_sub_agent_id: null,
-      // Promotion re-triggers the role-tailored onboarding wizard: the newly
-      // promoted account must complete setup for its new role before reaching
-      // any dashboard. Also clear the prior step acknowledgments so a once-
-      // onboarded account does not skip role-specific steps with stale flags.
-      // See app/dashboard/layout.tsx + /onboarding.
+      // Re-trigger onboarding wizard for the new role
       onboarding_completed_at: null,
       onboarding_progress: {},
       updated_at: now,
     };
-    // Super agent promoting to a FULL agent: seed the new agent's pricing from
-    // the super's onboarding default (overridable per-agent later). 'gamified'
-    // -> NULL custom_markup_override so the agent rides the platform volume
-    // ladder. 'flat' -> fixed override fraction from default_agent_markup_pct.
-    if (isPromotingToFullAgent) {
-      const cp = callerProfile as { default_agent_markup_pct?: number | null; default_agent_pricing_mode?: string | null };
-      if (cp.default_agent_pricing_mode === 'gamified') {
-        updatePayload.custom_markup_override = null;
-      } else if (cp.default_agent_markup_pct != null && Number.isFinite(Number(cp.default_agent_markup_pct))) {
-        updatePayload.custom_markup_override = Math.round((Number(cp.default_agent_markup_pct) / 100) * 10000) / 10000;
-      }
-    }
     if (paymentModel === 'credit') {
       updatePayload.credit_limit = creditLimit;
       updatePayload.auto_approve_orders = true;
@@ -330,9 +294,10 @@ export async function POST(req: NextRequest) {
       changes: {
         previous_role: researcherProfile.role,
         new_role: 'agent',
-        is_sub_agent: !isPromotingToFullAgent,
-        is_super_agent: false,
-        commission_pct: commissionPct,
+        is_sub_agent: false,
+        is_super_agent: newIsSuperAgent,
+        markup_pct: markupPct,
+        custom_markup_override: Math.round((markupPct / 100) * 10000) / 10000,
         commission_active_since: now,
         parent_agent_id: callerId,
         account_type: paymentModel,
@@ -383,14 +348,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       sub_agent_id: researcherId,
-      commission_pct: commissionPct,
+      markup_pct: markupPct,
       account_type: paymentModel,
       credit_limit: paymentModel === 'credit' ? creditLimit : 0,
       parent_slug: parentSlug,
       share_link: shareLink,
       created_by_role: createdByRole,
       new_agent_slug: newAgentSlug,
-      message: `${researcherProfile.full_name || 'Researcher'} Has Been Promoted To ${isPromotingToFullAgent ? 'Agent' : 'Sub-Agent'} At ${commissionPct}% Commission.`,
+      message: `${researcherProfile.full_name || 'Researcher'} Has Been Promoted To ${newIsSuperAgent ? 'Super Agent' : 'Agent'} At ${markupPct}% Markup On Base Cost.`,
     });
 
   } catch (error) {
