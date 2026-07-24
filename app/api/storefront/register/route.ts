@@ -289,8 +289,16 @@ export async function POST(req: NextRequest) {
             p_referee_id: newUserId,
             p_code: referralCode.slice(0, 50),
           });
-          if (!refErr && refOut && typeof refOut === 'object') {
+          if (refErr) {
+            // Fail LOUD: a referral RPC error (e.g. the apply_signup_referral
+            // migration drift that silently sent signups to the house store)
+            // must surface, never be swallowed. Signup still proceeds.
+            console.error('[storefront/register] apply_signup_referral error:', refErr);
+          } else if (refOut && typeof refOut === 'object') {
             referralResult = refOut as Record<string, unknown>;
+            if ((refOut as { applied?: boolean }).applied === false) {
+              console.warn('[storefront/register] referral code not applied:', refOut);
+            }
             // Record the referee email on any referral row that was created.
             const refId = (refOut as { referral_id?: string }).referral_id;
             if (refId) {
@@ -300,7 +308,7 @@ export async function POST(req: NextRequest) {
                 .eq('id', refId);
             }
           }
-        } catch { /* invalid code -- signup proceeds regardless */ }
+        } catch (e) { console.error('[storefront/register] referral apply threw:', e); }
       }
     }
 

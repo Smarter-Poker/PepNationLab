@@ -118,10 +118,13 @@ export async function ensureOAuthResearcherProfile(
 
     if (agentSlug && /^[a-z0-9_-]{2,80}$/i.test(agentSlug)) {
       // First try robust matching (username/referral code) like register form
+      // Escape LIKE wildcards (_ and %) a raw username/code could contain so the
+      // match stays literal -- mirrors the email-probe escaping used below.
+      const refEsc = agentSlug.replace(/([%_\\])/g, '\\$1');
       const { data: refMatch } = await admin
         .from('profiles')
         .select('id, role, is_active, is_sub_agent, parent_agent_id')
-        .or(`username.ilike.${agentSlug},referral_code.ilike.${agentSlug}`)
+        .or(`username.ilike.${refEsc},referral_code.ilike.${refEsc}`)
         .eq('is_active', true)
         .limit(1)
         .maybeSingle();
