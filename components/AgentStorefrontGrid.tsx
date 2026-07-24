@@ -3879,7 +3879,7 @@ export default function AgentStorefrontGrid({
                         aria-label="View Certificate of Analysis"
                         style={{ display: 'block', cursor: 'pointer', flexShrink: 0 }}
                       >
-                        <DynamicCoaButton style={{ width: 75, height: 38 }} />
+                        <DynamicCoaButton style={{ width: 122, height: 38 }} />
                       </IframeLink>
                     );
                   })()}
