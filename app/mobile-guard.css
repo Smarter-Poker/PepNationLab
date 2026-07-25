@@ -64,3 +64,64 @@ p, span, div, td, th, li, a, label, button,
 h1, h2, h3, h4, h5, h6, dd, dt {
   overflow-wrap: break-word;
 }
+
+/* ============================================================
+   LEGIBILITY-FLOOR GAPS + FORM-CONTROL 16PX RE-FLOOR (2026-07-25)
+   ------------------------------------------------------------
+   1) The pixel-unit legibility floor in globals.css lists text-bearing
+      elements (div/span/p/li/td/th/a/small/label/button) but misses
+      strong, code, and h3, which carry inline 11-13px sizes in the
+      research calculators (CalculatorSuite h3 13px, StackBuilder strong
+      12/13px) and the admin email center (code 11px). Extend the same
+      0.82rem floor to those elements, in BOTH serializations.
+
+   2) Form controls must floor to 16px (iOS zoom prevention), not the
+      0.82rem text floor. The [style*=...] floor rules in globals.css
+      have attribute-selector specificity (0,1,0) and override the plain
+      input/select/textarea 16px rule (0,0,1), which left the 32 tier
+      selects on /dashboard/network (inline font-size: 0.75rem) computing
+      13.12px at 390px. These (0,1,1) selectors re-assert the 16px floor
+      for any inline sub-1rem or sub-16px pixel value on form controls,
+      in BOTH serializations. Verified live: selects below 16px went
+      32 -> 0 with no horizontal overflow introduced.
+   ============================================================ */
+
+@media (max-width: 768px) {
+  strong[style*="font-size:9px"], strong[style*="font-size: 9px"],
+  strong[style*="font-size:10px"], strong[style*="font-size: 10px"],
+  strong[style*="font-size:11px"], strong[style*="font-size: 11px"],
+  strong[style*="font-size:12px"], strong[style*="font-size: 12px"],
+  strong[style*="font-size:13px"], strong[style*="font-size: 13px"],
+  code[style*="font-size:9px"], code[style*="font-size: 9px"],
+  code[style*="font-size:10px"], code[style*="font-size: 10px"],
+  code[style*="font-size:11px"], code[style*="font-size: 11px"],
+  code[style*="font-size:12px"], code[style*="font-size: 12px"],
+  code[style*="font-size:13px"], code[style*="font-size: 13px"],
+  h3[style*="font-size:10px"], h3[style*="font-size: 10px"],
+  h3[style*="font-size:11px"], h3[style*="font-size: 11px"],
+  h3[style*="font-size:12px"], h3[style*="font-size: 12px"],
+  h3[style*="font-size:13px"], h3[style*="font-size: 13px"] {
+    font-size: 0.82rem !important;
+  }
+
+  input[style*="font-size:0."], input[style*="font-size: 0."],
+  select[style*="font-size:0."], select[style*="font-size: 0."],
+  textarea[style*="font-size:0."], textarea[style*="font-size: 0."],
+  input[style*="font-size:11px"], input[style*="font-size: 11px"],
+  input[style*="font-size:12px"], input[style*="font-size: 12px"],
+  input[style*="font-size:13px"], input[style*="font-size: 13px"],
+  input[style*="font-size:14px"], input[style*="font-size: 14px"],
+  input[style*="font-size:15px"], input[style*="font-size: 15px"],
+  select[style*="font-size:11px"], select[style*="font-size: 11px"],
+  select[style*="font-size:12px"], select[style*="font-size: 12px"],
+  select[style*="font-size:13px"], select[style*="font-size: 13px"],
+  select[style*="font-size:14px"], select[style*="font-size: 14px"],
+  select[style*="font-size:15px"], select[style*="font-size: 15px"],
+  textarea[style*="font-size:11px"], textarea[style*="font-size: 11px"],
+  textarea[style*="font-size:12px"], textarea[style*="font-size: 12px"],
+  textarea[style*="font-size:13px"], textarea[style*="font-size: 13px"],
+  textarea[style*="font-size:14px"], textarea[style*="font-size: 14px"],
+  textarea[style*="font-size:15px"], textarea[style*="font-size: 15px"] {
+    font-size: 16px !important;
+  }
+}
