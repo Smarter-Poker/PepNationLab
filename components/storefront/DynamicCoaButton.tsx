@@ -43,7 +43,7 @@ export default function DynamicCoaButton({
         style={{
           width: '100%',
           height: '100%',
-          objectFit: 'contain',
+          objectFit: 'fill',
           display: 'block',
         }}
         width={1024} height={521} unoptimized />
