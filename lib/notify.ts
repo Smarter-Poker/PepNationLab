@@ -154,7 +154,7 @@ export async function notifyDownlineOrderPlaced(
     type: 'order_placed',
     title: `Downline Sale: Order #${shortId}`,
     body: `A ${totalFormatted} Order Was Just Placed On ${storeLabel} In Your Downline.`,
-    url: `/dashboard?tab=Orders`,
+    url: `/dashboard/agent?tab=Orders`,
   });
 }
 
@@ -171,7 +171,7 @@ export async function notifyOrderAwaitingApproval(
     type: 'order_attention',
     title: `Order #${shortId} Awaits Your Approval`,
     body: `A ${totalFormatted} Order Has Been Forwarded To You For Approval. Please Review It Now.`,
-    url: `/dashboard?tab=Orders`,
+    url: `/dashboard/agent?tab=Orders`,
   });
 }
 
@@ -196,7 +196,7 @@ export async function notifyOrderAttention(
     type: 'order_attention',
     title,
     body,
-    url: opts.url ?? (opts.who === 'admin' ? '/admin/orders' : '/dashboard?tab=Orders'),
+    url: opts.url ?? (opts.who === 'admin' ? '/admin/orders' : '/dashboard/agent?tab=Orders'),
   });
 }
 
