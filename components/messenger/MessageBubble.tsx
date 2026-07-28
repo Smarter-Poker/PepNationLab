@@ -129,7 +129,7 @@ export default function MessageBubble({
     return () => clearInterval(id);
   }, [message.expires_at]);
 
-  // ── Early return for system messages (after all hooks) ──────────────────
+  // ── Early return for system messages (after all hooks) ──────────
   if (message.message_type === 'system') {
     return (
       <div
@@ -159,7 +159,7 @@ export default function MessageBubble({
     const now = Date.now();
     if (now - lastTapRef.current < 300) {
       vibrateLight();
-      onReact(message, '\u2764\uFE0F', 'add');
+      onReact(message, '❤️', 'add');
       lastTapRef.current = 0;
     } else {
       lastTapRef.current = now;
@@ -171,7 +171,7 @@ export default function MessageBubble({
     if (now - lastTapRef.current < 300) {
       // Double tap detected
       if (touchTimerRef.current) clearTimeout(touchTimerRef.current);
-      onReact(message, '\u2764\uFE0F', 'add');
+      onReact(message, '❤️', 'add');
       if (navigator.vibrate) navigator.vibrate(50);
       lastTapRef.current = 0;
       return;
@@ -196,7 +196,7 @@ export default function MessageBubble({
 
   const failed = (message.metadata as { failed?: boolean })?.failed === true;
   const pending = message.id.startsWith('temp-');
-  const meta = (message.media_metadata ?? {}) as { filename?: string; size?: number; durationSec?: number; contentType?: string };
+  const meta = (message.media_metadata ?? {}) as { filename?: string; size?: number; durationSec?: number; contentType?: string; orderId?: string };
   const url = extractFirstUrl(message.text);
   const isMediaBubble = ['image', 'gif', 'video'].includes(message.message_type);
 
@@ -560,6 +560,31 @@ export default function MessageBubble({
       )}
 
       {url && message.message_type === 'text' && !message.is_deleted && <LinkPreview url={url} />}
+
+      {/* Order deep link: any message carrying media_metadata.orderId (payment
+          proofs sent from checkout, payment confirmations from mark-paid) gets
+          a tappable chip straight to the full order. /orders/<id> is RLS-scoped
+          to the buyer, the order's agent, and the upline super agent, so one
+          link serves every participant in the thread. */}
+      {typeof meta.orderId === 'string' && meta.orderId.length > 0 && !message.is_deleted && (
+        <a
+          href={`/orders/${encodeURIComponent(meta.orderId)}`}
+          aria-label={`View Full Order ${meta.orderId.slice(0, 8).toUpperCase()}`}
+          style={{
+            alignSelf: isOwn ? 'flex-end' : 'flex-start',
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            marginTop: 4, padding: '5px 12px', borderRadius: 999,
+            background: 'rgba(0,196,188,0.12)',
+            border: '1px solid rgba(0,196,188,0.45)',
+            color: 'var(--teal, #00C4BC)',
+            fontSize: '0.78rem', fontWeight: 700,
+            textDecoration: 'none', letterSpacing: '0.02em',
+          }}
+        >
+          View Full Order #{meta.orderId.slice(0, 8).toUpperCase()}
+          <span aria-hidden="true">→</span>
+        </a>
+      )}
 
       {Object.keys(grouped).length > 0 && !message.is_deleted && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignSelf: isOwn ? 'flex-end' : 'flex-start', padding: '2px 4px' }}>

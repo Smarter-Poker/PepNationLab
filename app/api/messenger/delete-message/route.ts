@@ -28,10 +28,26 @@ export async function POST(req: NextRequest) {
   const svc = createAdminClient();
   const { data: msg } = await svc
     .from('messenger_messages')
-    .select('id, conversation_id, sender_id, is_deleted')
+    .select('id, conversation_id, sender_id, is_deleted, labels, media_metadata')
     .eq('id', parsed.data.messageId)
     .maybeSingle();
   if (!msg) return NextResponse.json({ error: 'Message Not Found' }, { status: 404 });
+
+  // Payment-proof messages are a PERMANENT payment record (owner mandate:
+  // proof images must never be deleted). They can be hidden per-user
+  // ('for_me' dismissal below) but never tombstoned for everyone - a
+  // for_everyone delete would blank text + media_url and erase the proof
+  // from the buyer<->agent thread. Identified by the 'Proof of Payment'
+  // label stamped by /api/researcher/payment-proof at send time.
+  const isPaymentProof =
+    Array.isArray((msg as { labels?: unknown }).labels) &&
+    ((msg as { labels: unknown[] }).labels as unknown[]).includes('Proof of Payment');
+  if (isPaymentProof && parsed.data.scope !== 'for_me') {
+    return NextResponse.json(
+      { error: 'Payment Proof Messages Are A Permanent Payment Record And Cannot Be Deleted.' },
+      { status: 403 },
+    );
+  }
 
   if (parsed.data.scope === 'for_me') {
     const participant = await getParticipant(msg.conversation_id, user.id);

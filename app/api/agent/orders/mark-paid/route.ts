@@ -4,6 +4,7 @@ import { requireAgent } from '@/lib/admin-auth';
 import { isAgentAncestorOf } from '@/lib/agent-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { findOrCreateDirectConversation } from '@/lib/messenger/conversations';
+import { sendBroadcast } from '@/lib/messenger/broadcast';
 import { notifyPaymentConfirmed, notifyAdmins, notify } from '@/lib/notify';
 import { emailConfigured, sendPaymentConfirmedEmail } from '@/lib/email';
 import { logOrderEvent } from '@/lib/order-events';
@@ -183,7 +184,9 @@ export async function POST(req: NextRequest) {
         type: 'payment_confirmed',
         title: `Downline Payment Confirmed: Order #${short}`,
         body: `${agentName || 'Your Sub-Agent'} Confirmed A ${totalFmt} Payment On Order #${short}. It Now Awaits Approval.`,
-        url: '/dashboard?tab=Orders',
+        // NOTE: /dashboard?tab=Orders loses the tab through the role redirect
+        // (redirect('/dashboard/agent') drops the query) - link directly.
+        url: '/dashboard/agent?tab=Orders',
       });
     }
     await notifyAdmins(svc, {
@@ -206,14 +209,50 @@ export async function POST(req: NextRequest) {
           ? `Payment Verified For Order #${short} ($${totalStr}). Your Order Is Now Awaiting Final Approval For Pickup - Your Agent Will Contact You Shortly.`
           : `Payment Verified For Order #${short} ($${totalStr}). Your Order Is Now Awaiting Final Approval - You Will Be Notified As Soon As It Is Approved, And Again When It Ships With Tracking.`;
 
-        await svc.from('messenger_messages').insert({
+        // media_metadata.orderId drives the "View Full Order" chip in
+        // MessageBubble, deep-linking both parties to /orders/<id>.
+        const { data: confMsg } = await svc.from('messenger_messages').insert({
           conversation_id: conversationId,
           sender_id: callerId,
           text: statusMsg,
           message_type: 'text',
           media_url: null,
-          media_metadata: {},
-        });
+          media_metadata: { orderId },
+        }).select('*').maybeSingle();
+
+        // Realtime fanout - a bare insert bypasses /api/messenger/send-message,
+        // so without these broadcasts the buyer's open messenger never shows
+        // the confirmation until a reload: conversation channel renders the
+        // bubble live; user_notify/user_unread update the buyer's sidebar and
+        // red badge (participant fetched AFTER insert so the trigger-updated
+        // unread_count is fresh).
+        if (confMsg) {
+          await sendBroadcast({
+            topic: `conversation:${conversationId}`,
+            event: 'new_message',
+            payload: { message: confMsg },
+          }).catch(() => {});
+          const { data: buyerPart } = await svc
+            .from('messenger_participants')
+            .select('*')
+            .eq('conversation_id', conversationId)
+            .eq('user_id', order.buyer_id)
+            .maybeSingle();
+          await sendBroadcast([
+            {
+              topic: `user_notify:${order.buyer_id}`,
+              event: 'new_message_notify',
+              payload: { message: confMsg },
+            },
+            ...(buyerPart
+              ? [{
+                  topic: `user_unread:${order.buyer_id}`,
+                  event: 'participant_updated',
+                  payload: { participant: buyerPart },
+                }]
+              : []),
+          ]).catch(() => {});
+        }
       }
     }
   } catch (err) {
