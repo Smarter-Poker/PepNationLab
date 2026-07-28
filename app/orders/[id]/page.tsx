@@ -221,7 +221,7 @@ export default async function OrderDetailPage(
     }
   }
 
-  // ─── Recommendations ("You May Also Like") ───────────────
+  // ─── Recommendations ("You May Also Like") ───────
   // Seed from the FIRST eligible order_item.product_id. Service client used
   // so the SECURITY DEFINER RPC + materialized view reads work regardless
   // of the researcher's row-level role. We intersect the candidate ids
@@ -768,10 +768,17 @@ export default async function OrderDetailPage(
             </div>
           )}
 
-          {/* Payment Proof Upload (buyer only - RLS enforces) */}
+          {/* Payment Proof Upload (buyer only - the POST route rejects
+              non-buyers and shipped/cancelled/delivered orders, so mirror
+              both gates here instead of showing a button that can only 403).
+              Agents/uplines still see the uploaded proofs listed above the
+              (hidden) upload control. */}
           <PaymentProofUpload
             orderId={order.id}
-            uploadDisabled={order.status === 'cancelled' || order.status === 'delivered'}
+            uploadDisabled={
+              ['cancelled', 'delivered', 'shipped'].includes(order.status) ||
+              order.buyer_id !== user.id
+            }
           />
 
           {/* Tracking */}
