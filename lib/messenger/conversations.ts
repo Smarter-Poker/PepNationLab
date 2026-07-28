@@ -20,6 +20,14 @@ export async function findOrCreateDirectConversation(
   userBId: string,
 ): Promise<string | null> {
   try {
+    // A buyer==agent "self-buy" (a store owner test-buying their own store) has
+    // no distinct counterparty. Returning the first arbitrary direct thread here
+    // mis-files the payment-proof / confirming-payment messages into an unrelated
+    // conversation (in practice the user's standing admin support DM), making the
+    // owner's own messages surface under the admin's name. No buyer<->seller
+    // message is needed for a self-buy, so skip messenger integration entirely.
+    if (userAId === userBId) return null;
+
     const { data: aParticipations } = await svc
       .from('messenger_participants')
       .select('conversation_id')
