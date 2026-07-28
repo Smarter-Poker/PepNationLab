@@ -3,6 +3,7 @@ import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { getEffectiveUser } from '@/lib/impersonation';
 import { assertSameOrigin } from '@/lib/csrf';
 import { findOrCreateDirectConversation } from '@/lib/messenger/conversations';
+import { sendBroadcast } from '@/lib/messenger/broadcast';
 import { notify, notifyAdmins } from '@/lib/notify';
 import crypto from 'crypto';
 
@@ -196,7 +197,7 @@ export async function POST(req: NextRequest) {
     .from('payment-proofs')
     .createSignedUrl(key, 600);
 
-  // ── Messenger integration ────────────────────────────────────────
+  // ── Messenger integration ────────────────────────────────
   // Post a message in the researcher↔agent conversation so the agent is
   // immediately alerted and can view the proof without leaving the app.
   // IMPORTANT: We must 'await' this so Vercel does not kill the process!
@@ -204,7 +205,10 @@ export async function POST(req: NextRequest) {
     const shortId = orderId.slice(0, 8).toUpperCase();
     const isImage = file.type.startsWith('image/');
 
-    // 24-hour signed URL for the messenger preview
+    // 24-hour signed URL stored in media_url. Read paths (get-messages,
+    // list-pins, thread replies) re-sign it fresh on every load via the
+    // bucket-aware lib/messenger/signMedia, so the proof keeps rendering in
+    // the chat after this token expires.
     const { data: longSigned } = await service.storage
       .from('payment-proofs')
       .createSignedUrl(key, 86400);
@@ -223,20 +227,61 @@ export async function POST(req: NextRequest) {
         order.agent_id
       );
       if (conversationId) {
-        await service.from('messenger_messages').insert({
-          conversation_id: conversationId,
-          sender_id: user.id, // The researcher who uploaded
-          text: `[Attachment] Payment proof submitted for Order #${shortId}. Please review and mark as paid once verified.`,
-          message_type: isImage ? 'image' : 'file',
-          media_url: longSigned?.signedUrl ?? null,
-          media_metadata: {
-            filename: file.name || `payment-proof.${EXT_BY_MIME[file.type] || 'bin'}`,
-            contentType: file.type,
-            size: file.size,
-            orderId,
-          },
-          labels: [`Order #${shortId}`, 'Proof of Payment'],
-        });
+        const { data: proofMsg } = await service
+          .from('messenger_messages')
+          .insert({
+            conversation_id: conversationId,
+            sender_id: user.id, // The researcher who uploaded
+            text: `[Attachment] Payment proof submitted for Order #${shortId}. Please review and mark as paid once verified.`,
+            message_type: isImage ? 'image' : 'file',
+            media_url: longSigned?.signedUrl ?? null,
+            media_metadata: {
+              filename: file.name || `payment-proof.${EXT_BY_MIME[file.type] || 'bin'}`,
+              contentType: file.type,
+              size: file.size,
+              orderId,
+            },
+            labels: [`Order #${shortId}`, 'Proof of Payment'],
+          })
+          .select('*')
+          .maybeSingle();
+
+        // Realtime fanout - the bare insert above bypasses the send-message
+        // route, so without these broadcasts the agent's open messenger never
+        // shows the proof until a full page reload: the conversation channel
+        // renders the bubble live, user_notify updates the sidebar/OS layer,
+        // and user_unread bumps the red badge (participant row is fetched
+        // AFTER the insert so the trigger-updated unread_count is fresh).
+        if (proofMsg) {
+          const outgoing = { ...proofMsg, media_url: longSigned?.signedUrl ?? null };
+          await sendBroadcast({
+            topic: `conversation:${conversationId}`,
+            event: 'new_message',
+            payload: { message: outgoing },
+          }).catch(() => {});
+
+          const { data: agentPart } = await service
+            .from('messenger_participants')
+            .select('*')
+            .eq('conversation_id', conversationId)
+            .eq('user_id', order.agent_id)
+            .maybeSingle();
+
+          await sendBroadcast([
+            {
+              topic: `user_notify:${order.agent_id}`,
+              event: 'new_message_notify',
+              payload: { message: outgoing },
+            },
+            ...(agentPart
+              ? [{
+                  topic: `user_unread:${order.agent_id}`,
+                  event: 'participant_updated',
+                  payload: { participant: agentPart },
+                }]
+              : []),
+          ]).catch(() => {});
+        }
       }
 
       // Notifications are independent of the messenger thread - a messenger
@@ -246,7 +291,7 @@ export async function POST(req: NextRequest) {
         type: 'system',
         title: 'Payment Proof Received',
         body: `Your Researcher Submitted A Payment Proof For Order #${shortId}. Review And Mark As Paid Once Verified.`,
-        url: '/dashboard?tab=Orders',
+        url: '/dashboard/agent?tab=Orders',
       });
       const { data: agentProf } = await service.from('profiles').select('parent_agent_id').eq('id', order.agent_id).maybeSingle();
       if (agentProf?.parent_agent_id) {
@@ -255,7 +300,7 @@ export async function POST(req: NextRequest) {
           type: 'system',
           title: 'Sub-Agent Payment Proof Received',
           body: `A Researcher For Your Sub-Agent Submitted A Payment Proof For Order #${shortId}.`,
-          url: '/dashboard?tab=Orders',
+          url: '/dashboard/agent?tab=Orders',
         });
       }
     }
