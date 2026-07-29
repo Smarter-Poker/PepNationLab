@@ -63,8 +63,8 @@ export default function InviteRedeemPage({ params }: { params: Promise<{ token: 
     e.preventDefault();
     if (submitting) return;
     setError(null);
-    if (password.length < 8) {
-      setError('Password Must Be At Least 8 Characters.');
+    if (password.length !== 8) {
+      setError('Password Must Be Exactly 8 Characters.');
       return;
     }
     if (password !== confirm) {
@@ -169,11 +169,11 @@ export default function InviteRedeemPage({ params }: { params: Promise<{ token: 
           </div>
           <div>
             <label style={labelStyle}>Create Password</label>
-            <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At Least 8 Characters" style={inputStyle} autoComplete="new-password" />
+            <input type="password" required minLength={8} maxLength={8} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Exactly 8 Characters" style={inputStyle} autoComplete="new-password" />
           </div>
           <div>
             <label style={labelStyle}>Confirm Password</label>
-            <input type="password" required value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="Re-Enter Password" style={inputStyle} autoComplete="new-password" />
+            <input type="password" required minLength={8} maxLength={8} value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="Re-Enter Password" style={inputStyle} autoComplete="new-password" />
           </div>
         </div>
 
