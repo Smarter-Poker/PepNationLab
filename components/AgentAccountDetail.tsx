@@ -868,9 +868,10 @@ export default function AgentAccountDetail({
                     className="form-input"
                     value={downlineNewPassword}
                     onChange={e => setDownlineNewPassword(e.target.value)}
-                    placeholder="Minimum 8 Characters"
+                    placeholder="Exactly 8 Characters"
                     required
                     minLength={8}
+                    maxLength={8}
                     autoComplete="off"
                     style={{ width: '100%' }}
                   />
