@@ -499,7 +499,7 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
                     {/* Thumbnail */}
                     {b.image_url ? (
                       <div style={{ width: 80, height: 80, borderRadius: 8, flexShrink: 0, overflow: 'hidden', position: 'relative' }}>
-                        <Image src={b.image_url} alt={b.name} fill style={{ objectFit: 'cover' }} />
+                        <Image src={b.image_url} alt={b.name} fill style={{ objectFit: 'contain' }} />
                       </div>
                     ) : (
                       <div style={{ width: 80, height: 80, borderRadius: 8, background: 'rgba(0,196,188,0.1)', border: '1px solid rgba(0,196,188,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#00E5FF', fontWeight: 800, fontSize: '0.8rem', textAlign: 'center', padding: 4 }}>

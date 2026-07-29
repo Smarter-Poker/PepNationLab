@@ -2112,7 +2112,7 @@ export default function AgentStorefrontGrid({
       >
         {bundle.image_url && (
           <div style={{ position: 'relative', width: '100%', height: 150, borderRadius: 'var(--radius-md)', overflow: 'hidden', marginBottom: 'var(--space-4)', background: 'var(--surface-3)' }}>
-            <Image src={bundle.image_url} alt={bundle.name} fill unoptimized sizes="(max-width: 768px) 100vw, 33vw" style={{ objectFit: 'cover' }} />
+            <Image src={bundle.image_url} alt={bundle.name} fill unoptimized sizes="(max-width: 768px) 100vw, 33vw" style={{ objectFit: 'contain' }} />
           </div>
         )}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 'var(--space-3)', textAlign: 'center' }}>
@@ -4739,7 +4739,7 @@ export default function AgentStorefrontGrid({
                     fill
                     unoptimized
                     sizes="560px"
-                    style={{ objectFit: 'cover' }}
+                    style={{ objectFit: 'contain' }}
                   />
                 </div>
               )}

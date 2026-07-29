@@ -342,7 +342,7 @@ export default function BundleManager({ agentId }: Props) {
               {/* Thumbnail */}
               <div style={{ width: 50, height: 50, borderRadius: 8, overflow: 'hidden', flexShrink: 0, background: 'var(--surface-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
                 {b.image_url ? (
-                  <Image src={b.image_url} alt={b.name} width={100} height={100} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <Image src={b.image_url} alt={b.name} width={100} height={100} unoptimized style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                 ) : (
                   <Package size={18} style={{ color: 'var(--grey-500)' }} aria-hidden="true" />
                 )}
