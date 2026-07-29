@@ -41,6 +41,7 @@ export async function GET(_req: NextRequest) {
       .eq('parent_agent_id', callerId)
       .eq('is_sub_agent', false)
       .in('role', ['agent', 'super_agent'])
+      .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
     if (error) {
