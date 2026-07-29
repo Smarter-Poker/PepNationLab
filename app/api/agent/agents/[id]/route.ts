@@ -374,11 +374,18 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       changes.commission_max_pct = null;
     } else if (body.commission_max_pct !== undefined && body.commission_max_pct !== '') {
       const cap = Number(body.commission_max_pct);
-      if (!Number.isFinite(cap) || cap < 0 || cap > MAX_CAP_LIMIT) {
-        return NextResponse.json({ error: 'Max Commission Cap Cannot Exceed 40%.' }, { status: 400 });
+      const maxAllowedCap = target.is_sub_agent === true ? MAX_CAP_LIMIT : MARKUP_MAX;
+      if (!Number.isFinite(cap) || cap < 0 || cap > maxAllowedCap) {
+        return NextResponse.json(
+          { error: target.is_sub_agent === true ? 'Max Commission Cap Cannot Exceed 40%.' : 'Max Markup Cap Cannot Exceed 200%.' },
+          { status: 400 }
+        );
       }
       if (cap < baseForCap) {
-        return NextResponse.json({ error: 'Max Commission Cap Cannot Be Below The Base Rate.' }, { status: 400 });
+        return NextResponse.json(
+          { error: target.is_sub_agent === true ? 'Max Commission Cap Cannot Be Below The Base Rate.' : 'Max Markup Cap Cannot Be Below The Base Rate.' },
+          { status: 400 }
+        );
       }
       updates.commission_max_pct = cap;
       changes.commission_max_pct = cap;
