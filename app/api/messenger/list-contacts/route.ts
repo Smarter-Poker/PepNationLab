@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { requireSession } from '@/lib/messenger/server';
 import { messengerRateLimit, messengerRateLimitResponse } from '@/lib/messengerRateLimit';
+import { SUPPORT_DISPLAY_NAME } from '@/lib/messenger/identity';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -45,7 +46,15 @@ async function loadAdminContacts(
     console.error('[list-contacts] loadAdminContacts failed', error);
     return [];
   }
-  return (data ?? []) as ContactRow[];
+  // Only non-admin viewers reach this helper (the admin branch returns earlier),
+  // so mask the admin identity: the contact picker shows the generic
+  // "PepNation Support" instead of the real admin name / handle / email.
+  return ((data ?? []) as ContactRow[]).map((r) => ({
+    ...r,
+    full_name: SUPPORT_DISPLAY_NAME,
+    username: null,
+    email: null,
+  }));
 }
 
 function freshJson(body: unknown): NextResponse {
