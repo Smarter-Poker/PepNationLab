@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { requireSession } from '@/lib/messenger/server';
 import { messengerRateLimit, messengerRateLimitResponse } from '@/lib/messengerRateLimit';
+import { SUPPORT_DISPLAY_NAME } from '@/lib/messenger/identity';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -30,6 +31,7 @@ interface ProfileRow {
   id: string;
   full_name: string | null;
   username: string | null;
+  role: string | null;
 }
 
 export async function POST(req: NextRequest) {
@@ -105,11 +107,25 @@ export async function POST(req: NextRequest) {
     const otherIds = Array.from(new Set(cpRows.map((r) => r.user_id)));
     let profileMap = new Map<string, ProfileRow>();
     if (otherIds.length > 0) {
+      // Non-admin viewers must never match or see the real admin identity:
+      // mask admin counterparties BEFORE building the map so both the
+      // name-match filter and the rendered label use "PepNation Support".
+      const { data: viewerProfile } = await svc
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle();
+      const viewerIsAdmin = (viewerProfile as { role?: string } | null)?.role === 'admin';
       const { data: profs } = await svc
         .from('profiles')
-        .select('id, full_name, username')
+        .select('id, full_name, username, role')
         .in('id', otherIds);
-      profileMap = new Map(((profs ?? []) as ProfileRow[]).map((p) => [p.id, p]));
+      const maskedProfs = ((profs ?? []) as ProfileRow[]).map((p) =>
+        !viewerIsAdmin && p.role === 'admin'
+          ? { ...p, full_name: SUPPORT_DISPLAY_NAME, username: null }
+          : p,
+      );
+      profileMap = new Map(maskedProfs.map((p) => [p.id, p]));
     }
     counterpartyByConv = new Map(
       cpRows
