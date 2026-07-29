@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { X } from 'lucide-react';
 import { toast } from 'sonner';
+import AccountDeleteButton from '@/components/AccountDeleteButton';
 import Pagination from '@/components/Pagination';
 import ViewAsButton from '@/components/ViewAsButton';
 import { useAvailability, availabilityMessage } from '@/lib/useAvailability';
@@ -796,6 +797,15 @@ function ResearchersAdminPageInner() {
                           style={{ fontSize: '0.75rem', padding: '5px 12px', borderRadius: 6, border: `1px solid ${profile.is_active ? 'rgba(229,62,62,0.3)' : 'rgba(0,196,188,0.3)'}`, background: 'none', color: profile.is_active ? 'var(--red)' : 'var(--teal)', cursor: 'pointer' }}>
                           {profile.is_active ? 'Deactivate' : 'Reactivate'}
                         </button>
+                      )}
+                      {profile.role !== 'admin' && (
+                        <AccountDeleteButton
+                          targetId={profile.id}
+                          targetName={profile.full_name || profile.username || null}
+                          kind="researcher"
+                          compact
+                          onDeleted={() => { fetchProfiles(); }}
+                        />
                       )}
                     </div>
                   </div>
