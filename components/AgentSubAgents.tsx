@@ -785,9 +785,10 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                     style={{ width: '100%', padding: '10px 14px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                     value={resetPwValue}
                     onChange={e => setResetPwValue(e.target.value)}
-                    placeholder="Minimum 8 Characters"
+                    placeholder="Exactly 8 Characters"
                     required
                     minLength={8}
+                    maxLength={8}
                     name="subagent_reset_password_no_autofill"
                     autoComplete="new-password"
                     data-lpignore="true"
