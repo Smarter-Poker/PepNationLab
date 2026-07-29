@@ -310,7 +310,7 @@ function PasswordStep({ onDone }: { onDone: () => void }) {
 
   const submit = async () => {
     setErr(null);
-    if (pw.length < 8) { setErr('Password Must Be At Least 8 Characters.'); return; }
+    if (pw.length !== 8) { setErr('Password Must Be Exactly 8 Characters.'); return; }
     if (pw !== confirm) { setErr('Passwords Do Not Match.'); return; }
     setBusy(true);
     try {
@@ -333,10 +333,10 @@ function PasswordStep({ onDone }: { onDone: () => void }) {
         'Click "Set Password And Continue".',
       ]} />
       <Field label="New Password">
-        <input type="password" style={inputStyle} value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" placeholder="At Least 8 Characters" />
+        <input type="password" style={inputStyle} value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" placeholder="Exactly 8 Characters" minLength={8} maxLength={8} />
       </Field>
       <Field label="Confirm New Password">
-        <input type="password" style={inputStyle} value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" />
+        <input type="password" style={inputStyle} value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" minLength={8} maxLength={8} />
       </Field>
       <ErrorLine msg={err} />
       <PrimaryButton onClick={submit} busy={busy}>Set Password And Continue</PrimaryButton>
