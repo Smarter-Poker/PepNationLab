@@ -126,6 +126,7 @@ export async function ensureOAuthResearcherProfile(
         .select('id, role, is_active, is_sub_agent, parent_agent_id')
         .or(`username.ilike.${refEsc},referral_code.ilike.${refEsc}`)
         .eq('is_active', true)
+        .is('deleted_at', null)
         .limit(1)
         .maybeSingle();
 
@@ -177,7 +178,7 @@ export async function ensureOAuthResearcherProfile(
 
     const { data: profile } = await admin
       .from('profiles')
-      .select('id, role, username, referring_agent_id, referring_sub_agent_id, is_active, email, full_name, first_name, last_name, avatar_url, created_at')
+      .select('id, role, username, referring_agent_id, referring_sub_agent_id, deleted_at, is_active, email, full_name, first_name, last_name, avatar_url, created_at')
       .eq('id', user.id)
       .maybeSingle();
 
@@ -282,7 +283,7 @@ export async function ensureOAuthResearcherProfile(
       return result;
     }
 
-    if (profile.is_active === false) {
+    if (profile.is_active === false || (profile as { deleted_at?: string | null }).deleted_at != null) {
       result.disabled = true;
       result.ok = true;
       return result;
