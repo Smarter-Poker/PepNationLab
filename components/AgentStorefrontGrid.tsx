@@ -2414,7 +2414,7 @@ export default function AgentStorefrontGrid({
                   alt={group.name}
                   fill
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  style={{ objectFit: 'contain', objectPosition: 'center', padding: '8px', transition: 'transform 0.4s ease' }}
+                  style={{ objectFit: 'contain', objectPosition: 'center', transition: 'transform 0.4s ease' }}
                   className="store-image-hover"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
@@ -3900,7 +3900,7 @@ export default function AgentStorefrontGrid({
                   alt={detailProduct.name}
                   fill
                   sizes="(max-width: 768px) 100vw, 50vw"
-                  style={{ objectFit: 'contain', objectPosition: 'center', padding: '16px', transition: 'transform 0.4s ease' }}
+                  style={{ objectFit: 'contain', objectPosition: 'center', transition: 'transform 0.4s ease' }}
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     const fallback = getProductImage(null, detailProduct.category || 'Other', detailProduct.name, false, agentSlug);

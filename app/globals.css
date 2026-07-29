@@ -1298,10 +1298,11 @@ nav button.drawer-close { text-transform: capitalize; }
 }
 
 .store-image-hover {
+  transform: scale(1.6) translateY(-3%);
   transition: transform 0.4s ease;
 }
 .message-card-hover:hover .store-image-hover {
-  transform: scale(1.05);
+  transform: scale(1.75) translateY(-3%);
 }
 
 /*
