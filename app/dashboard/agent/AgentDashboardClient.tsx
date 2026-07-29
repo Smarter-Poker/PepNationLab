@@ -1053,7 +1053,9 @@ export default function AgentDashboardClient({
                           value={crPassword}
                           onChange={e => setCrPassword(e.target.value)}
                           required
-                          placeholder="At Least 8 Characters"
+                          minLength={8}
+                          maxLength={8}
+                          placeholder="Exactly 8 Characters"
                           style={{
                             width: '100%', boxSizing: 'border-box',
                             background: 'linear-gradient(180deg, #0a0c14 0%, #0d1018 100%)',
@@ -1292,9 +1294,10 @@ export default function AgentDashboardClient({
                   className="form-input"
                   value={resetPwValue}
                   onChange={e => setResetPwValue(e.target.value)}
-                  placeholder="Minimum 8 Characters"
+                  placeholder="Exactly 8 Characters"
                   required
                   minLength={8}
+                  maxLength={8}
                   autoComplete="off"
                   style={{ width: '100%' }}
                 />
