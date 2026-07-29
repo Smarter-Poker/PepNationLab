@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { freshDefaultLadder } from '@/lib/gamification';
 import AgentFreezeToggle from '@/components/AgentFreezeToggle';
+import AccountDeleteButton from '@/components/AccountDeleteButton';
 import AdminTierOverrideControl from '@/components/AdminTierOverrideControl';
 import ViewAsButton from '@/components/ViewAsButton';
 import { createClient } from '@/lib/supabase/client';
@@ -690,6 +691,23 @@ export default function AgentAccountDetail({
                         initiallyFrozen={detail.agent.is_transactions_frozen === true}
                         initialReason={detail.agent.frozen_reason || null}
                         onChanged={() => { load(); onChanged(); }}
+                      />
+                    </div>
+                    {/* Account deletion 2026-07-29. Reversible soft delete: releases the
+                        username / email / referral code for re-use and blocks login, while
+                        keeping all order and payment history. */}
+                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 'var(--space-4)' }}>
+                      <div style={{ marginBottom: 10 }}>
+                        <div style={{ fontWeight: 700, color: 'var(--white)' }}>Delete Agent</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)' }}>
+                          Removes This Account From All Lists And Blocks Login Immediately. Their Username, Email And Referral Code Are Released For Re-Use. Order And Payment History Is Kept. Accounts With An Active Downline Must Be Cleared First.
+                        </div>
+                      </div>
+                      <AccountDeleteButton
+                        targetId={agentId}
+                        targetName={detail.agent.full_name || agentName}
+                        kind="agent"
+                        onDeleted={() => { onChanged(); onClose(); }}
                       />
                     </div>
                   </div>
