@@ -9,6 +9,7 @@ import { sanitizeMessageText } from '@/lib/messenger/sanitize';
 import { hasAdminMention, recordAdminMention } from '@/lib/messenger/admin-mentions';
 import { enqueuePush } from '@/lib/push-enqueue';
 import { notifyNewMessage, notifySupportMessage } from '@/lib/notify';
+import { SUPPORT_DISPLAY_NAME } from '@/lib/messenger/identity';
 import { sendBroadcast } from '@/lib/messenger/broadcast';
 import { signMessengerMediaUrl } from '@/lib/messenger/signMedia';
 
@@ -203,6 +204,7 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
     const senderName = senderProfile?.full_name || 'Someone';
     const senderRole = (senderProfile as { role?: string } | null)?.role ?? null;
+    const senderIsAdmin = senderRole === 'admin';
 
     // Get all OTHER participants in this conversation (fetched after insert so unread_count is updated by trigger)
     const { data: participants } = await svc
@@ -210,6 +212,20 @@ export async function POST(req: NextRequest) {
       .select('*')
       .eq('conversation_id', parsed.data.conversationId)
       .neq('user_id', user.id);
+
+    // Recipient roles: an admin sender is masked as "PepNation Support" in the
+    // bell + push title for non-admin recipients (display only). Only fetched
+    // when the sender is an admin, so normal sends add no extra query.
+    const recipientRoleById = new Map<string, string | null>();
+    if (senderIsAdmin && participants && participants.length > 0) {
+      const { data: recipRoles } = await svc
+        .from('profiles')
+        .select('id, role')
+        .in('id', participants.map((p: any) => p.user_id));
+      for (const rp of (recipRoles ?? []) as Array<{ id: string; role: string | null }>) {
+        recipientRoleById.set(rp.id, rp.role ?? null);
+      }
+    }
 
     // Customer Support v2: if this is a support thread AND the sender is not
     // admin, fire a dedicated support_message notification to the admin
@@ -273,8 +289,15 @@ export async function POST(req: NextRequest) {
       await Promise.allSettled(
         participants.map(async (p: any) => {
           try {
+            // Mask an admin sender as "PepNation Support" in the bell + push
+            // title for every non-admin recipient (display only; sender_id and
+            // the stored message are unchanged).
+            const displaySenderName =
+              senderIsAdmin && recipientRoleById.get(p.user_id) !== 'admin'
+                ? SUPPORT_DISPLAY_NAME
+                : senderName;
             // In-app notification (shows in bell immediately via Realtime)
-            await notifyNewMessage(svc, p.user_id, senderName, rawBody, parsed.data.conversationId);
+            await notifyNewMessage(svc, p.user_id, displaySenderName, rawBody, parsed.data.conversationId);
 
             // Customer Support v2: extra dedicated support_message bell entry
             // for admin recipients on is_support threads. Wrapped tightly so a
@@ -298,7 +321,7 @@ export async function POST(req: NextRequest) {
             // Web push (background, requires subscription + permission)
             await enqueuePush(svc, {
               userId: p.user_id,
-              title: senderName,
+              title: displaySenderName,
               body,
               url,
               event: 'message',
