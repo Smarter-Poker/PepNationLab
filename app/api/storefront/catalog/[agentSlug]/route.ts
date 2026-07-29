@@ -107,6 +107,7 @@ async function buildCatalogPayload(agentSlug: string): Promise<CatalogResult> {
           description,
           image_url,
           category,
+          inventory_count,
           backorder_days,
           unit_size,
           unit_measure,

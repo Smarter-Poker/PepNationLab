@@ -2,7 +2,8 @@ import React from 'react';
 import Image from 'next/image';
 
 export type StockState =
-  | { kind: 'in_stock' }
+  | { kind: 'in_stock_local' }
+  | { kind: 'in_stock_shipping' }
   | { kind: 'low_stock'; count: number }
   | { kind: 'backorder'; days: number }
   | { kind: 'out_of_stock' };
@@ -13,9 +14,9 @@ export function computeStockState(
   threshold: number,
   backorderDays: number
 ): StockState {
-  if (agentCount > threshold) return { kind: 'in_stock' };
+  if (agentCount > threshold) return { kind: 'in_stock_local' };
   if (agentCount > 0) return { kind: 'low_stock', count: agentCount };
-  if (masterInventory > 0) return { kind: 'in_stock' };
+  if (masterInventory > 0) return { kind: 'in_stock_shipping' };
   if (backorderDays > 0) return { kind: 'backorder', days: backorderDays };
   return { kind: 'out_of_stock' };
 }
@@ -26,7 +27,20 @@ export function StockBadge({ state }: { state: StockState }) {
   let border = 'rgba(192,184,168,0.40)';
   let label = 'In Stock';
   let badgeSrc = '/images/badges/badge_in_stock.png';
-  if (state.kind === 'low_stock') {
+  
+  if (state.kind === 'in_stock_local') {
+    bg = 'rgba(72,187,120,0.15)';
+    fg = '#48BB78';
+    border = 'rgba(72,187,120,0.40)';
+    label = 'In Stock (Same-Day Pickup)';
+    badgeSrc = '/images/badges/badge_in_stock.png';
+  } else if (state.kind === 'in_stock_shipping') {
+    bg = 'rgba(102,126,234,0.15)';
+    fg = '#667EEA';
+    border = 'rgba(102,126,234,0.40)';
+    label = 'In Stock (Needs Shipping)';
+    badgeSrc = '/images/badges/badge_in_stock.png';
+  } else if (state.kind === 'low_stock') {
     bg = 'rgba(246,173,85,0.15)';
     fg = '#00E5FF';
     border = 'rgba(246,173,85,0.40)';

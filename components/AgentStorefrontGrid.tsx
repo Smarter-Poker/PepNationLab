@@ -63,6 +63,7 @@ const StorefrontCompareDrawer = dynamic(() => import('./storefront/StorefrontCom
 export interface BundleConfig {
   id: string;
   name: string;
+  tagline?: string;
   description?: string;
   image_url?: string | null;
   product_ids: string[];
@@ -2431,7 +2432,7 @@ export default function AgentStorefrontGrid({
                   }}
                 />
 
-                {stockState.kind !== 'in_stock' && (
+                {true && (
                   <div
                     onClick={e => e.stopPropagation()}
                     style={{ position: 'absolute', bottom: 12, left: 12, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}
@@ -4735,7 +4736,7 @@ export default function AgentStorefrontGrid({
               {selectedBundle.image_url && agentSlug === 'savagebrands' ? (
                 <div 
                   style={{ width: '100%', background: 'var(--surface-3)', cursor: 'pointer', position: 'relative' }}
-                  onClick={() => setFullScreenImage(selectedBundle.image_url)}
+                  onClick={() => setFullScreenImage(selectedBundle.image_url || null)}
                 >
                   <Image
                     src={selectedBundle.image_url}
@@ -4771,7 +4772,7 @@ export default function AgentStorefrontGrid({
                     background: 'var(--surface-3)',
                     cursor: 'pointer'
                   }}
-                  onClick={() => setFullScreenImage(selectedBundle.image_url)}
+                  onClick={() => setFullScreenImage(selectedBundle.image_url || null)}
                 >
                   <Image
                     src={selectedBundle.image_url}
