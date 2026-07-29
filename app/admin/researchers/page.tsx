@@ -802,7 +802,7 @@ function ResearchersAdminPageInner() {
                         <AccountDeleteButton
                           targetId={profile.id}
                           targetName={profile.full_name || profile.username || null}
-                          kind="researcher"
+                          kind={isAgent ? 'agent' : 'researcher'}
                           compact
                           onDeleted={() => { fetchProfiles(); }}
                         />
