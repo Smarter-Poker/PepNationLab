@@ -82,6 +82,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
         'id, full_name, username, email, phone, role, account_type, credit_limit, max_auto_approve_limit, prepaid_balance, commission_pct, commission_max_pct, velocity_cap, commission_active_since, is_active, is_sub_agent, is_super_agent, parent_agent_id, created_at, last_sign_in_at, first_sign_in_at, sign_in_count, agent_profiles(slug, display_name, is_active)',
       )
       .eq('id', id)
+      .is('deleted_at', null)
       .maybeSingle();
 
     if (error || !agent) {
@@ -125,6 +126,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       .select('id, full_name, username, email, created_at, is_active, commission_pct')
       .eq('parent_agent_id', id)
       .eq('is_sub_agent', true)
+      .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
     // Full downline AGENTS of this agent (role agent/super_agent,
@@ -138,6 +140,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       .eq('parent_agent_id', id)
       .eq('is_sub_agent', false)
       .in('role', ['agent', 'super_agent'])
+      .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
     // Researchers of this agent
@@ -146,6 +149,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       .select('id, full_name, username, email, created_at, is_active')
       .eq('referring_agent_id', id)
       .eq('role', 'researcher')
+      .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
     // Custom Gamification Ladder
@@ -264,12 +268,15 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 
     const { data: target } = await supabase
       .from('profiles')
-      .select('id, parent_agent_id, account_type, credit_limit, is_active, full_name, commission_pct, commission_max_pct, is_sub_agent')
+      .select('id, deleted_at, parent_agent_id, account_type, credit_limit, is_active, full_name, commission_pct, commission_max_pct, is_sub_agent')
       .eq('id', id)
       .maybeSingle();
 
     if (!target) {
       return NextResponse.json({ error: 'Agent Account Not Found.' }, { status: 404 });
+    }
+    if ((target as { deleted_at?: string | null }).deleted_at) {
+      return NextResponse.json({ error: 'This Account Has Been Deleted.' }, { status: 404 });
     }
     if (!gate.isAdmin && target.parent_agent_id !== gate.callerId) {
       return NextResponse.json({ error: 'This Agent Is Not In Your Network.' }, { status: 403 });
