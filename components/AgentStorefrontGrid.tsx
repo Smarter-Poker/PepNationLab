@@ -335,6 +335,7 @@ export default function AgentStorefrontGrid({
   // wishlist), the API returns 401. Instead of silently failing, we surface the
   // sign-in / create-account modal so that guest interest converts to a signup.
   const [guestModalFeature, setGuestModalFeature] = useState<string | null>(null);
+  const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
 
   // These three state declarations must live before any callbacks that reference
   // their setters (closeGrid calls setFilterArea, setFilterCategory, setSearchQuery).
@@ -4732,7 +4733,16 @@ export default function AgentStorefrontGrid({
 
               {/* Hero image */}
               {selectedBundle.image_url && (
-                <div style={{ position: 'relative', width: '100%', height: 220, background: 'var(--surface-3)' }}>
+                <div 
+                  style={{ 
+                    position: 'relative', 
+                    width: '100%', 
+                    height: agentSlug === 'savagebrands' ? 360 : 220, 
+                    background: 'var(--surface-3)',
+                    cursor: 'pointer'
+                  }}
+                  onClick={() => setFullScreenImage(selectedBundle.image_url)}
+                >
                   <Image
                     src={selectedBundle.image_url}
                     alt={selectedBundle.name}
@@ -4741,6 +4751,21 @@ export default function AgentStorefrontGrid({
                     sizes="560px"
                     style={{ objectFit: 'contain' }}
                   />
+                  <div style={{
+                    position: 'absolute',
+                    bottom: 12, right: 12,
+                    background: 'rgba(0,0,0,0.6)',
+                    padding: '4px 8px',
+                    borderRadius: 4,
+                    fontSize: '0.75rem',
+                    color: 'var(--white)',
+                    pointerEvents: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6
+                  }}>
+                    <Search size={12} /> Click to enlarge
+                  </div>
                 </div>
               )}
 
@@ -4868,6 +4893,51 @@ export default function AgentStorefrontGrid({
           document.body
         );
       })()}
+
+      {/* Full Screen Image Viewer Modal */}
+      {fullScreenImage && createPortal(
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            zIndex: 999999,
+            background: 'rgba(0,0,0,0.9)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'zoom-out'
+          }}
+          onClick={() => setFullScreenImage(null)}
+        >
+          <div style={{ position: 'relative', width: '90%', height: '90%', maxWidth: 1200 }}>
+            <Image
+              src={fullScreenImage}
+              alt="Full screen view"
+              fill
+              unoptimized
+              style={{ objectFit: 'contain' }}
+            />
+          </div>
+          <button
+            onClick={(e) => { e.stopPropagation(); setFullScreenImage(null); }}
+            style={{
+              position: 'absolute',
+              top: 24, right: 24,
+              background: 'rgba(0,0,0,0.5)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              color: 'var(--white)',
+              width: 44, height: 44,
+              borderRadius: '50%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer'
+            }}
+            aria-label="Close full screen image"
+          >
+            <X size={24} />
+          </button>
+        </div>,
+        document.body
+      )}
     </div>
 
   );
