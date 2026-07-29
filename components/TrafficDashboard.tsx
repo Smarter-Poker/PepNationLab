@@ -18,7 +18,7 @@ interface TrafficData {
   top_storefronts: Array<{ agent_id: string; name: string; pageviews: number }>;
 }
 
-const WINDOWS = [7, 14, 30, 90];
+const WINDOWS = [1, 3, 7, 14, 30, 90];
 
 function nf(n: number) { return (Number(n) || 0).toLocaleString('en-US'); }
 function money(cents: number) { return `$${((Number(cents) || 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`; }
@@ -97,7 +97,7 @@ export default function TrafficDashboard({ endpoint, heading, subheading }: { en
           <h1 className="animated-gradient-text" style={{ color: 'var(--white)', fontSize: '1.5rem', marginBottom: 4 }}>{heading}</h1>
           {subheading && <p style={{ color: 'var(--silver)', fontSize: '0.9rem', margin: 0 }}>{subheading}</p>}
         </div>
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           {WINDOWS.map(w => (
             <button key={w} type="button" onClick={() => setDays(w)}
               style={{
