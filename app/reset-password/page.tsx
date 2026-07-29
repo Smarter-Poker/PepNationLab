@@ -34,8 +34,8 @@ export default function ResetPasswordPage() {
       setError('Passwords Do Not Match.');
       return;
     }
-    if (password.length < 8) {
-      setError('Password Must Be At Least 8 Characters.');
+    if (password.length !== 8) {
+      setError('Password Must Be Exactly 8 Characters.');
       return;
     }
 
@@ -155,10 +155,12 @@ export default function ResetPasswordPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="form-input"
-                    placeholder="At Least 8 Characters"
+                    placeholder="Exactly 8 Characters"
                     style={{ width: '100%' }}
                     autoFocus
                     autoComplete="new-password"
+                    minLength={8}
+                    maxLength={8}
                   />
                 </div>
 
@@ -176,6 +178,8 @@ export default function ResetPasswordPage() {
                     placeholder="Must Match"
                     style={{ width: '100%' }}
                     autoComplete="new-password"
+                    minLength={8}
+                    maxLength={8}
                   />
                 </div>
 
