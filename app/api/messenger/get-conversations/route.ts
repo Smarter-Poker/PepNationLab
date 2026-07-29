@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { requireSession, canInvite } from '@/lib/messenger/server';
 import { messengerRateLimit, messengerRateLimitResponse } from '@/lib/messengerRateLimit';
+import { maskAdminCounterparty } from '@/lib/messenger/identity';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -340,6 +341,11 @@ export async function POST(req: NextRequest) {
   // Final canonical ordering for every viewer type (hierarchical, flat, and
   // researcher-appended stubs): most recent conversation at the top.
   conversations.sort(sortByRecency);
+
+  // Non-admin viewers must see any admin counterparty (e.g. the standing admin
+  // support DM) as the generic "PepNation Support" identity (display only).
+  const viewerIsAdmin = ((me as { role?: string } | null)?.role ?? null) === 'admin';
+  conversations = conversations.map((c) => maskAdminCounterparty(c, viewerIsAdmin));
 
   const res = NextResponse.json({ conversations });
   res.headers.set('Cache-Control', 'private, no-store, max-age=0');
