@@ -89,11 +89,8 @@ export async function POST(req: NextRequest) {
   if (!newPassword || typeof newPassword !== 'string') {
     return NextResponse.json({ error: 'New Password Is Required' }, { status: 400 });
   }
-  if (newPassword.length < 8) {
-    return NextResponse.json({ error: 'Password Must Be At Least 8 Characters' }, { status: 400 });
-  }
-  if (newPassword.length > 128) {
-    return NextResponse.json({ error: 'Password Must Be 128 Characters Or Fewer' }, { status: 400 });
+  if (newPassword.length !== 8) {
+    return NextResponse.json({ error: 'Password Must Be Exactly 8 Characters.' }, { status: 400 });
   }
 
   // Update password via the user client. This generates a new session and triggers setAll()
