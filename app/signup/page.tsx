@@ -520,9 +520,9 @@ function SignupForm() {
             <div className="form-group">
               <label className="form-label" htmlFor="password">Password</label>
               <input
-                id="password" type="password" className="form-input" placeholder="At Least 8 Characters"
+                id="password" type="password" className="form-input" placeholder="Exactly 8 Characters"
                 value={password} onChange={e => setPassword(e.target.value)}
-                required minLength={8} maxLength={128} autoComplete="new-password"
+                required minLength={8} maxLength={8} autoComplete="new-password"
               />
             </div>
 
@@ -615,7 +615,7 @@ function SignupForm() {
                 type="submit"
                 className="btn btn-primary hover-lift"
                 style={{ width: '100%', maxWidth: 300, display: 'flex', justifyContent: 'center', textAlign: 'center' }}
-                disabled={loading || !allAcked || !firstName || !lastName || !username || !email || password.length < 8 || usernameBlocked || usernameCheck.status === 'checking'}
+                disabled={loading || !allAcked || !firstName || !lastName || !username || !email || password.length !== 8 || usernameBlocked || usernameCheck.status === 'checking'}
               >
                 {loading
                   ? 'Creating Account...'
