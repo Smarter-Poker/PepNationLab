@@ -320,12 +320,13 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                     name="new_agent_password_no_autofill"
                     required
                     minLength={8}
+                    maxLength={8}
                     autoComplete="new-password"
                     data-lpignore="true"
                     style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                     value={caPassword}
                     onChange={e => setCaPassword(e.target.value)}
-                    placeholder="Minimum 8 characters"
+                    placeholder="Exactly 8 characters"
                   />
                 </div>
 
@@ -481,9 +482,10 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                     style={{ width: '100%', padding: '10px 14px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                     value={resetPwValue}
                     onChange={e => setResetPwValue(e.target.value)}
-                    placeholder="Minimum 8 Characters"
+                    placeholder="Exactly 8 Characters"
                     required
                     minLength={8}
+                    maxLength={8}
                     autoComplete="new-password"
                   />
                 </div>
