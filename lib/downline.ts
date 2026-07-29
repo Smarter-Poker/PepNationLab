@@ -57,6 +57,7 @@ export async function buildDownlineTree(
     .from('profiles')
     .select(AGENT_COLUMNS)
     .eq('id', rootId)
+    .is('deleted_at', null)
     .in('role', ['agent', 'super_agent'])
     .maybeSingle();
   if (!rootRow) return null;
@@ -73,6 +74,7 @@ export async function buildDownlineTree(
       .from('profiles')
       .select(AGENT_COLUMNS)
       .in('parent_agent_id', frontier)
+      .is('deleted_at', null)
       .in('role', ['agent', 'super_agent']);
     const next: string[] = [];
     for (const k of kids ?? []) {
@@ -102,6 +104,7 @@ export async function buildDownlineTree(
     .from('profiles')
     .select('id, username, full_name, email, is_active, created_at, referring_agent_id')
     .eq('role', 'researcher')
+    .is('deleted_at', null)
     .in('referring_agent_id', allIds)
     .order('created_at', { ascending: false });
   const researcherMap = new Map<string, DownlineResearcher[]>();
