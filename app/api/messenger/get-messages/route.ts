@@ -5,6 +5,7 @@ import { requireSession, getParticipant } from '@/lib/messenger/server';
 import { messengerRateLimit, messengerRateLimitResponse } from '@/lib/messengerRateLimit';
 import { GetMessagesSchema } from '@/lib/messenger/schemas';
 import { signMessengerMediaUrls } from '@/lib/messenger/signMedia';
+import { maskAdminIdentity } from '@/lib/messenger/identity';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -52,6 +53,15 @@ export async function POST(req: NextRequest) {
 
   const limit = parsed.data.limit ?? 50;
   const svc = await createServiceClient();
+
+  // Viewer role drives admin-identity masking: non-admin viewers must see admin
+  // senders as the generic "PepNation Support" identity (display only).
+  const { data: viewerProfile } = await svc
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .maybeSingle();
+  const viewerIsAdmin = (viewerProfile as { role?: string } | null)?.role === 'admin';
 
   let query = svc
     .from('messenger_messages')
@@ -111,19 +121,31 @@ export async function POST(req: NextRequest) {
   // Audit9: drop counterparty role from the response so non-admin viewers
   // don't learn the role of other group/announcement participants.
   const senderIds = Array.from(new Set(visibleMessages.map((m) => m.sender_id)));
-  let senders: Array<{ id: string; full_name: string | null; username: string | null; avatar_url: string | null }> = [];
+  let senders: Array<{ id: string; full_name: string | null; username: string | null; avatar_url: string | null; role: string | null }> = [];
   if (senderIds.length > 0) {
     const { data: p } = await svc
       .from('profiles')
-      .select('id, full_name, username, avatar_url')
+      .select('id, full_name, username, avatar_url, role')
       .in('id', senderIds);
     senders = p ?? [];
   }
   const senderMap = new Map(senders.map((s) => [s.id, s]));
-  const messagesWithSenders = visibleMessages.map((m) => ({
-    ...m,
-    sender: senderMap.get(m.sender_id) ?? null,
-  }));
+  // Mask admin senders as "PepNation Support" for non-admin viewers. `role` is
+  // used only for the mask decision and is never emitted (preserving the audit9
+  // contract that non-admins don't learn other participants' roles).
+  const messagesWithSenders = visibleMessages.map((m) => {
+    const raw = senderMap.get(m.sender_id) ?? null;
+    const masked = maskAdminIdentity(raw, viewerIsAdmin);
+    const sender = masked
+      ? {
+          id: masked.id,
+          full_name: masked.full_name,
+          username: !viewerIsAdmin && raw?.role === 'admin' ? null : masked.username,
+          avatar_url: masked.avatar_url,
+        }
+      : null;
+    return { ...m, sender };
+  });
 
   let reactions: Array<{ message_id: string; user_id: string; emoji: string | null; gif_url: string | null; reaction_type: string }> = [];
   if (visibleIds.length > 0) {
