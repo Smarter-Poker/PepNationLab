@@ -2432,17 +2432,6 @@ export default function AgentStorefrontGrid({
                   }}
                 />
 
-                {true && (
-                  <div
-                    onClick={e => e.stopPropagation()}
-                    style={{ position: 'absolute', bottom: 12, left: 12, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}
-                  >
-                    <StockBadge state={stockState} />
-                    {stockState.kind === 'out_of_stock' && (
-                      <NotifyMeButton productId={activeVariant.product_id} agentId={agentId} compact />
-                    )}
-                  </div>
-                )}
               </div>
 
               <div style={{ padding: 'var(--space-5)', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
@@ -2561,6 +2550,15 @@ export default function AgentStorefrontGrid({
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'center' }}>
                           <span style={{ fontSize: '0.72rem', color: 'var(--silver-light)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 'var(--radius-full)', padding: '3px 14px', fontWeight: 600, whiteSpace: 'nowrap' }}>{displaySizeText}</span>
+                        </div>
+                        <div
+                          onClick={e => e.stopPropagation()}
+                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, marginTop: 4 }}
+                        >
+                          <StockBadge state={stockState} />
+                          {stockState.kind === 'out_of_stock' && (
+                            <NotifyMeButton productId={activeVariant.product_id} agentId={agentId} compact />
+                          )}
                         </div>
                       </div>
                     );
