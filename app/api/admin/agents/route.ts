@@ -36,6 +36,7 @@ export async function GET() {
         'agent_profiles(slug, is_active)'
       )
       .in('role', ['agent', 'super_agent'])
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(2000);
 
