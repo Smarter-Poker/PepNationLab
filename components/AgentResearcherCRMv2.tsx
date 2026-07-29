@@ -33,6 +33,7 @@ import {
   KanbanView, ChartsView, AcquisitionView, useInsights,
   type KanbanResearcher,
 } from './researcher-crm/views';
+import AccountDeleteButton from '@/components/AccountDeleteButton';
 
 /* -----------------------------------------------------------------------
    Types
@@ -470,7 +471,7 @@ function NoteEditor({ researcherId, initialNote, onSave }: { researcherId: strin
    Researcher row (table + expanded detail)
 ----------------------------------------------------------------------- */
 
-function ResearcherRow({ r, expanded, onExpand, selected, onToggleSelect, onMessage, onAddTag, onRemoveTag, onAddReminder, onTogglePin, isSuperAgent, onResetPassword, onPromote, onToggleAutoApprove, onNoteUpdate }: {
+function ResearcherRow({ r, expanded, onExpand, selected, onToggleSelect, onMessage, onAddTag, onRemoveTag, onAddReminder, onTogglePin, isSuperAgent, onResetPassword, onPromote, onToggleAutoApprove, onNoteUpdate, onDeleted }: {
   r: Researcher; expanded: boolean; onExpand: () => void;
   selected?: boolean; onToggleSelect?: () => void;
   onMessage: (r: Researcher) => void;
@@ -483,6 +484,7 @@ function ResearcherRow({ r, expanded, onExpand, selected, onToggleSelect, onMess
   onPromote?: (r: Researcher) => void;
   onToggleAutoApprove?: (id: string, current: boolean) => void;
   onNoteUpdate: (id: string, note: string) => void;
+  onDeleted?: () => void;
 }) {
   const [addingTag, setAddingTag] = useState(false);
   const s = STATUS_STYLES[r.status] ?? STATUS_STYLES.lead;
@@ -701,6 +703,15 @@ function ResearcherRow({ r, expanded, onExpand, selected, onToggleSelect, onMess
               onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,196,188,0.10)'; }}>
               <MessageSquare size={12} /> Message
             </button>
+
+            {/* Delete researcher */}
+            <AccountDeleteButton
+              targetId={r.id}
+              targetName={r.full_name || r.username || null}
+              kind="researcher"
+              compact
+              onDeleted={() => { onDeleted?.(); }}
+            />
           </div>
         </div>
       )}
@@ -1208,6 +1219,7 @@ export default function AgentResearcherCRMv2({
                     isSuperAgent={isSuperAgent} onResetPassword={onResetPassword}
                     onPromote={handlePromote} onToggleAutoApprove={handleAutoApprove}
                     onNoteUpdate={updateNote}
+                    onDeleted={() => { setExpandedId(null); void refresh(); }}
                   />
                 ))
               )}
