@@ -6,8 +6,8 @@
  */
 import { z } from 'zod';
 
-/** Platform password policy: 8-128 chars, must be a real string. */
-export const PasswordSchema = z.string().min(8, 'Password Must Be At Least 8 Characters.').max(128, 'Password Must Be 128 Characters Or Fewer.');
+/** Platform password policy: exactly 8 chars, must be a real string. */
+export const PasswordSchema = z.string().length(8, 'Password Must Be Exactly 8 Characters.');
 
 /** POST /api/storefront/register request body (the only public signup path). */
 export const StorefrontRegisterSchema = z.object({
