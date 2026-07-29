@@ -235,7 +235,7 @@ export default async function proxy(request: NextRequest) {
 
   let { data: profile, error: profileErr } = await supabase
     .from('profiles')
-    .select('is_active, role, must_change_password, disclaimer_v1_accepted, is_admin_account')
+    .select('is_active, deleted_at, role, must_change_password, disclaimer_v1_accepted, is_admin_account')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -243,7 +243,7 @@ export default async function proxy(request: NextRequest) {
     // One retry for transient blips before deciding anything.
     const retry = await supabase
       .from('profiles')
-      .select('is_active, role, must_change_password, disclaimer_v1_accepted, is_admin_account')
+      .select('is_active, deleted_at, role, must_change_password, disclaimer_v1_accepted, is_admin_account')
       .eq('id', user.id)
       .maybeSingle();
     profile = retry.data;
@@ -271,7 +271,7 @@ export default async function proxy(request: NextRequest) {
     );
   }
 
-  if (profile && profile.is_active === false) {
+  if (profile && (profile.is_active === false || (profile as { deleted_at?: string | null }).deleted_at != null)) {
     await supabase.auth.signOut();
     if (pathname.startsWith('/api/')) {
       return NextResponse.json({ error: 'Account disabled' }, { status: 401 });
