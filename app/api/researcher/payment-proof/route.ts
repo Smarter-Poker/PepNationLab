@@ -165,6 +165,9 @@ export async function POST(req: NextRequest) {
   const arrayBuffer = await file.arrayBuffer();
   const bytes = new Uint8Array(arrayBuffer);
 
+  // Fraud guard: fingerprint the file so re-used receipts are detectable.
+  const contentHash = crypto.createHash('sha256').update(bytes).digest('hex');
+
   const { error: uploadErr } = await service.storage
     .from('payment-proofs')
     .upload(key, bytes, {
@@ -184,6 +187,7 @@ export async function POST(req: NextRequest) {
       storage_key: key,
       mime_type: file.type,
       size_bytes: file.size,
+      content_hash: contentHash,
     })
     .select('id, order_id, uploader_id, storage_key, mime_type, size_bytes, uploaded_at, verified_at, verified_by')
     .maybeSingle();
@@ -197,7 +201,25 @@ export async function POST(req: NextRequest) {
     .from('payment-proofs')
     .createSignedUrl(key, 600);
 
-  // ── Messenger integration ────────────────────────────────
+  // Fraud guard: has this EXACT image already been submitted on a different
+  // order? Uploads still succeed (the reviewer decides), but the agent and
+  // admins get an explicit duplicate warning so a recycled screenshot can't
+  // slip through as fresh proof of a new payment.
+  let duplicateOfOrder: string | null = null;
+  try {
+    const { data: dup } = await service
+      .from('payment_proofs')
+      .select('order_id')
+      .eq('content_hash', contentHash)
+      .neq('order_id', orderId)
+      .limit(1)
+      .maybeSingle();
+    duplicateOfOrder = dup?.order_id ?? null;
+  } catch {
+    duplicateOfOrder = null;
+  }
+
+  // ── Messenger integration ──────────────
   // Post a message in the researcher↔agent conversation so the agent is
   // immediately alerted and can view the proof without leaving the app.
   // IMPORTANT: We must 'await' this so Vercel does not kill the process!
@@ -306,6 +328,32 @@ export async function POST(req: NextRequest) {
     }
   } catch (err) {
     console.error('[payment-proof] messenger integration error:', err);
+  }
+
+  // Duplicate-receipt warning fanout (kept OUTSIDE the messenger block so a
+  // chat failure can never silence a fraud signal).
+  if (duplicateOfOrder) {
+    try {
+      const shortId = orderId.slice(0, 8).toUpperCase();
+      const dupShort = duplicateOfOrder.slice(0, 8).toUpperCase();
+      if (order.agent_id) {
+        await notify(service, {
+          userId: order.agent_id,
+          type: 'order_attention',
+          title: `Duplicate Payment Proof Warning: Order #${shortId}`,
+          body: `The Receipt Submitted For Order #${shortId} Is Identical To One Already Submitted For Order #${dupShort}. Verify The Payment Carefully Before Marking Paid.`,
+          url: '/dashboard/agent?tab=Orders',
+        });
+      }
+      await notifyAdmins(service, {
+        type: 'order_attention',
+        title: `Duplicate Payment Proof: Order #${shortId}`,
+        body: `A Payment Proof Identical To Order #${dupShort}'s Receipt Was Submitted For Order #${shortId}.`,
+        url: `/admin/orders?highlight=${orderId}`,
+      });
+    } catch (err) {
+      console.error('[payment-proof] duplicate warning error:', err);
+    }
   }
 
   return NextResponse.json({ data: { ...row, signed_url: signed?.signedUrl ?? null } });
