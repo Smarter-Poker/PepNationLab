@@ -981,7 +981,7 @@ export default function AdminAgents() {
               </p>
               <form onSubmit={async (e) => {
                 e.preventDefault();
-                if (newPassword.length < 8) { toast.error('Password Must Be At Least 8 Characters'); return; }
+                if (newPassword.length !== 8) { toast.error('Password Must Be Exactly 8 Characters.'); return; }
                 if (!passwordAgent || !newPassword) return;
                 setPasswordSaving(true);
                 try {
@@ -1012,6 +1012,8 @@ export default function AdminAgents() {
                     placeholder="Enter New Password"
                     autoComplete="off"
                     autoFocus
+                    minLength={8}
+                    maxLength={8}
                     style={{ width: '100%' }}
                   />
                   <div style={{ marginTop: 6, fontSize: '0.75rem', color: newPassword.length === 0 ? 'var(--grey-500)' : newPassword.length < 8 ? '#F87171' : '#2DD4BF', fontWeight: 600 }}>
@@ -1200,9 +1202,10 @@ export default function AdminAgents() {
                   className="form-input"
                   value={createForm.password}
                   onChange={e => handleCreateFormChange('password', e.target.value)}
-                  placeholder="Minimum 8 Characters"
+                  placeholder="Exactly 8 Characters"
                   required
                   minLength={8}
+                  maxLength={8}
                   style={{ width: '100%' }}
                 />
               </div>
