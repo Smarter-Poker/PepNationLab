@@ -908,7 +908,7 @@ function ResearchersAdminPageInner() {
                 <label className="form-label">Temporary Password</label>
                 <input type="password" className="form-input" placeholder="Set Initial Password" value={newPassword}
                   name="new_researcher_password_no_autofill" autoComplete="new-password" data-lpignore="true"
-                  onChange={e => setNewPassword(e.target.value)} required minLength={6} />
+                  onChange={e => setNewPassword(e.target.value)} required minLength={8} maxLength={8} />
               </div>
 
               {createRole === 'researcher' && (
