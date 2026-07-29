@@ -2415,7 +2415,7 @@ export default function AgentStorefrontGrid({
                   fill
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   style={{ objectFit: 'contain', objectPosition: 'center', transition: 'transform 0.4s ease' }}
-                  className="store-image-hover"
+                  className={agentSlug === 'savagebrands' ? 'store-image-hover-zoomed' : 'store-image-hover'}
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     const fallback = getProductImage(null, group.category || 'Other', group.name, false, agentSlug);
