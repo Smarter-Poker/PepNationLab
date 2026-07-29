@@ -125,7 +125,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing Required Fields' }, { status: 400 });
     }
     if (username.length > 40) return NextResponse.json({ error: 'Username Too Long (Max 40 Characters)' }, { status: 400 });
-    if (password.length > 128) return NextResponse.json({ error: 'Password Too Long (Max 128 Characters)' }, { status: 400 });
     if (effFullName.length > 160) return NextResponse.json({ error: 'Full Name Too Long (Max 160 Characters)' }, { status: 400 });
     if (slug && slug.length > 80) return NextResponse.json({ error: 'Slug Too Long (Max 80 Characters)' }, { status: 400 });
     if (display_name && display_name.length > 120) return NextResponse.json({ error: 'Display Name Too Long (Max 120 Characters)' }, { status: 400 });
@@ -138,8 +137,8 @@ export async function POST(req: NextRequest) {
     const resolvedParentAgentId = isResearcher
       ? (parent_agent_id === '__ADMIN__' ? gate.userId : parent_agent_id)
       : parent_agent_id;
-    if (password.length < 8) {
-      return NextResponse.json({ error: 'Password Must Be At Least 8 Characters' }, { status: 400 });
+    if (password.length !== 8) {
+      return NextResponse.json({ error: 'Password Must Be Exactly 8 Characters.' }, { status: 400 });
     }
 
     if (!isResearcher && account_type === 'credit' && credit_limit !== undefined && credit_limit !== null && credit_limit !== '') {
