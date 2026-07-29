@@ -41,14 +41,20 @@ export function maskAdminIdentity<
 /**
  * Same rule as maskAdminIdentity, but for the flattened `counterparty_*` shape
  * used by the conversation list and global search results. Also blanks
- * counterparty_username so the UI cannot fall back to the admin's handle.
+ * counterparty_username so the UI cannot fall back to the admin's handle, and
+ * counterparty_avatar_url so it falls back to generic initials.
+ *
+ * Note: the generic constraint intentionally omits `counterparty_avatar_url`.
+ * The conversation-list `RawConv` type only exposes that key through an
+ * `[k: string]: unknown` index signature, and requiring it in the constraint
+ * would reject `RawConv` (unknown is not assignable to string | null). The body
+ * still blanks it via the spread, which is display-only and type-safe.
  */
 export function maskAdminCounterparty<
   T extends {
     counterparty_role?: string | null;
     counterparty_full_name?: string | null;
     counterparty_username?: string | null;
-    counterparty_avatar_url?: string | null;
   },
 >(row: T, viewerIsAdmin: boolean): T {
   if (viewerIsAdmin) return row;
