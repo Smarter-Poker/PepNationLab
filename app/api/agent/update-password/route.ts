@@ -36,11 +36,8 @@ export async function POST(req: NextRequest) {
   if (!userId || !newPassword) {
     return NextResponse.json({ error: 'Missing Required Fields' }, { status: 400 });
   }
-  if (typeof newPassword !== 'string' || newPassword.length < 8) {
-    return NextResponse.json({ error: 'Password Must Be At Least 8 Characters' }, { status: 400 });
-  }
-  if (newPassword.length > 128) {
-    return NextResponse.json({ error: 'Password Must Be 128 Characters Or Fewer' }, { status: 400 });
+  if (typeof newPassword !== 'string' || newPassword.length !== 8) {
+    return NextResponse.json({ error: 'Password Must Be Exactly 8 Characters.' }, { status: 400 });
   }
 
   // Verify the target user belongs to this agent (referring_agent_id = caller)
