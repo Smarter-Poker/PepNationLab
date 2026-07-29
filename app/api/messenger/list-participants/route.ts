@@ -4,6 +4,7 @@ import { assertSameOrigin } from '@/lib/csrf';
 import { requireSession, getParticipant } from '@/lib/messenger/server';
 import { messengerRateLimit, messengerRateLimitResponse } from '@/lib/messengerRateLimit';
 import { ListParticipantsSchema } from '@/lib/messenger/schemas';
+import { maskAdminIdentity } from '@/lib/messenger/identity';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -57,6 +58,10 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Non-admin viewers must see admin participants as the generic "PepNation
+  // Support" identity (name/email/avatar masked; display only).
+  const viewerIsAdmin = (profilesMap[user.id]?.role ?? null) === 'admin';
+
   type Row = {
     id: string;
     user_id: string;
@@ -68,17 +73,19 @@ export async function POST(req: NextRequest) {
 
   const flat = (participants as unknown as Row[]).map((r) => {
     const profile = profilesMap[r.user_id] || null;
+    const masked = maskAdminIdentity(profile, viewerIsAdmin);
+    const isMaskedAdmin = !viewerIsAdmin && profile?.role === 'admin';
     return {
       id: r.id,
       user_id: r.user_id,
       role: r.role,
       joined_at: r.joined_at,
       settings: r.user_id === user.id ? (r.settings ?? {}) : null,
-      full_name: profile?.full_name ?? null,
-      username: profile?.username ?? null,
+      full_name: masked?.full_name ?? null,
+      username: isMaskedAdmin ? null : (masked?.username ?? null),
       profile_role: profile?.role ?? null,
-      email: profile?.email ?? null,
-      avatar_url: profile?.avatar_url ?? null,
+      email: masked?.email ?? null,
+      avatar_url: masked?.avatar_url ?? null,
       last_read_message_id: r.last_read_message_id,
     };
   });
