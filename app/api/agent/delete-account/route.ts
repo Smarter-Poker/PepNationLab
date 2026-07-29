@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { safeError } from '@/lib/api-error';
-import { requireAgent, requireAdmin } from '@/lib/admin-auth';
+import { requireAgentOrAdmin, requireAdmin } from '@/lib/admin-auth';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -19,17 +19,23 @@ const RestoreBody = z.object({
 
 /**
  * Account deletion 2026-07-29.
- * Soft delete: releases username / email / referral code / storefront slug so they
- * can be re-used, bans the auth user, freezes + deactivates the profile, and keeps
- * every order + financial ledger row intact. Reversible by an admin via DELETE-undo
- * (PATCH below). Authorization is enforced inside the SECURITY DEFINER RPC:
- * admin, or a transitive upline ancestor of the target.
+ *
+ * Soft delete: releases username / email / referral code / storefront slug so
+ * they can be re-registered, bans the auth user, freezes + deactivates the
+ * profile, and keeps every order and financial ledger row intact. Reversible by
+ * an admin via PATCH below.
+ *
+ * Gate note: requireAgent() deliberately REJECTS role='admin' (agent routes
+ * assume agent_id = callerId). This route takes a foreign target_id and does all
+ * of its authorization inside the SECURITY DEFINER RPC against auth.uid()
+ * (admin, or a transitive upline ancestor of the target), so requireAgentOrAdmin
+ * is the correct gate here — the admin pages call this same endpoint.
  */
 export async function POST(req: Request) {
   const csrf = assertSameOrigin(req as any);
   if (csrf) return csrf;
 
-  const gate = await requireAgent();
+  const gate = await requireAgentOrAdmin();
   if (!gate.ok) return gate.response;
 
   const supabase = await createClient();
@@ -48,23 +54,24 @@ export async function POST(req: Request) {
 
   if (error) {
     const msg = String(error.message || '');
-    if (msg === 'unauthorized') {
+    if (msg.includes('unauthorized')) {
       return NextResponse.json({ error: 'Your Session Expired. Please Sign In Again.' }, { status: 401 });
     }
-    if (msg === 'forbidden') {
+    if (msg.includes('forbidden')) {
       return NextResponse.json({ error: 'This Account Is Not In Your Network.' }, { status: 403 });
     }
-    if (msg === 'not_found') {
+    if (msg.includes('not_found')) {
       return NextResponse.json({ error: 'Account Not Found.' }, { status: 404 });
     }
-    if (msg === 'cannot_delete_self') {
+    if (msg.includes('cannot_delete_self')) {
       return NextResponse.json({ error: 'You Cannot Delete Your Own Account.' }, { status: 400 });
     }
-    if (msg === 'cannot_delete_admin') {
+    if (msg.includes('cannot_delete_admin')) {
       return NextResponse.json({ error: 'Admin Accounts Cannot Be Deleted.' }, { status: 400 });
     }
-    if (msg.startsWith('has_downline:')) {
-      const n = msg.split(':')[1] || '0';
+    const downline = msg.match(/has_downline:(\d+)/);
+    if (downline) {
+      const n = downline[1];
       return NextResponse.json(
         {
           error: `This Account Still Has ${n} Active Account${n === '1' ? '' : 's'} In Its Downline. Move Or Delete Them First.`,
@@ -102,13 +109,13 @@ export async function PATCH(req: Request) {
 
   if (error) {
     const msg = String(error.message || '');
-    if (msg === 'unauthorized') {
+    if (msg.includes('unauthorized')) {
       return NextResponse.json({ error: 'Your Session Expired. Please Sign In Again.' }, { status: 401 });
     }
-    if (msg === 'forbidden') {
+    if (msg.includes('forbidden')) {
       return NextResponse.json({ error: 'Only Admins Can Restore A Deleted Account.' }, { status: 403 });
     }
-    if (msg === 'not_found') {
+    if (msg.includes('not_found')) {
       return NextResponse.json({ error: 'Account Not Found.' }, { status: 404 });
     }
     return safeError('agent.restore-account', error);
