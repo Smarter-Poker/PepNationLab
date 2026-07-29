@@ -4732,12 +4732,42 @@ export default function AgentStorefrontGrid({
               </div>
 
               {/* Hero image */}
-              {selectedBundle.image_url && (
+              {selectedBundle.image_url && agentSlug === 'savagebrands' ? (
+                <div 
+                  style={{ width: '100%', background: 'var(--surface-3)', cursor: 'pointer', position: 'relative' }}
+                  onClick={() => setFullScreenImage(selectedBundle.image_url)}
+                >
+                  <Image
+                    src={selectedBundle.image_url}
+                    alt={selectedBundle.name}
+                    width={800}
+                    height={1200}
+                    unoptimized
+                    sizes="100vw"
+                    style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'contain' }}
+                  />
+                  <div style={{
+                    position: 'absolute',
+                    bottom: 12, right: 12,
+                    background: 'rgba(0,0,0,0.6)',
+                    padding: '4px 8px',
+                    borderRadius: 4,
+                    fontSize: '0.75rem',
+                    color: 'var(--white)',
+                    pointerEvents: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6
+                  }}>
+                    <Search size={12} /> Click to enlarge
+                  </div>
+                </div>
+              ) : selectedBundle.image_url ? (
                 <div 
                   style={{ 
                     position: 'relative', 
                     width: '100%', 
-                    height: agentSlug === 'savagebrands' ? 360 : 220, 
+                    height: 220, 
                     background: 'var(--surface-3)',
                     cursor: 'pointer'
                   }}
@@ -4767,7 +4797,7 @@ export default function AgentStorefrontGrid({
                     <Search size={12} /> Click to enlarge
                   </div>
                 </div>
-              )}
+              ) : null}
 
               {/* Body */}
               <div style={{ padding: '24px 20px 40px' }}>
