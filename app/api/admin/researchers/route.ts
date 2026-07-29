@@ -27,7 +27,8 @@ export async function GET(req: NextRequest) {
 
     let dbQuery = supabase
       .from('profiles')
-      .select('*, agent_profiles(slug, display_name, is_active)', { count: 'exact' });
+      .select('*, agent_profiles(slug, display_name, is_active)', { count: 'exact' })
+      .is('deleted_at', null);
 
     if (role) {
       dbQuery = dbQuery.eq('role', role); // @ts-ignore
@@ -189,6 +190,7 @@ export async function POST(req: NextRequest) {
           .from('profiles')
           .select('id, role')
           .eq('id', id)
+          .is('deleted_at', null)
           .maybeSingle()
       );
       if (!target) return NextResponse.json({ error: 'Researcher Not Found' }, { status: 404 });
@@ -218,6 +220,7 @@ export async function POST(req: NextRequest) {
             .from('profiles')
             .select('id, role, is_active')
             .eq('id', assign_to_agent_id)
+            .is('deleted_at', null)
             .maybeSingle()
         );
         if (!owner || (owner.role !== 'agent' && owner.role !== 'super_agent')) {
