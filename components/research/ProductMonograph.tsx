@@ -20,6 +20,7 @@ interface Props {
   compound: Compound;
   primaryColor?: string;
   coaUrl?: string | null;
+  buttonLabel?: string;
 }
 
 const PANEL_BUTTONS: { key: ResearchSection; label: string }[] = [
@@ -77,7 +78,7 @@ export default function ProductMonograph({ compound, primaryColor = '#00C4BC', c
             width: '100%',
           }}
         >
-          Research & Spec Profile
+          {buttonLabel || 'Research & Spec Profile'}
         </button>
       </div>
 

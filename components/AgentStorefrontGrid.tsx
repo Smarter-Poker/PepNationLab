@@ -4861,9 +4861,6 @@ export default function AgentStorefrontGrid({
                       letterSpacing: '0.02em'
                     }}>{selectedBundle.tagline}</div>
                   )}
-                  <div style={{ marginTop: 16, marginBottom: 8, width: '100%', maxWidth: 300 }}>
-                    <StockBadge state={{ kind: 'in_stock_local' }} />
-                  </div>
                 </div>
 
                 {/* Description */}
@@ -4921,6 +4918,22 @@ export default function AgentStorefrontGrid({
                   </div>
                 </div>
 
+                {/* Bundle Member Monographs */}
+                <div style={{ marginBottom: 28 }}>
+                  {Array.from(new Set(resolved.members.map(m => m.compoundSlug).filter(Boolean))).map((slug) => {
+                    const compound = compoundsBySlug[slug as string];
+                    if (!compound) return null;
+                    return (
+                      <ProductMonograph 
+                        key={slug as string} 
+                        compound={compound} 
+                        primaryColor={primaryColor} 
+                        buttonLabel={`Research Profile: ${compound.name}`} 
+                      />
+                    );
+                  })}
+                </div>
+
                 {/* Pricing summary */}
                 <div style={{
                   background: 'rgba(0,0,0,0.35)', borderRadius: 12, padding: '18px 20px',
@@ -4962,6 +4975,45 @@ export default function AgentStorefrontGrid({
                   <ShoppingCart size={18} />
                   {inCart ? 'Remove Bundle From Cart' : 'Add Bundle To Cart'}
                 </button>
+
+                <div style={{ marginTop: 24 }}>
+                  <ProductModalEnhancements
+                    currentCompound={compoundsBySlug?.[resolved.members[0]?.compoundSlug ?? ''] ?? null}
+                    currentCompoundSlug={resolved.members[0]?.compoundSlug ?? null}
+                    currentProductName={selectedBundle.name}
+                    currentBundlePriceDollars={resolved.finalPrice}
+                    grouped={grouped.map<ModalGroupedProductRef>((g) => ({
+                      name: g.name,
+                      category: g.category,
+                      imageUrl: g.imageUrl,
+                      lowestPrice: g.lowestPrice,
+                      defaultVariantId: g.defaultVariantId,
+                      compoundSlug: g.compoundSlug,
+                    }))}
+                    compoundsBySlug={compoundsBySlug}
+                    primaryColor={primaryColor}
+                    onOpenProductBySlug={(slug) => {
+                      const grp = grouped.find((g) => g.compoundSlug === slug);
+                      if (grp) {
+                        setDetailHistory([grp]);
+                        setPendingQty(1);
+                        setSelectedBundle(null);
+                      }
+                    }}
+                    onOpenProductByName={(name) => {
+                      const match = grouped.find((g) => g.name === name);
+                      if (match) {
+                        setDetailHistory([match]);
+                        setPendingQty(1);
+                        setSelectedBundle(null);
+                      }
+                    }}
+                    onAddVariantToCart={(variantId, qty) => {
+                      setCartItems((prev) => ({ ...prev, [variantId]: (prev[variantId] || 0) + qty }));
+                      setShowCartFloat(true);
+                    }}
+                  />
+                </div>
               </div>
             </div>
           </div>,
