@@ -90,8 +90,8 @@ export default function PremiumPeptideCard({
               src={imageSrc}
               alt={productName}
               fill
-              // 'contain' so it doesn't zoom in, showing the full vial image edge-to-edge
-              style={{ objectFit: 'contain', objectPosition: 'center bottom', transform: 'rotate(9deg) scale(0.9)', transformOrigin: 'center bottom' }}
+              // 'cover' to fill edge-to-edge, 'center top' ensures the vial cap is never cropped!
+              style={{ objectFit: 'cover', objectPosition: 'center top' }}
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.src = '/images/peptide_clear.png';
