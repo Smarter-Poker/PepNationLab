@@ -352,6 +352,38 @@ export default async function proxy(request: NextRequest) {
     return withRefCookies(NextResponse.redirect(url, 308));
   }
 
+  // --- A REFERRAL LINK LANDS ON THE STORE, NOT THE SIGN-UP SCREEN ---
+  // Scanning an agent's QR code must open that agent's storefront so the
+  // visitor can browse products and see pricing immediately. The landing page
+  // leads with LOG IN / CREATE ACCOUNT, so routing a scan there reads as
+  // "make an account before you may look at anything" -- the exact opposite of
+  // what a referral QR is for.
+  //
+  // app/api/agent/my-qr now encodes `/<slug>?ref=<code>` directly, but QR codes
+  // already printed, saved to camera rolls or shared in chats still carry the
+  // old `/?ref=<code>` target and must keep working. This also covers repeat
+  // scans: first-scan-wins means no new cookie is minted on those requests, so
+  // the store has to be resolved from the existing lock instead.
+  //
+  // Placement matters: after the /register 308 (explicit sign-up intent is
+  // honoured) and before the PUBLIC_ROUTES check (which returns early for '/').
+  // NextResponse.redirect is used directly because `response` and
+  // redirectWithCookies are not in scope until after the Supabase client is
+  // built -- there is no session to preserve here anyway.
+  if (
+    request.method === 'GET' &&
+    pathname === '/' &&
+    request.nextUrl.searchParams.has('ref') &&
+    refLock?.s &&
+    STORE_SLUG_RE.test(refLock.s) &&
+    !RESERVED_SEGMENTS.has(refLock.s)
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = `/${refLock.s}`;
+    url.search = '';
+    return withRefCookies(NextResponse.redirect(url));
+  }
+
   // Scheduled jobs (Vercel Cron + GitHub Actions) hit /api/cron/* and
   // /api/messenger/cron/* with only an `Authorization: Bearer CRON_SECRET`
   // header and never a Supabase session cookie. Every such route enforces
@@ -478,16 +510,18 @@ export default async function proxy(request: NextRequest) {
     }
     // Direct storefront URL entry, e.g. someone types pepnationlab.com/
     // savagebrands with no account and no QR. Mint a SOFT lock for that store
-    // and send them to the home screen — the same landing a QR scan produces,
-    // so they get the disclaimer gate, "Continue As Guest" (confined to that
-    // store by the gate below) and "Create Account" with the credit locked in.
+    // and RENDER IT. This used to 307 to /?agent=<slug>, which put the landing
+    // page's LOG IN / CREATE ACCOUNT buttons between the visitor and the
+    // products they followed a link to see. A storefront link must open the
+    // storefront; the guest confinement gate below still keeps them inside it.
     //
     // Skipped when a HARD (QR) lock is already held, when a ?ref= capture just
     // fired on this same request, and when the current lock already points at
-    // this slug — that last guard is what lets a locked guest actually reach
-    // the store instead of bouncing back to the home screen forever.
+    // this slug — that last guard hands the request to the browsing gate below,
+    // which is what actually serves repeat views of the locked store.
     if (!refCookiesToSet && (!refLock || refLock.k === 'url')) {
-      const seg = pathname.split('/')[1]?.toLowerCase() ?? '';
+      const rawSeg = pathname.split('/')[1] ?? '';
+      const seg = rawSeg.toLowerCase();
       if (seg && seg !== refLock?.s && STORE_SLUG_RE.test(seg) && !RESERVED_SEGMENTS.has(seg)) {
         try {
           // Same amplification guard as the ?ref= path above.
@@ -500,12 +534,22 @@ export default async function proxy(request: NextRequest) {
             if (signed) {
               refLock = store;
               refCookiesToSet = { lock: signed, code: store.c };
+            }
+            // Render the store even when signing failed (no REF_LOCK_SECRET):
+            // attribution then degrades to the client-side <AgentLinkCapture>
+            // on the storefront, which is a far better outcome than turning a
+            // storefront link into a login wall.
+            const canonical = store.s ?? seg;
+            if (rawSeg !== canonical) {
+              // Case-mismatched entry (/SavageBrands). The page's
+              // .eq('slug', agentSlug) lookup is case-sensitive and would
+              // notFound(), so send them to the canonical lowercase URL once.
               const url = request.nextUrl.clone();
-              url.pathname = '/';
+              url.pathname = `/${canonical}`;
               url.search = '';
-              url.searchParams.set('agent', store.s ?? seg);
               return withRefCookies(redirectWithCookies(url));
             }
+            return withRefCookies(response);
           }
         } catch (err) {
           captureError(err, { context: 'proxy.storeUrlCapture', path: pathname });
