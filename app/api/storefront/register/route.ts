@@ -336,8 +336,17 @@ export async function POST(req: NextRequest) {
       last_name: String(lastName).trim(),
       phone: phone ? String(phone).trim() : null,
       role: 'researcher',
-      referring_agent_id: referringAgentId,
-      referring_sub_agent_id: referringSubAgentId,
+      // referring_agent_id / referring_sub_agent_id are DELIBERATELY absent.
+      //
+      // `handle_new_user` already created this row (AFTER INSERT on auth.users)
+      // and `trg_00_ensure_researcher_house_agent` stamped referring_agent_id
+      // with the house agent on the way in. Carrying our resolved agent in this
+      // upsert therefore makes it an UPDATE house -> agent, which
+      // `enforce_researcher_agent_binding` rejects with SQLSTATE 23000 — the
+      // route then deletes the auth user and returns 500. That is why every
+      // storefront signup resolving to a real agent has been failing since the
+      // house-agent default landed. Binding happens below through the
+      // sanctioned RPC instead.
       acquisition_source: 'storefront',
       disclaimer_v1_accepted: false,
       is_active: true,
@@ -358,6 +367,31 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Bind the resolved referring agent through the sanctioned RPC. This is the
+    // ONLY write path that can move a fresh researcher off the house-agent
+    // default without tripping enforce_researcher_agent_binding. It is scoped to
+    // profiles younger than 15 minutes that are still on house/NULL, so it can
+    // never re-point an established researcher.
+    let bindOk = false;
+    {
+      const { data: bound, error: bindErr } = await admin.rpc('bind_storefront_referral', {
+        p_user_id: newUserId,
+        p_agent_id: referringAgentId,
+        p_sub_agent_id: referringSubAgentId,
+      });
+      if (bindErr) {
+        console.error('[storefront/register] bind_storefront_referral error:', bindErr);
+      } else {
+        bindOk = bound === true;
+        if (!bindOk) {
+          console.error(
+            '[storefront/register] bind_storefront_referral did not bind',
+            { user: newUserId, agent: referringAgentId, subAgent: referringSubAgentId }
+          );
+        }
+      }
+    }
+
     // Immutable attribution audit trail. acquisition_source stays 'storefront'
     // (an established CRM value); the PROVENANCE — QR scan vs typed storefront
     // URL vs plain form — plus the exact code, store and lock age land here, so
@@ -373,7 +407,7 @@ export async function POST(req: NextRequest) {
       ref_code: referralCode || null,
       store_slug: submittedSlug || null,
       lock_minted_at: refLock?.t ? new Date(refLock.t).toISOString() : null,
-      detail: { lock_kind: refLock?.k ?? null, lock_version: refLock?.v ?? 0 },
+      detail: { lock_kind: refLock?.k ?? null, lock_version: refLock?.v ?? 0, bound: bindOk },
     });
 
     await notifyNewResearcher(admin, referringAgentId, fullName).catch(() => { /* ignore */ });
