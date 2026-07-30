@@ -4,6 +4,15 @@ import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { getSupabaseUrl } from '@/lib/supabase/url';
 import { captureError } from '@/lib/sentry';
 import { isEffectiveAdmin } from '@/lib/platform-admins';
+import {
+  REF_LOCK_COOKIE,
+  REF_DISPLAY_COOKIE,
+  REF_LOCK_MAX_AGE,
+  REF_CODE_RE,
+  type RefLock,
+  signRefLock,
+  verifyRefLock,
+} from '@/lib/ref-lock';
 
 // --- Global API Rate Limiting ---
 // Edge-level backstop against scrape bots and abuse across all ~80 /api/*
@@ -46,6 +55,60 @@ async function applyApiRateLimit(request: NextRequest, pathname: string): Promis
   );
 }
 
+// --- QR REFERRAL LOCK ---
+// Resolve a scanned referral code (?ref=<code>) to the referring agent and
+// their storefront slug, using the service-role REST API (middleware has no
+// RLS session). Called at most once per visitor: only when ?ref= is present
+// and no valid lock cookie exists yet (first scan wins).
+async function resolveRefCode(code: string): Promise<RefLock | null> {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!key) return null;
+  const base = getSupabaseUrl();
+  const headers = { apikey: key, Authorization: `Bearer ${key}` };
+  const q = encodeURIComponent(code);
+  const pRes = await fetch(
+    `${base}/rest/v1/profiles?select=id,role,is_sub_agent,parent_agent_id,referring_agent_id,is_active,deleted_at&or=(username.ilike.${q},referral_code.ilike.${q})&limit=1`,
+    { headers },
+  );
+  if (!pRes.ok) return null;
+  const [p] = (await pRes.json()) as Array<{
+    id: string; role: string | null; is_sub_agent: boolean | null;
+    parent_agent_id: string | null; referring_agent_id: string | null;
+    is_active: boolean | null; deleted_at: string | null;
+  }>;
+  if (!p || p.is_active === false || p.deleted_at != null) return null;
+
+  // Whose storefront should this scan lock guests to?
+  //   sub-agent code   -> the parent agent's store (sub still gets credit via sa)
+  //   agent/super/admin -> their own store
+  //   researcher code   -> the store they themselves belong to
+  const storeOwnerId = p.is_sub_agent && p.parent_agent_id
+    ? p.parent_agent_id
+    : (p.role === 'agent' || p.role === 'super_agent' || p.role === 'admin')
+      ? p.id
+      : p.referring_agent_id;
+
+  let slug: string | null = null;
+  if (storeOwnerId) {
+    const sRes = await fetch(
+      `${base}/rest/v1/agent_profiles?select=slug&id=eq.${encodeURIComponent(storeOwnerId)}&limit=1`,
+      { headers },
+    );
+    if (sRes.ok) {
+      const [s] = (await sRes.json()) as Array<{ slug: string | null }>;
+      slug = s?.slug ?? null;
+    }
+  }
+
+  return {
+    c: code,
+    a: storeOwnerId ?? p.id,
+    s: slug,
+    sa: p.is_sub_agent && p.parent_agent_id ? p.id : null,
+    t: Date.now(),
+  };
+}
+
 // --- RESTRICTED ACCESS: ACCOUNT REQUIRED FOR EVERYTHING ---
 // The guest view has been removed. Nothing is browsable without an account.
 // Only the logged-out account-creation + sign-in flow, the legal pages linked
@@ -53,6 +116,8 @@ async function applyApiRateLimit(request: NextRequest, pathname: string): Promis
 // webhooks, scheduled crons, uptime/health, PWA assets) remain public. Every
 // other route -- the landing page, agent storefronts, research, cart, and all
 // marketing pages -- now requires authentication (redirects to /login).
+// EXCEPTION: visitors holding a signed QR referral lock (see lib/ref-lock.ts)
+// may browse the referring agent's storefront as a guest — nothing else.
 
 // Routes that are always public (no auth required)
 const PUBLIC_ROUTES = [
@@ -125,6 +190,39 @@ export default async function proxy(request: NextRequest) {
   const limited = await applyApiRateLimit(request, pathname);
   if (limited) return limited;
 
+  // --- QR referral capture (first scan wins) ---
+  // A visit carrying ?ref=<code> (agent QR) locks this browser to that
+  // referrer: signed httpOnly cookie for the server, plus a client-readable
+  // display cookie so the signup form can show who referred them.
+  let refLock: RefLock | null = null;
+  let refCookiesToSet: { lock: string; code: string } | null = null;
+  if (request.method === 'GET' && !pathname.startsWith('/api/')) {
+    refLock = await verifyRefLock(request.cookies.get(REF_LOCK_COOKIE)?.value);
+    const refParam = request.nextUrl.searchParams.get('ref')?.trim();
+    if (!refLock && refParam && REF_CODE_RE.test(refParam)) {
+      try {
+        const resolved = await resolveRefCode(refParam);
+        if (resolved) {
+          refLock = resolved;
+          refCookiesToSet = { lock: await signRefLock(resolved), code: resolved.c };
+        }
+      } catch (err) {
+        captureError(err, { context: 'proxy.refCapture', path: pathname });
+      }
+    }
+  }
+  const withRefCookies = <T extends NextResponse>(res: T): T => {
+    if (refCookiesToSet) {
+      res.cookies.set(REF_LOCK_COOKIE, refCookiesToSet.lock, {
+        httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: REF_LOCK_MAX_AGE,
+      });
+      res.cookies.set(REF_DISPLAY_COOKIE, refCookiesToSet.code, {
+        httpOnly: false, secure: true, sameSite: 'lax', path: '/', maxAge: REF_LOCK_MAX_AGE,
+      });
+    }
+    return res;
+  };
+
   if (pathname.startsWith('/register')) {
     const url = request.nextUrl.clone();
     url.pathname = '/signup';
@@ -146,7 +244,7 @@ export default async function proxy(request: NextRequest) {
 
   const isLoginRoute = pathname === '/login';
   if (!isLoginRoute && PUBLIC_ROUTES.some(route => pathname === route || pathname.startsWith(route + '/'))) {
-    return NextResponse.next({ request });
+    return withRefCookies(NextResponse.next({ request }));
   }
 
   if (
@@ -225,12 +323,26 @@ export default async function proxy(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     if (pathname === '/login') {
-      return response;
+      return withRefCookies(response);
+    }
+    // QR-locked guest browsing: a visitor who arrived via an agent's referral
+    // QR may browse THAT agent's storefront without an account — and nothing
+    // else. Any other page bounces them back into their locked storefront.
+    // Guests with no lock keep the original behavior: sign in required.
+    if (refLock?.s) {
+      const slug = refLock.s;
+      if (pathname === `/${slug}` || pathname.startsWith(`/${slug}/`)) {
+        return withRefCookies(response);
+      }
+      const url = request.nextUrl.clone();
+      url.pathname = `/${slug}`;
+      url.search = '';
+      return withRefCookies(redirectWithCookies(url));
     }
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     url.searchParams.set('redirect', pathname + request.nextUrl.search);
-    return redirectWithCookies(url);
+    return withRefCookies(redirectWithCookies(url));
   }
 
   let { data: profile, error: profileErr } = await supabase
