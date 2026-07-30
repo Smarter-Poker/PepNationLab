@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { seedStorefrontFromHousePrices } from '@/lib/seed-storefront';
+import { validateStoreSlug } from '@/lib/store-slug';
 
 /**
  * GET /api/agent/agents
@@ -129,8 +130,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing Required Fields (Name, Username, Password, Billing, Slug, User Name)' }, { status: 400 });
     }
 
-    if (password.length < 8) {
-      return NextResponse.json({ error: 'Password Must Be At Least 8 Characters' }, { status: 400 });
+    // Provisioned passwords are exactly 8 characters platform-wide - the login
+    // form, the forced password-change flow and /api/admin/agents all assume
+    // it. This route used to accept `>= 8`, so a Super Agent could hand a
+    // downline Agent a preset password the rest of the platform would not
+    // round-trip. Keep this identical to the admin route.
+    if (password.length !== 8) {
+      return NextResponse.json({ error: 'Password Must Be Exactly 8 Characters.' }, { status: 400 });
     }
 
     if (account_type === 'credit' && credit_limit !== undefined && credit_limit !== null && credit_limit !== '') {
@@ -180,9 +186,17 @@ export async function POST(req: NextRequest) {
 
     const internalEmail = `${usernameClean}@internal.auth`;
 
-    const slugRegex = /^[a-z0-9\-]+$/;
-    if (!slugRegex.test(slug)) {
-      return NextResponse.json({ error: 'Slug Must Contain Lowercase Letters, Numbers, And Hyphens Only' }, { status: 400 });
+    // Storefront slug shape. This MUST agree with the edge middleware
+    // (proxy.ts), which is what actually routes /<slug>, and with the
+    // agent_profiles_slug_shape CHECK + agent_profiles_slug_not_reserved
+    // trigger in the database. The old /^[a-z0-9\-]+$/ here accepted `-x`,
+    // `a`, an unbounded-length slug and reserved segments like
+    // `admin`/`wallet`/`checkout` -- each of which produces an Agent whose QR
+    // code points at something unroutable, with no error until a customer
+    // scans it. lib/store-slug.ts is the single source of truth.
+    const slugError = validateStoreSlug(slug);
+    if (slugError) {
+      return NextResponse.json({ error: slugError }, { status: 400 });
     }
 
     // Use .eq() not .ilike() - sanitized usernames may contain underscores (a LIKE wildcard).
