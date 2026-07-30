@@ -72,26 +72,45 @@ export default function PremiumPeptideCard({
           style={{ objectFit: 'cover', pointerEvents: 'none', zIndex: 0 }}
         />
 
+        {/* Foreground card overlay — V-frame and all chrome ABOVE the vial image.
+             Clipped so only the non-vial area shows, ensuring the V-frame is always on top.
+             The clip-path is the INVERSE of the vial clip (everything OUTSIDE the V-well). */}
+        <Image
+          src="/images/storefront/premium-card-bg.jpg"
+          alt=""
+          aria-hidden="true"
+          fill
+          priority
+          style={{
+            objectFit: 'cover',
+            pointerEvents: 'none',
+            zIndex: 20,
+            // Show the card chrome EXCEPT the rectangular vial window
+            // so the real background shows through only in the V-image area
+            clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 0, 3.66% 0, 3.66% 53.51%, 50% 56.54%, 96.34% 53.51%, 96.34% 0)',
+            WebkitClipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 0, 3.66% 0, 3.66% 53.51%, 50% 56.54%, 96.34% 53.51%, 96.34% 0)',
+          }}
+        />
+
         {/* Global wrapper matching canvas size for absolute positioning over the background */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10 }}>
           
-          {/* 1 & 4. Vial Image - Edge to edge, clipped behind the V-frame! */}
           <div style={{
             position: 'absolute',
-            left: px(25), top: px(25), right: px(25), height: px(523), // Exactly reaches the bottom tip of the V-frame (548)
+            left: px(25), top: px(25), right: px(25), height: px(523),
             borderRadius: `${px(25)} ${px(25)} 0 0`,
-            // Clip perfectly along the UPPER edge of the V-frame to tuck the image behind it
+            // Clip to match the V-frame exactly — image stays inside the V
             clipPath: 'polygon(0 0, 100% 0, 100% 94.65%, 50% 100%, 0 94.65%)',
-            WebkitClipPath: 'polygon(0 0, 100% 0, 100% 94.65%, 50% 100%, 0 94.65%)', // MUST HAVE FOR SAFARI/MAC
+            WebkitClipPath: 'polygon(0 0, 100% 0, 100% 94.65%, 50% 100%, 0 94.65%)',
             overflow: 'hidden',
-            zIndex: 15 // Underneath top controls, above background
+            zIndex: 15
           }}>
             <Image
               src={imageSrc}
               alt={productName}
               fill
-              // 'cover' to fill edge-to-edge, 'center top' ensures the vial cap is never cropped!
-              style={{ objectFit: 'cover', objectPosition: 'center top' }}
+              // 'contain' shows the full vial without cropping; scale(0.85) adds breathing room
+              style={{ objectFit: 'contain', objectPosition: 'center center', transform: 'scale(0.85)', transformOrigin: 'center center' }}
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.src = '/images/peptide_clear.png';
