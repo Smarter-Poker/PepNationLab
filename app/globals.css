@@ -1305,11 +1305,11 @@ nav button.drawer-close { text-transform: capitalize; }
 }
 /* Savage Brands keeps the zoomed-in vial presentation */
 .store-image-hover-zoomed {
-  transform: scale(1.35) translateY(2%);
+  transform: scale(1.1);
   transition: transform 0.4s ease;
 }
 .message-card-hover:hover .store-image-hover-zoomed {
-  transform: scale(1.45) translateY(2%);
+  transform: scale(1.15);
 }
 
 /*
