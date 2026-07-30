@@ -49,7 +49,7 @@ type Zone = {
   height: string;
 };
 
-function buildZones(guestStoreSlug: string | null, refCode: string | null): Zone[] {
+function buildZones(guestStoreSlug: string | null): Zone[] {
   // Guests who scanned an agent QR are locked to that agent's storefront (see
   // lib/ref-lock.ts) -- the middleware only lets an unauthenticated guest
   // browse that one store, so both store entries ("Continue As Guest" and the
@@ -57,9 +57,28 @@ function buildZones(guestStoreSlug: string | null, refCode: string | null): Zone
   // the house store -- otherwise the badge just bounces off the middleware.
   // Without a lock, the house-store behavior is unchanged.
   const guestStoreHref = guestStoreSlug ? `/${guestStoreSlug}` : `/${DEFAULT_STORE_SLUG}`;
-  // Carry the locked referral code into sign-up so the form shows the locked
-  // "referred by" field.
-  const signupHref = refCode ? `/signup?ref=${encodeURIComponent(refCode)}` : '/signup';
+  // DELIBERATELY BARE -- never `/signup?ref=<code>`.
+  //
+  // proxy.ts treats a GET carrying ?ref= on /signup, /register, /login, /join
+  // or /create-account as a referral ENTRY POINT and redirects it to the
+  // locked storefront, because a scanned QR must never land on an account
+  // wall. This link is the opposite case: a guest who is already browsing the
+  // locked store and has deliberately tapped "Create Account". Appending the
+  // code here made the middleware bounce that tap straight back to the
+  // storefront, so a locked guest could never reach the sign-up form at all.
+  //
+  // Dropping the parameter costs nothing. Attribution does NOT travel in the
+  // URL: it travels in the httpOnly, HMAC-signed pnl_ref_lock cookie, which is
+  // the only source app/api/storefront/register and app/auth/callback trust
+  // when awarding referral credit. The sign-up form reads the companion
+  // client-readable pnl_ref_display cookie to show the locked "referred by"
+  // line, so the visible confirmation survives too -- and unlike a query
+  // string, neither can be edited by the visitor to re-point their own credit.
+  //
+  // proxy.ts additionally exempts same-origin navigations from that redirect,
+  // but Safari before 16.4 sends no Sec-Fetch-Site header at all, so that
+  // exemption cannot be the only guard for an iPhone audience. This is.
+  const signupHref = '/signup';
   return [
     // Right-Side Hexagon Badges
     { href: '/find-a-peptide', label: 'Discover', anchor: 'Discover Research Peptides', top: '12.56%', left: '79.17%', width: '18.4%', height: '7.77%' },
@@ -78,15 +97,22 @@ function buildZones(guestStoreSlug: string | null, refCode: string | null): Zone
 type HomeClientProps = {
   /** Agent storefront slug from the QR referral lock (lib/ref-lock.ts), if any. */
   guestStoreSlug?: string | null;
-  /** Referral code from the QR referral lock, if any. */
+  /**
+   * Referral code from the QR referral lock, if any.
+   *
+   * Retained so app/page.tsx keeps compiling and so the value is available if
+   * the landing page ever needs to display it. It is intentionally NOT used to
+   * build any href -- see the signupHref comment in buildZones for why putting
+   * a referral code in a landing-page link breaks sign-up for locked guests.
+   */
   refCode?: string | null;
 };
 
-export default function HomeClient({ guestStoreSlug = null, refCode = null }: HomeClientProps) {
+export default function HomeClient({ guestStoreSlug = null }: HomeClientProps) {
   const router = useRouter();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
 
-  const zones = buildZones(guestStoreSlug, refCode);
+  const zones = buildZones(guestStoreSlug);
 
   // Only ENTERING THE STORE as a guest requires the Research-Only
   // acknowledgment here. Both store entries -- "Continue As Guest" and the
