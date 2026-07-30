@@ -4,6 +4,12 @@ import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { getSupabaseUrl } from '@/lib/supabase/url';
 import { captureError } from '@/lib/sentry';
 import { isEffectiveAdmin } from '@/lib/platform-admins';
+import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
+// Slug shape + reserved app routes live in ONE module shared by the middleware,
+// the creation endpoints and the client capture component. They used to be
+// three separate regexes that disagreed, so a slug could be legal at creation,
+// get a QR generated for it, and be permanently unroutable here.
+import { STORE_SLUG_RE, RESERVED_SEGMENTS } from '@/lib/store-slug';
 import {
   REF_LOCK_COOKIE,
   REF_DISPLAY_COOKIE,
@@ -130,12 +136,20 @@ async function resolveRefCode(code: string): Promise<RefLock | null> {
     }
   }
 
+  // A slug the middleware cannot route is worse than no slug: it would send the
+  // guest to a URL this very function's caller bounces back, forever. Drop it
+  // and let the house-store browsing fallback take over.
+  if (slug && !(STORE_SLUG_RE.test(slug) && !RESERVED_SEGMENTS.has(slug))) slug = null;
+
   return {
     c: code,
     a: storeOwnerId ?? p.id,
     s: slug,
     sa: p.is_sub_agent && p.parent_agent_id ? p.id : null,
     t: Date.now(),
+    // Explicit HARD kind. Legacy locks omit `k` and are treated as hard too,
+    // but stamping it removes the ambiguity for anything reading the payload.
+    k: 'qr',
   };
 }
 
@@ -149,22 +163,6 @@ async function resolveRefCode(code: string): Promise<RefLock | null> {
 // Slugs and referral codes are separate namespaces (the store `scooters` is
 // owned by username `adam`, while a *different* agent owns the store `adam`),
 // so feeding a slug into the code namespace credits the wrong agent.
-const STORE_SLUG_RE = /^[a-z0-9][a-z0-9_-]{1,49}$/;
-
-// First path segments that are real app routes, never storefronts. Skipping
-// these avoids a pointless service-role lookup on every logged-out hit to a
-// gated page, and stops a future agent slug from shadowing an app route.
-const RESERVED_SEGMENTS = new Set([
-  'about', 'accept-disclaimer', 'account', 'admin', 'advertising', 'api', 'auth',
-  'become-agent', 'checkout', 'coa', 'compliance', 'contact', 'dashboard',
-  'disclaimer', 'favicon.ico', 'feed.xml', 'find-a-peptide', 'forgot-password',
-  'help', 'invite', 'lab-journal', 'lab-tools', 'llms.txt', 'llms-full.txt',
-  'login', 'manifest.webmanifest', 'messages', 'messenger', 'onboarding',
-  'orders', 'peptide-101', 'peptides', 'privacy', 'products', 'register',
-  'research', 'reset-password', 'robots.txt', 'shelf-life', 'shipping',
-  'signup', 'sitemap.xml', 'status', 'sw.js', 'terms', 'wallet', '_next',
-]);
-
 async function resolveStoreSlug(slug: string): Promise<RefLock | null> {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!key) return null;
@@ -287,6 +285,7 @@ export default async function proxy(request: NextRequest) {
   // display cookie so the signup form can show who referred them.
   let refLock: RefLock | null = null;
   let refCookiesToSet: { lock: string; code: string } | null = null;
+  let clearRefCookies = false;
   if (request.method === 'GET' && !pathname.startsWith('/api/')) {
     refLock = await verifyRefLock(request.cookies.get(REF_LOCK_COOKIE)?.value);
     const refParam = request.nextUrl.searchParams.get('ref')?.trim();
@@ -304,8 +303,15 @@ export default async function proxy(request: NextRequest) {
         });
         const resolved = rl.allowed ? await resolveRefCode(refParam) : null;
         if (resolved) {
-          refLock = resolved;
-          refCookiesToSet = { lock: await signRefLock(resolved), code: resolved.c };
+          // signRefLock returns null when no server-side signing secret is
+          // configured. Writing the cookie anyway would persist an unsigned
+          // value that verifyRefLock rejects on the very next request, so the
+          // guest would be silently re-resolved on every page view. Skip it.
+          const signed = await signRefLock(resolved);
+          if (signed) {
+            refLock = resolved;
+            refCookiesToSet = { lock: signed, code: resolved.c };
+          }
         }
       } catch (err) {
         captureError(err, { context: 'proxy.refCapture', path: pathname });
@@ -313,6 +319,17 @@ export default async function proxy(request: NextRequest) {
     }
   }
   const withRefCookies = <T extends NextResponse>(res: T): T => {
+    if (clearRefCookies) {
+      // maxAge 0 with the SAME path/secure/sameSite attributes the cookie was
+      // written with -- anything else leaves the original cookie in place.
+      res.cookies.set(REF_LOCK_COOKIE, '', {
+        httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: 0,
+      });
+      res.cookies.set(REF_DISPLAY_COOKIE, '', {
+        httpOnly: false, secure: true, sameSite: 'lax', path: '/', maxAge: 0,
+      });
+      return res;
+    }
     if (refCookiesToSet) {
       res.cookies.set(REF_LOCK_COOKIE, refCookiesToSet.lock, {
         httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: REF_LOCK_MAX_AGE,
@@ -396,6 +413,32 @@ export default async function proxy(request: NextRequest) {
     captureError(err, { context: 'proxy.getUser', path: pathname });
   }
 
+  // --- STALE LOCK CLEANUP ---
+  // The referral lock is a LOGGED-OUT concept: it confines guest browsing and
+  // it decides who gets credited at signup. Once the visitor has an account,
+  // attribution is settled in profiles.referring_agent_id and the cookie is
+  // pure liability -- it survives logout on a shared device, so the NEXT
+  // person to sign up on that browser gets credited to whatever store the
+  // previous user happened to scan months ago. Expire it on the first
+  // authenticated, gated request.
+  //
+  // Signup attribution is unaffected: /auth/callback and
+  // /api/storefront/register are PUBLIC_ROUTES and return above, before
+  // getUser() ever runs, so they still read the lock they need.
+  if (user && !authBackendDown) {
+    refLock = null;
+    refCookiesToSet = null;
+    if (request.cookies.has(REF_LOCK_COOKIE) || request.cookies.has(REF_DISPLAY_COOKIE)) {
+      clearRefCookies = true;
+      response.cookies.set(REF_LOCK_COOKIE, '', {
+        httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: 0,
+      });
+      response.cookies.set(REF_DISPLAY_COOKIE, '', {
+        httpOnly: false, secure: true, sameSite: 'lax', path: '/', maxAge: 0,
+      });
+    }
+  }
+
   const redirectWithCookies = (url: URL) => {
     const redirectResponse = NextResponse.redirect(url);
     // Copy the FULL cookie descriptor, not just name/value. Dropping the
@@ -453,13 +496,16 @@ export default async function proxy(request: NextRequest) {
           });
           const store = rl.allowed ? await resolveStoreSlug(seg) : null;
           if (store) {
-            refLock = store;
-            refCookiesToSet = { lock: await signRefLock(store), code: store.c };
-            const url = request.nextUrl.clone();
-            url.pathname = '/';
-            url.search = '';
-            url.searchParams.set('agent', store.s ?? seg);
-            return withRefCookies(redirectWithCookies(url));
+            const signed = await signRefLock(store);
+            if (signed) {
+              refLock = store;
+              refCookiesToSet = { lock: signed, code: store.c };
+              const url = request.nextUrl.clone();
+              url.pathname = '/';
+              url.search = '';
+              url.searchParams.set('agent', store.s ?? seg);
+              return withRefCookies(redirectWithCookies(url));
+            }
           }
         } catch (err) {
           captureError(err, { context: 'proxy.storeUrlCapture', path: pathname });
@@ -470,13 +516,20 @@ export default async function proxy(request: NextRequest) {
     // QR may browse THAT agent's storefront without an account — and nothing
     // else. Any other page bounces them back into their locked storefront.
     // Guests with no lock keep the original behavior: sign in required.
-    if (refLock?.s) {
-      const slug = refLock.s;
-      if (pathname === `/${slug}` || pathname.startsWith(`/${slug}/`)) {
+    //
+    // A lock with NO storefront slug is a real, common case: the referrer is a
+    // researcher, or an agent whose agent_profiles row is inactive/missing, so
+    // resolveRefCode legitimately returns s:null. Sending those scanners to
+    // /login threw away a valid scan — the attribution cookie is set and the
+    // credit is real, they just have nowhere to browse. Fall back to the house
+    // store so "Continue As Guest" works for every lock we ever mint.
+    const browseSlug = refLock ? (refLock.s ?? DEFAULT_STORE_SLUG) : null;
+    if (browseSlug) {
+      if (pathname === `/${browseSlug}` || pathname.startsWith(`/${browseSlug}/`)) {
         return withRefCookies(response);
       }
       const url = request.nextUrl.clone();
-      url.pathname = `/${slug}`;
+      url.pathname = `/${browseSlug}`;
       url.search = '';
       return withRefCookies(redirectWithCookies(url));
     }
