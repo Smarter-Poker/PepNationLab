@@ -38,10 +38,6 @@ export async function GET(_req: Request) {
       return NextResponse.json({ error: 'no_profile', message: 'Your Profile Was Not Found' }, { status: 404 });
     }
 
-    // The QR opens the HOME landing page with ?ref=<code>. Middleware captures
-    // the ?ref param into a signed cookie (referral lock), so signup later
-    // applies the referral -- downline assignment for agents/super-agents/
-    // sub-agents, and referral credits for researchers (and opted-in sub-agents).
     const isSub = !!profile.is_sub_agent;
     const isSuper = !!profile.is_super_agent || profile.role === 'super_agent';
     const isResearcher = profile.role === 'researcher' && !isSub && !isSuper;
@@ -51,12 +47,11 @@ export async function GET(_req: Request) {
     const referralCode = (profile.username || profile.referral_code || user.id) as string;
 
     const baseUrl = (process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '')) || 'https://pepnationlab.com';
-    // QR target: landing page with ?ref -- middleware locks the referral from ?ref.
-    const signupUrl = `${baseUrl}/?ref=${encodeURIComponent(referralCode)}`;
 
-    // Best-effort: resolve the associated storefront (own for agents/super-agents,
-    // parent for sub-agents, referring agent for researchers) so the hub can also
-    // offer a storefront link. Never fails the referral QR if it is missing.
+    // Resolve the associated storefront FIRST (own for agents/super-agents,
+    // parent for sub-agents, referring agent for researchers) - the QR target
+    // depends on it. This lookup already existed but ran *after* the URL was
+    // built, so it could only ever be offered as a secondary link.
     let storefrontSlug: string | null = null;
     let storefrontUrl: string | null = null;
     let displayName: string | null = profile.full_name ?? null;
@@ -70,13 +65,15 @@ export async function GET(_req: Request) {
       if (lookupId) {
         const { data: agent, error: aErr } = await svc
           .from('agent_profiles')
-          .select('slug, display_name, primary_color')
+          .select('slug, display_name, primary_color, is_active')
           .eq('id', lookupId)
           .maybeSingle();
         if (aErr) {
           logError('agent.my-qr.agent_query', { userId: user.id, lookupId }, aErr);
         }
-        if (agent?.slug) {
+        // An inactive storefront renders a "Storefront Paused" card, so it is
+        // not a usable QR destination - fall back to the landing page for it.
+        if (agent?.slug && agent.is_active !== false) {
           storefrontSlug = agent.slug;
           storefrontUrl = `${baseUrl}/${agent.slug}`;
         }
@@ -84,6 +81,20 @@ export async function GET(_req: Request) {
         if (agent?.primary_color) primaryColor = agent.primary_color;
       }
     }
+
+    // QR TARGET. Scanning an agent's code must open that agent's STORE - the
+    // products and the pricing - never an account-creation screen. `?ref=` is
+    // carried on the storefront URL so proxy.ts mints the identical signed
+    // referral lock it minted when the QR pointed at `/`; attribution, downline
+    // assignment and researcher referral credits are unchanged.
+    //
+    // Users with no resolvable storefront (researchers, and agents whose
+    // agent_profiles row is missing or inactive) have nowhere to send a
+    // scanner, so they keep the landing-page target - proxy.ts routes those
+    // guests on to the house store for browsing.
+    const signupUrl = storefrontSlug
+      ? `${baseUrl}/${storefrontSlug}?ref=${encodeURIComponent(referralCode)}`
+      : `${baseUrl}/?ref=${encodeURIComponent(referralCode)}`;
 
     const effectDescription = isResearcher
       ? 'Anyone Who Signs Up With This Code Earns You Referral Credits On Their First Qualifying Order.'
@@ -99,7 +110,7 @@ export async function GET(_req: Request) {
       storefrontUrl,
       slug: storefrontSlug,
       displayName,
-      qrCodeData: null, // regenerate client-side so the QR encodes the landing-page referral link
+      qrCodeData: null, // regenerate client-side so the QR encodes the link above
       primaryColor,
       isInvite: true,
       referCode: referralCode,
