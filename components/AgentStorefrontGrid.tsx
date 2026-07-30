@@ -2113,7 +2113,7 @@ export default function AgentStorefrontGrid({
         aria-label={`View ${bundle.name} details`}
       >
         {bundle.image_url && (
-          <div style={{ position: 'relative', width: '100%', height: 150, borderRadius: 'var(--radius-md)', overflow: 'hidden', marginBottom: 'var(--space-4)', background: 'var(--surface-3)' }}>
+          <div style={{ position: 'relative', width: '100%', aspectRatio: '2/3', borderRadius: 'var(--radius-md)', overflow: 'hidden', marginBottom: 'var(--space-4)', background: 'var(--surface-3)' }}>
             <Image src={bundle.image_url} alt={bundle.name} fill unoptimized sizes="(max-width: 768px) 100vw, 33vw" style={{ objectFit: 'contain' }} />
           </div>
         )}
