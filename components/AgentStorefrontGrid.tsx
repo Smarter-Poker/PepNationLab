@@ -4920,7 +4920,7 @@ export default function AgentStorefrontGrid({
 
                 {/* Bundle Member Monographs */}
                 <div style={{ marginBottom: 28 }}>
-                  {Array.from(new Set(resolved.members.map(m => m.compoundSlug).filter(Boolean))).map((slug) => {
+                  {Array.from(new Set(resolved.members.map(m => grouped.find(g => g.defaultVariantId === m.product_id)?.compoundSlug).filter(Boolean))).map((slug) => {
                     const compound = compoundsBySlug[slug as string];
                     if (!compound) return null;
                     return (
@@ -4928,7 +4928,7 @@ export default function AgentStorefrontGrid({
                         key={slug as string} 
                         compound={compound} 
                         primaryColor={primaryColor} 
-                        buttonLabel={`Research Profile: ${compound.name}`} 
+                        buttonLabel={`Research Profile: ${compound.display_name}`} 
                       />
                     );
                   })}
@@ -4978,8 +4978,8 @@ export default function AgentStorefrontGrid({
 
                 <div style={{ marginTop: 24 }}>
                   <ProductModalEnhancements
-                    currentCompound={compoundsBySlug?.[resolved.members[0]?.compoundSlug ?? ''] ?? null}
-                    currentCompoundSlug={resolved.members[0]?.compoundSlug ?? null}
+                    currentCompound={compoundsBySlug?.[grouped.find(g => g.defaultVariantId === resolved.members[0]?.product_id)?.compoundSlug ?? ''] ?? null}
+                    currentCompoundSlug={grouped.find(g => g.defaultVariantId === resolved.members[0]?.product_id)?.compoundSlug ?? null}
                     currentProductName={selectedBundle.name}
                     currentBundlePriceDollars={resolved.finalPrice}
                     grouped={grouped.map<ModalGroupedProductRef>((g) => ({

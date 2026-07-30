@@ -52,7 +52,7 @@ const premiumMetalButton: React.CSSProperties = {
   lineHeight: 1,
 };
 
-export default function ProductMonograph({ compound, primaryColor = '#00C4BC', coaUrl = null }: Props) {
+export default function ProductMonograph({ compound, primaryColor = '#00C4BC', coaUrl = null, buttonLabel }: Props) {
   const [panelSection, setPanelSection] = useState<ResearchSection | null>(null);
   if (!compound) return null;
 
