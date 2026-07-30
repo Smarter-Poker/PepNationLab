@@ -343,8 +343,8 @@ export async function PATCH(req: NextRequest) {
 
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const { id, action } = body as { id?: unknown; action?: unknown };
-  if (typeof id !== 'string' || !id) return NextResponse.json({ error: 'Bundle ID Required' }, { status: 400 });
-  const VALID_ACTIONS = ['toggle', 'update', 'update_price'] as const;
+  if (action !== 'reorder' && (typeof id !== 'string' || !id)) return NextResponse.json({ error: 'Bundle ID Required' }, { status: 400 });
+  const VALID_ACTIONS = ['toggle', 'update', 'update_price', 'reorder'] as const;
   if (typeof action !== 'string' || !(VALID_ACTIONS as readonly string[]).includes(action)) {
     return NextResponse.json({ error: `Invalid Action. Must Be One Of: ${VALID_ACTIONS.join(', ')}` }, { status: 400 });
   }
@@ -353,7 +353,7 @@ export async function PATCH(req: NextRequest) {
   const caller = await resolveCaller(svc, gate.user.id, gate.isAdmin);
   const { bundles, slug } = await loadOwn(svc, gate.user.id);
   const idx = bundles.findIndex((b) => b.id === id);
-  if (idx === -1) return NextResponse.json({ error: 'Bundle Not Found' }, { status: 404 });
+  if (action !== 'reorder' && idx === -1) return NextResponse.json({ error: 'Bundle Not Found' }, { status: 404 });
 
   let updated: StoredBundle[];
   if (action === 'toggle') {
@@ -370,6 +370,20 @@ export async function PATCH(req: NextRequest) {
     }
     const cleanPrice = newPrice !== null && newPrice > 0 ? Math.round(newPrice * 100) / 100 : null;
     updated = bundles.map((b) => (b.id === id ? { ...b, custom_price: cleanPrice } : b));
+  } else if (action === 'reorder') {
+    const ids = Array.isArray(body.ids) ? body.ids : [];
+    updated = [];
+    const bundleMap = new Map(bundles.map(b => [b.id, b]));
+    for (const bid of ids) {
+      if (typeof bid === 'string' && bundleMap.has(bid)) {
+        updated.push(bundleMap.get(bid)!);
+        bundleMap.delete(bid);
+      }
+    }
+    // Append any bundles that were omitted from the payload
+    for (const b of bundleMap.values()) {
+      updated.push(b);
+    }
   } else {
     const fields = validateBundleInput(body);
     if ('error' in fields) return NextResponse.json({ error: fields.error }, { status: 400 });

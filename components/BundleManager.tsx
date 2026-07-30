@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
-import { Package, Search, Upload, Pencil, Trash2, Eye, EyeOff, Plus, X, DollarSign, Tag, TrendingUp } from 'lucide-react';
+import { Package, Search, Upload, Pencil, Trash2, Eye, EyeOff, Plus, X, DollarSign, Tag, TrendingUp, ChevronUp, ChevronDown } from 'lucide-react';
 
 const MIN_PRODUCTS = 2;
 const MAX_PRODUCTS = 6;
@@ -280,6 +280,27 @@ export default function BundleManager({ agentId }: Props) {
     }
   };
 
+  const moveBundle = async (index: number, direction: 'up' | 'down') => {
+    if (direction === 'up' && index === 0) return;
+    if (direction === 'down' && index === bundles.length - 1) return;
+    
+    const newBundles = [...bundles];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    [newBundles[index], newBundles[targetIndex]] = [newBundles[targetIndex], newBundles[index]];
+    
+    setBundles(newBundles);
+    
+    const res = await fetch('/api/agent/bundles', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'reorder', ids: newBundles.map((b) => b.id) }),
+    });
+    if (!res.ok) {
+      toast.error('Failed To Reorder Bundles');
+      loadBundles();
+    }
+  };
+
   const remove = async (b: Bundle) => {
     const res = await fetch('/api/agent/bundles', {
       method: 'DELETE',
@@ -338,18 +359,28 @@ export default function BundleManager({ agentId }: Props) {
       {/* Existing bundles */}
       {bundles.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-          {bundles.map((b) => (
+          {bundles.map((b, idx) => (
             <div
               key={b.id}
               style={{
                 display: 'flex', gap: 'var(--space-3)', padding: '12px 14px',
                 borderRadius: 'var(--radius-md)', background: 'var(--surface-2)',
                 border: '1px solid rgba(255,255,255,0.06)', opacity: b.is_active ? 1 : 0.55,
-                alignItems: 'flex-start',
+                alignItems: 'center',
               }}
             >
+              {/* Reorder Arrows */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginRight: -6 }}>
+                <button type="button" onClick={() => moveBundle(idx, 'up')} disabled={idx === 0} className="btn-ghost" style={{ padding: 2, color: idx === 0 ? 'var(--surface-3)' : 'var(--silver)' }}>
+                  <ChevronUp size={16} />
+                </button>
+                <button type="button" onClick={() => moveBundle(idx, 'down')} disabled={idx === bundles.length - 1} className="btn-ghost" style={{ padding: 2, color: idx === bundles.length - 1 ? 'var(--surface-3)' : 'var(--silver)' }}>
+                  <ChevronDown size={16} />
+                </button>
+              </div>
+
               {/* Thumbnail */}
-              <div style={{ width: 50, height: 50, borderRadius: 8, overflow: 'hidden', flexShrink: 0, background: 'var(--surface-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
+              <div style={{ width: 50, height: 50, borderRadius: 8, overflow: 'hidden', flexShrink: 0, background: 'var(--surface-3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {b.image_url ? (
                   <Image src={b.image_url} alt={b.name} width={100} height={100} unoptimized style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                 ) : (
