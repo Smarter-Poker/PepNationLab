@@ -281,11 +281,24 @@ const PUBLIC_ROUTES = [
 // out the per-user pages that live underneath it. These are carved back out.
 // Keep this list in sync with any new personal page added under a public tree:
 // a miss here leaks one user's saved items to every logged-out visitor.
+// Logged-out entry points that ask the visitor to make an account. Reached
+// WITH a ?ref= code they are stale QR targets and get rerouted to the store
+// (see the block in the handler); reached without one they are ordinary pages.
+const ACCOUNT_ENTRY_PREFIXES = ['/signup', '/register', '/login', '/join', '/create-account'];
+
 const GATED_SUBROUTES = [
   '/research/saved',
   '/research/reading-queue',
   '/research/subscriptions',
 ];
+
+// STORE_SLUG_RE demands two or more characters, which is correct for slug
+// CREATION but wrong as the logged-out fallback test further down: a ONE
+// character first segment (/r/savagebrands, /q/<code>, a bare /r -- the shapes
+// short and legacy QR links use) is not slug-shaped, so it escaped the "send
+// them to the landing page" branch and fell straight through to /login. Same
+// character class, one character shorter.
+const GUEST_FALLBACK_SEGMENT_RE = /^[a-z0-9][a-z0-9_-]{0,49}$/;
 
 function isGatedSubroute(pathname: string): boolean {
   return GATED_SUBROUTES.some((r) => pathname === r || pathname.startsWith(r + '/'));
@@ -364,6 +377,42 @@ export default async function proxy(request: NextRequest) {
     }
     return res;
   };
+
+  // --- A REFERRAL LINK MUST NEVER OPEN AN ACCOUNT-CREATION SCREEN ---
+  // QR codes printed, saved to camera rolls or pasted into chats BEFORE the
+  // storefront-first change still encode the old account-first targets:
+  // /signup?ref=<code>, /register?ref=<code>, /join?ref=<code>. Every one of
+  // those paths is in PUBLIC_ROUTES, so it renders normally and the scanner is
+  // met with "create an account" before seeing a single product or price --
+  // the exact thing the storefront-first rule forbids, and the symptom
+  // reported from a real-world scan.
+  //
+  // The trigger is the ?ref= QUERY PARAMETER, never the lock cookie. In-app
+  // "Sign In" / "Create Account" links carry no ?ref=, so a guest already
+  // browsing a locked store can still reach /login and /signup deliberately.
+  // Only a referral ENTRY POINT is rerouted. /invite/* is deliberately absent:
+  // an invitation is an account-creation link somebody was sent on purpose.
+  //
+  // Placement: after the ?ref= capture above (so the lock is minted and both
+  // cookies ride along on this redirect) and before the /register 308 and the
+  // PUBLIC_ROUTES early return, either of which would otherwise win.
+  if (
+    request.method === 'GET' &&
+    request.nextUrl.searchParams.has('ref') &&
+    ACCOUNT_ENTRY_PREFIXES.some((r) => pathname === r || pathname.startsWith(r + '/'))
+  ) {
+    const lockedSlug =
+      refLock?.s && STORE_SLUG_RE.test(refLock.s) && !RESERVED_SEGMENTS.has(refLock.s)
+        ? refLock.s
+        : null;
+    const url = request.nextUrl.clone();
+    // No resolvable storefront (researcher code, deactivated store, unknown
+    // code) still beats an account wall: the landing page is a sanctioned QR
+    // landing target and offers "Continue As Guest".
+    url.pathname = lockedSlug ? `/${lockedSlug}` : '/';
+    url.search = '';
+    return withRefCookies(NextResponse.redirect(url));
+  }
 
   if (pathname.startsWith('/register')) {
     const url = request.nextUrl.clone();
@@ -637,7 +686,7 @@ export default async function proxy(request: NextRequest) {
     if (
       request.method === 'GET' &&
       firstSegment &&
-      STORE_SLUG_RE.test(firstSegment) &&
+      GUEST_FALLBACK_SEGMENT_RE.test(firstSegment) &&
       !RESERVED_SEGMENTS.has(firstSegment)
     ) {
       const url = request.nextUrl.clone();
