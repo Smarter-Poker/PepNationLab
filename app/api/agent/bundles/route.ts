@@ -97,8 +97,8 @@ function validateBundleInput(body: Record<string, unknown>):
   if (cleanIds.length < MIN_BUNDLE_PRODUCTS) {
     return { error: `A Bundle Needs At Least ${MIN_BUNDLE_PRODUCTS} Distinct Products` };
   }
-  if (description !== undefined && description !== null && (typeof description !== 'string' || description.length > 500)) {
-    return { error: 'Bundle Description Too Long (Max 500 Characters)' };
+  if (description !== undefined && description !== null && (typeof description !== 'string' || description.length > 5000)) {
+    return { error: 'Bundle Description Too Long (Max 5000 Characters)' };
   }
   if (image_url !== undefined && image_url !== null) {
     if (typeof image_url !== 'string' || image_url.length > 1000) {
