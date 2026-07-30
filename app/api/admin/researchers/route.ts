@@ -8,6 +8,7 @@ import { requireAdmin } from '@/lib/admin-auth';
 import { unwrapMaybe } from '@/lib/supabase/unwrap';
 import { assertSameOrigin } from '@/lib/csrf';
 import { safeError } from '@/lib/api-error';
+import { validateStoreSlug } from '@/lib/store-slug';
 
 // GET: List all profiles with optional roles and search query
 export async function GET(req: NextRequest) {
@@ -274,9 +275,18 @@ export async function POST(req: NextRequest) {
     if (isAgentRole) {
       if (!slug || !display_name) return NextResponse.json({ error: 'Slug And User Name Are Required For Agents' }, { status: 400 });
       if (typeof display_name !== 'string' || display_name.length > 100) return NextResponse.json({ error: 'User Name Length Must Be 100 Characters Or Less' }, { status: 400 });
-      const slugRegex = /^[a-z0-9\-]+$/;
-      if (!slugRegex.test(slug)) return NextResponse.json({ error: 'Slug Must Contain Lowercase Letters, Numbers, And Hyphens Only' }, { status: 400 });
-      if (slug.length < 2 || slug.length > 50) return NextResponse.json({ error: 'Slug Length Must Be Between 2 And 50 Characters' }, { status: 400 });
+      // Storefront slug shape comes from lib/store-slug.ts - the same definition
+      // the edge middleware (proxy.ts) matches on and the
+      // agent_profiles_slug_shape CHECK + agent_profiles_slug_not_reserved
+      // trigger enforce in the database.
+      //
+      // The old /^[a-z0-9\-]+$/ plus a 2..50 length pair had the right bounds
+      // but no reserved-segment guard and allowed a leading hyphen, so
+      // promoting a researcher onto slug `admin`, `wallet`, `checkout` or `-x`
+      // produced a storefront the middleware refuses to route -- permanently
+      // dead, with its QR code, and no error surfaced anywhere.
+      const slugError = validateStoreSlug(slug);
+      if (slugError) return NextResponse.json({ error: slugError }, { status: 400 });
 
       const existingSlug = await unwrapMaybe<any>('researcher.slug_check', supabase.from('agent_profiles').select('id').eq('slug', slug).neq('id', id).maybeSingle());
       if (existingSlug) return NextResponse.json({ error: 'This Agent Storefront Slug Is Already Taken' }, { status: 400 });
