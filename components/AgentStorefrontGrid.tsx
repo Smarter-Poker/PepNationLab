@@ -2133,9 +2133,7 @@ export default function AgentStorefrontGrid({
             }}>{bundle.tagline}</div>
           )}
         </div>
-        {bundle.description && (
-          <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', lineHeight: 1.5, marginBottom: 'var(--space-3)' }}>{bundle.description}</p>
-        )}
+
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, marginBottom: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 4 }}>
           {resolved.members.map((m) => (
             <li key={m.id} style={{ fontSize: '0.78rem', color: 'var(--silver)', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -4856,9 +4854,9 @@ export default function AgentStorefrontGrid({
 
                 {/* Description */}
                 {selectedBundle.description && (
-                  <p style={{ fontSize: '0.9rem', color: 'var(--grey-300)', lineHeight: 1.65, marginBottom: 24 }}>
+                  <div style={{ fontSize: '0.9rem', color: 'var(--grey-300)', lineHeight: 1.65, marginBottom: 24, whiteSpace: 'pre-wrap' }}>
                     {selectedBundle.description}
-                  </p>
+                  </div>
                 )}
 
                 {/* What's included */}
