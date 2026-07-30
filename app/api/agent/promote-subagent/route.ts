@@ -4,12 +4,10 @@ import { requireAgent } from '@/lib/admin-auth';
 import { isAgentAncestorOf } from '@/lib/agent-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { notifyPromotedToAgent, notifyPromotionSuccess } from '@/lib/notify';
-import { generateQrDataUrl } from '@/lib/qr';
+import { generateStorefrontQr } from '@/lib/qr-storefront';
 import { verifyCommissionSafeguard } from '@/lib/pricing';
 import { seedStorefrontFromHousePrices } from '@/lib/seed-storefront';
 import { isValidStoreSlug } from '@/lib/store-slug';
-
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://pepnationlab.com';
 
 /**
  * Derives a routable storefront slug from a person's username / display name.
@@ -111,13 +109,12 @@ async function provisionAgentStorefront(
         }
       }
 
-      let qr: string | null = null;
-      try {
-        // utm params make QR scans attributable as offline traffic.
-        qr = await generateQrDataUrl(`${APP_URL}/${candidate}?utm_source=qr&utm_medium=offline`);
-      } catch {
-        /* QR is non-essential; storefront works without it */
-      }
+      // utm params make QR scans attributable as offline traffic; ?ref= makes
+      // the scan mint a HARD first-scan-wins referral lock. `username` is
+      // nullable here, so fall back to the slug - resolveRefCode() accepts a
+      // slug too, which still beats shipping a code with no ref at all.
+      // Never throws; a null result just means no cached code.
+      const qr: string | null = await generateStorefrontQr(candidate, username || candidate);
       const { error: storeError } = await admin.from('agent_profiles').insert({
         id: agentId,
         slug: candidate,

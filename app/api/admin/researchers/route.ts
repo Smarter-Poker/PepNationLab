@@ -9,6 +9,7 @@ import { unwrapMaybe } from '@/lib/supabase/unwrap';
 import { assertSameOrigin } from '@/lib/csrf';
 import { safeError } from '@/lib/api-error';
 import { validateStoreSlug } from '@/lib/store-slug';
+import { generateStorefrontQr } from '@/lib/qr-storefront';
 
 // GET: List all profiles with optional roles and search query
 export async function GET(req: NextRequest) {
@@ -331,11 +332,37 @@ export async function POST(req: NextRequest) {
     });
 
     if (isAgentRole) {
-      const agentProfileData = {
+      // Promotion to agent creates (or re-points) a storefront, and a
+      // storefront with no qr_code_data is a storefront whose owner has no
+      // code to hand out. This branch never generated one, so every agent
+      // promoted from a researcher account shipped with a NULL QR while
+      // agents created through the four /api/*/agents routes got theirs at
+      // creation time. Generate it here too, from the same shared helper, so
+      // the payload and the scanner-safe palette match everywhere.
+      //
+      // referral_code is the referral namespace when set, username otherwise;
+      // proxy.ts's resolveRefCode() accepts either (and the slug), so the
+      // fallback chain always yields a working hard lock.
+      const { data: refRow } = await supabase
+        .from('profiles')
+        .select('username, referral_code')
+        .eq('id', id)
+        .maybeSingle();
+      const refCode =
+        (refRow as { username?: string | null; referral_code?: string | null } | null)?.referral_code ||
+        (refRow as { username?: string | null } | null)?.username ||
+        slug;
+      const qrCodeData = await generateStorefrontQr(slug, refCode);
+
+      const agentProfileData: Record<string, unknown> = {
         id, slug, display_name,
         is_active: is_active !== undefined ? is_active : true,
         updated_at: new Date().toISOString(),
       };
+      // Only write the column when the render succeeded - a null would wipe a
+      // working code off an agent_profiles row that already had one.
+      if (qrCodeData) agentProfileData.qr_code_data = qrCodeData;
+
       const { error: agentError } = await supabase.from('agent_profiles').upsert(agentProfileData);
       if (agentError) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
     } else {
