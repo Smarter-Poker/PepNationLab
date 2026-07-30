@@ -1,6 +1,8 @@
 import type { createAdminClient } from '@/lib/supabase/server';
 import { sanitizeUsername } from '@/lib/usernames';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
+import { STORE_SLUG_RE } from '@/lib/store-slug';
+import { recordAttributionEvent } from '@/lib/attribution-log';
 
 type AdminClient = ReturnType<typeof createAdminClient>;
 
@@ -75,6 +77,9 @@ export interface EnsureProfileResult {
  *   7. subAgentId (QR ?sa= Capture, Forwarded As subAgentRef): Credited Only
  *      When It Is A Real Sub-Agent Of The Resolved Referring Agent, Matching
  *      POST /api/storefront/register Exactly.
+ *   8. Every Attribution Outcome Is Written To referral_attribution_events So
+ *      A Commission Dispute Can Be Reconstructed Months Later. Best-Effort:
+ *      An Audit Failure Never Blocks A Sign-In.
  */
 
 /**
@@ -86,11 +91,29 @@ export interface EnsureProfileResult {
  */
 const FRESH_SIGNUP_WINDOW_MS = 15 * 60 * 1000;
 
+/**
+ * Referral codes live in the profiles username / referral_code namespace,
+ * which permits mixed case, digits, underscores and hyphens. Kept identical
+ * to REF_CODE_RE in lib/ref-lock.ts so a code that survives the signed lock
+ * can never be silently dropped here.
+ */
+const REF_CODE_RE = /^[A-Za-z0-9_-]{2,80}$/;
+
 interface EmailOwner {
   id: string;
   role?: string | null;
   is_active?: boolean | null;
   email_verified?: boolean | null;
+}
+
+interface RefCandidate {
+  id: string;
+  role?: string | null;
+  username?: string | null;
+  referral_code?: string | null;
+  is_active?: boolean | null;
+  is_sub_agent?: boolean | null;
+  parent_agent_id?: string | null;
 }
 
 export async function ensureOAuthResearcherProfile(
@@ -132,21 +155,47 @@ export async function ensureOAuthResearcherProfile(
     let referringSubAgentId: string | null = null;
 
     // FIRST: explicit referral code (username / referral_code namespace).
-    if (refCode && /^[a-z0-9_-]{2,80}$/i.test(refCode)) {
+    if (refCode && REF_CODE_RE.test(refCode)) {
       // Escape LIKE wildcards (_ and %) a raw username/code could contain so the
       // match stays literal -- mirrors the email-probe escaping used below.
+      // encodeURIComponent does NOT neutralise these: without the escape,
+      // ?ref=____l matches EVERY five-character code ending in `l`.
       const refEsc = refCode.replace(/([%_\\])/g, '\\$1');
-      const { data: refMatch } = await admin
+
+      // DETERMINISM. This used to be .limit(1).maybeSingle() with no ORDER BY.
+      // Postgres is free to return any row of a multi-row match in any order,
+      // so when a code matched one profile's `username` and a DIFFERENT
+      // profile's `referral_code`, which agent got paid varied between
+      // identical requests. Fetch a small window with a stable order, then
+      // prefer an EXACT match — a literal code always beats a case-fold or
+      // cross-column coincidence.
+      const { data: refRows } = await admin
         .from('profiles')
-        .select('id, role, is_active, is_sub_agent, parent_agent_id')
+        .select('id, role, username, referral_code, is_active, is_sub_agent, parent_agent_id')
         .or(`username.ilike.${refEsc},referral_code.ilike.${refEsc}`)
         .eq('is_active', true)
         .is('deleted_at', null)
-        .limit(1)
-        .maybeSingle();
+        .order('username', { ascending: true })
+        .order('id', { ascending: true })
+        .limit(5);
+
+      const rows = (refRows ?? []) as unknown as RefCandidate[];
+      const wanted = refCode.toLowerCase();
+      const refMatch =
+        rows.find((r) => (r.referral_code ?? '').toLowerCase() === wanted) ??
+        rows.find((r) => (r.username ?? '').toLowerCase() === wanted) ??
+        rows[0] ??
+        null;
 
       if (refMatch) {
-        if (refMatch.role === 'agent' || refMatch.role === 'super_agent') {
+        // 'admin' is included deliberately: the platform owner's own code was
+        // silently non-crediting, so their referrals fell through to the house
+        // store with no error anywhere. Matches the storefront register route.
+        if (
+          refMatch.role === 'agent' ||
+          refMatch.role === 'super_agent' ||
+          refMatch.role === 'admin'
+        ) {
           namedAgentId = refMatch.id;
         } else if (refMatch.is_sub_agent && refMatch.parent_agent_id) {
           namedAgentId = refMatch.parent_agent_id;
@@ -157,11 +206,15 @@ export async function ensureOAuthResearcherProfile(
 
     // SECOND: storefront slug (agent_profiles.slug namespace) when the code
     // namespace produced nothing.
-    if (!namedAgentId && agentSlug && /^[a-z0-9_-]{2,80}$/i.test(agentSlug)) {
+    const normalizedSlug = (agentSlug ?? '').trim().toLowerCase();
+    if (!namedAgentId && normalizedSlug && STORE_SLUG_RE.test(normalizedSlug)) {
       const { data: namedAgent } = await admin
         .from('agent_profiles')
         .select('id')
-        .eq('slug', agentSlug.toLowerCase())
+        .eq('slug', normalizedSlug)
+        // A storefront can be deactivated independently of its owner's
+        // account; without this gate a retired store kept harvesting signups.
+        .eq('is_active', true)
         .maybeSingle();
       if (namedAgent?.id) {
         // Activity gate mirrors /api/storefront/register. deleted_at is checked
@@ -190,13 +243,42 @@ export async function ensureOAuthResearcherProfile(
     if (subAgentId && namedAgentId) {
       const { data: subAgent } = await admin
         .from('profiles')
-        .select('id, is_sub_agent, parent_agent_id')
+        .select('id, is_sub_agent, parent_agent_id, is_active, deleted_at')
         .eq('id', subAgentId)
         .maybeSingle();
-      if (subAgent && subAgent.is_sub_agent && subAgent.parent_agent_id === namedAgentId) {
+      if (
+        subAgent &&
+        subAgent.is_sub_agent &&
+        subAgent.parent_agent_id === namedAgentId &&
+        subAgent.is_active === true &&
+        (subAgent as { deleted_at?: string | null }).deleted_at == null
+      ) {
         referringSubAgentId = subAgentId;
       }
     }
+
+    /** Best-effort forensic record of what this call decided and why. */
+    const audit = (
+      event: string,
+      agentId: string | null,
+      extra?: Record<string, unknown>,
+    ) =>
+      recordAttributionEvent(admin, {
+        event,
+        channel: 'oauth_callback',
+        source: 'oauth',
+        user_id: user.id,
+        agent_id: agentId,
+        sub_agent_id: referringSubAgentId,
+        ref_code: refCode ?? null,
+        store_slug: normalizedSlug || null,
+        lock_minted_at: null,
+        detail: {
+          resolved_named_agent: !!namedAgentId,
+          house_fallback: !namedAgentId,
+          ...(extra ?? {}),
+        },
+      });
 
     const { data: profile } = await admin
       .from('profiles')
@@ -265,32 +347,55 @@ export async function ensureOAuthResearcherProfile(
         return result;
       }
       // SELF-HEAL: The Trigger Did Not Create A Row. Build The Full Profile.
-      const username = await deriveUniqueUsername(admin, user);
+      let username = await deriveUniqueUsername(admin, user);
       const firstName = metaName ? metaName.split(' ')[0] : null;
       const lastName = metaName && metaName.includes(' ')
         ? metaName.slice(metaName.indexOf(' ') + 1)
         : null;
 
-      const { error: insertErr } = await admin.from('profiles').upsert({
+      const buildRow = (name: string) => ({
         id: user.id,
         email: realEmail,
-        username,
+        username: name,
         full_name: metaName || null,
         first_name: firstName,
         last_name: lastName,
         avatar_url: metaAvatar,
-        role: 'researcher',
+        role: 'researcher' as const,
         referring_agent_id: referringAgentId,
         referring_sub_agent_id: referringSubAgentId,
         disclaimer_v1_accepted: false,
         is_active: true,
         updated_at: new Date().toISOString(),
-      }, { onConflict: 'id' });
+      });
+
+      let { error: insertErr } = await admin
+        .from('profiles')
+        .upsert(buildRow(username), { onConflict: 'id' });
+
+      // USERNAME RACE. deriveUniqueUsername probes then inserts, and two
+      // Google sign-ins sharing an email local part ("dan@a.com" and
+      // "dan@b.com") can both pass the probe before either writes. The loser
+      // used to fail the whole self-heal and be left profile-less. Retry once
+      // with the id-derived name, which cannot collide with anyone else's.
+      if (insertErr && insertErr.code === '23505' && /username/i.test(insertErr.message ?? '')) {
+        username = fallbackUsername(user);
+        ({ error: insertErr } = await admin
+          .from('profiles')
+          .upsert(buildRow(username), { onConflict: 'id' }));
+      }
 
       if (insertErr) {
-        // Fallback: the unique-email trigger rejected the row in the race
-        // window between the probe above and this insert.
-        if (insertErr.code === '23505' && /email/i.test(insertErr.message ?? '')) {
+        // Fallback: the unique-email guard rejected the row in the race window
+        // between the probe above and this insert. It surfaces as 23505 from
+        // the unique index and as P0001 from the enforce_unique_account_email
+        // trigger's RAISE EXCEPTION - only the former was handled, so a
+        // trigger-side rejection produced an opaque 500 instead of the
+        // "account already exists, please log in" path.
+        if (
+          (insertErr.code === '23505' || insertErr.code === 'P0001') &&
+          /email/i.test(insertErr.message ?? '')
+        ) {
           result.emailConflict = true;
           result.ok = true;
           return result;
@@ -302,6 +407,10 @@ export async function ensureOAuthResearcherProfile(
       result.linkedHouseStore = referringAgentId === (houseStore?.id ?? null);
       result.username = username;
       result.ok = true;
+      await audit('oauth_profile_self_healed', referringAgentId, {
+        self_heal: true,
+        house_linked: result.linkedHouseStore,
+      });
       return result;
     }
 
@@ -341,6 +450,11 @@ export async function ensureOAuthResearcherProfile(
     const trustsTriggerHouseLink =
       profile.referring_agent_id === houseId && isFreshSignup;
 
+    /** What this call actually changed, for the audit row. Null = no change. */
+    let attributionEvent: string | null = null;
+    let attributionAgent: string | null = null;
+    let attributionDetail: Record<string, unknown> = {};
+
     if (!profile.referring_agent_id && referringAgentId) {
       updates.referring_agent_id = referringAgentId;
       // Sub-agent attribution travels WITH the referral: it is only ever set
@@ -350,6 +464,9 @@ export async function ensureOAuthResearcherProfile(
         updates.referring_sub_agent_id = referringSubAgentId;
       }
       result.linkedHouseStore = referringAgentId === houseId;
+      attributionEvent = 'oauth_referral_established';
+      attributionAgent = referringAgentId;
+      attributionDetail = { had_no_referral: true, house_linked: result.linkedHouseStore };
     } else if (trustsTriggerHouseLink && namedAgentId && namedAgentId !== houseId) {
       // The enforce_researcher_agent_binding DB guard forbids changing a
       // non-null referral through a plain UPDATE. oauth_link_fresh_referral
@@ -366,6 +483,13 @@ export async function ensureOAuthResearcherProfile(
         console.error('[oauth-profile] fresh referral upgrade failed:', rpcErr.message);
       }
       result.linkedHouseStore = upgraded !== true;
+      attributionEvent = 'oauth_fresh_referral_upgrade';
+      attributionAgent = upgraded === true ? namedAgentId : houseId;
+      attributionDetail = {
+        upgraded: upgraded === true,
+        rpc_error: rpcErr?.message ?? null,
+        from_house_placeholder: true,
+      };
     }
 
     if (!profile.username) {
@@ -397,10 +521,26 @@ export async function ensureOAuthResearcherProfile(
 
     if (Object.keys(updates).length > 0) {
       updates.updated_at = new Date().toISOString();
-      const { error: updateErr } = await admin
+      let { error: updateErr } = await admin
         .from('profiles')
         .update(updates)
         .eq('id', user.id);
+
+      // Same username race as the self-heal path, on the backfill branch.
+      if (
+        updateErr &&
+        updateErr.code === '23505' &&
+        /username/i.test(updateErr.message ?? '') &&
+        typeof updates.username === 'string'
+      ) {
+        updates.username = fallbackUsername(user);
+        result.username = updates.username;
+        ({ error: updateErr } = await admin
+          .from('profiles')
+          .update(updates)
+          .eq('id', user.id));
+      }
+
       if (updateErr) {
         result.error = `profile_update_failed: ${updateErr.message}`;
         return result;
@@ -408,6 +548,9 @@ export async function ensureOAuthResearcherProfile(
     }
 
     result.ok = true;
+    if (attributionEvent) {
+      await audit(attributionEvent, attributionAgent, attributionDetail);
+    }
     return result;
   } catch (err) {
     result.error = err instanceof Error ? err.message : 'unknown_error';
@@ -416,9 +559,24 @@ export async function ensureOAuthResearcherProfile(
 }
 
 /**
+ * Guaranteed-unique username tied to the caller's own immutable id. Two
+ * different users can never produce the same value, so this always
+ * terminates a collision.
+ */
+function fallbackUsername(user: OAuthUserLike): string {
+  const base =
+    sanitizeUsername((user.email ?? '').split('@')[0]).slice(0, 16) || 'researcher';
+  return `${base}_${user.id.replace(/-/g, '').slice(0, 8)}`;
+}
+
+/**
  * Derive A Unique Username From The OAuth Email. The Final Fallback Appends
  * A Slice Of The Immutable User Id, Which Cannot Collide With Another User's
  * Fallback - Guaranteeing Termination Without An Unbounded Retry Loop.
+ *
+ * NOTE: this is a probe, not a reservation. The caller MUST handle a 23505 on
+ * `username` by retrying with fallbackUsername() - two concurrent sign-ins
+ * sharing an email local part can both pass this check.
  */
 async function deriveUniqueUsername(admin: AdminClient, user: OAuthUserLike): Promise<string> {
   const base =
@@ -435,7 +593,7 @@ async function deriveUniqueUsername(admin: AdminClient, user: OAuthUserLike): Pr
     candidate = `${base}${Math.floor(1000 + Math.random() * 9000)}`;
   }
   // Guaranteed Unique: Tied To The Caller's Own Immutable Id.
-  return `${base.slice(0, 16)}_${user.id.replace(/-/g, '').slice(0, 8)}`;
+  return fallbackUsername(user);
 }
 
 /**
