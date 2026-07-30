@@ -2243,7 +2243,8 @@ export default function AgentStorefrontGrid({
             <motion.div
               key={group.name} className="sf-product-card-nickel hover-lift stagger-fade-in" variants={itemVariants}
               style={{
-                cursor: 'pointer'
+                cursor: 'pointer',
+                border: '1px solid var(--silver)'
               }}
               onMouseEnter={() => {
                 // Prefetch recommendations for this product on hover so data
@@ -2548,8 +2549,26 @@ export default function AgentStorefrontGrid({
                             <span className="sf-product-price-nickel" style={{ fontSize: '1.45rem', fontWeight: 800, fontFamily: 'var(--font-brand)', lineHeight: 1 }}>${displayPrice.toFixed(2)}</span>
                           </div>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'center' }}>
-                          <span style={{ fontSize: '0.72rem', color: 'var(--silver-light)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 'var(--radius-full)', padding: '3px 14px', fontWeight: 600, whiteSpace: 'nowrap' }}>{displaySizeText}</span>
+                        <div style={{ display: 'flex', justifyContent: 'center', minHeight: 32 }}>
+                          {(() => {
+                            const normalizedSize = (displaySizeText || '').toLowerCase().replace(/\s+/g, '');
+                            const pillSizes = ['1mg', '5mg', '10mg', '20mg', '50mg', '70mg', '80mg', '100mg', '3ml', '10ml', '600mg', '1000mg', '1500mg', '75iu'];
+                            if (pillSizes.includes(normalizedSize)) {
+                              return (
+                                <Image 
+                                  src={`/images/ui/pills/${normalizedSize}.png`} 
+                                  alt={`${displaySizeText} Vials`} 
+                                  width={140} 
+                                  height={32} 
+                                  style={{ width: '100%', maxWidth: '140px', height: 'auto', objectFit: 'contain' }} 
+                                  unoptimized 
+                                />
+                              );
+                            }
+                            return (
+                              <span style={{ fontSize: '0.72rem', color: 'var(--silver-light)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 'var(--radius-full)', padding: '3px 14px', fontWeight: 600, whiteSpace: 'nowrap' }}>{displaySizeText}</span>
+                            );
+                          })()}
                         </div>
                         <div
                           onClick={e => e.stopPropagation()}

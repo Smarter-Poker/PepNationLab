@@ -22,19 +22,28 @@ export function computeStockState(
 }
 
 export function StockBadge({ state }: { state: StockState }) {
+  if (state.kind === 'in_stock_local') {
+    return (
+      <div style={{ display: 'flex', width: '100%', maxWidth: '280px', margin: '0 auto' }}>
+        <Image 
+          src="/images/ui/instock-banner.png" 
+          alt="In Stock (Same-Day Pickup)" 
+          width={400} 
+          height={60} 
+          style={{ width: '100%', height: 'auto', objectFit: 'contain' }} 
+          unoptimized 
+        />
+      </div>
+    );
+  }
+
   let bg = 'rgba(192,184,168,0.15)';
   let fg = '#C0B8A8';
   let border = 'rgba(192,184,168,0.40)';
   let label = 'In Stock';
   let badgeSrc = '/images/badges/badge_in_stock.png';
   
-  if (state.kind === 'in_stock_local') {
-    bg = 'rgba(72,187,120,0.15)';
-    fg = '#48BB78';
-    border = 'rgba(72,187,120,0.40)';
-    label = 'In Stock (Same-Day Pickup)';
-    badgeSrc = '/images/badges/badge_in_stock.png';
-  } else if (state.kind === 'in_stock_shipping') {
+  if (state.kind === 'in_stock_shipping') {
     bg = 'rgba(102,126,234,0.15)';
     fg = '#667EEA';
     border = 'rgba(102,126,234,0.40)';
