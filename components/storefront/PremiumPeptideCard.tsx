@@ -42,12 +42,12 @@ export default function PremiumPeptideCard({
   onHover,
   hasSearchMatch = null
 }: Props) {
-  // Helper to convert 832x1248 canvas pixels to responsive CQI units
-  const px = (val: number) => `calc(${val} * 100cqi / 832)`;
-
+  // Helper to convert 683x1024 canvas pixels to responsive CQI units
+  const px = (val: number) => `calc(${val} * 100cqi / 683)`;
+  
   return (
-    <div
-      style={{ containerType: 'inline-size', width: '100%', maxWidth: 832, margin: '0 auto', cursor: 'pointer' }}
+    <div 
+      style={{ containerType: 'inline-size', width: '100%', maxWidth: 683, margin: '0 auto', cursor: 'pointer' }}
       onClick={onClick}
       onMouseEnter={onHover}
       role="button"
@@ -57,12 +57,13 @@ export default function PremiumPeptideCard({
       <div style={{
         position: 'relative',
         width: '100%',
-        paddingBottom: '150%', // 1248 / 832
+        paddingBottom: '149.92679%', // 1024 / 683
         overflow: 'hidden',
+        // Fallback fonts if custom fonts haven't loaded yet
         fontFamily: 'var(--font-sans, sans-serif)',
         transition: 'transform 0.2s',
       }}>
-        {/* Store Frame V2 background — flat metallic separator bar design */}
+        {/* Exact background template provided by user */}
         <Image
           src="/images/storefront/premium-card-bg.jpg"
           alt="Card Background"
@@ -71,25 +72,22 @@ export default function PremiumPeptideCard({
           style={{ objectFit: 'cover', pointerEvents: 'none', zIndex: 0 }}
         />
 
-        {/* Global wrapper for absolute-positioned overlays */}
+        {/* Global wrapper matching canvas size for absolute positioning over the background */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10 }}>
-
-          {/* ─── VIAL IMAGE ─────────────────────────────────────────────
-              Sits in the top image window (above the flat metallic bar).
-              The flat bar is at ~715px on the 1248 canvas → 57.3%.
-              We stop the image container at 710px so the bar is always
-              fully visible on top. Overflow:hidden gives a hard flat edge. */}
+          
+          {/* Vial Image — flat rectangular window, contained by overflow:hidden */}
           <div style={{
             position: 'absolute',
-            left: px(30), top: px(30), right: px(30), height: px(680),
-            borderRadius: `${px(22)} ${px(22)} 0 0`,
+            left: px(25), top: px(25), right: px(25), height: px(523),
+            borderRadius: `${px(20)} ${px(20)} 0 0`,
             overflow: 'hidden',
-            zIndex: 15,
+            zIndex: 15
           }}>
             <Image
               src={imageSrc}
               alt={productName}
               fill
+              // cover = fills the V-window edge-to-edge; clip-path handles the V boundary
               style={{ objectFit: 'cover', objectPosition: 'center center' }}
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
@@ -98,7 +96,7 @@ export default function PremiumPeptideCard({
             />
           </div>
 
-          {/* ─── SEARCH MATCH CHIP (optional) ───────────────────────── */}
+          {/* --- SEARCH MATCH CHIP (Optional) --- */}
           {hasSearchMatch && hasSearchMatch.reason && (() => {
             const confidenceStyle: Record<'high' | 'medium' | 'low', { bg: string; border: string; color: string; label: string }> = {
               high:   { bg: 'rgba(79,209,197,0.12)',  border: 'rgba(79,209,197,0.35)',  color: '#4FD1C5', label: 'Strong Match' },
@@ -109,17 +107,17 @@ export default function PremiumPeptideCard({
             if (!cs) return null;
             return (
               <div style={{
-                position: 'absolute', top: px(170), left: px(30), right: px(30), zIndex: 40,
+                position: 'absolute', top: px(140), left: px(26), right: px(25), zIndex: 40,
                 display: 'flex', justifyContent: 'center', pointerEvents: 'none'
               }}>
                 <div style={{
                   background: 'rgba(20, 25, 30, 0.85)', backdropFilter: 'blur(8px)',
-                  border: `1px solid ${cs.border}`, padding: `${px(5)} ${px(12)}`, borderRadius: px(24),
-                  display: 'flex', alignItems: 'center', gap: px(7), fontSize: px(19),
-                  fontWeight: 700, color: cs.color, boxShadow: `0 ${px(4)} ${px(14)} rgba(0,0,0,0.5)`,
+                  border: `1px solid ${cs.border}`, padding: `${px(4)} ${px(10)}`, borderRadius: px(20),
+                  display: 'flex', alignItems: 'center', gap: px(6), fontSize: px(16),
+                  fontWeight: 700, color: cs.color, boxShadow: `0 ${px(4)} ${px(12)} rgba(0,0,0,0.5)`,
                   maxWidth: '90%', textTransform: 'uppercase', letterSpacing: '0.04em'
                 }}>
-                  <svg width={px(18)} height={px(18)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  <svg width={px(16)} height={px(16)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {cs.label}: {hasSearchMatch.reason}
                   </span>
@@ -128,10 +126,10 @@ export default function PremiumPeptideCard({
             );
           })()}
 
-          {/* ─── COMPARE CHECKBOX (Top Left) ────────────────────────── */}
+          {/* --- COMPARE CONTROL (Top Left) --- */}
           <div style={{
             position: 'absolute',
-            left: px(36), top: px(30), width: px(85), height: px(85),
+            left: px(30), top: px(25), width: px(70), height: px(70),
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             zIndex: 30
           }}>
@@ -141,15 +139,15 @@ export default function PremiumPeptideCard({
               onChange={onCompareToggle}
               onClick={e => e.stopPropagation()}
               style={{
-                width: px(54), height: px(54),
+                width: px(45), height: px(45),
                 cursor: 'pointer',
-                opacity: isPinned ? 1 : 0,
+                opacity: isPinned ? 1 : 0, 
                 accentColor: '#00e5ff'
               }}
             />
           </div>
 
-          {/* ─── WISHLIST HEART (Top Right) ─────────────────────────── */}
+          {/* --- FAVORITE HEART (Top Right) --- */}
           <button
             type="button"
             onClick={(e) => {
@@ -158,8 +156,8 @@ export default function PremiumPeptideCard({
             }}
             style={{
               position: 'absolute',
-              right: px(42), top: px(30),
-              width: px(100), height: px(100),
+              right: px(35), top: px(25),
+              width: px(85), height: px(85),
               background: isWishlisted ? 'rgba(229,62,62,0.8)' : 'transparent',
               border: 'none',
               borderRadius: '50%',
@@ -170,26 +168,27 @@ export default function PremiumPeptideCard({
             }}
           >
             {isWishlisted && (
-              <svg width={px(48)} height={px(48)} viewBox="0 0 24 24" fill="#FF5A6E" stroke="#FF5A6E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width={px(40)} height={px(40)} viewBox="0 0 24 24" fill="#FF5A6E" stroke="#FF5A6E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
               </svg>
             )}
           </button>
 
-          {/* ─── PRODUCT NAME ────────────────────────────────────────── 
-              Sits in the dark info band just below the metallic bar.
-              Bar bottom edge ≈ 730px, pill top ≈ 1000px → center ≈ 865px. */}
+
+          {/* --- PRODUCT NAME AREA --- */}
+          {/* 5. Lowered and centered to the space, dynamic custom font sizes */}
           {(() => {
+            // Determine font size based on length
             const len = productName.length;
-            let dynamicFontSize = px(54);
-            if (len > 22) dynamicFontSize = px(32);
-            else if (len > 15) dynamicFontSize = px(38);
-            else if (len > 11) dynamicFontSize = px(44);
+            let dynamicFontSize = px(44);
+            if (len > 22) dynamicFontSize = px(26);
+            else if (len > 15) dynamicFontSize = px(30);
+            else if (len > 11) dynamicFontSize = px(36);
 
             return (
               <div style={{
                 position: 'absolute',
-                left: px(30), top: px(730), width: px(430), height: px(140),
+                left: px(51), top: px(548), width: px(319), height: px(116), // Perfectly centered vertically in available space between V-frame and pill
                 display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
                 zIndex: 30, pointerEvents: 'none'
               }}>
@@ -205,6 +204,7 @@ export default function PremiumPeptideCard({
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   textAlign: 'center',
+                  // Silver Gradient
                   background: 'linear-gradient(180deg, #FFFFFF 0%, #B9C0C7 40%, #828A92 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
@@ -216,20 +216,21 @@ export default function PremiumPeptideCard({
             );
           })()}
 
-          {/* ─── VIAL SIZE BADGE (inside the pill button on left) ────── 
-              Pill in template: left ~62px, top ~990px, width ~390px, height ~108px */}
+          {/* --- SIZE BADGE AREA (Inside the Pill box) --- */}
+          {/* Silver gradient for weights */}
           <div style={{
             position: 'absolute',
-            left: px(62), top: px(990), width: px(390), height: px(108),
+            left: px(51), top: px(664), width: px(319), height: px(89),
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             zIndex: 30, pointerEvents: 'none'
           }}>
             <span style={{
               fontFamily: 'var(--font-montserrat, sans-serif)',
               fontWeight: 800,
-              fontSize: px(40),
+              fontSize: px(34),
               letterSpacing: px(1),
               textTransform: 'uppercase',
+              // Silver Gradient
               background: 'linear-gradient(180deg, #FFFFFF 0%, #B9C0C7 40%, #828A92 100%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
@@ -239,43 +240,43 @@ export default function PremiumPeptideCard({
             </span>
           </div>
 
-          {/* ─── PRICING (Right column, below bar) ───────────────────── 
-              WHOLESALE PRICE label ≈ top 760px, right section x≈468px, width≈332px */}
 
+          {/* --- PRICING AREA (Right Side) --- */}
+          
           {(msrp !== undefined && msrp > (wholesalePrice ?? 0)) && (
             <>
-              {/* MSRP row */}
+              {/* 3. Raised MSRP to clear the cyan line */}
               <div style={{
                 position: 'absolute',
-                left: px(468), width: px(332), top: px(750),
-                display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: px(7),
+                left: px(380), width: px(280), top: px(560),
+                display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: px(6),
                 zIndex: 30, pointerEvents: 'none'
               }}>
                 <span style={{
                   fontFamily: 'var(--font-roboto-condensed, sans-serif)',
                   fontWeight: 700,
-                  fontSize: px(31),
+                  fontSize: px(26),
                   color: '#8B8F93'
                 }}>MSRP</span>
                 <span style={{
                   fontFamily: 'var(--font-roboto-condensed, sans-serif)',
                   fontWeight: 700,
-                  fontSize: px(36),
+                  fontSize: px(30),
                   color: '#8B8F93',
                   textDecoration: 'line-through',
                   textDecorationThickness: px(2)
                 }}>${msrp.toFixed(2)}</span>
               </div>
 
-              {/* YOU SAVE row */}
+              {/* 3. Raised Savings Text to clear the cyan line */}
               {savings !== undefined && savings > 0 && (
                 <div style={{
                   position: 'absolute',
-                  left: px(468), width: px(332), top: px(800),
+                  left: px(380), width: px(280), top: px(592),
                   display: 'flex', justifyContent: 'center',
                   fontFamily: 'var(--font-roboto-condensed, sans-serif)',
                   fontWeight: 700,
-                  fontSize: px(33),
+                  fontSize: px(27),
                   color: '#00C7E8',
                   textTransform: 'uppercase',
                   zIndex: 30, pointerEvents: 'none'
@@ -286,29 +287,29 @@ export default function PremiumPeptideCard({
             </>
           )}
 
-          {/* Wholesale Price digits */}
+          {/* Centered Wholesale Price Digits */}
           <div style={{
             position: 'absolute',
-            left: px(468), width: px(332), top: px(1010),
+            left: px(380), width: px(280), top: px(710),
             display: 'flex', justifyContent: 'center',
             fontFamily: 'var(--font-roboto-condensed, sans-serif)',
             fontWeight: 700,
-            fontSize: px(80),
-            color: '#00D5F2',
+            fontSize: px(65),
+            color: '#00D5F2', 
             lineHeight: 1,
-            textShadow: `0 ${px(4)} ${px(12)} rgba(0,0,0,0.5)`,
+            textShadow: `0 ${px(4)} ${px(10)} rgba(0,0,0,0.5)`,
             zIndex: 30, pointerEvents: 'none'
           }}>
             ${(wholesalePrice ?? 0).toFixed(2)}
           </div>
 
-          {/* ─── ADD TO CART (invisible click overlay) ───────────────── 
-              Button in template: left ~56px, top ~1155px, width ~720px, height ~135px */}
-          <div
+
+          {/* --- ADD TO CART BUTTON (Invisible overlay) --- */}
+          <div 
             style={{
               position: 'absolute',
-              left: px(56), top: px(1155), width: px(720), height: px(135),
-              borderRadius: px(68),
+              left: px(46), top: px(800), width: px(591), height: px(115),
+              borderRadius: px(57.5),
               cursor: 'pointer',
               zIndex: 30
             }}
@@ -318,9 +319,10 @@ export default function PremiumPeptideCard({
             }}
             aria-label={buttonText}
           />
-
+          
         </div>
       </div>
     </div>
   );
 }
+
