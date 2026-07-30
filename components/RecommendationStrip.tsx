@@ -85,8 +85,15 @@ export default function RecommendationStrip({
           display: 'flex',
           gap: 'var(--space-2)',
           overflowX: 'auto',
+          // Isolate the carousel's horizontal scroll from the page WITHOUT
+          // trapping vertical page-scroll: overscroll-behavior-x:none stops the
+          // horizontal swipe from chaining to browser back/forward at the edge,
+          // while touch-action pan-x pan-y still lets a vertical swipe that
+          // starts on the strip scroll the page (a bare pan-x blocked it on
+          // Android, so a thumb resting over this full-width strip could not
+          // scroll the page up/down).
           overscrollBehaviorX: 'none',
-          touchAction: 'pan-x',
+          touchAction: 'pan-x pan-y',
           WebkitOverflowScrolling: 'touch',
           paddingBottom: 6,
           scrollbarWidth: 'thin',
