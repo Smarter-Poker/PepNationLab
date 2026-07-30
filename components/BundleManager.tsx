@@ -15,9 +15,10 @@ type BundleScope = 'self' | 'downline' | 'global';
 interface Bundle {
   id: string;
   name: string;
-  tagline: string;
-  description: string;
+  tagline: string | null;
+  description: string | null;
   image_url: string | null;
+  vial_image_url: string | null;
   product_ids: string[];
   discount_percent: number;
   custom_price: number | null;
@@ -68,6 +69,7 @@ export default function BundleManager({ agentId }: Props) {
   const [tagline, setTagline] = useState('');
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [vialImageUrl, setVialImageUrl] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [discount, setDiscount] = useState(0);
   const [customPrice, setCustomPrice] = useState('');
@@ -75,6 +77,7 @@ export default function BundleManager({ agentId }: Props) {
   const [query, setQuery] = useState('');
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [vialUploading, setVialUploading] = useState(false);
   const formRef = useRef<HTMLDivElement | null>(null);
 
   const catalogName = useCallback(
@@ -142,6 +145,7 @@ export default function BundleManager({ agentId }: Props) {
     setTagline('');
     setDescription('');
     setImageUrl('');
+    setVialImageUrl('');
     setSelectedIds([]);
     setDiscount(0);
     setCustomPrice('');
@@ -161,6 +165,7 @@ export default function BundleManager({ agentId }: Props) {
     setTagline(b.tagline || '');
     setDescription(b.description || '');
     setImageUrl(b.image_url || '');
+    setVialImageUrl(b.vial_image_url || '');
     setSelectedIds([...b.product_ids]);
     setDiscount(b.discount_percent || 0);
     setCustomPrice(b.custom_price != null ? String(b.custom_price) : '');
@@ -181,8 +186,9 @@ export default function BundleManager({ agentId }: Props) {
     });
   };
 
-  const handleUpload = async (file: File) => {
-    setUploading(true);
+  const handleUpload = async (file: File, isVial: boolean = false) => {
+    if (isVial) setVialUploading(true);
+    else setUploading(true);
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -200,13 +206,15 @@ export default function BundleManager({ agentId }: Props) {
       }
       
       if (json.url) {
-        setImageUrl(json.url);
+        if (isVial) setVialImageUrl(json.url);
+        else setImageUrl(json.url);
         toast.success('Image Uploaded');
       }
     } catch (err: any) {
       toast.error('Upload Error: ' + err.message);
     } finally {
-      setUploading(false);
+      if (isVial) setVialUploading(false);
+      else setUploading(false);
     }
   };
 
@@ -234,6 +242,7 @@ export default function BundleManager({ agentId }: Props) {
         tagline: tagline.trim(),
         description: description.trim(),
         image_url: imageUrl.trim() || null,
+        vial_image_url: vialImageUrl.trim() || null,
         product_ids: selectedIds,
         discount_percent: Math.min(Math.max(Math.round(Number(discount) || 0), 0), MAX_DISCOUNT),
         custom_price: cpNum,
@@ -433,25 +442,51 @@ export default function BundleManager({ agentId }: Props) {
           </div>
 
           {/* Image upload */}
-          <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
-            <div style={{ width: 84, height: 84, borderRadius: 10, overflow: 'hidden', flexShrink: 0, background: 'var(--surface-3)', border: '1px dashed rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-              {imageUrl ? (
-                <Image src={imageUrl} alt="Bundle" width={168} height={168} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                <Package size={24} style={{ color: 'var(--grey-500)' }} aria-hidden="true" />
-              )}
+          <div style={{ display: 'flex', gap: 'var(--space-6)', flexWrap: 'wrap' }}>
+            {/* Flyer Image */}
+            <div style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'center' }}>
+              <div style={{ width: 84, height: 84, borderRadius: 10, overflow: 'hidden', flexShrink: 0, background: 'var(--surface-3)', border: '1px dashed rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                {imageUrl ? (
+                  <Image src={imageUrl} alt="Flyer Image" width={168} height={168} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <Package size={24} style={{ color: 'var(--grey-500)' }} aria-hidden="true" />
+                )}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, justifyContent: 'center' }}>
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 34, padding: '0 14px', borderRadius: 'var(--radius-md)', background: 'var(--teal)', color: 'var(--background)', fontWeight: 600, fontSize: '0.8rem', cursor: uploading ? 'wait' : 'pointer' }}>
+                  <Upload size={13} aria-hidden="true" />
+                  {uploading ? 'Uploading...' : 'Upload Flyer Image'}
+                  <input type="file" accept="image/*" style={{ display: 'none' }} disabled={uploading} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f, false); }} />
+                </label>
+                {imageUrl && (
+                  <button type="button" onClick={() => setImageUrl('')} style={{ fontSize: '0.72rem', color: 'var(--red)', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0 }}>
+                    Remove Flyer
+                  </button>
+                )}
+              </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, justifyContent: 'center' }}>
-              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 34, padding: '0 14px', borderRadius: 'var(--radius-md)', background: 'var(--teal)', color: 'var(--background)', fontWeight: 600, fontSize: '0.8rem', cursor: uploading ? 'wait' : 'pointer' }}>
-                <Upload size={13} aria-hidden="true" />
-                {uploading ? 'Uploading...' : imageUrl ? 'Replace Image' : 'Upload Image'}
-                <input type="file" accept="image/*" style={{ display: 'none' }} disabled={uploading} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); }} />
-              </label>
-              {imageUrl && (
-                <button type="button" onClick={() => setImageUrl('')} style={{ fontSize: '0.72rem', color: 'var(--red)', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0 }}>
-                  Remove Image
-                </button>
-              )}
+
+            {/* Vial Image */}
+            <div style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'center' }}>
+              <div style={{ width: 84, height: 84, borderRadius: 10, overflow: 'hidden', flexShrink: 0, background: 'var(--surface-3)', border: '1px dashed rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                {vialImageUrl ? (
+                  <Image src={vialImageUrl} alt="Vial Image" width={168} height={168} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <Package size={24} style={{ color: 'var(--grey-500)' }} aria-hidden="true" />
+                )}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, justifyContent: 'center' }}>
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 34, padding: '0 14px', borderRadius: 'var(--radius-md)', background: 'var(--teal)', color: 'var(--background)', fontWeight: 600, fontSize: '0.8rem', cursor: vialUploading ? 'wait' : 'pointer' }}>
+                  <Upload size={13} aria-hidden="true" />
+                  {vialUploading ? 'Uploading...' : 'Upload Vial Image'}
+                  <input type="file" accept="image/*" style={{ display: 'none' }} disabled={vialUploading} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f, true); }} />
+                </label>
+                {vialImageUrl && (
+                  <button type="button" onClick={() => setVialImageUrl('')} style={{ fontSize: '0.72rem', color: 'var(--red)', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0 }}>
+                    Remove Vials
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
