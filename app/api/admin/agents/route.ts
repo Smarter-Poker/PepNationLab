@@ -8,6 +8,7 @@ import { generateQrDataUrl } from '@/lib/qr';
 import { sanitizeUsername } from '@/lib/usernames';
 import { assertSameOrigin } from '@/lib/csrf';
 import { seedStorefrontFromHousePrices } from '@/lib/seed-storefront';
+import { validateStoreSlug } from '@/lib/store-slug';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://pepnationlab.com';
 
@@ -127,7 +128,6 @@ export async function POST(req: NextRequest) {
     }
     if (username.length > 40) return NextResponse.json({ error: 'Username Too Long (Max 40 Characters)' }, { status: 400 });
     if (effFullName.length > 160) return NextResponse.json({ error: 'Full Name Too Long (Max 160 Characters)' }, { status: 400 });
-    if (slug && slug.length > 80) return NextResponse.json({ error: 'Slug Too Long (Max 80 Characters)' }, { status: 400 });
     if (display_name && display_name.length > 120) return NextResponse.json({ error: 'Display Name Too Long (Max 120 Characters)' }, { status: 400 });
     if (!isResearcher && (!tier || !account_type || !slug || !display_name)) {
       return NextResponse.json({ error: 'Missing Required Agent Fields (Tier, Billing, Slug, User Name)' }, { status: 400 });
@@ -198,10 +198,19 @@ export async function POST(req: NextRequest) {
 
     const internalEmail = `${usernameClean}@internal.auth`;
 
+    // Storefront slug shape. This MUST agree with the edge middleware
+    // (proxy.ts), which is what actually routes /<slug>, and with the
+    // agent_profiles_slug_shape CHECK + agent_profiles_slug_not_reserved
+    // trigger in the database. The old check here was /^[a-z0-9\-]+$/ with a
+    // separate 80-character cap, which accepted `-x`, `a`, an 80-char slug and
+    // reserved segments like `admin`/`wallet`/`checkout` -- every one of which
+    // creates an agent whose QR code points somewhere unroutable, with no
+    // error raised until a customer scans it. lib/store-slug.ts is the single
+    // source of truth.
     if (!isResearcher) {
-      const slugRegex = /^[a-z0-9\-]+$/;
-      if (!slugRegex.test(slug)) {
-        return NextResponse.json({ error: 'Slug Must Contain Lowercase Letters, Numbers, And Hyphens Only' }, { status: 400 });
+      const slugError = validateStoreSlug(slug);
+      if (slugError) {
+        return NextResponse.json({ error: slugError }, { status: 400 });
       }
     }
 
