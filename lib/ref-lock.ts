@@ -29,6 +29,23 @@ export interface RefLock {
   sa: string | null;
   /** capture time (epoch ms) */
   t: number;
+  /**
+   * How the lock was acquired.
+   *   'qr'  — explicit ?ref=<code> (an agent's QR / share link). HARD: first
+   *           scan wins, never overwritten while it is valid.
+   *   'url' — visitor typed or followed pepnationlab.com/<agent-slug> while
+   *           logged out. SOFT: replaceable by a later real QR scan, or by
+   *           typing a different storefront URL. Without this distinction an
+   *           accidental visit to any store URL would permanently block the
+   *           referral credit of a QR the visitor scans afterwards.
+   * Absent on locks issued before this field existed — treated as 'qr'.
+   */
+  k?: 'qr' | 'url';
+}
+
+/** A lock is soft (replaceable) only when it came from direct URL entry. */
+export function isSoftLock(lock: RefLock | null | undefined): boolean {
+  return lock?.k === 'url';
 }
 
 export const REF_CODE_RE = /^[A-Za-z0-9_-]{2,50}$/;
@@ -89,6 +106,7 @@ export async function verifyRefLock(value: string | undefined | null): Promise<R
     if (typeof lock.a !== 'string' || lock.a.length < 10) return null;
     if (lock.s != null && typeof lock.s !== 'string') return null;
     if (lock.sa != null && typeof lock.sa !== 'string') return null;
+    if (lock.k != null && lock.k !== 'qr' && lock.k !== 'url') return null;
     return lock;
   } catch {
     return null;
