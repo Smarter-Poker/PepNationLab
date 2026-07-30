@@ -42,12 +42,12 @@ export default function PremiumPeptideCard({
   onHover,
   hasSearchMatch = null
 }: Props) {
-  // Helper to convert 675x1007 canvas pixels to responsive CQI units
-  const px = (val: number) => `calc(${val} * 100cqi / 675)`;
+  // Helper to convert 683x1024 canvas pixels to responsive CQI units
+  const px = (val: number) => `calc(${val} * 100cqi / 683)`;
   
   return (
     <div 
-      style={{ containerType: 'inline-size', width: '100%', maxWidth: 675, margin: '0 auto', cursor: 'pointer' }}
+      style={{ containerType: 'inline-size', width: '100%', maxWidth: 683, margin: '0 auto', cursor: 'pointer' }}
       onClick={onClick}
       onMouseEnter={onHover}
       role="button"
@@ -57,7 +57,7 @@ export default function PremiumPeptideCard({
       <div style={{
         position: 'relative',
         width: '100%',
-        paddingBottom: '149.18518%', // 1007 / 675
+        paddingBottom: '149.92679%', // 1024 / 683
         overflow: 'hidden',
         // Fallback fonts if custom fonts haven't loaded yet
         fontFamily: 'var(--font-sans, sans-serif)',
@@ -75,12 +75,11 @@ export default function PremiumPeptideCard({
         {/* Global wrapper matching canvas size for absolute positioning over the background */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10 }}>
           
-          {/* Vial Image - Absolutely positioned */}
-          {/* Vial bounds from previous design: Left: 50%, Top: 61, Height: 427 */}
+          {/* Vial Image - Absolutely positioned straight at the top */}
           <div style={{
             position: 'absolute',
-            left: '50%', top: px(61), height: px(427), width: px(290),
-            transform: 'translateX(-50%) rotate(9deg)', // 8 to 10 deg clockwise
+            left: '50%', top: px(60), height: px(420), width: px(290),
+            transform: 'translateX(-50%)', // Straight
             zIndex: 20
           }}>
             <Image
@@ -126,11 +125,11 @@ export default function PremiumPeptideCard({
           })()}
 
           {/* --- COMPARE CONTROL (Top Left) --- */}
-          {/* Box bounds from image: roughly left 47, top 47 */}
+          {/* Based on template box at Left: 33, Top: 27 */}
           <div style={{
             position: 'absolute',
-            left: px(47), top: px(47), width: px(70), height: px(70),
-            display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+            left: px(30), top: px(25), width: px(70), height: px(70),
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
             zIndex: 30
           }}>
             <input
@@ -139,16 +138,16 @@ export default function PremiumPeptideCard({
               onChange={onCompareToggle}
               onClick={e => e.stopPropagation()}
               style={{
-                width: px(38), height: px(38),
+                width: px(45), height: px(45),
                 cursor: 'pointer',
-                opacity: isPinned ? 1 : 0, // hide unless checked so it doesn't cover the image border if unstyled
+                opacity: isPinned ? 1 : 0, 
                 accentColor: '#00e5ff'
               }}
             />
           </div>
 
           {/* --- FAVORITE HEART (Top Right) --- */}
-          {/* Heart bounds from image: roughly right ~50, top ~45 */}
+          {/* Heart bounds from template: left 550, top 25 */}
           <button
             type="button"
             onClick={(e) => {
@@ -157,8 +156,8 @@ export default function PremiumPeptideCard({
             }}
             style={{
               position: 'absolute',
-              right: px(52), top: px(45),
-              width: px(66), height: px(66),
+              right: px(35), top: px(25),
+              width: px(85), height: px(85),
               background: isWishlisted ? 'rgba(229,62,62,0.8)' : 'transparent',
               border: 'none',
               borderRadius: '50%',
@@ -169,7 +168,7 @@ export default function PremiumPeptideCard({
             }}
           >
             {isWishlisted && (
-              <svg width={px(28)} height={px(28)} viewBox="0 0 24 24" fill="#FF5A6E" stroke="#FF5A6E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width={px(40)} height={px(40)} viewBox="0 0 24 24" fill="#FF5A6E" stroke="#FF5A6E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
               </svg>
             )}
@@ -177,19 +176,20 @@ export default function PremiumPeptideCard({
 
 
           {/* --- PRODUCT NAME AREA --- */}
-          {/* Just above the pill box, left aligned */}
+          {/* Below chevron line */}
           <div style={{
             position: 'absolute',
-            left: px(77), top: px(575), width: px(300),
+            left: px(60), top: px(580), width: px(320),
             zIndex: 30, pointerEvents: 'none'
           }}>
             <h2 style={{
               margin: 0,
               fontFamily: 'var(--font-montserrat, sans-serif)',
-              fontWeight: 600,
-              fontSize: px(43),
-              color: '#D5D7D8',
+              fontWeight: 700,
+              fontSize: px(44),
+              color: '#E2E4E6',
               lineHeight: 1.1,
+              textTransform: 'uppercase',
               textShadow: `0 ${px(4)} ${px(6)} rgba(0,0,0,0.8)`
             }}>
               {productName}
@@ -197,19 +197,21 @@ export default function PremiumPeptideCard({
           </div>
 
           {/* --- SIZE BADGE AREA (Inside the Pill box) --- */}
-          {/* Box area on image: left ~50, top ~648, width ~315, height ~82 */}
+          {/* Pill box coords: left 51, top 664, width 319, height 89 */}
           <div style={{
             position: 'absolute',
-            left: px(50), top: px(648), width: px(315), height: px(82),
+            left: px(51), top: px(664), width: px(319), height: px(89),
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             zIndex: 30, pointerEvents: 'none'
           }}>
             <span style={{
               fontFamily: 'var(--font-montserrat, sans-serif)',
-              fontWeight: 600,
-              fontSize: px(35),
-              color: '#D5D7D8',
-              textShadow: `0 ${px(2)} ${px(4)} rgba(0,0,0,0.5)`
+              fontWeight: 800,
+              fontSize: px(34),
+              color: '#FFFFFF',
+              letterSpacing: px(1),
+              textTransform: 'uppercase',
+              textShadow: `0 ${px(2)} ${px(4)} rgba(0,0,0,0.8)`
             }}>
               {vialSizeBadge}
             </span>
@@ -217,12 +219,12 @@ export default function PremiumPeptideCard({
 
 
           {/* --- PRICING AREA (Right Side) --- */}
-          {/* MSRP Label: Left 406, Top 582 */}
+          {/* MSRP Label */}
           {(msrp !== undefined && msrp > (wholesalePrice ?? 0)) && (
             <>
               <div style={{
                 position: 'absolute',
-                left: px(406), top: px(582),
+                left: px(410), top: px(590),
                 display: 'flex', alignItems: 'baseline', gap: px(8),
                 zIndex: 30, pointerEvents: 'none'
               }}>
@@ -242,11 +244,11 @@ export default function PremiumPeptideCard({
                 }}>${msrp.toFixed(2)}</span>
               </div>
 
-              {/* Savings Text: Left 406, Top 629 */}
+              {/* Savings Text */}
               {savings !== undefined && savings > 0 && (
                 <div style={{
                   position: 'absolute',
-                  left: px(406), top: px(629),
+                  left: px(410), top: px(635),
                   fontFamily: 'var(--font-roboto-condensed, sans-serif)',
                   fontWeight: 700,
                   fontSize: px(23),
@@ -260,14 +262,14 @@ export default function PremiumPeptideCard({
             </>
           )}
 
-          {/* Wholesale Price (Under the line): Left 406, Top 706 */}
+          {/* Wholesale Price Digits (Below printed label) */}
           <div style={{
             position: 'absolute',
-            left: px(406), top: px(706),
+            left: px(410), top: px(710),
             fontFamily: 'var(--font-roboto-condensed, sans-serif)',
             fontWeight: 700,
-            fontSize: px(62),
-            color: '#00BFD8', // Bright teal
+            fontSize: px(65),
+            color: '#00D5F2', 
             lineHeight: 1,
             textShadow: `0 ${px(4)} ${px(10)} rgba(0,0,0,0.5)`,
             zIndex: 30, pointerEvents: 'none'
@@ -277,12 +279,12 @@ export default function PremiumPeptideCard({
 
 
           {/* --- ADD TO CART BUTTON (Invisible overlay) --- */}
-          {/* The image already has the button text. We just overlay an invisible clickable div over it. */}
+          {/* Bounds from template: Left 46, Top 800, Width 591, Height 115 */}
           <div 
             style={{
               position: 'absolute',
-              left: px(68), top: px(782), width: px(538), height: px(108),
-              borderRadius: px(54),
+              left: px(46), top: px(800), width: px(591), height: px(115),
+              borderRadius: px(57.5),
               cursor: 'pointer',
               zIndex: 30
             }}
@@ -292,9 +294,6 @@ export default function PremiumPeptideCard({
             }}
             aria-label={buttonText}
           />
-
-          {/* We omit rendering "IN STOCK" and "AVAILABLE FOR SAME DAY PICKUP" dynamically since they are baked into the image. */}
-          {/* Note: The user requested ONLY dynamic vial image, weight, peptide name, MSRP, and wholesale price. */}
           
         </div>
       </div>
