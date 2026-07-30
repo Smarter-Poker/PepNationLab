@@ -50,6 +50,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { ArrowRight, Plus, Beaker, ChevronDown, ChevronUp, BookmarkPlus, AlertCircle, CheckCircle2, Shield, AlertTriangle, BookOpen, Trophy, Clock, Sparkles, Thermometer } from 'lucide-react';
 import PinToCompareButton from '../research/PinToCompareButton';
 import DynamicDetailButton from './DynamicDetailButton';
+import ImageAddToCartButton from './ImageAddToCartButton';
 import { scoreCompound } from '../research/CompareTool';
 import {
   evidenceTier,
@@ -84,6 +85,7 @@ interface Props {
   onOpenProductBySlug: (compoundSlug: string) => void;
   onOpenProductByName: (name: string) => void;
   onAddVariantToCart: (variantId: string, qty: number) => void;
+  onAddToCart?: () => void;
   children?: React.ReactNode;
   showBulkPricing?: boolean;
   onToggleBulkPricing?: () => void;
@@ -831,6 +833,7 @@ export default function ProductModalEnhancements({
   onOpenProductBySlug,
   onOpenProductByName,
   onAddVariantToCart,
+  onAddToCart,
   children,
   showBulkPricing = false,
   onToggleBulkPricing,
@@ -1356,6 +1359,16 @@ export default function ProductModalEnhancements({
           </div>
         </section>
       </>
+      )}
+
+      {/* Very Bottom Center Add To Cart */}
+      {onAddToCart && (
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 32, marginBottom: 16 }}>
+          <ImageAddToCartButton
+            onClick={onAddToCart}
+            width={160}
+          />
+        </div>
       )}
     </div>
   );

@@ -13,6 +13,7 @@ import IframeLink from '@/components/ui/IframeLink';
 import DiscoveryHero, { type MatchedProduct } from './storefront/StorefrontDiscovery';
 import type { ModalGroupedProductRef } from './storefront/ProductModalEnhancements';
 import DynamicAddToCartButton from './storefront/DynamicAddToCartButton';
+import ImageAddToCartButton from './storefront/ImageAddToCartButton';
 import DynamicCoaButton from './storefront/DynamicCoaButton';
 import DynamicCartButton from './storefront/DynamicCartButton';
 import DynamicDetailButton from './storefront/DynamicDetailButton';
@@ -3659,9 +3660,9 @@ export default function AgentStorefrontGrid({
                       </IframeLink>
                     );
                   })()}
-                  <DynamicAddToCartButton
+                  <ImageAddToCartButton
                     onClick={addDetailProductToCart}
-                    style={{ width: 136, height: 38, fontSize: '0.85rem', flexShrink: 0 }}
+                    width={150}
                   />
                 </div>
               );
@@ -4003,9 +4004,9 @@ export default function AgentStorefrontGrid({
                                 <span style={{ fontSize: '1.4rem', fontWeight: 800, color: primaryColor, fontFamily: 'var(--font-brand)' }}>${lineTotal.toFixed(2)}</span>
                               </div>
                             </div>
-                            <DynamicAddToCartButton
+                            <ImageAddToCartButton
                               onClick={addDetailProductToCart}
-                              style={{ width: 140, height: 44, fontSize: '0.9rem' }}
+                              width={150}
                             />
                           </div>
                         )}
@@ -4057,6 +4058,7 @@ export default function AgentStorefrontGrid({
                     setCartItems((prev) => ({ ...prev, [variantId]: (prev[variantId] || 0) + qty }));
                     setShowCartFloat(true);
                   }}
+                  onAddToCart={addDetailProductToCart}
                 >
                   {showBulkPricing && (
                       <div style={{
