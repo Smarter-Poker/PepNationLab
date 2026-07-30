@@ -13,6 +13,7 @@ import { hashCode, isValidEmail, normalizeEmail, CODE_PURPOSE_SIGNUP, MAX_CODE_A
 import { StorefrontRegisterSchema } from '@/lib/schemas/auth';
 import { recordServerAnalyticsEvent } from '@/lib/server-analytics';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
+import { recordAttributionEvent } from '@/lib/attribution-log';
 import { cookies } from 'next/headers';
 import { verifyRefLock, REF_LOCK_COOKIE, REF_DISPLAY_COOKIE } from '@/lib/ref-lock';
 
@@ -23,6 +24,8 @@ import { verifyRefLock, REF_LOCK_COOKIE, REF_DISPLAY_COOKIE } from '@/lib/ref-lo
  * Rate-limited to 10 registrations per hour per IP to prevent abuse.
  * Uses createAdminClient (raw supabase-js) to bypass RLS on profile writes.
  */
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -77,6 +80,9 @@ export async function POST(req: NextRequest) {
     if (refLock.s) agentSlug = refLock.s;
     if (refLock.sa) subAgentId = refLock.sa;
   }
+  // Where the attribution came from, for the audit trail. 'form' means the
+  // visitor arrived with no lock and the storefront page supplied the slug.
+  const attributionSource = refLock ? (refLock.k === 'url' ? 'storefront_url' : 'qr') : 'form';
 
   // A real email is required for all public signups.
   if (!isValidEmail(email)) {
@@ -94,45 +100,86 @@ export async function POST(req: NextRequest) {
   try {
     const admin = createAdminClient();
 
-    // First, resolve the referring agent from the storefront slug
+    // ── Resolve the referring agent ──────────────────────────────────────────
+    // Order of authority:
+    //   1. the storefront slug (form body, or the lock's own slug)
+    //   2. refLock.a — the owner id the middleware ALREADY resolved and signed
+    //      at scan time. This is what rescues a lock whose referrer has no
+    //      storefront of their own (s:null — a researcher's code, or an agent
+    //      whose agent_profiles row is inactive). Before this, such a signup
+    //      submitted an empty agentSlug and the whole registration 404'd with
+    //      "Storefront Not Found Or Inactive.": a valid, credited scan turned
+    //      into a dead signup form.
+    //   3. the house store, so a real scan is NEVER dead-ended.
+    // An explicitly submitted slug that does not resolve, with no lock backing
+    // it, still 404s — that is a genuine bad link, not a lost scan.
     let referringAgentId: string | null = null;
     let referringSubAgentId: string | null = null;
 
-    const { data: agentProfile, error: agentErr } = await admin
-      .from('agent_profiles')
-      .select('id')
-      .eq('slug', agentSlug)
-      .maybeSingle();
-
-    if (!agentErr && agentProfile) {
-      const { data: agentUser } = await admin
+    const isLiveAccount = async (id: string): Promise<boolean> => {
+      if (!UUID_RE.test(id)) return false;
+      const { data } = await admin
         .from('profiles')
         .select('id, is_active, deleted_at')
-        .eq('id', agentProfile.id)
+        .eq('id', id)
         .maybeSingle();
-
       // deleted_at matters as much as is_active: a soft-deleted agent keeps its
       // agent_profiles row, so a stale storefront link would otherwise still
       // credit an account that no longer exists to the rest of the app.
-      if (agentUser?.is_active && agentUser.deleted_at == null) {
-        referringAgentId = agentProfile.id;
+      return !!data && data.is_active === true &&
+        (data as { deleted_at?: string | null }).deleted_at == null;
+    };
 
-        // Check sub-agent attribution if slug resolved successfully
-        if (subAgentId) {
-          const { data: subAgent } = await admin
-            .from('profiles')
-            .select('id, is_sub_agent, parent_agent_id')
-            .eq('id', subAgentId)
-            .maybeSingle();
-          if (subAgent && subAgent.is_sub_agent && subAgent.parent_agent_id === referringAgentId) {
-            referringSubAgentId = subAgentId;
-          }
-        }
-      }
+    const resolveSlugOwner = async (slug: string): Promise<string | null> => {
+      if (!slug) return null;
+      const { data: ap, error: apErr } = await admin
+        .from('agent_profiles')
+        .select('id')
+        .eq('slug', slug)
+        // The storefront itself must be live, not just its owner's account.
+        // The middleware already gates guest browsing on agent_profiles
+        // .is_active; without the same gate here a deactivated storefront kept
+        // collecting signups through any still-circulating QR code.
+        .eq('is_active', true)
+        .maybeSingle();
+      if (apErr || !ap?.id) return null;
+      return (await isLiveAccount(ap.id)) ? ap.id : null;
+    };
+
+    const submittedSlug = String(agentSlug ?? '').trim().toLowerCase();
+    if (submittedSlug) {
+      referringAgentId = await resolveSlugOwner(submittedSlug);
+    }
+    if (!referringAgentId && refLock?.a && (await isLiveAccount(refLock.a))) {
+      referringAgentId = refLock.a;
+    }
+    if (!referringAgentId && (!submittedSlug || refLock)) {
+      referringAgentId = await resolveSlugOwner(DEFAULT_STORE_SLUG);
     }
 
     if (!referringAgentId) {
       return NextResponse.json({ error: 'Storefront Not Found Or Inactive.' }, { status: 404 });
+    }
+
+    // Sub-agent attribution. Credited only when the id is a real, live
+    // sub-agent whose parent is the resolved referring agent — the same check
+    // lib/oauth-profile.ts applies. is_active/deleted_at are checked here too:
+    // crediting a removed sub-agent silently mis-books the commission.
+    if (subAgentId && UUID_RE.test(String(subAgentId))) {
+      const { data: subAgent } = await admin
+        .from('profiles')
+        .select('id, is_sub_agent, parent_agent_id, is_active, deleted_at')
+        .eq('id', subAgentId)
+        .maybeSingle();
+      if (
+        subAgent &&
+        subAgent.is_sub_agent &&
+        subAgent.parent_agent_id === referringAgentId &&
+        subAgent.is_active === true &&
+        (subAgent as { deleted_at?: string | null }).deleted_at == null
+      ) {
+        referringSubAgentId = subAgent.id;
+      }
     }
 
     // SECOND: Override with explicit Referral Code if provided and valid.
@@ -148,19 +195,42 @@ export async function POST(req: NextRequest) {
     // lib/oauth-profile.ts). deleted_at is filtered alongside is_active so a
     // soft-deleted agent can never be credited through a stale link or an old
     // referral lock cookie.
+    //
+    // .order() is MANDATORY alongside .limit(1): PostgREST does not promise a
+    // row order, so an unordered limit-1 over a two-column OR could hand the
+    // same code to a different agent on different requests. Exact matches are
+    // preferred first, then a stable (username, id) ordering, so this route and
+    // the middleware always agree on who a code belongs to.
     if (referralCode && /^[a-z0-9_-]{2,80}$/i.test(referralCode)) {
       const refPattern = referralCode.replace(/([%_\\])/g, '\\$1');
-      const { data: refMatch } = await admin
+      const { data: refRows } = await admin
         .from('profiles')
-        .select('id, role, is_active, is_sub_agent, parent_agent_id')
+        .select('id, role, username, referral_code, is_active, is_sub_agent, parent_agent_id')
         .or(`username.ilike.${refPattern},referral_code.ilike.${refPattern}`)
         .eq('is_active', true)
         .is('deleted_at', null)
-        .limit(1)
-        .maybeSingle();
+        .order('username', { ascending: true })
+        .order('id', { ascending: true })
+        .limit(5);
+
+      const rows = (refRows ?? []) as Array<{
+        id: string; role: string | null; username: string | null;
+        referral_code: string | null; is_sub_agent: boolean | null;
+        parent_agent_id: string | null;
+      }>;
+      const wanted = referralCode.toLowerCase();
+      const refMatch =
+        rows.find((r) => (r.referral_code ?? '').toLowerCase() === wanted) ??
+        rows.find((r) => (r.username ?? '').toLowerCase() === wanted) ??
+        rows[0] ??
+        null;
 
       if (refMatch) {
-        if (refMatch.role === 'agent' || refMatch.role === 'super_agent') {
+        // 'admin' belongs here with agent/super_agent. The house store is owned
+        // by an admin account, so leaving it out meant a house referral code
+        // matched a real profile and then credited NOBODY — the branch fell
+        // through and the slug-resolved agent silently kept the signup.
+        if (refMatch.role === 'agent' || refMatch.role === 'super_agent' || refMatch.role === 'admin') {
           referringAgentId = refMatch.id;
           referringSubAgentId = null;
         } else if (refMatch.is_sub_agent && refMatch.parent_agent_id) {
@@ -288,7 +358,31 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Immutable attribution audit trail. acquisition_source stays 'storefront'
+    // (an established CRM value); the PROVENANCE — QR scan vs typed storefront
+    // URL vs plain form — plus the exact code, store and lock age land here, so
+    // a commission dispute can be settled from data instead of from logs that
+    // have already rolled off.
+    await recordAttributionEvent(admin, {
+      event: 'signup_attributed',
+      channel: 'storefront_register',
+      source: attributionSource,
+      user_id: newUserId,
+      agent_id: referringAgentId,
+      sub_agent_id: referringSubAgentId,
+      ref_code: referralCode || null,
+      store_slug: submittedSlug || null,
+      lock_minted_at: refLock?.t ? new Date(refLock.t).toISOString() : null,
+      detail: { lock_kind: refLock?.k ?? null, lock_version: refLock?.v ?? 0 },
+    });
+
     await notifyNewResearcher(admin, referringAgentId, fullName).catch(() => { /* ignore */ });
+    // The sub-agent who actually made the referral gets told too. Previously
+    // only the parent agent was notified, so a sub-agent never learned their
+    // own share link had converted.
+    if (referringSubAgentId && referringSubAgentId !== referringAgentId) {
+      await notifyNewResearcher(admin, referringSubAgentId, fullName).catch(() => { /* ignore */ });
+    }
 
     // Server-authoritative signup analytics: joins the anonymous browse
     // session/visitor to the conversion without storing the new user id in the
@@ -300,7 +394,7 @@ export async function POST(req: NextRequest) {
         event_type: 'signup',
         session_id: typeof rb.sessionId === 'string' ? rb.sessionId : null,
         visitor_id: typeof rb.visitorId === 'string' ? rb.visitorId : null,
-        path: `/${String(agentSlug).slice(0, 80)}`,
+        path: `/${String(agentSlug ?? '').slice(0, 80)}`,
       });
     }
 
@@ -373,7 +467,7 @@ export async function POST(req: NextRequest) {
       to: email,
       fullName,
       username: usernameClean,
-      promoCode: agentSlug === DEFAULT_STORE_SLUG ? 'FIRST20' : undefined,
+      promoCode: submittedSlug === DEFAULT_STORE_SLUG ? 'FIRST20' : undefined,
     }).catch(() => { /* ignore */ });
 
     const successRes = NextResponse.json({
@@ -385,9 +479,14 @@ export async function POST(req: NextRequest) {
       promoWarning,
     });
     // The QR lock's job is done once the account exists — clear both cookies
-    // so a future signup on this device starts fresh.
-    successRes.cookies.set(REF_LOCK_COOKIE, '', { maxAge: 0, path: '/' });
-    successRes.cookies.set(REF_DISPLAY_COOKIE, '', { maxAge: 0, path: '/' });
+    // so a future signup on this device starts fresh. The attributes must match
+    // the ones the middleware wrote or the browser keeps the original cookie.
+    successRes.cookies.set(REF_LOCK_COOKIE, '', {
+      httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: 0,
+    });
+    successRes.cookies.set(REF_DISPLAY_COOKIE, '', {
+      httpOnly: false, secure: true, sameSite: 'lax', path: '/', maxAge: 0,
+    });
     return successRes;
   } catch (err) {
     console.error('[storefront/register] POST error:', err);
