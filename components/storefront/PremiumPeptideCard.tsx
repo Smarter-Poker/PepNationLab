@@ -63,7 +63,7 @@ export default function PremiumPeptideCard({
         fontFamily: 'var(--font-sans, sans-serif)',
         transition: 'transform 0.2s',
       }}>
-        {/* Layer 0: Base card background */}
+        {/* ── LAYER 0: Base card background ───────────────────────────── */}
         <Image
           src="/images/storefront/premium-card-bg.jpg"
           alt="Card Background"
@@ -72,12 +72,34 @@ export default function PremiumPeptideCard({
           style={{ objectFit: 'cover', pointerEvents: 'none', zIndex: 0 }}
         />
 
-        {/* Layer 2 (vial) is inside the global wrapper below */}
+        {/* ── LAYER 1: Vial image ─────────────────────────────────────────
+            Direct child of the card container (NOT inside the z:30 wrapper).
+            z:5 here is meaningful — it's above the base bg (z:0) but BELOW
+            the V-frame screen overlay (z:10). This is what makes the frame
+            sit on top of the vial correctly. */}
+        <div style={{
+          position: 'absolute',
+          left: px(25), top: px(25), right: px(25), height: px(523),
+          borderRadius: `${px(20)} ${px(20)} 0 0`,
+          overflow: 'hidden',
+          zIndex: 5,
+        }}>
+          <Image
+            src={imageSrc}
+            alt={productName}
+            fill
+            style={{ objectFit: 'cover', objectPosition: 'center center' }}
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.src = '/images/peptide_clear.png';
+            }}
+          />
+        </div>
 
-        {/* Layer 1: Card frame overlay — sits ON TOP of the vial image.
-            mix-blend-mode:screen makes every black pixel transparent,
-            so the vial shows through the image window while the bright
-            silver/metallic V-frame chrome remains fully visible on top. */}
+        {/* ── LAYER 2: V-frame chrome overlay ────────────────────────────
+            Same card background rendered on top of the vial at z:10.
+            mix-blend-mode:screen = black pixels → transparent (vial shows through),
+            bright silver V-frame lines → fully visible on top. */}
         <Image
           src="/images/storefront/premium-card-bg.jpg"
           alt=""
@@ -92,28 +114,9 @@ export default function PremiumPeptideCard({
           }}
         />
 
-        {/* Global wrapper — all UI content sits above both image layers */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 30 }}>
-          
-          {/* Layer 2: Vial image — behind the frame overlay (z:10 above) */}
-          <div style={{
-            position: 'absolute',
-            left: px(25), top: px(25), right: px(25), height: px(523),
-            borderRadius: `${px(20)} ${px(20)} 0 0`,
-            overflow: 'hidden',
-            zIndex: 5,
-          }}>
-            <Image
-              src={imageSrc}
-              alt={productName}
-              fill
-              style={{ objectFit: 'cover', objectPosition: 'center center' }}
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.src = '/images/peptide_clear.png';
-              }}
-            />
-          </div>
+        {/* ── LAYER 3: All UI content ─────────────────────────────────────
+            z:20 — above the V-frame overlay, always readable. */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 20 }}>
 
           {/* --- SEARCH MATCH CHIP (Optional) --- */}
           {hasSearchMatch && hasSearchMatch.reason && (() => {
