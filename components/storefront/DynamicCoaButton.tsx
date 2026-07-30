@@ -43,7 +43,7 @@ export default function DynamicCoaButton({
         style={{
           width: '100%',
           height: '100%',
-          objectFit: 'fill', // Force fill to prevent aspect-ratio shrinkage regressions
+          objectFit: 'cover', // cover scales it up to fill the 122px width, preserving aspect ratio and clipping the transparent top/bottom padding
           display: 'block',
         }}
         width={896} height={251} unoptimized />
