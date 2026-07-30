@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { motion, Variants, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-import { Star, X, Heart, FileText, Search, SlidersHorizontal, RotateCcw, Check, ShoppingCart, ArrowRight, Sparkles, Flame, Zap, Brain, Shield, Hourglass, Moon, Activity, Syringe, Wind } from 'lucide-react';
+import {Star, X, Heart, FileText, Search, SlidersHorizontal, RotateCcw, Check, ShoppingCart, ArrowRight, Sparkles, Flame, Zap, Brain, Shield, Hourglass, Moon, Activity, Syringe, Wind, Package} from 'lucide-react';
 import RecommendationStrip, { type RecommendationItem } from './RecommendationStrip';
 import ProductMonograph from './research/ProductMonograph';
 import IframeLink from '@/components/ui/IframeLink';
@@ -2264,23 +2264,22 @@ export default function AgentStorefrontGrid({
 
           return (
             <motion.div
-              key={group.name} className="sf-product-card-nickel hover-lift stagger-fade-in" variants={itemVariants}
+              key={group.name} className="hover-lift stagger-fade-in" variants={itemVariants}
               style={{
-                cursor: 'pointer',
-                border: '1px solid #a8a8a8',
+                width: '100%',
+                background: '#04070a',
+                borderRadius: 16,
+                border: '2px solid #232933',
+                position: 'relative',
+                overflow: 'hidden',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.8), inset 0 0 0 1px rgba(255,255,255,0.1)',
                 display: 'flex',
-                flexDirection: 'column'
+                flexDirection: 'column',
+                cursor: 'pointer',
               }}
               onMouseEnter={() => {
-                // Prefetch recommendations for this product on hover so data
-                // is already cached by the time the user clicks to open the detail.
                 const seedId = activeVariant.product_id;
-                if (seedId) {
-                  // Prefetch via standard fetch so it triggers the Service Worker cache
-                  fetch(
-                    `/api/storefront/recommendations?product_id=${encodeURIComponent(seedId)}&agent_slug=${encodeURIComponent(agentSlug)}&limit=8`
-                  ).catch(() => {});
-                }
+                if (seedId) fetch(`/api/storefront/recommendations?product_id=${encodeURIComponent(seedId)}&agent_slug=${encodeURIComponent(agentSlug)}&limit=8`).catch(() => {});
               }}
               onClick={() => {
                 setDetailProduct(group);
@@ -2293,331 +2292,219 @@ export default function AgentStorefrontGrid({
               role="button"
               tabIndex={0}
               aria-label={`View Details For ${group.name}`}
-              onKeyDown={(e: React.KeyboardEvent<HTMLElement>) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  if (e.key === ' ') e.preventDefault();
-                  e.currentTarget.click();
-                }
-              }}
             >
-              <div className="" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', padding: 0, position: 'relative' }}>
-
+              {/* Top Section - Image & Glow */}
               <div style={{
-                height: 220,
-                background: `radial-gradient(circle at 50% 50%, ${primaryColor}20 0%, var(--black) 100%)`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
-                borderBottom: '1px solid rgba(255,255,255,0.02)', position: 'relative'
+                position: 'relative',
+                height: 300,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'linear-gradient(180deg, #090e14 0%, #030508 100%)',
+                overflow: 'hidden',
               }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, transparent, ${primaryColor}50, transparent)` }} />
-                {group._search?.reason && (
-                  <div style={{
-                    position: 'absolute',
-                    top: 52,
-                    left: 10,
-                    right: 10,
-                    zIndex: 10,
-                    display: 'flex',
-                    justifyContent: 'center',
-                    pointerEvents: 'none'
-                  }}>
-                    <div style={{
-                      background: 'rgba(20, 25, 30, 0.75)',
-                      backdropFilter: 'blur(8px)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      padding: '4px 10px',
-                      borderRadius: 20,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                      color: 'var(--white)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                    }}>
-                      <Sparkles size={11} style={{ marginRight: 4 }} /> Matched: {toTitleCase(group._search.reason)}
-                    </div>
-                  </div>
-                )}
-
-                {/* Compare Checkbox opposite of the heart (which is on top-right, so this is on top-left) */}
-                <label
-                  onClick={(e) => e.stopPropagation()}
-                  style={{
-                    position: 'absolute',
-                    top: 12,
-                    left: 12,
-                    zIndex: 10,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    boxSizing: 'border-box',
-                    transition: 'transform 0.15s ease',
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.10)'}
-                  onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-                >
+                {/* Top actions */}
+                <div style={{ position: 'absolute', top: 16, left: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 30 }}>
                   <input
                     type="checkbox"
                     checked={pinnedNames.has(group.name)}
                     onChange={(e) => {
                       if (e.target.checked) {
-                        if (pinnedNames.size >= 4) {
-                          toast.error('You can compare up to 4 compounds at a time.');
-                          return;
-                        }
-                        try {
-                          const raw = window.localStorage.getItem('pnl:compare') || '[]';
-                          const list = JSON.parse(raw);
-                          if (Array.isArray(list) && list.length > 0) {
-                            const firstItem = list[0];
-                            const firstCategory = firstItem.category;
-                            if (firstCategory && firstCategory !== group.category) {
-                              toast.error(`You can only compare peptides within the same category ("${firstCategory}").`);
-                              return;
-                            }
-                          }
-                        } catch {}
+                        if (pinnedNames.size >= 4) { toast.error('You can compare up to 4 compounds at a time.'); return; }
                         pin(group, activeVariant);
                       } else {
                         unpin(group);
                       }
                     }}
-                    disabled={!pinnedNames.has(group.name) && pinnedNames.size >= 4}
-                    style={{
-                      width: 17,
-                      height: 17,
-                      accentColor: primaryColor,
-                      cursor: 'pointer',
-                      margin: 0,
-                    }}
-                    title="Compare this peptide"
-                    aria-label={`Compare ${group.name}`}
+                    onClick={e => e.stopPropagation()}
+                    style={{ width: 18, height: 18, cursor: 'pointer', accentColor: '#00e5ff', margin: 0, marginBottom: 4 }}
                   />
-                  <span
-                    style={{
-                      fontSize: '0.55rem',
-                      fontWeight: 800,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em',
-                      color: pinnedNames.has(group.name) ? primaryColor : 'rgba(255,255,255,0.85)',
-                      textShadow: '0 1px 3px rgba(0, 0, 0, 0.9), 0 0 1px rgba(0, 0, 0, 0.9)',
-                      transition: 'color 0.15s',
-                      pointerEvents: 'none',
-                      marginTop: 4
+                  <span style={{ fontSize: '0.6rem', fontWeight: 600, color: 'var(--silver-light)', letterSpacing: '0.05em' }}>COMPARE</span>
+                </div>
+                
+                <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 30 }}>
+                  <button
+                    type="button"
+                    onClick={e => { e.stopPropagation(); void toggleWishlist(activeVariant.product_id); }}
+                    style={{ 
+                      width: 36, height: 36, borderRadius: '50%', 
+                      border: `1px solid ${wishlist.has(activeVariant.product_id) ? '#FF5A6E' : 'rgba(255,255,255,0.2)'}`,
+                      background: wishlist.has(activeVariant.product_id) ? 'rgba(229,62,62,0.15)' : 'transparent',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' 
                     }}
                   >
-                    Compare
-                  </span>
-                </label>
+                    <Heart size={18} fill={wishlist.has(activeVariant.product_id) ? '#FF5A6E' : 'none'} color={wishlist.has(activeVariant.product_id) ? '#FF5A6E' : 'rgba(255,255,255,0.7)'} />
+                  </button>
+                </div>
 
-                {(() => {
-                  const wished = wishlist.has(activeVariant.product_id);
-                  return (
-                    <button
-                      type="button"
-                      aria-label={wished ? 'Remove From Wishlist' : 'Add To Wishlist'}
-                      onClick={e => { e.stopPropagation(); void toggleWishlist(activeVariant.product_id); }}
-                      className="sf-wishlist-btn"
-                      style={{
-                        background: wished ? 'rgba(229,62,62,0.20)' : 'rgba(0,0,0,0.55)',
-                        border: `1px solid ${wished ? 'rgba(229,62,62,0.50)' : 'rgba(255,255,255,0.20)'}`,
-                      }}
-                    >
-                      <Heart
-                        size={17}
-                        stroke={wished ? '#FF5A6E' : 'rgba(220,220,220,0.9)'}
-                        fill={wished ? '#FF5A6E' : 'none'}
-                        strokeWidth={2}
-                        aria-hidden="true"
-                      />
-                    </button>
-                  );
-                })()}
+                {/* Glow Ring */}
+                <div style={{
+                  position: 'absolute', width: 220, height: 220, borderRadius: '50%',
+                  border: `2px solid #00e5ff`, boxShadow: `0 0 40px #00e5ff66, inset 0 0 40px #00e5ff66`,
+                  opacity: 0.6, top: '50%', left: '50%', transform: 'translate(-50%, -50%)'
+                }} />
 
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <Image
-                  src={group.imageUrl || '/images/peptide_clear.png'}
-                  alt={group.name}
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  style={{ objectFit: 'contain', objectPosition: 'center', transition: 'transform 0.4s ease' }}
-                  className={agentSlug === 'savagebrands' ? 'store-image-hover-zoomed' : 'store-image-hover'}
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    const fallback = getProductImage(null, group.category || 'Other', group.name, false, agentSlug);
-                    if (target.src !== fallback && !target.src.includes(fallback)) {
-                      target.srcset = '';
-                      target.src = fallback;
-                    } else {
-                      target.srcset = '';
-                      target.src = '/images/peptide_clear.png';
-                      target.style.opacity = '0.9';
-                    }
-                  }}
-                />
-
+                {/* Product Image */}
+                <div style={{ position: 'relative', zIndex: 10, width: 160, height: 240 }}>
+                  <Image
+                    src={group.imageUrl || '/images/peptide_clear.png'}
+                    alt={group.name}
+                    fill
+                    style={{ objectFit: 'contain', filter: 'drop-shadow(0 20px 20px rgba(0,0,0,0.8))' }}
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      const fallback = getProductImage(null, group.category || 'Other', group.name, false, agentSlug);
+                      if (target.src !== fallback && !target.src.includes(fallback)) { target.srcset = ''; target.src = fallback; } 
+                      else { target.srcset = ''; target.src = '/images/peptide_clear.png'; target.style.opacity = '0.9'; }
+                    }}
+                  />
+                </div>
+                
+                {/* Floor reflection fake */}
+                <div style={{
+                  position: 'absolute', bottom: 0, left: '10%', right: '10%', height: 40,
+                  background: `radial-gradient(ellipse at top, #00e5ff40 0%, transparent 70%)`, opacity: 0.5,
+                }} />
               </div>
 
-              <div style={{ padding: 'var(--space-5)', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                {(() => {
-                  const { main, subtitle } = splitProductName(toTitleCase(group.name));
-                  const searchReason = (group as any)._search?.reason;
-                  const confidence = (group as any)._search?.confidence as 'high' | 'medium' | 'low' | undefined;
-                  // ── #6 Confidence tier colour map ─────────────────────────
-                  const confidenceStyle: Record<'high' | 'medium' | 'low', { bg: string; border: string; color: string; label: string }> = {
-                    high:   { bg: 'rgba(79,209,197,0.12)',  border: 'rgba(79,209,197,0.35)',  color: '#4FD1C5', label: 'Strong Match' },
-                    medium: { bg: 'rgba(235,178,54,0.10)',  border: 'rgba(235,178,54,0.30)',  color: '#EBB236', label: 'Good Match'   },
-                    low:    { bg: 'rgba(160,174,192,0.08)', border: 'rgba(160,174,192,0.22)', color: '#A0AEC0', label: 'Partial Match' },
-                  };
-                  const cs = confidence ? confidenceStyle[confidence] : null;
-                  return (
-                    <div style={{ textAlign: 'center', marginBottom: 'var(--space-2)' }}>
-                      {searchReason && cs && (
-                        <div style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 5,
-                          background: cs.bg, border: `1px solid ${cs.border}`,
-                          color: cs.color, fontSize: '0.63rem', fontWeight: 700,
-                          padding: '3px 8px', borderRadius: 'var(--radius-full)',
-                          textTransform: 'uppercase', marginBottom: 'var(--space-2)',
-                          letterSpacing: '0.04em', maxWidth: '100%',
-                        }}>
-                          <Sparkles size={9} />
-                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>
-                            {cs.label}: {searchReason}
-                          </span>
-                        </div>
-                      )}
-                      <h4 style={{
-                        fontFamily: 'var(--font-brand)',
-                        fontSize: '1.15rem', color: 'var(--white)', letterSpacing: '0.02em', lineHeight: 1.2,
-                        marginBottom: subtitle ? 2 : 0
-                      }}>
-                        {highlightText(main, deferredSearch)}
-                      </h4>
-                      {subtitle && (
-                        <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', fontWeight: 500 }}>
-                          {highlightText(subtitle, deferredSearch)}
-                        </span>
-                      )}
-                      {(() => {
-                        const _canonicalName = group.variants[0]?.products?.name || group.name;
-                        const _nick = getPopularName(_canonicalName);
-                        if (!_nick) return null;
-                        return (
-                          <span style={{ fontSize: '0.72rem', color: 'var(--teal)', fontStyle: 'italic', fontWeight: 500, display: 'block', marginTop: 2 }}>
-                            {_nick}
-                          </span>
-                        );
-                      })()}
-                      {(() => {
-  const _c = group.compoundSlug ? compoundsBySlug?.[group.compoundSlug] : undefined;
-  const _nasal = intranasalDisplay(_c);
-  if (!_nasal.nasal) return null;
-  return (
-    <span title={_nasal.caveat ?? undefined} style={{
-      display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6,
-      padding: '3px 9px', borderRadius: 'var(--radius-full)',
-      background: _nasal.bg, border: `1px solid ${_nasal.border}`,
-      color: _nasal.color, fontSize: '0.62rem', fontWeight: 800,
-      textTransform: 'uppercase', letterSpacing: '0.04em',
-    }}>
-      <Wind size={9} aria-hidden="true" />{_nasal.badgeLabel}
-    </span>
-  );
-})()}
-                      {/* CRO trust chip removed per user request */}
-                      
-                      <div style={{ display: 'flex', justifyContent: 'center', minHeight: 32, marginTop: 12 }}>
-                        {(() => {
-                          const defaultV = group.variants.find(v => v.id === group.defaultVariantId) || group.variants[0];
-                          const size = defaultV.products?.unit_size || '10';
-                          const measure = defaultV.products?.unit_measure || 'mg';
-                          const isBW = packOf10(group.name, defaultV.products?.compound_slug);
-                          const displaySizeText = isBW ? `10x ${size}${measure} Vials` : `${size}${measure} Vials`;
-                          
-                          const baseSize = `${size}${measure}`.toLowerCase();
-                          const pillSizes = ['0.1mg', '1mg', '5mg', '10mg', '15mg', '20mg', '30mg', '40mg', '50mg', '60mg', '70mg', '80mg', '90mg', '100mg', '120mg', '600mg', '1000mg', '1500mg', '3ml', '10ml', '75iu', '5000iu', '10000iu'];
-                          
-                          if (pillSizes.includes(baseSize)) {
-                            return (
-                              <div style={{ width: 130, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Image 
-                                  src={`/images/ui/pills/${baseSize}.png`} 
-                                  alt={`${displaySizeText}`} 
-                                  width={130} 
-                                  height={34} 
-                                  style={{ width: '100%', height: '100%', objectFit: 'fill' }} 
-                                  unoptimized 
-                                />
-                              </div>
-                            );
-                          }
-                          return (
-                            <span style={{ fontSize: '0.72rem', color: 'var(--silver-light)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 'var(--radius-full)', padding: '3px 14px', fontWeight: 600, whiteSpace: 'nowrap' }}>{displaySizeText}</span>
-                          );
-                        })()}
-                      </div>
+              {/* Chevron Divider SVG */}
+              <div style={{ width: '100%', height: 24, marginTop: -12, position: 'relative', zIndex: 20 }}>
+                <svg width="100%" height="24" viewBox="0 0 380 24" preserveAspectRatio="none" style={{ filter: 'drop-shadow(0 -4px 6px rgba(0,0,0,0.8))' }}>
+                  <path d="M0,0 L190,16 L380,0 L380,24 L0,24 L0,0 Z" fill="#0b1118" stroke="rgba(255,255,255,0.4)" strokeWidth="2" />
+                </svg>
+              </div>
 
-                    </div>
-                  );
-                })()}
-
-              <div style={{
-                  marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 'var(--space-4)',
-                  textAlign: 'center'
-                }}>
+              {/* Bottom Content Area */}
+              <div style={{ background: '#0b1118', padding: '16px 20px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                   {(() => {
+                    const { main, subtitle } = splitProductName(toTitleCase(group.name));
                     const defaultV = group.variants.find(v => v.id === group.defaultVariantId) || group.variants[0];
                     const size = defaultV.products?.unit_size || '10';
                     const measure = defaultV.products?.unit_measure || 'mg';
+                    const isBW = packOf10(group.name, defaultV.products?.compound_slug);
+                    const displaySizeText = isBW ? `10x ${size}${measure} Vials` : `${size}${measure} Vials`;
+                    const baseSize = `${size}${measure}`.toLowerCase();
+                    const pillSizes = ['0.1mg', '1mg', '5mg', '10mg', '15mg', '20mg', '30mg', '40mg', '50mg', '60mg', '70mg', '80mg', '90mg', '100mg', '120mg', '600mg', '1000mg', '1500mg', '3ml', '10ml', '75iu', '5000iu', '10000iu'];
+                    const hasPillImage = pillSizes.includes(baseSize);
+
                     const perVialBase = defaultV.retail_price / 10;
                     const isOnSale = (defaultV as any).is_on_sale && (defaultV as any).sale_price;
                     const perVialDisplay = isOnSale ? (defaultV as any).sale_price / 10 : perVialBase;
-                    const perVialOriginal = perVialBase;
-                    
-                    const isBW = packOf10(group.name, defaultV.products?.compound_slug);
                     const displayPrice = isBW ? perVialDisplay * 10 : perVialDisplay;
-                      const _marketAvgVial = Number((defaultV as any).products?.market_avg_price) || 0;
-                      const _marketAvgDisplay = isBW ? _marketAvgVial * 10 : _marketAvgVial;
-                      const _showMarketAvg = (agentSlug === 'researchstore' || agentSlug === 'savagebrands') && _marketAvgDisplay > displayPrice;
-                    const displayOriginalPrice = isBW ? perVialOriginal * 10 : perVialOriginal;
-                    const displaySizeText = isBW ? `10x ${size}${measure} Vials` : `${size}${measure} Vials`;
-
-                    const _comparePrice = _showMarketAvg ? _marketAvgDisplay : (isOnSale ? displayOriginalPrice : 0);
+                    const _marketAvgVial = Number((defaultV as any).products?.market_avg_price) || 0;
+                    const _marketAvgDisplay = isBW ? _marketAvgVial * 10 : _marketAvgVial;
+                    const _showMarketAvg = (agentSlug === 'researchstore' || agentSlug === 'savagebrands') && _marketAvgDisplay > displayPrice;
+                    const _comparePrice = _showMarketAvg ? _marketAvgDisplay : (isOnSale ? (isBW ? perVialBase * 10 : perVialBase) : 0);
                     const _hasCompare = _comparePrice > displayPrice;
                     const _youSave = _hasCompare ? _comparePrice - displayPrice : 0;
+
                     return (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
-                        <div className="sf-pricing-row" style={{ display: 'flex', flexWrap: 'nowrap', alignItems: 'stretch', justifyContent: _hasCompare ? 'space-between' : 'center', gap: _hasCompare ? 4 : 8 }}>
-                          {_hasCompare && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(0,196,188,0.35)', borderRadius: 8, padding: '4px 6px', background: 'rgba(0,196,188,0.06)', flexShrink: 1, minWidth: 0 }}>
-                              <span style={{ display: 'flex', alignItems: 'baseline', gap: 4, whiteSpace: 'nowrap' }}>
-                                <span style={{ fontSize: '0.58rem', color: 'var(--grey-500)', fontWeight: 700, letterSpacing: '0.04em' }}>MSRP</span>
-                                <span style={{ fontSize: '0.78rem', color: 'var(--grey-500)', textDecoration: 'line-through', fontWeight: 700 }}>${_comparePrice.toFixed(2)}</span>
-                              </span>
-                              <span style={{ fontSize: '0.62rem', fontWeight: 800, color: 'var(--teal)', letterSpacing: '0.01em', whiteSpace: 'nowrap' }}>YOU SAVE ${Math.floor(_youSave)}</span>
-                            </div>
-                          )}
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 1, minWidth: 0 }}>
-                            <span style={{ fontSize: '0.62rem', fontWeight: 800, color: 'var(--teal)', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>WHOLESALE PRICE</span>
-                            <span className="sf-product-price-nickel" style={{ fontSize: '1.45rem', fontWeight: 800, fontFamily: 'var(--font-brand)', lineHeight: 1 }}>${displayPrice.toFixed(2)}</span>
+                      <>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1, minWidth: 0 }}>
+                          <h2 style={{
+                            margin: '0', fontSize: '1.6rem', fontWeight: 800,
+                            background: 'linear-gradient(180deg, #ffffff 0%, #a0b4c8 50%, #607080 100%)',
+                            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                            filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.9))', lineHeight: 1.1,
+                            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                          }}>
+                            {main}
+                          </h2>
+                          {subtitle && <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', marginTop: -6 }}>{subtitle}</span>}
+                          
+                          <div style={{ display: 'flex', alignItems: 'center', marginTop: 4 }}>
+                            {hasPillImage ? (
+                              <div style={{ width: 130, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Image src={`/images/ui/pills/${baseSize}.png`} alt={displaySizeText} width={130} height={34} style={{ width: '100%', height: '100%', objectFit: 'fill' }} unoptimized />
+                              </div>
+                            ) : (
+                              <div style={{
+                                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px 16px', borderRadius: 999,
+                                background: 'linear-gradient(180deg, #2b3744 0%, #1b242e 100%)', border: '1px solid rgba(255,255,255,0.2)',
+                                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), 0 2px 8px rgba(0,0,0,0.5)'
+                              }}>
+                                <span style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--silver-light)' }}>{displaySizeText}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
-                      </div>
+                        
+                        <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: 2, flexShrink: 0 }}>
+                          {_hasCompare && (
+                            <>
+                              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: 6 }}>
+                                <span style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--grey-500)' }}>MSRP</span>
+                                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--grey-500)', textDecoration: 'line-through' }}>${_comparePrice.toFixed(2)}</span>
+                              </div>
+                              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#00e5ff', textTransform: 'uppercase', marginBottom: 4 }}>
+                                YOU SAVE ${Math.floor(_youSave)}
+                              </div>
+                            </>
+                          )}
+                          <div style={{ width: '100%', height: 1, background: 'rgba(255,255,255,0.1)', marginBottom: _hasCompare ? 4 : 0 }} />
+                          <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--silver)', textTransform: 'uppercase', marginTop: 4 }}>
+                            WHOLESALE PRICE
+                          </div>
+                          <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#00e5ff', lineHeight: 1, textShadow: `0 0 20px rgba(0,229,255,0.4)` }}>
+                            ${displayPrice.toFixed(2)}
+                          </div>
+                        </div>
+                      </>
                     );
                   })()}
                 </div>
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const defaultVId = group.defaultVariantId || group.variants[0]?.id;
+                    if (defaultVId) {
+                      setCartItems((prev) => ({ ...prev, [defaultVId]: (prev[defaultVId] || 0) + 1 }));
+                      setShowCartFloat(true);
+                      toast.success(`Added ${group.name} to cart`);
+                    }
+                  }}
+                  style={{
+                    width: '100%', padding: '12px', borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'linear-gradient(180deg, #2c3846 0%, #1a222b 50%, #0d1218 100%)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -2px 6px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.6)',
+                    color: 'var(--white)', cursor: 'pointer', position: 'relative'
+                  }}
+                >
+                  <div style={{
+                    position: 'absolute', left: 8, width: 32, height: 32, borderRadius: '50%',
+                    border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 20a1 1 0 1 0 0 2 1 1 0 1 0 0-2zm7 0a1 1 0 1 0 0 2 1 1 0 1 0 0-2zm-9.8-2h12.6c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2H5.2L4.5 3H2v2h1.5l2.4 11H6.2z"/></svg>
+                  </div>
+                  <span style={{ fontSize: '1.2rem', fontWeight: 800, letterSpacing: '0.05em', color: 'var(--silver-light)', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>Add To Cart</span>
+                </button>
               </div>
-              </div>
-              <div
-                onClick={e => e.stopPropagation()}
-                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, margin: 0, padding: 0, marginTop: 'auto' }}
-              >
-                <StockBadge state={stockState} />
-                {stockState.kind === 'out_of_stock' && (
-                  <NotifyMeButton productId={activeVariant.product_id} agentId={agentId} compact />
+
+              {/* Footer Strip */}
+              <div style={{
+                background: 'linear-gradient(180deg, #090e14 0%, #04070a 100%)',
+                borderTop: '1px solid rgba(255,255,255,0.05)', padding: '12px 20px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16
+              }}>
+                {stockState.kind === 'out_of_stock' ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#e53e3e' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.05em' }}>OUT OF STOCK</span>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#00e5ff' }}>
+                      <Package size={16} />
+                      <span style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.05em' }}>IN STOCK</span>
+                    </div>
+                    <div style={{ width: 1, height: 12, background: 'rgba(255,255,255,0.2)' }} />
+                    <div style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--grey-400)', letterSpacing: '0.05em' }}>
+                      AVAILABLE FOR SAME DAY PICKUP
+                    </div>
+                  </>
                 )}
               </div>
             </motion.div>
