@@ -2251,7 +2251,9 @@ export default function AgentStorefrontGrid({
               key={group.name} className="sf-product-card-nickel hover-lift stagger-fade-in" variants={itemVariants}
               style={{
                 cursor: 'pointer',
-                border: '1px solid var(--silver)'
+                border: '1px solid #a8a8a8',
+                display: 'flex',
+                flexDirection: 'column'
               }}
               onMouseEnter={() => {
                 // Prefetch recommendations for this product on hover so data
@@ -2577,20 +2579,20 @@ export default function AgentStorefrontGrid({
                             );
                           })()}
                         </div>
-                        <div
-                          onClick={e => e.stopPropagation()}
-                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, marginTop: 4 }}
-                        >
-                          <StockBadge state={stockState} />
-                          {stockState.kind === 'out_of_stock' && (
-                            <NotifyMeButton productId={activeVariant.product_id} agentId={agentId} compact />
-                          )}
-                        </div>
                       </div>
                     );
                   })()}
                 </div>
               </div>
+              </div>
+              <div
+                onClick={e => e.stopPropagation()}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, paddingBottom: 16, marginTop: 'auto' }}
+              >
+                <StockBadge state={stockState} />
+                {stockState.kind === 'out_of_stock' && (
+                  <NotifyMeButton productId={activeVariant.product_id} agentId={agentId} compact />
+                )}
               </div>
             </motion.div>
           );
