@@ -57,10 +57,8 @@ export async function GET(_req: NextRequest) {
   }
 }
 
-import { generateQrDataUrl } from '@/lib/qr';
+import { generateStorefrontQr } from '@/lib/qr-storefront';
 import { sanitizeUsername } from '@/lib/usernames';
-
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://pepnationlab.com';
 
 // Platform rule: the gamification Max Cap can never exceed 40%.
 const MAX_CAP_LIMIT = 40;
@@ -293,14 +291,11 @@ export async function POST(req: NextRequest) {
     }
 
     // QR payload carries utm params so scans are attributable as offline/QR
-    // traffic in first-party attribution (UtmCapture ingests and strips them).
-    const storefrontUrl = `${APP_URL}/${slug}?utm_source=qr&utm_medium=offline`;
-    let qrCodeData: string | null = null;
-    try {
-      qrCodeData = await generateQrDataUrl(storefrontUrl);
-    } catch (qrErr) {
-      console.error('QR generation failed:', qrErr);
-    }
+    // traffic in first-party attribution (UtmCapture ingests and strips them),
+    // AND ?ref= so the scan mints a HARD first-scan-wins referral lock rather
+    // than the replaceable soft lock a bare storefront URL produces.
+    // See lib/qr-storefront.ts.
+    const qrCodeData: string | null = await generateStorefrontQr(slug, usernameClean);
 
     const { error: agentError } = await supabase.from('agent_profiles').upsert({
       id: userId,

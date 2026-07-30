@@ -4,13 +4,11 @@ export const revalidate = 0;
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
-import { generateQrDataUrl } from '@/lib/qr';
+import { generateStorefrontQr } from '@/lib/qr-storefront';
 import { sanitizeUsername } from '@/lib/usernames';
 import { assertSameOrigin } from '@/lib/csrf';
 import { seedStorefrontFromHousePrices } from '@/lib/seed-storefront';
 import { validateStoreSlug } from '@/lib/store-slug';
-
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://pepnationlab.com';
 
 // GET: List all agents with their profiles and storefront data
 export async function GET() {
@@ -306,14 +304,10 @@ export async function POST(req: NextRequest) {
     }
 
     if (!isResearcher) {
-      const storefrontUrl = `${APP_URL}/${slug}`;
-      let qrCodeData: string | null = null;
-      try {
-        qrCodeData = await generateQrDataUrl(storefrontUrl);
-      } catch (qrErr) {
-        console.error('QR generation failed:', qrErr);
-        qrCodeData = null;
-      }
+      // Carries ?ref= so a scan mints a HARD first-scan-wins referral lock,
+      // and renders black-on-white so phone cameras can actually decode it.
+      // See lib/qr-storefront.ts.
+      const qrCodeData: string | null = await generateStorefrontQr(slug, usernameClean);
 
       const { error: agentError } = await supabase.from('agent_profiles').upsert({
         id: userId,
