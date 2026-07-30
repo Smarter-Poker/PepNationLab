@@ -38,10 +38,10 @@ export async function GET(_req: Request) {
       return NextResponse.json({ error: 'no_profile', message: 'Your Profile Was Not Found' }, { status: 404 });
     }
 
-    // The QR is now a REFERRAL SIGNUP link: whoever scans it lands on the signup
-    // page with this user's referral code prefilled. Signup then applies the
-    // referral -- downline assignment for agents/super-agents/sub-agents, and
-    // referral credits for researchers (and opted-in sub-agents).
+    // The QR opens the HOME landing page with ?ref=<code>. Middleware captures
+    // the ?ref param into a signed cookie (referral lock), so signup later
+    // applies the referral -- downline assignment for agents/super-agents/
+    // sub-agents, and referral credits for researchers (and opted-in sub-agents).
     const isSub = !!profile.is_sub_agent;
     const isSuper = !!profile.is_super_agent || profile.role === 'super_agent';
     const isResearcher = profile.role === 'researcher' && !isSub && !isSuper;
@@ -51,7 +51,8 @@ export async function GET(_req: Request) {
     const referralCode = (profile.username || profile.referral_code || user.id) as string;
 
     const baseUrl = (process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '')) || 'https://pepnationlab.com';
-    const signupUrl = `${baseUrl}/signup?ref=${encodeURIComponent(referralCode)}`;
+    // QR target: landing page with ?ref -- middleware locks the referral from ?ref.
+    const signupUrl = `${baseUrl}/?ref=${encodeURIComponent(referralCode)}`;
 
     // Best-effort: resolve the associated storefront (own for agents/super-agents,
     // parent for sub-agents, referring agent for researchers) so the hub can also
@@ -98,7 +99,7 @@ export async function GET(_req: Request) {
       storefrontUrl,
       slug: storefrontSlug,
       displayName,
-      qrCodeData: null, // regenerate client-side so the QR encodes the signup link
+      qrCodeData: null, // regenerate client-side so the QR encodes the landing-page referral link
       primaryColor,
       isInvite: true,
       referCode: referralCode,
