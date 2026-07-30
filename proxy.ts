@@ -109,6 +109,67 @@ async function resolveRefCode(code: string): Promise<RefLock | null> {
   };
 }
 
+// --- DIRECT STOREFRONT URL ENTRY ---
+// A logged-out visitor who types (or follows a plain link to)
+// pepnationlab.com/<agent-slug> should get exactly what a QR scan gives them:
+// guest browsing confined to that store, and signup credit locked to its
+// owner. Resolve the slug to its storefront owner and mint a SOFT lock.
+//
+// The lock's `c` is the owner's own referral code / username -- NOT the slug.
+// Slugs and referral codes are separate namespaces (the store `scooters` is
+// owned by username `adam`, while a *different* agent owns the store `adam`),
+// so feeding a slug into the code namespace credits the wrong agent.
+const STORE_SLUG_RE = /^[a-z0-9][a-z0-9_-]{1,49}$/;
+
+// First path segments that are real app routes, never storefronts. Skipping
+// these avoids a pointless service-role lookup on every logged-out hit to a
+// gated page, and stops a future agent slug from shadowing an app route.
+const RESERVED_SEGMENTS = new Set([
+  'about', 'accept-disclaimer', 'account', 'admin', 'advertising', 'api', 'auth',
+  'become-agent', 'checkout', 'coa', 'compliance', 'contact', 'dashboard',
+  'disclaimer', 'favicon.ico', 'feed.xml', 'find-a-peptide', 'forgot-password',
+  'help', 'invite', 'lab-journal', 'lab-tools', 'llms.txt', 'llms-full.txt',
+  'login', 'manifest.webmanifest', 'messages', 'messenger', 'onboarding',
+  'orders', 'peptide-101', 'peptides', 'privacy', 'products', 'register',
+  'research', 'reset-password', 'robots.txt', 'shelf-life', 'shipping',
+  'signup', 'sitemap.xml', 'status', 'sw.js', 'terms', 'wallet', '_next',
+]);
+
+async function resolveStoreSlug(slug: string): Promise<RefLock | null> {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!key) return null;
+  const base = getSupabaseUrl();
+  const headers = { apikey: key, Authorization: `Bearer ${key}` };
+
+  const aRes = await fetch(
+    `${base}/rest/v1/agent_profiles?select=id,slug&slug=eq.${encodeURIComponent(slug)}&limit=1`,
+    { headers },
+  );
+  if (!aRes.ok) return null;
+  const [store] = (await aRes.json()) as Array<{ id: string | null; slug: string | null }>;
+  if (!store?.id || !store.slug) return null;
+
+  const pRes = await fetch(
+    `${base}/rest/v1/profiles?select=id,username,referral_code,is_active,deleted_at&id=eq.${encodeURIComponent(store.id)}&limit=1`,
+    { headers },
+  );
+  if (!pRes.ok) return null;
+  const [owner] = (await pRes.json()) as Array<{
+    id: string; username: string | null; referral_code: string | null;
+    is_active: boolean | null; deleted_at: string | null;
+  }>;
+  if (!owner || owner.is_active === false || owner.deleted_at != null) return null;
+
+  // Credit code must live in the profiles username/referral_code namespace and
+  // must satisfy REF_CODE_RE, or verifyRefLock would reject the cookie we mint.
+  const code = [owner.referral_code, owner.username].find(
+    (v): v is string => typeof v === 'string' && REF_CODE_RE.test(v),
+  );
+  if (!code) return null;
+
+  return { c: code, a: owner.id, s: store.slug, sa: null, t: Date.now(), k: 'url' };
+}
+
 // --- RESTRICTED ACCESS: ACCOUNT REQUIRED FOR EVERYTHING ---
 // The guest view has been removed. Nothing is browsable without an account.
 // Only the logged-out account-creation + sign-in flow, the legal pages linked
@@ -199,7 +260,10 @@ export default async function proxy(request: NextRequest) {
   if (request.method === 'GET' && !pathname.startsWith('/api/')) {
     refLock = await verifyRefLock(request.cookies.get(REF_LOCK_COOKIE)?.value);
     const refParam = request.nextUrl.searchParams.get('ref')?.trim();
-    if (!refLock && refParam && REF_CODE_RE.test(refParam)) {
+    // First scan wins for HARD (QR) locks. A SOFT lock -- one minted merely
+    // because the visitor typed a storefront URL -- yields to a real QR scan,
+    // so an incidental visit can never rob an agent of their scan credit.
+    if ((!refLock || refLock.k === 'url') && refParam && REF_CODE_RE.test(refParam)) {
       try {
         const resolved = await resolveRefCode(refParam);
         if (resolved) {
@@ -324,6 +388,35 @@ export default async function proxy(request: NextRequest) {
     }
     if (pathname === '/login') {
       return withRefCookies(response);
+    }
+    // Direct storefront URL entry, e.g. someone types pepnationlab.com/
+    // savagebrands with no account and no QR. Mint a SOFT lock for that store
+    // and send them to the home screen — the same landing a QR scan produces,
+    // so they get the disclaimer gate, "Continue As Guest" (confined to that
+    // store by the gate below) and "Create Account" with the credit locked in.
+    //
+    // Skipped when a HARD (QR) lock is already held, when a ?ref= capture just
+    // fired on this same request, and when the current lock already points at
+    // this slug — that last guard is what lets a locked guest actually reach
+    // the store instead of bouncing back to the home screen forever.
+    if (!refCookiesToSet && (!refLock || refLock.k === 'url')) {
+      const seg = pathname.split('/')[1]?.toLowerCase() ?? '';
+      if (seg && seg !== refLock?.s && STORE_SLUG_RE.test(seg) && !RESERVED_SEGMENTS.has(seg)) {
+        try {
+          const store = await resolveStoreSlug(seg);
+          if (store) {
+            refLock = store;
+            refCookiesToSet = { lock: await signRefLock(store), code: store.c };
+            const url = request.nextUrl.clone();
+            url.pathname = '/';
+            url.search = '';
+            url.searchParams.set('agent', store.s ?? seg);
+            return withRefCookies(redirectWithCookies(url));
+          }
+        } catch (err) {
+          captureError(err, { context: 'proxy.storeUrlCapture', path: pathname });
+        }
+      }
     }
     // QR-locked guest browsing: a visitor who arrived via an agent's referral
     // QR may browse THAT agent's storefront without an account — and nothing
