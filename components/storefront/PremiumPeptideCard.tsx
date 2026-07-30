@@ -75,13 +75,14 @@ export default function PremiumPeptideCard({
         {/* Global wrapper matching canvas size for absolute positioning over the background */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10 }}>
           
-          {/* 1 & 4. Vial Image - Unzoomed (square container) and clipped behind the V-frame! */}
+          {/* 1 & 4. Vial Image - Edge to edge, clipped behind the V-frame! */}
           <div style={{
             position: 'absolute',
-            left: px(25), top: px(25), right: px(25), height: px(633), // Square aspect ratio matches vials to prevent cover zoom/cropping
+            left: px(25), top: px(25), right: px(25), height: px(528), // Down to the tip of the V-frame
             borderRadius: `${px(25)} ${px(25)} 0 0`,
             // Clip perfectly along the V-frame to tuck the image behind it
-            clipPath: 'polygon(0 0, 100% 0, 100% 77.7%, 50% 83.4%, 0 77.7%)',
+            clipPath: 'polygon(0 0, 100% 0, 100% 93.2%, 50% 100%, 0 93.2%)',
+            WebkitClipPath: 'polygon(0 0, 100% 0, 100% 93.2%, 50% 100%, 0 93.2%)', // MUST HAVE FOR SAFARI/MAC
             overflow: 'hidden',
             zIndex: 15 // Underneath top controls, above background
           }}>
@@ -89,7 +90,8 @@ export default function PremiumPeptideCard({
               src={imageSrc}
               alt={productName}
               fill
-              style={{ objectFit: 'cover' }}
+              // 'cover' to fill edge-to-edge, 'center top' ensures the vial cap is never cropped!
+              style={{ objectFit: 'cover', objectPosition: 'center top' }}
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.src = '/images/peptide_clear.png';
@@ -177,34 +179,45 @@ export default function PremiumPeptideCard({
 
 
           {/* --- PRODUCT NAME AREA --- */}
-          {/* 5. Lowered and centered to the size pill below it */}
-          <div style={{
-            position: 'absolute',
-            left: px(51), top: px(615), width: px(319), // Perfectly aligned width to the pill box
-            display: 'flex', justifyContent: 'center',
-            zIndex: 30, pointerEvents: 'none'
-          }}>
-            <h2 style={{
-              margin: 0,
-              fontFamily: 'var(--font-montserrat, sans-serif)',
-              fontWeight: 700,
-              fontSize: px(36), // Slightly smaller to ensure fit
-              letterSpacing: px(-1),
-              lineHeight: 1.1,
-              textTransform: 'uppercase',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              textAlign: 'center',
-              // Silver Gradient
-              background: 'linear-gradient(180deg, #FFFFFF 0%, #B9C0C7 40%, #828A92 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              textShadow: `0 ${px(4)} ${px(6)} rgba(0,0,0,0.8)`
-            }}>
-              {productName}
-            </h2>
-          </div>
+          {/* 5. Lowered and centered to the space, dynamic custom font sizes */}
+          {(() => {
+            // Determine font size based on length
+            const len = productName.length;
+            let dynamicFontSize = px(44);
+            if (len > 22) dynamicFontSize = px(26);
+            else if (len > 15) dynamicFontSize = px(30);
+            else if (len > 11) dynamicFontSize = px(36);
+
+            return (
+              <div style={{
+                position: 'absolute',
+                left: px(51), top: px(575), width: px(319), height: px(85), // Centered vertically in available space
+                display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
+                zIndex: 30, pointerEvents: 'none'
+              }}>
+                <h2 style={{
+                  margin: 0,
+                  fontFamily: 'var(--font-montserrat, sans-serif)',
+                  fontWeight: 700,
+                  fontSize: dynamicFontSize,
+                  letterSpacing: px(-1),
+                  lineHeight: 1.1,
+                  textTransform: 'uppercase',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  textAlign: 'center',
+                  // Silver Gradient
+                  background: 'linear-gradient(180deg, #FFFFFF 0%, #B9C0C7 40%, #828A92 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  textShadow: `0 ${px(4)} ${px(6)} rgba(0,0,0,0.8)`
+                }}>
+                  {productName}
+                </h2>
+              </div>
+            );
+          })()}
 
           {/* --- SIZE BADGE AREA (Inside the Pill box) --- */}
           {/* Silver gradient for weights */}
