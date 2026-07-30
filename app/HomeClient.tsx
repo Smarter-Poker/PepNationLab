@@ -49,37 +49,60 @@ type Zone = {
   height: string;
 };
 
-const ZONES: Zone[] = [
-  // Right-Side Hexagon Badges
-  { href: '/find-a-peptide', label: 'Discover', anchor: 'Discover Research Peptides', top: '12.56%', left: '79.17%', width: '18.4%', height: '7.77%' },
-  { href: '/research', label: 'Research', anchor: 'Research Library', top: '21.83%', left: '79.17%', width: '18.4%', height: '8.07%' },
-  { href: '/peptide-101', label: 'Learn', anchor: 'Peptide 101 Research Education', top: '31.10%', left: '79.17%', width: '18.4%', height: '8.07%' },
-  { href: `/${DEFAULT_STORE_SLUG}`, label: 'Transform', anchor: 'Browse The Research Catalog', top: '40.37%', left: '79.17%', width: '18.4%', height: '8.37%' },
-  // Primary Action Buttons
-  { href: '/login', label: 'Log In', anchor: 'Log In To Your Researcher Account', top: '71.29%', left: '20.72%', width: '58.98%', height: '3.59%' },
-  { href: '/signup', label: 'Create Account', anchor: 'Create A Verified Researcher Account', top: '76.85%', left: '20.72%', width: '58.98%', height: '3.59%' },
-  { href: `/${DEFAULT_STORE_SLUG}`, label: 'Continue As Guest', anchor: 'Browse Research Peptides As A Guest', top: '82.06%', left: '20.72%', width: '58.98%', height: '3.59%' },
-  // Footer Compliance Line
-  { href: '/disclaimer', label: 'For Research Purposes Only', anchor: 'Research Use Only Disclaimer', top: '97.1%', left: '10%', width: '80%', height: '2.4%' },
-];
+function buildZones(guestStoreSlug: string | null, refCode: string | null): Zone[] {
+  // Guests who scanned an agent QR are locked to that agent's storefront (see
+  // lib/ref-lock.ts) -- the middleware only lets an unauthenticated guest
+  // browse that one store, so "Continue As Guest" must go there rather than
+  // the house store. Without a lock, the house-store behavior is unchanged.
+  const guestStoreHref = guestStoreSlug ? `/${guestStoreSlug}` : `/${DEFAULT_STORE_SLUG}`;
+  // Carry the locked referral code into sign-up so the form shows the locked
+  // "referred by" field.
+  const signupHref = refCode ? `/signup?ref=${encodeURIComponent(refCode)}` : '/signup';
+  return [
+    // Right-Side Hexagon Badges
+    { href: '/find-a-peptide', label: 'Discover', anchor: 'Discover Research Peptides', top: '12.56%', left: '79.17%', width: '18.4%', height: '7.77%' },
+    { href: '/research', label: 'Research', anchor: 'Research Library', top: '21.83%', left: '79.17%', width: '18.4%', height: '8.07%' },
+    { href: '/peptide-101', label: 'Learn', anchor: 'Peptide 101 Research Education', top: '31.10%', left: '79.17%', width: '18.4%', height: '8.07%' },
+    { href: `/${DEFAULT_STORE_SLUG}`, label: 'Transform', anchor: 'Browse The Research Catalog', top: '40.37%', left: '79.17%', width: '18.4%', height: '8.37%' },
+    // Primary Action Buttons
+    { href: '/login', label: 'Log In', anchor: 'Log In To Your Researcher Account', top: '71.29%', left: '20.72%', width: '58.98%', height: '3.59%' },
+    { href: signupHref, label: 'Create Account', anchor: 'Create A Verified Researcher Account', top: '76.85%', left: '20.72%', width: '58.98%', height: '3.59%' },
+    { href: guestStoreHref, label: 'Continue As Guest', anchor: 'Browse Research Peptides As A Guest', top: '82.06%', left: '20.72%', width: '58.98%', height: '3.59%' },
+    // Footer Compliance Line
+    { href: '/disclaimer', label: 'For Research Purposes Only', anchor: 'Research Use Only Disclaimer', top: '97.1%', left: '10%', width: '80%', height: '2.4%' },
+  ];
+}
 
-export default function HomeClient() {
+type HomeClientProps = {
+  /** Agent storefront slug from the QR referral lock (lib/ref-lock.ts), if any. */
+  guestStoreSlug?: string | null;
+  /** Referral code from the QR referral lock, if any. */
+  refCode?: string | null;
+};
+
+export default function HomeClient({ guestStoreSlug = null, refCode = null }: HomeClientProps) {
   const router = useRouter();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
 
+  const zones = buildZones(guestStoreSlug, refCode);
+
   // Only ENTERING THE STORE as a guest requires the Research-Only
-  // acknowledgment here. Both "Continue As Guest" and the "Browse The Research
-  // Catalog" badge point at the house store, so we gate by destination. Every
-  // other zone (Log In, Create Account, and the research / education links)
-  // navigates straight through -- sign-up and checkout carry their own.
+  // acknowledgment here. "Continue As Guest" points at the QR-locked agent
+  // storefront when a referral lock is present (house store otherwise), and
+  // the "Browse The Research Catalog" badge points at the house store, so we
+  // gate by destination against both. Every other zone (Log In, Create
+  // Account, and the research / education links) navigates straight through
+  // -- sign-up and checkout carry their own.
   const STORE_HREF = `/${DEFAULT_STORE_SLUG}`;
+  const GUEST_STORE_HREF = guestStoreSlug ? `/${guestStoreSlug}` : STORE_HREF;
 
   const handleZoneClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
-    const isGuestStoreEntry =
-      href === STORE_HREF ||
-      href.startsWith(`${STORE_HREF}?`) ||
-      href.startsWith(`${STORE_HREF}#`);
+    const isStoreEntry = (base: string) =>
+      href === base ||
+      href.startsWith(`${base}?`) ||
+      href.startsWith(`${base}#`);
+    const isGuestStoreEntry = isStoreEntry(STORE_HREF) || isStoreEntry(GUEST_STORE_HREF);
     if (isGuestStoreEntry && !isDisclaimerAccepted()) {
       // First-time guest entering the store: acknowledge first, then navigate.
       setPendingHref(href);
@@ -150,7 +173,7 @@ export default function HomeClient() {
           sizes="(max-width: 480px) 250px, (max-width: 941px) 100vw, 941px"
           style={{ width: '100%', height: 'auto', display: 'block' }}
         />
-        {ZONES.map(zone => (
+        {zones.map(zone => (
           <a
             key={zone.label}
             href={zone.href}
