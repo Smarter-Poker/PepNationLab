@@ -75,11 +75,13 @@ export default function PremiumPeptideCard({
         {/* Global wrapper matching canvas size for absolute positioning over the background */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10 }}>
           
-          {/* 1. Vial Image - Edge to Edge inside the top frame */}
+          {/* 1 & 4. Vial Image - Unzoomed (square container) and clipped behind the V-frame! */}
           <div style={{
             position: 'absolute',
-            left: px(25), top: px(25), right: px(25), height: px(490),
+            left: px(25), top: px(25), right: px(25), height: px(633), // Square aspect ratio matches vials to prevent cover zoom/cropping
             borderRadius: `${px(25)} ${px(25)} 0 0`,
+            // Clip perfectly along the V-frame to tuck the image behind it
+            clipPath: 'polygon(0 0, 100% 0, 100% 77.7%, 50% 83.4%, 0 77.7%)',
             overflow: 'hidden',
             zIndex: 15 // Underneath top controls, above background
           }}>
@@ -175,23 +177,25 @@ export default function PremiumPeptideCard({
 
 
           {/* --- PRODUCT NAME AREA --- */}
-          {/* 2 & 3. One line only, Silver gradient */}
+          {/* 5. Lowered and centered to the size pill below it */}
           <div style={{
             position: 'absolute',
-            left: px(60), top: px(580), width: px(340),
+            left: px(51), top: px(615), width: px(319), // Perfectly aligned width to the pill box
+            display: 'flex', justifyContent: 'center',
             zIndex: 30, pointerEvents: 'none'
           }}>
             <h2 style={{
               margin: 0,
               fontFamily: 'var(--font-montserrat, sans-serif)',
               fontWeight: 700,
-              fontSize: px(40), // Slightly smaller to ensure fit
+              fontSize: px(36), // Slightly smaller to ensure fit
               letterSpacing: px(-1),
               lineHeight: 1.1,
               textTransform: 'uppercase',
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
+              textAlign: 'center',
               // Silver Gradient
               background: 'linear-gradient(180deg, #FFFFFF 0%, #B9C0C7 40%, #828A92 100%)',
               WebkitBackgroundClip: 'text',
@@ -203,7 +207,7 @@ export default function PremiumPeptideCard({
           </div>
 
           {/* --- SIZE BADGE AREA (Inside the Pill box) --- */}
-          {/* 3. Silver gradient for weights */}
+          {/* Silver gradient for weights */}
           <div style={{
             position: 'absolute',
             left: px(51), top: px(664), width: px(319), height: px(89),
@@ -228,14 +232,13 @@ export default function PremiumPeptideCard({
 
 
           {/* --- PRICING AREA (Right Side) --- */}
-          {/* 4. Center MSRP, YOU SAVE, and WHOLESALE PRICE above each other */}
           
           {(msrp !== undefined && msrp > (wholesalePrice ?? 0)) && (
             <>
-              {/* Centered MSRP */}
+              {/* 3. Raised MSRP to clear the cyan line */}
               <div style={{
                 position: 'absolute',
-                left: px(380), width: px(280), top: px(590),
+                left: px(380), width: px(280), top: px(570),
                 display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: px(8),
                 zIndex: 30, pointerEvents: 'none'
               }}>
@@ -255,11 +258,11 @@ export default function PremiumPeptideCard({
                 }}>${msrp.toFixed(2)}</span>
               </div>
 
-              {/* Centered Savings Text */}
+              {/* 3. Raised Savings Text to clear the cyan line */}
               {savings !== undefined && savings > 0 && (
                 <div style={{
                   position: 'absolute',
-                  left: px(380), width: px(280), top: px(635),
+                  left: px(380), width: px(280), top: px(615),
                   display: 'flex', justifyContent: 'center',
                   fontFamily: 'var(--font-roboto-condensed, sans-serif)',
                   fontWeight: 700,
@@ -307,25 +310,6 @@ export default function PremiumPeptideCard({
             aria-label={buttonText}
           />
           
-          {/* --- 5. DARKER BOTTOM PILL OVERLAY --- */}
-          {/* Overlays the baked-in pill to make it look darker and more premium */}
-          <div style={{
-            position: 'absolute',
-            left: px(46), right: px(46), top: px(909), height: px(48),
-            background: '#070A0D', // Very dark background to block out the baked-in one
-            border: `${px(1)} solid #232B35`,
-            borderRadius: px(24),
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: px(16),
-            zIndex: 25, pointerEvents: 'none'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: px(8) }}>
-              <svg width={px(18)} height={px(18)} viewBox="0 0 24 24" fill="none" stroke="#00A2B8" strokeWidth="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-              <span style={{ fontFamily: 'var(--font-roboto-condensed, sans-serif)', fontWeight: 700, fontSize: px(17), color: '#00A2B8', letterSpacing: px(1) }}>IN STOCK</span>
-            </div>
-            <div style={{ width: px(2), height: px(22), background: '#232B35' }} />
-            <span style={{ fontFamily: 'var(--font-roboto-condensed, sans-serif)', fontWeight: 700, fontSize: px(16), color: '#6A7682', letterSpacing: px(1) }}>AVAILABLE FOR SAME DAY PICKUP</span>
-          </div>
-
         </div>
       </div>
     </div>
