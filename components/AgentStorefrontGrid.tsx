@@ -4127,27 +4127,42 @@ export default function AgentStorefrontGrid({
                             {detailProduct.variants.map(v => {
                               const size = v.products?.unit_size ? `${v.products.unit_size}${v.products.unit_measure || ''}` : 'Standard';
                               const isSelected = v.id === activeV.id;
+                              const normalizedSize = size.toLowerCase().replace(/\s+/g, '');
+                              const pillSizes = ['1mg', '5mg', '10mg', '20mg', '50mg', '70mg', '80mg', '100mg', '3ml', '10ml', '600mg', '1000mg', '1500mg', '75iu'];
+                              const hasImage = pillSizes.includes(normalizedSize);
+
                               return (
                                 <button
                                   key={v.id}
                                   onClick={() => setSelectedVariants(prev => ({ ...prev, [detailProduct.name]: v.id }))}
                                   style={{
-                                    flex: '1 1 calc(16.666% - 8px)', minWidth: 60,
+                                    flex: '1 1 auto', minWidth: 60, maxWidth: 140,
                                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center',
-                                    padding: '10px 6px', borderRadius: 10,
-                                    border: isSelected ? `1px solid ${primaryColor}` : '1px solid rgba(190,200,210,0.22)',
-                                    background: isSelected
+                                    padding: hasImage ? '2px' : '10px 6px', borderRadius: 10,
+                                    border: isSelected ? `2px solid ${primaryColor}` : '2px solid transparent',
+                                    background: hasImage ? 'transparent' : (isSelected
                                       ? `linear-gradient(180deg, ${primaryColor}26 0%, ${primaryColor}10 100%)`
-                                      : 'linear-gradient(180deg, #2b3744 0%, #1b242e 100%)',
-                                    boxShadow: isSelected
+                                      : 'linear-gradient(180deg, #2b3744 0%, #1b242e 100%)'),
+                                    boxShadow: isSelected && !hasImage
                                       ? `inset 0 1px 0 rgba(255,255,255,0.18), 0 0 0 1px ${primaryColor}55, 0 0 12px ${primaryColor}40`
-                                      : 'inset 0 1px 0 rgba(255,255,255,0.10), 0 2px 6px rgba(0,0,0,0.4)',
+                                      : (!hasImage ? 'inset 0 1px 0 rgba(255,255,255,0.10), 0 2px 6px rgba(0,0,0,0.4)' : 'none'),
                                     color: isSelected ? primaryColor : 'var(--grey-200)',
                                     fontWeight: isSelected ? 800 : 600, fontSize: '0.85rem',
                                     cursor: 'pointer', transition: 'all 0.15s ease'
                                   }}
                                 >
-                                  {size}
+                                  {hasImage ? (
+                                    <Image 
+                                      src={`/images/ui/pills/${normalizedSize}.png`} 
+                                      alt={size} 
+                                      width={140} 
+                                      height={32} 
+                                      style={{ width: '100%', height: 'auto', objectFit: 'contain' }} 
+                                      unoptimized 
+                                    />
+                                  ) : (
+                                    size
+                                  )}
                                 </button>
                               );
                             })}
