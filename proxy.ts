@@ -230,6 +230,16 @@ const PUBLIC_ROUTES = [
   // Indexable trust surface linked from vial lot numbers, the footer and
   // the sitemap; renders via service client from public COA data (no PII).
   '/coa',
+  // --- PUBLIC SEO SURFACE ---
+  // sitemap.xml advertises 3,184 URLs, 2,795 of them under /peptides. Every
+  // one of those was answering 307 -> /login for logged-out visitors, which
+  // means Googlebot saw a login wall on the entire indexable surface and a
+  // human following a city or research link was told to create an account
+  // before reading anything. Both trees are service-rendered public content
+  // with no per-user data, EXCEPT the three personal /research pages listed
+  // in GATED_SUBROUTES below, which stay behind auth.
+  '/peptides',
+  '/research',
   // Auth + signup APIs (called while logged out)
   '/api/auth/resolve',
   '/api/auth/signout',
@@ -266,6 +276,20 @@ const PUBLIC_ROUTES = [
   // NOTE: /api/cron/* and /api/messenger/cron/* are exempted by prefix in the
   // handler below (CRON_SECRET enforced in each route), so they are not listed.
 ];
+
+// PUBLIC_ROUTES matches by PREFIX, so listing '/research' would otherwise hand
+// out the per-user pages that live underneath it. These are carved back out.
+// Keep this list in sync with any new personal page added under a public tree:
+// a miss here leaks one user's saved items to every logged-out visitor.
+const GATED_SUBROUTES = [
+  '/research/saved',
+  '/research/reading-queue',
+  '/research/subscriptions',
+];
+
+function isGatedSubroute(pathname: string): boolean {
+  return GATED_SUBROUTES.some((r) => pathname === r || pathname.startsWith(r + '/'));
+}
 
 export default async function proxy(request: NextRequest) {
   if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
@@ -395,7 +419,11 @@ export default async function proxy(request: NextRequest) {
   }
 
   const isLoginRoute = pathname === '/login';
-  if (!isLoginRoute && PUBLIC_ROUTES.some(route => pathname === route || pathname.startsWith(route + '/'))) {
+  if (
+    !isLoginRoute &&
+    !isGatedSubroute(pathname) &&
+    PUBLIC_ROUTES.some(route => pathname === route || pathname.startsWith(route + '/'))
+  ) {
     return withRefCookies(NextResponse.next({ request }));
   }
 
@@ -594,17 +622,23 @@ export default async function proxy(request: NextRequest) {
     // This cannot swallow a gated page. RESERVED_SEGMENTS is the set of
     // first-segment app routes — /admin, /dashboard, /checkout, /wallet,
     // /orders, /messages and the rest are all in it and still get /login with
-    // their `redirect` parameter, as does every multi-segment path. That
-    // completeness is already load-bearing: slug CREATION rejects the same
-    // set, so a missing entry would let an agent claim a slug that shadows a
-    // real route — a strictly worse bug than a lost `redirect` param.
-    const segments = pathname.split('/').filter(Boolean);
-    const onlySegment = segments.length === 1 ? segments[0].toLowerCase() : null;
+    // their `redirect` parameter. That completeness is already load-bearing:
+    // slug CREATION rejects the same set, so a missing entry would let an
+    // agent claim a slug that shadows a real route — a strictly worse bug than
+    // a lost `redirect` param.
+    //
+    // The test is on the FIRST segment only. It used to require the path to be
+    // exactly one segment, which meant any deeper URL a guest could plausibly
+    // land on -- a storefront product page from a shared link
+    // (/savagebrands/products/bpc-157), a renamed store's old deep link -- fell
+    // straight through to /login. Same failure mode, one path segment further
+    // in.
+    const firstSegment = pathname.split('/').filter(Boolean)[0]?.toLowerCase() ?? null;
     if (
       request.method === 'GET' &&
-      onlySegment &&
-      STORE_SLUG_RE.test(onlySegment) &&
-      !RESERVED_SEGMENTS.has(onlySegment)
+      firstSegment &&
+      STORE_SLUG_RE.test(firstSegment) &&
+      !RESERVED_SEGMENTS.has(firstSegment)
     ) {
       const url = request.nextUrl.clone();
       url.pathname = '/';
