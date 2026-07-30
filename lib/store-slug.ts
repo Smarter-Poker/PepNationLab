@@ -22,6 +22,37 @@
 export const STORE_SLUG_RE = /^[a-z0-9][a-z0-9_-]{1,49}$/;
 
 /**
+ * The shape the DATABASE will actually accept, which is NARROWER than
+ * STORE_SLUG_RE.
+ *
+ * agent_profiles carries two overlapping CHECK constraints on `slug`:
+ *
+ *   agent_profiles_slug_shape  CHECK (slug ~ '^[a-z0-9][a-z0-9_-]{1,49}')  -- allows `_`
+ *   slug_format (older, stale) CHECK (slug ~ '^[a-z0-9\-]+')                -- forbids `_`
+ *
+ * Postgres ANDs every CHECK on a column, so the effective rule is the
+ * INTERSECTION of the two: no underscores. STORE_SLUG_RE stays permissive
+ * because it is the READ/MATCH path -- proxy.ts uses it to recognise an
+ * incoming `/<slug>` URL, and narrowing it would orphan any existing row that
+ * somehow already contains an underscore. DB_SLUG_RE is the guard for anything
+ * we are about to INSERT, so a slug derived from a username like `bob_smith`
+ * fails at creation with a message that names the problem instead of blowing
+ * up at the database with a generic SQLSTATE 23514 the user sees as
+ * "an unexpected error".
+ */
+export const DB_SLUG_RE = /^[a-z0-9][a-z0-9-]{1,49}$/;
+
+/**
+ * True when `slug` is a shape the database will actually store. Creation and
+ * rename paths that build their own candidate (e.g. slugs derived from a
+ * username) should test with THIS, not STORE_SLUG_RE.
+ */
+export function isDbSafeSlug(slug: string | null | undefined): boolean {
+  if (typeof slug !== 'string') return false;
+  return DB_SLUG_RE.test(slug.trim().toLowerCase());
+}
+
+/**
  * First path segments that are real app routes and can therefore never be a
  * storefront.
  *
@@ -32,9 +63,19 @@ export const STORE_SLUG_RE = /^[a-z0-9][a-z0-9_-]{1,49}$/;
  *      like `wallet` or `checkout` — which would generate a QR pointing at an
  *      app route and leave their storefront unreachable forever.
  *
- * Mirrored by the `agent_profiles_slug_not_reserved` database trigger, which
- * is the real enforcement point (it covers all five creation routes and any
- * future one). Keep the two in sync; the DB is authoritative.
+ * PARTIALLY mirrored by the `agent_profiles_slug_not_reserved` database
+ * trigger. NEITHER list is authoritative and neither contains the other -- the
+ * DB list has 48 entries, this one has entries the DB lacks, and the DB has
+ * entries this one lacks. Segments this app list covers that the DB trigger
+ * does NOT: peptides, research, coa, wallet, invite, find-a-peptide,
+ * peptide-101, lab-journal, lab-tools, messenger, onboarding, reset-password,
+ * shelf-life, advertising, accept-disclaimer, account, test-card, monitoring.
+ * For the segments that matter to ROUTING, this app-side list is the stricter
+ * of the two, so it must never be weakened on the assumption that the trigger
+ * will catch what slips through -- it will not. Both checks have to run: this
+ * one at creation, the trigger as the backstop for any write path that bypasses
+ * it. Keeping the two in sync is still the goal; until they are, treat the
+ * union as the real reserved set.
  */
 export const RESERVED_SEGMENTS = new Set([
   'about', 'accept-disclaimer', 'account', 'admin', 'advertising', 'api', 'auth',
@@ -95,8 +136,17 @@ export function validateStoreSlug(slug: string | null | undefined): string | nul
   const s = slug.trim().toLowerCase();
   if (s.length < 2) return 'Storefront URL Must Be At Least 2 Characters.';
   if (s.length > 50) return 'Storefront URL Must Be 50 Characters Or Fewer.';
-  if (!STORE_SLUG_RE.test(s)) {
-    return 'Storefront URL May Only Contain Lowercase Letters, Numbers, Hyphens And Underscores, And Must Start With A Letter Or Number.';
+  // DB_SLUG_RE, not STORE_SLUG_RE. This is the CREATION-time validator, and the
+  // database refuses underscores (see DB_SLUG_RE for the
+  // intersection-of-two-CHECK-constraints reasoning). Passing a slug that only
+  // satisfies STORE_SLUG_RE green-lights an INSERT the database then rejects
+  // with SQLSTATE 23514, which every caller surfaces as a generic "unexpected
+  // error" with nothing pointing at the slug.
+  if (!DB_SLUG_RE.test(s)) {
+    if (s.includes('_')) {
+      return 'Storefront URL Cannot Contain Underscores. Use A Hyphen Instead (For Example: bob-smith).';
+    }
+    return 'Storefront URL May Only Contain Lowercase Letters, Numbers And Hyphens, And Must Start With A Letter Or Number.';
   }
   if (RESERVED_SEGMENTS.has(s)) return 'That Storefront URL Is Reserved By The Site.';
   return null;
