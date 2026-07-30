@@ -53,10 +53,18 @@ export interface EnsureProfileResult {
  *   5. Missing Identity Data (Email, Name, Avatar): Backfill From The OAuth
  *      Provider On Every Sign-In. Existing Non-Null Values Are NEVER
  *      Overwritten - Users Are Simply Not Asked For Data We Already Have.
- *   6. agentSlug (From The /signup Referral Step Or A QR Scan, Forwarded As
- *      The Top-Level agentRef Callback Param): Resolves To That Agent When
- *      The Slug Exists AND The Agent's Account Is Active; Otherwise Falls
- *      Back To The House Store. Signup Is Never Blocked By A Bad Slug.
+ *   6. Referral Resolution Uses TWO SEPARATE, NEVER-CROSSED NAMESPACES:
+ *        refCode   -> profiles.username / profiles.referral_code
+ *        agentSlug -> agent_profiles.slug
+ *      refCode Wins When Both Are Supplied. A Storefront Slug Resolved In
+ *      The Username Namespace Credits The WRONG Agent Whenever The Two
+ *      Collide (Live Example: The Store `scooters` Is Owned By Username
+ *      `adam`, While A DIFFERENT Agent Owns The Store `adam`), Which Is
+ *      Exactly The Misattribution This Split Prevents. A Caller Holding
+ *      Only One Value Passes It In BOTH Slots, Reproducing The Historical
+ *      "Code First, Slug Second" Order Exactly. Either Path Requires The
+ *      Agent's Account To Be Active And Not Deleted; Otherwise It Falls
+ *      Back To The House Store. Signup Is Never Blocked By A Bad Ref.
  *      CRITICAL: The trg_00_ensure_researcher_house_agent DB Trigger House-
  *      Links Every New Researcher Row The Moment handle_new_user Creates It,
  *      So By The Time The OAuth Callback Runs The Profile Is ALREADY House-
@@ -90,6 +98,7 @@ export async function ensureOAuthResearcherProfile(
   user: OAuthUserLike,
   agentSlug?: string,
   subAgentId?: string,
+  refCode?: string,
 ): Promise<EnsureProfileResult> {
   const result: EnsureProfileResult = {
     ok: false,
@@ -108,19 +117,25 @@ export async function ensureOAuthResearcherProfile(
       .eq('slug', DEFAULT_STORE_SLUG)
       .maybeSingle();
 
-    // If the user provided a referral agent slug (from QR code or manual entry),
-    // look up that agent. Fall back to house store if not found, invalid, or
-    // INACTIVE - the same gate POST /api/storefront/register applies, so a
-    // deactivated storefront can never keep collecting new researchers through
-    // a stale QR code or share link.
+    // Resolve the referring agent. Fall back to the house store if not found,
+    // invalid, INACTIVE or deleted - the same gate POST /api/storefront/register
+    // applies, so a deactivated storefront can never keep collecting new
+    // researchers through a stale QR code or share link.
+    //
+    // TWO SEPARATE NAMESPACES, NEVER CROSSED:
+    //   refCode   -> profiles.username / profiles.referral_code
+    //   agentSlug -> agent_profiles.slug
+    // Resolving a slug in the username namespace credits the wrong agent
+    // whenever the two collide, so each value is only ever looked up in the
+    // namespace it actually belongs to.
     let namedAgentId: string | null = null;
     let referringSubAgentId: string | null = null;
 
-    if (agentSlug && /^[a-z0-9_-]{2,80}$/i.test(agentSlug)) {
-      // First try robust matching (username/referral code) like register form
+    // FIRST: explicit referral code (username / referral_code namespace).
+    if (refCode && /^[a-z0-9_-]{2,80}$/i.test(refCode)) {
       // Escape LIKE wildcards (_ and %) a raw username/code could contain so the
       // match stays literal -- mirrors the email-probe escaping used below.
-      const refEsc = agentSlug.replace(/([%_\\])/g, '\\$1');
+      const refEsc = refCode.replace(/([%_\\])/g, '\\$1');
       const { data: refMatch } = await admin
         .from('profiles')
         .select('id, role, is_active, is_sub_agent, parent_agent_id')
@@ -138,24 +153,31 @@ export async function ensureOAuthResearcherProfile(
           referringSubAgentId = refMatch.id;
         }
       }
+    }
 
-      // Fallback to strict slug matching if the above didn't find anything
-      if (!namedAgentId) {
-        const { data: namedAgent } = await admin
-          .from('agent_profiles')
-          .select('id')
-          .eq('slug', agentSlug.toLowerCase())
+    // SECOND: storefront slug (agent_profiles.slug namespace) when the code
+    // namespace produced nothing.
+    if (!namedAgentId && agentSlug && /^[a-z0-9_-]{2,80}$/i.test(agentSlug)) {
+      const { data: namedAgent } = await admin
+        .from('agent_profiles')
+        .select('id')
+        .eq('slug', agentSlug.toLowerCase())
+        .maybeSingle();
+      if (namedAgent?.id) {
+        // Activity gate mirrors /api/storefront/register. deleted_at is checked
+        // alongside is_active: a soft-deleted agent keeps is_active=true in some
+        // rows, and crediting a deleted account is the same leak as crediting a
+        // deactivated one.
+        const { data: agentAccount } = await admin
+          .from('profiles')
+          .select('id, is_active, deleted_at')
+          .eq('id', namedAgent.id)
           .maybeSingle();
-        if (namedAgent?.id) {
-          // Activity gate mirrors /api/storefront/register
-          const { data: agentAccount } = await admin
-            .from('profiles')
-            .select('id, is_active')
-            .eq('id', namedAgent.id)
-            .maybeSingle();
-          if (agentAccount?.is_active === true) {
-            namedAgentId = namedAgent.id;
-          }
+        if (
+          agentAccount?.is_active === true &&
+          (agentAccount as { deleted_at?: string | null }).deleted_at == null
+        ) {
+          namedAgentId = namedAgent.id;
         }
       }
     }
