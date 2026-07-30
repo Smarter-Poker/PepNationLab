@@ -451,13 +451,13 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
 
         <div style={{ flex: 1, minWidth: 0 }} aria-hidden="true" />
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
           {loading ? (
             <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--surface-2)' }} className="skeleton" />
           ) : user ? (
             <>
               <GlobalCompletenessWidget />
-              <Link href={dashLink} aria-label={dashLabel} className="hover-scale-105" style={{ display: 'flex', alignItems: 'center', padding: 4, background: 'none', flexShrink: 0, marginRight: 4, position: 'relative', left: -8 }}>
+              <Link href={dashLink} aria-label={dashLabel} className="hover-scale-105" style={{ display: 'flex', alignItems: 'center', background: 'none', flexShrink: 0 }}>
                 <Image
                   src={
                     role === 'admin' ? '/nav-icons/admin-dashboard.png' :
@@ -477,7 +477,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
                   href={`/checkout?agent=${encodeURIComponent(activeAgentSlug)}`}
                   aria-label="Cart"
                   className="hover-scale-105"
-                  style={{ display: 'flex', alignItems: 'center', padding: 4, background: 'none', flexShrink: 0, marginRight: 4, position: 'relative', left: -8 }}
+                  style={{ display: 'flex', alignItems: 'center', background: 'none', flexShrink: 0 }}
                 >
                   <Image
                     src="/nav-icons/cart.png"
@@ -491,7 +491,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
                 </Link>
               )}
               <div
-                style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', cursor: 'pointer', position: 'relative', left: -8 }}
+                style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
                 title={displayName}
               >
                 <NavbarWalletBadge />
