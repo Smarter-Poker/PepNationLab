@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import PremiumPeptideCard from '@/components/storefront/PremiumPeptideCard';
 
