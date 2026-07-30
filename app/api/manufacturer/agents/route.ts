@@ -7,6 +7,7 @@ import { requireManufacturer } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { generateQrDataUrl } from '@/lib/qr';
 import { sanitizeUsername } from '@/lib/usernames';
+import { validateStoreSlug } from '@/lib/store-slug';
 import { seedStorefrontFromHousePrices } from '@/lib/seed-storefront';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://pepnationlab.com';
@@ -111,16 +112,32 @@ export async function POST(req: NextRequest) {
   if (!username || !password || !slug) {
     return NextResponse.json({ error: 'Username, password, and slug are required' }, { status: 400 });
   }
-  if (typeof password !== 'string' || password.length < 8) {
-    return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 });
+  // Provisioned passwords are exactly 8 characters platform-wide - the login
+  // form, the forced password-change flow, /api/admin/agents and
+  // /api/agent/agents all assume it. This route used to accept `>= 8`, so a
+  // manufacturer could hand a downline Agent a preset password the rest of the
+  // platform would not round-trip.
+  if (typeof password !== 'string' || password.length !== 8) {
+    return NextResponse.json({ error: 'Password Must Be Exactly 8 Characters.' }, { status: 400 });
   }
 
   const usernameClean = sanitizeUsername(username);
   if (!usernameClean) return NextResponse.json({ error: 'Invalid username' }, { status: 400 });
 
-  const slugClean = String(slug).toLowerCase().replace(/[^a-z0-9-]/g, '-');
-  if (!/^[a-z0-9-]+$/.test(slugClean)) {
-    return NextResponse.json({ error: 'Slug must contain only lowercase letters, numbers, and hyphens' }, { status: 400 });
+  // Storefront slug shape comes from lib/store-slug.ts - the same definition
+  // the edge middleware (proxy.ts) matches on and the agent_profiles_slug_shape
+  // CHECK + agent_profiles_slug_not_reserved trigger enforce in the database.
+  //
+  // The old code coerced with `.replace(/[^a-z0-9-]/g, '-')` and then tested
+  // /^[a-z0-9-]+$/, which (a) silently mangled legal underscored slugs into
+  // hyphens, and (b) still accepted a leading hyphen, a single character,
+  // unbounded length and reserved app-route segments (`admin`, `wallet`,
+  // `checkout`). None of those are routable, so the resulting storefront and
+  // its QR code would be permanently dead with no error surfaced anywhere.
+  const slugClean = String(slug).trim().toLowerCase();
+  const slugError = validateStoreSlug(slugClean);
+  if (slugError) {
+    return NextResponse.json({ error: slugError }, { status: 400 });
   }
 
   // Check uniqueness
