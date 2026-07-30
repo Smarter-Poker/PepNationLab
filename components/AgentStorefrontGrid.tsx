@@ -3891,46 +3891,34 @@ export default function AgentStorefrontGrid({
                           </label>
                           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                             {detailProduct.variants.map(v => {
-                              const size = v.products?.unit_size ? `${v.products.unit_size}${v.products.unit_measure || ''}` : 'Standard';
+                              const sizeStr = v.products?.unit_size ? `${v.products.unit_size}${v.products.unit_measure || ''}` : 'Standard';
+                              const displaySize = sizeStr === 'Standard' ? sizeStr : `${sizeStr} Vials`;
                               const isSelected = v.id === activeV.id;
-                              const normalizedSize = size.toLowerCase().replace(/\s+/g, '');
-                              const pillSizes = ['0.1mg', '1mg', '5mg', '10mg', '15mg', '20mg', '30mg', '40mg', '50mg', '60mg', '70mg', '80mg', '90mg', '100mg', '120mg', '600mg', '1000mg', '1500mg', '3ml', '10ml', '75iu', '5000iu', '10000iu'];
-                              const hasImage = pillSizes.includes(normalizedSize);
 
                               return (
                                 <button
                                   key={v.id}
                                   onClick={() => setSelectedVariants(prev => ({ ...prev, [detailProduct.name]: v.id }))}
                                   style={{
-                                    flex: '1 1 auto', minWidth: 60, maxWidth: 140,
+                                    flex: '0 1 auto', minWidth: 90,
                                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center',
-                                    padding: hasImage ? '2px' : '10px 6px', borderRadius: 10,
-                                    border: isSelected ? `2px solid ${primaryColor}` : '2px solid transparent',
-                                    background: hasImage ? 'transparent' : (isSelected
+                                    padding: '8px 14px', borderRadius: 10,
+                                    border: isSelected ? `1px solid ${primaryColor}` : '1px solid rgba(190,200,210,0.30)',
+                                    background: isSelected 
                                       ? `linear-gradient(180deg, ${primaryColor}26 0%, ${primaryColor}10 100%)`
-                                      : 'linear-gradient(180deg, #2b3744 0%, #1b242e 100%)'),
-                                    boxShadow: isSelected && !hasImage
-                                      ? `inset 0 1px 0 rgba(255,255,255,0.18), 0 0 0 1px ${primaryColor}55, 0 0 12px ${primaryColor}40`
-                                      : (!hasImage ? 'inset 0 1px 0 rgba(255,255,255,0.10), 0 2px 6px rgba(0,0,0,0.4)' : 'none'),
+                                      : 'linear-gradient(180deg, #34424f 0%, #1d2630 55%, #151d26 100%)',
+                                    boxShadow: isSelected
+                                      ? `inset 0 1px 0 rgba(255,255,255,0.18), 0 0 12px ${primaryColor}40`
+                                      : 'inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 4px rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.5)',
                                     color: isSelected ? primaryColor : 'var(--grey-200)',
-                                    fontWeight: isSelected ? 800 : 600, fontSize: '0.85rem',
+                                    fontFamily: 'var(--font-brand)',
+                                    fontWeight: isSelected ? 800 : 700, 
+                                    fontSize: '0.95rem',
+                                    letterSpacing: '0.02em',
                                     cursor: 'pointer', transition: 'all 0.15s ease'
                                   }}
                                 >
-                                  {hasImage ? (
-                                    <div style={{ width: 130, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                      <Image 
-                                        src={`/images/ui/pills/${normalizedSize}.png`} 
-                                        alt={size} 
-                                        width={130} 
-                                        height={34} 
-                                        style={{ width: '100%', height: '100%', objectFit: 'fill' }} 
-                                        unoptimized 
-                                      />
-                                    </div>
-                                  ) : (
-                                    size
-                                  )}
+                                  {displaySize}
                                 </button>
                               );
                             })}

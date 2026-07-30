@@ -1062,7 +1062,6 @@ export default function ProductModalEnhancements({
 
         </>
       )}
-      <IsThisRightForMe compound={currentCompound} primaryColor={primaryColor} />
 
       {stackComponents.length > 0 && (
         <>
@@ -1205,28 +1204,6 @@ export default function ProductModalEnhancements({
 
 
       <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
-      {!hideBulkPricing && (
-        <div style={{
-          display: 'flex',
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 16,
-          margin: '16px 0',
-          flexWrap: 'wrap',
-        }}>
-          <DynamicDetailButton
-            type="bulk"
-            height={76}
-            onClick={onToggleBulkPricing || (() => {})}
-            style={{
-              filter: showBulkPricing
-                ? 'brightness(1.2) drop-shadow(0 0 6px rgba(255, 255, 255, 0.3))'
-                : 'none',
-            }}
-          />
-        </div>
-      )}
       
       {currentCompoundSlug && currentProductName && (
         <div style={{
