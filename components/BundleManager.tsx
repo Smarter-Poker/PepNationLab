@@ -481,7 +481,7 @@ export default function BundleManager({ agentId }: Props) {
           {/* Description */}
           <div className="form-group" style={{ margin: 0 }}>
             <label className="form-label" htmlFor="bundle-desc" style={{ color: 'var(--grey-400)' }}>Description (Optional)</label>
-            <textarea id="bundle-desc" className="form-input" value={description} maxLength={500} onChange={(e) => setDescription(e.target.value)} placeholder="What This Bundle Is For" rows={2} style={{ resize: 'vertical' }} />
+            <textarea id="bundle-desc" className="form-input" value={description} maxLength={5000} onChange={(e) => setDescription(e.target.value)} placeholder="What This Bundle Is For" rows={2} style={{ resize: 'vertical' }} />
           </div>
 
           {/* Product selection */}
