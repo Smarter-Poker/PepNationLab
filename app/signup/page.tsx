@@ -94,7 +94,17 @@ function SignupForm() {
   // removed or changed by the person signing up.
   const [lockedRef, setLockedRef] = useState<string | null>(null);
   useEffect(() => {
-    const rawRef = (searchParams.get('ref') ?? '').trim();
+    let rawRef = (searchParams.get('ref') ?? '').trim();
+    if (!rawRef || !/^[A-Za-z0-9_-]{2,50}$/.test(rawRef)) {
+      // No valid ?ref= — fall back to the QR lock display cookie
+      // (pnl_ref_display, set by the middleware alongside the signed lock) so
+      // the locked referral still shows when /signup is reached without the
+      // query param. The signed httpOnly cookie remains the server-side truth.
+      try {
+        const m = document.cookie.match(/(?:^|;\s*)pnl_ref_display=([^;]*)/);
+        if (m) rawRef = decodeURIComponent(m[1]).trim();
+      } catch { /* ignore */ }
+    }
     if (rawRef && /^[A-Za-z0-9_-]{2,50}$/.test(rawRef)) {
       setReferralInput(rawRef);
       setLockedRef(rawRef); // lock it — cannot be changed
