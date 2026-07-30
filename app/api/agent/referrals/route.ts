@@ -12,8 +12,10 @@ export async function GET() {
     const supabase = createAdminClient();
     const agentId = gate.user.id;
 
-    // 1. Referral identifier is the agent's username (resolves across all roles
-    //    in apply_signup_referral).
+    // 1. Referral identifier for this agent. Both columns are fetched because
+    //    either one resolves in proxy.ts; the precedence between them is
+    //    applied below, once the storefront slug is known (the slug is the
+    //    last-resort fallback).
     const { data: selfProfile } = await supabase
       .from('profiles')
       .select('username, referral_code')
@@ -49,7 +51,25 @@ export async function GET() {
         ? rawSlug
         : null;
 
-    const referral_code = selfProfile?.username ?? selfProfile?.referral_code ?? null;
+    // REFERRAL IDENTIFIER - referral_code first, then username, then the slug.
+    // proxy.ts resolveRefCode() resolves a scanned `?ref=` with
+    // `username.ilike.<code> OR referral_code.ilike.<code>`, so either profile
+    // column works; `referral_code` is the one that exists to be handed out, so
+    // it takes precedence and this link stays identical to what the QR
+    // provisioning routes bake into printed codes for the same agent.
+    //
+    // `||`, deliberately not `??`. The old `??` chain only skipped
+    // null/undefined, so a profile whose `username` had been written as an
+    // empty string rather than NULL won outright - beating a perfectly good
+    // referral_code - and produced `?ref=` with nothing after it, a link that
+    // resolves to nobody and silently loses the credit.
+    //
+    // The slug is the final fallback rather than giving up: with a null code
+    // the whole `referral_url` below collapses to null and the dashboard shows
+    // an agent a blank "your referral link" box with nothing to share. A
+    // `/<slug>` link still mints a lock for that store's owner through
+    // proxy.ts resolveStoreSlug(), so attribution survives.
+    const referral_code = selfProfile?.referral_code || selfProfile?.username || slug || null;
     const base = (process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '')) || 'https://pepnationlab.com';
     const referral_url = referral_code
       ? slug
