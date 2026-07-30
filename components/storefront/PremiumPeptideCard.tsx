@@ -78,8 +78,8 @@ export default function PremiumPeptideCard({
           {/* Vial Image — clipped to the V-frame polygon so it is always contained inside the frame */}
           <div style={{
             position: 'absolute',
-            left: px(25), top: px(25), right: px(25), height: px(523),
-            borderRadius: `${px(25)} ${px(25)} 0 0`,
+            left: px(42), top: px(25), right: px(42), height: px(523),
+            borderRadius: `${px(18)} ${px(18)} 0 0`,
             // Clip-path enforces the V-bottom so the image never overlaps the frame
             clipPath: 'polygon(0 0, 100% 0, 100% 94.65%, 50% 100%, 0 94.65%)',
             WebkitClipPath: 'polygon(0 0, 100% 0, 100% 94.65%, 50% 100%, 0 94.65%)',
@@ -252,19 +252,19 @@ export default function PremiumPeptideCard({
               <div style={{
                 position: 'absolute',
                 left: px(380), width: px(280), top: px(560),
-                display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: px(8),
+                display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: px(6),
                 zIndex: 30, pointerEvents: 'none'
               }}>
                 <span style={{
                   fontFamily: 'var(--font-roboto-condensed, sans-serif)',
                   fontWeight: 700,
-                  fontSize: px(22),
+                  fontSize: px(26),
                   color: '#8B8F93'
                 }}>MSRP</span>
                 <span style={{
                   fontFamily: 'var(--font-roboto-condensed, sans-serif)',
                   fontWeight: 700,
-                  fontSize: px(25),
+                  fontSize: px(30),
                   color: '#8B8F93',
                   textDecoration: 'line-through',
                   textDecorationThickness: px(2)
@@ -275,11 +275,11 @@ export default function PremiumPeptideCard({
               {savings !== undefined && savings > 0 && (
                 <div style={{
                   position: 'absolute',
-                  left: px(380), width: px(280), top: px(600),
+                  left: px(380), width: px(280), top: px(592),
                   display: 'flex', justifyContent: 'center',
                   fontFamily: 'var(--font-roboto-condensed, sans-serif)',
                   fontWeight: 700,
-                  fontSize: px(23),
+                  fontSize: px(27),
                   color: '#00C7E8',
                   textTransform: 'uppercase',
                   zIndex: 30, pointerEvents: 'none'
