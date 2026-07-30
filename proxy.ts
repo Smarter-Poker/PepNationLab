@@ -435,8 +435,29 @@ export default async function proxy(request: NextRequest) {
   // Placement: after the ?ref= capture above (so the lock is minted and both
   // cookies ride along on this redirect) and before the /register 308 and the
   // PUBLIC_ROUTES early return, either of which would otherwise win.
+  //
+  // EXEMPTION -- an in-app click is not a referral entry point. The comment
+  // above assumed no in-app link carries ?ref=; app/HomeClient.tsx did exactly
+  // that, sending a locked guest's "Create Account" button to
+  // /signup?ref=<code>, which this block then bounced straight back to the
+  // storefront. A locked guest could therefore never reach the sign-up form
+  // from the landing page -- a hole opened by this very block.
+  //
+  // Sec-Fetch-Site tells the two apart with no guessing: a camera app opening
+  // a scanned URL sends `none` (or omits the header entirely), a foreign page
+  // linking in sends `cross-site`, and a click or router.push() from one of
+  // our own pages sends `same-origin`. Only the first two are entry points.
+  // Header absent -> not exempt, i.e. the safe pre-existing behaviour, so an
+  // old browser still gets the storefront rather than an account wall.
+  //
+  // HomeClient.tsx separately no longer appends ?ref= at all (attribution
+  // rides the httpOnly pnl_ref_lock cookie, which is what the register route
+  // actually trusts); this exemption is the general guard so the next in-app
+  // link that carries a ref does not silently reopen the same hole.
+  const isSameOriginNav = request.headers.get('sec-fetch-site') === 'same-origin';
   if (
     request.method === 'GET' &&
+    !isSameOriginNav &&
     request.nextUrl.searchParams.has('ref') &&
     ACCOUNT_ENTRY_PREFIXES.some((r) => pathname === r || pathname.startsWith(r + '/'))
   ) {
