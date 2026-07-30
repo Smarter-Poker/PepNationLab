@@ -107,13 +107,16 @@ export async function POST(req: NextRequest) {
     if (!agentErr && agentProfile) {
       const { data: agentUser } = await admin
         .from('profiles')
-        .select('id, is_active')
+        .select('id, is_active, deleted_at')
         .eq('id', agentProfile.id)
         .maybeSingle();
 
-      if (agentUser?.is_active) {
+      // deleted_at matters as much as is_active: a soft-deleted agent keeps its
+      // agent_profiles row, so a stale storefront link would otherwise still
+      // credit an account that no longer exists to the rest of the app.
+      if (agentUser?.is_active && agentUser.deleted_at == null) {
         referringAgentId = agentProfile.id;
-        
+
         // Check sub-agent attribution if slug resolved successfully
         if (subAgentId) {
           const { data: subAgent } = await admin
@@ -136,12 +139,23 @@ export async function POST(req: NextRequest) {
     // This pre-resolves it so the initial INSERT has the correct ID, bypassing
     // the enforce_researcher_agent_binding trigger error that blocks apply_signup_referral.
     // (referralCode carries the QR lock-cookie code when a valid lock exists.)
-    if (referralCode) {
+    //
+    // .ilike. is a LIKE pattern, so `_` and `%` inside the submitted value are
+    // WILDCARDS - and usernames legitimately contain `_`. Unescaped, `ada_t`
+    // also matches `adamt` and `adaXt`, and .limit(1) then hands the credit to
+    // an arbitrary one of them. The value is therefore format-checked first and
+    // wildcard-escaped before interpolation (same treatment as
+    // lib/oauth-profile.ts). deleted_at is filtered alongside is_active so a
+    // soft-deleted agent can never be credited through a stale link or an old
+    // referral lock cookie.
+    if (referralCode && /^[a-z0-9_-]{2,80}$/i.test(referralCode)) {
+      const refPattern = referralCode.replace(/([%_\\])/g, '\\$1');
       const { data: refMatch } = await admin
         .from('profiles')
         .select('id, role, is_active, is_sub_agent, parent_agent_id')
-        .or(`username.ilike.${referralCode},referral_code.ilike.${referralCode}`)
+        .or(`username.ilike.${refPattern},referral_code.ilike.${refPattern}`)
         .eq('is_active', true)
+        .is('deleted_at', null)
         .limit(1)
         .maybeSingle();
 
