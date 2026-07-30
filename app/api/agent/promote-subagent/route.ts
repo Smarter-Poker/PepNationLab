@@ -57,6 +57,36 @@ function deriveStoreSlugBase(
 }
 
 /**
+ * Picks the code that gets embedded as ?ref= in a storefront QR.
+ *
+ * The precedence here is not arbitrary -- it mirrors exactly how proxy.ts
+ * resolves an inbound ?ref= on a scan: `referral_code` is the canonical
+ * referral namespace whenever the profile has one, `username` is the historical
+ * fallback resolveRefCode() still honours, and the storefront slug resolves as
+ * well. Both referral_code and username are nullable (and can be an empty
+ * string), and a QR that carries no usable ref mints NO first-scan-wins lock at
+ * all -- the scan is attributed to nobody and the agent silently loses every
+ * customer who walks in off that code. The slug is guaranteed present and
+ * routable, so this chain always terminates in something that resolves.
+ *
+ * Deliberately absent from the chain: the raw user id. It is a UUID, no row is
+ * keyed by it in the referral lookup, so shipping it as ?ref= fails exactly the
+ * same way an absent ref does -- only harder to spot, because the QR looks
+ * correctly formed.
+ */
+function resolveQrRefCode(
+  referralCode: string | null,
+  username: string | null,
+  slug: string,
+): string {
+  const code = (referralCode || '').trim();
+  if (code) return code;
+  const name = (username || '').trim();
+  if (name) return name;
+  return slug;
+}
+
+/**
  * Provisions a full storefront + product catalog for a newly minted full Agent.
  * Mirrors POST /api/agent/agents so a super-agent's promoted agent is a complete,
  * visible storefront rather than an invisible profile-only shell. Idempotent:
@@ -74,17 +104,52 @@ async function provisionAgentStorefront(
   agentId: string,
   username: string | null,
   fullName: string | null,
+  referralCode: string | null,
 ): Promise<string | null> {
   let slug: string | null = null;
   try {
     const { data: existingStore } = await admin
       .from('agent_profiles')
-      .select('id, slug')
+      .select('id, slug, qr_code_data')
       .eq('id', agentId)
       .maybeSingle();
 
     if (existingStore) {
       slug = (existingStore as { slug?: string | null }).slug ?? null;
+
+      // This branch used to return the slug and nothing else, which meant a
+      // researcher who ALREADY had an agent_profiles row (left behind by an
+      // earlier partial promotion, or created by one of the routes that
+      // predates QR generation) skipped the generateStorefrontQr call below
+      // entirely and kept qr_code_data NULL forever. Nothing in the product
+      // ever retries it, so that agent owns a live storefront with no code to
+      // hand out and no error surfaced anywhere -- the promotion "succeeded".
+      // Backfill it here so the repaired path is the same path.
+      //
+      // Two guards, both load-bearing: we regenerate ONLY when the column is
+      // actually empty (regenerating unconditionally would churn a working
+      // code on every re-promotion), and we write ONLY a truthy render, because
+      // generateStorefrontQr returns null on failure and persisting that null
+      // would erase a good code -- strictly worse than the NULL we came to fix.
+      const existingQr = (existingStore as { qr_code_data?: string | null }).qr_code_data ?? null;
+      if (!existingQr && slug) {
+        const backfillQr: string | null = await generateStorefrontQr(
+          slug,
+          resolveQrRefCode(referralCode, username, slug),
+        );
+        if (backfillQr) {
+          const { error: backfillError } = await admin
+            .from('agent_profiles')
+            .update({ qr_code_data: backfillQr })
+            .eq('id', agentId);
+          if (backfillError) {
+            // Non-fatal: the agent is still a full agent with a storefront.
+            // supabase-js returns errors rather than throwing, so without this
+            // read the failure would be invisible.
+            console.error('[promote-subagent] qr_code_data backfill failed:', backfillError);
+          }
+        }
+      }
     } else {
       const base = deriveStoreSlugBase(username, fullName, agentId);
       let candidate = base;
@@ -110,11 +175,17 @@ async function provisionAgentStorefront(
       }
 
       // utm params make QR scans attributable as offline traffic; ?ref= makes
-      // the scan mint a HARD first-scan-wins referral lock. `username` is
-      // nullable here, so fall back to the slug - resolveRefCode() accepts a
-      // slug too, which still beats shipping a code with no ref at all.
+      // the scan mint a HARD first-scan-wins referral lock. The ref itself
+      // comes from resolveQrRefCode(), which honours the profile's
+      // referral_code first: passing `username` alone (as this line did) burned
+      // the wrong namespace into the code for every agent who has a
+      // referral_code, so scans resolved against a username that resolveRefCode()
+      // may not map back to that agent at all.
       // Never throws; a null result just means no cached code.
-      const qr: string | null = await generateStorefrontQr(candidate, username || candidate);
+      const qr: string | null = await generateStorefrontQr(
+        candidate,
+        resolveQrRefCode(referralCode, username, candidate),
+      );
       const { error: storeError } = await admin.from('agent_profiles').insert({
         id: agentId,
         slug: candidate,
@@ -255,7 +326,7 @@ export async function POST(req: NextRequest) {
     // P0: maybeSingle() so a missing researcher returns null instead of throwing.
     const { data: researcherProfile } = await admin
       .from('profiles')
-      .select('role, referring_agent_id, full_name, username, email, is_sub_agent')
+      .select('role, referring_agent_id, full_name, username, email, is_sub_agent, referral_code')
       .eq('id', researcherId)
       .maybeSingle();
 
@@ -348,7 +419,14 @@ export async function POST(req: NextRequest) {
     // CRITICAL: Sync the role to auth.users app_metadata so the JWT reflects the new agent role.
     const { data: userData } = await admin.auth.admin.getUserById(researcherId);
     if (userData?.user) {
-      const newMeta = { ...userData.user.app_metadata, role: 'agent' };
+      // The literal 'agent' that used to sit here desynced the JWT claim from
+      // profiles.role in BOTH directions: a promotion to 'sub_agent' minted a
+      // token claiming full agent (a privilege ESCALATION -- every
+      // role === 'agent' check in the app reads the claim, not the row), and a
+      // promotion to 'super_agent' minted a token claiming plain agent, locking
+      // the new super-agent out of its own surfaces. `newRole` is the exact
+      // value written to profiles above, so the claim and the row cannot drift.
+      const newMeta = { ...userData.user.app_metadata, role: newRole };
       await admin.auth.admin.updateUserById(researcherId, { app_metadata: newMeta });
     }
 
@@ -359,8 +437,13 @@ export async function POST(req: NextRequest) {
       entity_id: researcherId,
       changes: {
         previous_role: researcherProfile.role,
-        new_role: 'agent',
-        is_sub_agent: false,
+        // Logged from the computed values, not the literals 'agent'/false that
+        // were here before. Those two fields disagreed with updatePayload for
+        // every sub_agent and super_agent promotion, so the audit trail -- the
+        // only forensic record of who was granted what -- asserted a plain
+        // agent promotion that never happened.
+        new_role: newRole,
+        is_sub_agent: isPromotingToSubAgent,
         is_super_agent: newIsSuperAgent,
         markup_pct: markupPct,
         custom_markup_override: Math.round((markupPct / 100) * 10000) / 10000,
@@ -403,6 +486,7 @@ export async function POST(req: NextRequest) {
         researcherId,
         researcherProfile.username ?? null,
         researcherProfile.full_name ?? null,
+        (researcherProfile as { referral_code?: string | null }).referral_code ?? null,
       );
     }
 
