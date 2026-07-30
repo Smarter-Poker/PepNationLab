@@ -2297,10 +2297,14 @@ export default function AgentStorefrontGrid({
           pickupText="AVAILABLE FOR SAME DAY PICKUP"
           buttonText="Add To Cart"
           imageSrc={group.imageUrl || '/images/peptide_clear.png'}
-          cardBg={({
-            'tirzepatide': '/images/storefront/tirzepatide-card-composite.jpg',
-            'retatrutide': '/images/storefront/retatrutide-card-composite.jpg',
-          } as Record<string, string>)[group.compoundSlug ?? '']}
+          cardBg={(() => {
+            const slug = group.compoundSlug ?? '';
+            if (!slug) return undefined;
+            // Route each storefront to its own brand image folder — never mix
+            const brand = agentSlug === 'savagebrands' ? 'savagebrands' : 'pepnation';
+            const path = `/images/storefront/${brand}/${slug}-card.jpg`;
+            return path;
+          })()}
           isPinned={pinnedNames.has(group.name)}
           isWishlisted={wishlist.has(activeVariant.product_id)}
           onCompareToggle={(e) => {
