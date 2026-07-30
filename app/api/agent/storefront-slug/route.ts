@@ -3,6 +3,7 @@ import { revalidateTag } from 'next/cache';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgentOrAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { generateStorefrontQr } from '@/lib/qr-storefront';
 
 /**
  * POST /api/agent/storefront-slug
@@ -90,9 +91,34 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
   const oldSlug = previous?.slug ?? null;
 
+  // A rename invalidates the stored QR code: it still encodes the OLD slug,
+  // which now resolves to nothing. Every printed code an agent hands out would
+  // keep pointing at a dead URL until someone noticed. Regenerate it in the
+  // same UPDATE so the slug and its QR can never disagree.
+  //
+  // The referral namespace is profiles.referral_code when one exists and
+  // profiles.username otherwise; proxy.ts's resolveRefCode() accepts either
+  // (and the slug itself), so a missing profile row still yields a working
+  // hard lock rather than no lock at all.
+  const { data: refRow } = await supabase
+    .from('profiles')
+    .select('username, referral_code')
+    .eq('id', agentId)
+    .maybeSingle();
+  const refCode =
+    (refRow as { username?: string | null; referral_code?: string | null } | null)?.referral_code ||
+    (refRow as { username?: string | null } | null)?.username ||
+    cleanSlug;
+  const freshQr = await generateStorefrontQr(cleanSlug, refCode);
+
+  // Only overwrite qr_code_data when the render actually succeeded - writing
+  // null would erase a working (if stale) code and leave the agent with none.
+  const updatePayload: { slug: string; qr_code_data?: string } = { slug: cleanSlug };
+  if (freshQr) updatePayload.qr_code_data = freshQr;
+
   const { data, error } = await supabase
     .from('agent_profiles')
-    .update({ slug: cleanSlug })
+    .update(updatePayload)
     .eq('id', agentId)
     .select('slug')
     .maybeSingle();

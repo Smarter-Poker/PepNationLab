@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireManufacturer } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
-import { generateQrDataUrl } from '@/lib/qr';
+import { generateStorefrontQr } from '@/lib/qr-storefront';
 import { sanitizeUsername } from '@/lib/usernames';
 import { validateStoreSlug } from '@/lib/store-slug';
 import { seedStorefrontFromHousePrices } from '@/lib/seed-storefront';
@@ -197,10 +197,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to create profile' }, { status: 500 });
   }
 
-  // QR code
+  // QR code. The human-readable storefrontUrl below stays clean (it is shown
+  // to the operator and returned in the response body); the QR payload itself
+  // carries ?ref= so a scan mints a HARD first-scan-wins referral lock, plus
+  // utm params so offline scans are attributable. See lib/qr-storefront.ts.
   const storefrontUrl = `${APP_URL}/${slugClean}`;
-  let qrCodeData: string | null = null;
-  try { qrCodeData = await generateQrDataUrl(storefrontUrl); } catch { /* non-fatal */ }
+  const qrCodeData: string | null = await generateStorefrontQr(slugClean, usernameClean);
 
   const { error: agentError } = await supabase.from('agent_profiles').upsert({
     id: userId,
