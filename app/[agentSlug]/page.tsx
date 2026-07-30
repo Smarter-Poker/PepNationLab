@@ -3,6 +3,8 @@ export const dynamic = 'force-dynamic';
 import { Suspense, cache } from 'react';
 import { preload } from 'react-dom';
 import { notFound, redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
+import { REF_LOCK_COOKIE, verifyRefLock } from '@/lib/ref-lock';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 import Link from 'next/link';
@@ -337,14 +339,23 @@ export default async function AgentStorefrontPage({ params, searchParams }: Prop
     data: { user },
   } = await supabase.auth.getUser();
   if (!user && agentSlug !== DEFAULT_STORE_SLUG) {
-    // Preserve QR / sub-agent attribution across the guest bounce to the
-    // landing: carry the storefront slug (and any ?sa sub-agent id) so the
-    // landing AgentLinkCapture records it for signup credit. Without this the
-    // guest redirect dropped all attribution and agents/sub-agents lost the
-    // referral + commission credit their storefront links are meant to earn.
-    const refParams = new URLSearchParams({ agent: agentSlug });
-    if (rawSa && /^[0-9a-f-]{36}$/i.test(rawSa)) refParams.set('sa', rawSa);
-    redirect(`/?${refParams.toString()}`);
+    // QR-locked guests may browse this one storefront: a visitor holding a
+    // valid pnl_ref_lock cookie whose locked slug matches this store gets the
+    // same guest view the house store renders (GuestCTA + AgentLinkCapture
+    // attribution) instead of the bounce to the landing page. See
+    // lib/ref-lock.ts; proxy.ts enforces the same rule at the edge.
+    const cookieStore = await cookies();
+    const lock = await verifyRefLock(cookieStore.get(REF_LOCK_COOKIE)?.value);
+    if (lock?.s !== agentSlug) {
+      // Preserve QR / sub-agent attribution across the guest bounce to the
+      // landing: carry the storefront slug (and any ?sa sub-agent id) so the
+      // landing AgentLinkCapture records it for signup credit. Without this the
+      // guest redirect dropped all attribution and agents/sub-agents lost the
+      // referral + commission credit their storefront links are meant to earn.
+      const refParams = new URLSearchParams({ agent: agentSlug });
+      if (rawSa && /^[0-9a-f-]{36}$/i.test(rawSa)) refParams.set('sa', rawSa);
+      redirect(`/?${refParams.toString()}`);
+    }
   }
 
   if (agent.is_active === false) {
