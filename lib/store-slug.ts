@@ -45,7 +45,35 @@ export const RESERVED_SEGMENTS = new Set([
   'orders', 'peptide-101', 'peptides', 'privacy', 'products', 'register',
   'research', 'reset-password', 'robots.txt', 'shelf-life', 'shipping',
   'signup', 'sitemap.xml', 'status', 'sw.js', 'terms', 'wallet', '_next',
+  // Real routes that were missing from this list. Either one could have been
+  // handed out as a storefront slug, and the agent who received it would have
+  // had a QR code and a printed URL pointing at an app route forever, with no
+  // error raised anywhere.
+  //   test-card  -> app/test-card/page.tsx
+  //   monitoring -> injected by Sentry (tunnelRoute: '/monitoring' in
+  //                 next.config.ts), so it exists at runtime with no folder
+  //                 under app/ to notice it by.
+  'test-card', 'monitoring',
 ]);
+
+/**
+ * Canonical form of a storefront slug, or null when it is not a legal slug.
+ *
+ * The validators below lowercase INTERNALLY and then throw that value away, so
+ * `MyStore` passes validation and whatever the caller happens to persist is
+ * whatever it was handed. A mixed-case slug in the database is a silent
+ * time-bomb: proxy.ts matches with STORE_SLUG_RE, which is lowercase-only, so
+ * the referral lock is minted with no store attached and the guest is sent to
+ * the house storefront instead of the agent whose code they scanned.
+ *
+ * Every creation and rename path must persist THIS value, not its own input.
+ */
+export function normalizeStoreSlug(slug: string | null | undefined): string | null {
+  if (typeof slug !== 'string') return null;
+  const s = slug.trim().toLowerCase();
+  if (!STORE_SLUG_RE.test(s) || RESERVED_SEGMENTS.has(s)) return null;
+  return s;
+}
 
 export function isReservedSegment(slug: string): boolean {
   return RESERVED_SEGMENTS.has((slug || '').toLowerCase());
