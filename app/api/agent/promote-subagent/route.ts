@@ -7,8 +7,56 @@ import { notifyPromotedToAgent, notifyPromotionSuccess } from '@/lib/notify';
 import { generateQrDataUrl } from '@/lib/qr';
 import { verifyCommissionSafeguard } from '@/lib/pricing';
 import { seedStorefrontFromHousePrices } from '@/lib/seed-storefront';
+import { isValidStoreSlug } from '@/lib/store-slug';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://pepnationlab.com';
+
+/**
+ * Derives a routable storefront slug from a person's username / display name.
+ *
+ * The naive version of this (lowercase, non-alphanumerics to hyphens, trim,
+ * slice) produced slugs the platform cannot actually serve:
+ *
+ *   - Reserved app routes. A researcher called "Admin", "Orders", "Wallet" or
+ *     "Checkout" yields exactly that slug, which the
+ *     agent_profiles_slug_not_reserved trigger rejects with 23514 -- and even
+ *     if it were stored, proxy.ts would route /admin to the admin app, never
+ *     to the storefront.
+ *   - Too short. A one-character username ("J") yields "j", below the two-char
+ *     floor in agent_profiles_slug_shape / STORE_SLUG_RE.
+ *   - Empty after stripping. A name of only punctuation or non-Latin script
+ *     collapses to "".
+ *
+ * So: sanitize, then hold the result against the single source of truth
+ * (lib/store-slug.ts) and fall back through `<base>-store` to an id-derived
+ * slug that cannot collide with an app route.
+ */
+function deriveStoreSlugBase(
+  username: string | null,
+  fullName: string | null,
+  agentId: string,
+): string {
+  const cleaned = ((username || fullName || '') as string)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40)
+    .replace(/-+$/g, '');
+
+  if (isValidStoreSlug(cleaned)) return cleaned;
+
+  // Reserved or too short -- `admin` becomes `admin-store`, `j` becomes
+  // `j-store`. Both are legal shapes and neither can be an app route.
+  if (cleaned) {
+    const suffixed = `${cleaned}-store`;
+    if (isValidStoreSlug(suffixed)) return suffixed;
+  }
+
+  // Nothing usable came out of the name (empty, all punctuation, non-Latin).
+  // The agent id is guaranteed present and yields a legal slug.
+  const fromId = `agent-${(agentId || '').replace(/[^a-z0-9]/gi, '').toLowerCase().slice(0, 12)}`;
+  return isValidStoreSlug(fromId) ? fromId : 'agent-store';
+}
 
 /**
  * Provisions a full storefront + product catalog for a newly minted full Agent.
@@ -16,6 +64,12 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://pepnationlab.com';
  * visible storefront rather than an invisible profile-only shell. Idempotent:
  * skips storefront/product creation if rows already exist. Best-effort and
  * non-fatal -- the profile is already a full agent regardless of outcome.
+ *
+ * Returns the slug that actually exists in agent_profiles, or null. It used to
+ * return the slug it INTENDED to insert without ever reading the insert's
+ * error, so a rejected insert still reported success to the caller and left
+ * the promoted agent with no storefront row -- silently reintroducing the
+ * profile-only shell this function exists to prevent.
  */
 async function provisionAgentStorefront(
   admin: ReturnType<typeof createAdminClient>,
@@ -34,36 +88,51 @@ async function provisionAgentStorefront(
     if (existingStore) {
       slug = (existingStore as { slug?: string | null }).slug ?? null;
     } else {
-      const base =
-        ((username || fullName || 'agent') as string)
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-+|-+$/g, '')
-          .slice(0, 40) || 'agent';
-      slug = base;
+      const base = deriveStoreSlugBase(username, fullName, agentId);
+      let candidate = base;
+      let free = false;
       for (let i = 2; i < 100; i++) {
         const { data: clash } = await admin
           .from('agent_profiles')
           .select('id')
-          .eq('slug', slug)
+          .eq('slug', candidate)
           .maybeSingle();
-        if (!clash) break;
-        slug = `${base}-${i}`;
+        if (!clash) { free = true; break; }
+        candidate = `${base}-${i}`;
       }
+      if (!free) {
+        // 99 variants taken. Fall back to the agent id, which is unique by
+        // construction. Previously the loop simply fell out still holding an
+        // unverified `base-99`, which then collided on insert.
+        candidate = `agent-${(agentId || '').replace(/[^a-z0-9]/gi, '').toLowerCase().slice(0, 12)}`;
+        if (!isValidStoreSlug(candidate)) {
+          console.error('[promote-subagent] could not derive a free storefront slug for', agentId);
+          return null;
+        }
+      }
+
       let qr: string | null = null;
       try {
         // utm params make QR scans attributable as offline traffic.
-        qr = await generateQrDataUrl(`${APP_URL}/${slug}?utm_source=qr&utm_medium=offline`);
+        qr = await generateQrDataUrl(`${APP_URL}/${candidate}?utm_source=qr&utm_medium=offline`);
       } catch {
         /* QR is non-essential; storefront works without it */
       }
-      await admin.from('agent_profiles').insert({
+      const { error: storeError } = await admin.from('agent_profiles').insert({
         id: agentId,
-        slug,
+        slug: candidate,
         display_name: (fullName || username || 'Agent') as string,
         qr_code_data: qr,
         is_active: true,
       });
+      if (storeError) {
+        // supabase-js returns errors rather than throwing, so the surrounding
+        // catch never saw these. Report null instead of a slug that does not
+        // exist.
+        console.error('[promote-subagent] agent_profiles insert failed:', storeError);
+        return null;
+      }
+      slug = candidate;
     }
 
     // Provision the agent's product catalog only if none exists yet.
