@@ -24,13 +24,13 @@ export function computeStockState(
 export function StockBadge({ state }: { state: StockState }) {
   if (state.kind === 'in_stock_local') {
     return (
-      <div style={{ display: 'flex', width: '100%', maxWidth: '280px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', width: '100%', margin: '0' }}>
         <Image 
           src="/images/ui/instock-banner.png" 
           alt="In Stock (Same-Day Pickup)" 
           width={400} 
           height={60} 
-          style={{ width: '100%', height: 'auto', objectFit: 'contain' }} 
+          style={{ width: '100%', height: 'auto', objectFit: 'contain', display: 'block' }} 
           unoptimized 
         />
       </div>

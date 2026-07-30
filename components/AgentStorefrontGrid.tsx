@@ -2570,7 +2570,7 @@ export default function AgentStorefrontGrid({
                                   alt={`${displaySizeText} Vials`} 
                                   width={140} 
                                   height={32} 
-                                  style={{ width: '100%', maxWidth: '140px', height: 'auto', objectFit: 'contain' }} 
+                                  style={{ height: '32px', width: 'auto', maxWidth: '100%', objectFit: 'contain' }} 
                                   unoptimized 
                                 />
                               );
@@ -4167,7 +4167,7 @@ export default function AgentStorefrontGrid({
                                       alt={size} 
                                       width={140} 
                                       height={32} 
-                                      style={{ width: '100%', height: 'auto', objectFit: 'contain' }} 
+                                      style={{ height: '32px', width: 'auto', maxWidth: '100%', objectFit: 'contain' }} 
                                       unoptimized 
                                     />
                                   ) : (
