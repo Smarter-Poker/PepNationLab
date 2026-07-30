@@ -75,18 +75,19 @@ export default function PremiumPeptideCard({
         {/* Global wrapper matching canvas size for absolute positioning over the background */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10 }}>
           
-          {/* Vial Image - Absolutely positioned straight at the top */}
+          {/* 1. Vial Image - Edge to Edge inside the top frame */}
           <div style={{
             position: 'absolute',
-            left: '50%', top: px(60), height: px(420), width: px(290),
-            transform: 'translateX(-50%)', // Straight
-            zIndex: 20
+            left: px(25), top: px(25), right: px(25), height: px(490),
+            borderRadius: `${px(25)} ${px(25)} 0 0`,
+            overflow: 'hidden',
+            zIndex: 15 // Underneath top controls, above background
           }}>
             <Image
               src={imageSrc}
               alt={productName}
               fill
-              style={{ objectFit: 'contain', filter: `drop-shadow(0 ${px(20)} ${px(20)} rgba(0,0,0,0.9))` }}
+              style={{ objectFit: 'cover' }}
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.src = '/images/peptide_clear.png';
@@ -125,7 +126,6 @@ export default function PremiumPeptideCard({
           })()}
 
           {/* --- COMPARE CONTROL (Top Left) --- */}
-          {/* Based on template box at Left: 33, Top: 27 */}
           <div style={{
             position: 'absolute',
             left: px(30), top: px(25), width: px(70), height: px(70),
@@ -147,7 +147,6 @@ export default function PremiumPeptideCard({
           </div>
 
           {/* --- FAVORITE HEART (Top Right) --- */}
-          {/* Heart bounds from template: left 550, top 25 */}
           <button
             type="button"
             onClick={(e) => {
@@ -176,20 +175,27 @@ export default function PremiumPeptideCard({
 
 
           {/* --- PRODUCT NAME AREA --- */}
-          {/* Below chevron line */}
+          {/* 2 & 3. One line only, Silver gradient */}
           <div style={{
             position: 'absolute',
-            left: px(60), top: px(580), width: px(320),
+            left: px(60), top: px(580), width: px(340),
             zIndex: 30, pointerEvents: 'none'
           }}>
             <h2 style={{
               margin: 0,
               fontFamily: 'var(--font-montserrat, sans-serif)',
               fontWeight: 700,
-              fontSize: px(44),
-              color: '#E2E4E6',
+              fontSize: px(40), // Slightly smaller to ensure fit
+              letterSpacing: px(-1),
               lineHeight: 1.1,
               textTransform: 'uppercase',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              // Silver Gradient
+              background: 'linear-gradient(180deg, #FFFFFF 0%, #B9C0C7 40%, #828A92 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
               textShadow: `0 ${px(4)} ${px(6)} rgba(0,0,0,0.8)`
             }}>
               {productName}
@@ -197,7 +203,7 @@ export default function PremiumPeptideCard({
           </div>
 
           {/* --- SIZE BADGE AREA (Inside the Pill box) --- */}
-          {/* Pill box coords: left 51, top 664, width 319, height 89 */}
+          {/* 3. Silver gradient for weights */}
           <div style={{
             position: 'absolute',
             left: px(51), top: px(664), width: px(319), height: px(89),
@@ -208,9 +214,12 @@ export default function PremiumPeptideCard({
               fontFamily: 'var(--font-montserrat, sans-serif)',
               fontWeight: 800,
               fontSize: px(34),
-              color: '#FFFFFF',
               letterSpacing: px(1),
               textTransform: 'uppercase',
+              // Silver Gradient
+              background: 'linear-gradient(180deg, #FFFFFF 0%, #B9C0C7 40%, #828A92 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
               textShadow: `0 ${px(2)} ${px(4)} rgba(0,0,0,0.8)`
             }}>
               {vialSizeBadge}
@@ -219,13 +228,15 @@ export default function PremiumPeptideCard({
 
 
           {/* --- PRICING AREA (Right Side) --- */}
-          {/* MSRP Label */}
+          {/* 4. Center MSRP, YOU SAVE, and WHOLESALE PRICE above each other */}
+          
           {(msrp !== undefined && msrp > (wholesalePrice ?? 0)) && (
             <>
+              {/* Centered MSRP */}
               <div style={{
                 position: 'absolute',
-                left: px(410), top: px(590),
-                display: 'flex', alignItems: 'baseline', gap: px(8),
+                left: px(380), width: px(280), top: px(590),
+                display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: px(8),
                 zIndex: 30, pointerEvents: 'none'
               }}>
                 <span style={{
@@ -244,11 +255,12 @@ export default function PremiumPeptideCard({
                 }}>${msrp.toFixed(2)}</span>
               </div>
 
-              {/* Savings Text */}
+              {/* Centered Savings Text */}
               {savings !== undefined && savings > 0 && (
                 <div style={{
                   position: 'absolute',
-                  left: px(410), top: px(635),
+                  left: px(380), width: px(280), top: px(635),
+                  display: 'flex', justifyContent: 'center',
                   fontFamily: 'var(--font-roboto-condensed, sans-serif)',
                   fontWeight: 700,
                   fontSize: px(23),
@@ -262,10 +274,11 @@ export default function PremiumPeptideCard({
             </>
           )}
 
-          {/* Wholesale Price Digits (Below printed label) */}
+          {/* Centered Wholesale Price Digits */}
           <div style={{
             position: 'absolute',
-            left: px(410), top: px(710),
+            left: px(380), width: px(280), top: px(710),
+            display: 'flex', justifyContent: 'center',
             fontFamily: 'var(--font-roboto-condensed, sans-serif)',
             fontWeight: 700,
             fontSize: px(65),
@@ -279,7 +292,6 @@ export default function PremiumPeptideCard({
 
 
           {/* --- ADD TO CART BUTTON (Invisible overlay) --- */}
-          {/* Bounds from template: Left 46, Top 800, Width 591, Height 115 */}
           <div 
             style={{
               position: 'absolute',
@@ -295,6 +307,25 @@ export default function PremiumPeptideCard({
             aria-label={buttonText}
           />
           
+          {/* --- 5. DARKER BOTTOM PILL OVERLAY --- */}
+          {/* Overlays the baked-in pill to make it look darker and more premium */}
+          <div style={{
+            position: 'absolute',
+            left: px(46), right: px(46), top: px(909), height: px(48),
+            background: '#070A0D', // Very dark background to block out the baked-in one
+            border: `${px(1)} solid #232B35`,
+            borderRadius: px(24),
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: px(16),
+            zIndex: 25, pointerEvents: 'none'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: px(8) }}>
+              <svg width={px(18)} height={px(18)} viewBox="0 0 24 24" fill="none" stroke="#00A2B8" strokeWidth="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+              <span style={{ fontFamily: 'var(--font-roboto-condensed, sans-serif)', fontWeight: 700, fontSize: px(17), color: '#00A2B8', letterSpacing: px(1) }}>IN STOCK</span>
+            </div>
+            <div style={{ width: px(2), height: px(22), background: '#232B35' }} />
+            <span style={{ fontFamily: 'var(--font-roboto-condensed, sans-serif)', fontWeight: 700, fontSize: px(16), color: '#6A7682', letterSpacing: px(1) }}>AVAILABLE FOR SAME DAY PICKUP</span>
+          </div>
+
         </div>
       </div>
     </div>
