@@ -52,8 +52,10 @@ type Zone = {
 function buildZones(guestStoreSlug: string | null, refCode: string | null): Zone[] {
   // Guests who scanned an agent QR are locked to that agent's storefront (see
   // lib/ref-lock.ts) -- the middleware only lets an unauthenticated guest
-  // browse that one store, so "Continue As Guest" must go there rather than
-  // the house store. Without a lock, the house-store behavior is unchanged.
+  // browse that one store, so both store entries ("Continue As Guest" and the
+  // "Transform" / Browse The Research Catalog badge) must go there rather than
+  // the house store -- otherwise the badge just bounces off the middleware.
+  // Without a lock, the house-store behavior is unchanged.
   const guestStoreHref = guestStoreSlug ? `/${guestStoreSlug}` : `/${DEFAULT_STORE_SLUG}`;
   // Carry the locked referral code into sign-up so the form shows the locked
   // "referred by" field.
@@ -63,7 +65,7 @@ function buildZones(guestStoreSlug: string | null, refCode: string | null): Zone
     { href: '/find-a-peptide', label: 'Discover', anchor: 'Discover Research Peptides', top: '12.56%', left: '79.17%', width: '18.4%', height: '7.77%' },
     { href: '/research', label: 'Research', anchor: 'Research Library', top: '21.83%', left: '79.17%', width: '18.4%', height: '8.07%' },
     { href: '/peptide-101', label: 'Learn', anchor: 'Peptide 101 Research Education', top: '31.10%', left: '79.17%', width: '18.4%', height: '8.07%' },
-    { href: `/${DEFAULT_STORE_SLUG}`, label: 'Transform', anchor: 'Browse The Research Catalog', top: '40.37%', left: '79.17%', width: '18.4%', height: '8.37%' },
+    { href: guestStoreHref, label: 'Transform', anchor: 'Browse The Research Catalog', top: '40.37%', left: '79.17%', width: '18.4%', height: '8.37%' },
     // Primary Action Buttons
     { href: '/login', label: 'Log In', anchor: 'Log In To Your Researcher Account', top: '71.29%', left: '20.72%', width: '58.98%', height: '3.59%' },
     { href: signupHref, label: 'Create Account', anchor: 'Create A Verified Researcher Account', top: '76.85%', left: '20.72%', width: '58.98%', height: '3.59%' },
@@ -87,12 +89,12 @@ export default function HomeClient({ guestStoreSlug = null, refCode = null }: Ho
   const zones = buildZones(guestStoreSlug, refCode);
 
   // Only ENTERING THE STORE as a guest requires the Research-Only
-  // acknowledgment here. "Continue As Guest" points at the QR-locked agent
-  // storefront when a referral lock is present (house store otherwise), and
-  // the "Browse The Research Catalog" badge points at the house store, so we
-  // gate by destination against both. Every other zone (Log In, Create
-  // Account, and the research / education links) navigates straight through
-  // -- sign-up and checkout carry their own.
+  // acknowledgment here. Both store entries -- "Continue As Guest" and the
+  // "Browse The Research Catalog" badge -- point at the QR-locked agent
+  // storefront when a referral lock is present, and at the house store
+  // otherwise, so we gate by destination against both. Every other zone (Log
+  // In, Create Account, and the research / education links) navigates straight
+  // through -- sign-up and checkout carry their own.
   const STORE_HREF = `/${DEFAULT_STORE_SLUG}`;
   const GUEST_STORE_HREF = guestStoreSlug ? `/${guestStoreSlug}` : STORE_HREF;
 
