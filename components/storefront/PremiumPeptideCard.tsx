@@ -78,11 +78,11 @@ export default function PremiumPeptideCard({
           {/* 1 & 4. Vial Image - Edge to edge, clipped behind the V-frame! */}
           <div style={{
             position: 'absolute',
-            left: px(25), top: px(25), right: px(25), height: px(528), // Down to the tip of the V-frame
+            left: px(25), top: px(25), right: px(25), height: px(523), // Exactly reaches the bottom tip of the V-frame (548)
             borderRadius: `${px(25)} ${px(25)} 0 0`,
-            // Clip perfectly along the V-frame to tuck the image behind it
-            clipPath: 'polygon(0 0, 100% 0, 100% 93.2%, 50% 100%, 0 93.2%)',
-            WebkitClipPath: 'polygon(0 0, 100% 0, 100% 93.2%, 50% 100%, 0 93.2%)', // MUST HAVE FOR SAFARI/MAC
+            // Clip perfectly along the UPPER edge of the V-frame to tuck the image behind it
+            clipPath: 'polygon(0 0, 100% 0, 100% 94.65%, 50% 100%, 0 94.65%)',
+            WebkitClipPath: 'polygon(0 0, 100% 0, 100% 94.65%, 50% 100%, 0 94.65%)', // MUST HAVE FOR SAFARI/MAC
             overflow: 'hidden',
             zIndex: 15 // Underneath top controls, above background
           }}>
@@ -90,8 +90,8 @@ export default function PremiumPeptideCard({
               src={imageSrc}
               alt={productName}
               fill
-              // 'cover' to fill edge-to-edge, 'center top' ensures the vial cap is never cropped!
-              style={{ objectFit: 'cover', objectPosition: 'center top' }}
+              // 'contain' so it doesn't zoom in, showing the full vial image edge-to-edge
+              style={{ objectFit: 'contain', objectPosition: 'center bottom', transform: 'rotate(9deg) scale(0.9)', transformOrigin: 'center bottom' }}
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.src = '/images/peptide_clear.png';
@@ -191,7 +191,7 @@ export default function PremiumPeptideCard({
             return (
               <div style={{
                 position: 'absolute',
-                left: px(51), top: px(575), width: px(319), height: px(85), // Centered vertically in available space
+                left: px(51), top: px(548), width: px(319), height: px(116), // Perfectly centered vertically in available space between V-frame and pill
                 display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
                 zIndex: 30, pointerEvents: 'none'
               }}>
@@ -251,7 +251,7 @@ export default function PremiumPeptideCard({
               {/* 3. Raised MSRP to clear the cyan line */}
               <div style={{
                 position: 'absolute',
-                left: px(380), width: px(280), top: px(570),
+                left: px(380), width: px(280), top: px(560),
                 display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: px(8),
                 zIndex: 30, pointerEvents: 'none'
               }}>
@@ -275,7 +275,7 @@ export default function PremiumPeptideCard({
               {savings !== undefined && savings > 0 && (
                 <div style={{
                   position: 'absolute',
-                  left: px(380), width: px(280), top: px(615),
+                  left: px(380), width: px(280), top: px(600),
                   display: 'flex', justifyContent: 'center',
                   fontFamily: 'var(--font-roboto-condensed, sans-serif)',
                   fontWeight: 700,
