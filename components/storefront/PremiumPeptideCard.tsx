@@ -75,14 +75,11 @@ export default function PremiumPeptideCard({
         {/* Global wrapper matching canvas size for absolute positioning over the background */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10 }}>
           
-          {/* Vial Image — clipped to the V-frame polygon so it is always contained inside the frame */}
+          {/* Vial Image — flat rectangular window, contained by overflow:hidden */}
           <div style={{
             position: 'absolute',
-            left: px(42), top: px(25), right: px(42), height: px(523),
-            borderRadius: `${px(18)} ${px(18)} 0 0`,
-            // Clip-path enforces the V-bottom so the image never overlaps the frame
-            clipPath: 'polygon(0 0, 100% 0, 100% 94.65%, 50% 100%, 0 94.65%)',
-            WebkitClipPath: 'polygon(0 0, 100% 0, 100% 94.65%, 50% 100%, 0 94.65%)',
+            left: px(25), top: px(25), right: px(25), height: px(523),
+            borderRadius: `${px(20)} ${px(20)} 0 0`,
             overflow: 'hidden',
             zIndex: 15
           }}>
