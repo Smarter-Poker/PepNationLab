@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Bell, BellRing, Check } from 'lucide-react';
+import GuestAuthModal from '@/components/GuestAuthModal';
 
 // Drop-in "Notify Me" control for a product card or detail view. Self-contained:
 // it only needs the product id (and optionally the storefront agent id for
@@ -20,6 +21,11 @@ interface Props {
 
 export default function NotifyMeButton({ productId, agentId = null, mode = 'back_in_stock', compact = false }: Props) {
   const [state, setState] = useState<'idle' | 'saving' | 'done' | 'error'>('idle');
+  // --- SIGNUP CHECKPOINT: alert subscription ---
+  // This is a commitment action (it stores a contact intent against an account),
+  // so it is a legitimate place to ask -- unlike browsing or price display,
+  // which stay open to guests.
+  const [showGuestGate, setShowGuestGate] = useState(false);
 
   const label =
     state === 'done'
@@ -38,8 +44,12 @@ export default function NotifyMeButton({ productId, agentId = null, mode = 'back
         body: JSON.stringify({ product_id: productId, agent_id: agentId, alert_type: mode }),
       });
       if (res.status === 401) {
-        // Guest -- send them to sign in, preserving intent is a future nicety.
-        window.location.href = '/login';
+        // Guest. This used to hard-navigate to /login, which threw away the
+        // page they were on AND, for a QR-locked guest, was bounced straight
+        // back to the storefront by the middleware -- so the tap did nothing
+        // at all. Prompt in place instead and return them here after auth.
+        setState('idle');
+        setShowGuestGate(true);
         return;
       }
       setState(res.ok ? 'done' : 'error');
@@ -49,6 +59,7 @@ export default function NotifyMeButton({ productId, agentId = null, mode = 'back
   };
 
   return (
+    <>
     <button
       type="button"
       onClick={subscribe}
@@ -69,5 +80,15 @@ export default function NotifyMeButton({ productId, agentId = null, mode = 'back
       {state === 'done' ? <Check size={15} /> : state === 'saving' ? <BellRing size={15} /> : <Bell size={15} />}
       {state === 'error' ? 'Try Again' : label}
     </button>
+    <GuestAuthModal
+      open={showGuestGate}
+      onClose={() => setShowGuestGate(false)}
+      featureLabel="Stock Alerts"
+      description={mode === 'price_drop'
+        ? 'Create a free account and we will email you the moment this compound drops in price.'
+        : 'Create a free account and we will email you the moment this compound is back in stock.'}
+      ctaLabel="Create Free Account"
+    />
+    </>
   );
 }
