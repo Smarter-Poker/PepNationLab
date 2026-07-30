@@ -2337,6 +2337,37 @@ export default function AgentStorefrontGrid({
                   </button>
                 </div>
 
+                {/* Search Match Chip */}
+                {group._search?.reason && (() => {
+                  const confidence = (group as any)._search?.confidence as 'high' | 'medium' | 'low' | undefined;
+                  const confidenceStyle: Record<'high' | 'medium' | 'low', { bg: string; border: string; color: string; label: string }> = {
+                    high:   { bg: 'rgba(79,209,197,0.12)',  border: 'rgba(79,209,197,0.35)',  color: '#4FD1C5', label: 'Strong Match' },
+                    medium: { bg: 'rgba(235,178,54,0.10)',  border: 'rgba(235,178,54,0.30)',  color: '#EBB236', label: 'Good Match'   },
+                    low:    { bg: 'rgba(160,174,192,0.08)', border: 'rgba(160,174,192,0.22)', color: '#A0AEC0', label: 'Partial Match' },
+                  };
+                  const cs = confidence ? confidenceStyle[confidence] : null;
+                  if (!cs) return null;
+                  return (
+                    <div style={{
+                      position: 'absolute', top: 52, left: 10, right: 10, zIndex: 40,
+                      display: 'flex', justifyContent: 'center', pointerEvents: 'none'
+                    }}>
+                      <div style={{
+                        background: 'rgba(20, 25, 30, 0.85)', backdropFilter: 'blur(8px)',
+                        border: `1px solid ${cs.border}`, padding: '4px 10px', borderRadius: 20,
+                        display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.65rem',
+                        fontWeight: 700, color: cs.color, boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                        maxWidth: '100%', textTransform: 'uppercase', letterSpacing: '0.04em'
+                      }}>
+                        <Sparkles size={11} />
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>
+                          {cs.label}: {toTitleCase(group._search.reason)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* Glow Ring */}
                 <div style={{
                   position: 'absolute', width: 220, height: 220, borderRadius: '50%',
