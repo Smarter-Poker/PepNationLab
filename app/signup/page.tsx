@@ -6,6 +6,11 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { UserPlus } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
+// REF_LOCK_MAX_AGE is the ONE definition of how long a referral attribution
+// survives. It is imported rather than re-typed because this file previously
+// re-declared the number and drifted to a third of the real value -- see the
+// comment on the age check inside the localStorage capture below.
+import { REF_LOCK_MAX_AGE } from '@/lib/ref-lock';
 import { buildOAuthCallbackUrl } from '@/lib/oauth-callback-url';
 import { useAvailability, availabilityMessage } from '@/lib/useAvailability';
 
@@ -73,7 +78,18 @@ function SignupForm() {
       if (stored) {
         const parsed = JSON.parse(stored) as { slug?: string; sa?: string; savedAt?: number };
         const age = Date.now() - (parsed.savedAt ?? 0);
-        if (parsed.slug && age < 30 * 24 * 60 * 60 * 1000) {
+        // Attribution lifetime is ONE number, and it lives in lib/ref-lock.ts.
+        // This test was a hardcoded 30 days while both the signed cookie lock
+        // (REF_LOCK_MAX_AGE) and the component that WROTE this entry
+        // (MAX_AGE_MS in components/AgentLinkCapture.tsx) used 90. A guest who
+        // scanned an agent's QR and came back to sign up on day 31-90 therefore
+        // arrived with a capture that was still live everywhere else and was
+        // silently discarded here: agentSlug fell through to
+        // DEFAULT_STORE_SLUG and the HOUSE store was credited for that agent's
+        // signup, with nothing logged and nothing for the agent to dispute.
+        // Re-declaring the literal is exactly what let the three drift apart,
+        // so the constant is imported instead of restated.
+        if (parsed.slug && age < REF_LOCK_MAX_AGE * 1000) {
           // The house storefront is the default destination anyway - a stored
           // house slug carries no referral information, and treating it as a
           // capture would silently SKIP the "Who Referred You?" step for
@@ -100,6 +116,23 @@ function SignupForm() {
       // (pnl_ref_display, set by the middleware alongside the signed lock) so
       // the locked referral still shows when /signup is reached without the
       // query param. The signed httpOnly cookie remains the server-side truth.
+      //
+      // This branch is now the ONLY display source for a scanned guest, not a
+      // spare one. proxy.ts redirects any GET carrying ?ref= on an
+      // account-entry path (ACCOUNT_ENTRY_PREFIXES) back to the locked
+      // storefront, so a locked guest can never reach this form with the query
+      // param still attached -- which is why the landing page's "Create
+      // Account" link emits a bare /signup. Without the cookie read the
+      // "Referred By (Locked)" field would render EMPTY for precisely the
+      // visitors whose referrer is most certain.
+      //
+      // There is deliberately no further fallback to the pnl_referral_agent
+      // localStorage capture read above: that entry stores a storefront SLUG,
+      // and slugs and referral codes are separate namespaces (the store
+      // `scooters` is owned by username `adam`, while a different agent owns
+      // the store `adam`), so rendering one as the other would name the wrong
+      // person as the referrer. Nothing here is trusted for credit in any
+      // case -- the server awards it from the signed httpOnly lock alone.
       try {
         const m = document.cookie.match(/(?:^|;\s*)pnl_ref_display=([^;]*)/);
         if (m) rawRef = decodeURIComponent(m[1]).trim();
