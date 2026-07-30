@@ -2528,6 +2528,35 @@ export default function AgentStorefrontGrid({
   );
 })()}
                       {/* CRO trust chip removed per user request */}
+                      
+                      <div style={{ display: 'flex', justifyContent: 'center', minHeight: 32, marginTop: 12 }}>
+                        {(() => {
+                          const defaultV = group.variants.find(v => v.id === group.defaultVariantId) || group.variants[0];
+                          const size = defaultV.products?.unit_size || '10';
+                          const measure = defaultV.products?.unit_measure || 'mg';
+                          const isBW = packOf10(group.name, defaultV.products?.compound_slug);
+                          const displaySizeText = isBW ? `10x ${size}${measure} Vials` : `${size}${measure} Vials`;
+                          
+                          const baseSize = `${size}${measure}`.toLowerCase();
+                          const pillSizes = ['0.1mg', '1mg', '5mg', '10mg', '15mg', '20mg', '30mg', '40mg', '50mg', '60mg', '70mg', '80mg', '90mg', '100mg', '120mg', '600mg', '1000mg', '1500mg', '3ml', '10ml', '75iu', '5000iu', '10000iu'];
+                          
+                          if (pillSizes.includes(baseSize)) {
+                            return (
+                              <Image 
+                                src={`/images/ui/pills/${baseSize}.png`} 
+                                alt={`${displaySizeText}`} 
+                                width={140} 
+                                height={32} 
+                                style={{ height: '32px', width: 'auto', maxWidth: '100%', objectFit: 'contain' }} 
+                                unoptimized 
+                              />
+                            );
+                          }
+                          return (
+                            <span style={{ fontSize: '0.72rem', color: 'var(--silver-light)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 'var(--radius-full)', padding: '3px 14px', fontWeight: 600, whiteSpace: 'nowrap' }}>{displaySizeText}</span>
+                          );
+                        })()}
+                      </div>
 
                     </div>
                   );
@@ -2573,27 +2602,6 @@ export default function AgentStorefrontGrid({
                             <span style={{ fontSize: '0.62rem', fontWeight: 800, color: 'var(--teal)', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>WHOLESALE PRICE</span>
                             <span className="sf-product-price-nickel" style={{ fontSize: '1.45rem', fontWeight: 800, fontFamily: 'var(--font-brand)', lineHeight: 1 }}>${displayPrice.toFixed(2)}</span>
                           </div>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'center', minHeight: 32 }}>
-                          {(() => {
-                            const baseSize = `${size}${measure}`.toLowerCase();
-                            const pillSizes = ['0.1mg', '1mg', '5mg', '10mg', '15mg', '20mg', '30mg', '40mg', '50mg', '60mg', '70mg', '80mg', '90mg', '100mg', '120mg', '600mg', '1000mg', '1500mg', '3ml', '10ml', '75iu', '5000iu', '10000iu'];
-                            if (pillSizes.includes(baseSize)) {
-                              return (
-                                <Image 
-                                  src={`/images/ui/pills/${baseSize}.png`} 
-                                  alt={`${displaySizeText} Vials`} 
-                                  width={140} 
-                                  height={32} 
-                                  style={{ height: '32px', width: 'auto', maxWidth: '100%', objectFit: 'contain' }} 
-                                  unoptimized 
-                                />
-                              );
-                            }
-                            return (
-                              <span style={{ fontSize: '0.72rem', color: 'var(--silver-light)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 'var(--radius-full)', padding: '3px 14px', fontWeight: 600, whiteSpace: 'nowrap' }}>{displaySizeText}</span>
-                            );
-                          })()}
                         </div>
                       </div>
                     );
@@ -2741,6 +2749,7 @@ export default function AgentStorefrontGrid({
                         linear-gradient(135deg, #b0b5bc 0%, #5c626b 20%, #e2e6eb 50%, #5c626b 80%, #b0b5bc 100%) border-box;
             box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 24px 80px rgba(0,0,0,0.85);
           }
+          .sf-modal-sticky-header { border-top-left-radius: 15px; border-top-right-radius: 15px; }
           .sf-modal-img { height: 320px; border-radius: 18px 18px 0 0; }
           .sf-modal-body { padding: 32px 40px 16px; }
           .sf-modal-h2 { font-size: 1.8rem !important; }
@@ -3878,7 +3887,7 @@ export default function AgentStorefrontGrid({
               const stickyPer = stickyRaw / 10;
               const stickyQty = Math.max(1, pendingQty);
               return (
-                <div style={{
+                <div className="sf-modal-sticky-header" style={{
                   position: 'sticky', top: 'var(--nav-offset, 60px)', zIndex: 40,
                   display: 'flex', alignItems: 'center', gap: 12,
                   padding: '10px 18px',
@@ -4277,39 +4286,6 @@ export default function AgentStorefrontGrid({
                         )}
                       </div>
 
-                      {(volumePricingEnabled) && (
-                        <>
-                          <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: 'var(--space-5) 0' }} />
-                          <div style={{
-                            border: '6px solid #E2E8F0',
-                            borderRadius: 'var(--radius-md)', overflow: 'hidden'
-                          }}>
-                          <div style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.04)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--silver)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                            Volume Discounts
-                          </div>
-                          {tiers.map((t, i) => {
-                            const tierPrice = parseFloat((basePrice * (1 + t.pct / 100)).toFixed(2));
-                            const isActive = displayQty >= t.min && displayQty <= t.max;
-                            return (
-                              <div key={i} style={{
-                                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                padding: '10px 16px', borderTop: '1px solid rgba(255,255,255,0.04)',
-                                background: isActive ? `${primaryColor}10` : 'transparent'
-                              }}>
-                                <span style={{ fontSize: '0.85rem', color: isActive ? 'var(--white)' : 'var(--grey-400)', fontWeight: isActive ? 600 : 400 }}>
-                                  {t.label ?? (t.max === Infinity ? `${t.min}+ vials` : `${t.min}-${t.max} vials`)}
-                                  {t.pct < 0 && <span style={{ color: '#68D391', marginLeft: 8, fontSize: '0.75rem' }}>Save {-t.pct}%</span>}
-                                  {t.pct === 0 && tiers.length > 1 && <span style={{ color: 'var(--grey-400)', marginLeft: 8, fontSize: '0.75rem' }}>Standard</span>}
-                                </span>
-                                <span style={{ fontSize: '0.95rem', fontWeight: 700, fontFamily: 'var(--font-brand)', color: isActive ? primaryColor : 'var(--grey-300)' }}>
-                                  ${tierPrice.toFixed(2)}/ea
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </>
-                    )}
                     </div>
                   );
                 })()}
