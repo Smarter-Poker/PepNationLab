@@ -13,6 +13,8 @@ import { hashCode, isValidEmail, normalizeEmail, CODE_PURPOSE_SIGNUP, MAX_CODE_A
 import { StorefrontRegisterSchema } from '@/lib/schemas/auth';
 import { recordServerAnalyticsEvent } from '@/lib/server-analytics';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
+import { cookies } from 'next/headers';
+import { verifyRefLock, REF_LOCK_COOKIE, REF_DISPLAY_COOKIE } from '@/lib/ref-lock';
 
 /**
  * POST /api/storefront/register
@@ -59,9 +61,22 @@ export async function POST(req: NextRequest) {
         : 'Username, Password, First Name, And Last Name Are Required.';
     return NextResponse.json({ error: message }, { status: 400 });
   }
-  const { agentSlug, username, password, firstName, lastName, phone, code } = parsedBody.data;
-  const subAgentId = parsedBody.data.subAgentId ?? null;
+  const { username, password, firstName, lastName, phone, code } = parsedBody.data;
+  let agentSlug = parsedBody.data.agentSlug;
+  let subAgentId = parsedBody.data.subAgentId ?? null;
+  let referralCode = String(parsedBody.data.referralCode ?? '').trim();
   const email = normalizeEmail(parsedBody.data.email ?? '');
+
+  // QR referral lock: the signed httpOnly cookie set by the middleware is the
+  // AUTHORITATIVE attribution. When a valid lock exists it overrides whatever
+  // the form submitted — the form body cannot change who gets signup credit.
+  const cookieStore = await cookies();
+  const refLock = await verifyRefLock(cookieStore.get(REF_LOCK_COOKIE)?.value);
+  if (refLock) {
+    referralCode = refLock.c;
+    if (refLock.s) agentSlug = refLock.s;
+    if (refLock.sa) subAgentId = refLock.sa;
+  }
 
   // A real email is required for all public signups.
   if (!isValidEmail(email)) {
@@ -120,7 +135,7 @@ export async function POST(req: NextRequest) {
     // SECOND: Override with explicit Referral Code if provided and valid.
     // This pre-resolves it so the initial INSERT has the correct ID, bypassing
     // the enforce_researcher_agent_binding trigger error that blocks apply_signup_referral.
-    const referralCode = String(parsedBody.data.referralCode ?? '').trim();
+    // (referralCode carries the QR lock-cookie code when a valid lock exists.)
     if (referralCode) {
       const { data: refMatch } = await admin
         .from('profiles')
@@ -282,7 +297,6 @@ export async function POST(req: NextRequest) {
     // apply_signup_referral is revoked from anon/authenticated).
     let referralResult: Record<string, unknown> | null = null;
     {
-      const referralCode = String(parsedBody.data.referralCode ?? '').trim();
       if (referralCode) {
         try {
           const { data: refOut, error: refErr } = await admin.rpc('apply_signup_referral', {
@@ -348,7 +362,7 @@ export async function POST(req: NextRequest) {
       promoCode: agentSlug === DEFAULT_STORE_SLUG ? 'FIRST20' : undefined,
     }).catch(() => { /* ignore */ });
 
-    return NextResponse.json({
+    const successRes = NextResponse.json({
       success: true,
       userId: newUserId,
       username: usernameClean,
@@ -356,6 +370,11 @@ export async function POST(req: NextRequest) {
       promo: promoResult,
       promoWarning,
     });
+    // The QR lock's job is done once the account exists — clear both cookies
+    // so a future signup on this device starts fresh.
+    successRes.cookies.set(REF_LOCK_COOKIE, '', { maxAge: 0, path: '/' });
+    successRes.cookies.set(REF_DISPLAY_COOKIE, '', { maxAge: 0, path: '/' });
+    return successRes;
   } catch (err) {
     console.error('[storefront/register] POST error:', err);
     return NextResponse.json(
