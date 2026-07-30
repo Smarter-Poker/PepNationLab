@@ -125,7 +125,11 @@ export async function GET(req: NextRequest) {
     : `${base}/?ref=${encodeURIComponent(ref)}`;
 
   try {
-    const dataUrl = await generateQrDataUrl(url);
+    // Explicit black-on-white. lib/qr.ts defaults to the brand palette
+    // (#00C4BC on #0A1018), which has nowhere near enough luminance contrast
+    // for a phone camera to decode. A printed referral QR has to be black on
+    // white, same as lib/qr-storefront.ts.
+    const dataUrl = await generateQrDataUrl(url, '#000000', '#FFFFFF');
     // dataUrl is "data:image/png;base64,..."
     const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '');
     const buffer = Buffer.from(base64Data, 'base64');
