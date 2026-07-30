@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { Package, Search, Upload, Pencil, Trash2, Eye, EyeOff, Plus, X, DollarSign, Tag, TrendingUp } from 'lucide-react';
 
 const MIN_PRODUCTS = 2;
-const MAX_PRODUCTS = 5;
+const MAX_PRODUCTS = 6;
 const MAX_DISCOUNT = 90;
 
 type BundleScope = 'self' | 'downline' | 'global';

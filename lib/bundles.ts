@@ -39,7 +39,7 @@ export interface StoredBundle {
 }
 
 export const MIN_BUNDLE_PRODUCTS = 2;
-export const MAX_BUNDLE_PRODUCTS = 5;
+export const MAX_BUNDLE_PRODUCTS = 6;
 export const MAX_BUNDLE_DISCOUNT = 90;
 
 /** Clamp a discount to a whole percentage in [0, MAX_BUNDLE_DISCOUNT]. */
