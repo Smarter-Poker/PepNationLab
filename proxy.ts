@@ -577,6 +577,41 @@ export default async function proxy(request: NextRequest) {
       url.search = '';
       return withRefCookies(redirectWithCookies(url));
     }
+
+    // --- A DEAD STOREFRONT URL IS NOT A REASON TO DEMAND AN ACCOUNT ---
+    // The visitor asked for a single-segment path that LOOKS like a store but
+    // did not resolve above: a typo (`/savagebrand`), a slug that has since
+    // been renamed while printed QR codes still point at the old one, a
+    // deactivated storefront, or an agent whose account was closed.
+    //
+    // Falling through to /login turned every one of those into "sign in or
+    // create an account" — the precise thing the guest-storefront rule
+    // forbids, aimed at exactly the people least willing to tolerate it
+    // (someone who just scanned a code and has seen nothing of the store).
+    // Send them to the landing page instead, which is a sanctioned QR landing
+    // target and offers "Continue As Guest".
+    //
+    // This cannot swallow a gated page. RESERVED_SEGMENTS is the set of
+    // first-segment app routes — /admin, /dashboard, /checkout, /wallet,
+    // /orders, /messages and the rest are all in it and still get /login with
+    // their `redirect` parameter, as does every multi-segment path. That
+    // completeness is already load-bearing: slug CREATION rejects the same
+    // set, so a missing entry would let an agent claim a slug that shadows a
+    // real route — a strictly worse bug than a lost `redirect` param.
+    const segments = pathname.split('/').filter(Boolean);
+    const onlySegment = segments.length === 1 ? segments[0].toLowerCase() : null;
+    if (
+      request.method === 'GET' &&
+      onlySegment &&
+      STORE_SLUG_RE.test(onlySegment) &&
+      !RESERVED_SEGMENTS.has(onlySegment)
+    ) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/';
+      url.search = '';
+      return withRefCookies(redirectWithCookies(url));
+    }
+
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     url.searchParams.set('redirect', pathname + request.nextUrl.search);
