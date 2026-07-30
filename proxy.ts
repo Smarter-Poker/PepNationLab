@@ -198,15 +198,30 @@ async function resolveStoreSlug(slug: string): Promise<RefLock | null> {
   return { c: code, a: owner.id, s: store.slug, sa: null, t: Date.now(), k: 'url' };
 }
 
-// --- RESTRICTED ACCESS: ACCOUNT REQUIRED FOR EVERYTHING ---
-// The guest view has been removed. Nothing is browsable without an account.
-// Only the logged-out account-creation + sign-in flow, the legal pages linked
-// from the signup acknowledgements, and non-user infra callers (external
-// webhooks, scheduled crons, uptime/health, PWA assets) remain public. Every
-// other route -- the landing page, agent storefronts, research, cart, and all
-// marketing pages -- now requires authentication (redirects to /login).
-// EXCEPTION: visitors holding a signed QR referral lock (see lib/ref-lock.ts)
-// may browse the referring agent's storefront as a guest — nothing else.
+// --- ACCESS MODEL: BROWSE FREELY, COMMIT WITH AN ACCOUNT ---
+// This block used to say "nothing is browsable without an account." That is no
+// longer true and had not been for some time; leaving it stood as an invitation
+// to reintroduce the exact login wall the guest-storefront rule forbids.
+//
+// The rule, stated once, here:
+//   A visitor who scans an agent's QR code, follows an agent link, or types a
+//   storefront URL DIRECTLY MUST land on that storefront (or the landing page)
+//   and MUST be able to browse it, see pricing and read product detail without
+//   ever being told to create an account first.
+//
+// So the public surface is: the landing page, every agent storefront (for a
+// visitor holding a referral lock -- and a direct storefront URL mints one, see
+// the storefront-URL capture in the handler), the public SEO trees /peptides
+// and /research, COA lookup, the logged-out auth pages, the legal pages, and
+// non-user infra callers (external webhooks, scheduled crons, uptime/health,
+// PWA assets).
+//
+// The ACCOUNT ASK happens at COMMITMENT, not at entry: checking out, saving to
+// an account, subscribing to a stock alert. Those are enforced in the UI as
+// signup checkpoints (components/GuestAuthModal.tsx) and, for the routes that
+// touch real user data, by the deny-by-default gate below. A guest is still
+// CONFINED to their locked storefront -- everything outside it redirects back
+// into it rather than to /login.
 
 // Routes that are always public (no auth required)
 const PUBLIC_ROUTES = [
