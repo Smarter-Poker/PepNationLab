@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgentOrAdmin } from '@/lib/admin-auth';
+import { STORE_SLUG_RE, RESERVED_SEGMENTS } from '@/lib/store-slug';
 
 export async function GET() {
   try {
@@ -12,7 +13,7 @@ export async function GET() {
     const agentId = gate.user.id;
 
     // 1. Referral identifier is the agent's username (resolves across all roles
-    //    in apply_signup_referral). The referral link now goes straight to signup.
+    //    in apply_signup_referral).
     const { data: selfProfile } = await supabase
       .from('profiles')
       .select('username, referral_code')
@@ -20,15 +21,40 @@ export async function GET() {
       .maybeSingle();
     const { data: agentProfileData } = await supabase
       .from('agent_profiles')
-      .select('slug')
+      .select('slug, is_active')
       .eq('id', agentId)
       .maybeSingle();
 
-    const slug = agentProfileData?.slug ?? null;
+    // GUEST STOREFRONT RULE (2026-07-30)
+    // The referral link must open the agent's storefront so the visitor can
+    // browse products and see pricing as a guest. It must NEVER open
+    // /signup ("Create Researcher Account") - nobody is asked to register
+    // before they have seen the store.
+    //
+    // Only an active, routable slug is used. `is_active === false` means the
+    // storefront is switched off and proxy.ts will not render it; a legacy
+    // slug that fails STORE_SLUG_RE or collides with a reserved app route
+    // predates the agent_profiles_slug_shape CHECK and the
+    // agent_profiles_slug_not_reserved trigger and is likewise unroutable.
+    // In either case fall back to `/?ref=<code>` - the landing page, which
+    // offers "Continue As Guest" - rather than emitting a dead link.
+    // Attribution is preserved on both paths because proxy.ts mints the
+    // signed ref lock from the `?ref=` parameter.
+    const rawSlug = agentProfileData?.slug ?? null;
+    const slug =
+      rawSlug &&
+      agentProfileData?.is_active !== false &&
+      STORE_SLUG_RE.test(rawSlug) &&
+      !RESERVED_SEGMENTS.has(rawSlug)
+        ? rawSlug
+        : null;
+
     const referral_code = selfProfile?.username ?? selfProfile?.referral_code ?? null;
     const base = (process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '')) || 'https://pepnationlab.com';
     const referral_url = referral_code
-      ? `${base}/signup?ref=${encodeURIComponent(referral_code)}`
+      ? slug
+        ? `${base}/${slug}?ref=${encodeURIComponent(referral_code)}`
+        : `${base}/?ref=${encodeURIComponent(referral_code)}`
       : null;
 
     // 2. Fetch all researchers referred via this agent's storefront
@@ -51,6 +77,7 @@ export async function GET() {
       return NextResponse.json({
         referral_url,
         referral_code,
+        storefront_slug: slug,
         total_referred: 0,
         total_orders: 0,
         total_revenue: 0,
@@ -105,6 +132,7 @@ export async function GET() {
     return NextResponse.json({
       referral_url,
       referral_code,
+      storefront_slug: slug,
       total_referred,
       total_orders,
       total_revenue: Number(total_revenue.toFixed(2)),
