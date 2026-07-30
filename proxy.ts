@@ -55,6 +55,30 @@ async function applyApiRateLimit(request: NextRequest, pathname: string): Promis
   );
 }
 
+// --- REFERRAL RESOLUTION HELPERS ---
+// Escape Postgres LIKE/ILIKE metacharacters so a referral code is matched
+// LITERALLY. Without this `_` and `%` inside a user-supplied code act as
+// wildcards against every username/referral_code in the table.
+function likeEscape(v: string): string {
+  return v.replace(/([%_\\])/g, '\\$1');
+}
+
+// Every middleware DB hop is on the critical path of a page render, is made
+// with the service role, and is reachable by unauthenticated visitors. Bound
+// it: hard timeout, non-2xx -> null (caller falls back to "no lock"), and
+// never let a fetch rejection escape into the request.
+const REF_FETCH_TIMEOUT_MS = 2500;
+async function fetchJson(url: string, headers: Record<string, string>): Promise<unknown[] | null> {
+  try {
+    const res = await fetch(url, { headers, signal: AbortSignal.timeout(REF_FETCH_TIMEOUT_MS) });
+    if (!res.ok) return null;
+    const body = await res.json();
+    return Array.isArray(body) ? body : null;
+  } catch {
+    return null;
+  }
+}
+
 // --- QR REFERRAL LOCK ---
 // Resolve a scanned referral code (?ref=<code>) to the referring agent and
 // their storefront slug, using the service-role REST API (middleware has no
@@ -65,13 +89,19 @@ async function resolveRefCode(code: string): Promise<RefLock | null> {
   if (!key) return null;
   const base = getSupabaseUrl();
   const headers = { apikey: key, Authorization: `Bearer ${key}` };
-  const q = encodeURIComponent(code);
-  const pRes = await fetch(
-    `${base}/rest/v1/profiles?select=id,role,is_sub_agent,parent_agent_id,referring_agent_id,is_active,deleted_at&or=(username.ilike.${q},referral_code.ilike.${q})&limit=1`,
-    { headers },
+  // LIKE-wildcard escape is MANDATORY. REF_CODE_RE permits `_`, which ilike
+  // treats as a single-character wildcard, so an unescaped code turns the
+  // lookup into a pattern match: `?ref=____l` would resolve to an arbitrary
+  // agent (enumeration oracle + traffic-hijack vector), and any legitimate
+  // code containing `_` would resolve nondeterministically. encodeURIComponent
+  // alone does NOT neutralise `_`/`%` — they must be backslash-escaped first.
+  const q = encodeURIComponent(likeEscape(code));
+  const pRes = await fetchJson(
+    `${base}/rest/v1/profiles?select=id,role,is_sub_agent,parent_agent_id,referring_agent_id,is_active,deleted_at&or=(username.ilike.${q},referral_code.ilike.${q})&is_active=is.true&deleted_at=is.null&order=username.asc,id.asc&limit=1`,
+    headers,
   );
-  if (!pRes.ok) return null;
-  const [p] = (await pRes.json()) as Array<{
+  if (!pRes) return null;
+  const [p] = pRes as Array<{
     id: string; role: string | null; is_sub_agent: boolean | null;
     parent_agent_id: string | null; referring_agent_id: string | null;
     is_active: boolean | null; deleted_at: string | null;
@@ -90,12 +120,12 @@ async function resolveRefCode(code: string): Promise<RefLock | null> {
 
   let slug: string | null = null;
   if (storeOwnerId) {
-    const sRes = await fetch(
-      `${base}/rest/v1/agent_profiles?select=slug&id=eq.${encodeURIComponent(storeOwnerId)}&limit=1`,
-      { headers },
+    const sRes = await fetchJson(
+      `${base}/rest/v1/agent_profiles?select=slug&id=eq.${encodeURIComponent(storeOwnerId)}&is_active=is.true&limit=1`,
+      headers,
     );
-    if (sRes.ok) {
-      const [s] = (await sRes.json()) as Array<{ slug: string | null }>;
+    if (sRes) {
+      const [s] = sRes as Array<{ slug: string | null }>;
       slug = s?.slug ?? null;
     }
   }
@@ -141,20 +171,20 @@ async function resolveStoreSlug(slug: string): Promise<RefLock | null> {
   const base = getSupabaseUrl();
   const headers = { apikey: key, Authorization: `Bearer ${key}` };
 
-  const aRes = await fetch(
-    `${base}/rest/v1/agent_profiles?select=id,slug&slug=eq.${encodeURIComponent(slug)}&limit=1`,
-    { headers },
+  const aRes = await fetchJson(
+    `${base}/rest/v1/agent_profiles?select=id,slug&slug=eq.${encodeURIComponent(slug)}&is_active=is.true&limit=1`,
+    headers,
   );
-  if (!aRes.ok) return null;
-  const [store] = (await aRes.json()) as Array<{ id: string | null; slug: string | null }>;
+  if (!aRes) return null;
+  const [store] = aRes as Array<{ id: string | null; slug: string | null }>;
   if (!store?.id || !store.slug) return null;
 
-  const pRes = await fetch(
-    `${base}/rest/v1/profiles?select=id,username,referral_code,is_active,deleted_at&id=eq.${encodeURIComponent(store.id)}&limit=1`,
-    { headers },
+  const pRes = await fetchJson(
+    `${base}/rest/v1/profiles?select=id,username,referral_code,is_active,deleted_at&id=eq.${encodeURIComponent(store.id)}&is_active=is.true&deleted_at=is.null&limit=1`,
+    headers,
   );
-  if (!pRes.ok) return null;
-  const [owner] = (await pRes.json()) as Array<{
+  if (!pRes) return null;
+  const [owner] = pRes as Array<{
     id: string; username: string | null; referral_code: string | null;
     is_active: boolean | null; deleted_at: string | null;
   }>;
@@ -265,7 +295,14 @@ export default async function proxy(request: NextRequest) {
     // so an incidental visit can never rob an agent of their scan credit.
     if ((!refLock || refLock.k === 'url') && refParam && REF_CODE_RE.test(refParam)) {
       try {
-        const resolved = await resolveRefCode(refParam);
+        // Referral resolution is an unauthenticated, service-role DB hop.
+        // Cap it per IP so ?ref= cannot be used as a free enumeration or
+        // amplification channel. Real scanners resolve once and are then
+        // served from the cookie.
+        const rl = await rateLimit({
+          key: 'ref_resolve', limit: 20, windowSeconds: 60, identifier: getClientIp(request),
+        });
+        const resolved = rl.allowed ? await resolveRefCode(refParam) : null;
         if (resolved) {
           refLock = resolved;
           refCookiesToSet = { lock: await signRefLock(resolved), code: resolved.c };
@@ -293,7 +330,9 @@ export default async function proxy(request: NextRequest) {
     url.search = '';
     // 308 Permanent: /register is permanently retired; consolidate crawl and
     // link equity on /signup (matches the 308 host redirects in next.config).
-    return NextResponse.redirect(url, 308);
+    // withRefCookies: a QR whose target is /register?ref=<code> must still
+    // persist the lock across the redirect, or the scan credit is lost.
+    return withRefCookies(NextResponse.redirect(url, 308));
   }
 
   // Scheduled jobs (Vercel Cron + GitHub Actions) hit /api/cron/* and
@@ -359,8 +398,13 @@ export default async function proxy(request: NextRequest) {
 
   const redirectWithCookies = (url: URL) => {
     const redirectResponse = NextResponse.redirect(url);
+    // Copy the FULL cookie descriptor, not just name/value. Dropping the
+    // options downgraded refreshed Supabase session cookies to host-only,
+    // non-httpOnly, non-secure, session-lifetime cookies on every gated
+    // redirect - readable by page scripts and silently expiring at browser
+    // close.
     response.cookies.getAll().forEach((cookie) => {
-      redirectResponse.cookies.set(cookie.name, cookie.value);
+      redirectResponse.cookies.set(cookie);
     });
     return redirectResponse;
   };
@@ -403,7 +447,11 @@ export default async function proxy(request: NextRequest) {
       const seg = pathname.split('/')[1]?.toLowerCase() ?? '';
       if (seg && seg !== refLock?.s && STORE_SLUG_RE.test(seg) && !RESERVED_SEGMENTS.has(seg)) {
         try {
-          const store = await resolveStoreSlug(seg);
+          // Same amplification guard as the ?ref= path above.
+          const rl = await rateLimit({
+            key: 'ref_resolve', limit: 20, windowSeconds: 60, identifier: getClientIp(request),
+          });
+          const store = rl.allowed ? await resolveStoreSlug(seg) : null;
           if (store) {
             refLock = store;
             refCookiesToSet = { lock: await signRefLock(store), code: store.c };
