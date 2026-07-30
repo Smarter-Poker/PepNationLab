@@ -2,9 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { Suspense, cache } from 'react';
 import { preload } from 'react-dom';
-import { notFound, redirect } from 'next/navigation';
-import { cookies } from 'next/headers';
-import { REF_LOCK_COOKIE, verifyRefLock } from '@/lib/ref-lock';
+import { notFound } from 'next/navigation';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 import Link from 'next/link';
@@ -315,9 +313,8 @@ async function AgentStorefrontDataLoader({
   );
 }
 
-export default async function AgentStorefrontPage({ params, searchParams }: Props) {
+export default async function AgentStorefrontPage({ params }: Props) {
   const { agentSlug } = await params;
-  const { sa: rawSa } = searchParams ? await searchParams : {};
   const supabase = await createClient();
 
   const { data: agent, error } = await getAgentProfileBySlug(agentSlug);
@@ -326,38 +323,30 @@ export default async function AgentStorefrontPage({ params, searchParams }: Prop
     notFound(); // returns HTTP 404; prevents bots indexing dead storefronts as valid pages
   }
 
-  // GUEST QR / LINK RULE (2026-07-12): a guest who scans an agent QR code or
-  // opens an agent storefront link lands on the public HOME / sign-up page
-  // first -- a clean, welcoming first screen instead of a bare storefront (and
-  // no longer the full-screen legal wall that read as a broken site). Guests
-  // enter the store via "Continue As Guest" on the landing page.
+  // GUEST STOREFRONT RULE (2026-07-30): scanning an agent's QR code, or opening
+  // pepnationlab.com/<slug> directly, renders THIS STORE. No sign-up wall, no
+  // bounce to the landing screen, no account required to browse products or see
+  // pricing.
   //
-  // The house store (researchstore -- Daniel Bekavac) still renders directly
-  // for guests AND for anonymous crawlers, so it stays indexable and remains
-  // the destination "Continue As Guest" lands on. Signed-in researchers,
-  // agents, and store owners continue to see their own storefront untouched.
+  // This block used to redirect any guest whose ref-lock slug did not already
+  // match this store to /?agent=<slug>. That landing screen leads with LOG IN /
+  // CREATE ACCOUNT, so in practice every first-time scanner was told to make an
+  // account before they could look at anything -- which is precisely what a
+  // referral QR code exists to avoid.
+  //
+  // Removing it does NOT open guest browsing up. Confinement is enforced one
+  // layer earlier, in proxy.ts: a guest holding a hard (QR) lock who requests a
+  // different store is 307'd back to their locked store at the edge, before this
+  // component is ever invoked, and an unlocked guest hitting /<slug> has a soft
+  // lock minted for this store on the same request. This guard only ever
+  // duplicated that decision -- and disagreed with it.
+  //
+  // Attribution is unaffected: <AgentLinkCapture> below records the slug for
+  // signup credit, and the signed pnl_ref_lock cookie (lib/ref-lock.ts) remains
+  // authoritative over anything the client submits at registration.
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user && agentSlug !== DEFAULT_STORE_SLUG) {
-    // QR-locked guests may browse this one storefront: a visitor holding a
-    // valid pnl_ref_lock cookie whose locked slug matches this store gets the
-    // same guest view the house store renders (GuestCTA + AgentLinkCapture
-    // attribution) instead of the bounce to the landing page. See
-    // lib/ref-lock.ts; proxy.ts enforces the same rule at the edge.
-    const cookieStore = await cookies();
-    const lock = await verifyRefLock(cookieStore.get(REF_LOCK_COOKIE)?.value);
-    if (lock?.s !== agentSlug) {
-      // Preserve QR / sub-agent attribution across the guest bounce to the
-      // landing: carry the storefront slug (and any ?sa sub-agent id) so the
-      // landing AgentLinkCapture records it for signup credit. Without this the
-      // guest redirect dropped all attribution and agents/sub-agents lost the
-      // referral + commission credit their storefront links are meant to earn.
-      const refParams = new URLSearchParams({ agent: agentSlug });
-      if (rawSa && /^[0-9a-f-]{36}$/i.test(rawSa)) refParams.set('sa', rawSa);
-      redirect(`/?${refParams.toString()}`);
-    }
-  }
 
   if (agent.is_active === false) {
     const primaryColor = agent.primary_color ?? '#00C4BC';
