@@ -2562,7 +2562,7 @@ export default function AgentStorefrontGrid({
                         <div style={{ display: 'flex', justifyContent: 'center', minHeight: 32 }}>
                           {(() => {
                             const baseSize = `${size}${measure}`.toLowerCase();
-                            const pillSizes = ['1mg', '5mg', '10mg', '20mg', '50mg', '70mg', '80mg', '100mg', '3ml', '10ml', '600mg', '1000mg', '1500mg', '75iu'];
+                            const pillSizes = ['0.1mg', '1mg', '5mg', '10mg', '15mg', '20mg', '30mg', '40mg', '50mg', '60mg', '70mg', '80mg', '90mg', '100mg', '120mg', '600mg', '1000mg', '1500mg', '3ml', '10ml', '75iu', '5000iu', '10000iu'];
                             if (pillSizes.includes(baseSize)) {
                               return (
                                 <Image 
@@ -4138,7 +4138,7 @@ export default function AgentStorefrontGrid({
                               const size = v.products?.unit_size ? `${v.products.unit_size}${v.products.unit_measure || ''}` : 'Standard';
                               const isSelected = v.id === activeV.id;
                               const normalizedSize = size.toLowerCase().replace(/\s+/g, '');
-                              const pillSizes = ['1mg', '5mg', '10mg', '20mg', '50mg', '70mg', '80mg', '100mg', '3ml', '10ml', '600mg', '1000mg', '1500mg', '75iu'];
+                              const pillSizes = ['0.1mg', '1mg', '5mg', '10mg', '15mg', '20mg', '30mg', '40mg', '50mg', '60mg', '70mg', '80mg', '90mg', '100mg', '120mg', '600mg', '1000mg', '1500mg', '3ml', '10ml', '75iu', '5000iu', '10000iu'];
                               const hasImage = pillSizes.includes(normalizedSize);
 
                               return (
