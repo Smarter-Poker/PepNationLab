@@ -2713,6 +2713,7 @@ export default function AgentStorefrontGrid({
           width: 100%; max-width: 860px; margin: 0 auto;
           display: flex; flex-direction: column;
           padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+          background: linear-gradient(180deg, #131b24 0%, #0a0f14 100%);
         }
         .sf-modal-drag-bar { display: none; }
         .sf-modal-img {
@@ -4690,18 +4691,18 @@ export default function AgentStorefrontGrid({
             onClick={() => setSelectedBundle(null)}
             style={{
               position: 'fixed', inset: 0, zIndex: 999998,
-              background: '#0a0f14',
+              background: 'rgba(10,15,20,0.85)',
               overflowY: 'auto',
               display: 'flex', flexDirection: 'column',
+              padding: '20px 0'
             }}
           >
             <div
               onClick={(e) => e.stopPropagation()}
+              className="sf-modal-sheet"
               style={{
-                width: '100%', maxWidth: 560, margin: '0 auto',
-                minHeight: '100%',
-                background: 'linear-gradient(180deg, #131b24 0%, #0a0f14 100%)',
-                display: 'flex', flexDirection: 'column',
+                maxWidth: 560, margin: 'auto',
+                minHeight: 'auto',
               }}
             >
               {/* Back bar */}
@@ -4771,7 +4772,8 @@ export default function AgentStorefrontGrid({
               {/* Hero image */}
               {(selectedBundle.vial_image_url || selectedBundle.image_url) && agentSlug === 'savagebrands' ? (
                 <div 
-                  style={{ width: '100%', background: 'var(--surface-3)', cursor: 'pointer', position: 'relative' }}
+                  className="sf-modal-img"
+                  style={{ width: '100%', background: 'var(--surface-3)', cursor: 'pointer', position: 'relative', height: 'auto' }}
                   onClick={() => setFullScreenImage(selectedBundle.vial_image_url || selectedBundle.image_url || null)}
                 >
                   <Image
@@ -4801,6 +4803,7 @@ export default function AgentStorefrontGrid({
                 </div>
               ) : (selectedBundle.vial_image_url || selectedBundle.image_url) ? (
                 <div 
+                  className="sf-modal-img"
                   style={{ 
                     position: 'relative', 
                     width: '100%', 
@@ -4865,6 +4868,8 @@ export default function AgentStorefrontGrid({
                   </div>
                 )}
 
+                <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '24px 0' }} />
+
                 {/* What's included */}
                 <div style={{ marginBottom: 28 }}>
                   <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--grey-500)', marginBottom: 12 }}>
@@ -4928,6 +4933,8 @@ export default function AgentStorefrontGrid({
                     );
                   })}
                 </div>
+
+                <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '24px 0' }} />
 
                 {/* Pricing summary */}
                 <div style={{
@@ -5003,6 +5010,7 @@ export default function AgentStorefrontGrid({
                       setCartItems((prev) => ({ ...prev, [variantId]: (prev[variantId] || 0) + qty }));
                       setShowCartFloat(true);
                     }}
+                    hideBulkPricing={true}
                   />
                 </div>
               </div>

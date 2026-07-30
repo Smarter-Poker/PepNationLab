@@ -87,6 +87,7 @@ interface Props {
   children?: React.ReactNode;
   showBulkPricing?: boolean;
   onToggleBulkPricing?: () => void;
+  hideBulkPricing?: boolean;
 }
 
 // Hard block: syringes are strictly forbidden on PepNationLab - never surface them
@@ -821,6 +822,7 @@ export default function ProductModalEnhancements({
   currentCompoundSlug,
   currentProductName,
   currentBundlePriceDollars,
+  currentDefaultVariantId,
   currentImageUrl,
   currentVialMassMg,
   grouped,
@@ -832,6 +834,7 @@ export default function ProductModalEnhancements({
   children,
   showBulkPricing = false,
   onToggleBulkPricing,
+  hideBulkPricing,
 }: Props) {
   // Smart "Similar Products" - ranked by relatedCompounds scorer which now
   // weights best_stacked_with highest (+7 per direction), then compound class
@@ -1199,26 +1202,39 @@ export default function ProductModalEnhancements({
 
 
       <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
-      <div style={{
-        display: 'flex',
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 16,
-        margin: '16px 0',
-        flexWrap: 'wrap',
-      }}>
-        <DynamicDetailButton
-          type="bulk"
-          height={76}
-          onClick={onToggleBulkPricing || (() => {})}
-          style={{
-            filter: showBulkPricing
-              ? 'brightness(1.2) drop-shadow(0 0 6px rgba(255, 255, 255, 0.3))'
-              : 'none',
-          }}
-        />
-        {currentCompoundSlug && currentProductName && (
+      {!hideBulkPricing && (
+        <div style={{
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 16,
+          margin: '16px 0',
+          flexWrap: 'wrap',
+        }}>
+          <DynamicDetailButton
+            type="bulk"
+            height={76}
+            onClick={onToggleBulkPricing || (() => {})}
+            style={{
+              filter: showBulkPricing
+                ? 'brightness(1.2) drop-shadow(0 0 6px rgba(255, 255, 255, 0.3))'
+                : 'none',
+            }}
+          />
+        </div>
+      )}
+      
+      {currentCompoundSlug && currentProductName && (
+        <div style={{
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 16,
+          margin: '16px 0',
+          flexWrap: 'wrap',
+        }}>
           <PinToCompareButton
             compoundSlug={currentCompoundSlug}
             compoundName={currentCompound?.display_name ?? currentProductName}
@@ -1234,8 +1250,8 @@ export default function ProductModalEnhancements({
               width: 360,
             }}
           />
-        )}
-      </div>
+        </div>
+      )}
 
       {children && (
         <>
