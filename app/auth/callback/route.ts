@@ -7,6 +7,8 @@ import { ensureOAuthResearcherProfile, logOAuthRegistrationAck } from '@/lib/oau
 import { notifyNewResearcher } from '@/lib/notify';
 import { getClientIp } from '@/lib/rate-limit';
 import { safeRelativePath } from '@/lib/safe-redirect';
+import { cookies } from 'next/headers';
+import { verifyRefLock, REF_LOCK_COOKIE, REF_DISPLAY_COOKIE } from '@/lib/ref-lock';
 
 /**
  * GET /auth/callback
@@ -29,8 +31,20 @@ export async function GET(req: NextRequest) {
   // lib/oauth-callback-url.ts) so they survive the OAuth round-trip
   // independently of the inner redirect URL - do NOT move them inside the
   // redirect value; url.searchParams.get() cannot see nested params.
-  const agentRef = url.searchParams.get('agentRef') ?? undefined;
-  const subAgentRef = url.searchParams.get('subAgentRef') ?? undefined;
+  let agentRef = url.searchParams.get('agentRef') ?? undefined;
+  let subAgentRef = url.searchParams.get('subAgentRef') ?? undefined;
+  // QR referral lock: the signed httpOnly cookie set by the middleware is the
+  // AUTHORITATIVE attribution. When a valid lock exists it overrides the
+  // URL-threaded params — the client cannot change who gets signup credit.
+  // refLock.c (the scanned code) resolves inside ensureOAuthResearcherProfile
+  // via username/referral_code first (then storefront slug), exactly like a
+  // typed referral; refLock.sa carries the QR sub-agent capture.
+  const cookieStore = await cookies();
+  const refLock = await verifyRefLock(cookieStore.get(REF_LOCK_COOKIE)?.value);
+  if (refLock) {
+    agentRef = refLock.c;
+    subAgentRef = refLock.sa ?? undefined;
+  }
   // Prevent Open Redirect: same-origin relative paths only; also strips embedded
   // control characters that browsers collapse into scheme-relative navigation.
   const redirectTo = safeRelativePath(url.searchParams.get('redirect'));
@@ -63,6 +77,9 @@ export async function GET(req: NextRequest) {
   }
 
   const user = exchangeData.user;
+  // Set once profile creation/attribution succeeds — the QR lock cookies are
+  // then cleared on the success redirect (their job is done).
+  let clearRefLockCookies = false;
 
   try {
     const admin = createAdminClient();
@@ -121,6 +138,9 @@ export async function GET(req: NextRequest) {
     if (!ensured.ok) {
       // Session Is Still Valid - Log Loudly For Follow-Up, Never Strand The User.
       console.error('[auth/callback] ensureOAuthResearcherProfile failed:', ensured.error);
+    } else if (refLock) {
+      // Attribution settled on this account under the locked referrer.
+      clearRefLockCookies = true;
     }
 
     // Notify the agent that a new researcher signed up under their storefront.
@@ -181,5 +201,10 @@ export async function GET(req: NextRequest) {
     console.error('[auth/callback] Post-login profile linking error:', err);
   }
 
-  return NextResponse.redirect(new URL(redirectTo, url.origin));
+  const successRes = NextResponse.redirect(new URL(redirectTo, url.origin));
+  if (clearRefLockCookies) {
+    successRes.cookies.set(REF_LOCK_COOKIE, '', { maxAge: 0, path: '/' });
+    successRes.cookies.set(REF_DISPLAY_COOKIE, '', { maxAge: 0, path: '/' });
+  }
+  return successRes;
 }
