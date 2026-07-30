@@ -63,7 +63,7 @@ export default function PremiumPeptideCard({
         fontFamily: 'var(--font-sans, sans-serif)',
         transition: 'transform 0.2s',
       }}>
-        {/* Exact background template provided by user */}
+        {/* Layer 0: Base card background */}
         <Image
           src="/images/storefront/premium-card-bg.jpg"
           alt="Card Background"
@@ -72,22 +72,41 @@ export default function PremiumPeptideCard({
           style={{ objectFit: 'cover', pointerEvents: 'none', zIndex: 0 }}
         />
 
-        {/* Global wrapper matching canvas size for absolute positioning over the background */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10 }}>
+        {/* Layer 2 (vial) is inside the global wrapper below */}
+
+        {/* Layer 1: Card frame overlay — sits ON TOP of the vial image.
+            mix-blend-mode:screen makes every black pixel transparent,
+            so the vial shows through the image window while the bright
+            silver/metallic V-frame chrome remains fully visible on top. */}
+        <Image
+          src="/images/storefront/premium-card-bg.jpg"
+          alt=""
+          aria-hidden="true"
+          fill
+          priority
+          style={{
+            objectFit: 'cover',
+            pointerEvents: 'none',
+            zIndex: 10,
+            mixBlendMode: 'screen',
+          }}
+        />
+
+        {/* Global wrapper — all UI content sits above both image layers */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 30 }}>
           
-          {/* Vial Image — flat rectangular window, contained by overflow:hidden */}
+          {/* Layer 2: Vial image — behind the frame overlay (z:10 above) */}
           <div style={{
             position: 'absolute',
             left: px(25), top: px(25), right: px(25), height: px(523),
             borderRadius: `${px(20)} ${px(20)} 0 0`,
             overflow: 'hidden',
-            zIndex: 15
+            zIndex: 5,
           }}>
             <Image
               src={imageSrc}
               alt={productName}
               fill
-              // cover = fills the V-window edge-to-edge; clip-path handles the V boundary
               style={{ objectFit: 'cover', objectPosition: 'center center' }}
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
