@@ -2297,6 +2297,10 @@ export default function AgentStorefrontGrid({
           pickupText="AVAILABLE FOR SAME DAY PICKUP"
           buttonText="Add To Cart"
           imageSrc={group.imageUrl || '/images/peptide_clear.png'}
+          cardBg={({
+            'tirzepatide': '/images/storefront/tirzepatide-card-composite.jpg',
+            'retatrutide': '/images/storefront/retatrutide-card-composite.jpg',
+          } as Record<string, string>)[group.compoundSlug ?? '']}
           isPinned={pinnedNames.has(group.name)}
           isWishlisted={wishlist.has(activeVariant.product_id)}
           onCompareToggle={(e) => {

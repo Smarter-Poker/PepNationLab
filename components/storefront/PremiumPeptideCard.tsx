@@ -13,6 +13,9 @@ interface Props {
   pickupText?: string;
   buttonText?: string;
   imageSrc?: string;
+  /** Pre-composited card image (vial already baked into the frame). When
+   *  provided this replaces premium-card-bg.jpg AND the separate vial layer. */
+  cardBg?: string;
   isPinned?: boolean;
   isWishlisted?: boolean;
   onCompareToggle?: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -33,6 +36,7 @@ export default function PremiumPeptideCard({
   pickupText = "AVAILABLE FOR SAME DAY PICKUP",
   buttonText = "Add To Cart",
   imageSrc = "/images/savage-brands/tirzepatide.png",
+  cardBg,
   isPinned = false,
   isWishlisted = false,
   onCompareToggle,
@@ -44,6 +48,8 @@ export default function PremiumPeptideCard({
 }: Props) {
   // Helper to convert 683x1024 canvas pixels to responsive CQI units
   const px = (val: number) => `calc(${val} * 100cqi / 683)`;
+  // Background: use pre-composited card (vial baked in) if provided, else generic template
+  const bgSrc = cardBg ?? '/images/storefront/premium-card-bg.jpg';
   
   return (
     <div 
@@ -63,42 +69,39 @@ export default function PremiumPeptideCard({
         fontFamily: 'var(--font-sans, sans-serif)',
         transition: 'transform 0.2s',
       }}>
-        {/* ── LAYER 0: Base card background (provides the V-frame chrome) ─── */}
+        {/* ── BACKGROUND: composited card image (vial baked in) or generic template */}
         <Image
-          src="/images/storefront/premium-card-bg.jpg"
+          src={bgSrc}
           alt="Card Background"
           fill
           priority
           style={{ objectFit: 'cover', pointerEvents: 'none', zIndex: 0 }}
         />
 
-        {/* ── LAYER 1: Vial image ────────────────────────────────────────────
-            Clipped to the V-polygon so it fits INSIDE the frame.
-            The clip cuts the bottom corners into a V-shape matching the
-            card background's chrome divider exactly.
-            objectFit:contain = full vial always visible, no crop/zoom. */}
-        <div style={{
-          position: 'absolute',
-          left: px(25), top: px(25), right: px(25), height: px(523),
-          overflow: 'hidden',
-          zIndex: 5,
-          clipPath: 'polygon(0 0, 100% 0, 100% 94.65%, 50% 100%, 0 94.65%)',
-          WebkitClipPath: 'polygon(0 0, 100% 0, 100% 94.65%, 50% 100%, 0 94.65%)',
-        }}>
-          <Image
-            src={imageSrc}
-            alt={productName}
-            fill
-            style={{ objectFit: 'contain', objectPosition: 'center center' }}
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.src = '/images/peptide_clear.png';
-            }}
-          />
-        </div>
+        {/* ── VIAL IMAGE: only rendered when NO pre-composite is provided ── */}
+        {!cardBg && (
+          <div style={{
+            position: 'absolute',
+            left: px(25), top: px(25), right: px(25), height: px(523),
+            overflow: 'hidden',
+            zIndex: 5,
+            clipPath: 'polygon(0 0, 100% 0, 100% 94.65%, 50% 100%, 0 94.65%)',
+            WebkitClipPath: 'polygon(0 0, 100% 0, 100% 94.65%, 50% 100%, 0 94.65%)',
+          }}>
+            <Image
+              src={imageSrc}
+              alt={productName}
+              fill
+              style={{ objectFit: 'contain', objectPosition: 'center center' }}
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = '/images/peptide_clear.png';
+              }}
+            />
+          </div>
+        )}
 
-        {/* ── LAYER 2: All UI content ─────────────────────────────────────────
-            z:20 — above vial and frame chrome, always readable */}
+        {/* ── ALL UI CONTENT — always on top */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 20 }}>
 
           {/* --- SEARCH MATCH CHIP (Optional) --- */}
