@@ -300,6 +300,27 @@ const GATED_SUBROUTES = [
 // character class, one character shorter.
 const GUEST_FALLBACK_SEGMENT_RE = /^[a-z0-9][a-z0-9_-]{0,49}$/;
 
+// Per-IP, per-minute budget for the two unauthenticated service-role lookups a
+// logged-out visitor can trigger: resolveRefCode() for ?ref=<code> and
+// resolveStoreSlug() for a bare /<slug>.
+//
+// This was 20, which is roughly one busy minute for a SINGLE person and was
+// never a per-person budget in the first place: getClientIp() returns the
+// carrier's or the office's egress address, so an entire mobile NAT gateway
+// shares one bucket. Measured against production, the 21st distinct storefront
+// resolution inside a minute -- from any phone on that gateway -- failed, and
+// the failure was silently read downstream as "that slug does not exist."
+//
+// A real scanner costs exactly ONE token: the resolution mints pnl_ref_lock and
+// every later page view short-circuits on the cookie. So the honest question is
+// how many DISTINCT first-time visitors may share one egress IP in one minute,
+// and for a carrier gateway or an event hotspot 20 is far too low while a few
+// hundred still shuts down enumeration (the whole slug namespace is ~60 rows;
+// an attacker willing to spend an hour walks it at any cap, which is why the
+// real defence is that the endpoint leaks nothing but "this store exists").
+// Overridable without a deploy so the cap can be tuned against real traffic.
+const REF_RESOLVE_LIMIT = Number(process.env.REF_RESOLVE_LIMIT) || 120;
+
 function isGatedSubroute(pathname: string): boolean {
   return GATED_SUBROUTES.some((r) => pathname === r || pathname.startsWith(r + '/'));
 }
@@ -323,6 +344,15 @@ export default async function proxy(request: NextRequest) {
   let refLock: RefLock | null = null;
   let refCookiesToSet: { lock: string; code: string } | null = null;
   let clearRefCookies = false;
+  // Set when the ref_resolve limiter DENIES a lookup, as opposed to the lookup
+  // running and finding nothing. The two are indistinguishable downstream --
+  // both leave `store`/`resolved` null -- and conflating them is what turned a
+  // perfectly live storefront into a bounce: past the cap, /savagebrands looked
+  // exactly like a dead slug and got sent to the landing page (and, before the
+  // landing-page fallback existed, to /login -- the reported "white page, then
+  // the login screen" scan). A throttled request must degrade attribution, not
+  // routing, so this flag suppresses every "this slug must not exist" branch.
+  let refResolveThrottled = false;
   if (request.method === 'GET' && !pathname.startsWith('/api/')) {
     refLock = await verifyRefLock(request.cookies.get(REF_LOCK_COOKIE)?.value);
     const refParam = request.nextUrl.searchParams.get('ref')?.trim();
@@ -335,9 +365,18 @@ export default async function proxy(request: NextRequest) {
         // Cap it per IP so ?ref= cannot be used as a free enumeration or
         // amplification channel. Real scanners resolve once and are then
         // served from the cookie.
+        //
+        // The cap is REF_RESOLVE_LIMIT, not 20. getClientIp() sees the carrier
+        // or corporate egress address, not a person: every phone behind one
+        // mobile NAT gateway, and every employee in one office, shares a single
+        // budget. At 20/min a few dozen simultaneous first-time scanners --
+        // one table at a trade show -- exhausted it for everyone on that
+        // gateway, and the overflow got bounced off the storefront they had
+        // just scanned. See REF_RESOLVE_LIMIT for the sizing argument.
         const rl = await rateLimit({
-          key: 'ref_resolve', limit: 20, windowSeconds: 60, identifier: getClientIp(request),
+          key: 'ref_resolve', limit: REF_RESOLVE_LIMIT, windowSeconds: 60, identifier: getClientIp(request),
         });
+        if (!rl.allowed) refResolveThrottled = true;
         const resolved = rl.allowed ? await resolveRefCode(refParam) : null;
         if (resolved) {
           // signRefLock returns null when no server-side signing secret is
@@ -601,11 +640,22 @@ export default async function proxy(request: NextRequest) {
       const seg = rawSeg.toLowerCase();
       if (seg && seg !== refLock?.s && STORE_SLUG_RE.test(seg) && !RESERVED_SEGMENTS.has(seg)) {
         try {
-          // Same amplification guard as the ?ref= path above.
+          // Same amplification guard as the ?ref= path above, same budget.
           const rl = await rateLimit({
-            key: 'ref_resolve', limit: 20, windowSeconds: 60, identifier: getClientIp(request),
+            key: 'ref_resolve', limit: REF_RESOLVE_LIMIT, windowSeconds: 60, identifier: getClientIp(request),
           });
+          if (!rl.allowed) refResolveThrottled = true;
           const store = rl.allowed ? await resolveStoreSlug(seg) : null;
+          // Throttled, not missing. Render the path as-is and let the page
+          // decide: a real storefront draws normally (attribution falls back to
+          // the client-side <AgentLinkCapture> on the page, exactly as it does
+          // when REF_LOCK_SECRET is unset) and a genuinely bogus slug reaches
+          // its own notFound(). Both beat bouncing a paying visitor off a store
+          // that exists because somebody else on their carrier's NAT scanned a
+          // code in the same minute.
+          if (!store && refResolveThrottled) {
+            return withRefCookies(response);
+          }
           if (store) {
             const signed = await signRefLock(store);
             if (signed) {
@@ -682,9 +732,14 @@ export default async function proxy(request: NextRequest) {
     // (/savagebrands/products/bpc-157), a renamed store's old deep link -- fell
     // straight through to /login. Same failure mode, one path segment further
     // in.
+    //
+    // Suppressed entirely when the resolver was throttled rather than run:
+    // "did not resolve" would then be a statement about the limiter, not about
+    // the slug, and bouncing on it is how a live store came to look dead.
     const firstSegment = pathname.split('/').filter(Boolean)[0]?.toLowerCase() ?? null;
     if (
       request.method === 'GET' &&
+      !refResolveThrottled &&
       firstSegment &&
       GUEST_FALLBACK_SEGMENT_RE.test(firstSegment) &&
       !RESERVED_SEGMENTS.has(firstSegment)
