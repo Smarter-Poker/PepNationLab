@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { Suspense, cache } from 'react';
 import { preload } from 'react-dom';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 import Link from 'next/link';
@@ -19,7 +19,15 @@ import AgentLinkCapture from '@/components/AgentLinkCapture';
 
 interface Props {
   params: Promise<{ agentSlug: string }>;
-  searchParams?: Promise<{ sa?: string }>;
+  // There is deliberately no searchParams here. This page used to declare
+  // `searchParams?: Promise<{ sa?: string }>` and never read it, which made it
+  // look as though the server participated in sub-agent attribution when it
+  // does not. The ?sa= param is already read client-side by AgentLinkCapture
+  // straight off window.location.search, and the credit that actually counts
+  // is the `sa` field inside the HMAC-signed pnl_ref_lock cookie minted by
+  // resolveRefCode in proxy.ts. Reading ?sa= here as well would create a
+  // second, unsigned, client-supplied channel for the same fact, and the two
+  // could disagree -- so the declaration is removed rather than wired up.
 }
 
 // Request-scoped memo: both the page body and generateMetadata resolve the
@@ -29,6 +37,17 @@ interface Props {
 // full column set plus tagline for generateMetadata).
 const getAgentProfileBySlug = cache(async (agentSlug: string) => {
   const supabase = await createClient();
+  // Storefront slugs are canonically lowercase (STORE_SLUG_RE in
+  // lib/store-slug.ts only admits [a-z0-9...]), but the URL segment is
+  // whatever the visitor typed or whatever a partner printed on a flyer.
+  // PostgREST's .eq() is case-sensitive, so /SavageBrands used to match no
+  // row and notFound() -- a hard 404 on a live agent's storefront. proxy.ts
+  // has a canonicalising redirect, but it is gated behind
+  // `!refCookiesToSet && (!refLock || refLock.k === 'url')` inside its
+  // `if (!user)` branch, so it never runs for a signed-in visitor: exactly
+  // the returning customer whose order would have been credited to that
+  // agent. Normalising here makes the lookup correct no matter which path
+  // reached it.
   const { data, error } = await supabase
     .from('agent_profiles')
     .select(`
@@ -50,7 +69,7 @@ const getAgentProfileBySlug = cache(async (agentSlug: string) => {
       featured_products,
       custom_branding
     `)
-    .eq('slug', agentSlug)
+    .eq('slug', agentSlug.trim().toLowerCase())
     .maybeSingle();
   return { data, error };
 });
@@ -314,7 +333,21 @@ async function AgentStorefrontDataLoader({
 }
 
 export default async function AgentStorefrontPage({ params }: Props) {
-  const { agentSlug } = await params;
+  const { agentSlug: rawAgentSlug } = await params;
+  const agentSlug = rawAgentSlug.trim().toLowerCase();
+
+  // Send a mixed-case entry to the canonical lowercase path once, so the
+  // odd-cased URL does not stay in circulation collecting links, shares and
+  // duplicate-content penalties, and so everything below this line (the
+  // inventory RPC's p_slug, the AgentLinkCapture attribution write, the
+  // og:url) sees one spelling of the storefront rather than the visitor's.
+  // encodeURIComponent is not decoration: the segment is attacker-controlled,
+  // and passing it raw would let a crafted path turn this into an open
+  // redirect off-site.
+  if (rawAgentSlug !== agentSlug) {
+    permanentRedirect(`/${encodeURIComponent(agentSlug)}`);
+  }
+
   const supabase = await createClient();
 
   const { data: agent, error } = await getAgentProfileBySlug(agentSlug);
@@ -470,7 +503,13 @@ export default async function AgentStorefrontPage({ params }: Props) {
 }
 
 export async function generateMetadata({ params }: Props) {
-  const { agentSlug } = await params;
+  const { agentSlug: rawAgentSlug } = await params;
+  // Lowercased for the same reason as the page body: `alternates.canonical`
+  // must point at one URL rather than echoing whatever casing was requested,
+  // and `robots.index` compares against DEFAULT_STORE_SLUG -- an untouched
+  // /Pepnationlab would otherwise compare unequal and quietly noindex the
+  // house store.
+  const agentSlug = rawAgentSlug.trim().toLowerCase();
   // Shares the request-scoped cached lookup with the page body, so the
   // agent_profiles row is only fetched once per request.
   const { data: agent } = await getAgentProfileBySlug(agentSlug);
