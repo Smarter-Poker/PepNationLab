@@ -2133,9 +2133,6 @@ export default function AgentStorefrontGrid({
               letterSpacing: '0.02em'
             }}>{bundle.tagline}</div>
           )}
-          <div style={{ marginTop: 12, marginBottom: 4, width: '100%', maxWidth: 220 }}>
-            <StockBadge state={{ kind: 'in_stock_local' }} />
-          </div>
         </div>
 
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, marginBottom: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -2151,25 +2148,43 @@ export default function AgentStorefrontGrid({
           })}
         </ul>
         <div style={{ marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 'var(--space-4)' }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 'var(--space-3)', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 'var(--space-3)', flexWrap: 'nowrap' }}>
             {resolved.discountPct > 0 && (
-              <span style={{ opacity: 0.75, color: 'var(--silver)', fontSize: '0.95rem', fontWeight: 600 }}>
+              <span style={{ opacity: 0.75, color: 'var(--silver)', fontSize: '0.95rem', fontWeight: 600, whiteSpace: 'nowrap' }}>
                 MSRP: <span style={{ textDecoration: 'line-through' }}>${formatPrice(resolved.fullPrice)}</span>
               </span>
             )}
-            <span className="sf-product-price-nickel" style={{ fontSize: '1.3rem', fontWeight: 800, fontFamily: 'var(--font-brand)' }}>${formatPrice(resolved.finalPrice)}</span>
+            <span className="sf-product-price-nickel" style={{ fontSize: '1.3rem', fontWeight: 800, fontFamily: 'var(--font-brand)', whiteSpace: 'nowrap' }}>${formatPrice(resolved.finalPrice)}</span>
             {resolved.discountPct > 0 && (
-              <span style={{ fontSize: '0.72rem', color: '#68D391', fontWeight: 700 }}>({resolved.discountPct}% Off)</span>
+              <span style={{ 
+                fontSize: '0.85rem', 
+                color: '#ff3333', 
+                fontWeight: 900, 
+                textShadow: '0 0 8px rgba(255,51,51,0.5)', 
+                background: 'rgba(255,51,51,0.1)', 
+                padding: '2px 6px', 
+                borderRadius: 4, 
+                whiteSpace: 'nowrap',
+                border: '1px solid rgba(255,51,51,0.3)'
+              }}>({resolved.discountPct}% Off)</span>
             )}
           </div>
-          <button
-            type="button"
+          <div 
             onClick={(e) => { e.stopPropagation(); inCart ? removeBundleFromCart(bundle.name) : addBundleToCart(bundle); }}
-            className={inCart ? 'btn btn-outline' : 'btn-primary'}
-            style={{ width: '100%', height: 40, fontSize: '0.85rem', color: inCart ? 'var(--white)' : undefined, borderColor: inCart ? 'rgba(255,255,255,0.2)' : undefined }}
+            style={{ width: '100%', cursor: 'pointer', opacity: inCart ? 0.7 : 1, transition: 'opacity 0.2s', marginBottom: 12 }}
           >
-            {inCart ? 'Remove Bundle' : 'Add Bundle To Cart'}
-          </button>
+            <Image 
+              src="/images/add_stack_to_cart_btn.png" 
+              alt={inCart ? "Remove Bundle" : "Add Bundle To Cart"} 
+              width={400} 
+              height={60} 
+              unoptimized 
+              style={{ width: '100%', height: 'auto', objectFit: 'contain', display: 'block' }} 
+            />
+          </div>
+          <div style={{ width: '100%', maxWidth: 220, margin: '0 auto' }}>
+            <StockBadge state={{ kind: 'in_stock_local' }} />
+          </div>
         </div>
       </div>
     );
@@ -4958,23 +4973,19 @@ export default function AgentStorefrontGrid({
                 </div>
 
                 {/* Main CTA */}
-                <button
-                  type="button"
+                <div 
                   onClick={() => { inCart ? removeBundleFromCart(selectedBundle.name) : addBundleToCart(selectedBundle); }}
-                  style={{
-                    width: '100%', height: 52, borderRadius: 10,
-                    fontFamily: 'var(--font-brand)', fontSize: '1.05rem', fontWeight: 700,
-                    background: inCart ? 'transparent' : `linear-gradient(135deg, ${primaryColor} 0%, ${primaryColor}bb 100%)`,
-                    border: inCart ? '1px solid rgba(255,255,255,0.2)' : 'none',
-                    color: 'var(--white)', cursor: 'pointer',
-                    boxShadow: inCart ? 'none' : '0 4px 20px rgba(0,0,0,0.4)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                    transition: 'opacity 0.15s',
-                  }}
+                  style={{ width: '100%', cursor: 'pointer', opacity: inCart ? 0.7 : 1, transition: 'opacity 0.2s', display: 'flex', justifyContent: 'center' }}
                 >
-                  <ShoppingCart size={18} />
-                  {inCart ? 'Remove Bundle From Cart' : 'Add Bundle To Cart'}
-                </button>
+                  <Image 
+                    src="/images/add_stack_to_cart_btn.png" 
+                    alt={inCart ? "Remove Bundle" : "Add Bundle To Cart"} 
+                    width={400} 
+                    height={60} 
+                    unoptimized 
+                    style={{ width: '100%', maxWidth: 400, height: 'auto', objectFit: 'contain', display: 'block' }} 
+                  />
+                </div>
 
                 <div style={{ marginTop: 24 }}>
                   <ProductModalEnhancements
