@@ -48,9 +48,18 @@ const nextConfig = {
     // /peptides/illinois/oak-lawn), generated from lib/cities/cities-data.ts.
     // Applied at the edge BEFORE routing, so they work regardless of the
     // [agentSlug] serverless route (whose runtime city-match fallback proved
-    // unreliable). Agent slugs and reserved routes have zero collisions.
+    // unreliable).
+    //
+    // These run BEFORE middleware, which means a bare city form that collides
+    // with a live agent storefront makes that storefront permanently
+    // unreachable -- proxy.ts never sees the request. This is not theoretical:
+    // the agent slug `melissa` collided with Melissa, TX and turned every scan
+    // of that agent's QR code into a login wall. The generator is therefore an
+    // async factory that fetches the live storefront-slug list and withholds
+    // any colliding redirect; see lib/cities/city-redirects.cjs.
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const cityRedirects = require("./lib/cities/city-redirects.cjs");
+    const buildCityRedirects = require("./lib/cities/city-redirects.cjs");
+    const cityRedirects = await buildCityRedirects();
     return [
       {
         source: "/:path*",
