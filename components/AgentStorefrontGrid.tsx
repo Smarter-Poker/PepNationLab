@@ -66,6 +66,7 @@ export interface BundleConfig {
   tagline?: string;
   description?: string;
   image_url?: string | null;
+  vial_image_url?: string | null;
   product_ids: string[];
   /** Optional discount applied to the summed member price at checkout. */
   discount_percent?: number;
@@ -4694,8 +4695,7 @@ export default function AgentStorefrontGrid({
             onClick={() => setSelectedBundle(null)}
             style={{
               position: 'fixed', inset: 0, zIndex: 999998,
-              background: 'rgba(0,0,0,0.75)',
-              backdropFilter: 'blur(4px)',
+              background: '#0a0f14',
               overflowY: 'auto',
               display: 'flex', flexDirection: 'column',
             }}

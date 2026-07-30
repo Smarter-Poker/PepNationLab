@@ -228,6 +228,7 @@ async function AgentStorefrontDataLoader({
       tagline: b.tagline || '',
       description: b.description,
       image_url: b.image_url,
+      vial_image_url: b.vial_image_url,
       product_ids: b.product_ids,
       discount_percent: b.discount_percent,
       custom_price: b.custom_price ?? null,
