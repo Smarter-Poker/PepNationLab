@@ -54,11 +54,10 @@ export default function NavbarWalletBadge() {
         background: 'none',
         flexShrink: 0,
         position: 'relative',
-        left: -8,
         padding: 4
       }}
     >
-      <Image src="/nav-icons/wallet-icon.png" alt="Wallet" width={84} height={84} unoptimized style={{ display: 'block' }} />
+      <Image src="/nav-icons/wallet-icon.png" alt="Wallet" width={84} height={84} unoptimized style={{ height: 36, width: 'auto', display: 'block', objectFit: 'contain' }} />
     </Link>
   );
 }

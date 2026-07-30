@@ -451,7 +451,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
 
         <div style={{ flex: 1, minWidth: 0 }} aria-hidden="true" />
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
           {loading ? (
             <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--surface-2)' }} className="skeleton" />
           ) : user ? (
@@ -469,7 +469,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
                   height={74}
                   unoptimized
                   className="dashboard-icon"
-                  style={{ width: 158, height: 'auto', maxWidth: '100%', objectFit: 'contain', display: 'block' }}
+                  style={{ height: 36, width: 'auto', maxWidth: '100%', objectFit: 'contain', display: 'block' }}
                 />
               </Link>
               {activeAgentSlug && (
@@ -486,7 +486,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
                     height={76}
                     unoptimized
                     className="dashboard-icon"
-                    style={{ width: 158, height: 'auto', maxWidth: '100%', objectFit: 'contain', display: 'block' }}
+                    style={{ height: 36, width: 'auto', maxWidth: '100%', objectFit: 'contain', display: 'block' }}
                   />
                 </Link>
               )}
