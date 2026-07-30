@@ -2561,12 +2561,12 @@ export default function AgentStorefrontGrid({
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'center', minHeight: 32 }}>
                           {(() => {
-                            const normalizedSize = (displaySizeText || '').toLowerCase().replace(/\s+/g, '');
+                            const baseSize = `${size}${measure}`.toLowerCase();
                             const pillSizes = ['1mg', '5mg', '10mg', '20mg', '50mg', '70mg', '80mg', '100mg', '3ml', '10ml', '600mg', '1000mg', '1500mg', '75iu'];
-                            if (pillSizes.includes(normalizedSize)) {
+                            if (pillSizes.includes(baseSize)) {
                               return (
                                 <Image 
-                                  src={`/images/ui/pills/${normalizedSize}.png`} 
+                                  src={`/images/ui/pills/${baseSize}.png`} 
                                   alt={`${displaySizeText} Vials`} 
                                   width={140} 
                                   height={32} 
@@ -2588,7 +2588,7 @@ export default function AgentStorefrontGrid({
               </div>
               <div
                 onClick={e => e.stopPropagation()}
-                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, paddingBottom: 16, marginTop: 'auto' }}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, margin: 0, padding: 0, marginTop: 'auto' }}
               >
                 <StockBadge state={stockState} />
                 {stockState.kind === 'out_of_stock' && (
