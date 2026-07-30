@@ -469,7 +469,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
                   height={74}
                   unoptimized
                   className="dashboard-icon"
-                  style={{ height: 36, width: 'auto', maxWidth: '100%', objectFit: 'contain', display: 'block' }}
+                  style={{ height: 74, width: 'auto', maxWidth: '100%', objectFit: 'contain', display: 'block' }}
                 />
               </Link>
               {activeAgentSlug && (
@@ -486,7 +486,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
                     height={76}
                     unoptimized
                     className="dashboard-icon"
-                    style={{ height: 36, width: 'auto', maxWidth: '100%', objectFit: 'contain', display: 'block' }}
+                    style={{ height: 74, width: 'auto', maxWidth: '100%', objectFit: 'contain', display: 'block' }}
                   />
                 </Link>
               )}
