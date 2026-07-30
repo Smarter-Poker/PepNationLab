@@ -2542,14 +2542,16 @@ export default function AgentStorefrontGrid({
                           
                           if (pillSizes.includes(baseSize)) {
                             return (
-                              <Image 
-                                src={`/images/ui/pills/${baseSize}.png`} 
-                                alt={`${displaySizeText}`} 
-                                width={140} 
-                                height={32} 
-                                style={{ height: '32px', width: 'auto', maxWidth: '100%', objectFit: 'contain' }} 
-                                unoptimized 
-                              />
+                              <div style={{ width: 130, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Image 
+                                  src={`/images/ui/pills/${baseSize}.png`} 
+                                  alt={`${displaySizeText}`} 
+                                  width={130} 
+                                  height={34} 
+                                  style={{ width: '100%', height: '100%', objectFit: 'fill' }} 
+                                  unoptimized 
+                                />
+                              </div>
                             );
                           }
                           return (
@@ -3932,13 +3934,13 @@ export default function AgentStorefrontGrid({
                         aria-label="View Certificate of Analysis"
                         style={{ display: 'block', cursor: 'pointer', flexShrink: 0 }}
                       >
-                        <DynamicCoaButton style={{ width: 122, height: 38 }} />
+                        <DynamicCoaButton style={{ width: 136, height: 38 }} />
                       </IframeLink>
                     );
                   })()}
                   <DynamicAddToCartButton
                     onClick={addDetailProductToCart}
-                    style={{ width: 122, height: 38, fontSize: '0.8rem', flexShrink: 0 }}
+                    style={{ width: 136, height: 38, fontSize: '0.85rem', flexShrink: 0 }}
                   />
                 </div>
               );
@@ -4186,14 +4188,16 @@ export default function AgentStorefrontGrid({
                                   }}
                                 >
                                   {hasImage ? (
-                                    <Image 
-                                      src={`/images/ui/pills/${normalizedSize}.png`} 
-                                      alt={size} 
-                                      width={140} 
-                                      height={32} 
-                                      style={{ height: '32px', width: 'auto', maxWidth: '100%', objectFit: 'contain' }} 
-                                      unoptimized 
-                                    />
+                                    <div style={{ width: 130, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                      <Image 
+                                        src={`/images/ui/pills/${normalizedSize}.png`} 
+                                        alt={size} 
+                                        width={130} 
+                                        height={34} 
+                                        style={{ width: '100%', height: '100%', objectFit: 'fill' }} 
+                                        unoptimized 
+                                      />
+                                    </div>
                                   ) : (
                                     size
                                   )}

@@ -3,7 +3,6 @@
 import React from 'react';
 import { vibrate } from '@/lib/haptics';
 import MetalButton from './MetalButton';
-import { ShoppingCart } from 'lucide-react';
 
 interface DynamicAddToCartButtonProps {
   onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
@@ -43,10 +42,7 @@ export default function DynamicAddToCartButton({
         filter: justAdded ? 'hue-rotate(90deg) brightness(1.2) drop-shadow(0 0 4px #68D391)' : 'none',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <ShoppingCart size={16} />
-        <span>Add To Cart</span>
-      </div>
+      <span style={{ fontSize: style.fontSize || '0.85rem' }}>Add To Cart</span>
       
       {justAdded ? (
         <span
