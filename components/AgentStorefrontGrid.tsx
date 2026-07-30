@@ -2132,20 +2132,29 @@ export default function AgentStorefrontGrid({
               letterSpacing: '0.02em'
             }}>{bundle.tagline}</div>
           )}
+          <div style={{ marginTop: 12, marginBottom: 4, width: '100%', maxWidth: 220 }}>
+            <StockBadge state={{ kind: 'in_stock_local' }} />
+          </div>
         </div>
 
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, marginBottom: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {resolved.members.map((m) => (
-            <li key={m.id} style={{ fontSize: '0.78rem', color: 'var(--silver)', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ width: 5, height: 5, borderRadius: '50%', background: primaryColor, flexShrink: 0 }} />
-              {m.custom_name || m.products?.name || 'Product'}
-            </li>
-          ))}
+          {resolved.members.map((m) => {
+            const sizeStr = m.products?.unit_size ? `${m.products.unit_size}${m.products.unit_measure || ''}` : '';
+            const nameStr = m.custom_name || m.products?.name || 'Product';
+            return (
+              <li key={m.id} style={{ fontSize: '0.78rem', color: 'var(--silver)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: primaryColor, flexShrink: 0 }} />
+                {sizeStr ? `${sizeStr} ${nameStr}` : nameStr}
+              </li>
+            );
+          })}
         </ul>
         <div style={{ marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 'var(--space-4)' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 'var(--space-3)', flexWrap: 'wrap' }}>
             {resolved.discountPct > 0 && (
-              <span style={{ textDecoration: 'line-through', opacity: 0.55, color: 'var(--silver)', fontSize: '0.95rem' }}>${formatPrice(resolved.fullPrice)}</span>
+              <span style={{ opacity: 0.75, color: 'var(--silver)', fontSize: '0.95rem', fontWeight: 600 }}>
+                MSRP: <span style={{ textDecoration: 'line-through' }}>${formatPrice(resolved.fullPrice)}</span>
+              </span>
             )}
             <span className="sf-product-price-nickel" style={{ fontSize: '1.3rem', fontWeight: 800, fontFamily: 'var(--font-brand)' }}>${formatPrice(resolved.finalPrice)}</span>
             {resolved.discountPct > 0 && (
@@ -4850,6 +4859,9 @@ export default function AgentStorefrontGrid({
                       letterSpacing: '0.02em'
                     }}>{selectedBundle.tagline}</div>
                   )}
+                  <div style={{ marginTop: 16, marginBottom: 8, width: '100%', maxWidth: 300 }}>
+                    <StockBadge state={{ kind: 'in_stock_local' }} />
+                  </div>
                 </div>
 
                 {/* Description */}
@@ -4867,8 +4879,9 @@ export default function AgentStorefrontGrid({
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {resolved.members.map((m) => {
                       const img = getProductImage(m.custom_image_url ?? m.products?.image_url ?? null, m.products?.category || 'Other', m.products?.name, !!m.custom_image_url, agentSlug);
-                      const name = m.custom_name || m.products?.name || 'Product';
                       const size = m.products?.unit_size ? `${m.products.unit_size}${m.products.unit_measure || ''}` : '';
+                      const baseName = m.custom_name || m.products?.name || 'Product';
+                      const name = size ? `${size} ${baseName}` : baseName;
                       const perVial = (Number(m.retail_price) || 0) / 10;
                       return (
                         <div
@@ -4896,7 +4909,6 @@ export default function AgentStorefrontGrid({
                           />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--white)', marginBottom: 2 }}>{name}</div>
-                            {size && <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)' }}>{size}</div>}
                           </div>
                           <div style={{ fontSize: '0.88rem', fontWeight: 700, color: primaryColor, whiteSpace: 'nowrap' }}>
                             ${formatPrice(perVial)}<span style={{ fontSize: '0.65rem', color: 'var(--grey-500)', fontWeight: 400 }}>/vial</span>
@@ -4914,7 +4926,7 @@ export default function AgentStorefrontGrid({
                 }}>
                   {resolved.discountPct > 0 && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, gap: 8 }}>
-                      <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>Regular Price</span>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>MSRP (If Bought Separately)</span>
                       <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)', textDecoration: 'line-through', whiteSpace: 'nowrap', flexShrink: 0 }}>${formatPrice(resolved.fullPrice)}</span>
                     </div>
                   )}
