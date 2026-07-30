@@ -10,6 +10,7 @@ import { assertSameOrigin } from '@/lib/csrf';
 import { safeError } from '@/lib/api-error';
 import { validateStoreSlug } from '@/lib/store-slug';
 import { generateStorefrontQr } from '@/lib/qr-storefront';
+import { seedStorefrontFromHousePrices } from '@/lib/seed-storefront';
 
 // GET: List all profiles with optional roles and search query
 export async function GET(req: NextRequest) {
@@ -268,7 +269,22 @@ export async function POST(req: NextRequest) {
 
     const isSuperPromotion = role === 'super_agent';
     const isAgentRole = role === 'agent' || role === 'super_agent';
-    const canonicalRole = isSuperPromotion ? 'agent' : role;
+    // This used to fold a super-agent promotion down to role='agent' while
+    // still setting is_super_agent=true below, which is exactly the pairing the
+    // chk_super_agent_role_sync CHECK forbids. That constraint is a strict
+    // biconditional:
+    //
+    //   ((is_super_agent = false) OR (role = 'super_agent'))
+    //   AND ((role <> 'super_agent') OR (is_super_agent = true))
+    //
+    // i.e. is_super_agent = true if and only if role = 'super_agent'. So every
+    // super-agent promotion through this endpoint was rejected outright by the
+    // database with a 23514, surfaced to the admin as the generic
+    // "An Unexpected Error Occurred" -- the promotion simply never worked.
+    // 'super_agent' is a real user_role enum member, so writing it through is
+    // both legal and what the rest of the platform already expects (the agents
+    // list queries .in('role', ['agent','super_agent'])).
+    const canonicalRole = role;
 
     // Validate agent-specific fields BEFORE updating the profile to avoid
     // leaving the user in a broken state (role=agent but no agent_profiles row)
@@ -365,6 +381,32 @@ export async function POST(req: NextRequest) {
 
       const { error: agentError } = await supabase.from('agent_profiles').upsert(agentProfileData);
       if (agentError) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
+
+      // A storefront with no products is a storefront whose QR code scans to an
+      // empty shelf. POST /api/admin/agents seeds every agent it creates from
+      // the HOUSE (admin) store's retail prices; this promotion path created the
+      // agent_profiles row and the QR but never the catalog, so a researcher
+      // promoted here got a live, routable, code-carrying store with nothing in
+      // it -- the customer scans, lands, sees zero products and leaves.
+      //
+      // Guarded by a count, unlike the creation route: this endpoint is an
+      // upsert an admin can re-run on an existing agent (to rename, retier or
+      // reactivate them), and re-seeding then would stomp prices the agent has
+      // since set by hand. Seed only when the catalog is genuinely empty.
+      // Non-fatal, matching admin/agents: the agent and storefront both exist
+      // regardless, and failing the whole request would be worse than an
+      // unseeded catalog the admin can retry.
+      try {
+        const { count: prodCount } = await supabase
+          .from('agent_products')
+          .select('id', { count: 'exact', head: true })
+          .eq('agent_id', id);
+        if (!prodCount) {
+          await seedStorefrontFromHousePrices(supabase, id);
+        }
+      } catch (provisionErr) {
+        console.error('[admin/researchers] storefront seeding failed (non-fatal):', provisionErr);
+      }
     } else {
       await supabase.from('agent_profiles').update({ is_active: false }).eq('id', id);
     }
