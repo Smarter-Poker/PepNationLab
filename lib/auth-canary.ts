@@ -25,6 +25,10 @@ import { getSupabaseUrl } from '@/lib/supabase/url';
  *                                     ACTIVE Agent (Not The House Store), And
  *                                     A Second Run Can Never Overwrite An
  *                                     Existing Referral.
+ *  7b. referral_code_resolution    - The Same Attribution Reached Through The
+ *                                     referral_code/username Namespace (What A
+ *                                     QR Referral Lock Carries), Proving Slugs
+ *                                     And Codes Are Never Cross-Resolved.
  *   8. oauth_identity_backfill      - Existing Profiles With Missing Email,
  *                                     Name, Or Avatar Get Them Backfilled From
  *                                     The Provider On The Next Sign-In.
@@ -148,18 +152,33 @@ export async function runAuthFlowCanary(origin: string): Promise<CanaryResult> {
     //    Brand-New OAuth Account When The Callback Runs. ensure() Must
     //    Upgrade That Fresh House Link To The Named ACTIVE Agent, And A
     //    Second Run (Stale House Ref) Must NOT Move It Again.
+    //
+    //    The fixture query is ORDERED so the canary samples the same agents on
+    //    every run. Without .order() Postgres returns rows in physical tuple
+    //    order, which shifts after any UPDATE/VACUUM on agent_profiles - the
+    //    canary would then pass or fail depending on table churn rather than
+    //    on code behavior, which is exactly what a canary must never do.
+    //    deleted_at is filtered alongside is_active because
+    //    ensureOAuthResearcherProfile() rejects soft-deleted owners too; a
+    //    fixture it would refuse to credit is not a valid fixture.
     let refAgent: { id: string; slug: string } | null = null;
     const { data: candidateAgents } = await admin
       .from('agent_profiles')
       .select('id, slug')
       .neq('slug', DEFAULT_STORE_SLUG)
+      .order('slug', { ascending: true })
       .limit(5);
     for (const a of candidateAgents ?? []) {
       const { data: acct } = await admin
-        .from('profiles').select('is_active').eq('id', a.id).maybeSingle();
-      if (acct?.is_active === true) { refAgent = a; break; }
+        .from('profiles').select('is_active, deleted_at').eq('id', a.id).maybeSingle();
+      if (acct?.is_active === true && acct.deleted_at == null) { refAgent = a; break; }
     }
     if (refAgent) {
+      // A STOREFRONT SLUG travels in the agentSlug slot only. Feeding it into
+      // the refCode slot would resolve it against profiles.username, which is
+      // a different namespace and credits a different agent whenever the two
+      // strings collide - the exact production misattribution this canary
+      // exists to catch.
       const linked = await ensureOAuthResearcherProfile(admin, {
         id: probeUserId,
         email: externalEmail,
@@ -185,12 +204,74 @@ export async function runAuthFlowCanary(origin: string): Promise<CanaryResult> {
         ok: linkOk && keepOk,
         detail: linkOk && keepOk
           ? `slug=${refAgent.slug}`
-          : JSON.stringify({ linkOk, keepOk, got: linkedRow?.referring_agent_id ?? null }),
+          : JSON.stringify({
+              slug: refAgent.slug,
+              want: refAgent.id,
+              linkOk,
+              keepOk,
+              got: linkedRow?.referring_agent_id ?? null,
+              after: afterRow?.referring_agent_id ?? null,
+            }),
       });
       if (!(linkOk && keepOk)) throw new Error('agent_referral_resolution_failed');
     } else {
       // No secondary agent exists in this environment - nothing to resolve.
       steps.push({ name: 'agent_referral_resolution', ok: true, detail: 'skipped_no_secondary_agent' });
+    }
+
+    // 7b. Referral-CODE Resolution: the same attribution reached through the
+    //     OTHER namespace (profiles.referral_code / username), which is what a
+    //     QR referral lock carries in its `c` field. Proves the two namespaces
+    //     are wired independently, and - because the fixture agent's slug and
+    //     username differ in live data - that a code is never resolved as a
+    //     slug or vice versa. Skipped when the fixture agent has no code that
+    //     satisfies the resolver's own input guard.
+    if (refAgent) {
+      const { data: refOwner } = await admin
+        .from('profiles')
+        .select('referral_code, username')
+        .eq('id', refAgent.id)
+        .maybeSingle();
+      const ownerCode = [refOwner?.referral_code, refOwner?.username].find(
+        (v): v is string => typeof v === 'string' && /^[a-z0-9_-]{2,80}$/i.test(v),
+      );
+      if (!ownerCode) {
+        steps.push({ name: 'referral_code_resolution', ok: true, detail: 'skipped_no_code' });
+      } else {
+        // Reset to the same starting state step 7 used: a freshly created,
+        // trigger-house-linked researcher row. Without the reset the settled
+        // named referral from step 7 would (correctly) refuse to move, so the
+        // probe would prove nothing.
+        await admin.from('profiles').delete().eq('id', probeUserId);
+        await ensureOAuthResearcherProfile(admin, {
+          id: probeUserId,
+          email: externalEmail,
+          user_metadata: { full_name: 'Auth Diagnostic', avatar_url: probeAvatar },
+        });
+        // Code in the refCode slot ONLY - no slug is supplied, so a pass here
+        // cannot be produced by the slug path.
+        const byCode = await ensureOAuthResearcherProfile(admin, {
+          id: probeUserId,
+          email: externalEmail,
+          user_metadata: { full_name: 'Auth Diagnostic', avatar_url: probeAvatar },
+        }, undefined, undefined, ownerCode);
+        const { data: codeRow } = await admin
+          .from('profiles').select('referring_agent_id').eq('id', probeUserId).maybeSingle();
+        const codeOk = byCode.ok && codeRow?.referring_agent_id === refAgent.id;
+        steps.push({
+          name: 'referral_code_resolution',
+          ok: codeOk,
+          detail: codeOk
+            ? `code=${ownerCode}`
+            : JSON.stringify({
+                code: ownerCode,
+                want: refAgent.id,
+                got: codeRow?.referring_agent_id ?? null,
+                err: byCode.error ?? null,
+              }),
+        });
+        if (!codeOk) throw new Error('referral_code_resolution_failed');
+      }
     }
 
     // 8. OAuth Identity Backfill: Blank The Captured Identity Fields, Run The
