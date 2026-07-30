@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgentOrAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { generateStorefrontQr } from '@/lib/qr-storefront';
+import { validateStoreSlug } from '@/lib/store-slug';
 
 /**
  * POST /api/agent/storefront-slug
@@ -48,14 +49,29 @@ export async function POST(req: NextRequest) {
       : null;
   const cleanSlug = raw.trim().toLowerCase();
 
-  // Sanitize: lower-kebab only ([a-z0-9-]).
-  if (!/^[a-z0-9-]+$/.test(cleanSlug)) {
-    return NextResponse.json(
-      { error: 'Slug Must Contain Only Lowercase Letters, Numbers, And Hyphens.' },
-      { status: 400 }
-    );
+  // Shared validation FIRST. This runs the DB-safe shape guard (DB_SLUG_RE:
+  // must start with a letter or number -- so a leading hyphen like `-store` is
+  // rejected here with a readable message instead of reaching Postgres and
+  // coming back as an opaque SQLSTATE 23514) AND the app-side reserved-segment
+  // check.
+  //
+  // The reserved check CANNOT be delegated to the database. The
+  // `agent_profiles_slug_not_reserved` CHECK is NOT a superset of the app's
+  // RESERVED_SEGMENTS -- the DB list is missing peptides, research, coa,
+  // wallet, invite, find-a-peptide, peptide-101, lab-journal, lab-tools,
+  // messenger, onboarding, reset-password, shelf-life, advertising,
+  // accept-disclaimer, account, test-card and monitoring, among others.
+  // Relying on the DB alone therefore leaves every one of those segments
+  // claimable by any authenticated agent, and proxy.ts routes `/<slug>` for
+  // storefronts, so a claimed segment collides with a real application route
+  // in one direction or the other. Both checks have to run: this one in the
+  // app, the trigger as the backstop.
+  const slugError = validateStoreSlug(cleanSlug);
+  if (slugError) {
+    return NextResponse.json({ error: slugError }, { status: 400 });
   }
 
+  // Product-level window, deliberately NARROWER than the shared 2..50 rule.
   if (cleanSlug.length < 3 || cleanSlug.length > 30) {
     return NextResponse.json(
       { error: 'Slug Must Be Between 3 And 30 Characters.' },
