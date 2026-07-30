@@ -11,6 +11,10 @@ import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { getEffectiveUser } from '@/lib/impersonation';
 import { captureError } from '@/lib/sentry';
 import { logError } from '@/lib/log';
+// ONE builder for storefront QR payloads. See lib/qr-storefront.ts: every
+// route that hand-rolled this string had drifted, and the drift is what
+// silently dropped `?ref=` and the utm pair off printed codes.
+import { buildStorefrontQrUrl, generateStorefrontQr } from '@/lib/qr-storefront';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -42,10 +46,9 @@ export async function GET(_req: Request) {
     const isSuper = !!profile.is_super_agent || profile.role === 'super_agent';
     const isResearcher = profile.role === 'researcher' && !isSub && !isSuper;
 
-    // Referral identifier: username resolves across all roles (apply_signup_referral
-    // matches username OR referral_code). Fall back to referral_code, then id.
-    const referralCode = (profile.username || profile.referral_code || user.id) as string;
-
+    // NOTE: the referral identifier is resolved AFTER the storefront lookup
+    // below, not here. Its last-resort fallback is the storefront slug, which
+    // does not exist yet at this point in the handler.
     const baseUrl = (process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '')) || 'https://pepnationlab.com';
 
     // Resolve the associated storefront FIRST (own for agents/super-agents,
@@ -82,19 +85,72 @@ export async function GET(_req: Request) {
       }
     }
 
+    // REFERRAL IDENTIFIER - THE PRECEDENCE MATTERS AND IT MUST NEVER BE A UUID.
+    // proxy.ts resolveRefCode() looks a scanned code up with
+    // `username.ilike.<code> OR referral_code.ilike.<code>` against profiles,
+    // so either column resolves. `referral_code` is the column that exists
+    // precisely to be handed out, so it wins; `username` is the fallback
+    // because the same query accepts it and every account has one.
+    //
+    // This order used to be inverted AND it terminated in `user.id`. A UUID
+    // matches NEITHER column, so resolveRefCode() returned null, no referral
+    // lock was ever minted, and the scan credited nobody - the agent handed
+    // out a printed code that looked perfect and earned them nothing, with no
+    // symptom until the commissions failed to appear. The storefront slug is
+    // the last resort instead: a scan of `/<slug>` is still resolved by
+    // proxy.ts resolveStoreSlug(), which mints a lock for that store's owner,
+    // so attribution survives even when both profile columns are unusable.
+    //
+    // `||`, deliberately not `??`. Profile rows written with an empty string
+    // rather than NULL are just as unusable as missing ones, and `??` only
+    // skips null/undefined - it would let `''` win over a perfectly good
+    // referral_code and emit `?ref=` with nothing after it.
+    const referralCode = (profile.referral_code || profile.username || storefrontSlug || '').trim();
+
+    // Nothing resolvable at all. Returning a QR anyway would print a code that
+    // credits nobody; saying so plainly is the only outcome the agent can act
+    // on, so this fails loudly rather than shipping a decorative QR.
+    if (!referralCode) {
+      logError(
+        'agent.my-qr.no_referral_identifier',
+        { userId: user.id },
+        new Error('Profile has no referral_code, no username and no routable storefront slug'),
+      );
+      return NextResponse.json({
+        error: 'no_referral_code',
+        message: 'Your Account Has No Referral Code Yet. Please Contact Support So Your Code Can Be Issued.',
+      }, { status: 409 });
+    }
+
     // QR TARGET. Scanning an agent's code must open that agent's STORE - the
     // products and the pricing - never an account-creation screen. `?ref=` is
     // carried on the storefront URL so proxy.ts mints the identical signed
     // referral lock it minted when the QR pointed at `/`; attribution, downline
     // assignment and researcher referral credits are unchanged.
     //
-    // Users with no resolvable storefront (researchers, and agents whose
-    // agent_profiles row is missing or inactive) have nowhere to send a
-    // scanner, so they keep the landing-page target - proxy.ts routes those
-    // guests on to the house store for browsing.
-    const signupUrl = storefrontSlug
-      ? `${baseUrl}/${storefrontSlug}?ref=${encodeURIComponent(referralCode)}`
-      : `${baseUrl}/?ref=${encodeURIComponent(referralCode)}`;
+    // Built through buildStorefrontQrUrl() instead of a local template so this
+    // route cannot drift from the codes the provisioning routes already store.
+    // The hand-rolled string it replaces carried the `?ref=` but NO utm params,
+    // so every scan of a dashboard-issued code arrived in analytics as untagged
+    // direct traffic, indistinguishable from somebody typing the URL - the
+    // exact drift lib/qr-storefront.ts was created to end.
+    //
+    // An empty slug is a supported input, not an accident: buildStorefrontQrUrl
+    // then emits `${APP_ORIGIN}/?ref=<code>&utm_...`, which is the same
+    // landing-page target this route has always used for users with no
+    // resolvable storefront (researchers, and agents whose agent_profiles row
+    // is missing or inactive). proxy.ts routes those guests on to the house
+    // store for browsing.
+    const signupUrl = buildStorefrontQrUrl(storefrontSlug ?? '', referralCode);
+
+    // Render the QR server-side. This endpoint is named "my-qr" and answered
+    // `qrCodeData: null`, which made every caller re-derive the payload itself
+    // - and a caller that rebuilt the URL even slightly differently (or not at
+    // all) showed an empty box or a code pointing somewhere else. This encodes
+    // exactly the `signupUrl` above, from the same builder, so the two can
+    // never disagree. generateStorefrontQr never throws: a render failure
+    // returns null and the client-side regeneration path below still covers it.
+    const qrCodeData = await generateStorefrontQr(storefrontSlug ?? '', referralCode);
 
     const effectDescription = isResearcher
       ? 'Anyone Who Signs Up With This Code Earns You Referral Credits On Their First Qualifying Order.'
@@ -110,7 +166,8 @@ export async function GET(_req: Request) {
       storefrontUrl,
       slug: storefrontSlug,
       displayName,
-      qrCodeData: null, // regenerate client-side so the QR encodes the link above
+      qrCodeData, // server-rendered data URL; null only if rendering failed, in
+                  // which case clients regenerate it from the link above
       primaryColor,
       isInvite: true,
       referCode: referralCode,
