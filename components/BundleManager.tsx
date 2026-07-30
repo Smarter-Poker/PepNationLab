@@ -114,8 +114,8 @@ export default function BundleManager({ agentId }: Props) {
           seen.add(row.product_id);
           
           const baseName = row.custom_name || row.products?.name || 'Unnamed Product';
-          const sizeLabel = row.products?.unit_size && row.products?.unit_measure ? ` ${row.products.unit_size}${row.products.unit_measure}` : '';
-          const productName = `${baseName}${sizeLabel}`;
+          const sizeStr = row.products?.unit_size && row.products?.unit_measure ? `${row.products.unit_size}${row.products.unit_measure}` : '';
+          const productName = sizeStr ? `${sizeStr} ${baseName}` : baseName;
           
           const isBacWater = /bac\.?\s*water/i.test(row.products?.name || '');
           const divFactor = isBacWater ? 1 : 10;
