@@ -2630,6 +2630,11 @@ export default function AgentStorefrontGrid({
           type="text"
           aria-label="Search compounds by name, goal, or mechanism"
           value={searchQuery}
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
+          className="focus:outline-none focus:ring-0 bg-transparent"
           onChange={(e) => {
             const val = e.target.value;
             setSearchQuery(val);
@@ -2648,6 +2653,9 @@ export default function AgentStorefrontGrid({
             background: 'transparent',
             border: 'none',
             outline: 'none',
+            boxShadow: 'none',
+            WebkitAppearance: 'none',
+            appearance: 'none',
             color: '#FFFFFF',
             fontSize: 'max(16px, 2.2vw)',
             fontWeight: 500,
