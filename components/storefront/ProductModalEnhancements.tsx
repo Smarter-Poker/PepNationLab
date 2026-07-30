@@ -1053,14 +1053,7 @@ export default function ProductModalEnhancements({
       {currentCompound && (
         <>
           <QualityScoreWidget compound={currentCompound} primaryColor={primaryColor} />
-          <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
-          <div style={{ margin: '8px 0', textAlign: 'center' }}>
-            <img 
-              src="/images/storefront/bundle-savings-banner.png" 
-              alt="Save even more, buy in bundles" 
-              style={{ width: '100%', maxWidth: '800px', height: 'auto', display: 'block', margin: '0 auto' }}
-            />
-          </div>
+
         </>
       )}
       <IsThisRightForMe compound={currentCompound} primaryColor={primaryColor} />
@@ -1203,12 +1196,7 @@ export default function ProductModalEnhancements({
       )}
 
 
-      <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
-      <ReconstitutionCalc
-        defaultVialMassMg={currentVialMassMg ?? null}
-        primaryColor={primaryColor}
-        productName={currentProductName}
-      />
+
 
       <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
       <div style={{
