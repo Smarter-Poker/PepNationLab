@@ -33,16 +33,24 @@ export async function GET(req: NextRequest) {
   // redirect value; url.searchParams.get() cannot see nested params.
   let agentRef = url.searchParams.get('agentRef') ?? undefined;
   let subAgentRef = url.searchParams.get('subAgentRef') ?? undefined;
+  // The URL param is a single opaque string - it may be a username, a referral
+  // code OR a storefront slug - so it is fed into BOTH namespace slots, which
+  // reproduces the historical "code first, slug second" resolution exactly.
+  let refCode = agentRef;
   // QR referral lock: the signed httpOnly cookie set by the middleware is the
   // AUTHORITATIVE attribution. When a valid lock exists it overrides the
   // URL-threaded params — the client cannot change who gets signup credit.
-  // refLock.c (the scanned code) resolves inside ensureOAuthResearcherProfile
-  // via username/referral_code first (then storefront slug), exactly like a
-  // typed referral; refLock.sa carries the QR sub-agent capture.
+  //
+  // The lock carries the two values SEPARATELY and they must stay separate:
+  //   refLock.c -> the referral code (profiles.username / referral_code)
+  //   refLock.s -> the storefront slug (agent_profiles.slug)
+  // Passing the slug through the code slot credits whichever agent happens to
+  // own that string as a username, which is a real collision in live data.
   const cookieStore = await cookies();
   const refLock = await verifyRefLock(cookieStore.get(REF_LOCK_COOKIE)?.value);
   if (refLock) {
-    agentRef = refLock.c;
+    agentRef = refLock.s ?? undefined;
+    refCode = refLock.c;
     subAgentRef = refLock.sa ?? undefined;
   }
   // Prevent Open Redirect: same-origin relative paths only; also strips embedded
@@ -84,7 +92,7 @@ export async function GET(req: NextRequest) {
   try {
     const admin = createAdminClient();
 
-    const ensured = await ensureOAuthResearcherProfile(admin, user, agentRef, subAgentRef);
+    const ensured = await ensureOAuthResearcherProfile(admin, user, agentRef, subAgentRef, refCode);
 
     if (ensured.emailConflict) {
       // The Google email already belongs to another account. Block this second
