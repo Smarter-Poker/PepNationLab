@@ -66,9 +66,9 @@ function normalizeScope(requested: unknown, caller: CallerContext): { scope: Bun
 
 /** Shared validation for the create/update payloads. Returns cleaned fields or an error string. */
 function validateBundleInput(body: Record<string, unknown>):
-  | { name: string; tagline: string; description: string; image_url: string | null; product_ids: string[]; discount_percent: number; custom_price: number | null }
+  | { name: string; tagline: string; description: string; image_url: string | null; vial_image_url: string | null; product_ids: string[]; discount_percent: number; custom_price: number | null }
   | { error: string } {
-  const { name, tagline, description, image_url, product_ids, discount_percent, custom_price } = body;
+  const { name, tagline, description, image_url, vial_image_url, product_ids, discount_percent, custom_price } = body;
   if (typeof name !== 'string' || !name.trim()) {
     return { error: 'Bundle Name Is Required' };
   }
@@ -108,6 +108,14 @@ function validateBundleInput(body: Record<string, unknown>):
       return { error: 'Bundle Image Must Be An Uploaded Image URL' };
     }
   }
+  if (vial_image_url !== undefined && vial_image_url !== null) {
+    if (typeof vial_image_url !== 'string' || vial_image_url.length > 1000) {
+      return { error: 'Bundle Vial Image Reference Is Invalid' };
+    }
+    if (vial_image_url && !/^https?:\/\//i.test(vial_image_url) && !vial_image_url.startsWith('/')) {
+      return { error: 'Bundle Vial Image Must Be An Uploaded Image URL' };
+    }
+  }
   // custom_price: optional positive number, max $99,999
   let cleanCustomPrice: number | null = null;
   if (custom_price !== undefined && custom_price !== null && custom_price !== '') {
@@ -125,6 +133,7 @@ function validateBundleInput(body: Record<string, unknown>):
     tagline: typeof tagline === 'string' ? tagline.trim().slice(0, 120) : '',
     description: typeof description === 'string' ? description.trim() : '',
     image_url: typeof image_url === 'string' && image_url ? image_url : null,
+    vial_image_url: typeof vial_image_url === 'string' && vial_image_url ? vial_image_url : null,
     product_ids: cleanIds,
     discount_percent: clampDiscount(discount_percent),
     custom_price: cleanCustomPrice,
@@ -312,6 +321,7 @@ export async function POST(req: NextRequest) {
     tagline: fields.tagline,
     description: fields.description,
     image_url: fields.image_url,
+    vial_image_url: fields.vial_image_url,
     product_ids: fields.product_ids,
     discount_percent: fields.discount_percent,
     custom_price: finalCustomPrice,
@@ -382,6 +392,7 @@ export async function PATCH(req: NextRequest) {
             tagline: fields.tagline,
             description: fields.description,
             image_url: fields.image_url,
+            vial_image_url: fields.vial_image_url,
             product_ids: fields.product_ids,
             discount_percent: fields.discount_percent,
             custom_price: finalCustomPrice,

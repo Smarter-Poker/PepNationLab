@@ -43,6 +43,12 @@ export default function AgentBundles({ agentId }: { agentId: string }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [flyerImageUrl, setFlyerImageUrl] = useState('');
+  const [vialImageUrl, setVialImageUrl] = useState('');
+
+  // We can add a helper state for uploads
+  const [uploadingFlyer, setUploadingFlyer] = useState(false);
+  const [uploadingVial, setUploadingVial] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -93,6 +99,8 @@ export default function AgentBundles({ agentId }: { agentId: string }) {
         body: JSON.stringify({
           name: bundleName.trim(),
           description: bundleDesc.trim(),
+          image_url: flyerImageUrl || null,
+          vial_image_url: vialImageUrl || null,
           product_ids: selectedProducts,
           discount_percent: discountPercent,
         }),
@@ -103,6 +111,8 @@ export default function AgentBundles({ agentId }: { agentId: string }) {
       setSuccess('Bundle Created Successfully!');
       setBundleName('');
       setBundleDesc('');
+      setFlyerImageUrl('');
+      setVialImageUrl('');
       setSelectedProducts([]);
       setDiscountPercent(10);
       await fetchData();
@@ -239,6 +249,79 @@ export default function AgentBundles({ agentId }: { agentId: string }) {
                   value={bundleDesc}
                   onChange={e => setBundleDesc(e.target.value)}
                 />
+              </div>
+
+              {/* Image Uploads */}
+              <div className="grid-2" style={{ gap: 'var(--space-4)' }}>
+                <div className="form-group">
+                  <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Flyer Image (Storefront Grid)</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {flyerImageUrl && (
+                      <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1', background: 'var(--bg-metal-dark)', borderRadius: '6px', overflow: 'hidden' }}>
+                        <Image src={flyerImageUrl} alt="Flyer" fill style={{ objectFit: 'cover' }} unoptimized />
+                      </div>
+                    )}
+                    <label style={{
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', height: '36px',
+                      background: 'var(--teal)', color: 'var(--background)', borderRadius: '6px', cursor: 'pointer',
+                      fontSize: '0.85rem', fontWeight: 600, opacity: uploadingFlyer ? 0.7 : 1
+                    }}>
+                      <Package size={14} /> {uploadingFlyer ? 'Uploading...' : (flyerImageUrl ? 'Replace Flyer' : 'Upload Flyer')}
+                      <input type="file" accept="image/*" style={{ display: 'none' }} disabled={uploadingFlyer} onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setUploadingFlyer(true);
+                        const fd = new FormData();
+                        fd.append('file', file);
+                        try {
+                          const res = await fetch('/api/agent/bundles/upload-image', { method: 'POST', body: fd });
+                          const data = await res.json();
+                          if (res.ok && data.url) setFlyerImageUrl(data.url);
+                          else setError(data.error || 'Upload failed');
+                        } catch (err: any) {
+                          setError(err.message || 'Upload failed');
+                        } finally {
+                          setUploadingFlyer(false);
+                        }
+                      }} />
+                    </label>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Vials Image (Modal Detail)</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {vialImageUrl && (
+                      <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1', background: 'var(--bg-metal-dark)', borderRadius: '6px', overflow: 'hidden' }}>
+                        <Image src={vialImageUrl} alt="Vials" fill style={{ objectFit: 'cover' }} unoptimized />
+                      </div>
+                    )}
+                    <label style={{
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', height: '36px',
+                      background: 'var(--teal)', color: 'var(--background)', borderRadius: '6px', cursor: 'pointer',
+                      fontSize: '0.85rem', fontWeight: 600, opacity: uploadingVial ? 0.7 : 1
+                    }}>
+                      <Package size={14} /> {uploadingVial ? 'Uploading...' : (vialImageUrl ? 'Replace Vials Image' : 'Upload Vials Image')}
+                      <input type="file" accept="image/*" style={{ display: 'none' }} disabled={uploadingVial} onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setUploadingVial(true);
+                        const fd = new FormData();
+                        fd.append('file', file);
+                        try {
+                          const res = await fetch('/api/agent/bundles/upload-image', { method: 'POST', body: fd });
+                          const data = await res.json();
+                          if (res.ok && data.url) setVialImageUrl(data.url);
+                          else setError(data.error || 'Upload failed');
+                        } catch (err: any) {
+                          setError(err.message || 'Upload failed');
+                        } finally {
+                          setUploadingVial(false);
+                        }
+                      }} />
+                    </label>
+                  </div>
+                </div>
               </div>
 
               {/* Product Picker */}

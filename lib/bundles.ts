@@ -27,6 +27,7 @@ export interface StoredBundle {
   tagline: string;
   description: string;
   image_url: string | null;
+  vial_image_url: string | null;
   product_ids: string[];
   discount_percent: number;
   /** Flat custom price override — when set, overrides discount_percent entirely */
@@ -66,6 +67,7 @@ export function normalizeBundle(raw: unknown): StoredBundle | null {
     tagline: typeof r.tagline === 'string' ? r.tagline : '',
     description: typeof r.description === 'string' ? r.description : '',
     image_url: typeof r.image_url === 'string' && r.image_url ? r.image_url : null,
+    vial_image_url: typeof r.vial_image_url === 'string' && r.vial_image_url ? r.vial_image_url : null,
     product_ids,
     discount_percent: clampDiscount(r.discount_percent),
     custom_price: typeof r.custom_price === 'number' && r.custom_price > 0 ? Math.round(r.custom_price * 100) / 100 : null,

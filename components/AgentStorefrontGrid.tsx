@@ -4731,13 +4731,13 @@ export default function AgentStorefrontGrid({
               </div>
 
               {/* Hero image */}
-              {selectedBundle.image_url && agentSlug === 'savagebrands' ? (
+              {(selectedBundle.vial_image_url || selectedBundle.image_url) && agentSlug === 'savagebrands' ? (
                 <div 
                   style={{ width: '100%', background: 'var(--surface-3)', cursor: 'pointer', position: 'relative' }}
-                  onClick={() => setFullScreenImage(selectedBundle.image_url || null)}
+                  onClick={() => setFullScreenImage(selectedBundle.vial_image_url || selectedBundle.image_url || null)}
                 >
                   <Image
-                    src={selectedBundle.image_url}
+                    src={selectedBundle.vial_image_url || selectedBundle.image_url || ''}
                     alt={selectedBundle.name}
                     width={800}
                     height={1200}
@@ -4761,7 +4761,7 @@ export default function AgentStorefrontGrid({
                     <Search size={12} /> Click to enlarge
                   </div>
                 </div>
-              ) : selectedBundle.image_url ? (
+              ) : (selectedBundle.vial_image_url || selectedBundle.image_url) ? (
                 <div 
                   style={{ 
                     position: 'relative', 
@@ -4770,10 +4770,10 @@ export default function AgentStorefrontGrid({
                     background: 'var(--surface-3)',
                     cursor: 'pointer'
                   }}
-                  onClick={() => setFullScreenImage(selectedBundle.image_url || null)}
+                  onClick={() => setFullScreenImage(selectedBundle.vial_image_url || selectedBundle.image_url || null)}
                 >
                   <Image
-                    src={selectedBundle.image_url}
+                    src={selectedBundle.vial_image_url || selectedBundle.image_url || ''}
                     alt={selectedBundle.name}
                     fill
                     unoptimized
