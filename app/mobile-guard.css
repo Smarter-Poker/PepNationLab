@@ -125,3 +125,44 @@ h1, h2, h3, h4, h5, h6, dd, dt {
     font-size: 16px !important;
   }
 }
+
+/* ============================================================
+   FLEX TEXT-COLUMN BASIS FLOOR ON LIST CARDS (2026-07-31)
+   ------------------------------------------------------------
+   Reported: "Inside the researcher page on mobile. Text is getting
+   stacked instead of displaying correctly."
+
+   The admin list-card row (app/admin/researchers/page.tsx) is a
+   `display:flex; flex-wrap:wrap` row holding four items:
+     [48px avatar] [text column] [status badges] [action buttons]
+   The text column is inline-styled `flex: 1; min-width: 0`, i.e.
+   `flex: 1 1 0%`. Flex line-breaking uses each item's HYPOTHETICAL
+   main size (flex-basis clamped by min/max), so a basis of 0% with
+   min-width:0 means the text column NEVER forces a line break: the
+   ~180px badge group packs onto the same line and the text column is
+   left ~30px on a 375px phone. That is what produced the vertical
+   letter/word stacking in the screenshots — the LETTER-STACKING FIX
+   above stops the one-character-per-line collapse, but the column is
+   still far too narrow without a real flex basis.
+
+   Giving the column a 150px basis makes its hypothetical size big
+   enough to push the badge/action groups onto their own flex lines on
+   a phone, while `flex-grow: 1` still fills the row and `min-width: 0`
+   (kept from the inline style) still lets it shrink below 150px rather
+   than overflow on very narrow viewports. Desktop is untouched — free
+   space there is positive, so grow resolves to the same result as
+   before.
+
+   Inline styles beat stylesheet rules regardless of specificity, so
+   this needs !important. Both React serializations are covered per the
+   CRITICAL SERIALIZATION RULE at the top of this file:
+     - server:  style="flex:1;min-width:0"
+     - client:  style="flex: 1 1 0%; min-width: 0px;"
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .glass-panel.hover-lift.stagger-fade-in > div > div > div[style*="flex:1"][style*="min-width:0"],
+  .glass-panel.hover-lift.stagger-fade-in > div > div > div[style*="flex: 1"][style*="min-width: 0"] {
+    flex-basis: 150px !important;
+  }
+}
