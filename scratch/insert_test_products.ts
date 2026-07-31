@@ -11,9 +11,9 @@ const supabase = createClient(
 async function insertTestProducts() {
   const products = [
     {
-      id: 'a0000000-0000-0000-0000-000000000003',
-      name: 'Epithalon 10mg (Test Print 3)',
-      slug: 'test-epithalon-3',
+      id: 'a0000000-0000-0000-0000-000000000005',
+      name: 'Epithalon 10mg (Test Print 5)',
+      slug: 'test-epithalon-5',
       category: 'Test Prints',
       unit_size: '10',
       unit_measure: 'mg',
@@ -22,16 +22,16 @@ async function insertTestProducts() {
       description: 'Test Print Label',
       base_cost: 0,
       image_url: '',
-      sku: 'TEST-EPI-3',
+      sku: 'TEST-EPI-5',
       in_stock: false,
       inventory_count: 0,
       min_retail_price: 0,
       max_retail_price: 0
     },
     {
-      id: 'a0000000-0000-0000-0000-000000000004',
-      name: 'Epithalon 10mg (Test Print 4)',
-      slug: 'test-epithalon-4',
+      id: 'a0000000-0000-0000-0000-000000000006',
+      name: 'Epithalon 10mg (Test Print 6)',
+      slug: 'test-epithalon-6',
       category: 'Test Prints',
       unit_size: '10',
       unit_measure: 'mg',
@@ -40,7 +40,7 @@ async function insertTestProducts() {
       description: 'Test Print Label',
       base_cost: 0,
       image_url: '',
-      sku: 'TEST-EPI-4',
+      sku: 'TEST-EPI-6',
       in_stock: false,
       inventory_count: 0,
       min_retail_price: 0,

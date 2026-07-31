@@ -11,12 +11,12 @@ const supabase = createClient(
 );
 
 async function uploadLabels() {
-  const file1Path = '/Users/smarter.poker/.gemini/antigravity/brain/fb49f354-f19d-4464-b091-a63cea11d8a7/.user_uploaded/media__1785540103493.png';
-  const file2Path = '/Users/smarter.poker/.gemini/antigravity/brain/fb49f354-f19d-4464-b091-a63cea11d8a7/.user_uploaded/media__1785540105480.png';
+  const file1Path = '/Users/smarter.poker/.gemini/antigravity/brain/fb49f354-f19d-4464-b091-a63cea11d8a7/.user_uploaded/media__1785540677778.png';
+  const file2Path = '/Users/smarter.poker/.gemini/antigravity/brain/fb49f354-f19d-4464-b091-a63cea11d8a7/.user_uploaded/media__1785540699501.png';
   
   const files = [
-    { source: file1Path, dest: 'savage/test-epithalon-3.png' },
-    { source: file2Path, dest: 'savage/test-epithalon-4.png' }
+    { source: file1Path, dest: 'savage/test-epithalon-5.png' },
+    { source: file2Path, dest: 'savage/test-epithalon-6.png' }
   ];
 
   for (const f of files) {

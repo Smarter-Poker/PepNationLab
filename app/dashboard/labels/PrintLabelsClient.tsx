@@ -59,6 +59,7 @@ export default function PrintLabelsClient({ products, isAdmin, brand = 'pepnatio
   const [customW, setCustomW] = useState('1.5');
   const [customH, setCustomH] = useState('0.75');
   const [mode, setMode] = useState<'avery' | 'roll' | 'grid'>('avery');
+  const [bleed, setBleed] = useState<number>(1.04);
 
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -106,7 +107,9 @@ export default function PrintLabelsClient({ products, isAdmin, brand = 'pepnatio
   // Avery 61525 (PermaTrack Asset Tags, 3/4" X 1 1/2", 40 Per Sheet).
   // Geometry extracted from Avery's official blank template PDF:
   // 4 columns at x = 0.5", 2.5", 4.5", 6.5" (2.0" pitch), 10 rows starting
-  // 0.625" from the top on a 1.0" pitch, 0.075" corner radius.
+  // 0.625" from the top on a 1.0" pitch. We do not use border-radius clipping
+  // here because physical labels already have rounded corners; printing square
+  // allows the color to bleed safely over the die cuts.
   const AVERY_COLS = [0.5, 2.5, 4.5, 6.5];
   const AVERY_TOP = 0.625;
   const AVERY_PITCH_Y = 1.0;
@@ -124,8 +127,8 @@ export default function PrintLabelsClient({ products, isAdmin, brand = 'pepnatio
       css = `@page { size: 8.5in 11in; margin: 0; }
         body { margin: 0; }
         .sheet { position: relative; width: 8.5in; height: 11in; page-break-after: always; overflow: hidden; }
-        .cell { position: absolute; width: 1.5in; height: 0.75in; overflow: hidden; border-radius: 0.075in; }
-        .cell img { width: 1.5in; height: 0.75in; object-fit: fill; display: block; }`;
+        .cell { position: absolute; width: 1.5in; height: 0.75in; overflow: hidden; }
+        .cell img { width: 1.5in; height: 0.75in; object-fit: fill; display: block; transform: scale(${bleed}); }`;
       for (let s = 0; s * AVERY_PER_SHEET < printItems.length; s++) {
         const batch = printItems.slice(s * AVERY_PER_SHEET, (s + 1) * AVERY_PER_SHEET);
         const cells = batch.map((item, i) => {
@@ -141,13 +144,13 @@ export default function PrintLabelsClient({ products, isAdmin, brand = 'pepnatio
       css = `@page { size: ${labelW}in ${labelH}in; margin: 0; }
         body { margin: 0; }
         .pl { width: ${labelW}in; height: ${labelH}in; page-break-after: always; overflow: hidden; }
-        .pl img { width: ${labelW}in; height: ${labelH}in; object-fit: fill; display: block; }`;
+        .pl img { width: ${labelW}in; height: ${labelH}in; object-fit: fill; display: block; transform: scale(${bleed}); transform-origin: center center; }`;
       pages = printItems.map(item => `<div class="pl">${imgTag(item.slug, item.name, '')}</div>`).join('');
     } else {
       css = `@page { size: 8.5in 11in; margin: 0.25in; }
         body { margin: 0; font-size: 0; }
         .pl { display: inline-block; width: ${labelW}in; height: ${labelH}in; margin: 0.0625in; overflow: hidden; page-break-inside: avoid; break-inside: avoid; }
-        .pl img { width: ${labelW}in; height: ${labelH}in; object-fit: fill; display: block; }`;
+        .pl img { width: ${labelW}in; height: ${labelH}in; object-fit: fill; display: block; transform: scale(${bleed}); transform-origin: center center; }`;
       pages = printItems.map(item => `<div class="pl">${imgTag(item.slug, item.name, '')}</div>`).join('');
     }
 
@@ -274,6 +277,20 @@ export default function PrintLabelsClient({ products, isAdmin, brand = 'pepnatio
                 </button>
               ))}
             </div>
+          </div>
+          
+          <div>
+            <label style={{ display: 'block', fontSize: '0.72rem', color: '#A8B4C0', marginBottom: 6, fontWeight: 600, letterSpacing: '0.04em' }}>Bleed (Overscan)</label>
+            <select
+              value={bleed}
+              onChange={e => setBleed(parseFloat(e.target.value))}
+              style={{ background: '#162230', color: '#FFF', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 8, padding: '10px 12px', fontSize: '0.85rem', minWidth: 140 }}
+            >
+              <option value={1}>None (Exact Fit)</option>
+              <option value={1.02}>Small (+2%)</option>
+              <option value={1.04}>Standard (+4%)</option>
+              <option value={1.08}>Large (+8%)</option>
+            </select>
           </div>
 
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
