@@ -83,32 +83,12 @@ export default async function PrintLabelsPage() {
     .order('name', { ascending: true })
     .order('slug', { ascending: true });
 
-  const finalProducts = products ? [...products] : [];
-  if (brand === 'savage') {
-    finalProducts.unshift({
-      id: 'test-print-1',
-      name: 'Epithalon 10mg (Test Print 1)',
-      slug: 'test-epithalon-1',
-      category: 'Test Prints',
-      unit_size: '10',
-      unit_measure: 'mg'
-    });
-    finalProducts.unshift({
-      id: 'test-print-2',
-      name: 'Epithalon 10mg (Test Print 2)',
-      slug: 'test-epithalon-2',
-      category: 'Test Prints',
-      unit_size: '10',
-      unit_measure: 'mg'
-    });
-  }
-
   return (
     <div style={{ minHeight: '100dvh', background: '#050A0F' }}>
       <Navbar />
       {/* Spacer for the fixed navbar */}
       <div style={{ height: 'var(--nav-offset, 60px)' }} />
-      <PrintLabelsClient products={finalProducts} isAdmin={profile.role === 'admin'} brand={brand} />
+      <PrintLabelsClient products={products || []} isAdmin={profile.role === 'admin'} brand={brand} />
     </div>
   );
 }
