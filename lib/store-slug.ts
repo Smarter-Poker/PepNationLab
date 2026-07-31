@@ -78,23 +78,7 @@ export function isDbSafeSlug(slug: string | null | undefined): boolean {
  * union as the real reserved set.
  */
 export const RESERVED_SEGMENTS = new Set([
-  'about', 'accept-disclaimer', 'account', 'admin', 'advertising', 'api', 'auth',
-  'become-agent', 'checkout', 'coa', 'compliance', 'contact', 'dashboard',
-  'disclaimer', 'favicon.ico', 'feed.xml', 'find-a-peptide', 'forgot-password',
-  'help', 'invite', 'lab-journal', 'lab-tools', 'llms.txt', 'llms-full.txt',
-  'login', 'manifest.webmanifest', 'messages', 'messenger', 'onboarding',
-  'orders', 'peptide-101', 'peptides', 'privacy', 'products', 'register',
-  'research', 'reset-password', 'robots.txt', 'shelf-life', 'shipping',
-  'signup', 'sitemap.xml', 'status', 'sw.js', 'terms', 'wallet', '_next',
-  // Real routes that were missing from this list. Either one could have been
-  // handed out as a storefront slug, and the agent who received it would have
-  // had a QR code and a printed URL pointing at an app route forever, with no
-  // error raised anywhere.
-  //   test-card  -> app/test-card/page.tsx
-  //   monitoring -> injected by Sentry (tunnelRoute: '/monitoring' in
-  //                 next.config.ts), so it exists at runtime with no folder
-  //                 under app/ to notice it by.
-  'test-card', 'monitoring',
+  '_next', 'about', 'accept-disclaimer', 'account', 'admin', 'admin-panel', 'advertising', 'api', 'app', 'assets', 'auth', 'become-agent', 'blog', 'cart', 'checkout', 'coa', 'compliance', 'contact', 'dashboard', 'disclaimer', 'docs', 'favicon.ico', 'feed.xml', 'find-a-peptide', 'forgot-password', 'health', 'help', 'inbox', 'invite', 'lab-journal', 'lab-tools', 'llms-full.txt', 'llms.txt', 'login', 'logout', 'manifest.webmanifest', 'message', 'messages', 'messenger', 'monitoring', 'onboarding', 'order', 'orders', 'peptide-101', 'peptides', 'pricing', 'privacy', 'product', 'products', 'public', 'register', 'research', 'researchers', 'reset-password', 'robots', 'robots.txt', 'sales', 'shelf-life', 'shipping', 'signin', 'signup', 'sitemap', 'sitemap.xml', 'staff', 'statements', 'status', 'support', 'sw.js', 'terms', 'test-card', 'transactions', 'users', 'wallet', 'www'
 ]);
 
 /**
