@@ -2104,91 +2104,48 @@ export default function AgentStorefrontGrid({
     const resolved = resolveBundle(bundle);
     if (!resolved) return null;
     const inCart = bundleCart.some((l) => l.bundleName === bundle.name);
-    return (
-      <div
-        key={bundle.id}
-        className="sf-product-card-nickel"
-        style={{ padding: 'var(--space-5)', display: 'flex', flexDirection: 'column', cursor: 'pointer' }}
-        onClick={() => setSelectedBundle(bundle)}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelectedBundle(bundle); }}
-        aria-label={`View ${bundle.name} details`}
-      >
-        {bundle.image_url && (
-          <div style={{ position: 'relative', width: '100%', aspectRatio: '2/3', borderRadius: 'var(--radius-md)', overflow: 'hidden', marginBottom: 'var(--space-4)', background: 'var(--surface-3)' }}>
-            <Image src={bundle.image_url} alt={bundle.name} fill unoptimized sizes="(max-width: 768px) 100vw, 33vw" style={{ objectFit: 'contain' }} />
-          </div>
-        )}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 'var(--space-3)', textAlign: 'center' }}>
-          <h4 style={{ fontFamily: 'var(--font-brand)', fontSize: '1.2rem', color: 'var(--white)', letterSpacing: '0.02em', lineHeight: 1.2, marginBottom: bundle.tagline ? 'var(--space-1)' : 0 }}>{bundle.name}</h4>
-          {bundle.tagline && (
-            <div style={{
-              fontSize: '1rem',
-              fontWeight: 800,
-              fontStyle: 'italic',
-              fontFamily: 'var(--font-brand)',
-              background: 'linear-gradient(to bottom, #ffffff 0%, #a1a1aa 48%, #e4e4e7 50%, #52525b 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              filter: 'drop-shadow(0px 2px 2px rgba(0,0,0,0.8))',
-              letterSpacing: '0.02em'
-            }}>{bundle.tagline}</div>
-          )}
-        </div>
 
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0, marginBottom: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {resolved.members.map((m) => {
-            const sizeStr = m.products?.unit_size ? `${m.products.unit_size}${m.products.unit_measure || ''}` : '';
-            const nameStr = m.custom_name || m.products?.name || 'Product';
-            return (
-              <li key={m.id} style={{ fontSize: '0.78rem', color: 'var(--silver)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ width: 5, height: 5, borderRadius: '50%', background: primaryColor, flexShrink: 0 }} />
-                {sizeStr ? `${sizeStr} ${nameStr}` : nameStr}
-              </li>
-            );
-          })}
-        </ul>
-        <div style={{ marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 'var(--space-4)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 'var(--space-3)', flexWrap: 'nowrap' }}>
-            {resolved.discountPct > 0 && (
-              <span style={{ opacity: 0.75, color: 'var(--silver)', fontSize: '0.95rem', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                MSRP: <span style={{ textDecoration: 'line-through' }}>${formatPrice(resolved.fullPrice)}</span>
-              </span>
-            )}
-            <span className="sf-product-price-nickel" style={{ fontSize: '1.3rem', fontWeight: 800, fontFamily: 'var(--font-brand)', whiteSpace: 'nowrap' }}>${formatPrice(resolved.finalPrice)}</span>
-            {resolved.discountPct > 0 && (
-              <span style={{ 
-                fontSize: '0.85rem', 
-                color: '#ff3333', 
-                fontWeight: 900, 
-                textShadow: '0 0 8px rgba(255,51,51,0.5)', 
-                background: 'rgba(255,51,51,0.1)', 
-                padding: '2px 6px', 
-                borderRadius: 4, 
-                whiteSpace: 'nowrap',
-                border: '1px solid rgba(255,51,51,0.3)'
-              }}>({resolved.discountPct}% Off)</span>
-            )}
-          </div>
-          <div 
-            onClick={(e) => { e.stopPropagation(); inCart ? removeBundleFromCart(bundle.name) : addBundleToCart(bundle); }}
-            style={{ width: '100%', cursor: 'pointer', opacity: inCart ? 0.7 : 1, transition: 'opacity 0.2s', marginBottom: 12 }}
-          >
-            <Image 
-              src="/images/add_stack_to_cart_btn.png" 
-              alt={inCart ? "Remove Bundle" : "Add Bundle To Cart"} 
-              width={400} 
-              height={60} 
-              unoptimized 
-              style={{ width: '100%', height: 'auto', objectFit: 'contain', display: 'block' }} 
-            />
-          </div>
-          <div style={{ width: '100%', maxWidth: 220, margin: '0 auto' }}>
-            <StockBadge state={{ kind: 'in_stock_local' }} />
-          </div>
-        </div>
-      </div>
+    // Derive vialSize badge from member count ("4 VIAL BUNDLE")
+    const memberCount = resolved.members.length;
+    const vialBadge = `${memberCount} VIAL BUNDLE${memberCount !== 1 ? 'S' : ''}`;
+
+    // savings = fullPrice - finalPrice (always positive when discount > 0)
+    const savings = resolved.discountPct > 0
+      ? Math.round(resolved.fullPrice - resolved.finalPrice)
+      : undefined;
+
+    // Use the flyer image inside the V-frame window, filling it edge-to-edge
+    const flyerImg = bundle.image_url || bundle.vial_image_url || '/images/peptide_clear.png';
+
+    return (
+      <motion.div
+        key={bundle.id}
+        className="hover-lift stagger-fade-in"
+        variants={itemVariants}
+        style={{ width: '100%', position: 'relative' }}
+      >
+        <PremiumPeptideCard
+          productName={bundle.name}
+          vialSizeBadge={vialBadge}
+          msrp={resolved.discountPct > 0 ? resolved.fullPrice : undefined}
+          savings={savings}
+          wholesalePrice={resolved.finalPrice}
+          inStockText="IN STOCK"
+          pickupText="AVAILABLE FOR SAME DAY PICKUP"
+          buttonText="Add Stack To Cart"
+          imageSrc={flyerImg}
+          imageObjectFit="cover"
+          onClick={() => setSelectedBundle(bundle)}
+          onAddToCart={(e) => {
+            e.stopPropagation();
+            if (inCart) {
+              removeBundleFromCart(bundle.name);
+            } else {
+              addBundleToCart(bundle);
+            }
+          }}
+        />
+      </motion.div>
     );
   };
   const totalSavedItems = Object.values(savedForLater).reduce((sum, qty) => sum + Number(qty || 0), 0);

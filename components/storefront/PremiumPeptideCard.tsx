@@ -13,6 +13,7 @@ interface Props {
   pickupText?: string;
   buttonText?: string;
   imageSrc?: string;
+  imageObjectFit?: 'contain' | 'cover';
   /** Pre-composited card image (vial already baked into the frame). When
    *  provided this replaces premium-card-bg.jpg AND the separate vial layer. */
   cardBg?: string;
@@ -36,6 +37,7 @@ export default function PremiumPeptideCard({
   pickupText = "AVAILABLE FOR SAME DAY PICKUP",
   buttonText = "Add To Cart",
   imageSrc = "/images/savage-brands/tirzepatide.png",
+  imageObjectFit = "contain",
   cardBg,
   isPinned = false,
   isWishlisted = false,
@@ -92,7 +94,7 @@ export default function PremiumPeptideCard({
               src={imageSrc}
               alt={productName}
               fill
-              style={{ objectFit: 'contain', objectPosition: 'center center' }}
+              style={{ objectFit: imageObjectFit, objectPosition: 'center center' }}
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.src = '/images/peptide_clear.png';
