@@ -1,6 +1,9 @@
 """
 Batch-generates all PremiumPeptideCard composites using the EXACT compound_slug
-values from the database (verified via supabase migration backfill scripts).
+values from the database.
+
+KEY FIX: PNG images with transparent backgrounds are auto-cropped to their
+content bounding box so the vial fills the frame edge-to-edge (no black padding).
 
 Outputs brand-separated:
   public/images/storefront/savagebrands/<slug>-card.jpg
@@ -18,34 +21,83 @@ CARD_BG    = "public/images/storefront/premium-card-bg.jpg"
 WIN_X, WIN_Y = 25, 25
 WIN_W, WIN_H = 633, 523
 
+
+def autocrop_transparent(img: Image.Image) -> Image.Image:
+    """
+    Removes transparent/near-transparent padding from RGBA images so the vial
+    fills the frame instead of floating in a sea of black.
+    Also crops near-black background (for dark-background PNGs).
+    """
+    if img.mode != "RGBA":
+        return img
+
+    arr = np.array(img)
+    alpha = arr[:, :, 3]
+
+    # Find bounding box of non-transparent pixels
+    rows = np.any(alpha > 10, axis=1)
+    cols = np.any(alpha > 10, axis=0)
+
+    if not rows.any():
+        return img  # fully transparent, return as-is
+
+    rmin, rmax = np.where(rows)[0][[0, -1]]
+    cmin, cmax = np.where(cols)[0][[0, -1]]
+
+    # Add 2% padding so we don't clip the very edge
+    pad_r = max(int((rmax - rmin) * 0.02), 4)
+    pad_c = max(int((cmax - cmin) * 0.02), 4)
+    h, w = arr.shape[:2]
+    rmin = max(0, rmin - pad_r)
+    rmax = min(h - 1, rmax + pad_r)
+    cmin = max(0, cmin - pad_c)
+    cmax = min(w - 1, cmax + pad_c)
+
+    return img.crop((cmin, rmin, cmax + 1, rmax + 1))
+
+
 def make_composite(vial_path: str, out_path: str):
     if not os.path.exists(vial_path):
         print(f"  ⚠️  SKIP (not found): {vial_path}")
         return
 
     card = Image.open(CARD_BG).convert("RGB")
-    vial = Image.open(vial_path).convert("RGB")
+    raw  = Image.open(vial_path)
 
+    # Auto-crop transparent padding from PNG images
+    if raw.mode in ("RGBA", "LA") or (raw.mode == "P" and "transparency" in raw.info):
+        raw = raw.convert("RGBA")
+        raw = autocrop_transparent(raw)
+
+    vial = raw.convert("RGB")
+
+    # --- COVER scale: fill the window completely (may crop slightly) ---
     vial_w, vial_h = vial.size
     win_aspect  = WIN_W / WIN_H
     vial_aspect = vial_w / vial_h
 
+    # Scale so the vial FILLS the window (cover style — no black bars)
     if vial_aspect > win_aspect:
-        new_w, new_h = WIN_W, int(WIN_W / vial_aspect)
+        # vial is wider: fit height, crop sides
+        new_h = WIN_H
+        new_w = int(WIN_H * vial_aspect)
     else:
-        new_h, new_w = WIN_H, int(WIN_H * vial_aspect)
+        # vial is taller: fit width, crop top/bottom
+        new_w = WIN_W
+        new_h = int(WIN_W / vial_aspect)
 
     vial_resized = vial.resize((new_w, new_h), Image.LANCZOS)
 
-    window_canvas = Image.new("RGB", (WIN_W, WIN_H), (0, 0, 0))
-    paste_x = (WIN_W - new_w) // 2
-    paste_y = (WIN_H - new_h) // 2
-    window_canvas.paste(vial_resized, (paste_x, paste_y))
+    # Centre-crop to exact window size
+    cx = (new_w - WIN_W) // 2
+    cy = (new_h - WIN_H) // 2
+    vial_cropped = vial_resized.crop((cx, cy, cx + WIN_W, cy + WIN_H))
 
+    # Paste into window position on card copy
     composite = card.copy()
-    composite.paste(window_canvas, (WIN_X, WIN_Y))
+    composite.paste(vial_cropped, (WIN_X, WIN_Y))
 
-    # Restore V-chrome via lighten blend
+    # Restore V-chrome via lighten blend (chrome pixels are brighter than vial bg)
     comp_arr = np.array(composite, dtype=np.uint16)
     card_arr = np.array(card,      dtype=np.uint16)
     y1 = WIN_Y + int(WIN_H * 0.82)
@@ -61,18 +113,15 @@ def make_composite(vial_path: str, out_path: str):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# SAVAGE BRANDS
-# Keys are the EXACT compound_slug values from products table (DB migrations)
+# SAVAGE BRANDS — exact compound_slug values from DB
 # ─────────────────────────────────────────────────────────────────────────────
 SB = "public/images/savage-brands"
 SAVAGE_MAP = {
-    # ── GLP-1 / weight loss ──────────────────────────────────────────────────
     "tirzepatide":           f"{SB}/tirzepatide-10mg.jpg",
     "retatrutide":           f"{SB}/retatrutide-10mg.jpg",
     "semaglutide":           f"{SB}/semaglutide-10mg.jpg",
     "cagrilintide":          f"{SB}/cagrilintide-10mg.jpg",
     "survodutide":           f"{SB}/survodutide-10mg.jpg",
-    # ── Peptides ─────────────────────────────────────────────────────────────
     "bpc-157":               f"{SB}/bpc-157-10mg.jpg",
     "tb-500":                f"{SB}/tb-500-10mg.jpg",
     "ipamorelin":            f"{SB}/ipamorelin-10mg.jpg",
@@ -124,17 +173,20 @@ SAVAGE_MAP = {
     "follistatin":           f"{SB}/follistatin-1mg.jpg",
     "b12":                   f"{SB}/b12-10mg.jpg",
     "l-carnitine":           f"{SB}/lipolysis-stack-10ml.jpg",
-    # ── Stacks (exact DB slugs) ───────────────────────────────────────────────
+    # Stacks — exact DB slugs
     "klow":                  f"{SB}/klow-stack-80mg.jpg",
     "glow":                  f"{SB}/stack-glow-1vial.jpg",
     "limitless-stack":       f"{SB}/stack-limitless.jpg",
     "shred-stack":           f"{SB}/stack-weight-loss.jpg",
     "bpc-tb":                f"{SB}/bpc-157-10mg.jpg",
     "cagrisema":             f"{SB}/cagrilintide-10mg.jpg",
+    # Lipolysis Stack = lemon-bottle slug; Skinny Shot = lipo-c slug
+    "lemon-bottle":          f"{SB}/lipolysis-stack-10ml.jpg",
+    "lipo-c":                f"{SB}/skinny-shot-10ml.jpg",
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# PEPNATION — same exact DB slugs, different images
+# PEPNATION — same exact DB slugs, PepNation-branded images
 # ─────────────────────────────────────────────────────────────────────────────
 PN = "public/images/products"
 PEPNATION_MAP = {
@@ -193,13 +245,16 @@ PEPNATION_MAP = {
     "follistatin":           f"{PN}/follistatin-fn1.png",
     "b12":                   f"{PN}/b12-b12.png",
     "l-carnitine":           f"{PN}/l-carnitine-lc600.png",
-    # Stacks (exact DB slugs)
+    # Stacks — exact DB slugs
     "klow":                  f"{PN}/klow-tb10-bpc10-ghk50-kpv10-k80.png",
     "glow":                  f"{PN}/glow-tb10-bpc10-ghk50-bbg70.png",
-    "limitless-stack":       f"{PN}/limitless-stack.png",
-    "shred-stack":           f"{PN}/shred-stack.png",
+    "limitless-stack":       f"{PN}/the-limitless-stack-semax-selank.png",
+    "shred-stack":           f"{PN}/the-shred-stack-tirzepatide-aod9604.png",
     "bpc-tb":                f"{PN}/bpc-10mg-tb-10mg-bb20.png",
     "cagrisema":             f"{PN}/cagrilintide-5mg-semaglutide-5mg-cs10.png",
+    # Lipolysis Stack = lemon-bottle slug; Skinny Shot = lipo-c slug
+    "lemon-bottle":          f"{PN}/lemon-bottle-le10.png",
+    "lipo-c":                f"{PN}/lipo-c-lc10.png",
 }
 
 if __name__ == "__main__":
