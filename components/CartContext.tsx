@@ -847,7 +847,7 @@ function SmartRecommendationStrip({
       <div
         style={{
           display: 'flex', gap: 8, overflowX: 'auto',
-          overscrollBehaviorX: 'none', touchAction: 'pan-x',
+          overscrollBehaviorX: 'none', touchAction: 'pan-x pan-y',
           WebkitOverflowScrolling: 'touch' as React.CSSProperties['WebkitOverflowScrolling'],
           paddingBottom: 6,
           scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'],
