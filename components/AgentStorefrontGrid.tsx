@@ -2114,16 +2114,8 @@ export default function AgentStorefrontGrid({
       ? Math.round(resolved.fullPrice - resolved.finalPrice)
       : undefined;
 
-    // For Savage Brands: try to find a composite from the first member's compound_slug.
-    // For all others: use the vial_image_url uploaded by the store owner.
-    const leadSlug = resolved.members[0]?.products?.compound_slug ?? '';
-    const brandFolder = agentSlug === 'savagebrands' ? 'savagebrands' : 'pepnation';
-    const derivedCardBg = leadSlug
-      ? `/images/storefront/${brandFolder}/${leadSlug}-card.jpg`
-      : undefined;
-
-    // Prefer the explicitly-set vial_image_url or image_url; fall back to derived composite.
-    const vialImg = bundle.vial_image_url || bundle.image_url || '/images/peptide_clear.png';
+    // Use the flyer image inside the V-frame window
+    const vialImg = bundle.image_url || bundle.vial_image_url || '/images/peptide_clear.png';
 
     return (
       <motion.div
@@ -2142,7 +2134,6 @@ export default function AgentStorefrontGrid({
           pickupText="AVAILABLE FOR SAME DAY PICKUP"
           buttonText="Add Stack To Cart"
           imageSrc={vialImg}
-          cardBg={derivedCardBg}
           onClick={() => setSelectedBundle(bundle)}
           onAddToCart={(e) => {
             e.stopPropagation();
