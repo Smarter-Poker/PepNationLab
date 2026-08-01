@@ -8,85 +8,85 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const bgBuffer = fs.readFileSync('savage-blank-template.png');
+const bgBuffer = fs.readFileSync('perfect_blank.png');
 const bgBase64 = bgBuffer.toString('base64');
 
 const htmlTemplate = `
 <!DOCTYPE html>
 <html>
 <head>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Teko:wght@700&display=swap" rel="stylesheet">
 <style>
   body {
     margin: 0;
     padding: 0;
     width: 1024px;
     height: 512px;
-    background-image: url('data:image/png;base64,${bgBase64}');
+    background-image: url('data:image/png;base64,\${bgBase64}');
     background-size: 1024px 512px;
     position: relative;
     overflow: hidden;
   }
   
   .metal-text {
-    font-family: 'Impact', sans-serif;
-    font-style: italic;
-    transform: skewX(-8deg);
+    font-family: 'Anton', sans-serif;
+    transform: skewX(-12deg);
     text-transform: uppercase;
     text-align: center;
     white-space: nowrap;
     
     background: linear-gradient(
       180deg,
-      #EAEAEA 0%,
-      #FFFFFF 20%,
-      #909090 40%,
-      #505050 50%,
-      #D0D0D0 60%,
-      #FFFFFF 80%,
-      #808080 100%
+      #F0F0F0 0%,
+      #FFFFFF 25%,
+      #A0A0A0 45%,
+      #606060 50%,
+      #E0E0E0 65%,
+      #FFFFFF 85%,
+      #909090 100%
     );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     
-    filter: drop-shadow(0px 8px 10px rgba(0, 0, 0, 0.9))
-            drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.7));
-    -webkit-text-stroke: 4px #1A1A1A;
+    filter: drop-shadow(0px 8px 6px rgba(0, 0, 0, 0.9))
+            drop-shadow(0px 0px 4px #00C4BC);
+    -webkit-text-stroke: 3px #111111;
   }
 
   .title-container {
     position: absolute;
-    bottom: 120px;
-    width: 900px;
-    left: 62px;
+    bottom: 95px;
+    width: 860px;
+    left: 82px;
     display: flex;
     justify-content: center;
     align-items: center;
   }
   
   .title {
-    font-size: 100px;
-    letter-spacing: -2px;
+    font-size: 110px;
+    letter-spacing: -1px;
+    transform: skewX(-15deg);
   }
   
   .dose-container {
     position: absolute;
-    top: 200px;
+    top: 155px;
     width: 200px;
     display: flex;
     justify-content: center;
     align-items: center;
   }
 
-  .dose-left {
-    left: 40px;
-  }
-  
-  .dose-right {
-    right: 40px;
-  }
+  .dose-left { left: 40px; }
+  .dose-right { right: 40px; }
 
   .dose {
-    font-size: 80px;
+    font-family: 'Teko', sans-serif;
+    font-weight: 700;
+    font-size: 110px;
+    transform: skewX(-10deg);
+    letter-spacing: 2px;
   }
 </style>
 </head>
@@ -104,25 +104,32 @@ const htmlTemplate = `
   </div>
 
   <script>
-    // Resize title if it overflows
-    const title = document.getElementById('title');
-    const titleContainer = document.querySelector('.title-container');
-    let fontSize = 100;
-    while (title.scrollWidth > titleContainer.clientWidth && fontSize > 20) {
-      fontSize -= 2;
-      title.style.fontSize = fontSize + 'px';
-    }
+    async function init() {
+      await document.fonts.ready;
+      
+      const title = document.getElementById('title');
+      const titleContainer = document.querySelector('.title-container');
+      let fontSize = 110;
+      while (title.scrollWidth > titleContainer.clientWidth && fontSize > 30) {
+        fontSize -= 2;
+        title.style.fontSize = fontSize + 'px';
+      }
 
-    // Resize doses if they overflow
-    const dose1 = document.getElementById('dose1');
-    const dose2 = document.getElementById('dose2');
-    const doseContainer = document.querySelector('.dose-left');
-    let doseSize = 80;
-    while (dose1.scrollWidth > doseContainer.clientWidth && doseSize > 20) {
-      doseSize -= 2;
-      dose1.style.fontSize = doseSize + 'px';
-      dose2.style.fontSize = doseSize + 'px';
+      const dose1 = document.getElementById('dose1');
+      const dose2 = document.getElementById('dose2');
+      const doseContainer = document.querySelector('.dose-left');
+      let doseSize = 110;
+      while (dose1.scrollWidth > doseContainer.clientWidth && doseSize > 30) {
+        doseSize -= 2;
+        dose1.style.fontSize = doseSize + 'px';
+        dose2.style.fontSize = doseSize + 'px';
+      }
+      
+      const el = document.createElement('div');
+      el.id = 'ready';
+      document.body.appendChild(el);
     }
+    init();
   </script>
 </body>
 </html>
@@ -131,7 +138,6 @@ const htmlTemplate = `
 async function run() {
   console.log('Fetching Savage Brands products...');
   const { data: agent } = await supabase.from('agent_profiles').select('id').eq('slug', 'savagebrands').single();
-  
   const { data: ap, error } = await supabase.from('agent_products').select('product_id, products(slug, name, unit_size, unit_measure)').eq('agent_id', agent.id);
   
   if (error) {
@@ -161,8 +167,8 @@ async function run() {
 
     await page.setContent(html, { waitUntil: 'domcontentloaded' });
     
-    // Wait for JS resize to apply
-    await new Promise(r => setTimeout(r, 50));
+    // Wait for fonts to load and resize to finish
+    await page.waitForSelector('#ready', { timeout: 10000 });
     
     const buffer = await page.screenshot({ type: 'png' });
     
