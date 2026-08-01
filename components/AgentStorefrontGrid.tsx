@@ -2186,7 +2186,7 @@ export default function AgentStorefrontGrid({
             </h2>
           </div>
 
-          {/* Badge Overlay ("5 VIAL BUNDLES") */}
+          {/* Badge Overlay ("5 VIAL BUNDLES") over the baked-in pill box */}
           <div style={{
             position: 'absolute', left: px(51), top: px(664 - 523), width: px(319), height: px(89),
             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -2237,7 +2237,7 @@ export default function AgentStorefrontGrid({
             ${resolved.finalPrice.toFixed(2)}
           </div>
 
-          {/* Add to Cart Hitbox Overlay */}
+          {/* Add to Cart Hitbox Overlay (uses baked-in graphic) */}
           <div 
             onClick={(e) => { e.stopPropagation(); inCart ? removeBundleFromCart(bundle.name) : addBundleToCart(bundle); }}
             style={{

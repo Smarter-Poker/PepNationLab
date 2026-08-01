@@ -8,6 +8,9 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+const bgBuffer = fs.readFileSync('savage-blank-template.png');
+const bgBase64 = bgBuffer.toString('base64');
+
 const htmlTemplate = `
 <!DOCTYPE html>
 <html>
@@ -18,7 +21,7 @@ const htmlTemplate = `
     padding: 0;
     width: 1024px;
     height: 512px;
-    background-image: url('file://${__dirname}/savage-blank-template.png');
+    background-image: url('data:image/png;base64,${bgBase64}');
     background-size: 1024px 512px;
     position: relative;
     overflow: hidden;
@@ -156,9 +159,9 @@ async function run() {
       .replace(/TITLE_TEXT/g, product.name)
       .replace(/DOSE_TEXT/g, doseText);
 
-    await page.setContent(html, { waitUntil: 'networkidle0' });
+    await page.setContent(html, { waitUntil: 'domcontentloaded' });
     
-    // Wait for local fonts and JS resize to apply
+    // Wait for JS resize to apply
     await new Promise(r => setTimeout(r, 50));
     
     const buffer = await page.screenshot({ type: 'png' });
