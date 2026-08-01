@@ -2107,7 +2107,6 @@ export default function AgentStorefrontGrid({
 
     const memberCount = resolved.members.length;
     
-    // savings = fullPrice - finalPrice (always positive when discount > 0)
     const savings = resolved.discountPct > 0
       ? Math.round(resolved.fullPrice - resolved.finalPrice)
       : 0;
@@ -2126,136 +2125,172 @@ export default function AgentStorefrontGrid({
           maxWidth: 683,
           margin: '0 auto',
           cursor: 'pointer',
-          background: '#04070a',
+          background: '#000000',
           border: '2px solid #3f444a',
-          borderRadius: '16px',
-          overflow: 'hidden',
+          borderRadius: '18px',
+          padding: '6px',
           display: 'flex',
           flexDirection: 'column'
         }}
         onClick={() => setSelectedBundle(bundle)}
       >
-        {/* Top: Flyer Image fully visible */}
-        <div style={{ position: 'relative', width: '100%', aspectRatio: '2/3', background: '#000' }}>
-          <Image 
-            src={flyerImg} 
-            alt={bundle.name} 
-            fill 
-            unoptimized 
-            style={{ objectFit: 'contain', objectPosition: 'center' }} 
-          />
-        </div>
-
-        {/* Divider Solid Line */}
-        <div style={{ height: '3px', background: 'linear-gradient(90deg, #2a2d32 0%, #b9c0c7 50%, #2a2d32 100%)', zIndex: 10 }} />
-
-        {/* Bottom: Data panel using cropped premium-card-bg.jpg */}
-        <div style={{ position: 'relative', width: '100%', paddingBottom: '73.352%', overflow: 'hidden', background: '#000' }}>
-          {/* Scaled Background Image */}
-          <div style={{
-            position: 'absolute',
-            top: 0, left: 0, right: 0, bottom: 0,
-            backgroundImage: 'url(/images/storefront/premium-card-bg.jpg)',
-            backgroundSize: '100% 204.39%', // 1024 / 501 = 204.39%
-            backgroundPosition: 'bottom center',
-            backgroundRepeat: 'no-repeat',
-            zIndex: 0
-          }} />
-
-          {/* Name overlay */}
-          <div style={{
-            position: 'absolute', left: px(51), top: px(548 - 523), width: px(319), height: px(116),
-            display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
-            zIndex: 30, pointerEvents: 'none'
-          }}>
-            <h2 style={{
-              margin: 0,
-              fontFamily: 'var(--font-montserrat, sans-serif)',
-              fontWeight: 700,
-              fontSize: bundle.name.length > 22 ? px(26) : bundle.name.length > 15 ? px(30) : px(36),
-              letterSpacing: px(-1),
-              lineHeight: 1.1,
-              textTransform: 'uppercase',
-              textAlign: 'center',
-              background: 'linear-gradient(180deg, #FFFFFF 0%, #B9C0C7 40%, #828A92 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              textShadow: `0 ${px(4)} ${px(6)} rgba(0,0,0,0.8)`
-            }}>
-              {bundle.name}
-            </h2>
+        <div style={{
+          width: '100%',
+          background: '#000000',
+          border: '1px solid #3f444a',
+          borderRadius: '12px',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          {/* Top: Flyer Image fully visible */}
+          <div style={{ position: 'relative', width: '100%', aspectRatio: '2/3', background: '#000' }}>
+            <Image 
+              src={flyerImg} 
+              alt={bundle.name} 
+              fill 
+              unoptimized 
+              style={{ objectFit: 'contain', objectPosition: 'center' }} 
+            />
           </div>
 
-          {/* Badge Overlay ("5 VIAL BUNDLES") over the baked-in pill box */}
-          <div style={{
-            position: 'absolute', left: px(51), top: px(664 - 523), width: px(319), height: px(89),
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 30, pointerEvents: 'none'
-          }}>
-            <span style={{
-              fontFamily: 'var(--font-montserrat, sans-serif)',
-              fontWeight: 800,
-              fontSize: px(34),
-              letterSpacing: px(1),
-              textTransform: 'uppercase',
-              background: 'linear-gradient(180deg, #FFFFFF 0%, #B9C0C7 40%, #828A92 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              textShadow: `0 ${px(2)} ${px(4)} rgba(0,0,0,0.8)`
-            }}>
-              {memberCount} VIAL BUNDLES
-            </span>
-          </div>
+          {/* Divider Solid Line */}
+          <div style={{ height: '3px', background: 'linear-gradient(90deg, #1a1d24 0%, #b9c0c7 50%, #1a1d24 100%)', zIndex: 10 }} />
 
-          {/* Pricing Overlay */}
-          {savings > 0 && (
-            <>
-              <div style={{
-                position: 'absolute', left: px(380), width: px(280), top: px(560 - 523),
-                display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: px(6),
-                zIndex: 30, pointerEvents: 'none'
+          {/* Bottom: Data panel */}
+          <div style={{ 
+            position: 'relative', 
+            width: '100%', 
+            background: 'linear-gradient(180deg, #0d1115 0%, #000000 100%)', 
+            padding: px(24) + ' ' + px(24) + ' ' + px(20), 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: px(20) 
+          }}>
+            
+            {/* Row 1: Name and MSRP */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{
+                margin: 0,
+                fontFamily: 'var(--font-montserrat, sans-serif)',
+                fontWeight: 700,
+                fontSize: bundle.name.length > 22 ? px(26) : bundle.name.length > 15 ? px(30) : px(36),
+                letterSpacing: px(-1),
+                lineHeight: 1.1,
+                textTransform: 'uppercase',
+                background: 'linear-gradient(180deg, #FFFFFF 0%, #B9C0C7 40%, #828A92 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
               }}>
-                <span style={{ fontFamily: 'var(--font-roboto-condensed, sans-serif)', fontWeight: 700, fontSize: px(26), color: '#8B8F93' }}>MSRP</span>
-                <span style={{ fontFamily: 'var(--font-roboto-condensed, sans-serif)', fontWeight: 700, fontSize: px(30), color: '#8B8F93', textDecoration: 'line-through', textDecorationThickness: px(2) }}>${resolved.fullPrice.toFixed(2)}</span>
-              </div>
-              <div style={{
-                position: 'absolute', left: px(380), width: px(280), top: px(592 - 523),
-                display: 'flex', justifyContent: 'center',
-                fontFamily: 'var(--font-roboto-condensed, sans-serif)', fontWeight: 700, fontSize: px(27), color: '#00C7E8', textTransform: 'uppercase',
-                zIndex: 30, pointerEvents: 'none'
-              }}>
-                YOU SAVE ${savings}
-              </div>
-            </>
-          )}
-          <div style={{
-            position: 'absolute', left: px(380), width: px(280), top: px(710 - 523),
-            display: 'flex', justifyContent: 'center',
-            fontFamily: 'var(--font-roboto-condensed, sans-serif)', fontWeight: 700, fontSize: px(65), color: '#00D5F2', lineHeight: 1, textShadow: `0 ${px(4)} ${px(10)} rgba(0,0,0,0.5)`,
-            zIndex: 30, pointerEvents: 'none'
-          }}>
-            ${resolved.finalPrice.toFixed(2)}
-          </div>
+                {bundle.name}
+              </h2>
+              {savings > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: 1.1 }}>
+                  <div style={{ fontFamily: 'var(--font-roboto-condensed, sans-serif)', fontWeight: 700, fontSize: px(22), color: '#8B8F93' }}>
+                    MSRP <span style={{ textDecoration: 'line-through' }}>${resolved.fullPrice.toFixed(2)}</span>
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-roboto-condensed, sans-serif)', fontWeight: 700, fontSize: px(26), color: '#00C7E8', textTransform: 'uppercase' }}>
+                    YOU SAVE ${savings}
+                  </div>
+                </div>
+              )}
+            </div>
 
-          {/* Add to Cart Hitbox Overlay (uses baked-in graphic) */}
-          <div 
-            onClick={(e) => { e.stopPropagation(); inCart ? removeBundleFromCart(bundle.name) : addBundleToCart(bundle); }}
-            style={{
-              position: 'absolute', left: px(46), top: px(800 - 523), width: px(591), height: px(115),
-              borderRadius: px(57.5), cursor: 'pointer', zIndex: 40,
-              background: inCart ? 'rgba(0,0,0,0.6)' : 'transparent',
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}
-            title={inCart ? "Remove from cart" : "Add to cart"}
-          >
-            {inCart && (
+            {/* Row 2: Pill and Wholesale */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+              {/* Vials Pill */}
+              <div style={{
+                border: '2px solid #5a6068',
+                borderRadius: px(30),
+                padding: px(12) + ' ' + px(24),
+                background: 'transparent',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: px(8)
+              }}>
+                <span style={{
+                  fontFamily: 'var(--font-montserrat, sans-serif)',
+                  fontWeight: 800,
+                  fontSize: px(28),
+                  letterSpacing: px(1),
+                  textTransform: 'uppercase',
+                  color: '#828A92'
+                }}>
+                  {memberCount} VIAL BUNDLES
+                </span>
+              </div>
+
+              {/* Wholesale Price */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: 1.1 }}>
+                <div style={{ fontFamily: 'var(--font-roboto-condensed, sans-serif)', fontWeight: 700, fontSize: px(20), color: '#8B8F93', textTransform: 'uppercase', marginBottom: px(4) }}>
+                  WHOLESALE PRICE
+                </div>
+                <div style={{ fontFamily: 'var(--font-roboto-condensed, sans-serif)', fontWeight: 700, fontSize: px(56), color: '#00D5F2', textShadow: `0 2px 4px rgba(0,0,0,0.5)` }}>
+                  ${resolved.finalPrice.toFixed(2)}
+                </div>
+              </div>
+            </div>
+
+            {/* Row 3: Add To Cart Button */}
+            <div 
+              onClick={(e) => { e.stopPropagation(); inCart ? removeBundleFromCart(bundle.name) : addBundleToCart(bundle); }}
+              style={{
+                position: 'relative',
+                width: '100%',
+                height: px(90),
+                borderRadius: px(45),
+                background: 'linear-gradient(180deg, #111418 0%, #04070a 100%)',
+                border: '2px solid #5a6068',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.5), inset 0 2px 4px rgba(255,255,255,0.05)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer'
+              }}
+            >
+              <div style={{
+                position: 'absolute',
+                left: px(12),
+                width: px(62),
+                height: px(62),
+                borderRadius: '50%',
+                border: '2px solid #5a6068',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: '#0a0d10'
+              }}>
+                <svg width={px(32)} height={px(32)} viewBox="0 0 24 24" fill="none" stroke="#B9C0C7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="9" cy="21" r="1"></circle>
+                  <circle cx="20" cy="21" r="1"></circle>
+                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                </svg>
+              </div>
               <span style={{
-                color: '#fff', fontSize: px(34), fontWeight: 800, fontFamily: 'var(--font-montserrat, sans-serif)',
+                fontFamily: 'var(--font-montserrat, sans-serif)',
+                fontWeight: 800,
+                fontSize: px(38),
+                color: inCart ? '#00C7E8' : '#FFFFFF',
                 textShadow: '0 2px 4px rgba(0,0,0,0.8)'
-              }}>IN CART</span>
-            )}
+              }}>
+                {inCart ? "IN CART" : "Add To Cart"}
+              </span>
+            </div>
+
+            {/* Row 4: Footer */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: px(12), marginTop: px(4) }}>
+              <svg width={px(22)} height={px(22)} viewBox="0 0 24 24" fill="none" stroke="#00C7E8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+              </svg>
+              <span style={{ fontFamily: 'var(--font-roboto-condensed, sans-serif)', fontWeight: 700, fontSize: px(20), color: '#00C7E8' }}>IN STOCK</span>
+              <span style={{ fontFamily: 'var(--font-roboto-condensed, sans-serif)', fontWeight: 700, fontSize: px(20), color: '#4a5056' }}>|</span>
+              <span style={{ fontFamily: 'var(--font-roboto-condensed, sans-serif)', fontWeight: 700, fontSize: px(20), color: '#8B8F93' }}>AVAILABLE FOR SAME DAY PICKUP</span>
+            </div>
+
           </div>
-          
         </div>
       </motion.div>
     );
