@@ -1681,7 +1681,6 @@ img, video, svg, iframe {
 @media (max-width: 768px) {
   main, [role="main"], .admin-layout > main, .dashboard-main {
     -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain;
   }
 
   /* Any page that uses inline `maxHeight: 90vh` for a modal card
@@ -2619,7 +2618,6 @@ select option {
 @media (max-width: 768px) {
   main, [role="main"], .admin-layout > main, .dashboard-main {
     -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain;
   }
   [role="dialog"] .card,
   [role="dialog"] .card-metal,
