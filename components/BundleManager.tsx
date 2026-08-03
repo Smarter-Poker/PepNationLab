@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 import { Package, Search, Upload, Pencil, Trash2, Eye, EyeOff, Plus, X, DollarSign, Tag, TrendingUp, ChevronUp, ChevronDown } from 'lucide-react';
 
 const MIN_PRODUCTS = 2;
@@ -58,6 +59,7 @@ function fmt(n: number | null | undefined): string {
  * and custom price fields.
  */
 export default function BundleManager({ agentId }: Props) {
+  const router = useRouter();
   const [catalog, setCatalog] = useState<CatalogEntry[]>([]);
   const [bundles, setBundles] = useState<Bundle[]>([]);
   const [perms, setPerms] = useState<{ canDownline: boolean; canGlobal: boolean }>({ canDownline: false, canGlobal: false });
@@ -260,6 +262,7 @@ export default function BundleManager({ agentId }: Props) {
       }
       toast.success(editingId ? 'Bundle Updated' : 'Bundle Created');
       await loadBundles();
+      router.refresh();
       resetForm();
       setShowForm(false);
     } finally {
@@ -275,6 +278,7 @@ export default function BundleManager({ agentId }: Props) {
     });
     if (res.ok) {
       setBundles((prev) => prev.map((x) => (x.id === b.id ? { ...x, is_active: !x.is_active } : x)));
+      router.refresh();
     } else {
       toast.error('Failed To Update Bundle');
     }
@@ -298,6 +302,8 @@ export default function BundleManager({ agentId }: Props) {
     if (!res.ok) {
       toast.error('Failed To Reorder Bundles');
       loadBundles();
+    } else {
+      router.refresh();
     }
   };
 
@@ -310,6 +316,7 @@ export default function BundleManager({ agentId }: Props) {
     if (res.ok) {
       setBundles((prev) => prev.filter((x) => x.id !== b.id));
       toast.success('Bundle Removed');
+      router.refresh();
       if (editingId === b.id) {
         resetForm();
         setShowForm(false);

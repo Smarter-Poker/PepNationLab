@@ -72,10 +72,10 @@ const ICON = {
 };
 
 const ADMIN_LINKS: RoleNavLink[] = [
+  { href: '/dashboard/labels', label: 'Print Labels', icon: ICON.printer },
   { href: '/admin', label: 'Admin Dashboard', icon: ICON.grid },
   { href: '/admin/pricing', label: 'Pricing', icon: <svg {...ip}><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg> },
   { href: '/admin/products', label: 'Products', icon: <svg {...ip}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg> },
-  { href: '/dashboard/labels', label: 'Print Labels', icon: ICON.printer },
   { href: '/admin/store-preview', label: 'Visit Storefront', icon: <svg {...ip}><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="3" y1="9" x2="21" y2="9" /></svg> },
   { href: '/wallet', label: 'Wallet', icon: ICON.wallet },
   { href: '/admin/payments', label: 'Agent Payments', icon: <svg {...ip}><rect x="1" y="4" width="22" height="16" rx="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg> },
@@ -122,6 +122,7 @@ function agentLinks(isSuper: boolean, storefrontHref: string, pathname?: string)
   const normStoreHref = storefrontHref?.replace(/\/$/, '') || '';
 
   const links: RoleNavLink[] = [
+    { href: '/dashboard/labels', label: 'Print Labels', icon: ICON.printer },
     { href: agentTab('Overview'), label: 'Overview', icon: ICON.grid },
   ];
 
@@ -139,7 +140,6 @@ function agentLinks(isSuper: boolean, storefrontHref: string, pathname?: string)
     teamItem,
     { href: agentTab('Researchers'), label: 'My Researchers', icon: ICON.people },
     { href: agentTab('Inventory'), label: 'Local Instock Inventory', icon: <svg {...ip}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg> },
-    { href: '/dashboard/labels', label: 'Print Labels', icon: ICON.printer },
     { href: agentTab('Sales & Accounting'), label: 'Sales & Accounting', icon: <svg {...ip}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg> },
     { href: '/research', label: 'Research Library', icon: ICON.book },
     { href: '/find-a-peptide', label: 'Find A Peptide', icon: ICON.search },

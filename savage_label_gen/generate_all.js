@@ -8,8 +8,14 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const bgBuffer = fs.readFileSync('perfect_blank.png');
+const bgBuffer = fs.readFileSync('true_blank.png');
 const bgBase64 = bgBuffer.toString('base64');
+
+const leftClawsBuffer = fs.readFileSync('left_claws.png');
+const leftClawsBase64 = leftClawsBuffer.toString('base64');
+
+const rightClawsBuffer = fs.readFileSync('right_claws.png');
+const rightClawsBase64 = rightClawsBuffer.toString('base64');
 
 const htmlTemplate = `
 <!DOCTYPE html>
@@ -22,7 +28,7 @@ const htmlTemplate = `
     padding: 0;
     width: 1024px;
     height: 512px;
-    background-image: url('data:image/png;base64,\${bgBase64}');
+    background-image: url('data:image/png;base64,${bgBase64}');
     background-size: 1024px 512px;
     position: relative;
     overflow: hidden;
@@ -69,17 +75,31 @@ const htmlTemplate = `
     transform: skewX(-15deg);
   }
   
-  .dose-container {
+  .badge-container {
     position: absolute;
-    top: 155px;
-    width: 200px;
+    top: 140px;
+    width: 240px;
+    height: 210px;
     display: flex;
     justify-content: center;
     align-items: center;
   }
 
-  .dose-left { left: 40px; }
-  .dose-right { right: 40px; }
+  .badge-left { 
+    left: 0px; 
+    background-image: url('data:image/png;base64,${leftClawsBase64}');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+  }
+  
+  .badge-right { 
+    right: 0px; 
+    background-image: url('data:image/png;base64,${rightClawsBase64}');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+  }
 
   .dose {
     font-family: 'Teko', sans-serif;
@@ -91,7 +111,7 @@ const htmlTemplate = `
 </style>
 </head>
 <body>
-  <div class="dose-container dose-left">
+  <div class="badge-container badge-left">
     <div class="metal-text dose" id="dose1">DOSE_TEXT</div>
   </div>
   
@@ -99,7 +119,7 @@ const htmlTemplate = `
     <div class="metal-text title" id="title">TITLE_TEXT</div>
   </div>
 
-  <div class="dose-container dose-right">
+  <div class="badge-container badge-right">
     <div class="metal-text dose" id="dose2">DOSE_TEXT</div>
   </div>
 
@@ -117,9 +137,10 @@ const htmlTemplate = `
 
       const dose1 = document.getElementById('dose1');
       const dose2 = document.getElementById('dose2');
-      const doseContainer = document.querySelector('.dose-left');
+      const doseContainer = document.querySelector('.badge-left');
       let doseSize = 110;
-      while (dose1.scrollWidth > doseContainer.clientWidth && doseSize > 30) {
+      // Subtract some padding to fit inside the badge nicely
+      while (dose1.scrollWidth > (doseContainer.clientWidth - 40) && doseSize > 30) {
         doseSize -= 2;
         dose1.style.fontSize = doseSize + 'px';
         dose2.style.fontSize = doseSize + 'px';
@@ -146,7 +167,7 @@ async function run() {
   }
 
   console.log(`Found ${ap.length} products. Launching puppeteer...`);
-  const browser = await puppeteer.launch();
+  const browser = await puppeteer.launch({ headless: 'new' });
   const page = await browser.newPage();
   await page.setViewport({ width: 1024, height: 512, deviceScaleFactor: 1 });
 

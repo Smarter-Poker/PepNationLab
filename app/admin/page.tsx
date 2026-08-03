@@ -218,11 +218,23 @@ export default async function AdminDashboard() {
     <div style={{ padding: 'var(--space-8)' }}>
       <AdminDashboardRealtime />
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-8)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
-        <h1 className="animated-gradient-text" style={{ fontSize: '1.6rem', margin: 0 }}>Admin Dashboard</h1>
-        <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', margin: 0, fontFamily: 'var(--font-brand)', letterSpacing: '0.5px' }}>
-          Pep Nation Lab Control Center
-        </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
+        <div>
+          <h1 className="animated-gradient-text" style={{ fontSize: '1.6rem', margin: 0 }}>Admin Dashboard</h1>
+          <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', margin: 0, fontFamily: 'var(--font-brand)', letterSpacing: '0.5px' }}>
+            Pep Nation Lab Control Center
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+          <Link href="/dashboard/labels" className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <svg {...ICON_PROPS} width="16" height="16"><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" /></svg>
+            Print Labels
+          </Link>
+          <Link href="/admin/store-preview" className="btn btn-ghost btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <svg {...ICON_PROPS} width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="3" y1="9" x2="21" y2="9" /></svg>
+            Storefront
+          </Link>
+        </div>
       </div>
 
       {activeImpersonation && (
