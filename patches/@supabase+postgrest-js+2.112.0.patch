@@ -1,8 +1,8 @@
 diff --git a/node_modules/@supabase/postgrest-js/dist/index.d.cts b/node_modules/@supabase/postgrest-js/dist/index.d.cts
-index 667cc05..ee3d6f6 100644
+index 7042418..7ad629a 100644
 --- a/node_modules/@supabase/postgrest-js/dist/index.d.cts
 +++ b/node_modules/@supabase/postgrest-js/dist/index.d.cts
-@@ -622,7 +622,7 @@ type PostgrestSingleResponse<T> = PostgrestResponseSuccess<T> | PostgrestRespons
+@@ -655,7 +655,7 @@ type PostgrestSingleResponse<T> = PostgrestResponseSuccess<T> | PostgrestRespons
  type PostgrestMaybeSingleResponse<T> = PostgrestSingleResponse<T | null>;
  type PostgrestResponse<T> = PostgrestSingleResponse<T[]>;
  type Prettify<T> = { [K in keyof T]: T[K] } & {};
@@ -12,10 +12,10 @@ index 667cc05..ee3d6f6 100644
  type ConditionalSimplifyDeep<Type, ExcludeType = never, IncludeType = unknown> = Type extends ExcludeType ? Type : Type extends IncludeType ? { [TypeKey in keyof Type]: ConditionalSimplifyDeep<Type[TypeKey], ExcludeType, IncludeType> } : Type;
  type NonRecursiveType = BuiltIns | Function | (new (...arguments_: any[]) => unknown);
 diff --git a/node_modules/@supabase/postgrest-js/dist/index.d.mts b/node_modules/@supabase/postgrest-js/dist/index.d.mts
-index 0a346b7..2e26c70 100644
+index 88f6ea8..ab45375 100644
 --- a/node_modules/@supabase/postgrest-js/dist/index.d.mts
 +++ b/node_modules/@supabase/postgrest-js/dist/index.d.mts
-@@ -622,7 +622,7 @@ type PostgrestSingleResponse<T> = PostgrestResponseSuccess<T> | PostgrestRespons
+@@ -655,7 +655,7 @@ type PostgrestSingleResponse<T> = PostgrestResponseSuccess<T> | PostgrestRespons
  type PostgrestMaybeSingleResponse<T> = PostgrestSingleResponse<T | null>;
  type PostgrestResponse<T> = PostgrestSingleResponse<T[]>;
  type Prettify<T> = { [K in keyof T]: T[K] } & {};
