@@ -332,6 +332,10 @@ export default function AgentStorefrontGrid({
   featuredProductIds = [],
   customBranding = null,
 }: Props) {
+  const isSavageBrandsNetwork = useMemo(() => {
+    return agentSlug === 'savagebrands' || (products ?? []).some(p => p.custom_image_url?.includes('/images/savage-brands/'));
+  }, [agentSlug, products]);
+
   const [mounted, setMounted] = useState(false);
   const [showStoreGrid, setShowStoreGrid] = useState(true);
   const [visibleCount, setVisibleCount] = useState(24);
@@ -1077,7 +1081,8 @@ export default function AgentStorefrontGrid({
             item.products?.category || 'Other',
             rawName,
             !!item.custom_image_url, // allowBrandSpecific: custom_image_url is agent-scoped
-            agentSlug
+            agentSlug,
+            isSavageBrandsNetwork
           ),
           variants: [],
           lowestPrice: Infinity,
@@ -3276,7 +3281,8 @@ export default function AgentStorefrontGrid({
                     item.products?.category || 'Other',
                     name,
                     !!item.custom_image_url, // allowBrandSpecific: custom_image_url is agent-scoped
-                    agentSlug
+                    agentSlug,
+                    isSavageBrandsNetwork
                   );
                   const perVial = item.retail_price / 10;
                   // Bac. water sells in fixed 10-packs; show it as packs (10x), not loose vials.
@@ -3299,7 +3305,7 @@ export default function AgentStorefrontGrid({
                         style={{ width: 64, height: 64, borderRadius: 10, objectFit: 'cover', flexShrink: 0, background: '#0F1923' }}
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
-                          const fallback = getProductImage(null, item.products?.category || 'Other', name, false, agentSlug);
+                          const fallback = getProductImage(null, item.products?.category || 'Other', name, false, agentSlug, isSavageBrandsNetwork);
                           if (target.src !== fallback && !target.src.includes(fallback)) {
                             target.srcset = '';
                             target.src = fallback;
@@ -3459,7 +3465,7 @@ export default function AgentStorefrontGrid({
                             style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'cover', flexShrink: 0, background: '#0F1923', opacity: 0.9 }}
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
-                              const fallback = getProductImage(null, item.products?.category || 'Other', name, false, agentSlug);
+                              const fallback = getProductImage(null, item.products?.category || 'Other', name, false, agentSlug, isSavageBrandsNetwork);
                               if (target.src !== fallback) {
                                 target.src = fallback;
                               } else {
@@ -3792,7 +3798,7 @@ export default function AgentStorefrontGrid({
                   style={{ objectFit: 'contain', objectPosition: 'center', transition: 'transform 0.4s ease' }}
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    const fallback = getProductImage(null, detailProduct.category || 'Other', detailProduct.name, false, agentSlug);
+                    const fallback = getProductImage(null, detailProduct.category || 'Other', detailProduct.name, false, agentSlug, isSavageBrandsNetwork);
                     if (target.src !== fallback && !target.src.includes(fallback)) {
                       target.srcset = '';
                       target.src = fallback;
@@ -4699,7 +4705,7 @@ export default function AgentStorefrontGrid({
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {resolved.members.map((m) => {
-                      const img = getProductImage(m.custom_image_url ?? m.products?.image_url ?? null, m.products?.category || 'Other', m.products?.name, !!m.custom_image_url, agentSlug);
+                      const img = getProductImage(m.custom_image_url ?? m.products?.image_url ?? null, m.products?.category || 'Other', m.products?.name, !!m.custom_image_url, agentSlug, isSavageBrandsNetwork);
                       const size = m.products?.unit_size ? `${m.products.unit_size}${m.products.unit_measure || ''}` : '';
                       const baseName = m.custom_name || m.products?.name || 'Product';
                       const name = size ? `${size} ${baseName}` : baseName;

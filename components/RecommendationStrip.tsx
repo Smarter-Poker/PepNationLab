@@ -136,9 +136,9 @@ export default function RecommendationStrip({
                       justifyContent: 'center',
                     }}
                   >
-                    {getProductImage(item.image_url, item.category || 'Other', item.name, false, agentSlug) ? (
+                    {getProductImage(item.image_url, item.category || 'Other', item.name, false, agentSlug, agentSlug === 'savagebrands' || (item.image_url || '').includes('/images/savage-brands/')) ? (
                       <Image
-                        src={getProductImage(item.image_url, item.category || 'Other', item.name, false, agentSlug)}
+                        src={getProductImage(item.image_url, item.category || 'Other', item.name, false, agentSlug, agentSlug === 'savagebrands' || (item.image_url || '').includes('/images/savage-brands/'))}
                         alt={item.name}
                         width={200}
                         height={200}
@@ -151,7 +151,7 @@ export default function RecommendationStrip({
                         }}
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
-                          const fallback = getProductImage(null, item.category || 'Other', item.name, false, agentSlug);
+                          const fallback = getProductImage(null, item.category || 'Other', item.name, false, agentSlug, agentSlug === 'savagebrands' || (item.image_url || '').includes('/images/savage-brands/'));
                           if (target.src !== fallback) {
                             target.src = fallback;
                           }

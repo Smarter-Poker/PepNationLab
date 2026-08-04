@@ -886,7 +886,8 @@ function SmartRecCard({
   agentSlug?: string;
 }) {
   const [added, setAdded] = useState(false);
-  const imgSrc = getProductImage(rec.image_url, rec.category || 'Other', rec.name, false, agentSlug);
+  const isSavageBrandsNetwork = agentSlug === 'savagebrands' || (rec.image_url || '').includes('/images/savage-brands/');
+  const imgSrc = getProductImage(rec.image_url, rec.category || 'Other', rec.name, false, agentSlug, isSavageBrandsNetwork);
   const displayName = rec.unit_size
     ? `${rec.name} ${rec.unit_size}${rec.unit_measure || ''}`
     : rec.name;
@@ -939,7 +940,7 @@ function SmartRecCard({
             unoptimized
             onError={(e) => {
               const t = e.target as HTMLImageElement;
-              const fallback = getProductImage(null, rec.category || 'Other', rec.name, false, agentSlug);
+              const fallback = getProductImage(null, rec.category || 'Other', rec.name, false, agentSlug, isSavageBrandsNetwork);
               if (t.src !== fallback) t.src = fallback;
             }}
           />

@@ -311,11 +311,12 @@ export function getProductImage(
   category: string,
   productName?: string,
   allowBrandSpecific?: boolean,
-  agentSlug?: string
+  agentSlug?: string,
+  isSavageBrandsNetwork?: boolean
 ): string {
-  // STRICT HARDENING: If this is the Savage Brands store, we MUST NEVER 
-  // leak PepNation vials (products table or category fallbacks).
-  if (agentSlug === 'savagebrands') {
+  // STRICT HARDENING: If this is the Savage Brands store (or one of its downlines),
+  // we MUST NEVER leak PepNation vials (products table or category fallbacks).
+  if (agentSlug === 'savagebrands' || isSavageBrandsNetwork) {
     if (imageUrl && imageUrl.trim() !== '' && imageUrl.includes('/images/savage-brands/')) {
       return imageUrl;
     }
