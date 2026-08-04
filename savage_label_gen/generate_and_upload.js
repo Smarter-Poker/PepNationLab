@@ -56,7 +56,6 @@ const htmlTemplate = `
 
   .title-container {
     position: absolute;
-    /* Vertically center between logo and teal bar */
     top: 290px;
     height: 120px;
     width: 860px;
@@ -99,7 +98,6 @@ const htmlTemplate = `
     transform: scaleX(-1);
   }
 
-  /* We must un-flip the text inside the right badge */
   .badge-right .dose {
     transform: scaleX(-1);
   }
@@ -107,24 +105,23 @@ const htmlTemplate = `
   .dose {
     font-family: 'Teko', sans-serif;
     font-weight: 700;
-    font-size: 125px; /* slightly larger */
+    font-size: 125px; 
     letter-spacing: 2px;
-    /* Remove text stroke to prevent weird line */
     -webkit-text-stroke: 1px #111111; 
   }
 </style>
 </head>
 <body>
   <div class="badge-container badge-left">
-    <div class="metal-text dose" id="dose1">15MG</div>
+    <div class="metal-text dose" id="dose1">DOSE_TEXT</div>
   </div>
   
   <div class="title-container">
-    <div class="metal-text title" id="title">RETATRUTIDE</div>
+    <div class="metal-text title" id="title">TITLE_TEXT</div>
   </div>
 
   <div class="badge-container badge-right">
-    <div class="metal-text dose" id="dose2">15MG</div>
+    <div class="metal-text dose" id="dose2">DOSE_TEXT</div>
   </div>
 
   <script>
@@ -160,19 +157,74 @@ const htmlTemplate = `
 `;
 
 async function run() {
+  console.log('Fetching Savage Brands products...');
+  const { data: agent } = await supabase.from('agent_profiles').select('id').eq('slug', 'savagebrands').single();
+  const { data: ap, error } = await supabase.from('agent_products').select('product_id, products(slug, name, unit_size, unit_measure)').eq('agent_id', agent.id);
+  
+  if (error) {
+    console.error('Error fetching products:', error);
+    return;
+  }
+
+  console.log(`Found ${ap.length} products. Launching puppeteer...`);
   const browser = await puppeteer.launch({ headless: 'new' });
   const page = await browser.newPage();
   await page.setViewport({ width: 1024, height: 512, deviceScaleFactor: 1 });
 
-  await page.setContent(htmlTemplate, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#ready', { timeout: 10000 });
+  let successCount = 0;
   
-  const buffer = await page.screenshot({ type: 'png' });
-  const destPath = require('path').join('/Users/smarter.poker/.gemini/antigravity/brain/5704cc86-3c79-46da-8052-0defc4900d3b/scratch', 'test_label_retatrutide_15mg.png');
-  require('fs').writeFileSync(destPath, buffer);
-  
-  console.log(`Saved locally to ${destPath}`);
+  for (let i = 0; i < ap.length; i++) {
+    const product = ap[i].products;
+    if (!product || !product.slug) continue;
+    
+    let doseText = '';
+    if (product.unit_size && product.unit_measure) {
+      doseText = `${product.unit_size}${product.unit_measure.toUpperCase()}`;
+    }
+    
+    const slug = product.slug || product.name.replace(/\s+/g, '-').toLowerCase();
+    const safeSlug = slug.replace(/\//g, '_').replace(/ /g, '_');
+
+    const html = htmlTemplate
+      .replace(/TITLE_TEXT/g, product.name)
+      .replace(/DOSE_TEXT/g, doseText);
+      
+    const newPage = await browser.newPage();
+    await newPage.setViewport({ width: 1024, height: 512, deviceScaleFactor: 1 });
+    await newPage.setContent(html, { waitUntil: 'domcontentloaded' });
+    await newPage.waitForSelector('#ready', { timeout: 10000 });
+    
+    const buffer = await newPage.screenshot({ type: 'png' });
+    await newPage.close();
+    
+    // Upload to Supabase
+    const filePath = `savage/${safeSlug}.png`;
+    
+    let retries = 3;
+    let uploaded = false;
+    
+    while (retries > 0 && !uploaded) {
+      const { data, error: uploadError } = await supabase.storage
+        .from('print-labels')
+        .upload(filePath, buffer, {
+          contentType: 'image/png',
+          upsert: true
+        });
+        
+      if (uploadError) {
+        console.error(`Failed to upload ${filePath}, retries left: ${retries - 1}. Error:`, uploadError.message);
+        retries--;
+        await new Promise(r => setTimeout(r, 2000));
+      } else {
+        console.log(`[${i + 1}/${ap.length}] Uploaded ${filePath}`);
+        successCount++;
+        uploaded = true;
+      }
+    }
+  }
+
   await browser.close();
+  console.log(`Done! Successfully generated and uploaded ${successCount} labels.`);
 }
 
 run().catch(console.error);
