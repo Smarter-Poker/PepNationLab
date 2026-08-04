@@ -1,6 +1,7 @@
 const { createClient } = require('@supabase/supabase-js');
 const puppeteer = require('puppeteer');
 const fs = require('fs');
+const path = require('path');
 require('dotenv').config({ path: '../.env.local' });
 
 const supabase = createClient(
@@ -8,14 +9,11 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const bgBuffer = fs.readFileSync('true_blank.png');
+const bgBuffer = fs.readFileSync('true_perfect_blank4.png');
 const bgBase64 = bgBuffer.toString('base64');
 
-const leftClawsBuffer = fs.readFileSync('left_claws.png');
-const leftClawsBase64 = leftClawsBuffer.toString('base64');
-
-const rightClawsBuffer = fs.readFileSync('right_claws.png');
-const rightClawsBase64 = rightClawsBuffer.toString('base64');
+const clawsBuffer = fs.readFileSync('correct_claws_cyan.png');
+const clawsBase64 = clawsBuffer.toString('base64');
 
 const htmlTemplate = `
 <!DOCTYPE html>
@@ -36,7 +34,6 @@ const htmlTemplate = `
   
   .metal-text {
     font-family: 'Anton', sans-serif;
-    transform: skewX(-12deg);
     text-transform: uppercase;
     text-align: center;
     white-space: nowrap;
@@ -56,12 +53,12 @@ const htmlTemplate = `
     
     filter: drop-shadow(0px 8px 6px rgba(0, 0, 0, 0.9))
             drop-shadow(0px 0px 4px #00C4BC);
-    -webkit-text-stroke: 3px #111111;
   }
 
   .title-container {
     position: absolute;
-    bottom: 95px;
+    top: 290px;
+    height: 120px;
     width: 860px;
     left: 82px;
     display: flex;
@@ -72,7 +69,7 @@ const htmlTemplate = `
   .title {
     font-size: 110px;
     letter-spacing: -1px;
-    transform: skewX(-15deg);
+    -webkit-text-stroke: 3px #111111;
   }
   
   .badge-container {
@@ -86,27 +83,32 @@ const htmlTemplate = `
   }
 
   .badge-left { 
-    left: 0px; 
-    background-image: url('data:image/png;base64,${leftClawsBase64}');
+    left: 10px; 
+    background-image: url('data:image/png;base64,${clawsBase64}');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
   }
   
   .badge-right { 
-    right: 0px; 
-    background-image: url('data:image/png;base64,${rightClawsBase64}');
+    right: 10px; 
+    background-image: url('data:image/png;base64,${clawsBase64}');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
+    transform: scaleX(-1);
+  }
+
+  .badge-right .dose {
+    transform: scaleX(-1);
   }
 
   .dose {
     font-family: 'Teko', sans-serif;
     font-weight: 700;
-    font-size: 110px;
-    transform: skewX(-10deg);
+    font-size: 125px; 
     letter-spacing: 2px;
+    -webkit-text-stroke: 1px #111111; 
   }
 </style>
 </head>
@@ -138,9 +140,8 @@ const htmlTemplate = `
       const dose1 = document.getElementById('dose1');
       const dose2 = document.getElementById('dose2');
       const doseContainer = document.querySelector('.badge-left');
-      let doseSize = 110;
-      // Subtract some padding to fit inside the badge nicely
-      while (dose1.scrollWidth > (doseContainer.clientWidth - 40) && doseSize > 30) {
+      let doseSize = 125;
+      while (dose1.scrollWidth > (doseContainer.clientWidth - 30) && doseSize > 30) {
         doseSize -= 2;
         dose1.style.fontSize = doseSize + 'px';
         dose2.style.fontSize = doseSize + 'px';
@@ -172,7 +173,7 @@ async function run() {
   await page.setViewport({ width: 1024, height: 512, deviceScaleFactor: 1 });
 
   let successCount = 0;
-
+  
   for (let i = 0; i < ap.length; i++) {
     const product = ap[i].products;
     if (!product || !product.slug) continue;
@@ -181,31 +182,31 @@ async function run() {
     if (product.unit_size && product.unit_measure) {
       doseText = `${product.unit_size}${product.unit_measure.toUpperCase()}`;
     }
+    
+    const slug = product.slug || product.name.replace(/\s+/g, '-').toLowerCase();
+    const safeSlug = slug.replace(/\//g, '_').replace(/ /g, '_');
 
     const html = htmlTemplate
       .replace(/TITLE_TEXT/g, product.name)
       .replace(/DOSE_TEXT/g, doseText);
-
-    await page.setContent(html, { waitUntil: 'domcontentloaded' });
+      
+    const newPage = await browser.newPage();
+    await newPage.setViewport({ width: 1024, height: 512, deviceScaleFactor: 1 });
+    await newPage.setContent(html, { waitUntil: 'domcontentloaded' });
+    await newPage.waitForSelector('#ready', { timeout: 10000 });
     
-    // Wait for fonts to load and resize to finish
-    await page.waitForSelector('#ready', { timeout: 10000 });
+    const buffer = await newPage.screenshot({ type: 'png' });
+    await newPage.close();
     
-    const buffer = await page.screenshot({ type: 'png' });
-    
-    const slug = product.slug || product.name.replace(/\s+/g, '-').toLowerCase();
-    const safeSlug = slug.replace(/\//g, '_').replace(/ /g, '_');
-    
-    const destPath = require('path').join(__dirname, '..', 'public', 'images', 'savage-brands-flattened', `${safeSlug}.png`);
-    require('fs').mkdirSync(require('path').dirname(destPath), { recursive: true });
-    require('fs').writeFileSync(destPath, buffer);
-    console.log(`[${i+1}/${ap.length}] Saved locally to ${destPath}`);
-    
+    // Save to local file system
+    const destPath = path.join(__dirname, '../public/images/savage-brands', `${safeSlug}.png`);
+    fs.writeFileSync(destPath, buffer);
+    console.log(`[${i + 1}/${ap.length}] Saved ${destPath}`);
     successCount++;
   }
 
   await browser.close();
-  console.log(`Done! Successfully generated ${successCount} labels locally.`);
+  console.log(`Done! Successfully generated and saved ${successCount} labels to public/images/savage-brands.`);
 }
 
 run().catch(console.error);
