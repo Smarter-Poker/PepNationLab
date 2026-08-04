@@ -7,6 +7,7 @@
 > published study or label parameters and labeled as such.
 >
 > **Last compiled:** 2026-07-01
+> **Last verified:** 2026-08-04 (regulatory status, WADA 2026 Prohibited List, identity caveats)
 > **Scope:** Every distinct compound in the live `products` catalog (approximately 58 entities)
 > plus combination stacks and reconstitution supplies. Many catalog rows are dose/size variants
 > of the same compound; this reference profiles each distinct compound once.
@@ -34,6 +35,24 @@ Many compounds here are on the WADA Prohibited List (growth-hormone secretagogue
 TB-500, AICAR, MOTS-c, etc.). Anti-doping status is noted per compound. Status can change; verify
 against the current WADA list before any competition context.
 
+Verified against the WADA 2026 Prohibited List, in force 1 January 2026. Compounds in this catalog
+that the 2026 List names explicitly: BPC-157 (S0); AOD-9604 and hGH 176-191 (S2.2.3, growth hormone
+fragments); kisspeptin and its agonist analogues (S2.2.1, prohibited in males); CJC-1295, sermorelin,
+tesamorelin, ipamorelin, examorelin/hexarelin, GHRP-2 (pralmorelin) and GHRP-6 (S2.2.4); IGF-1 and
+its analogues, and Thymosin-beta4 with derivatives such as TB-500 (S2.3); follistatin as a
+myostatin-binding protein (S4.3); AICAR and MOTS-c as AMPK activators (S4.4.1).
+
+Changes introduced in the 2026 List that touch this catalog: cell components such as mitochondria and
+ribosomes were added to the gene and cell doping prohibition (M3.2), and non-diagnostic carbon monoxide
+use was added as a new prohibited method (M1.4). Two administration rules matter for compounded
+injectables profiled here: intravenous infusions or injections exceeding 100 mL per 12-hour period are
+prohibited under M2.2, which is directly relevant to IV NAD+, IV glutathione and IV L-carnitine
+protocols even though those substances are not themselves prohibited.
+
+GLP-1 receptor agonists are not on the 2026 Prohibited List. Semaglutide has been on the WADA
+Monitoring Program since 2024 and tirzepatide was added to the Monitoring Program effective
+1 January 2026; monitored substances are tracked but carry no sanction.
+
 ---
 
 ## Category Index
@@ -50,6 +69,7 @@ against the current WADA list before any competition context.
 
 ---
 ---
+
 
 # 1. Anti-Aging & Longevity / Bioregulators
 
@@ -86,31 +106,31 @@ against the current WADA list before any competition context.
 - **Side effects:** Injection-site reactions (SC), headache, GI symptoms; generally tolerable at studied doses.
 - **Warnings/limitations:** 2025 approval is narrow (Barth); other uses investigational and several large endpoints not met. Research use only outside labeling.
 - **Handling:** Lyophilized (research) or formulated injectable (clinical); store cold/dark. Reconstitute sterile/bacteriostatic water; non-natural residues improve stability. Avoid freeze-thaw.
-- **Regulatory:** FDA-approved (Sept 2025, Barth syndrome); investigational elsewhere. Assume WADA relevance; verify.
+- **Regulatory:** FDA accelerated approval 19 September 2025 as Forzinity (elamipretide hydrochloride) to improve muscle strength in adult and pediatric patients with Barth syndrome weighing at least 30 kg; label dosage 40 mg subcutaneous once daily. Holds FDA Orphan Drug, Fast Track, Priority Review and Rare Pediatric designations, plus an EMA Orphan Drug designation; no EMA marketing authorization identified as of August 2026. Accelerated approval is conditional on confirmatory evidence. All other uses remain investigational. Not named on the WADA 2026 Prohibited List.
 - **Sources:** ncbi.nlm.nih.gov/pmc/articles/PMC11816484; neurology.org/doi/10.1212/WNL.0000000000005255; nature.com/articles/s41598-024-64368-y
 
 ### Pinealon (EDR, Glu-Asp-Arg)
 - **Class / type:** Synthetic tripeptide bioregulator (Khavinson); investigational neuroprotective. Research-chemical only.
-- **Identity:** Glu-Asp-Arg (EDR); ~418-420 Da; no standardized CAS. Pineal-bioregulator lineage.
+- **Identity:** Glu-Asp-Arg (EDR); C15H26N6O8; 418.41 Da; CAS 175175-23-2 (verified 2026-08-04 against PubChem CID 10273502). Pineal-bioregulator lineage.
 - **Mechanism / target:** Proposed nuclear/DNA-major-groove binding modulating neuronal-survival, antioxidant and neuroendocrine genes; reduces ROS, preserves mitochondrial potential, delayed ERK1/2 activation; claimed partial oral bioavailability.
 - **Research use cases:** Neuroprotection (oxidative stress, hypoxia, ischemia), neuronal aging, cognition, Alzheimer's-relevant gene expression.
 - **Reported benefits:** In vitro (2011) -- reduced ROS/necrosis, delayed ERK1/2 (PMC7795577). Animal -- neuroprotection, reduced apoptosis/lipid peroxidation. Human -- no robust independent data. Preliminary.
 - **Side effects:** No characterized human AE profile; reported tolerable in limited preclinical work.
 - **Warnings/limitations:** Not approved; preliminary single-lineage evidence. Research use only.
 - **Handling:** Lyophilized; store -20C dark/dry. Reconstitute bacteriostatic/sterile water. Refrigerate; very short half-life.
-- **Regulatory:** Not FDA/EMA approved; research chemical. Not WADA-named (verify).
-- **Sources:** pmc.ncbi.nlm.nih.gov/articles/PMC7795577; peptidedeck.com/peptides/pinealon
+- **Regulatory:** Not FDA/EMA approved; research chemical. Not named on the WADA 2026 Prohibited List.
+- **Sources:** pmc.ncbi.nlm.nih.gov/articles/PMC7795577; en.wikipedia.org/wiki/Pinealon; pubchem.ncbi.nlm.nih.gov/compound/10273502
 
 ### Thymalin (Thymus polypeptide bioregulator)
 - **Class / type:** Thymus-derived peptide bioregulator/immunomodulator (Khavinson tradition). Used clinically in Russia; not US/EU approved.
-- **Identity:** Historically a low-MW polypeptide complex from calf thymus (a mixture, not one molecule). Some vendors equate it with dipeptide Glu-Trp (~333 Da) -- a labeling ambiguity to flag. Active short-peptide motifs include KE, EW, EDP.
+- **Identity:** RESOLVED 2026-08-04. Thymalin is the low-molecular-weight polypeptide complex obtained by enzymatic hydrolysis of calf thymus (CAS 131183-11-4); it is a heterogeneous mixture, not a single molecule, with roughly 80 to 90 percent of components between 600 and 6000 Da, so it has no single PubChem compound record. Material sold as "Thymalin" that is in fact the Glu-Trp (EW) dipeptide is mislabelled: that dipeptide is properly Thymogen / Oglufanide, CAS 38101-59-6, ~333 Da, and was isolated from the Thymalin low-MW fraction as its most active constituent. Lys-Glu (KE) is another constituent dipeptide, marketed separately as Vilon (CAS 45234-02-4). Confirm from the certificate of analysis which of the three materials is supplied.
 - **Mechanism / target:** Proposed action via constituent short peptides binding DNA/histones to regulate immune genes; restores T-cell maturation, rebalances immune indices.
 - **Research use cases:** Immunosenescence/immune restoration, T-cell deficiency, infection resistance, severe respiratory infection (incl. COVID-19).
 - **Reported benefits:** Human -- Khavinson elderly cohorts: improved T-cell counts, CD4/CD8, NK activity; long follow-ups reduced infection/improved survival (PubMed 14523363); COVID-19 immune-status paper (Adv Gerontol 2021). Largely single-lineage, older; preliminary.
 - **Side effects:** Reported well tolerated (IM in Russian protocols); no robust modern AE dataset; tissue-extract immunogenicity/variability concerns.
 - **Warnings/limitations:** Not FDA/EMA approved; extract composition/potency varies by source; caution in autoimmunity (immunostimulation). Research use only.
 - **Handling:** Lyophilized; store frozen/refrigerated, dark/dry. Reconstitute bacteriostatic/sterile water; refrigerate; short-lived constituents.
-- **Regulatory:** Used in Russia; not US/EU approved -- research chemical. Not WADA-named (verify).
+- **Regulatory:** Used in Russia; not US/EU approved -- research chemical. Not named on the WADA 2026 Prohibited List.
 - **Sources:** pubmed.ncbi.nlm.nih.gov/14523363; link.springer.com/article/10.1134/S2079057021040068
 
 ### Thymosin Alpha-1 (Talpha1, Thymalfasin, Zadaxin)
@@ -199,20 +219,20 @@ against the current WADA list before any competition context.
 - **Side effects:** Acadesine relatively well tolerated in cardiac trials; transient hyperuricemia, headache, infusion effects. AMPK activation context-dependently tumor-promoting; long-term healthy-human safety unknown.
 - **Warnings/limitations:** Not approved; no safe non-clinical dose; WADA-prohibited; hyperuricemia/gout caution; mostly preclinical.
 - **Handling:** White crystalline solid; store cold/desiccated/dark; soluble in water/DMSO; use solutions fresh.
-- **Regulatory:** Investigational/research chemical; not DEA-controlled. WADA-PROHIBITED (S4.5 AMPK activators, all times, since 2011).
+- **Regulatory:** Investigational/research chemical; not DEA-controlled. WADA-PROHIBITED: named on the 2026 Prohibited List under S4.4.1 (activators of the AMP-activated protein kinase), prohibited at all times, non-Specified substance.
 - **Sources:** selleckchem.com/products/aicar; pubchem CID 17513; usada.org (AICAR advisory)
 
 ### 5-Amino-1MQ (5-amino-1-methylquinolinium)
 - **Class / type:** Small molecule (NOT a peptide despite marketing); NNMT inhibitor; investigational research chemical.
-- **Identity:** Cation C10H11N2+ (~159.21); iodide salt C10H11IN2 (~286.11); CAS commonly cited 5611-99-4 (verify per CoA). Mimics 1-methylnicotinamide.
+- **Identity:** RESOLVED 2026-08-04. The research material is the iodide salt: 5-amino-1-methylquinolinium iodide, C10H11N2 . I, 286.11 Da, CAS 42464-96-0 (also cited as 685079-15-6); the free cation C10H11N2+ is 159.21 Da. 1.89 mg of the iodide salt corresponds to 1 mg of 5-Amino-1MQ base, so potency quoted on the salt basis is not interchangeable with the base basis -- confirm which basis a certificate of analysis uses. Mimics 1-methylnicotinamide.
 - **Mechanism / target:** Selective NNMT inhibitor. NNMT (high in adipose/liver) methylates nicotinamide using SAM; overactivity drains NAD+ salvage and SAM methyl flux. Inhibition preserves nicotinamide for NAD+ and restores methylation, increasing adipocyte energy expenditure. "Block consumption" rather than "add precursor."
 - **Research use cases:** Obesity, metabolic syndrome/insulin resistance, fat-loss/energy-expenditure, NAD+/SAM metabolism; marketed for weight management.
 - **Reported benefits:** Animal -- diet-induced-obese mice: reduced weight/white-fat mass without changed intake, lower cholesterol, smaller adipocytes. In vitro -- increased adipocyte NAD+/expenditure. Human -- NO completed published trials; all claims animal/in-vitro; preliminary.
 - **Side effects:** No AEs in short rodent studies; essentially no human safety data. Theoretical: broad NNMT/1-MNA roles, SAM-methylation perturbation, unknown chronic NAD+/methyl shifts; toxicity/carcinogenicity/reproductive safety uncharacterized.
-- **Warnings/limitations:** Strictly investigational; no human approval; animal/in-vitro only, short exposures; no defined human dose/PK. Verify salt/CAS per CoA.
+- **Warnings/limitations:** Strictly investigational; no human approval; animal/in-vitro only, short exposures; no defined human dose/PK. Salt and CAS now resolved (see Identity), but still confirm the potency basis on the certificate of analysis.
 - **Handling:** Solid (iodide salt); store cold/desiccated/dark (light-sensitive). Water/DMSO-soluble; prepare fresh.
 - **Regulatory:** Not approved; research chemical. Not WADA-named (NAD/metabolic-modulator scrutiny -- caution).
-- **Sources:** rawamino.com (NNMT/5-amino-1MQ); newtropin.com; pubchem (identity confirmation)
+- **Sources:** sigmaaldrich.com product SML2832 (identity, CAS, MW); rawamino.com (NNMT/5-amino-1MQ); pubchem (identity confirmation)
 
 ---
 ---
@@ -269,15 +289,15 @@ against the current WADA list before any competition context.
 
 ### AHK-Cu (Copper Tripeptide-3)
 - **Class / type:** Synthetic copper(II)-binding tripeptide; GHK-Cu analog (Ala for Gly at position 1). Mainly cosmetic (hair/derma). Investigational/cosmetic.
-- **Identity:** Ala-His-Lys + Cu(II). Free AHK ~354.4 Da; CAS inconsistent across vendors (verify per CoA).
+- **Identity:** RESOLVED 2026-08-04. Ala-His-Lys + Cu(II). AHK-Cu complex: C15H24CuN6O4, 415.93 Da, CAS 767286-83-9. Hydrochloride form: CAS 682809-81-0, 452.40 Da. Free AHK tripeptide (no copper): 354.41 Da. The generic CAS 89030-95-5 ("copper tripeptide") is not specific to AHK-Cu and should not be used for it. Copper content differs between these forms -- confirm which one a certificate of analysis describes.
 - **Mechanism / target:** Copper delivery plus growth-factor modulation, more targeted to hair-follicle dermal-papilla cells than GHK-Cu; VEGF-driven angiogenesis; anti-apoptotic (Bcl-2/Bax); prolongs anagen; reduces TGF-beta1.
 - **Research use cases:** Hair follicle growth/restoration (primary niche), dermal regeneration; often formulated with GHK-Cu.
 - **Reported benefits:** In-vitro (dermal-papilla) and animal (2007 follicle studies) -- proliferation, anti-apoptosis, angiogenesis, anagen prolongation. Human clinical limited/cosmetic; preliminary.
 - **Side effects:** Topically tolerated; possible irritation/sensitization; copper-overload theoretical; identity/labeling variability a real risk.
 - **Warnings/limitations:** Not FDA drug (cosmetic ingredient Copper Tripeptide-3); same acid/reducing-agent destabilization caveat; systemic safety/efficacy unproven.
-- **Handling:** Lyophilized, blue complex; store cold/dry/dark; reconstitute sterile/bacteriostatic water; pH/redox-sensitive; verify CAS per CoA.
-- **Regulatory:** Cosmetic ingredient; not WADA-named; non-cosmetic forms are research chemical.
-- **Sources:** biotechpeptides.com (AHK-Cu); medsci.org/v22p4175.htm
+- **Handling:** Lyophilized, blue complex; store cold/dry/dark; reconstitute sterile/bacteriostatic water; pH/redox-sensitive; confirm the supplied form (complex, hydrochloride, or copper-free peptide) per CoA.
+- **Regulatory:** Cosmetic ingredient; not named on the WADA 2026 Prohibited List; non-cosmetic forms are research chemical.
+- **Sources:** abmole.com product M51012 (identity, CAS, MW); biotechpeptides.com (AHK-Cu); medsci.org/v22p4175.htm
 
 ### Combination Stacks (Healing/Repair)
 No controlled human combination-trial evidence exists; combining compounds compounds the individual identity/quality/safety caveats.
@@ -500,7 +520,7 @@ Cited as a dual-pathway GH-stimulation model recruiting two distinct somatotroph
 - **Side effects:** Limited formal human safety data; lacks GH diabetogenic/IGF-1 effects, so GH-type glucose effects not expected at studied levels; mainly injection-site reactions in unregulated use; long-term safety uncharacterized.
 - **Warnings/limitations:** Not approved; no human dosing; human efficacy unproven; grey-market identity/purity a major limitation. Research use only.
 - **Handling:** Lyophilized; store -20C dark; reconstitute bacteriostatic water slowly down wall (no foaming); refrigerate 2-8C, ~4 weeks; no freeze-thaw; cysteine/disulfide loop oxidation-sensitive.
-- **Regulatory:** Not FDA-approved; research use only. WADA-banned (S2/S0). Often conflated with AOD9604.
+- **Regulatory:** Not FDA-approved; research chemical. Named on the WADA 2026 Prohibited List under S2.2.3 (growth hormone fragments); prohibited at all times and a non-Specified substance. Often conflated with AOD9604.
 - **Sources:** en.wikipedia.org/wiki/HGH_Fragment_176-191; academic.oup.com/endo/article/142/12/5182/2988749
 
 ### AOD9604 (Tyr-hGH 177-191)
@@ -512,7 +532,7 @@ Cited as a dual-pathway GH-stimulation model recruiting two distinct somatotroph
 - **Side effects:** Generally well tolerated in human trials at studied oral doses; no significant effect on glucose/IGF-1/GH axis short-term; long-term/injectable safety uncharacterized.
 - **Warnings/limitations:** Failed efficacy is the headline; not an approved medicine; self-affirmed GRAS is not FDA efficacy approval.
 - **Handling:** Lyophilized; store -20C dark; reconstitute gently with bacteriostatic water (no foam); refrigerate 2-8C, use within weeks, no freeze-thaw. Was also an oral tablet in the clinical program.
-- **Regulatory:** Not FDA-approved (development halted); self-affirmed GRAS panel determination (not FDA drug approval); TGA Rx/unapproved in Australia. WADA-banned (S0/S2).
+- **Regulatory:** Not FDA-approved (development halted); self-affirmed GRAS panel determination (not FDA drug approval); TGA Rx/unapproved in Australia. WADA-banned: named on the 2026 Prohibited List under S2.2.3 (growth hormone fragments, alongside hGH 176-191), prohibited at all times, non-Specified substance. It was originally caught by the S0 catch-all from 2011 and is now listed by name.
 - **Sources:** en.wikipedia.org/wiki/AOD9604; jofem.org (safety/tolerability)
 
 ### IGF-1 LR3 (Long R3 IGF-1)
@@ -536,7 +556,7 @@ Cited as a dual-pathway GH-stimulation model recruiting two distinct somatotroph
 - **Side effects:** Sparse human data; theoretical reproductive (FSH/activin), cardiac/vascular, tissue, and tumor-microenvironment effects from broad systemic myostatin/activin/BMP blockade. Animal gene-therapy reported no untoward cardiac/reproductive pathology at studied doses (not human systemic safety).
 - **Warnings/limitations:** No approved human use/dosing; recombinant peptide PK poor (rapid clearance) -- durable effects come from gene delivery, a key limitation for injectable-peptide claims; broad ligand promiscuity extends effects beyond muscle.
 - **Handling:** Lyophilized; store -20C (or colder) dark; reconstitute gently sterile/bacteriostatic water (avoid foam/shear); refrigerate short-term, aliquot/freeze longer; avoid freeze-thaw. Injected recombinant rapidly cleared.
-- **Regulatory:** Not FDA-approved; research/experimental (gene therapy investigational). WADA S4.5 (myostatin inhibitors), all times.
+- **Regulatory:** Not FDA-approved; research/experimental (gene therapy investigational). Named on the WADA 2026 Prohibited List under S4.3 as a myostatin-binding protein; prohibited at all times and a non-Specified substance.
 - **Sources:** pnas.org/doi/10.1073/pnas.0709144105; newtropin.com/peptides/follistatin-344
 
 ---
@@ -577,7 +597,7 @@ Cited as a dual-pathway GH-stimulation model recruiting two distinct somatotroph
 - **Side effects:** Generally well tolerated in research infusions; mild (transient headache, injection-site); KISS1R tachyphylaxis with sustained exposure; limited long-term data.
 - **Warnings/limitations:** Investigational; no approved product; HPG-axis effects inappropriate outside controlled study; short half-life/desensitization; reproductive safety not established.
 - **Handling:** Lyophilized; store desiccated/frozen (-20C); reconstitute bacteriostatic/sterile water; Met/Trp oxidation-prone -- avoid freeze-thaw, protect from light.
-- **Regulatory:** Not approved; investigational/reagent. HPG-modulators draw WADA scrutiny; no approved sport use.
+- **Regulatory:** Not approved; investigational/reagent. Named on the WADA 2026 Prohibited List under S2.2.1 as "kisspeptin and its agonist analogues", a testosterone-stimulating peptide prohibited in males at all times; non-Specified.
 - **Sources:** en.wikipedia.org/wiki/Kisspeptin; ncbi.nlm.nih.gov/pmc/articles/PMC6286967
 
 ### Oxytocin (Pitocin, Syntocinon)
@@ -645,7 +665,7 @@ Cited as a dual-pathway GH-stimulation model recruiting two distinct somatotroph
 - **Side effects:** Dose-dependent GI (nausea, vomiting, diarrhea, constipation, abdominal pain); gallbladder disease, acute pancreatitis (MHRA monitoring rare severe); hypoglycemia mainly with insulin/sulfonylureas.
 - **Warnings/limitations:** FDA boxed warning for thyroid C-cell tumors (rodent MTC); contraindicated with personal/family MTC or MEN 2; not for type 1 diabetes; caution pancreatitis history and diabetic retinopathy.
 - **Handling:** Pens refrigerated 2-8C pre-use; room-temp in-use window. Research lyophilizate desiccated/frozen, reconstitute bacteriostatic water, refrigerate; heat/freeze-thaw/agitation-sensitive. Oral form requires fasting administration with minimal water (SNAC-dependent).
-- **Regulatory:** FDA-approved: Ozempic (T2D, 2017), Rybelsus (oral T2D, 2019), Wegovy (obesity, 2021); Ozempic label expanded for CKD risk reduction in T2D (Jan 2025); Wegovy approved for MASH with moderate-to-advanced fibrosis (Aug 2025). Compounded salt forms (sodium/acetate) cautioned by FDA as not established safe/effective.
+- **Regulatory:** FDA-approved: Ozempic (T2D, 2017), Rybelsus (oral T2D, 2019), Wegovy (obesity, 2021); Ozempic label expanded for CKD risk reduction in T2D (Jan 2025); Wegovy approved for MASH with moderate-to-advanced fibrosis (Aug 2025); Wegovy pill (oral semaglutide 25 mg) approved for chronic weight management and reduction of major adverse cardiovascular events, US availability from January 2026 -- the first oral GLP-1 receptor agonist approved for weight management, supported by OASIS 4 (16.6% mean weight loss at 64 wk with full adherence vs 2.7% placebo) and carrying the same thyroid C-cell boxed warning. Compounded salt forms (sodium/acetate) cautioned by FDA as not established safe/effective. Not on the WADA 2026 Prohibited List; on the WADA Monitoring Program since 2024.
 - **Sources:** en.wikipedia.org/wiki/Semaglutide; pubmed.ncbi.nlm.nih.gov/33567185 (STEP 1); nejm.org/doi/full/10.1056/NEJMoa2307563 (SELECT)
 
 ### Tirzepatide (Mounjaro, Zepbound; LY3298176)
@@ -657,7 +677,7 @@ Cited as a dual-pathway GH-stimulation model recruiting two distinct somatotroph
 - **Side effects:** Dose-dependent GI (nausea, diarrhea, vomiting, constipation); class gallbladder/pancreatitis signals (MHRA severe-pancreatitis guidance).
 - **Warnings/limitations:** FDA boxed warning for thyroid C-cell tumors; contraindicated with MTC/MEN 2 history; not for type 1 diabetes; hypoglycemia with insulin/secretagogues.
 - **Handling:** Pens/vials refrigerated 2-8C; limited room-temp window. Research lyophilizate frozen/desiccated, reconstitute bacteriostatic/sterile water, refrigerate; avoid freeze-thaw/heat/shaking.
-- **Regulatory:** FDA-approved -- Mounjaro (T2D 2022), Zepbound (obesity 2023; OSA 2024). Approved product distinct from compounded.
+- **Regulatory:** FDA-approved -- Mounjaro (T2D 2022), Zepbound (chronic weight management 2023; moderate-to-severe obstructive sleep apnea in adults with obesity, December 2024). Approved product distinct from compounded. Not on the WADA 2026 Prohibited List; added to the WADA Monitoring Program effective 1 January 2026.
 - **Sources:** en.wikipedia.org/wiki/Tirzepatide; pubmed.ncbi.nlm.nih.gov/35658024 (SURMOUNT-1); 34370970 (SURPASS-2)
 
 ### Retatrutide (LY-3437943; "triple-G")
@@ -669,7 +689,7 @@ Cited as a dual-pathway GH-stimulation model recruiting two distinct somatotroph
 - **Side effects:** Dose-dependent GI (nausea, vomiting, diarrhea, constipation, abdominal discomfort), fatigue, headache, mild HR increases; low hypoglycemia, infrequent serious AEs in non-diabetic trials to date; class pancreatitis/gallbladder/GI risks apply; long-term outcomes not established.
 - **Warnings/limitations:** Investigational -- no label, no long-term safety; theoretical thyroid C-cell/pancreatitis considerations under study. Not approved.
 - **Handling:** Lyophilized; store frozen/desiccated, dark; reconstitute bacteriostatic/sterile water, refrigerate; avoid freeze-thaw/agitation; lipidated/amphiphilic -- gentle reconstitution avoids foaming/aggregation.
-- **Regulatory:** Investigational (Eli Lilly); Phase 3 TRIUMPH program -- TRIUMPH-1 topline results positive (May 2026); NDA submission expected Q4 2026 to Q1 2027; FDA decision projected 2027 or later; not FDA-approved; non-trial material research-use-only.
+- **Regulatory:** Investigational (Eli Lilly); Phase 3 TRIUMPH program -- TRIUMPH-1 topline results positive (May 2026). As of August 2026 no NDA has been filed. Sponsor guidance is an obesity NDA submission in the second half of 2026 and a type 2 diabetes submission in early 2027; an FDA decision is therefore not expected before 2027. FDA has granted Fast Track designation for obesity. Not FDA-approved; non-trial material is research-use-only. Not on the WADA 2026 Prohibited List.
 - **Sources:** pubmed.ncbi.nlm.nih.gov/37366315 (Jastreboff); 35985340 (Coskun POC); en.wikipedia.org/wiki/Retatrutide
 
 ### Survodutide (BI 456906)
@@ -677,12 +697,12 @@ Cited as a dual-pathway GH-stimulation model recruiting two distinct somatotroph
 - **Identity:** Peptide with C18-diacid albumin-binding side chain; C192H289N47O61; ~4231.7 g/mol; CAS 2805997-46-8; PubChem CID 168429725; UNII 2ALA66NS64. Weekly SC.
 - **Mechanism / target:** Balanced GLP-1R (insulin/satiety/slowed emptying) + glucagon-receptor (energy expenditure, hepatic lipid mobilization) co-agonism; glucagon arm underlies hepatic-fat interest.
 - **Research use cases:** Obesity, T2D, MASH/NASH (notable hepatic interest).
-- **Reported benefits:** Human -- meta-analysis of 3 RCTs (1,088 patients): 4-11 months at 2.4-4.8 mg/wk associated with ~7-9% weight reduction (~9-15 kg); Phase 2 activity in obesity and MASH histologic improvement.
+- **Reported benefits:** Human -- meta-analysis of 3 RCTs (1,088 patients): 4-11 months at 2.4-4.8 mg/wk associated with ~7-9% weight reduction (~9-15 kg); Phase 2 activity in obesity and MASH histologic improvement. Phase 3 SYNCHRONIZE-1 (topline 28 April 2026) met its co-primary endpoints on both the efficacy and treatment-regimen estimands, with mean weight loss of up to 16.6% at 76 wk vs 3.2% placebo (p<0.0001). Phase 3 SYNCHRONIZE-MASLD met both primary endpoints, with liver-fat normalization in about 6 of 10 treated participants at 48 wk; a pre-specified analysis reported roughly 34% visceral and 63% liver fat reduction with relative preservation of lean mass. Both were presented at ADA 2026 and published in The New England Journal of Medicine and Nature Medicine respectively.
 - **Side effects:** Predominantly GI (nausea, vomiting, diarrhea), mild/dose-dependent; glucagon agonism can raise heart rate.
 - **Warnings/limitations:** Investigational -- no approved indication/long-term safety; class incretin considerations under study. Not approved.
 - **Handling:** Lyophilized; store frozen/desiccated, dark; reconstitute bacteriostatic/sterile water, refrigerate; avoid freeze-thaw/shaking.
-- **Regulatory:** Investigational (Boehringer Ingelheim/Zealand Pharma); not FDA-approved.
-- **Sources:** en.wikipedia.org/wiki/Survodutide; pubmed.ncbi.nlm.nih.gov/38856224 (MASH Phase 2)
+- **Regulatory:** Investigational (Boehringer Ingelheim/Zealand Pharma); not FDA-approved despite positive Phase 3 readouts in 2026. Holds FDA Breakthrough Therapy designation for MASH. Not on the WADA 2026 Prohibited List.
+- **Sources:** en.wikipedia.org/wiki/Survodutide; pubmed.ncbi.nlm.nih.gov/38856224 (MASH Phase 2); boehringer-ingelheim.com (SYNCHRONIZE-1 and SYNCHRONIZE-MASLD announcements, 2026)
 
 ### Cagrilintide (AM833)
 - **Class / type:** Investigational long-acting amylin analog (dual amylin + calcitonin receptor agonist, DACRA); acylated cyclic peptide.
@@ -693,11 +713,11 @@ Cited as a dual-pathway GH-stimulation model recruiting two distinct somatotroph
 - **Side effects:** Predominantly GI (nausea, vomiting), mild-moderate/dose-dependent; injection-site reactions.
 - **Warnings/limitations:** Investigational -- no approved indication; long-term safety not established. Not approved.
 - **Handling:** Lyophilized; store frozen/desiccated; reconstitute bacteriostatic/sterile water, refrigerate, dark; avoid freeze-thaw/agitation; cyclic disulfide -- avoid reducing conditions.
-- **Regulatory:** Investigational (Novo Nordisk); not FDA-approved.
+- **Regulatory:** Investigational (Novo Nordisk); not FDA-approved as a single agent. It is the amylin analogue component of CagriSema, which is under FDA review following a December 2025 NDA filing. Not on the WADA 2026 Prohibited List.
 - **Sources:** en.wikipedia.org/wiki/Cagrilintide; pubmed.ncbi.nlm.nih.gov/34798060 (Lau); go.drugbank.com/drugs/DB18887
 
 ### Combination: Cagrilintide + Semaglutide (CagriSema)
-Investigational fixed combination (cagrilintide 2.4 mg + semaglutide 2.4 mg) exploiting amylin + incretin synergy via complementary, non-redundant satiety pathways. Phase 1b (Enebo, Lancet 2021) established tolerability/PK; Phase 2 ~-15.6% at 32 wk. Phase 3 REDEFINE (NEJM, June 2025): REDEFINE 1 (68 wk, 3,417, obesity/overweight) -- CagriSema -20.4% vs -11.5% cagrilintide, -14.9% semaglutide, -3.0% placebo; REDEFINE 2 (68 wk, 1,206, T2D) -- -13.7% vs -3.1% placebo. AEs predominantly GI. Investigational (Novo Nordisk); NDA filed with FDA Dec 18, 2025 (under FDA review in 2026); not yet approved.
+Investigational fixed combination (cagrilintide 2.4 mg + semaglutide 2.4 mg) exploiting amylin + incretin synergy via complementary, non-redundant satiety pathways. Phase 1b (Enebo, Lancet 2021) established tolerability/PK; Phase 2 ~-15.6% at 32 wk. Phase 3 REDEFINE (NEJM, June 2025): REDEFINE 1 (68 wk, 3,417, obesity/overweight) -- CagriSema -20.4% vs -11.5% cagrilintide, -14.9% semaglutide, -3.0% placebo; REDEFINE 2 (68 wk, 1,206, T2D) -- -13.7% vs -3.1% placebo. AEs predominantly GI. REDEFINE 4, a Phase 3 head-to-head against tirzepatide, did NOT meet its primary endpoint of non-inferiority on weight loss at 84 wk -- a material caveat when comparing this combination to approved dual agonists. Investigational (Novo Nordisk); NDA filed with FDA 18 December 2025 on REDEFINE 1 and REDEFINE 2 and under review through 2026; company guidance points to a decision in Q4 2026 and no PDUFA date has been publicly confirmed. Would be the first once-weekly GLP-1 plus amylin analogue combination for weight management if approved. Not yet approved. Not on the WADA 2026 Prohibited List.
 - **Sources:** en.wikipedia.org/wiki/Cagrilintide/semaglutide; pubmed 40544433 (REDEFINE 1); 40544432 (REDEFINE 2); 33894838 (Enebo)
 
 
@@ -708,9 +728,9 @@ Investigational fixed combination (cagrilintide 2.4 mg + semaglutide 2.4 mg) exp
 - **Research use cases:** Metabolic homeostasis, insulin resistance/obesity, exercise mimetics, aging/healthspan, neurodegenerative/cardiovascular research.
 - **Reported benefits:** Animal/in-vitro (Lee, Cell Metab 2015) -- promoted metabolic homeostasis, reduced obesity/insulin resistance in mice. Human -- observational (exercise-induced circulating MOTS-c, Sci Rep 2021). Predominantly preclinical/mechanistic; controlled human therapeutic trials lacking.
 - **Side effects:** No well-characterized human AE profile (no formal human safety trials); human safety not established.
-- **Warnings/limitations:** Not approved; EMPHASIS -- WADA-banned effective 2024 (relevant for competitive athletes); evidence predominantly preclinical.
+- **Warnings/limitations:** Not approved; EMPHASIS -- WADA-banned, named on the 2026 Prohibited List under S4.4.1 as "mitochondrial open reading frame of the 12S rRNA-c (MOTS-c)", prohibited at all times and non-Specified, which carries the highest sanction tier for a first violation; evidence predominantly preclinical.
 - **Handling:** Lyophilized; store frozen/desiccated, dark; reconstitute bacteriostatic/sterile water, refrigerate short-term; two methionines (oxidation-prone) -- minimize air exposure, avoid freeze-thaw.
-- **Regulatory:** Not FDA-approved; research-use-only. WADA-prohibited (2024).
+- **Regulatory:** Not FDA-approved; research-use-only. WADA-prohibited since 2024 and named explicitly on the 2026 Prohibited List under S4.4.1 (AMPK activators), prohibited at all times, non-Specified substance.
 - **Sources:** en.wikipedia.org/wiki/MOTS-c; pubmed 25738459 (Lee); usada.org (2024 list changes)
 
 ### Lemon Bottle (Riboflavin / Bromelain / Lecithin lipolytic blend)
@@ -769,7 +789,19 @@ Investigational fixed combination (cagrilintide 2.4 mg + semaglutide 2.4 mg) exp
 
 ## WADA-Prohibited (verify current list)
 
-All GH secretagogues/GHRH analogs (CJC-1295 +/-DAC, Sermorelin, Tesamorelin, GHRP-2/6, Hexarelin, Ipamorelin), all GH/IGF/anabolic agents (Somatropin, HGH Frag 176-191, AOD9604, IGF-1 LR3, Follistatin), TB-500/Tbeta4, AICAR, MOTS-c. HCG/HMG prohibited in males. BPC-157/KPV fall under WADA S0 (non-approved-substance) catch-all.
+Verified against the WADA 2026 Prohibited List (in force 1 January 2026).
+
+**Named explicitly on the 2026 List:** BPC-157 (S0, Specified); AOD9604 and HGH Frag 176-191 (S2.2.3, growth hormone fragments); CJC-1295 +/-DAC, Sermorelin, Tesamorelin, Ipamorelin, Hexarelin (examorelin), GHRP-2 (pralmorelin), GHRP-6 (S2.2.4); IGF-1 LR3 as an IGF-1 analogue and TB-500/Tbeta4 (S2.3); Follistatin as a myostatin-binding protein (S4.3); AICAR and MOTS-c (S4.4.1, AMPK activators). Kisspeptin and its agonist analogues are named under S2.2.1 and prohibited in males, as are HCG and HMG. Everything in S2 and S4.3/S4.4 is non-Specified, which carries the highest first-violation sanction tier.
+
+**Caught by the S0 catch-all rather than by name:** KPV, and any other non-approved research compound in this catalog that is not addressed by a later section.
+
+**Stacks inherit the strictest component:** the Shred Stack (Tirzepatide + AOD9604), Wolverine Stack, GLOW and KLOW all contain a prohibited component and are therefore prohibited at all times.
+
+**Unresolved:** ARA-290 (cibinetide) is not named, but as an erythropoietin-derived innate repair receptor agonist it may fall within S2.1.5, whose examples are explicitly non-exhaustive. Treat its status as unresolved and verify with an anti-doping organization.
+
+**Not prohibited but monitored:** Semaglutide (Monitoring Program since 2024) and Tirzepatide (added 1 January 2026).
+
+**Method rules that apply to compounded injectables here:** M2.2 prohibits IV infusions or injections exceeding 100 mL per 12-hour period, which reaches IV NAD+, IV glutathione and IV L-carnitine protocols even though those substances are themselves permitted.
 
 ## Notable Safety Flags
 
@@ -782,4 +814,27 @@ All GH secretagogues/GHRH analogs (CJC-1295 +/-DAC, Sermorelin, Tesamorelin, GHR
 
 ---
 
-> **Identity/data notes (updated 2026-07-01):** Pinealon (Glu-Asp-Arg tripeptide) CAS 175175-23-2 is confirmed in multiple chemical registries (MW 418.4 Da, C14H23N5O6). 5-Amino-1MQ has two relevant CAS numbers: free-base 5-amino-1-methylquinoline (CAS 5611-99-4, MW ~158 Da) and iodide salt 5-amino-1-methylquinolinium iodide (CAS 685079-15-6, MW ~285 Da) -- verify per certificate of analysis which form is supplied. AHK-Cu (Ala-His-Lys+Cu(II)) has no single registry CAS; confirm per certificate of analysis. Thymalin identity is accurately documented in its entry: the commercial research compound is most commonly supplied as the Glu-Trp dipeptide; the historical thymus-extract "Thymalin" is a distinct multi-peptide preparation -- treat as Glu-Trp unless the certificate of analysis specifies otherwise.
+>
+> **Identity/data notes (resolved 2026-08-04).** The four open identity caveats carried in earlier
+> revisions are now closed.
+>
+> - **Pinealon (EDR, Glu-Asp-Arg):** CAS 175175-23-2, C15H26N6O8, 418.41 Da. The earlier formula
+>   C14H23N5O6 given here was incorrect and has been corrected. Confirmed against PubChem CID 10273502.
+> - **5-Amino-1MQ:** the research material is the iodide salt, 5-amino-1-methylquinolinium iodide,
+>   C10H11N2 . I, 286.11 Da, CAS 42464-96-0 (also cited as 685079-15-6), confirmed against the
+>   Sigma-Aldrich SML2832 record. The free cation is 159.21 Da. The previously cited CAS 5611-99-4 was
+>   incorrect. 1.89 mg of the iodide salt corresponds to 1 mg of 5-Amino-1MQ base, so verify which
+>   basis a certificate of analysis quotes potency on.
+> - **AHK-Cu:** CAS 767286-83-9, C15H24CuN6O4, 415.93 Da for the complex; CAS 682809-81-0, 452.40 Da
+>   for the hydrochloride; 354.41 Da for the copper-free AHK tripeptide. The generic CAS 89030-95-5
+>   ("copper tripeptide") is not specific to AHK-Cu. Confirm the supplied form per certificate of
+>   analysis, since copper content differs.
+> - **Thymalin:** the identity ambiguity resolves in favour of the extract, not the dipeptide. Thymalin
+>   is the calf-thymus low-molecular-weight polypeptide complex, CAS 131183-11-4, a heterogeneous
+>   mixture with roughly 80 to 90 percent of components between 600 and 6000 Da; it has no single
+>   PubChem compound record. Material supplied as the Glu-Trp (EW) dipeptide is properly named
+>   Thymogen / Oglufanide, CAS 38101-59-6 -- one constituent isolated from the Thymalin low-MW
+>   fraction, not a synonym for it. Lys-Glu (KE) is another constituent, marketed as Vilon
+>   (CAS 45234-02-4). The earlier guidance in this reference to "treat as Glu-Trp unless the
+>   certificate of analysis specifies otherwise" was backwards and has been reversed: treat the
+>   product as the thymus complex unless the certificate of analysis identifies a specific dipeptide.
