@@ -41,133 +41,6 @@ function doseString(p: LabelProduct): string {
   return `${size}${(m || 'mg').toUpperCase()}`;
 }
 
-// ─── Pep Nation Dynamic Label Helpers ──────────────────────────────────────
-
-/** Scale peptide name font size (px) by character count for screen preview. */
-function pepNameFontPx(name: string): number {
-  const len = name.length;
-  if (len <= 7)  return 28;
-  if (len <= 10) return 23;
-  if (len <= 13) return 19;
-  if (len <= 17) return 15;
-  if (len <= 22) return 12;
-  return 10;
-}
-
-/** Scale peptide name font size (pt) by character count for print. */
-function pepNameFontPt(name: string): string {
-  const len = name.length;
-  if (len <= 7)  return '14pt';
-  if (len <= 10) return '11.5pt';
-  if (len <= 13) return '9.5pt';
-  if (len <= 17) return '8pt';
-  if (len <= 22) return '6.5pt';
-  return '5.5pt';
-}
-
-/**
- * Builds a self-contained HTML snippet for one Pep Nation label
- * at the exact target print dimensions. Used inside the print popup window.
- */
-function buildPepNationLabelHtml(name: string, dose: string, logoUrl: string): string {
-  const esc = (s: string) =>
-    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
-  const nameFontSize = pepNameFontPt(name);
-  const doseSpan = dose
-    ? `<span class="pnl-mg">${esc(dose)}</span>`
-    : `<span style="display:inline-block;width:18pt"></span>`;
-  return (
-    `<div class="pnl">` +
-      `<div class="pnl-top"></div>` +
-      `<div class="pnl-main">` +
-        `<div class="pnl-logo-row">${doseSpan}<img class="pnl-logo" src="${esc(logoUrl)}" alt="Pep Nation">${doseSpan}</div>` +
-        `<div class="pnl-name" style="font-size:${nameFontSize}">${esc(name)}</div>` +
-      `</div>` +
-      `<div class="pnl-footer"><span class="pnl-ftext">FOR RESEARCH USE ONLY</span></div>` +
-    `</div>`
-  );
-}
-
-/** CSS injected into every Pep Nation print window. */
-const PEP_NATION_LABEL_CSS = `
-  .pnl{background:#000;display:flex;flex-direction:column;font-family:Impact,'Arial Narrow',Arial,sans-serif;overflow:hidden;box-sizing:border-box;}
-  .pnl-top{height:2pt;background:#C0C0C0;flex-shrink:0;}
-  .pnl-main{flex:1;display:flex;flex-direction:column;}
-  .pnl-logo-row{flex:1;display:flex;align-items:center;justify-content:space-between;padding:1pt 5pt;}
-  .pnl-mg{color:#CCCCCC;font-style:italic;font-size:14pt;line-height:1;text-shadow:-1pt -1pt 0 #0a1a50,1pt -1pt 0 #0a1a50,-1pt 1pt 0 #0a1a50,1pt 1pt 0 #0a1a50;}
-  .pnl-logo{height:22pt;width:auto;object-fit:contain;}
-  .pnl-name{color:#CCCCCC;text-align:center;line-height:1;letter-spacing:0.5pt;padding:1pt 3pt 0;flex-shrink:0;}
-  .pnl-footer{background:#C0C0C0;height:11pt;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-  .pnl-ftext{font-size:4.5pt;font-weight:700;color:#111;letter-spacing:0.5pt;}
-`;
-
-/**
- * Screen-side preview of one Pep Nation label rendered with React/CSS.
- * Fills its parent container at a 2:1 aspect ratio.
- */
-function PepNationLabelPreview({ name, dose }: { name: string; dose: string }) {
-  const nameFontSize = pepNameFontPx(name);
-  const stroke =
-    '-2px -2px 0 #0a1a50,2px -2px 0 #0a1a50,-2px 2px 0 #0a1a50,2px 2px 0 #0a1a50,' +
-    '-3px 0 0 #0a1a50,3px 0 0 #0a1a50';
-
-  return (
-    <div style={{
-      width: '100%', aspectRatio: '2 / 1', background: '#000',
-      display: 'flex', flexDirection: 'column',
-      fontFamily: "Impact, 'Arial Narrow', Arial, sans-serif",
-      overflow: 'hidden',
-    }}>
-      {/* Thin top line */}
-      <div style={{ height: 3, background: '#C0C0C0', flexShrink: 0 }} />
-
-      {/* Main area */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        {/* Logo row */}
-        <div style={{
-          flex: 1, display: 'flex', alignItems: 'center',
-          justifyContent: 'space-between', padding: '4px 10px',
-        }}>
-          {dose
-            ? <span style={{ color: '#CCCCCC', fontStyle: 'italic', fontSize: 28, lineHeight: 1, textShadow: stroke }}>{dose}</span>
-            : <span />}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/pep-nation-label-logo.png"
-            alt="Pep Nation"
-            style={{ height: 50, width: 'auto', objectFit: 'contain' }}
-          />
-          {dose
-            ? <span style={{ color: '#CCCCCC', fontStyle: 'italic', fontSize: 28, lineHeight: 1, textShadow: stroke }}>{dose}</span>
-            : <span />}
-        </div>
-
-        {/* Peptide name */}
-        <div style={{
-          color: '#CCCCCC', fontSize: nameFontSize,
-          textAlign: 'center', letterSpacing: 2,
-          lineHeight: 1, padding: '0 6px 3px',
-        }}>
-          {name}
-        </div>
-      </div>
-
-      {/* Footer stripe */}
-      <div style={{
-        background: '#C0C0C0', height: 22,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexShrink: 0,
-      }}>
-        <span style={{ fontSize: 8, fontWeight: 700, color: '#111', letterSpacing: 1 }}>
-          FOR RESEARCH USE ONLY
-        </span>
-      </div>
-    </div>
-  );
-}
-
-// ─── Size Presets ──────────────────────────────────────────────────────────
-
 const SIZE_PRESETS = [
   { key: 'default', label: '3/4" X 1 1/2" (Default)', w: 1.5, h: 0.75 },
   { key: 'small',   label: '1/2" X 1"',               w: 1,   h: 0.5  },
@@ -177,7 +50,8 @@ const SIZE_PRESETS = [
   { key: 'custom',  label: 'Custom Size',              w: 0,   h: 0    },
 ];
 
-// ─── Main Component ────────────────────────────────────────────────────────
+// Cache-buster version — bump after uploading a new batch of label images.
+const IMG_VERSION = 7;
 
 export default function PrintLabelsClient({
   products,
@@ -189,7 +63,6 @@ export default function PrintLabelsClient({
   brand?: 'pepnation' | 'savage';
 }) {
   const STORAGE_BASE = brandBase(brand);
-  const isPepNation = brand === 'pepnation';
 
   const [search, setSearch]               = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('All');
@@ -235,11 +108,10 @@ export default function PrintLabelsClient({
   const labelH = sizeKey === 'custom' ? Math.max(0.25, Math.min(10, parseFloat(customH) || 0.75)) : preset.h;
 
   const printItems = useMemo(() => {
-    const items: { slug: string; name: string; dose: string }[] = [];
+    const items: { slug: string; name: string }[] = [];
     products.forEach(p => {
-      const qty  = quantities[p.slug] || 0;
-      const dose = doseString(p);
-      for (let i = 0; i < qty; i++) items.push({ slug: p.slug, name: p.name, dose });
+      const qty = quantities[p.slug] || 0;
+      for (let i = 0; i < qty; i++) items.push({ slug: p.slug, name: p.name });
     });
     return items;
   }, [products, quantities]);
@@ -254,146 +126,65 @@ export default function PrintLabelsClient({
     const esc = (s: string) =>
       s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 
-    // For Savage: static images from Supabase storage.
     const imgTag = (slug: string, name: string) =>
-      `<img src="${STORAGE_BASE}/${esc(slug)}.png?v=6" alt="${esc(name)}">`;
-
-    // For Pep Nation: CSS labels (logo served from same origin as the page).
-    const logoUrl =
-      typeof window !== 'undefined'
-        ? `${window.location.origin}/pep-nation-label-logo.png`
-        : '/pep-nation-label-logo.png';
+      `<img src="${STORAGE_BASE}/${esc(slug)}.png?v=${IMG_VERSION}" alt="${esc(name)}">`;
 
     let pages = '';
     let css   = '';
 
-    /* ── Avery 61525 sheet mode ── */
     if (mode === 'avery') {
-      if (isPepNation) {
-        css = `
-          @page { size: 8.5in 11in; margin: 0; }
-          body { margin: 0; }
-          .sheet { position:relative; width:8.5in; height:11in; page-break-after:always; overflow:hidden; }
-          .cell  { position:absolute; width:1.5in; height:0.75in; overflow:hidden; }
-          .cell .pnl {
-            position:absolute;
-            width:calc(1.5in * ${bleed}); height:calc(0.75in * ${bleed});
-            top:50%; left:50%; transform:translate(-50%,-50%);
-          }
-          ${PEP_NATION_LABEL_CSS}
-        `;
-        for (let s = 0; s * AVERY_PER_SHEET < printItems.length; s++) {
-          const batch = printItems.slice(s * AVERY_PER_SHEET, (s + 1) * AVERY_PER_SHEET);
-          const cells = batch.map((item, i) => {
-            const col  = i % 4;
-            const row  = Math.floor(i / 4);
-            const left = AVERY_COLS[col];
-            const top  = AVERY_TOP + row * AVERY_PITCH_Y;
-            return `<div class="cell" style="left:${left}in;top:${top}in;">${buildPepNationLabelHtml(item.name, item.dose, logoUrl)}</div>`;
-          }).join('');
-          pages += `<div class="sheet">${cells}</div>`;
+      css = `
+        @page { size: 8.5in 11in; margin: 0; }
+        body { margin: 0; }
+        .sheet { position:relative; width:8.5in; height:11in; page-break-after:always; overflow:hidden; }
+        .cell  { position:absolute; width:1.5in; height:0.75in; overflow:hidden; }
+        .cell img {
+          display:block; position:absolute;
+          width:calc(1.5in * ${bleed}); height:calc(0.75in * ${bleed});
+          top:50%; left:50%; transform:translate(-50%,-50%); object-fit:fill;
         }
-      } else {
-        css = `
-          @page { size: 8.5in 11in; margin: 0; }
-          body { margin: 0; }
-          .sheet { position:relative; width:8.5in; height:11in; page-break-after:always; overflow:hidden; }
-          .cell  { position:absolute; width:1.5in; height:0.75in; overflow:hidden; }
-          .cell img {
-            display:block; position:absolute;
-            width:calc(1.5in * ${bleed}); height:calc(0.75in * ${bleed});
-            top:50%; left:50%; transform:translate(-50%,-50%); object-fit:fill;
-          }
-        `;
-        for (let s = 0; s * AVERY_PER_SHEET < printItems.length; s++) {
-          const batch = printItems.slice(s * AVERY_PER_SHEET, (s + 1) * AVERY_PER_SHEET);
-          const cells = batch.map((item, i) => {
-            const col  = i % 4;
-            const row  = Math.floor(i / 4);
-            const left = AVERY_COLS[col];
-            const top  = AVERY_TOP + row * AVERY_PITCH_Y;
-            return `<div class="cell" style="left:${left}in;top:${top}in;">${imgTag(item.slug, item.name)}</div>`;
-          }).join('');
-          pages += `<div class="sheet">${cells}</div>`;
-        }
+      `;
+      for (let s = 0; s * AVERY_PER_SHEET < printItems.length; s++) {
+        const batch = printItems.slice(s * AVERY_PER_SHEET, (s + 1) * AVERY_PER_SHEET);
+        const cells = batch.map((item, i) => {
+          const col  = i % 4;
+          const row  = Math.floor(i / 4);
+          const left = AVERY_COLS[col];
+          const top  = AVERY_TOP + row * AVERY_PITCH_Y;
+          return `<div class="cell" style="left:${left}in;top:${top}in;">${imgTag(item.slug, item.name)}</div>`;
+        }).join('');
+        pages += `<div class="sheet">${cells}</div>`;
       }
-
-    /* ── Roll mode (1 label per page) ── */
     } else if (mode === 'roll') {
-      if (isPepNation) {
-        css = `
-          @page { size: ${labelW}in ${labelH}in; margin: 0; }
-          body { margin: 0; }
-          .pl { width:${labelW}in; height:${labelH}in; page-break-after:always; overflow:hidden; position:relative; }
-          .pl .pnl {
-            position:absolute;
-            width:calc(${labelW}in * ${bleed}); height:calc(${labelH}in * ${bleed});
-            top:50%; left:50%; transform:translate(-50%,-50%);
-          }
-          ${PEP_NATION_LABEL_CSS}
-        `;
-        pages = printItems
-          .map(item => `<div class="pl">${buildPepNationLabelHtml(item.name, item.dose, logoUrl)}</div>`)
-          .join('');
-      } else {
-        css = `
-          @page { size: ${labelW}in ${labelH}in; margin: 0; }
-          body { margin: 0; }
-          .pl { width:${labelW}in; height:${labelH}in; page-break-after:always; overflow:hidden; position:relative; }
-          .pl img {
-            display:block; position:absolute;
-            width:calc(${labelW}in * ${bleed}); height:calc(${labelH}in * ${bleed});
-            top:50%; left:50%; transform:translate(-50%,-50%); object-fit:fill;
-          }
-        `;
-        pages = printItems
-          .map(item => `<div class="pl">${imgTag(item.slug, item.name)}</div>`)
-          .join('');
-      }
-
-    /* ── Grid mode (multiple per page) ── */
+      css = `
+        @page { size: ${labelW}in ${labelH}in; margin: 0; }
+        body { margin: 0; }
+        .pl { width:${labelW}in; height:${labelH}in; page-break-after:always; overflow:hidden; position:relative; }
+        .pl img {
+          display:block; position:absolute;
+          width:calc(${labelW}in * ${bleed}); height:calc(${labelH}in * ${bleed});
+          top:50%; left:50%; transform:translate(-50%,-50%); object-fit:fill;
+        }
+      `;
+      pages = printItems.map(item => `<div class="pl">${imgTag(item.slug, item.name)}</div>`).join('');
     } else {
-      if (isPepNation) {
-        css = `
-          @page { size: 8.5in 11in; margin: 0.25in; }
-          body { margin: 0; font-size: 0; }
-          .pl {
-            display:inline-block; width:${labelW}in; height:${labelH}in;
-            margin:0.0625in; overflow:hidden;
-            page-break-inside:avoid; break-inside:avoid; position:relative;
-          }
-          .pl .pnl {
-            position:absolute;
-            width:calc(${labelW}in * ${bleed}); height:calc(${labelH}in * ${bleed});
-            top:50%; left:50%; transform:translate(-50%,-50%);
-          }
-          ${PEP_NATION_LABEL_CSS}
-        `;
-        pages = printItems
-          .map(item => `<div class="pl">${buildPepNationLabelHtml(item.name, item.dose, logoUrl)}</div>`)
-          .join('');
-      } else {
-        css = `
-          @page { size: 8.5in 11in; margin: 0.25in; }
-          body { margin: 0; font-size: 0; }
-          .pl {
-            display:inline-block; width:${labelW}in; height:${labelH}in;
-            margin:0.0625in; overflow:hidden;
-            page-break-inside:avoid; break-inside:avoid; position:relative;
-          }
-          .pl img {
-            display:block; position:absolute;
-            width:calc(${labelW}in * ${bleed}); height:calc(${labelH}in * ${bleed});
-            top:50%; left:50%; transform:translate(-50%,-50%); object-fit:fill;
-          }
-        `;
-        pages = printItems
-          .map(item => `<div class="pl">${imgTag(item.slug, item.name)}</div>`)
-          .join('');
-      }
+      css = `
+        @page { size: 8.5in 11in; margin: 0.25in; }
+        body { margin: 0; font-size: 0; }
+        .pl {
+          display:inline-block; width:${labelW}in; height:${labelH}in;
+          margin:0.0625in; overflow:hidden;
+          page-break-inside:avoid; break-inside:avoid; position:relative;
+        }
+        .pl img {
+          display:block; position:absolute;
+          width:calc(${labelW}in * ${bleed}); height:calc(${labelH}in * ${bleed});
+          top:50%; left:50%; transform:translate(-50%,-50%); object-fit:fill;
+        }
+      `;
+      pages = printItems.map(item => `<div class="pl">${imgTag(item.slug, item.name)}</div>`).join('');
     }
 
-    // Wait for all images to load before triggering print
     const waitScript =
       `<script>(function(){` +
         `var imgs=Array.prototype.slice.call(document.images);` +
@@ -405,7 +196,7 @@ export default function PrintLabelsClient({
           `if(img.complete&&img.naturalWidth>0){done();}` +
           `else{img.addEventListener('load',done);img.addEventListener('error',done);}` +
         `});` +
-        `setTimeout(go,15000);` +
+        `setTimeout(go,20000);` +
         `window.onafterprint=function(){setTimeout(function(){window.close();},300);};` +
       `})();<` + `/script>`;
 
@@ -475,19 +266,13 @@ export default function PrintLabelsClient({
             <>
               <div>
                 <label style={{ display: 'block', fontSize: '0.72rem', color: '#A8B4C0', marginBottom: 6, fontWeight: 600 }}>Width (Inches)</label>
-                <input
-                  type="number" step="0.25" value={customW}
-                  onChange={e => setCustomW(e.target.value)}
-                  style={{ background: '#162230', color: '#FFF', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 8, padding: '10px 12px', fontSize: '0.85rem', width: 110 }}
-                />
+                <input type="number" step="0.25" value={customW} onChange={e => setCustomW(e.target.value)}
+                  style={{ background: '#162230', color: '#FFF', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 8, padding: '10px 12px', fontSize: '0.85rem', width: 110 }} />
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '0.72rem', color: '#A8B4C0', marginBottom: 6, fontWeight: 600 }}>Height (Inches)</label>
-                <input
-                  type="number" step="0.25" value={customH}
-                  onChange={e => setCustomH(e.target.value)}
-                  style={{ background: '#162230', color: '#FFF', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 8, padding: '10px 12px', fontSize: '0.85rem', width: 110 }}
-                />
+                <input type="number" step="0.25" value={customH} onChange={e => setCustomH(e.target.value)}
+                  style={{ background: '#162230', color: '#FFF', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 8, padding: '10px 12px', fontSize: '0.85rem', width: 110 }} />
               </div>
             </>
           )}
@@ -500,27 +285,21 @@ export default function PrintLabelsClient({
                 { key: 'roll',  label: 'Roll (1 Per Page)' },
                 { key: 'grid',  label: 'Grid (Multiple Per Page)' },
               ] as const).map(m => (
-                <button
-                  key={m.key}
-                  onClick={() => setMode(m.key)}
+                <button key={m.key} onClick={() => setMode(m.key)}
                   style={{
                     background: mode === m.key ? 'rgba(0,196,188,0.14)' : '#162230',
                     color:      mode === m.key ? '#00C4BC' : '#A8B4C0',
                     border:     `1px solid ${mode === m.key ? '#00C4BC' : 'rgba(255,255,255,0.14)'}`,
                     borderRadius: 8, padding: '10px 12px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
                   }}
-                >
-                  {m.label}
-                </button>
+                >{m.label}</button>
               ))}
             </div>
           </div>
 
           <div>
             <label style={{ display: 'block', fontSize: '0.72rem', color: '#A8B4C0', marginBottom: 6, fontWeight: 600, letterSpacing: '0.04em' }}>Bleed (Overscan)</label>
-            <select
-              value={bleed}
-              onChange={e => setBleed(parseFloat(e.target.value))}
+            <select value={bleed} onChange={e => setBleed(parseFloat(e.target.value))}
               style={{ background: '#162230', color: '#FFF', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 8, padding: '10px 12px', fontSize: '0.85rem', minWidth: 140 }}
             >
               <option value={1}>None (Exact Fit)</option>
@@ -534,16 +313,13 @@ export default function PrintLabelsClient({
 
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
             {totalSelected > 0 && (
-              <button
-                onClick={() => setQuantities({})}
+              <button onClick={() => setQuantities({})}
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'transparent', color: '#A8B4C0', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 8, padding: '10px 14px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}
               >
                 <Trash2 size={15} /> Clear All
               </button>
             )}
-            <button
-              onClick={handlePrint}
-              disabled={totalSelected === 0}
+            <button onClick={handlePrint} disabled={totalSelected === 0}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8,
                 background: totalSelected === 0 ? 'rgba(0,196,188,0.25)' : '#00C4BC',
@@ -565,20 +341,14 @@ export default function PrintLabelsClient({
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginBottom: 16 }}>
           <div style={{ position: 'relative' }}>
             <Search size={15} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: '#A8B4C0' }} />
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search Labels"
-              style={{ background: '#162230', color: '#FFF', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 8, padding: '10px 12px 10px 32px', fontSize: '0.85rem', width: 220 }}
-            />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search Labels"
+              style={{ background: '#162230', color: '#FFF', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 8, padding: '10px 12px 10px 32px', fontSize: '0.85rem', width: 220 }} />
           </div>
           {categories.map(cat => {
             const active = activeCategory === cat;
             const dot    = cat === 'All' ? '#00C4BC' : categoryColor(cat, '');
             return (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
+              <button key={cat} onClick={() => setActiveCategory(cat)}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 7,
                   background: active ? 'rgba(0,196,188,0.14)' : '#0F1923',
@@ -602,23 +372,15 @@ export default function PrintLabelsClient({
             const dose   = doseString(p);
             return (
               <div key={p.id} style={{ ...surface, overflow: 'hidden', outline: qty > 0 ? `2px solid ${accent}` : 'none' }}>
-
-                {/* Label preview */}
-                {isPepNation ? (
-                  <PepNationLabelPreview name={p.name} dose={dose} />
-                ) : (
-                  <div style={{ background: '#FFFFFF', aspectRatio: '2 / 1' }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={`${STORAGE_BASE}/${p.slug}.png?v=6`}
-                      alt={`${p.name} Label`}
-                      loading="lazy"
-                      style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
-                    />
-                  </div>
-                )}
-
-                {/* Name + quantity controls */}
+                <div style={{ background: '#000', aspectRatio: '2 / 1' }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`${STORAGE_BASE}/${p.slug}.png?v=${IMG_VERSION}`}
+                    alt={`${p.name} Label`}
+                    loading="lazy"
+                    style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+                  />
+                </div>
                 <div style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{ fontSize: '0.83rem', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -626,30 +388,19 @@ export default function PrintLabelsClient({
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <button
-                      onClick={() => setQty(p.slug, qty - 1)}
-                      disabled={qty === 0}
+                    <button onClick={() => setQty(p.slug, qty - 1)} disabled={qty === 0}
                       aria-label={`Remove One ${p.name} Label`}
                       style={{ width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#162230', color: qty === 0 ? '#4A5560' : '#FFF', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 7, cursor: qty === 0 ? 'not-allowed' : 'pointer' }}
-                    >
-                      <Minus size={14} />
-                    </button>
-                    <input
-                      type="number" min={0} max={999}
-                      value={qty === 0 ? '' : qty} placeholder="0"
+                    ><Minus size={14} /></button>
+                    <input type="number" min={0} max={999} value={qty === 0 ? '' : qty} placeholder="0"
                       onChange={e => setQty(p.slug, parseInt(e.target.value || '0', 10) || 0)}
-                      style={{ width: 46, textAlign: 'center', background: '#162230', color: '#FFF', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 7, padding: '6px 4px', fontSize: '0.85rem' }}
-                    />
-                    <button
-                      onClick={() => setQty(p.slug, qty + 1)}
+                      style={{ width: 46, textAlign: 'center', background: '#162230', color: '#FFF', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 7, padding: '6px 4px', fontSize: '0.85rem' }} />
+                    <button onClick={() => setQty(p.slug, qty + 1)}
                       aria-label={`Add One ${p.name} Label`}
                       style={{ width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,196,188,0.14)', color: '#00C4BC', border: '1px solid rgba(0,196,188,0.5)', borderRadius: 7, cursor: 'pointer' }}
-                    >
-                      <Plus size={14} />
-                    </button>
+                    ><Plus size={14} /></button>
                   </div>
                 </div>
-
               </div>
             );
           })}
@@ -662,7 +413,7 @@ export default function PrintLabelsClient({
         )}
       </div>
 
-      {/* Sticky Print Bar (mobile-friendly) */}
+      {/* Sticky Print Bar */}
       {totalSelected > 0 && (
         <div style={{
           position: 'fixed', left: 0, right: 0, bottom: 0,
@@ -676,12 +427,9 @@ export default function PrintLabelsClient({
             {totalSelected} Label{totalSelected === 1 ? '' : 's'} Selected —{' '}
             {mode === 'avery'
               ? `Avery 61525 (${Math.ceil(totalSelected / 40)} Sheet${Math.ceil(totalSelected / 40) === 1 ? '' : 's'})`
-              : sizeKey === 'custom'
-                ? `${labelH}" × ${labelW}"`
-                : preset.label.replace(' (Default)', '')}
+              : sizeKey === 'custom' ? `${labelH}" × ${labelW}"` : preset.label.replace(' (Default)', '')}
           </span>
-          <button
-            onClick={handlePrint}
+          <button onClick={handlePrint}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#00C4BC', color: '#04211F', border: 'none', borderRadius: 8, padding: '10px 18px', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer' }}
           >
             <Printer size={16} /> Print Now
