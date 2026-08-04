@@ -65,7 +65,6 @@ export default function PrintLabelsClient({
   const STORAGE_BASE = brandBase(brand);
 
   const [search, setSearch]               = useState('');
-  const [activeCategory, setActiveCategory] = useState<string>('All');
   const [quantities, setQuantities]       = useState<Record<string, number>>({});
   const [sizeKey, setSizeKey]             = useState('default');
   const [customW, setCustomW]             = useState('1.5');
@@ -73,24 +72,15 @@ export default function PrintLabelsClient({
   const [mode, setMode]                   = useState<'avery' | 'roll' | 'grid'>('avery');
   const [bleed, setBleed]                 = useState<number>(1.06);
 
-  const categories = useMemo(() => {
-    const set = new Set<string>();
-    products.forEach(p => { if (p.category) set.add(p.category); });
-    return ['All', ...Array.from(set).sort()];
-  }, [products]);
-
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return products.filter(p => {
-      if (activeCategory !== 'All' && p.category !== activeCategory) return false;
-      if (!q) return true;
-      return (
-        p.name.toLowerCase().includes(q) ||
-        (p.category || '').toLowerCase().includes(q) ||
-        doseString(p).toLowerCase().includes(q)
-      );
-    });
-  }, [products, search, activeCategory]);
+    if (!q) return products;
+    return products.filter(p =>
+      p.name.toLowerCase().includes(q) ||
+      (p.category || '').toLowerCase().includes(q) ||
+      doseString(p).toLowerCase().includes(q)
+    );
+  }, [products, search]);
 
   const setQty = (slug: string, qty: number) => {
     setQuantities(prev => {
@@ -337,31 +327,13 @@ export default function PrintLabelsClient({
           Tip: In The Browser Print Dialog Set Margins To None And Scale To 100% So Labels Line Up Exactly.
         </p>
 
-        {/* Search + Category Filters */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginBottom: 16 }}>
+        {/* Search */}
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
           <div style={{ position: 'relative' }}>
             <Search size={15} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: '#A8B4C0' }} />
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search Labels"
-              style={{ background: '#162230', color: '#FFF', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 8, padding: '10px 12px 10px 32px', fontSize: '0.85rem', width: 220 }} />
+              style={{ background: '#162230', color: '#FFF', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 8, padding: '10px 12px 10px 32px', fontSize: '0.85rem', width: 260 }} />
           </div>
-          {categories.map(cat => {
-            const active = activeCategory === cat;
-            const dot    = cat === 'All' ? '#00C4BC' : categoryColor(cat, '');
-            return (
-              <button key={cat} onClick={() => setActiveCategory(cat)}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 7,
-                  background: active ? 'rgba(0,196,188,0.14)' : '#0F1923',
-                  color:      active ? '#FFFFFF' : '#A8B4C0',
-                  border:     `1px solid ${active ? '#00C4BC' : 'rgba(255,255,255,0.10)'}`,
-                  borderRadius: 999, padding: '8px 14px', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer',
-                }}
-              >
-                <span style={{ width: 9, height: 9, borderRadius: '50%', background: dot, display: 'inline-block' }} />
-                {cat}
-              </button>
-            );
-          })}
         </div>
 
         {/* Label Grid */}

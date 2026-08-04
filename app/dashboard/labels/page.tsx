@@ -79,6 +79,7 @@ export default async function PrintLabelsPage() {
   const { data: products } = await service
     .from('products')
     .select('id, name, slug, category, unit_size, unit_measure')
+    .not('slug', 'ilike', 'test-%')
     .order('category', { ascending: true })
     .order('name', { ascending: true })
     .order('slug', { ascending: true });
