@@ -212,7 +212,8 @@ async function provisionAgentStorefront(
     if (!prodCount) {
       // Seed the promoted agent's catalog from the HOUSE (admin) store's retail
       // prices (default "set price"); falls back to rookie pricing per product.
-      await seedStorefrontFromHousePrices(admin, agentId);
+      // We pass callerId as the parent agent to inherit custom images/branding.
+      await seedStorefrontFromHousePrices(admin, agentId, callerId);
     }
   } catch (provErr) {
     console.error('[promote-subagent] storefront provisioning failed:', provErr);

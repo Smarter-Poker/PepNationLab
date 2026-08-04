@@ -7,7 +7,7 @@
 // client; typed loosely to work with either.
 type SeedClient = any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
-export async function seedStorefrontFromHousePrices(client: SeedClient, agentId: string): Promise<number> {
+export async function seedStorefrontFromHousePrices(client: SeedClient, agentId: string, parentAgentId?: string): Promise<number> {
   const { data: products } = await client
     .from('products')
     .select('id, base_cost')
@@ -37,6 +37,24 @@ export async function seedStorefrontFromHousePrices(client: SeedClient, agentId:
     }
   }
 
+  // Parent agent customizations
+  const parentCustoms = new Map<string, { name: string | null, desc: string | null, img: string | null }>();
+  if (parentAgentId) {
+    const { data: parentProducts } = await client
+      .from('agent_products')
+      .select('product_id, custom_name, custom_description, custom_image_url')
+      .eq('agent_id', parentAgentId);
+    for (const p of (parentProducts ?? [])) {
+      if (p.product_id) {
+        parentCustoms.set(p.product_id, {
+          name: p.custom_name,
+          desc: p.custom_description,
+          img: p.custom_image_url,
+        });
+      }
+    }
+  }
+
   // Fallback for any active product the house store has not priced.
   const { data: rookieTier } = await client
     .from('house_tiers')
@@ -50,6 +68,9 @@ export async function seedStorefrontFromHousePrices(client: SeedClient, agentId:
     const retail = housePrice != null
       ? housePrice
       : Math.round(Number(p.base_cost) * rookieMultiplier * 100) / 100;
+    
+    const pc = parentCustoms.get(p.id);
+
     return {
       agent_id: agentId,
       product_id: p.id,
@@ -57,6 +78,9 @@ export async function seedStorefrontFromHousePrices(client: SeedClient, agentId:
       margin_percent: 50,
       is_visible: true,
       sort_order: 0,
+      custom_name: pc?.name ?? null,
+      custom_description: pc?.desc ?? null,
+      custom_image_url: pc?.img ?? null,
     };
   });
 
