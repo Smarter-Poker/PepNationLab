@@ -377,7 +377,6 @@ export default function PrintLabelsClient({ products, isAdmin, brand = 'pepnatio
                     <div style={{ fontSize: '0.83rem', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {p.name}{dose ? ` ${dose}` : ''}
                     </div>
-                    <div style={{ fontSize: '0.7rem', color: accent, fontWeight: 600 }}>{p.category || 'Uncategorized'}</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                     <button

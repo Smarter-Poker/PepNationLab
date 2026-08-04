@@ -201,7 +201,8 @@ async function run() {
         const titleContainer = document.querySelector('.title-container');
         const container = document.querySelector('.badge-left');
 
-        title.textContent = titleText;
+        let printTitle = titleText.replace(/\s*\([^)]*\)/g, '').trim();
+        title.textContent = printTitle;
         dose1.textContent = doseTextStr;
         dose2.textContent = doseTextStr;
 

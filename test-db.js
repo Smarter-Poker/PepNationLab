@@ -1,8 +1,8 @@
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config({ path: '.env.local' });
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-async function run() {
-  const { data, error } = await supabase.from('agent_products').select('custom_image_url').eq('agent_id', '45f75d5b-674f-444a-b7ab-4757a9228ee5').limit(5);
-  console.log(data);
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+async function test() {
+  const { data: bundles, error } = await supabase.from('storefront_bundles').select('*');
+  console.log(error || bundles.map(b => b.vial_image_url));
 }
-run();
+test();
