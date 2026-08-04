@@ -59,7 +59,7 @@ export default function PrintLabelsClient({ products, isAdmin, brand = 'pepnatio
   const [customW, setCustomW] = useState('1.5');
   const [customH, setCustomH] = useState('0.75');
   const [mode, setMode] = useState<'avery' | 'roll' | 'grid'>('avery');
-  const [bleed, setBleed] = useState<number>(1.04);
+  const [bleed, setBleed] = useState<number>(1.06);
 
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -124,11 +124,22 @@ export default function PrintLabelsClient({ products, isAdmin, brand = 'pepnatio
     let css = '';
 
     if (mode === 'avery') {
+      // Proper bleed: image is physically larger than the cell and centered via absolute positioning.
+      // overflow:hidden on .cell clips all 4 sides evenly — this actually fills the die-cut edge.
       css = `@page { size: 8.5in 11in; margin: 0; }
         body { margin: 0; }
         .sheet { position: relative; width: 8.5in; height: 11in; page-break-after: always; overflow: hidden; }
         .cell { position: absolute; width: 1.5in; height: 0.75in; overflow: hidden; }
-        .cell img { width: 1.5in; height: 0.75in; object-fit: fill; display: block; transform: scale(${bleed}); }`;
+        .cell img {
+          display: block;
+          position: absolute;
+          width: calc(1.5in * ${bleed});
+          height: calc(0.75in * ${bleed});
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          object-fit: fill;
+        }`;
       for (let s = 0; s * AVERY_PER_SHEET < printItems.length; s++) {
         const batch = printItems.slice(s * AVERY_PER_SHEET, (s + 1) * AVERY_PER_SHEET);
         const cells = batch.map((item, i) => {
@@ -143,14 +154,32 @@ export default function PrintLabelsClient({ products, isAdmin, brand = 'pepnatio
     } else if (mode === 'roll') {
       css = `@page { size: ${labelW}in ${labelH}in; margin: 0; }
         body { margin: 0; }
-        .pl { width: ${labelW}in; height: ${labelH}in; page-break-after: always; overflow: hidden; }
-        .pl img { width: ${labelW}in; height: ${labelH}in; object-fit: fill; display: block; transform: scale(${bleed}); transform-origin: center center; }`;
+        .pl { width: ${labelW}in; height: ${labelH}in; page-break-after: always; overflow: hidden; position: relative; }
+        .pl img {
+          display: block;
+          position: absolute;
+          width: calc(${labelW}in * ${bleed});
+          height: calc(${labelH}in * ${bleed});
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          object-fit: fill;
+        }`;
       pages = printItems.map(item => `<div class="pl">${imgTag(item.slug, item.name, '')}</div>`).join('');
     } else {
       css = `@page { size: 8.5in 11in; margin: 0.25in; }
         body { margin: 0; font-size: 0; }
-        .pl { display: inline-block; width: ${labelW}in; height: ${labelH}in; margin: 0.0625in; overflow: hidden; page-break-inside: avoid; break-inside: avoid; }
-        .pl img { width: ${labelW}in; height: ${labelH}in; object-fit: fill; display: block; transform: scale(${bleed}); transform-origin: center center; }`;
+        .pl { display: inline-block; width: ${labelW}in; height: ${labelH}in; margin: 0.0625in; overflow: hidden; page-break-inside: avoid; break-inside: avoid; position: relative; }
+        .pl img {
+          display: block;
+          position: absolute;
+          width: calc(${labelW}in * ${bleed});
+          height: calc(${labelH}in * ${bleed});
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          object-fit: fill;
+        }`;
       pages = printItems.map(item => `<div class="pl">${imgTag(item.slug, item.name, '')}</div>`).join('');
     }
 
@@ -289,7 +318,9 @@ export default function PrintLabelsClient({ products, isAdmin, brand = 'pepnatio
               <option value={1}>None (Exact Fit)</option>
               <option value={1.02}>Small (+2%)</option>
               <option value={1.04}>Standard (+4%)</option>
+              <option value={1.06}>Medium (+6%) — Recommended</option>
               <option value={1.08}>Large (+8%)</option>
+              <option value={1.10}>Extra Large (+10%) — Physical Avery</option>
             </select>
           </div>
 
