@@ -91,10 +91,7 @@ export default function PeptideVialCard({ name, category, className = '', style 
         {line2 && <text x={BX + BW / 2} y={BY + 34} textAnchor="middle" fontFamily="'Inter','Arial',sans-serif" fontWeight="800" fontSize={line2.length > 12 ? 10 : 12} fill="white" letterSpacing="0.04em">{line2}</text>}
         {/* INJECTION type */}
         <text x={LX + LW / 2} y={BY + BH + 18} textAnchor="middle" fontFamily="'Inter','Arial',sans-serif" fontWeight="700" fontSize={11} fill="#1E1E2C" letterSpacing="0.06em">INJECTION</text>
-        {/* Category subtitle */}
-        {subtitleLines.map((line, i) => (
-          <text key={i} x={LX + LW / 2} y={BY + BH + 33 + i * 13} textAnchor="middle" fontFamily="'Inter','Arial',sans-serif" fontWeight="400" fontSize={9} fill="#555566">{line}</text>
-        ))}
+        {/* Category subtitle removed per user request */}
         {/* PN logo */}
         <text x={LX + 10} y={LY + LH - SH - 14} fontFamily="'Inter','Arial Black',sans-serif" fontWeight="900" fontSize={14} fill={colors.primary} letterSpacing="-1">PN</text>
         {/* Brand name */}
