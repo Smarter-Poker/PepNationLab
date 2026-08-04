@@ -254,6 +254,36 @@ async function AgentStorefrontDataLoader({
     storeBundles = [];
   }
 
+  // ── Savage Brands network detection (server-side) ─────────────────────────
+  // A downline store (e.g. /eddierazz) must render Savage card art and never
+  // fall back to Pep Nation imagery. The client-side heuristic in the grid
+  // sniffs custom_image_url paths, which fails when a downline's catalog rows
+  // were seeded without savage image paths — so resolve the parent chain here
+  // via the service client (RLS on profiles.parent_agent_id would hide it from
+  // anonymous visitors otherwise) and pass an authoritative flag down.
+  let brandNetworkIsSavage = agentSlug === 'savagebrands';
+  if (!brandNetworkIsSavage) {
+    try {
+      const svcBrand = await createServiceClient();
+      const { data: ownerProfile } = await svcBrand
+        .from('profiles')
+        .select('parent_agent_id')
+        .eq('id', agent.id)
+        .maybeSingle();
+      const parentId = (ownerProfile as { parent_agent_id?: string | null } | null)?.parent_agent_id;
+      if (parentId) {
+        const { data: parentStore } = await svcBrand
+          .from('agent_profiles')
+          .select('slug')
+          .eq('id', parentId)
+          .maybeSingle();
+        brandNetworkIsSavage = (parentStore as { slug?: string | null } | null)?.slug === 'savagebrands';
+      }
+    } catch {
+      // Non-fatal: the grid's client-side heuristics still apply.
+    }
+  }
+
   // Build schema.org/Product nodes defensively. `name` is REQUIRED by Google's
   // Product structured-data spec; when it resolved to undefined, JSON.stringify
   // dropped the key entirely and Search Console flagged "Missing field name".
@@ -327,6 +357,7 @@ async function AgentStorefrontDataLoader({
         compoundsBySlug={compoundsBySlug}
         featuredProductIds={agent.featured_products || []}
         customBranding={(agent as any).custom_branding ?? null}
+        brandNetworkIsSavage={brandNetworkIsSavage}
       />
     </>
   );

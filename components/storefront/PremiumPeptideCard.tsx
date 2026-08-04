@@ -50,8 +50,14 @@ export default function PremiumPeptideCard({
 }: Props) {
   // Helper to convert 683x1024 canvas pixels to responsive CQI units
   const px = (val: number) => `calc(${val} * 100cqi / 683)`;
+  // If the pre-composited card image 404s (e.g. a brand folder is missing one
+  // compound's card), fall back to the generic template + live vial layer
+  // instead of rendering a broken background.
+  const [bgFailed, setBgFailed] = React.useState(false);
+  React.useEffect(() => { setBgFailed(false); }, [cardBg]);
+  const compositeBg = bgFailed ? undefined : cardBg;
   // Background: use pre-composited card (vial baked in) if provided, else generic template
-  const bgSrc = cardBg ?? '/images/storefront/premium-card-bg.jpg';
+  const bgSrc = compositeBg ?? '/images/storefront/premium-card-bg.jpg';
   
   return (
     <div 
@@ -78,10 +84,11 @@ export default function PremiumPeptideCard({
           fill
           priority
           style={{ objectFit: 'cover', pointerEvents: 'none', zIndex: 0 }}
+          onError={() => { if (compositeBg) setBgFailed(true); }}
         />
 
         {/* ── VIAL IMAGE: only rendered when NO pre-composite is provided ── */}
-        {!cardBg && (
+        {!compositeBg && (
           <div style={{
             position: 'absolute',
             left: px(25), top: px(25), right: px(25), height: px(523),

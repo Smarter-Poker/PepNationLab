@@ -114,6 +114,10 @@ interface Props {
   /** Accepted for compatibility with the storefront branding wiring; rendering
    *  of custom branding is owned by that feature, not the pricing/bundle grid. */
   customBranding?: Record<string, unknown> | null;
+  /** Server-resolved: this store is Savage Brands or one of its downlines
+   *  (profiles.parent_agent_id chain). Drives brand-scoped card art + vial
+   *  fallbacks so Pep Nation imagery never leaks onto Savage network stores. */
+  brandNetworkIsSavage?: boolean;
 }
 
 const containerVariants: Variants = {
@@ -331,10 +335,14 @@ export default function AgentStorefrontGrid({
   compoundsBySlug = {},
   featuredProductIds = [],
   customBranding = null,
+  brandNetworkIsSavage = false,
 }: Props) {
   const isSavageBrandsNetwork = useMemo(() => {
-    return agentSlug === 'savagebrands' || (products ?? []).some(p => p.custom_image_url?.includes('/images/savage-brands/'));
-  }, [agentSlug, products]);
+    // Server-resolved flag first (parent_agent_id chain — covers downlines like
+    // /eddierazz whose catalog rows may not carry savage-brands image paths),
+    // then the client-side heuristics as a safety net.
+    return brandNetworkIsSavage || agentSlug === 'savagebrands' || (products ?? []).some(p => p.custom_image_url?.includes('/images/savage-brands/'));
+  }, [brandNetworkIsSavage, agentSlug, products]);
 
   const [mounted, setMounted] = useState(false);
   const [showStoreGrid, setShowStoreGrid] = useState(true);
@@ -2409,8 +2417,11 @@ export default function AgentStorefrontGrid({
           cardBg={(() => {
             const slug = group.compoundSlug ?? '';
             if (!slug) return undefined;
-            // Route each storefront to its own brand image folder — never mix
-            const brand = agentSlug === 'savagebrands' ? 'savagebrands' : 'pepnation';
+            // Route each storefront to its own brand image folder — never mix.
+            // Savage Brands AND its downline stores get savage card art; the
+            // old `agentSlug === 'savagebrands'` check left downlines (e.g.
+            // /eddierazz) on Pep Nation cards.
+            const brand = isSavageBrandsNetwork ? 'savagebrands' : 'pepnation';
             const path = `/images/storefront/${brand}/${slug}-card.jpg`;
             return path;
           })()}
