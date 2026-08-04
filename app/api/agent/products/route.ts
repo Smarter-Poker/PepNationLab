@@ -156,19 +156,33 @@ export async function PATCH(req: NextRequest) {
     let marginCapExempt = false;
     // Manufacturer stores: zero pricing restrictions of any kind.
     let isManufacturer = false;
+    let ceilingMultiplier = 1.0;
+
     if (gate.isAdmin) {
       const rawBase = (check.products as any)?.house_cost ?? (check.products as any)?.base_cost;
       agentCostPer10 = rawBase != null ? Number(rawBase) : 0;
     } else {
       const { data: profData } = await supabase
         .from('profiles')
-        .select('tier, margin_cap_exempt, is_manufacturer')
+        .select(`
+          tier, margin_cap_exempt, is_manufacturer, role, is_super_agent,
+          parent:parent_agent_id(role, is_super_agent)
+        `)
         .eq('id', gate.user.id)
         .maybeSingle();
       isManufacturer = Boolean((profData as { is_manufacturer?: boolean | null } | null)?.is_manufacturer);
       marginCapExempt = Boolean((profData as { margin_cap_exempt?: boolean } | null)?.margin_cap_exempt);
       if (!isManufacturer && profData?.tier) {
         agentCostPer10 = await computeAgentCostForAgent(supabase, check.product_id, gate.user.id, profData.tier as AgentTier);
+      }
+
+      const prRole = (profData as any)?.role;
+      const prIsSuper = (profData as any)?.is_super_agent;
+      const parRole = (profData as any)?.parent?.role;
+      const parIsSuper = (profData as any)?.parent?.is_super_agent;
+
+      if (prRole === 'super_agent' || prIsSuper || parRole === 'super_agent' || parIsSuper) {
+        ceilingMultiplier = 1.5;
       }
     }
 
@@ -186,9 +200,12 @@ export async function PATCH(req: NextRequest) {
 
     const maxMargin = Number((check.products as any)?.max_margin_percent || 300);
     // Admin store price = the hard price ceiling for all agents.
-    const maxRetailPrice: number | null = (check.products as any)?.max_retail_price != null
+    // Super agents and their downlines can exceed this ceiling by 50%.
+    const rawMaxRetailPrice = (check.products as any)?.max_retail_price != null
       ? Number((check.products as any).max_retail_price)
       : null;
+
+    const maxRetailPrice: number | null = rawMaxRetailPrice !== null ? rawMaxRetailPrice * ceilingMultiplier : null;
 
     // Minimum-margin floor (platform rule): retail must be at least 10% above
     // the agent's cost - but never demand a price above the admin ceiling,

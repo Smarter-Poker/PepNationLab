@@ -8,11 +8,11 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const bgBuffer = fs.readFileSync('true_perfect_blank3.png');
+const bgBuffer = fs.readFileSync('true_perfect_blank4.png');
 const bgBase64 = bgBuffer.toString('base64');
 
-// Use transparent claws
-const clawsBuffer = fs.readFileSync('correct_claws_transparent.png');
+// Use transparent cyan claws
+const clawsBuffer = fs.readFileSync('correct_claws_cyan.png');
 const clawsBase64 = clawsBuffer.toString('base64');
 
 const htmlTemplate = `
@@ -39,16 +39,8 @@ const htmlTemplate = `
     text-align: center;
     white-space: nowrap;
     
-    background: linear-gradient(
-      180deg,
-      #F0F0F0 0%,
-      #FFFFFF 25%,
-      #A0A0A0 45%,
-      #606060 50%,
-      #E0E0E0 65%,
-      #FFFFFF 85%,
-      #909090 100%
-    );
+    /* Use smooth gradient without harsh lines */
+    background: linear-gradient(180deg, #FFFFFF 0%, #D0D0D0 50%, #A0A0A0 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     filter: drop-shadow(0px 8px 6px rgba(0, 0, 0, 0.9));
@@ -112,9 +104,11 @@ const htmlTemplate = `
 
   .badge-container {
     position: absolute;
-    top: 151px;
-    width: 200px;
-    height: 200px;
+    /* Raised from 151px to 115px to perfectly balance the visual space */
+    top: 115px;
+    /* Increased container size for slightly larger claws */
+    width: 215px;
+    height: 215px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -134,17 +128,20 @@ const htmlTemplate = `
   }
 
   .badge-left { 
-    left: 50px; 
+    /* Set to 0 to fill the left black space (x=0 to 215) */
+    left: 0px; 
   }
   
   .badge-right { 
-    right: 50px; 
+    /* Set to 0 to fill the right black space (x=809 to 1024) */
+    right: 0px; 
   }
 
   .dose {
     position: relative;
     z-index: 10;
-    font-size: 75px;
+    /* Increased font size so the size is slightly larger */
+    font-size: 92px;
     letter-spacing: 1px;
     line-height: 1;
     top: 5px; 

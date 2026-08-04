@@ -1,3 +1,5 @@
+const path = require("path");
+
 const { createClient } = require('@supabase/supabase-js');
 const puppeteer = require('puppeteer');
 const fs = require('fs');
@@ -8,20 +10,18 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const bgBuffer = fs.readFileSync('true_blank.png');
+const bgBuffer = fs.readFileSync('true_perfect_blank4.png');
 const bgBase64 = bgBuffer.toString('base64');
 
-const leftClawsBuffer = fs.readFileSync('left_claws.png');
-const leftClawsBase64 = leftClawsBuffer.toString('base64');
-
-const rightClawsBuffer = fs.readFileSync('right_claws.png');
-const rightClawsBase64 = rightClawsBuffer.toString('base64');
+// Use transparent cyan claws
+const clawsBuffer = fs.readFileSync('correct_claws_cyan.png');
+const clawsBase64 = clawsBuffer.toString('base64');
 
 const htmlTemplate = `
 <!DOCTYPE html>
 <html>
 <head>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Teko:wght@700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
 <style>
   body {
     margin: 0;
@@ -34,36 +34,50 @@ const htmlTemplate = `
     overflow: hidden;
   }
   
-  .metal-text {
+  .badge-metal-text {
     font-family: 'Anton', sans-serif;
     transform: skewX(-12deg);
     text-transform: uppercase;
     text-align: center;
     white-space: nowrap;
     
-    background: linear-gradient(
-      180deg,
-      #F0F0F0 0%,
-      #FFFFFF 25%,
-      #A0A0A0 45%,
-      #606060 50%,
-      #E0E0E0 65%,
-      #FFFFFF 85%,
-      #909090 100%
-    );
+    /* Use smooth gradient without harsh lines */
+    background: linear-gradient(180deg, #FFFFFF 0%, #D0D0D0 50%, #A0A0A0 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    
-    filter: drop-shadow(0px 8px 6px rgba(0, 0, 0, 0.9))
-            drop-shadow(0px 0px 4px #00C4BC);
+    filter: drop-shadow(0px 8px 6px rgba(0, 0, 0, 0.9));
     -webkit-text-stroke: 3px #111111;
+  }
+  
+  .smooth-metal-text {
+    font-family: 'Anton', sans-serif;
+    text-transform: uppercase;
+    text-align: center;
+    white-space: nowrap;
+    
+    background: linear-gradient(180deg, #FFFFFF 0%, #D0D0D0 50%, #A0A0A0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke: 1px #111111;
+    filter: drop-shadow(0px 4px 4px rgba(0, 0, 0, 0.5));
+  }
+
+  .white-text {
+    font-family: 'Anton', sans-serif;
+    text-transform: uppercase;
+    text-align: center;
+    white-space: nowrap;
+    color: #FFFFFF;
+    -webkit-text-stroke: 1px #000000;
   }
 
   .title-container {
     position: absolute;
-    bottom: 95px;
-    width: 860px;
-    left: 82px;
+    /* Vertically perfectly centered between logo (y=270) and teal bar (y=422) */
+    top: 270px;
+    height: 152px;
+    width: 1024px;
+    left: 0px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -72,86 +86,88 @@ const htmlTemplate = `
   .title {
     font-size: 110px;
     letter-spacing: -1px;
-    transform: skewX(-15deg);
   }
   
-  .badge-container {
+  .bottom-text-container {
     position: absolute;
-    top: 140px;
-    width: 240px;
-    height: 210px;
+    bottom: 0px;
+    height: 90px;
+    width: 1024px;
+    left: 0px;
     display: flex;
     justify-content: center;
     align-items: center;
   }
 
-  .badge-left { 
-    left: 0px; 
-    background-image: url('data:image/png;base64,${leftClawsBase64}');
-    background-size: contain;
+  .bottom-text {
+    font-size: 65px;
+    letter-spacing: 2px;
+  }
+
+  .badge-container {
+    position: absolute;
+    /* Raised from 151px to 115px to perfectly balance the visual space */
+    top: 115px;
+    /* Increased container size for slightly larger claws */
+    width: 215px;
+    height: 215px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .badge-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('data:image/png;base64,${clawsBase64}');
+    background-size: cover;
     background-repeat: no-repeat;
     background-position: center;
+    z-index: 1;
+  }
+
+  .badge-left { 
+    /* Set to 0 to fill the left black space (x=0 to 215) */
+    left: 0px; 
   }
   
   .badge-right { 
+    /* Set to 0 to fill the right black space (x=809 to 1024) */
     right: 0px; 
-    background-image: url('data:image/png;base64,${rightClawsBase64}');
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
   }
 
   .dose {
-    font-family: 'Teko', sans-serif;
-    font-weight: 700;
-    font-size: 110px;
-    transform: skewX(-10deg);
-    letter-spacing: 2px;
+    position: relative;
+    z-index: 10;
+    /* Increased font size so the size is slightly larger */
+    font-size: 92px;
+    letter-spacing: 1px;
+    line-height: 1;
+    top: 5px; 
   }
 </style>
 </head>
 <body>
   <div class="badge-container badge-left">
-    <div class="metal-text dose" id="dose1">DOSE_TEXT</div>
+    <div class="badge-bg"></div>
+    <div class="badge-metal-text dose" id="dose1"></div>
   </div>
   
-  <div class="title-container">
-    <div class="metal-text title" id="title">TITLE_TEXT</div>
-  </div>
-
   <div class="badge-container badge-right">
-    <div class="metal-text dose" id="dose2">DOSE_TEXT</div>
+    <div class="badge-bg"></div>
+    <div class="badge-metal-text dose" id="dose2"></div>
   </div>
 
-  <script>
-    async function init() {
-      await document.fonts.ready;
-      
-      const title = document.getElementById('title');
-      const titleContainer = document.querySelector('.title-container');
-      let fontSize = 110;
-      while (title.scrollWidth > titleContainer.clientWidth && fontSize > 30) {
-        fontSize -= 2;
-        title.style.fontSize = fontSize + 'px';
-      }
-
-      const dose1 = document.getElementById('dose1');
-      const dose2 = document.getElementById('dose2');
-      const doseContainer = document.querySelector('.badge-left');
-      let doseSize = 110;
-      // Subtract some padding to fit inside the badge nicely
-      while (dose1.scrollWidth > (doseContainer.clientWidth - 40) && doseSize > 30) {
-        doseSize -= 2;
-        dose1.style.fontSize = doseSize + 'px';
-        dose2.style.fontSize = doseSize + 'px';
-      }
-      
-      const el = document.createElement('div');
-      el.id = 'ready';
-      document.body.appendChild(el);
-    }
-    init();
-  </script>
+  <div class="title-container">
+    <div class="smooth-metal-text title" id="title"></div>
+  </div>
+  
+  <div class="bottom-text-container">
+    <div class="white-text bottom-text">FOR RESEARCH USE ONLY</div>
+  </div>
 </body>
 </html>
 `;
@@ -166,54 +182,75 @@ async function run() {
     return;
   }
 
-  console.log(`Found ${ap.length} products. Launching puppeteer...`);
+  const products = ap;
+  
+  console.log(`Found ${products.length} products to generate. Launching puppeteer...`);
   const browser = await puppeteer.launch({ headless: 'new' });
   const page = await browser.newPage();
   await page.setViewport({ width: 1024, height: 512, deviceScaleFactor: 1 });
 
-  let successCount = 0;
+  // Set the base HTML content exactly once to prevent memory/base64 parsing issues
+  await page.setContent(htmlTemplate, { waitUntil: 'domcontentloaded' });
+  
+  // Wait for fonts to load
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+  });
 
-  for (let i = 0; i < ap.length; i++) {
-    const product = ap[i].products;
+  for (let i = 0; i < products.length; i++) {
+    const product = products[i].products;
     if (!product || !product.slug) continue;
     
     let doseText = '';
     if (product.unit_size && product.unit_measure) {
       doseText = `${product.unit_size}${product.unit_measure.toUpperCase()}`;
     }
-
-    const html = htmlTemplate
-      .replace(/TITLE_TEXT/g, product.name)
-      .replace(/DOSE_TEXT/g, doseText);
-
-    await page.setContent(html, { waitUntil: 'domcontentloaded' });
     
-    // Wait for fonts to load and resize to finish
-    await page.waitForSelector('#ready', { timeout: 10000 });
+    // Dynamically update text and trigger resizing logic in the browser context
+    await page.evaluate((titleText, doseTextStr) => {
+      const title = document.getElementById('title');
+      const dose1 = document.getElementById('dose1');
+      const dose2 = document.getElementById('dose2');
+      const titleContainer = document.querySelector('.title-container');
+      const container = document.querySelector('.badge-left');
+
+      // Set text
+      title.textContent = titleText;
+      dose1.textContent = doseTextStr;
+      dose2.textContent = doseTextStr;
+
+      // Reset sizes before computing layout
+      title.style.fontSize = '110px';
+      dose1.style.fontSize = '80px';
+      dose2.style.fontSize = '80px';
+
+      // Recompute Title Size
+      let fontSize = 110;
+      while (title.scrollWidth > titleContainer.clientWidth && fontSize > 30) {
+        fontSize -= 2;
+        title.style.fontSize = fontSize + 'px';
+      }
+
+      // Recompute Dose Size
+      let doseSize = 80;
+      while (dose1.scrollWidth > (container.clientWidth - 10) && doseSize > 20) {
+        doseSize -= 1;
+        dose1.style.fontSize = doseSize + 'px';
+        dose2.style.fontSize = doseSize + 'px';
+      }
+    }, product.name, doseText);
     
     const buffer = await page.screenshot({ type: 'png' });
     
-    const filePath = `savage/${product.slug}.png`;
+    const slug = product.slug || product.name.replace(/\s+/g, '-').toLowerCase();
     
-    console.log(`[${i+1}/${ap.length}] Uploading ${filePath} (${product.name} ${doseText})...`);
-    
-    const { data: uploadData, error: uploadError } = await supabase
-      .storage
-      .from('print-labels')
-      .upload(filePath, buffer, {
-        contentType: 'image/png',
-        upsert: true
-      });
-
-    if (uploadError) {
-      console.error(`Failed to upload ${filePath}:`, uploadError);
-    } else {
-      successCount++;
-    }
+    const outputPath = path.join(__dirname, '..', 'public', 'images', 'savage-brands', `${slug}.png`);
+    require('fs').writeFileSync(outputPath, buffer);
+    console.log(`[${i+1}/${products.length}] Saved locally to ${outputPath}`);
   }
 
   await browser.close();
-  console.log(`Done! Successfully uploaded ${successCount} labels.`);
+  console.log('Done!');
 }
 
 run().catch(console.error);
