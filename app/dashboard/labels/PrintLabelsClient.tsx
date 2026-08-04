@@ -118,7 +118,7 @@ export default function PrintLabelsClient({ products, isAdmin, brand = 'pepnatio
   const buildPrintDocument = (): string => {
     const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
     const imgTag = (slug: string, name: string, style: string) =>
-      `<img src="${STORAGE_BASE}/${esc(slug)}.png?v=4" alt="${esc(name)}" style="${style}">`;
+      `<img src="${STORAGE_BASE}/${esc(slug)}.png?v=5" alt="${esc(name)}" style="${style}">`;
 
     let pages = '';
     let css = '';
@@ -366,7 +366,7 @@ export default function PrintLabelsClient({ products, isAdmin, brand = 'pepnatio
                 <div style={{ background: '#FFFFFF', aspectRatio: '2 / 1' }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={`${STORAGE_BASE}/${p.slug}.png?v=4`}
+                    src={`${STORAGE_BASE}/${p.slug}.png?v=5`}
                     alt={`${p.name} Label`}
                     loading="lazy"
                     style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
