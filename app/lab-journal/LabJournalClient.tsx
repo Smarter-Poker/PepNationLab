@@ -45,6 +45,8 @@ interface Props {
   trending: Item[];
   categories: string[];
   storefrontSlug: string | null;
+  /** Server-resolved: this journal shops a Savage-network catalog. */
+  brandNetworkIsSavage?: boolean;
   /** When true the viewer is an agent using the lab journal to add from their own storefront. */
   isAgentSelfBuy?: boolean;
 }
@@ -144,7 +146,7 @@ function CycleEditor({ id, cycleStartDates, cycleLengthWeeks, cycleOffWeeks, rem
   );
 }
 
-export default function LabJournalClient({ favorites: initialFavorites, pastOrders, recentlyViewed: initialRecentlyViewed, bundles, catalog, trending, categories, storefrontSlug, isAgentSelfBuy = false }: Props) {
+export default function LabJournalClient({ favorites: initialFavorites, pastOrders, recentlyViewed: initialRecentlyViewed, bundles, catalog, trending, categories, storefrontSlug, isAgentSelfBuy = false, brandNetworkIsSavage = false }: Props) {
   const [favorites, setFavorites] = useState<Item[]>(initialFavorites);
   const [recentlyViewed, setRecentlyViewed] = useState<Item[]>(initialRecentlyViewed);
   const [, startTransition] = useTransition();
@@ -2040,14 +2042,14 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
           }}
         >
           <Image
-            src={item.image_url || getProductImage(null, item.category || 'Other', item.name, false, storefrontSlug ?? undefined)}
+            src={getProductImage(item.image_url ?? null, item.category || 'Other', item.name, true, storefrontSlug ?? undefined, brandNetworkIsSavage)}
             alt={item.name}
             fill
             unoptimized
             style={{ objectFit: 'cover', transition: 'transform 0.4s' }}
             onError={(e) => {
               const target = e.target as HTMLImageElement;
-              const fallback = getProductImage(null, item.category || 'Other', item.name, false, storefrontSlug ?? undefined);
+              const fallback = getProductImage(null, item.category || 'Other', item.name, false, storefrontSlug ?? undefined, brandNetworkIsSavage);
               if (target.src !== fallback) target.src = fallback;
             }}
           />
@@ -2256,7 +2258,8 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
 
       {/* Main Content */}
       {activeTab === 'bundles' && showBuilder ? (
-        <SmartStackBuilder 
+        <SmartStackBuilder
+          brandNetworkIsSavage={brandNetworkIsSavage} 
           catalog={catalog} 
           agentSlug={storefrontSlug ?? undefined}
           onAddStackToCart={(items, name) => {
@@ -2323,7 +2326,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                           {recommendedItems.map(item => (
                             <div key={item.product_id} style={{ minWidth: 200, flexShrink: 0, background: 'rgba(0,0,0,0.3)', borderRadius: 8, padding: 'var(--space-3)', position: 'relative' }}>
                                <div style={{ position: 'relative', width: '100%', aspectRatio: '1', borderRadius: 8, overflow: 'hidden', marginBottom: 'var(--space-3)', background: '#111' }}>
-                                  <Image src={item.image_url || getProductImage(null, item.category || 'Other', item.name, false, storefrontSlug ?? undefined)} alt={item.name} fill style={{ objectFit: 'cover', mixBlendMode: 'screen' }} />
+                                  <Image src={getProductImage(item.image_url ?? null, item.category || 'Other', item.name, true, storefrontSlug ?? undefined, brandNetworkIsSavage)} alt={item.name} fill style={{ objectFit: 'cover', mixBlendMode: 'screen' }} />
                                   <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIntelligenceCompound(item.name); }} style={{ position: 'absolute', top: 8, left: 8, background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.2)', color: 'var(--white)', padding: '4px 8px', borderRadius: 12, fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, backdropFilter: 'blur(4px)' }}><FlaskConical size={12}/> Intel</button>
                                </div>
                                <h4 style={{ margin: 0, fontSize: '1rem', color: 'var(--white)' }}>{item.name}</h4>
@@ -3467,7 +3470,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                             if (!item) return <div key={pid} style={{ color: 'var(--silver)' }}>Unknown Item</div>;
                             return (
                               <div key={pid} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', background: 'rgba(255,255,255,0.05)', padding: 'var(--space-2) var(--space-3)', borderRadius: 20, whiteSpace: 'nowrap' }}>
-                                <Image src={item.image_url || getProductImage(null, item.category || 'Other', item.name, false, storefrontSlug ?? undefined)} width={24} height={24} unoptimized style={{ objectFit: 'contain', borderRadius: 4 }} alt={item.name} />
+                                <Image src={getProductImage(item.image_url ?? null, item.category || 'Other', item.name, true, storefrontSlug ?? undefined, brandNetworkIsSavage)} width={24} height={24} unoptimized style={{ objectFit: 'contain', borderRadius: 4 }} alt={item.name} />
                                 <div style={{ color: 'var(--white)', fontSize: '0.9rem', fontWeight: 600 }}>{item.name}</div>
                               </div>
                             );
@@ -3527,7 +3530,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
               const inner = (
                 <div key={idx} style={{ flex: '1 1 200px', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', position: 'relative' }}>
                     <div style={{ height: 100, background: 'radial-gradient(circle at 50% 50%, rgba(192,184,168,0.10) 0%, var(--black) 100%)', borderRadius: 8, marginBottom: 12, position: 'relative' }}>
-                    <Image src={t.image_url || getProductImage(null, t.category || 'Other', t.name, false, storefrontSlug ?? undefined)} alt={t.name} fill unoptimized style={{ objectFit: 'contain', padding: 8 }} />
+                    <Image src={getProductImage(t.image_url ?? null, t.category || 'Other', t.name, true, storefrontSlug ?? undefined, brandNetworkIsSavage)} alt={t.name} fill unoptimized style={{ objectFit: 'contain', padding: 8 }} />
                     </div>
                     <div style={{ color: 'var(--white)', fontWeight: 600, fontSize: '0.95rem' }}>{t.name}</div>  
                 </div>
@@ -3581,7 +3584,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
             <button onClick={() => setQuickViewItem(null)} style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(0,0,0,0.5)', border: 'none', color: 'var(--white)', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10 }}><X size={16} /></button>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
               <div style={{ flex: '0 0 300px', background: 'radial-gradient(circle at 50% 50%, rgba(192,184,168,0.10) 0%, var(--black) 100%)', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-4)', position: 'relative' }}>
-                <Image src={quickViewItem.image_url || getProductImage(null, quickViewItem.category || 'Other', quickViewItem.name, false, storefrontSlug ?? undefined)} fill unoptimized style={{ objectFit: 'contain' }} alt={quickViewItem.name} />
+                <Image src={getProductImage(quickViewItem.image_url ?? null, quickViewItem.category || 'Other', quickViewItem.name, true, storefrontSlug ?? undefined, brandNetworkIsSavage)} fill unoptimized style={{ objectFit: 'contain' }} alt={quickViewItem.name} />
               </div>
               <div style={{ flex: 1, padding: 'var(--space-6)', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ color: 'var(--teal)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 'bold', marginBottom: 8 }}>{quickViewItem.category || 'Compound'}</div>
@@ -3630,7 +3633,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                 return (
                   <div key={id} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', background: 'rgba(255,255,255,0.03)', padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)' }}>
                     <div style={{ width: '100%', height: 120, background: 'var(--black-2)', borderRadius: 8, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                      <Image src={item.image_url || getProductImage(null, item.category || 'Other', item.name, false, storefrontSlug ?? undefined)} fill unoptimized style={{ objectFit: 'contain', padding: 8 }} alt={item.name} />
+                      <Image src={getProductImage(item.image_url ?? null, item.category || 'Other', item.name, true, storefrontSlug ?? undefined, brandNetworkIsSavage)} fill unoptimized style={{ objectFit: 'contain', padding: 8 }} alt={item.name} />
                     </div>
                     <div style={{ color: 'var(--teal)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{item.category || 'N/A'}</div>
                     <div style={{ color: 'var(--white)', fontWeight: 700, fontSize: '1.1rem' }}>{item.name}</div>

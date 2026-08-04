@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { assertSameOrigin } from '@/lib/csrf';
 import { resolveCartIdsToProductIds } from '@/lib/cart-ids';
+import { isSavageNetworkAgent } from '@/lib/brand-network';
 
 /**
  * POST /api/cart/recommendations
@@ -298,16 +299,23 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // -- 8. Resolve agent pricing if available -----------------------------------
+    // -- 8. Resolve agent pricing + agent-scoped imagery if available ------------
     const agentPriceMap = new Map<string, number>();
+    const agentImageMap = new Map<string, string>();
+    let brandNetworkSavage = false;
     if (agentId && deduped.length > 0) {
-      const { data: aps } = await supabase
-        .from('agent_products')
-        .select('product_id, retail_price, is_visible, is_on_sale, sale_price')
-        .eq('agent_id', agentId)
-        .in('product_id', deduped.map(p => p.id));
-      for (const ap of (aps ?? []) as Array<{ product_id: string; retail_price: number | null; is_visible: boolean | null; is_on_sale: boolean | null; sale_price: number | null }>) {
+      const [{ data: aps }, savage] = await Promise.all([
+        supabase
+          .from('agent_products')
+          .select('product_id, retail_price, is_visible, is_on_sale, sale_price, custom_image_url')
+          .eq('agent_id', agentId)
+          .in('product_id', deduped.map(p => p.id)),
+        isSavageNetworkAgent(supabase, agentId),
+      ]);
+      brandNetworkSavage = savage === true;
+      for (const ap of (aps ?? []) as Array<{ product_id: string; retail_price: number | null; is_visible: boolean | null; is_on_sale: boolean | null; sale_price: number | null; custom_image_url: string | null }>) {
         if (!ap?.product_id || ap.is_visible === false) continue;
+        if (ap.custom_image_url) agentImageMap.set(ap.product_id, ap.custom_image_url);
         const raw = ap.is_on_sale && ap.sale_price != null ? Number(ap.sale_price) : Number(ap.retail_price);
         const perVial = Number.isFinite(raw) && raw > 0 ? raw / 10 : 0;
         if (perVial > 0) agentPriceMap.set(ap.product_id, perVial);
@@ -348,7 +356,10 @@ export async function POST(req: NextRequest) {
         name: p.name,
         slug: p.slug,
         category: p.category,
-        image_url: p.image_url,
+        // Agent-scoped image first; a Savage-network store must never emit
+        // the shared products-table (Pep Nation) image -- null lets the
+        // client fall back to a brand-safe vial.
+        image_url: agentImageMap.get(p.id) ?? (brandNetworkSavage ? null : p.image_url),
         unit_size: p.unit_size,
         unit_measure: p.unit_measure,
         score,
@@ -363,7 +374,7 @@ export async function POST(req: NextRequest) {
     // Return top 8
     const recommendations = scored.slice(0, 8);
 
-    return NextResponse.json({ recommendations }, {
+    return NextResponse.json({ recommendations, brand_network_savage: brandNetworkSavage }, {
       headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' },
     });
   } catch (err) {

@@ -2,6 +2,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { isSavageNetworkAgent } from '@/lib/brand-network';
 import { Heart, Bell, ShieldCheck, Gift } from 'lucide-react';
 import LabJournalClient from './LabJournalClient';
 import PageShell from '@/components/PageShell';
@@ -47,6 +48,14 @@ export default async function LabJournalPage() {
       .maybeSingle();
     storefrontSlug = agentRow?.slug ?? null;
   }
+
+  // Savage-network verdict for the catalog this journal shops against, so no
+  // Pep Nation vial imagery renders for researchers/agents in that network.
+  let brandNetworkIsSavage = false;
+  try {
+    const brandAgentId = referringAgentId ?? (isAgentSelfBuy ? user.id : null);
+    brandNetworkIsSavage = await isSavageNetworkAgent(service, brandAgentId);
+  } catch { /* non-fatal */ }
 
   // --- Fetch Wishlist and Past Orders ---
   const { data: favRows } = await service
@@ -292,6 +301,7 @@ export default async function LabJournalPage() {
             categories={categories}
             storefrontSlug={storefrontSlug}
             isAgentSelfBuy={isAgentSelfBuy}
+            brandNetworkIsSavage={brandNetworkIsSavage}
           />
         </div>
       </div>

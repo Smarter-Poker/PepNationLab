@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import IframeLink from '@/components/ui/IframeLink';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { isSavageNetworkAgent } from '@/lib/brand-network';
 import PageShell from '@/components/PageShell';
 import PaymentProofUpload from '@/components/PaymentProofUpload';
 import RecommendationStrip, { type RecommendationItem } from '@/components/RecommendationStrip';
@@ -207,7 +208,12 @@ export default async function OrderDetailPage(
   let sellerName = 'Pep Nation Lab';
   let agentSlug: string | null = null;
   let sellerLogoUrl: string | null = null;
+  let brandNetworkIsSavage = false;
   if (order.agent_id) {
+    try {
+      const svcBrand = await createServiceClient();
+      brandNetworkIsSavage = await isSavageNetworkAgent(svcBrand, order.agent_id);
+    } catch { /* non-fatal: strip falls back to its heuristics */ }
     const { data: agentProfile } = await supabase
       .from('agent_profiles')
       .select('display_name, payment_handles, slug, logo_url')
@@ -701,7 +707,8 @@ export default async function OrderDetailPage(
                   ...r,
                   href: agentSlug ? `/${agentSlug}?product=${encodeURIComponent(r.id)}` : '/orders',
                 }))}
-                agentSlug={agentSlug}
+                agentSlug={agentSlug ?? undefined}
+                isSavageBrandsNetwork={brandNetworkIsSavage}
               />
             </div>
           )}

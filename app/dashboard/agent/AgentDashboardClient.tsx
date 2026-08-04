@@ -91,6 +91,7 @@ interface AgentDashboardClientProps {
   initialResearchers: Researcher[];
   initialOrders: Order[];
   initialAgentsCount?: number;
+  brandNetworkIsSavage?: boolean;
 }
 
 
@@ -99,7 +100,8 @@ export default function AgentDashboardClient({
   initialAgentProfile,
   initialResearchers,
   initialOrders,
-  initialAgentsCount = 0
+  initialAgentsCount = 0,
+  brandNetworkIsSavage = false,
 }: AgentDashboardClientProps) {
   const supabase = useMemo(() => createClient(), []);
 
@@ -614,7 +616,7 @@ export default function AgentDashboardClient({
 
         {activeTab === 'Store Products' && (
           <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <AgentStoreProducts agentId={userProfile.id} agentSlug={agentProfile.slug} />
+            <AgentStoreProducts agentId={userProfile.id} agentSlug={agentProfile.slug} brandNetworkIsSavage={brandNetworkIsSavage} />
           </div>
         )}
 

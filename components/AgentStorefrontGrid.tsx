@@ -19,6 +19,7 @@ import DynamicCartButton from './storefront/DynamicCartButton';
 import DynamicDetailButton from './storefront/DynamicDetailButton';
 import { evidenceTier, EVIDENCE_TIER, RISK_META, intranasalDisplay, type Compound } from '@/lib/compounds';
 import { getProductImage, toTitleCase } from '@/lib/categoryImage';
+import { setBrandNetworkFlag } from '@/lib/brand-network-client';
 import PeptideVialCard from '@/components/PeptideVialCard';
 import PremiumPeptideCard from '@/components/storefront/PremiumPeptideCard';
 import GuestAuthModal from '@/components/GuestAuthModal';
@@ -393,6 +394,12 @@ export default function AgentStorefrontGrid({
   useEffect(() => {
     setMounted(true);
   }, []);
+  // Persist the brand-network verdict so client components that render
+  // product imagery outside this page tree (cart drawer, checkout, lab
+  // journal) never fall back to Pep Nation vials on a Savage-network store.
+  useEffect(() => {
+    setBrandNetworkFlag(agentSlug, isSavageBrandsNetwork);
+  }, [agentSlug, isSavageBrandsNetwork]);
   // Funnel analytics (best-effort, non-blocking): storefront pageview. Activates
   // the existing agent analytics dashboard (agent_storefront_analytics_30d).
   useEffect(() => {
@@ -3460,7 +3467,8 @@ export default function AgentStorefrontGrid({
                         item.products?.category || 'Other',
                         name,
                         !!item.custom_image_url, // allowBrandSpecific: custom_image_url is agent-scoped
-                        agentSlug
+                        agentSlug,
+                        isSavageBrandsNetwork
                       );
                       const perVial = item.retail_price / 10;
                       return (
@@ -3537,6 +3545,7 @@ export default function AgentStorefrontGrid({
                       loading={recommendationsLoading}
                       primaryColor={primaryColor}
                       agentSlug={agentSlug}
+                      isSavageBrandsNetwork={isSavageBrandsNetwork}
                       onSelect={(productId) => {
                         // Find the grouped product and open its detail sheet
                         const product = products.find(p => p.product_id === productId);

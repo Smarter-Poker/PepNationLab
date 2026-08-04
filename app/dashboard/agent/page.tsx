@@ -1,7 +1,8 @@
 
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { isSavageNetworkAgent } from '@/lib/brand-network';
 import AgentDashboardClient from './AgentDashboardClient';
 
 export const dynamic = 'force-dynamic';
@@ -135,6 +136,14 @@ export default async function AgentDashboardPage() {
     };
   });
 
+  // Savage-network verdict for this agent's own store (multi-hop parent walk)
+  // so the dashboard product editor previews the correct brand vials.
+  let brandNetworkIsSavage = false;
+  try {
+    const svcBrand = await createServiceClient();
+    brandNetworkIsSavage = await isSavageNetworkAgent(svcBrand, user.id);
+  } catch { /* non-fatal */ }
+
   return (
     <Suspense fallback={<div style={{ padding: '2rem', color: 'var(--grey-400, #888)' }}>Loading Dashboard…</div>}>
       <AgentDashboardClient
@@ -150,6 +159,7 @@ export default async function AgentDashboardPage() {
         initialResearchers={researchers} // @ts-ignore
         initialOrders={orders}
         initialAgentsCount={activeAgentsCount}
+        brandNetworkIsSavage={brandNetworkIsSavage}
       />
     </Suspense>
   );

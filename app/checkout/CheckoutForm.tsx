@@ -9,7 +9,8 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { US_STATES } from '@/lib/us-states';
 import PaymentProofUpload from '@/components/PaymentProofUpload';
-import { toTitleCase } from '@/lib/categoryImage';
+import { toTitleCase, getProductImage } from '@/lib/categoryImage';
+import { getBrandNetworkIsSavage } from '@/lib/brand-network-client';
 import { createClient } from '@/lib/supabase/client';
 import { calculateShippingCost as getShippingCost, ShippingOption } from '@/lib/shipping-cost';
 import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
@@ -92,6 +93,12 @@ interface ActiveFlashSale {
 }
 
 export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, agentSlug, agentPaymentHandles, minOverallQty = 1, minOrderQty = 1, volumeDiscountsEnabled = true, manufacturerStore = false }: CheckoutFormProps) {
+  // Brand-safe image resolver for the diluent upsell tiles: on a
+  // Savage-network storefront (verdict persisted by the storefront grid),
+  // never render a Pep Nation vial -- getProductImage swaps in the savage
+  // custom image or the generic clear vial.
+  const brandSafeImage = (url: string | null, name: string): string | null =>
+    url ? getProductImage(url, 'Other', name, true, agentSlug ?? undefined, getBrandNetworkIsSavage(agentSlug)) : null;
   const isAgentByRole = userProfile.role === 'agent' || userProfile.role === 'super_agent';
   const isSubAgent = userProfile.is_sub_agent === true;
   const isAgentSelfBuy = isAgentByRole && !isSubAgent;
@@ -357,7 +364,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             if (!bac) {
               const { data: apRows } = await supabase
                 .from('agent_products')
-                .select(`id, product_id, retail_price, products!inner ( name, unit_size, unit_measure, weight_oz, compound_slug, image_url )`)
+                .select(`id, product_id, retail_price, custom_image_url, products!inner ( name, unit_size, unit_measure, weight_oz, compound_slug, image_url )`)
                 .eq('agent_id', agentProfile.id)
                 .eq('is_visible', true)
                 .eq('products.compound_slug', 'bac-water')
@@ -376,7 +383,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                   retailPrice: retail, costPrice: retail,
                   weightOz: Number(prod?.weight_oz) || 0.5,
                   unitSize: prod?.unit_size ?? null, unitMeasure: prod?.unit_measure ?? null,
-                  imageUrl: prod?.image_url ?? null,
+                  imageUrl: (ap as any).custom_image_url ?? prod?.image_url ?? null,
                 };
               }
             }
@@ -384,7 +391,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             if (!acetic) {
               const { data: apAcetic } = await supabase
                 .from('agent_products')
-                .select(`id, product_id, retail_price, products!inner ( name, unit_size, unit_measure, weight_oz, compound_slug, image_url )`)
+                .select(`id, product_id, retail_price, custom_image_url, products!inner ( name, unit_size, unit_measure, weight_oz, compound_slug, image_url )`)
                 .eq('agent_id', agentProfile.id)
                 .eq('is_visible', true)
                 .ilike('products.name', '%acetic acid%')
@@ -400,7 +407,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                   retailPrice: retail, costPrice: retail,
                   weightOz: Number(prod?.weight_oz) || 0.5,
                   unitSize: prod?.unit_size ?? null, unitMeasure: prod?.unit_measure ?? null,
-                  imageUrl: prod?.image_url ?? null,
+                  imageUrl: (apAcetic as any).custom_image_url ?? prod?.image_url ?? null,
                 };
               }
             }
@@ -1521,7 +1528,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                     <strong style={{ display: 'block', color: 'var(--white)', fontSize: '0.85rem', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>Wait — Does Your Lab Have BAC Water?</strong>
                     {bacProduct.imageUrl && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '0 0 10px' }}>
-                        <img src={bacProduct.imageUrl} alt={`Bacteriostatic Water${bacProduct.unitSize ? ` ${bacProduct.unitSize}${bacProduct.unitMeasure || 'ml'}` : ''}`} width={50} height={50} loading="lazy" decoding="async" style={{ flex: '0 0 auto', width: 50, height: 50, objectFit: 'contain', borderRadius: 6, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(0,196,188,0.3)', padding: 3 }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                        <img src={brandSafeImage(bacProduct.imageUrl, bacProduct.name) ?? bacProduct.imageUrl} alt={`Bacteriostatic Water${bacProduct.unitSize ? ` ${bacProduct.unitSize}${bacProduct.unitMeasure || 'ml'}` : ''}`} width={50} height={50} loading="lazy" decoding="async" style={{ flex: '0 0 auto', width: 50, height: 50, objectFit: 'contain', borderRadius: 6, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(0,196,188,0.3)', padding: 3 }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
                         <span style={{ color: 'var(--teal)', fontSize: '0.8rem', fontWeight: 700, lineHeight: 1.3 }}>Bacteriostatic Water{bacProduct.unitSize ? ` — ${bacProduct.unitSize}${bacProduct.unitMeasure || 'ml'} Vials` : ''}</span>
                       </div>
                     )}
@@ -1646,7 +1653,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                   {bacProduct.imageUrl && (
-                    <img src={bacProduct.imageUrl} alt={`Bacteriostatic Water${bacProduct.unitSize ? ` ${bacProduct.unitSize}${bacProduct.unitMeasure || 'ml'}` : ''}`} width={54} height={54} loading="lazy" decoding="async" style={{ flex: '0 0 auto', width: 54, height: 54, objectFit: 'contain', borderRadius: 6, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(0,196,188,0.25)', padding: 3 }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                    <img src={brandSafeImage(bacProduct.imageUrl, bacProduct.name) ?? bacProduct.imageUrl} alt={`Bacteriostatic Water${bacProduct.unitSize ? ` ${bacProduct.unitSize}${bacProduct.unitMeasure || 'ml'}` : ''}`} width={54} height={54} loading="lazy" decoding="async" style={{ flex: '0 0 auto', width: 54, height: 54, objectFit: 'contain', borderRadius: 6, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(0,196,188,0.25)', padding: 3 }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
                   )}
                   <p style={{ color: 'var(--silver-light)', fontSize: '0.76rem', margin: 0, lineHeight: 1.4 }}>Your Order Contains <strong style={{ color: 'var(--white)' }}>{bacPeptideVialsDisplay}</strong> Research Vial{bacPeptideVialsDisplay !== 1 ? 's' : ''} Requiring BAC Water — Approximately <strong style={{ color: 'var(--teal)' }}>{bacTotalMlNeeded} mL</strong> Total Based On Per-Vial Strength. We Recommend <strong style={{ color: 'var(--white)' }}>{requiredBacWaterVials}</strong> × <strong style={{ color: 'var(--teal)' }}>{bacProduct.unitSize || '10'}{bacProduct.unitMeasure || 'ml'}</strong> Vial{requiredBacWaterVials !== 1 ? 's' : ''} Of Bacteriostatic Water.</p>
                 </div>
@@ -1664,7 +1671,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                   {aceticProduct.imageUrl && (
-                    <img src={aceticProduct.imageUrl} alt={`Acetic Acid${aceticProduct.unitSize ? ` ${aceticProduct.unitSize}${aceticProduct.unitMeasure || 'ml'}` : ''}`} width={54} height={54} loading="lazy" decoding="async" style={{ flex: '0 0 auto', width: 54, height: 54, objectFit: 'contain', borderRadius: 6, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(235,178,54,0.3)', padding: 3 }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                    <img src={brandSafeImage(aceticProduct.imageUrl, aceticProduct.name) ?? aceticProduct.imageUrl} alt={`Acetic Acid${aceticProduct.unitSize ? ` ${aceticProduct.unitSize}${aceticProduct.unitMeasure || 'ml'}` : ''}`} width={54} height={54} loading="lazy" decoding="async" style={{ flex: '0 0 auto', width: 54, height: 54, objectFit: 'contain', borderRadius: 6, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(235,178,54,0.3)', padding: 3 }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
                   )}
                   <p style={{ color: 'var(--silver-light)', fontSize: '0.76rem', margin: 0, lineHeight: 1.4 }}>Your Order Contains <strong style={{ color: 'var(--white)' }}>{aceticPeptideVials}</strong> Research Vial{aceticPeptideVials !== 1 ? 's' : ''} Requiring Acetic Acid For Solubility. You Need Approximately <strong style={{ color: 'var(--white)' }}>{requiredAceticAcidVials}</strong> Vial{requiredAceticAcidVials !== 1 ? 's' : ''} Of Acetic Acid 0.6%{aceticProduct.unitSize ? <> (<strong style={{ color: '#EBB236' }}>{aceticProduct.unitSize}{aceticProduct.unitMeasure || 'ml'}</strong> Each)</> : ''}.</p>
                 </div>

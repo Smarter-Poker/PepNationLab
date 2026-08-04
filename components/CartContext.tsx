@@ -16,6 +16,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { reportClientError } from '@/lib/report-client-error';
 import { getProductImage } from '@/lib/categoryImage';
+import { getBrandNetworkIsSavage } from '@/lib/brand-network-client';
 import { useModalA11y } from '@/lib/useModalA11y';
 import {
   sanitizeStoredCart,
@@ -769,6 +770,7 @@ function SmartRecommendationStrip({
   agentSlug?: string;
 }) {
   const [recs, setRecs] = useState<SmartRec[]>([]);
+  const [apiSavageNetwork, setApiSavageNetwork] = useState(false);
   const [loading, setLoading] = useState(true);
   const abortRef = useRef<AbortController | null>(null);
   const prevKeyRef = useRef<string>('');
@@ -796,12 +798,15 @@ function SmartRecommendationStrip({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       signal: ctrl.signal,
-      body: JSON.stringify({ productIds: cart.map(i => i.id) }),
+      // agentSlug lets the API resolve store-scoped prices, agent custom
+      // imagery, and the Savage-network verdict for this cart's storefront.
+      body: JSON.stringify({ productIds: cart.map(i => i.id), ...(agentSlug ? { agentSlug } : {}) }),
     })
       .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
-      .then((data: { recommendations?: SmartRec[] }) => {
+      .then((data: { recommendations?: SmartRec[]; brand_network_savage?: boolean }) => {
         const filtered = (data.recommendations ?? []).filter(r => !cartIdSet.has(r.id));
         setRecs(filtered.slice(0, 6));
+        setApiSavageNetwork(data.brand_network_savage === true);
         setLoading(false);
       })
       .catch(() => {
@@ -869,7 +874,7 @@ function SmartRecommendationStrip({
               />
             ))
           : recs.map(rec => (
-              <SmartRecCard key={rec.id} rec={rec} onQuickAdd={onQuickAdd} agentSlug={agentSlug} />
+              <SmartRecCard key={rec.id} rec={rec} onQuickAdd={onQuickAdd} agentSlug={agentSlug} brandNetworkIsSavage={apiSavageNetwork} />
             ))}
       </div>
     </div>
@@ -880,13 +885,18 @@ function SmartRecCard({
   rec,
   onQuickAdd,
   agentSlug,
+  brandNetworkIsSavage = false,
 }: {
   rec: SmartRec;
   onQuickAdd: (rec: SmartRec) => void;
   agentSlug?: string;
+  brandNetworkIsSavage?: boolean;
 }) {
   const [added, setAdded] = useState(false);
-  const isSavageBrandsNetwork = agentSlug === 'savagebrands' || (rec.image_url || '').includes('/images/savage-brands/');
+  // Persisted server verdict first (covers Savage downlines like /eddierazz
+  // whose rec images come straight from the shared products table), then
+  // the slug/path heuristics.
+  const isSavageBrandsNetwork = brandNetworkIsSavage || getBrandNetworkIsSavage(agentSlug) || agentSlug === 'savagebrands' || (rec.image_url || '').includes('/images/savage-brands/');
   const imgSrc = getProductImage(rec.image_url, rec.category || 'Other', rec.name, false, agentSlug, isSavageBrandsNetwork);
   const displayName = rec.unit_size
     ? `${rec.name} ${rec.unit_size}${rec.unit_measure || ''}`

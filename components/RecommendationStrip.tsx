@@ -25,6 +25,10 @@ interface Props {
   onSelect?: (productId: string) => void;
   buildHref?: (productId: string) => string | null;
   hideWhenEmpty?: boolean;
+  /** Authoritative Savage-network flag from the caller (server-resolved or
+   *  grid-computed). ORed with the local image-path heuristic so Pep Nation
+   *  vials never render on Savage-network stores. */
+  isSavageBrandsNetwork?: boolean;
 }
 
 
@@ -54,7 +58,15 @@ export default function RecommendationStrip({
   buildHref,
   hideWhenEmpty = true,
   agentSlug,
+  isSavageBrandsNetwork = false,
 }: Props) {
+  // Caller-supplied flag first (covers Savage downlines whose catalog rows
+  // carry no savage image paths), then the slug/path heuristics.
+  const savageNetwork = (item: RecommendationItem) =>
+    isSavageBrandsNetwork ||
+    agentSlug === 'savagebrands' ||
+    (item.image_url || '').includes('/images/savage-brands/');
+
   if (!loading && hideWhenEmpty && recommendations.length === 0) {
     return null;
   }
@@ -136,9 +148,9 @@ export default function RecommendationStrip({
                       justifyContent: 'center',
                     }}
                   >
-                    {getProductImage(item.image_url, item.category || 'Other', item.name, false, agentSlug, agentSlug === 'savagebrands' || (item.image_url || '').includes('/images/savage-brands/')) ? (
+                    {getProductImage(item.image_url, item.category || 'Other', item.name, false, agentSlug, savageNetwork(item)) ? (
                       <Image
-                        src={getProductImage(item.image_url, item.category || 'Other', item.name, false, agentSlug, agentSlug === 'savagebrands' || (item.image_url || '').includes('/images/savage-brands/'))}
+                        src={getProductImage(item.image_url, item.category || 'Other', item.name, false, agentSlug, savageNetwork(item))}
                         alt={item.name}
                         width={200}
                         height={200}
@@ -151,7 +163,7 @@ export default function RecommendationStrip({
                         }}
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
-                          const fallback = getProductImage(null, item.category || 'Other', item.name, false, agentSlug, agentSlug === 'savagebrands' || (item.image_url || '').includes('/images/savage-brands/'));
+                          const fallback = getProductImage(null, item.category || 'Other', item.name, false, agentSlug, savageNetwork(item));
                           if (target.src !== fallback) {
                             target.src = fallback;
                           }

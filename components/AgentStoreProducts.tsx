@@ -126,7 +126,7 @@ function MarketIntel({ p, priceOverride }: { p: AgentProduct; priceOverride?: nu
   );
 }
 
-export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Your Cost', unlimitedMargin = false }: { agentId: string; agentSlug?: string; costLabel?: string; unlimitedMargin?: boolean }) {
+export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Your Cost', unlimitedMargin = false, brandNetworkIsSavage = false }: { agentId: string; agentSlug?: string; costLabel?: string; unlimitedMargin?: boolean; brandNetworkIsSavage?: boolean }) {
   const [products, setProducts] = useState<AgentProduct[]>([]);
   const [bundles, setBundles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -674,7 +674,7 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
                   {isEditing ? (
                     <div className="agentprod-card" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
                       <Image
-                        src={getProductImage(p.custom_image_url ?? p.products.image_url ?? null, p.products.category || 'Other', p.products.name, !!p.custom_image_url, agentSlug)}
+                        src={getProductImage(p.custom_image_url ?? p.products.image_url ?? null, p.products.category || 'Other', p.products.name, !!p.custom_image_url, agentSlug, brandNetworkIsSavage)}
                         alt={displayName}
                         width={80}
                         height={80}
@@ -770,7 +770,7 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
                   ) : (
                     <div className="agentprod-card" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
                       <Image
-                        src={getProductImage(p.custom_image_url ?? p.products.image_url ?? null, p.products.category || 'Other', p.products.name, !!p.custom_image_url, agentSlug)}
+                        src={getProductImage(p.custom_image_url ?? p.products.image_url ?? null, p.products.category || 'Other', p.products.name, !!p.custom_image_url, agentSlug, brandNetworkIsSavage)}
                         alt={displayName}
                         width={80}
                         height={80}
@@ -901,7 +901,7 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
                   {isEditing ? (
                     <div className="agentprod-card" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
                       <Image
-                        src={getProductImage(p.custom_image_url ?? p.products.image_url ?? null, p.products.category || 'Other', p.products.name, !!p.custom_image_url, agentSlug)}
+                        src={getProductImage(p.custom_image_url ?? p.products.image_url ?? null, p.products.category || 'Other', p.products.name, !!p.custom_image_url, agentSlug, brandNetworkIsSavage)}
                         alt={displayName}
                         width={80}
                         height={80}
@@ -991,7 +991,7 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
                   ) : (
                     <div className="agentprod-card" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
                       <Image
-                        src={getProductImage(p.custom_image_url ?? p.products.image_url ?? null, p.products.category || 'Other', p.products.name, !!p.custom_image_url, agentSlug)}
+                        src={getProductImage(p.custom_image_url ?? p.products.image_url ?? null, p.products.category || 'Other', p.products.name, !!p.custom_image_url, agentSlug, brandNetworkIsSavage)}
                         alt={displayName}
                         width={80}
                         height={80}

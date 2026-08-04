@@ -10,6 +10,7 @@ import AgentStorefrontGrid from '@/components/AgentStorefrontGrid';
 import { getCompoundsBySlugs } from '@/lib/compounds-server';
 import { computeAgentCostsForAgent, type AgentTier } from '@/lib/pricing';
 import { getEffectiveBundlesForStore } from '@/lib/bundles';
+import { isSavageNetworkAgent, SAVAGE_BRANDS_SLUG } from '@/lib/brand-network';
 import CouponLinkCapture from '@/components/CouponLinkCapture';
 import StorefrontRenameBanner from '@/components/StorefrontRenameBanner';
 import Navbar from '@/components/Navbar';
@@ -255,30 +256,18 @@ async function AgentStorefrontDataLoader({
   }
 
   // ── Savage Brands network detection (server-side) ─────────────────────────
-  // A downline store (e.g. /eddierazz) must render Savage card art and never
-  // fall back to Pep Nation imagery. The client-side heuristic in the grid
-  // sniffs custom_image_url paths, which fails when a downline's catalog rows
-  // were seeded without savage image paths — so resolve the parent chain here
-  // via the service client (RLS on profiles.parent_agent_id would hide it from
-  // anonymous visitors otherwise) and pass an authoritative flag down.
-  let brandNetworkIsSavage = agentSlug === 'savagebrands';
+  // A downline store (e.g. /eddierazz) — or a downline OF a downline — must
+  // render Savage card art and never fall back to Pep Nation imagery. The
+  // client-side heuristic in the grid sniffs custom_image_url paths, which
+  // fails when a downline's catalog rows were seeded without savage image
+  // paths — so walk the parent_agent_id chain here via the service client
+  // (RLS hides profiles.parent_agent_id from anonymous visitors) and pass an
+  // authoritative flag down.
+  let brandNetworkIsSavage = agentSlug === SAVAGE_BRANDS_SLUG;
   if (!brandNetworkIsSavage) {
     try {
       const svcBrand = await createServiceClient();
-      const { data: ownerProfile } = await svcBrand
-        .from('profiles')
-        .select('parent_agent_id')
-        .eq('id', agent.id)
-        .maybeSingle();
-      const parentId = (ownerProfile as { parent_agent_id?: string | null } | null)?.parent_agent_id;
-      if (parentId) {
-        const { data: parentStore } = await svcBrand
-          .from('agent_profiles')
-          .select('slug')
-          .eq('id', parentId)
-          .maybeSingle();
-        brandNetworkIsSavage = (parentStore as { slug?: string | null } | null)?.slug === 'savagebrands';
-      }
+      brandNetworkIsSavage = await isSavageNetworkAgent(svcBrand, agent.id);
     } catch {
       // Non-fatal: the grid's client-side heuristics still apply.
     }
