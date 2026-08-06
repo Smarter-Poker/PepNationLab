@@ -166,3 +166,30 @@ h1, h2, h3, h4, h5, h6, dd, dt {
     flex-basis: 150px !important;
   }
 }
+
+/* ============================================================
+   SWITCH CONTROLS EXEMPT FROM THE 44PX BUTTON TAP FLOOR (2026-08-06)
+   ------------------------------------------------------------
+   The mobile touch-target rule in globals.css applies
+   `min-height: 44px` + horizontal padding to EVERY <button>. An
+   on/off switch is a button too, but it draws itself as a fixed
+   44x26 pill via inline width/height — and min-height from a
+   stylesheet BEATS an inline `height`, so on phones every
+   role="switch" ballooned into a ~44px-tall padded blob with the
+   knob floating inside it ("weird circle in a circle", reported
+   with a screenshot from the iPhone notification settings).
+
+   Switches manage their own geometry; exempt them from the floor.
+   Specificity (0,1,1) beats both `button` (0,0,1) and `.btn`
+   (0,1,0), so no !important is needed. Their touch target stays
+   comfortable — the pill is 44px wide, and iOS's own native
+   switches are 51x31.
+   ============================================================ */
+@media (max-width: 768px) {
+  button[role="switch"] {
+    min-height: 0;
+    min-width: 0;
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
