@@ -274,6 +274,16 @@ const PUBLIC_ROUTES = [
   '/api/social/ingest',       // GitHub Actions batch enqueue (CRON_SECRET in-route)
   '/api/health',
   '/api/status',
+  // Web-push infrastructure reachable without a session:
+  //  - vapid-public-key hands out the (public, opaque) application server key;
+  //    the route itself is documented as public but was 401ing for logged-out
+  //    callers because it was never listed here.
+  //  - receipt is the service worker's proof-of-display beacon. Push events
+  //    fire (and must confirm display) even when the site's auth cookies have
+  //    expired on that device. The route only bumps a timestamp on an exact
+  //    match of an unguessable high-entropy endpoint and is rate-limited.
+  '/api/push/vapid-public-key',
+  '/api/push/receipt',
   // Public storefront read-data endpoints (service-client, no user PII).
   // The storefront PAGES are gated, so guests still cannot browse the UI --
   // these keep logged-in shopping (catalog grid, search, recommendations)

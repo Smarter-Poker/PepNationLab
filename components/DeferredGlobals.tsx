@@ -32,6 +32,11 @@ const FirstRunNotificationPrompt = dynamic(() => import('@/components/FirstRunNo
 const SessionKeepalive = dynamic(() => import('@/components/messenger/SessionKeepalive'), { ssr: false });
 const WebVitalsReporter = dynamic(() => import('@/components/WebVitalsReporter'), { ssr: false });
 const ScrollLockWatchdog = dynamic(() => import('@/components/ScrollLockWatchdog'), { ssr: false });
+// Silent push-enrollment self-heal (2026-08-04 incident): repairs rotated /
+// reinstalled / reassigned push subscriptions on app open and PWA resume.
+// Without it, a device whose subscription rots NEVER re-enrolls, because
+// enrollment only ever ran from one-time user-facing prompts.
+const PushSubscriptionSync = dynamic(() => import('@/components/PushSubscriptionSync'), { ssr: false });
 
 export default function DeferredGlobals() {
   return (
@@ -45,6 +50,7 @@ export default function DeferredGlobals() {
       <SessionKeepalive />
       <WebVitalsReporter />
       <ScrollLockWatchdog />
+      <PushSubscriptionSync />
     </>
   );
 }
