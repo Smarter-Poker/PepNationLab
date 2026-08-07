@@ -169,7 +169,7 @@ export const EXTRACTED_H: Record<string, { 'zh-CN': string; 'zh-TW': string }> =
   "Pain Level": { 'zh-CN': "疼痛程度", 'zh-TW': "疼痛程度" },
   "Partial Match": { 'zh-CN': "部分匹配", 'zh-TW': "部分匹配" },
   "Password Change Failed": { 'zh-CN': "密码修改失败", 'zh-TW': "密碼修改失敗" },
-  "Password Must Be At Least 12 Characters": { 'zh-CN': "密码至少需要 12 个字符", 'zh-TW': "密碼至少需要 12 個字元" },
+  "Password Must Be At Least 8 Characters.": { 'zh-CN': "密码至少需要 8 个字符。", 'zh-TW': "密碼至少需要 8 個字元。" },
   "Password Updated.": { 'zh-CN': "密码已更新。", 'zh-TW': "密碼已更新。" },
   "Password, Two-Factor, Active Sessions, And Sign-In Activity.": { 'zh-CN': "密码、双重验证、活跃会话和登录活动。", 'zh-TW': "密碼、雙重驗證、使用中的工作階段和登入活動。" },
   "Passwords Do Not Match": { 'zh-CN': "两次输入的密码不一致", 'zh-TW': "兩次輸入的密碼不一致" },

@@ -159,7 +159,6 @@ export const EXTRACTED_E: Record<string, { 'zh-CN': string; 'zh-TW': string }> =
   "Ask The Lab": { 'zh-CN': "询问实验室", 'zh-TW': "詢問實驗室" },
   "Ask Us Anything...": { 'zh-CN': "有问题尽管问……", 'zh-TW': "有問題儘管問……" },
   "Associated Benefit": { 'zh-CN': "相关益处", 'zh-TW': "相關益處" },
-  "At Least 12 Characters": { 'zh-CN': "至少 12 个字符", 'zh-TW': "至少 12 個字元" },
   "Attachment": { 'zh-CN': "附件", 'zh-TW': "附件" },
   "Audit Log": { 'zh-CN': "审计日志", 'zh-TW': "稽核日誌" },
   "Authenticator App": { 'zh-CN': "验证器应用", 'zh-TW': "驗證器應用程式" },
