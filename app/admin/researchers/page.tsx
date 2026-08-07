@@ -917,7 +917,7 @@ function ResearchersAdminPageInner() {
 
               <div className="form-group">
                 <label className="form-label">Temporary Password</label>
-                <input type="password" className="form-input" placeholder="Set Initial Password" value={newPassword}
+                <input type="password" className="form-input" placeholder={PASSWORD_RULE_TEXT} value={newPassword}
                   name="new_researcher_password_no_autofill" autoComplete="new-password" data-lpignore="true"
                   onChange={e => setNewPassword(e.target.value)} required minLength={MIN_PASSWORD_LENGTH} maxLength={MAX_PASSWORD_LENGTH} />
               </div>
