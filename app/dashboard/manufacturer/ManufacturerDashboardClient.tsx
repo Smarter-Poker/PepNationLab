@@ -14,6 +14,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useI18n, LanguageToggle } from '@/lib/i18n';
+import { MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH, PASSWORD_RULE_TEXT } from '@/lib/password-policy';
 
 interface MfrProduct {
   id: string;
@@ -277,7 +278,7 @@ export default function ManufacturerDashboardClient() {
 
   const changePassword = async () => {
     setPwMsg(null);
-    if (pw1.length < 8) { setPwMsg({ ok: false, key: 'password_too_short' }); return; }
+    if (pw1.length < MIN_PASSWORD_LENGTH) { setPwMsg({ ok: false, key: 'password_too_short' }); return; }
     if (pw1 !== pw2) { setPwMsg({ ok: false, key: 'password_mismatch' }); return; }
     setPwBusy(true);
     try {
@@ -681,10 +682,10 @@ export default function ManufacturerDashboardClient() {
               <div style={{ fontWeight: 800, marginBottom: 10 }}>{t('change_password')}</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <label style={label}>{t('new_password')}
-                  <input type="password" value={pw1} onChange={e => setPw1(e.target.value)} style={{ ...inputStyle, marginTop: 4 }} autoComplete="new-password" />
+                  <input type="password" value={pw1} onChange={e => setPw1(e.target.value)} style={{ ...inputStyle, marginTop: 4 }} autoComplete="new-password" minLength={MIN_PASSWORD_LENGTH} maxLength={MAX_PASSWORD_LENGTH} />
                 </label>
                 <label style={label}>{t('confirm_new_password')}
-                  <input type="password" value={pw2} onChange={e => setPw2(e.target.value)} style={{ ...inputStyle, marginTop: 4 }} autoComplete="new-password" />
+                  <input type="password" value={pw2} onChange={e => setPw2(e.target.value)} style={{ ...inputStyle, marginTop: 4 }} autoComplete="new-password" minLength={MIN_PASSWORD_LENGTH} maxLength={MAX_PASSWORD_LENGTH} />
                 </label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
                   <button type="button" onClick={changePassword} disabled={pwBusy} style={{ ...btnPrimary, opacity: pwBusy ? 0.5 : 1 }}>
@@ -787,7 +788,7 @@ export default function ManufacturerDashboardClient() {
                     </label>
                     <label style={label}>
                       Password *
-                      <input type="password" value={nPassword} onChange={e => setNPassword(e.target.value)} style={{ ...inputStyle, marginTop: 4 }} placeholder="Min 8 chars" autoComplete="new-password" />
+                      <input type="password" value={nPassword} onChange={e => setNPassword(e.target.value)} style={{ ...inputStyle, marginTop: 4 }} placeholder={PASSWORD_RULE_TEXT} autoComplete="new-password" minLength={MIN_PASSWORD_LENGTH} maxLength={MAX_PASSWORD_LENGTH} />
                     </label>
                     <label style={label}>
                       Full Name
