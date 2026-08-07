@@ -8,6 +8,7 @@ import AccountDeleteButton from '@/components/AccountDeleteButton';
 import AdminTierOverrideControl from '@/components/AdminTierOverrideControl';
 import ViewAsButton from '@/components/ViewAsButton';
 import { createClient } from '@/lib/supabase/client';
+import { MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH, PASSWORD_RULE_TEXT } from '@/lib/password-policy';
 
 /**
  * AgentAccountDetail - full management drawer for a single downline FULL agent.
@@ -886,17 +887,17 @@ export default function AgentAccountDetail({
                     className="form-input"
                     value={downlineNewPassword}
                     onChange={e => setDownlineNewPassword(e.target.value)}
-                    placeholder="Exactly 8 Characters"
+                    placeholder={PASSWORD_RULE_TEXT}
                     required
-                    minLength={8}
-                    maxLength={8}
+                    minLength={MIN_PASSWORD_LENGTH}
+                    maxLength={MAX_PASSWORD_LENGTH}
                     autoComplete="off"
                     style={{ width: '100%' }}
                   />
                 </div>
                 <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
                   <button type="button" className="btn-silver" style={{ padding: '4px 12px', fontSize: '0.8rem' }} onClick={() => { setDownlinePasswordAgent(null); setDownlineNewPassword(''); }} disabled={downlinePasswordSaving}>Cancel</button>
-                  <button type="submit" className="btn-neon-cyan" style={{ padding: '4px 12px', fontSize: '0.8rem' }} disabled={downlinePasswordSaving || downlineNewPassword.length < 8}>
+                  <button type="submit" className="btn-neon-cyan" style={{ padding: '4px 12px', fontSize: '0.8rem' }} disabled={downlinePasswordSaving || downlineNewPassword.length < MIN_PASSWORD_LENGTH}>
                     {downlinePasswordSaving ? 'Saving...' : 'Update Password'}
                   </button>
                 </div>
