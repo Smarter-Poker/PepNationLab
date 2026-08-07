@@ -141,6 +141,7 @@ export default function SecurityTab({ userEmail }: Props) {
               onChange={(e) => setPwNew(e.target.value)}
               autoComplete="new-password"
               minLength={MIN_PASSWORD_LENGTH}
+              maxLength={MAX_PASSWORD_LENGTH}
             />
           </div>
           <div className="form-group" style={{ margin: 0 }}>
@@ -153,6 +154,7 @@ export default function SecurityTab({ userEmail }: Props) {
               onChange={(e) => setPwConfirm(e.target.value)}
               autoComplete="new-password"
               minLength={MIN_PASSWORD_LENGTH}
+              maxLength={MAX_PASSWORD_LENGTH}
             />
           </div>
         </div>

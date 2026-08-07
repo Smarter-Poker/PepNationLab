@@ -386,12 +386,16 @@ export default function AccountSecurityClient({
               placeholder="New Password"
               value={pw1}
               onChange={(e) => setPw1(e.target.value)}
+              minLength={MIN_PASSWORD_LENGTH}
+              maxLength={MAX_PASSWORD_LENGTH}
               style={inputStyle}
             />
             <input
               type="password"
               autoComplete="new-password"
               placeholder="Confirm New Password"
+              minLength={MIN_PASSWORD_LENGTH}
+              maxLength={MAX_PASSWORD_LENGTH}
               value={pw2}
               onChange={(e) => setPw2(e.target.value)}
               style={inputStyle}
