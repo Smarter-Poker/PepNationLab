@@ -5,6 +5,12 @@ import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import SessionsTable from './SessionsTable';
 import MFAEnrollFlow from './MFAEnrollFlow';
+import {
+  MIN_PASSWORD_LENGTH,
+  MAX_PASSWORD_LENGTH,
+  PASSWORD_RULE_TEXT,
+  PASSWORD_TOO_SHORT_ERROR,
+} from '@/lib/password-policy';
 
 interface Props {
   userId: string;
@@ -56,8 +62,8 @@ export default function SecurityTab({ userEmail }: Props) {
   const hasMfa = verifiedFactors.length > 0;
 
   const handleChangePassword = useCallback(async () => {
-    if (pwNew.length < 12) {
-      toast.error('Password Must Be At Least 12 Characters.');
+    if (pwNew.length < MIN_PASSWORD_LENGTH) {
+      toast.error(PASSWORD_TOO_SHORT_ERROR);
       return;
     }
     if (pwNew !== pwConfirm) {
@@ -115,7 +121,7 @@ export default function SecurityTab({ userEmail }: Props) {
           Change Password
         </h3>
         <p style={{ color: 'var(--silver)', fontSize: '0.82rem', margin: '0 0 var(--space-4)', lineHeight: 1.6 }}>
-          You Are Signed In As <code style={{ color: 'var(--teal)' }}>{userEmail || 'this account'}</code>. New Passwords Must Be At Least 12 Characters.
+          You Are Signed In As <code style={{ color: 'var(--teal)' }}>{userEmail || 'this account'}</code>. New Passwords Must Be {PASSWORD_RULE_TEXT}.
         </p>
         <div
           style={{
@@ -134,7 +140,7 @@ export default function SecurityTab({ userEmail }: Props) {
               value={pwNew}
               onChange={(e) => setPwNew(e.target.value)}
               autoComplete="new-password"
-              minLength={12}
+              minLength={MIN_PASSWORD_LENGTH}
             />
           </div>
           <div className="form-group" style={{ margin: 0 }}>
@@ -146,7 +152,7 @@ export default function SecurityTab({ userEmail }: Props) {
               value={pwConfirm}
               onChange={(e) => setPwConfirm(e.target.value)}
               autoComplete="new-password"
-              minLength={12}
+              minLength={MIN_PASSWORD_LENGTH}
             />
           </div>
         </div>

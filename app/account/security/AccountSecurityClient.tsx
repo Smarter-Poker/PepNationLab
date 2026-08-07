@@ -24,6 +24,12 @@ import { reportClientError } from '@/lib/report-client-error';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
+import {
+  MIN_PASSWORD_LENGTH,
+  MAX_PASSWORD_LENGTH,
+  PASSWORD_RULE_TEXT,
+  PASSWORD_TOO_SHORT_ERROR,
+} from '@/lib/password-policy';
 
 interface MfaFactor {
   id: string;
@@ -201,8 +207,8 @@ export default function AccountSecurityClient({
 
   /* ============ Password ============ */
   async function changePassword() {
-    if (pw1.length < 8) {
-      toast.error('Use At Least 8 Characters.');
+    if (pw1.length < MIN_PASSWORD_LENGTH) {
+      toast.error(PASSWORD_TOO_SHORT_ERROR);
       return;
     }
     if (pw1 !== pw2) {
@@ -371,7 +377,7 @@ export default function AccountSecurityClient({
         <section className="glass-panel hover-lift" style={cardStyle}>
           <h2 style={h2Style}>Change Password</h2>
           <p style={{ color: SILVER, fontSize: '0.85rem', marginBottom: 'var(--space-3)' }}>
-            Use At Least 8 Characters. Mix Letters, Numbers, And Symbols.
+            Use {PASSWORD_RULE_TEXT}. Mix Letters, Numbers, And Symbols.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 360 }}>
             <input

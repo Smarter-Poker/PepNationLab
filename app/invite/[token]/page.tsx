@@ -4,6 +4,12 @@ import { useEffect, useState } from 'react';
 import { use } from 'react';
 import Link from 'next/link';
 import { UserPlus, ShieldCheck, AlertCircle, CheckCircle2 } from 'lucide-react';
+import {
+  MIN_PASSWORD_LENGTH,
+  MAX_PASSWORD_LENGTH,
+  PASSWORD_RULE_TEXT,
+  PASSWORD_TOO_SHORT_ERROR,
+} from '@/lib/password-policy';
 
 // Public invitation redemption landing. The one-time token is the credential;
 // no session is required. Validates the token, then lets the recipient set a
@@ -63,8 +69,8 @@ export default function InviteRedeemPage({ params }: { params: Promise<{ token: 
     e.preventDefault();
     if (submitting) return;
     setError(null);
-    if (password.length !== 8) {
-      setError('Password Must Be Exactly 8 Characters.');
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      setError(PASSWORD_TOO_SHORT_ERROR);
       return;
     }
     if (password !== confirm) {
@@ -169,11 +175,11 @@ export default function InviteRedeemPage({ params }: { params: Promise<{ token: 
           </div>
           <div>
             <label style={labelStyle}>Create Password</label>
-            <input type="password" required minLength={8} maxLength={8} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Exactly 8 Characters" style={inputStyle} autoComplete="new-password" />
+            <input type="password" required minLength={MIN_PASSWORD_LENGTH} maxLength={MAX_PASSWORD_LENGTH} value={password} onChange={(e) => setPassword(e.target.value)} placeholder={PASSWORD_RULE_TEXT} style={inputStyle} autoComplete="new-password" />
           </div>
           <div>
             <label style={labelStyle}>Confirm Password</label>
-            <input type="password" required minLength={8} maxLength={8} value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="Re-Enter Password" style={inputStyle} autoComplete="new-password" />
+            <input type="password" required minLength={MIN_PASSWORD_LENGTH} maxLength={MAX_PASSWORD_LENGTH} value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="Re-Enter Password" style={inputStyle} autoComplete="new-password" />
           </div>
         </div>
 

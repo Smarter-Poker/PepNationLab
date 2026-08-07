@@ -4,6 +4,12 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Key, ArrowRight, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
+import {
+  MIN_PASSWORD_LENGTH,
+  MAX_PASSWORD_LENGTH,
+  PASSWORD_RULE_TEXT,
+  PASSWORD_TOO_SHORT_ERROR,
+} from '@/lib/password-policy';
 
 // Code-based password reset (two steps):
 //   Step 1: enter the verified contact email -> a 6-digit code is emailed.
@@ -62,7 +68,7 @@ export default function ForgotPasswordPage() {
   const handleConfirm = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!/^\d{6}$/.test(code.trim())) { setError('Enter The 6-Digit Code From Your Email.'); return; }
-    if (newPassword.length < 8) { setError('Password Must Be At Least 8 Characters.'); return; }
+    if (newPassword.length < MIN_PASSWORD_LENGTH) { setError(PASSWORD_TOO_SHORT_ERROR); return; }
     setLoading(true);
     setError(null);
     try {
@@ -147,10 +153,10 @@ export default function ForgotPasswordPage() {
                 </div>
                 <div style={{ marginBottom: 'var(--space-6)' }}>
                   <label htmlFor="newPassword" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--grey-300)', marginBottom: 'var(--space-2)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>New Password</label>
-                  <input id="newPassword" type="password" required minLength={8} maxLength={128} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="form-input" placeholder="At Least 8 Characters" style={{ width: '100%' }} autoComplete="new-password" />
+                  <input id="newPassword" type="password" required minLength={MIN_PASSWORD_LENGTH} maxLength={MAX_PASSWORD_LENGTH} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="form-input" placeholder={PASSWORD_RULE_TEXT} style={{ width: '100%' }} autoComplete="new-password" />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                  <button type="submit" disabled={loading || code.length !== 6 || newPassword.length < 8} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                  <button type="submit" disabled={loading || code.length !== 6 || newPassword.length < MIN_PASSWORD_LENGTH} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
                     {loading ? (<><Loader2 size={18} className="spin" style={{ marginRight: '0.5rem' }} />Resetting...</>) : 'Reset Password'}
                   </button>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
