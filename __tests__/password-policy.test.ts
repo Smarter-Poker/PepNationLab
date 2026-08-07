@@ -129,17 +129,37 @@ const BANNED_COPY: Array<[RegExp, string]> = [
   [/Password\s+Must\s+Be\s+Exactly/i, 'says a password must be an exact length'],
 ];
 
-/** Enforcement written as a raw literal instead of importing the policy. */
+/**
+ * Enforcement written as a raw literal instead of importing the policy.
+ *
+ * The compared number is deliberately \d{2,}|[4-9] — at least 4. A password
+ * check never compares against 0..3, but `pw.length === 0` (is the field
+ * empty?) and `n !== 1` (pluralise "character") are both legitimate and
+ * common, and flagging them would train people to ignore this test.
+ */
 const BANNED_CODE: Array<[RegExp, string]> = [
-  [/password[A-Za-z0-9_]*\.length\s*!==\s*\d+/i, 'compares a password length with !== (equality rule)'],
-  [/password[A-Za-z0-9_]*\.length\s*===\s*\d+/i, 'compares a password length with === (equality rule)'],
-  [/\bpw[A-Za-z0-9_]*\.length\s*[!=]==\s*\d+/i, 'compares a password length with an equality rule'],
+  [/password[A-Za-z0-9_]*\.length\s*[!=]==\s*(?:[4-9]|\d{2,})/i, 'compares a password length for exact equality'],
+  [/\bpw[A-Za-z0-9_]*\.length\s*[!=]==\s*(?:[4-9]|\d{2,})/i, 'compares a password length for exact equality'],
   [/z\s*\.\s*string\s*\(\s*\)\s*\.\s*length\s*\(\s*\d+/i, 'zod .length(N) on a password-ish schema'],
 ];
 
+/**
+ * Strip comments before scanning.
+ *
+ * Without this the test fails on the very comments that explain the bug — a
+ * file documenting `previously demanded "Exactly 8 Characters"` is doing the
+ * right thing, and a guard that punishes writing that down is a guard people
+ * delete. Only code is load-bearing here.
+ */
+function stripComments(src: string): string {
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')   // block comments, incl. JSDoc
+    .replace(/(^|[^:])\/\/[^\n]*/g, '$1'); // line comments (not "https://")
+}
+
 function read(f: string): string {
   try {
-    return readFileSync(join(ROOT, f), 'utf8');
+    return stripComments(readFileSync(join(ROOT, f), 'utf8'));
   } catch {
     return '';
   }

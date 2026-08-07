@@ -4,6 +4,7 @@ import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { seedStorefrontFromHousePrices } from '@/lib/seed-storefront';
 import { validateStoreSlug } from '@/lib/store-slug';
+import { validatePassword } from '@/lib/password-policy';
 
 /**
  * GET /api/agent/agents
@@ -128,13 +129,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing Required Fields (Name, Username, Password, Billing, Slug, User Name)' }, { status: 400 });
     }
 
-    // Provisioned passwords are exactly 8 characters platform-wide - the login
-    // form, the forced password-change flow and /api/admin/agents all assume
-    // it. This route used to accept `>= 8`, so a Super Agent could hand a
-    // downline Agent a preset password the rest of the platform would not
-    // round-trip. Keep this identical to the admin route.
-    if (password.length !== 8) {
-      return NextResponse.json({ error: 'Password Must Be Exactly 8 Characters.' }, { status: 400 });
+    // Password rule comes from lib/password-policy: at least 8 characters, at
+    // most 128. This route used to demand an EXACT length of 8 "to match the
+    // rest of the platform" -- but the create-agent form it serves offers the
+    // full range, so a Super Agent typing a longer password got a 400 telling
+    // them a rule the form never mentioned. The policy module is the only
+    // place that number is allowed to live.
+    const pwError = validatePassword(password);
+    if (pwError) {
+      return NextResponse.json({ error: pwError }, { status: 400 });
     }
 
     if (account_type === 'credit' && credit_limit !== undefined && credit_limit !== null && credit_limit !== '') {

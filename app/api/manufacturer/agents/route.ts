@@ -9,6 +9,7 @@ import { generateStorefrontQr } from '@/lib/qr-storefront';
 import { sanitizeUsername } from '@/lib/usernames';
 import { validateStoreSlug } from '@/lib/store-slug';
 import { seedStorefrontFromHousePrices } from '@/lib/seed-storefront';
+import { validatePassword } from '@/lib/password-policy';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://pepnationlab.com';
 
@@ -112,13 +113,15 @@ export async function POST(req: NextRequest) {
   if (!username || !password || !slug) {
     return NextResponse.json({ error: 'Username, password, and slug are required' }, { status: 400 });
   }
-  // Provisioned passwords are exactly 8 characters platform-wide - the login
-  // form, the forced password-change flow, /api/admin/agents and
-  // /api/agent/agents all assume it. This route used to accept `>= 8`, so a
-  // manufacturer could hand a downline Agent a preset password the rest of the
-  // platform would not round-trip.
-  if (typeof password !== 'string' || password.length !== 8) {
-    return NextResponse.json({ error: 'Password Must Be Exactly 8 Characters.' }, { status: 400 });
+  // Password rule comes from lib/password-policy: at least 8 characters, at
+  // most 128. This route used to demand an EXACT length of 8 while the
+  // manufacturer dashboard form advertised "Min 8 chars" -- the same
+  // form-says-X / API-says-Y contradiction that made password changes
+  // impossible elsewhere on the platform. validatePassword also rejects a
+  // non-string body value, which the old `typeof` guard handled separately.
+  const pwError = validatePassword(password);
+  if (pwError) {
+    return NextResponse.json({ error: pwError }, { status: 400 });
   }
 
   const usernameClean = sanitizeUsername(username);
