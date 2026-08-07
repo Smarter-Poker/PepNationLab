@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { pickOne } from '@/lib/relations';
 import SubAgentCommissionEditor from './SubAgentCommissionEditor';
 import AgentAccountDetail from '@/components/AgentAccountDetail';
+import { MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH, PASSWORD_RULE_TEXT } from '@/lib/password-policy';
 import {
   exportCSV,
   downloadCSV,
@@ -785,10 +786,10 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                     style={{ width: '100%', padding: '10px 14px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                     value={resetPwValue}
                     onChange={e => setResetPwValue(e.target.value)}
-                    placeholder="Exactly 8 Characters"
+                    placeholder={PASSWORD_RULE_TEXT}
                     required
-                    minLength={8}
-                    maxLength={8}
+                    minLength={MIN_PASSWORD_LENGTH}
+                    maxLength={MAX_PASSWORD_LENGTH}
                     name="subagent_reset_password_no_autofill"
                     autoComplete="new-password"
                     data-lpignore="true"
@@ -796,7 +797,7 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                 </div>
                 <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
                   <button type="button" className="btn-silver" onClick={() => { setResetPwUser(null); setResetPwValue(''); }} disabled={resetPwSaving}>Cancel</button>
-                  <button type="submit" className="btn-neon-cyan" disabled={resetPwSaving || resetPwValue.length < 8}>
+                  <button type="submit" className="btn-neon-cyan" disabled={resetPwSaving || resetPwValue.length < MIN_PASSWORD_LENGTH}>
                     {resetPwSaving ? 'Saving...' : 'Update Password'}
                   </button>
                 </div>
