@@ -24,6 +24,12 @@ import {
 } from 'lucide-react';
 import { isWebPushSupported, enablePush, notificationPermission } from '@/lib/push-client';
 import QRCodeGenerator from '@/components/QRCodeGenerator';
+import {
+  MIN_PASSWORD_LENGTH,
+  MAX_PASSWORD_LENGTH,
+  PASSWORD_RULE_TEXT,
+  PASSWORD_TOO_SHORT_ERROR,
+} from '@/lib/password-policy';
 
 type WizardRole = 'super_agent' | 'agent' | 'sub_agent';
 
@@ -310,7 +316,7 @@ function PasswordStep({ onDone }: { onDone: () => void }) {
 
   const submit = async () => {
     setErr(null);
-    if (pw.length !== 8) { setErr('Password Must Be Exactly 8 Characters.'); return; }
+    if (pw.length < MIN_PASSWORD_LENGTH) { setErr(PASSWORD_TOO_SHORT_ERROR); return; }
     if (pw !== confirm) { setErr('Passwords Do Not Match.'); return; }
     setBusy(true);
     try {
@@ -328,15 +334,15 @@ function PasswordStep({ onDone }: { onDone: () => void }) {
       <StepIntro icon={Lock} title="Secure Your Password"
         blurb="Your Account Was Created With A Temporary Password. Choose Your Own Private Password To Continue." />
       <GuidePanel steps={[
-        'Type A New Password - At Least 8 Characters.',
+        `Type A New Password - ${PASSWORD_RULE_TEXT}.`,
         'Type It A Second Time To Confirm It Matches.',
         'Click "Set Password And Continue".',
       ]} />
       <Field label="New Password">
-        <input type="password" style={inputStyle} value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" placeholder="Exactly 8 Characters" minLength={8} maxLength={8} />
+        <input type="password" style={inputStyle} value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" placeholder={PASSWORD_RULE_TEXT} minLength={MIN_PASSWORD_LENGTH} maxLength={MAX_PASSWORD_LENGTH} />
       </Field>
       <Field label="Confirm New Password">
-        <input type="password" style={inputStyle} value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" minLength={8} maxLength={8} />
+        <input type="password" style={inputStyle} value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" minLength={MIN_PASSWORD_LENGTH} maxLength={MAX_PASSWORD_LENGTH} />
       </Field>
       <ErrorLine msg={err} />
       <PrimaryButton onClick={submit} busy={busy}>Set Password And Continue</PrimaryButton>
