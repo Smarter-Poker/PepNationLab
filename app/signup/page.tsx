@@ -13,6 +13,11 @@ import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 import { REF_LOCK_MAX_AGE } from '@/lib/ref-lock';
 import { buildOAuthCallbackUrl } from '@/lib/oauth-callback-url';
 import { useAvailability, availabilityMessage } from '@/lib/useAvailability';
+// PASSWORD RULE: at least 8 characters, from the ONE policy definition. This
+// form previously hardcoded "Exactly 8 Characters" (maxLength=8) while other
+// surfaces said 12 or "at least 8" -- importing the policy is what keeps
+// every password surface telling the same story.
+import { MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH, PASSWORD_RULE_TEXT } from '@/lib/password-policy';
 
 // Public Researcher Signup -- Every Account Created Here Is Linked To The
 // House Storefront (Pep Nation Research Store) Via The Storefront Register API.
@@ -563,9 +568,9 @@ function SignupForm() {
             <div className="form-group">
               <label className="form-label" htmlFor="password">Password</label>
               <input
-                id="password" type="password" className="form-input" placeholder="Exactly 8 Characters"
+                id="password" type="password" className="form-input" placeholder={PASSWORD_RULE_TEXT}
                 value={password} onChange={e => setPassword(e.target.value)}
-                required minLength={8} maxLength={8} autoComplete="new-password"
+                required minLength={MIN_PASSWORD_LENGTH} maxLength={MAX_PASSWORD_LENGTH} autoComplete="new-password"
               />
             </div>
 
@@ -658,7 +663,7 @@ function SignupForm() {
                 type="submit"
                 className="btn btn-primary hover-lift"
                 style={{ width: '100%', maxWidth: 300, display: 'flex', justifyContent: 'center', textAlign: 'center' }}
-                disabled={loading || !allAcked || !firstName || !lastName || !username || !email || password.length !== 8 || usernameBlocked || usernameCheck.status === 'checking'}
+                disabled={loading || !allAcked || !firstName || !lastName || !username || !email || password.length < MIN_PASSWORD_LENGTH || usernameBlocked || usernameCheck.status === 'checking'}
               >
                 {loading
                   ? 'Creating Account...'

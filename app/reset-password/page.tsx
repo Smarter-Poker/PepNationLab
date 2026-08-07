@@ -6,6 +6,16 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Key, ArrowRight, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import {
+  MIN_PASSWORD_LENGTH,
+  MAX_PASSWORD_LENGTH,
+  PASSWORD_RULE_TEXT,
+  PASSWORD_TOO_SHORT_ERROR,
+} from '@/lib/password-policy';
+
+// PASSWORD RULE: at least 8 characters, via lib/password-policy. This page
+// once demanded EXACTLY 8 characters (maxLength=8 and all), stranding anyone
+// who wanted a longer password. Do not restate a length literal here.
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -34,8 +44,8 @@ export default function ResetPasswordPage() {
       setError('Passwords Do Not Match.');
       return;
     }
-    if (password.length !== 8) {
-      setError('Password Must Be Exactly 8 Characters.');
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      setError(PASSWORD_TOO_SHORT_ERROR);
       return;
     }
 
@@ -108,7 +118,7 @@ export default function ResetPasswordPage() {
             <Key size={22} aria-hidden="true" />
           </div>
           <h2 className="animated-gradient-text" style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)', textAlign: 'center' }}>New Password</h2>
-          
+
           {success ? (
             <div role="status" style={{ textAlign: 'center', margin: 'var(--space-6) 0' }}>
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--space-4)', color: 'var(--teal)' }}>
@@ -155,12 +165,12 @@ export default function ResetPasswordPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="form-input"
-                    placeholder="Exactly 8 Characters"
+                    placeholder={PASSWORD_RULE_TEXT}
                     style={{ width: '100%' }}
                     autoFocus
                     autoComplete="new-password"
-                    minLength={8}
-                    maxLength={8}
+                    minLength={MIN_PASSWORD_LENGTH}
+                    maxLength={MAX_PASSWORD_LENGTH}
                   />
                 </div>
 
@@ -178,8 +188,8 @@ export default function ResetPasswordPage() {
                     placeholder="Must Match"
                     style={{ width: '100%' }}
                     autoComplete="new-password"
-                    minLength={8}
-                    maxLength={8}
+                    minLength={MIN_PASSWORD_LENGTH}
+                    maxLength={MAX_PASSWORD_LENGTH}
                   />
                 </div>
 

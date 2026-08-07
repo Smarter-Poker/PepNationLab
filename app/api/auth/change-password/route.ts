@@ -7,6 +7,7 @@ import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { emailConfigured, sendPasswordChangedEmail } from '@/lib/email';
 import { safeError } from '@/lib/api-error';
 import { recordAuthEvent } from '@/lib/auth-events';
+import { validatePassword } from '@/lib/password-policy';
 
 // POST /api/auth/change-password
 // Used by researchers on first login to change their temp password.
@@ -15,6 +16,11 @@ import { recordAuthEvent } from '@/lib/auth-events';
 // fix-47: rate-limited 10/min/user. The skip path is cheap but a real
 // password change hits Supabase auth + writes profiles - worth gating to
 // deter abuse from a stolen session token.
+//
+// PASSWORD RULE: at least 8 characters, via lib/password-policy. This route
+// once demanded EXACTLY 8 while the page that posts here demanded at least
+// 12 — a contradiction that made a first-login password change impossible.
+// Do not restate a length literal here; import the policy.
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -89,8 +95,9 @@ export async function POST(req: NextRequest) {
   if (!newPassword || typeof newPassword !== 'string') {
     return NextResponse.json({ error: 'New Password Is Required' }, { status: 400 });
   }
-  if (newPassword.length !== 8) {
-    return NextResponse.json({ error: 'Password Must Be Exactly 8 Characters.' }, { status: 400 });
+  const policyError = validatePassword(newPassword);
+  if (policyError) {
+    return NextResponse.json({ error: policyError }, { status: 400 });
   }
 
   // Update password via the user client. This generates a new session and triggers setAll()
