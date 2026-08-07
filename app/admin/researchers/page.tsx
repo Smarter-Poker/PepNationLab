@@ -9,6 +9,7 @@ import AccountDeleteButton from '@/components/AccountDeleteButton';
 import Pagination from '@/components/Pagination';
 import ViewAsButton from '@/components/ViewAsButton';
 import { useAvailability, availabilityMessage } from '@/lib/useAvailability';
+import { MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH, PASSWORD_RULE_TEXT } from '@/lib/password-policy';
 
 const PAGE_SIZE = 25;
 
@@ -918,7 +919,7 @@ function ResearchersAdminPageInner() {
                 <label className="form-label">Temporary Password</label>
                 <input type="password" className="form-input" placeholder="Set Initial Password" value={newPassword}
                   name="new_researcher_password_no_autofill" autoComplete="new-password" data-lpignore="true"
-                  onChange={e => setNewPassword(e.target.value)} required minLength={8} maxLength={8} />
+                  onChange={e => setNewPassword(e.target.value)} required minLength={MIN_PASSWORD_LENGTH} maxLength={MAX_PASSWORD_LENGTH} />
               </div>
 
               {createRole === 'researcher' && (
