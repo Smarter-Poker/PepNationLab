@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import AgentAccountDetail from '@/components/AgentAccountDetail';
+import { MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH, PASSWORD_RULE_TEXT } from '@/lib/password-policy';
 
 export default function AgentDownline({ agentId }: { agentId?: string }) {
   const [agents, setAgents] = useState<any[]>([]);
@@ -319,14 +320,14 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                     type="password"
                     name="new_agent_password_no_autofill"
                     required
-                    minLength={8}
-                    maxLength={8}
+                    minLength={MIN_PASSWORD_LENGTH}
+                    maxLength={MAX_PASSWORD_LENGTH}
                     autoComplete="new-password"
                     data-lpignore="true"
                     style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                     value={caPassword}
                     onChange={e => setCaPassword(e.target.value)}
-                    placeholder="Exactly 8 characters"
+                    placeholder={PASSWORD_RULE_TEXT}
                   />
                 </div>
 
@@ -482,16 +483,16 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                     style={{ width: '100%', padding: '10px 14px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                     value={resetPwValue}
                     onChange={e => setResetPwValue(e.target.value)}
-                    placeholder="Exactly 8 Characters"
+                    placeholder={PASSWORD_RULE_TEXT}
                     required
-                    minLength={8}
-                    maxLength={8}
+                    minLength={MIN_PASSWORD_LENGTH}
+                    maxLength={MAX_PASSWORD_LENGTH}
                     autoComplete="new-password"
                   />
                 </div>
                 <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
                   <button type="button" className="btn-silver" onClick={() => { setResetPwUser(null); setResetPwValue(''); }} disabled={resetPwSaving}>Cancel</button>
-                  <button type="submit" className="btn-neon-cyan" disabled={resetPwSaving || resetPwValue.length < 8}>
+                  <button type="submit" className="btn-neon-cyan" disabled={resetPwSaving || resetPwValue.length < MIN_PASSWORD_LENGTH}>
                     {resetPwSaving ? 'Saving...' : 'Update Password'}
                   </button>
                 </div>
