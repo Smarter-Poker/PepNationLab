@@ -4,6 +4,7 @@ import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { sanitizeUsername } from '@/lib/usernames';
 import { assertSameOrigin } from '@/lib/csrf';
 import { notifyNewResearcher } from '@/lib/notify';
+import { validatePassword } from '@/lib/password-policy';
 
 /**
  * POST /api/agent/create-researcher
@@ -90,8 +91,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Username, Password, First Name, And Last Name Are Required.' }, { status: 400 });
   }
 
-  if (password.length !== 8) {
-    return NextResponse.json({ error: 'Password Must Be Exactly 8 Characters.' }, { status: 400 });
+  const pwError = validatePassword(password);
+  if (pwError) {
+    return NextResponse.json({ error: pwError }, { status: 400 });
   }
 
   const usernameClean = sanitizeUsername(username);

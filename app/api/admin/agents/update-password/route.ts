@@ -19,7 +19,8 @@ export async function POST(req: NextRequest) {
   const supabase = createAdminClient();
   const rawBody: unknown = await req.json().catch(() => ({}));
 
-  // Schema-locked: newPassword must be a STRING of 8-128 chars and userId a
+  // Schema-locked via lib/password-policy: newPassword must be a STRING
+  // obeying the platform rule (at least 8 characters), and userId a
   // UUID. The previous hand check called `.length` on an untyped value, so a
   // non-string JSON value bypassed both length bounds.
   const parsed = AdminUpdatePasswordSchema.safeParse(rawBody);

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireSession } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { validatePassword } from '@/lib/password-policy';
 
 /**
  * Agents can reset passwords for their own researchers and sub-agents.
@@ -36,8 +37,9 @@ export async function POST(req: NextRequest) {
   if (!userId || !newPassword) {
     return NextResponse.json({ error: 'Missing Required Fields' }, { status: 400 });
   }
-  if (typeof newPassword !== 'string' || newPassword.length !== 8) {
-    return NextResponse.json({ error: 'Password Must Be Exactly 8 Characters.' }, { status: 400 });
+  const pwError = validatePassword(newPassword);
+  if (pwError) {
+    return NextResponse.json({ error: pwError }, { status: 400 });
   }
 
   // Verify the target user belongs to this agent (referring_agent_id = caller)

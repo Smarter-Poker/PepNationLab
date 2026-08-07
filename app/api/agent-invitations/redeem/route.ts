@@ -9,6 +9,7 @@ import { generateStorefrontQr } from '@/lib/qr-storefront';
 import { seedStorefrontFromHousePrices } from '@/lib/seed-storefront';
 import { validateStoreSlug } from '@/lib/store-slug';
 import { randomBytes } from 'crypto';
+import { validatePassword } from '@/lib/password-policy';
 
 // Public invitation redemption. No session required (the recipient has no
 // account yet) -- the one-time token is the credential. Rate-limited by IP.
@@ -16,7 +17,6 @@ import { randomBytes } from 'crypto';
 // GET  /api/agent-invitations/redeem?token=... -> validate + return inviter info
 // POST /api/agent-invitations/redeem            -> set password, provision account
 
-const PASSWORD_MIN = 8;
 
 function inviteStatus(row: any): 'pending' | 'redeemed' | 'revoked' | 'expired' {
   if (row.metadata?.revoked === true) return 'revoked';
@@ -250,8 +250,9 @@ export async function POST(req: NextRequest) {
   const fullNameInput = body?.full_name ? String(body.full_name).trim().slice(0, 120) : null;
 
   if (!token) return NextResponse.json({ error: 'Missing Token.' }, { status: 400 });
-  if (password.length !== PASSWORD_MIN) {
-    return NextResponse.json({ error: 'Password Must Be Exactly 8 Characters.' }, { status: 400 });
+  const pwError = validatePassword(password);
+  if (pwError) {
+    return NextResponse.json({ error: pwError }, { status: 400 });
   }
 
   const supabase = createAdminClient();

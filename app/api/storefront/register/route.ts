@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
   const rawBody: unknown = await req.json().catch(() => ({}));
 
   // Schema-locked body. The password rule matters most: it is now REQUIRED
-  // to be a string of 8-128 chars. The previous hand checks called
+  // to be a string obeying lib/password-policy. The previous hand checks called
   // `password.length`, so a non-string JSON value (e.g. a bare number)
   // skipped both bounds entirely and went straight to auth.createUser.
   const parsedBody = StorefrontRegisterSchema.safeParse(rawBody);

@@ -9,6 +9,7 @@ import { sanitizeUsername } from '@/lib/usernames';
 import { assertSameOrigin } from '@/lib/csrf';
 import { seedStorefrontFromHousePrices } from '@/lib/seed-storefront';
 import { validateStoreSlug } from '@/lib/store-slug';
+import { validatePassword } from '@/lib/password-policy';
 
 // GET: List all agents with their profiles and storefront data
 export async function GET() {
@@ -136,8 +137,9 @@ export async function POST(req: NextRequest) {
     const resolvedParentAgentId = isResearcher
       ? (parent_agent_id === '__ADMIN__' ? gate.userId : parent_agent_id)
       : parent_agent_id;
-    if (password.length !== 8) {
-      return NextResponse.json({ error: 'Password Must Be Exactly 8 Characters.' }, { status: 400 });
+    const pwError = validatePassword(password);
+    if (pwError) {
+      return NextResponse.json({ error: pwError }, { status: 400 });
     }
 
     if (!isResearcher && account_type === 'credit' && credit_limit !== undefined && credit_limit !== null && credit_limit !== '') {

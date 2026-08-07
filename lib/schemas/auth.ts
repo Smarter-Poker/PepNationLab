@@ -5,9 +5,26 @@
  * (e.g. a number) skipped the min/max checks entirely.
  */
 import { z } from 'zod';
+import {
+  MIN_PASSWORD_LENGTH,
+  MAX_PASSWORD_LENGTH,
+  PASSWORD_TOO_SHORT_ERROR,
+  PASSWORD_TOO_LONG_ERROR,
+} from '@/lib/password-policy';
 
-/** Platform password policy: exactly 8 chars, must be a real string. */
-export const PasswordSchema = z.string().length(8, 'Password Must Be Exactly 8 Characters.');
+/**
+ * Platform password policy, from the ONE definition in lib/password-policy:
+ * at least 8 characters, at most 128, and it must be a real string.
+ *
+ * This was `.length(8)` — an EQUALITY check — which is what made every
+ * account-creation and password-reset route on the platform reject any
+ * password that was not exactly 8 characters, while the pages posting to
+ * them advertised different rules. Never hardcode a length literal here.
+ */
+export const PasswordSchema = z
+  .string()
+  .min(MIN_PASSWORD_LENGTH, PASSWORD_TOO_SHORT_ERROR)
+  .max(MAX_PASSWORD_LENGTH, PASSWORD_TOO_LONG_ERROR);
 
 /** POST /api/storefront/register request body (the only public signup path). */
 export const StorefrontRegisterSchema = z.object({
