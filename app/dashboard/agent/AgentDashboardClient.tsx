@@ -28,6 +28,7 @@ import PaymentMethodsPanel from '@/components/PaymentMethodsPanel';
 import AvatarUpload from '@/components/AvatarUpload';
 import MyQRCodeModal from '@/components/MyQRCodeModal';
 import { useAvailability, availabilityMessage } from '@/lib/useAvailability';
+import { MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH, PASSWORD_RULE_TEXT } from '@/lib/password-policy';
 
 
 interface Profile {
@@ -1055,9 +1056,9 @@ export default function AgentDashboardClient({
                           value={crPassword}
                           onChange={e => setCrPassword(e.target.value)}
                           required
-                          minLength={8}
-                          maxLength={8}
-                          placeholder="Exactly 8 Characters"
+                          minLength={MIN_PASSWORD_LENGTH}
+                          maxLength={MAX_PASSWORD_LENGTH}
+                          placeholder={PASSWORD_RULE_TEXT}
                           style={{
                             width: '100%', boxSizing: 'border-box',
                             background: 'linear-gradient(180deg, #0a0c14 0%, #0d1018 100%)',
@@ -1296,17 +1297,17 @@ export default function AgentDashboardClient({
                   className="form-input"
                   value={resetPwValue}
                   onChange={e => setResetPwValue(e.target.value)}
-                  placeholder="Exactly 8 Characters"
+                  placeholder={PASSWORD_RULE_TEXT}
                   required
-                  minLength={8}
-                  maxLength={8}
+                  minLength={MIN_PASSWORD_LENGTH}
+                  maxLength={MAX_PASSWORD_LENGTH}
                   autoComplete="off"
                   style={{ width: '100%' }}
                 />
               </div>
               <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
                 <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setResetPwUser(null); setResetPwValue(''); }} disabled={resetPwSaving}>Cancel</button>
-                <button type="submit" className="btn btn-primary btn-sm" disabled={resetPwSaving || resetPwValue.length < 8}>
+                <button type="submit" className="btn btn-primary btn-sm" disabled={resetPwSaving || resetPwValue.length < MIN_PASSWORD_LENGTH}>
                   {resetPwSaving ? 'Saving...' : 'Update Password'}
                 </button>
               </div>
