@@ -6,6 +6,12 @@ import { createClient } from '@/lib/supabase/client';
 import AgentAccountDetail from '@/components/AgentAccountDetail';
 import DownlineTree from '@/components/DownlineTree';
 import { freshDefaultLadder, GAMIFICATION_MAX_PCT } from '@/lib/gamification';
+import {
+  MIN_PASSWORD_LENGTH,
+  MAX_PASSWORD_LENGTH,
+  PASSWORD_RULE_TEXT,
+  PASSWORD_TOO_SHORT_ERROR,
+} from '@/lib/password-policy';
 
 const AvailabilityIndicator = ({ status }: { status: 'idle' | 'checking' | 'available' | 'taken' }) => {
   if (status === 'idle') return null;
@@ -981,7 +987,7 @@ export default function AdminAgents() {
               </p>
               <form onSubmit={async (e) => {
                 e.preventDefault();
-                if (newPassword.length !== 8) { toast.error('Password Must Be Exactly 8 Characters.'); return; }
+                if (newPassword.length < MIN_PASSWORD_LENGTH) { toast.error(PASSWORD_TOO_SHORT_ERROR); return; }
                 if (!passwordAgent || !newPassword) return;
                 setPasswordSaving(true);
                 try {
@@ -1012,15 +1018,15 @@ export default function AdminAgents() {
                     placeholder="Enter New Password"
                     autoComplete="off"
                     autoFocus
-                    minLength={8}
-                    maxLength={8}
+                    minLength={MIN_PASSWORD_LENGTH}
+                    maxLength={MAX_PASSWORD_LENGTH}
                     style={{ width: '100%' }}
                   />
-                  <div style={{ marginTop: 6, fontSize: '0.75rem', color: newPassword.length === 0 ? 'var(--grey-500)' : newPassword.length < 8 ? '#F87171' : '#2DD4BF', fontWeight: 600 }}>
+                  <div style={{ marginTop: 6, fontSize: '0.75rem', color: newPassword.length === 0 ? 'var(--grey-500)' : newPassword.length < MIN_PASSWORD_LENGTH ? '#F87171' : '#2DD4BF', fontWeight: 600 }}>
                     {newPassword.length === 0
-                      ? 'Minimum 8 Characters Required'
-                      : newPassword.length < 8
-                      ? `${newPassword.length}/8 - Need ${8 - newPassword.length} More Character${8 - newPassword.length !== 1 ? 's' : ''}`
+                      ? `Minimum ${MIN_PASSWORD_LENGTH} Characters Required`
+                      : newPassword.length < MIN_PASSWORD_LENGTH
+                      ? `${newPassword.length}/${MIN_PASSWORD_LENGTH} - Need ${MIN_PASSWORD_LENGTH - newPassword.length} More Character${MIN_PASSWORD_LENGTH - newPassword.length !== 1 ? 's' : ''}`
                       : `${newPassword.length} Characters - Good To Go`}
                   </div>
                 </div>
@@ -1029,8 +1035,8 @@ export default function AdminAgents() {
                   <button
                     type="submit"
                     className="btn-neon-cyan"
-                    style={{ padding: '4px 12px', fontSize: '0.8rem', opacity: (passwordSaving || newPassword.length < 8) ? 0.4 : 1, cursor: (passwordSaving || newPassword.length < 8) ? 'not-allowed' : 'pointer' }}
-                    disabled={passwordSaving || newPassword.length < 8}
+                    style={{ padding: '4px 12px', fontSize: '0.8rem', opacity: (passwordSaving || newPassword.length < MIN_PASSWORD_LENGTH) ? 0.4 : 1, cursor: (passwordSaving || newPassword.length < MIN_PASSWORD_LENGTH) ? 'not-allowed' : 'pointer' }}
+                    disabled={passwordSaving || newPassword.length < MIN_PASSWORD_LENGTH}
                   >
                     {passwordSaving ? 'Saving...' : 'Update Password'}
                   </button>
@@ -1202,10 +1208,10 @@ export default function AdminAgents() {
                   className="form-input"
                   value={createForm.password}
                   onChange={e => handleCreateFormChange('password', e.target.value)}
-                  placeholder="Exactly 8 Characters"
+                  placeholder={PASSWORD_RULE_TEXT}
                   required
-                  minLength={8}
-                  maxLength={8}
+                  minLength={MIN_PASSWORD_LENGTH}
+                  maxLength={MAX_PASSWORD_LENGTH}
                   style={{ width: '100%' }}
                 />
               </div>
