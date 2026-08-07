@@ -3,6 +3,13 @@
 import { useEffect } from 'react';
 
 import { STORE_SLUG_RE } from '@/lib/store-slug';
+// Imported, never re-typed. This window used to be a hand-copied literal that
+// drifted to 30 days while the signed cookie stayed at 90, so a guest who
+// scanned on day 45 arrived with a live server lock and an empty localStorage
+// and the house store took the agent's signup credit. See
+// __tests__/platform-invariants.test.ts, which fails the build if the two
+// windows ever disagree again.
+import { REF_LOCK_MAX_AGE } from '@/lib/ref-lock';
 
 /**
  * AgentLinkCapture — invisible client component that remembers which agent's
@@ -39,8 +46,16 @@ import { STORE_SLUG_RE } from '@/lib/store-slug';
 const STORAGE_KEY = 'pnl_referral_agent';
 const DISPLAY_COOKIE = 'pnl_ref_display';
 
-/** 90 days — kept identical to REF_LOCK_MAX_AGE in lib/ref-lock.ts. */
-const MAX_AGE_MS = 90 * 24 * 60 * 60 * 1000;
+/**
+ * The lock lifetime itself — not a copy of it.
+ *
+ * REF_LOCK_MAX_AGE is in SECONDS (it feeds a cookie Max-Age); this file works
+ * in milliseconds because it compares against Date.now(). The conversion is
+ * the whole reason a naive "just import it" is not enough — dropping the *1000
+ * would expire attribution after 90 seconds instead of 90 days, silently, with
+ * no error anywhere. platform-invariants asserts the two agree in real time.
+ */
+const MAX_AGE_MS = REF_LOCK_MAX_AGE * 1000;
 
 /** First-touch guard: a different agent seen within this window does not win. */
 const FIRST_TOUCH_MS = 10 * 60 * 1000;
