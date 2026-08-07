@@ -108,6 +108,10 @@ export default function AdminAgents() {
     username: '',
     password: '',
     tier: 'tier_3',
+    // Pricing mode: 'tier' (locked house tier) or 'markup' (flat cost-plus %).
+    // Mutually exclusive - see the payload builder in handleCreateAgent.
+    pricing_mode: 'tier',
+    markup_pct: '',
     account_type: 'prepaid',
     credit_limit: '',
     max_auto_approve_limit: '',
@@ -241,6 +245,14 @@ export default function AdminAgents() {
           username: createForm.username.toLowerCase().replace(/[^a-z0-9_]/g, ''),
           slug: (createForm.slug || createForm.username).toLowerCase().replace(/[^a-z0-9-]/g, ''),
           display_name: createForm.display_name || createForm.username,
+          // PRICING MODE (2026-08-07): an assigned house tier and a flat markup
+          // are mutually exclusive. Sending tier:null tells the API - and the DB
+          // invariant trg_sync_tier_lock_on_tier_change - that the flat markup
+          // governs; otherwise the tier governs and any stale flat markup is
+          // cleared. Never send both, or the tier silently wins and the markup
+          // looks like it "did not save".
+          tier: createForm.pricing_mode === 'markup' ? null : createForm.tier,
+          markup_pct: createForm.pricing_mode === 'markup' ? createForm.markup_pct : null,
           // Store pricing is preset at the admin store price; agents do not
           // choose a markup at onboarding, so no commission fields are sent.
         }),
@@ -256,6 +268,8 @@ export default function AdminAgents() {
         username: '',
         password: '',
         tier: 'tier_3',
+        pricing_mode: 'tier',
+        markup_pct: '',
         account_type: 'prepaid',
         credit_limit: '',
         max_auto_approve_limit: '',
@@ -397,7 +411,7 @@ export default function AdminAgents() {
           onClick={() => {
             setCreateForm({
               firstName: '', lastName: '', full_name: '',
-              username: '', password: '', tier: 'tier_3',
+              username: '', password: '', tier: 'tier_3', pricing_mode: 'tier', markup_pct: '',
               account_type: 'prepaid', credit_limit: '', max_auto_approve_limit: '', prepaid_balance: '',
               slug: '', display_name: '', account_role: 'agent', parent_agent_id: '', locale: 'en'
             });
@@ -1234,17 +1248,51 @@ export default function AdminAgents() {
               {createForm.account_role !== 'researcher' && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)', alignItems: 'start' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Tier</label>
+                  <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Pricing</label>
                   <select
                     className="form-input"
-                    value={createForm.tier}
-                    onChange={e => handleCreateFormChange('tier', e.target.value)}
-                    style={{ width: '100%' }}
+                    value={createForm.pricing_mode}
+                    onChange={e => handleCreateFormChange('pricing_mode', e.target.value)}
+                    style={{ width: '100%', marginBottom: 'var(--space-2)' }}
                   >
-                    <option value="tier_1">Tier 1</option>
-                    <option value="tier_2">Tier 2</option>
-                    <option value="tier_3">Tier 3</option>
+                    <option value="tier">House Tier</option>
+                    <option value="markup">Flat Markup %</option>
                   </select>
+                  {createForm.pricing_mode === 'markup' ? (
+                    <>
+                      <input
+                        className="form-input"
+                        type="number"
+                        min="0"
+                        max="500"
+                        step="1"
+                        inputMode="decimal"
+                        placeholder="e.g. 60"
+                        value={createForm.markup_pct}
+                        onChange={e => handleCreateFormChange('markup_pct', e.target.value)}
+                        style={{ width: '100%' }}
+                      />
+                      <div style={{ fontSize: '0.7rem', color: 'var(--silver)', marginTop: 4 }}>
+                        Pays Cost Plus This Percent. Replaces Tier Pricing.
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <select
+                        className="form-input"
+                        value={createForm.tier}
+                        onChange={e => handleCreateFormChange('tier', e.target.value)}
+                        style={{ width: '100%' }}
+                      >
+                        <option value="tier_1">Tier 1</option>
+                        <option value="tier_2">Tier 2</option>
+                        <option value="tier_3">Tier 3</option>
+                      </select>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--silver)', marginTop: 4 }}>
+                        Locked To This Tier. Sales Volume Never Changes It.
+                      </div>
+                    </>
+                  )}
                 </div>
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Billing Mode</label>

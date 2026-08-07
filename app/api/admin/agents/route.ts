@@ -88,6 +88,7 @@ export async function POST(req: NextRequest) {
       velocity_cap,
       custom_commission_scale,
       custom_markup_override,
+      markup_pct,
       max_auto_approve_limit,
       locale,
     } = body;
@@ -128,8 +129,26 @@ export async function POST(req: NextRequest) {
     if (username.length > 40) return NextResponse.json({ error: 'Username Too Long (Max 40 Characters)' }, { status: 400 });
     if (effFullName.length > 160) return NextResponse.json({ error: 'Full Name Too Long (Max 160 Characters)' }, { status: 400 });
     if (display_name && display_name.length > 120) return NextResponse.json({ error: 'Display Name Too Long (Max 120 Characters)' }, { status: 400 });
-    if (!isResearcher && (!tier || !account_type || !slug || !display_name)) {
-      return NextResponse.json({ error: 'Missing Required Agent Fields (Tier, Billing, Slug, User Name)' }, { status: 400 });
+    // PRICING MODE (2026-08-07): an account is priced EITHER by an assigned
+    // house tier OR by a flat markup percentage - never both. The database
+    // invariant (trg_sync_tier_lock_on_tier_change) treats a non-null `tier` as
+    // authoritative and clears any flat override, so choosing a flat markup
+    // MUST send tier = null. custom_markup_override is stored as a DECIMAL
+    // FRACTION (0.30 = 30%) because pricing computes cost = base * (1 + it).
+    // markup_pct is the human percent from the form; custom_markup_override is
+    // still accepted (as a fraction) for backwards compatibility.
+    const markupPctInput =
+      markup_pct !== undefined && markup_pct !== null && String(markup_pct).trim() !== ''
+        ? Number(markup_pct)
+        : (custom_markup_override !== undefined && custom_markup_override !== null && String(custom_markup_override).trim() !== ''
+            ? Number(custom_markup_override) * 100
+            : null);
+    if (markupPctInput !== null && (!Number.isFinite(markupPctInput) || markupPctInput < 0 || markupPctInput > 500)) {
+      return NextResponse.json({ error: 'Flat Markup Must Be Between 0 And 500 Percent' }, { status: 400 });
+    }
+    const useFlatMarkup = markupPctInput !== null;
+    if (!isResearcher && ((!tier && !useFlatMarkup) || !account_type || !slug || !display_name)) {
+      return NextResponse.json({ error: 'Missing Required Agent Fields (Tier Or Flat Markup, Billing, Slug, User Name)' }, { status: 400 });
     }
     if (isResearcher && !parent_agent_id) {
       return NextResponse.json({ error: 'Researcher Accounts Must Be Assigned To An Agent' }, { status: 400 });
@@ -276,10 +295,24 @@ export async function POST(req: NextRequest) {
       profileData.parent_agent_id = resolvedParentAgentId;
       profileData.referring_agent_id = resolvedParentAgentId;
     } else {
-      profileData.tier = tier;
-      profileData.locked_tier_level = tier ? parseInt(tier.replace('tier_', ''), 10) : null;
-      profileData.fixed_scale_override = true;
-      profileData.custom_markup_override = custom_markup_override !== undefined ? custom_markup_override : null;
+      // Tier OR flat markup, never both (see PRICING MODE above). Every column
+      // the tier lock depends on is written explicitly here AND normalised by
+      // the DB invariant, so an assigned tier can never end up decorative
+      // (which is what made tier picks appear not to save).
+      if (useFlatMarkup) {
+        profileData.tier = null;
+        profileData.locked_tier_level = null;
+        profileData.fixed_scale_override = false;
+        profileData.house_tier_level = null;
+        profileData.custom_markup_override = Math.round((markupPctInput / 100) * 10000) / 10000;
+      } else {
+        const tierLevel = tier ? parseInt(tier.replace('tier_', ''), 10) : null;
+        profileData.tier = tier;
+        profileData.locked_tier_level = tierLevel;
+        profileData.fixed_scale_override = true;
+        profileData.house_tier_level = tierLevel;
+        profileData.custom_markup_override = null;
+      }
       profileData.account_type = account_type;
       profileData.auto_approve_orders = account_type === 'credit';
       profileData.max_auto_approve_limit = account_type === 'credit' && max_auto_approve_limit ? Number(max_auto_approve_limit) : null;
