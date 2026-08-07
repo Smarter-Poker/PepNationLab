@@ -7,7 +7,7 @@ import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { emailConfigured, sendPasswordChangedEmail } from '@/lib/email';
 import { safeError } from '@/lib/api-error';
 import { recordAuthEvent } from '@/lib/auth-events';
-import { validatePassword } from '@/lib/password-policy';
+import { validatePassword, PASSWORD_RULE_TEXT } from '@/lib/password-policy';
 
 // POST /api/auth/change-password
 // Used by researchers on first login to change their temp password.
@@ -108,11 +108,23 @@ export async function POST(req: NextRequest) {
     // everything else (GoTrue internals, rate-limit phrasing, session/AAL
     // details) is replaced with a stable generic message and logged.
     const msg = pwError.message || '';
+    // The generic "choose a stronger password" copy that used to live here was
+    // actively misleading: the overwhelmingly common cause is Supabase's
+    // HaveIBeenPwned check (error_code `weak_password`, reason `pwned`), which
+    // has NOTHING to do with length or complexity -- the password can be long
+    // and mixed-case and still be refused because that exact string appears in
+    // a public breach dump. Telling the user to "make it stronger" sends them
+    // to add another character to a leaked password, which fails again. Name
+    // the real reason so the next attempt can succeed.
+    const isPwned = /pwned|known to be weak|leaked|data breach/i.test(msg)
+      || (pwError as { code?: string }).code === 'weak_password';
     const safeMsg = /different from the old password/i.test(msg)
       ? 'Your New Password Must Be Different From Your Current Password.'
-      : /at least|weak|strength/i.test(msg)
-        ? 'Please Choose A Stronger Password And Try Again.'
-        : null;
+      : isPwned
+        ? `This Password Appears In A Public Data Breach, So It Cannot Be Used. Pick Something Different -- ${PASSWORD_RULE_TEXT} Is All That Is Required.`
+        : /at least|weak|strength/i.test(msg)
+          ? `Password Not Accepted. ${PASSWORD_RULE_TEXT} Is All That Is Required.`
+          : null;
     return safeError('auth.change-password.updateUser', pwError, safeMsg ? 400 : 500, safeMsg ?? 'Failed To Update Password. Please Try Again.');
   }
 
