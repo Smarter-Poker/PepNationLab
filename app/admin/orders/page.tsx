@@ -235,6 +235,158 @@ function AdminOrdersPageInner() {
     }
   }
 
+  function printOrderReceipt() {
+    if (!selectedOrder) return;
+    const addr = selectedOrder.shipping_address;
+    const orderDate = new Date(selectedOrder.created_at).toLocaleDateString('en-US', {
+      year: 'numeric', month: 'long', day: 'numeric',
+    });
+    const statusLabel = STATUS_LABELS[selectedOrder.status] ?? selectedOrder.status;
+
+    const itemRows = items.map((item) => {
+      const dosage = item.unit_size ? `${item.unit_size}${item.unit_measure || 'mg'}` : '';
+      const lineTotal = (item.unit_retail_price * item.quantity).toFixed(2);
+      return `
+        <tr>
+          <td style="padding:8px 4px;border-bottom:1px solid #e5e7eb;">
+            <strong>${item.product_name}</strong>${dosage ? `<span style="color:#0891b2;font-weight:700;margin-left:6px;">${dosage}</span>` : ''}
+          </td>
+          <td style="padding:8px 4px;border-bottom:1px solid #e5e7eb;text-align:center;">${item.quantity}</td>
+          <td style="padding:8px 4px;border-bottom:1px solid #e5e7eb;text-align:right;">$${item.unit_retail_price.toFixed(2)}</td>
+          <td style="padding:8px 4px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:600;">$${lineTotal}</td>
+        </tr>`;
+    }).join('');
+
+    const shippingBlock = addr ? `
+      <div style="margin-top:20px;padding:14px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">
+        <div style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;">Ship To</div>
+        ${addr.fullName ? `<div style="font-weight:600;">${addr.fullName}</div>` : ''}
+        <div>${addr.street || ''}</div>
+        ${addr.suite ? `<div>${addr.suite}</div>` : ''}
+        <div>${addr.city || ''}, ${addr.state || ''} ${addr.zip || ''}</div>
+      </div>` : '';
+
+    const discountRow = Number(selectedOrder.discount_amount) > 0 ? `
+      <tr>
+        <td colspan="3" style="padding:4px 0;text-align:right;color:#16a34a;">Coupon Discount${selectedOrder.coupon_code ? ` (${selectedOrder.coupon_code})` : ''}</td>
+        <td style="padding:4px 0;text-align:right;color:#16a34a;">-$${Number(selectedOrder.discount_amount).toFixed(2)}</td>
+      </tr>` : '';
+
+    const trackingRow = selectedOrder.tracking_number ? `
+      <div style="margin-top:16px;padding:12px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;font-size:12px;">
+        <span style="font-weight:700;color:#166534;">Tracking #:</span> ${selectedOrder.tracking_number}
+      </div>` : '';
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>PepNation Lab — Order Receipt #${selectedOrder.id.slice(0, 8).toUpperCase()}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 13px; color: #111827; background: #fff; padding: 32px; }
+    @media print {
+      body { padding: 16px; }
+      .no-print { display: none !important; }
+    }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 2px solid #111827; }
+    .logo { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: #111827; }
+    .logo span { color: #0891b2; }
+    .order-meta { text-align: right; font-size: 11px; color: #6b7280; }
+    .order-meta strong { display: block; font-size: 15px; color: #111827; margin-bottom: 4px; }
+    .section-label { font-size: 11px; font-weight: 700; color: #6b7280; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 8px; margin-top: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    thead th { font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: .06em; padding: 6px 4px; border-bottom: 2px solid #e5e7eb; }
+    thead th:first-child { text-align: left; }
+    thead th:not(:first-child) { text-align: right; }
+    thead th:nth-child(2) { text-align: center; }
+    .totals-table td { padding: 4px 0; }
+    .total-row { font-size: 15px; font-weight: 800; color: #0891b2; border-top: 2px solid #111827; }
+    .total-row td { padding-top: 10px; }
+    .status-badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; background: #cffafe; color: #0891b2; }
+    .footer { margin-top: 36px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #9ca3af; text-align: center; }
+    .print-btn { margin-bottom: 24px; padding: 10px 24px; background: #0891b2; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="no-print" style="margin-bottom:20px;">
+    <button class="print-btn" onclick="window.print()">🖨️ Print / Save PDF</button>
+  </div>
+  <div class="header">
+    <div>
+      <div class="logo">Pep<span>Nation</span>Lab</div>
+      <div style="font-size:11px;color:#6b7280;margin-top:4px;">pepnationlab.com</div>
+    </div>
+    <div class="order-meta">
+      <strong>Order Receipt</strong>
+      Order #${selectedOrder.id.slice(0, 8).toUpperCase()}<br>
+      Date: ${orderDate}<br>
+      <span class="status-badge" style="margin-top:4px;display:inline-block;">${statusLabel}</span>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:32px;">
+    <div style="flex:1;">
+      <div class="section-label">Buyer Information</div>
+      <div style="font-weight:600;">${selectedOrder.buyer_name || selectedOrder.profiles?.full_name || '—'}</div>
+      <div style="color:#6b7280;">${selectedOrder.buyer_email || selectedOrder.profiles?.email || '—'}</div>
+    </div>
+    <div style="flex:1;">
+      <div class="section-label">Payment</div>
+      <div>${paymentMethodLabel(selectedOrder.payment_method as PaymentMethodSlug)}</div>
+    </div>
+  </div>
+
+  ${shippingBlock}
+
+  <div class="section-label" style="margin-top:24px;">Items Ordered</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Product</th>
+        <th style="text-align:center;">Qty</th>
+        <th style="text-align:right;">Unit Price</th>
+        <th style="text-align:right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${itemRows}
+    </tbody>
+  </table>
+
+  <table class="totals-table" style="margin-top:12px;">
+    <tbody>
+      <tr>
+        <td colspan="3" style="text-align:right;color:#6b7280;">Subtotal</td>
+        <td style="text-align:right;">$${Number(selectedOrder.subtotal).toFixed(2)}</td>
+      </tr>
+      ${discountRow}
+      <tr>
+        <td colspan="3" style="text-align:right;color:#6b7280;">Shipping</td>
+        <td style="text-align:right;">$${Number(selectedOrder.shipping_cost).toFixed(2)}</td>
+      </tr>
+      <tr class="total-row">
+        <td colspan="3" style="text-align:right;">Total</td>
+        <td style="text-align:right;">$${Number(selectedOrder.total).toFixed(2)}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  ${trackingRow}
+
+  <div class="footer">
+    PepNationLab &bull; Internal Fulfillment Receipt &bull; Printed ${new Date().toLocaleString()}
+  </div>
+</body>
+</html>`;
+
+    const win = window.open('', '_blank', 'width=780,height=900,scrollbars=yes');
+    if (!win) { toast.error('Pop-up blocked — please allow pop-ups for this page.'); return; }
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+  }
+
   async function handleStatusTransition(nextStatus: string) {
     if (!selectedOrder) return;
     setProcessing(true);
@@ -1296,6 +1448,30 @@ function AdminOrdersPageInner() {
                         gap: "var(--space-3)",
                       }}
                     >
+                      {/* Print Receipt — always visible */}
+                      <button
+                        onClick={printOrderReceipt}
+                        disabled={loadingItems}
+                        style={{
+                          width: "100%",
+                          justifyContent: "center",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          padding: "10px 16px",
+                          borderRadius: "var(--radius-md)",
+                          border: "1px solid var(--silver)",
+                          background: "transparent",
+                          color: "var(--silver)",
+                          fontSize: "0.82rem",
+                          fontWeight: 600,
+                          cursor: loadingItems ? "not-allowed" : "pointer",
+                          opacity: loadingItems ? 0.5 : 1,
+                          letterSpacing: "0.02em",
+                        }}
+                      >
+                        🖨️ Print Receipt
+                      </button>
                       {selectedOrder.status === "pending_customer_payment" &&
                         userRole !== "shipping" && (
                           <button
