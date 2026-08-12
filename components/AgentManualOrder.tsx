@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import DynamicAddToCartButton from './storefront/DynamicAddToCartButton';
 import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
+import { calculateShippingCost, getShippingZoneLabel, getShippingZone } from '@/lib/shipping-cost';
 
 interface AgentProduct {
   product_id: string;
@@ -27,7 +28,6 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
   const [state, setState] = useState('');
   const [zip, setZip] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cashapp');
-  const [shippingCostInput, setShippingCostInput] = useState('10');
   
   const [cart, setCart] = useState<Array<{ product_id: string; quantity: number; price: number; name: string }>>([]);
   const [selectedProductId, setSelectedProductId] = useState('');
@@ -90,14 +90,11 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
   };
 
   const subtotal = cart.reduce((sum, item) => sum + (Number(item.price) * Number(item.quantity)), 0);
-  // Fail-closed shipping entry, mirroring the server clamp: finite, 0-1000,
-  // rounded to cents. `Number('-25') || 0` previously allowed a negative
-  // shipping figure into the payload (server clamped it, but the DISPLAYED
-  // total here went negative-adjusted and disagreed with the stored order).
-  const shippingCostRaw = Number(shippingCostInput);
-  const shippingCost = Number.isFinite(shippingCostRaw)
-    ? Math.min(1000, Math.max(0, Math.round(shippingCostRaw * 100) / 100))
-    : 0;
+  // Shipping is NOT agent-entered any more. Pep Nation ships every order at a
+  // flat rate keyed on the destination state, and /api/agent/orders/new
+  // recomputes it from the same table -- so a typed-in figure could only ever
+  // disagree with what the order is actually charged.
+  const shippingCost = calculateShippingCost('standard', state);
   const total = subtotal + (cart.length > 0 ? shippingCost : 0);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -116,13 +113,13 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
           'Content-Type': 'application/json',
           'Idempotency-Key': idempotencyKey,
         },
-        // NOTE: total is intentionally omitted -- the server MUST recalculate
-        // the total from items + shippingCost to prevent price manipulation.
+        // NOTE: total AND shippingCost are intentionally omitted -- the server
+        // recalculates the total from items plus the flat regional shipping
+        // rate for `state`, so neither can be manipulated from the client.
         body: JSON.stringify({
           buyerName, buyerEmail, street, city, state, zip,
           paymentMethod,
-          items: cart,
-          shippingCost
+          items: cart
         })
       });
 
@@ -238,7 +235,7 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
                       <span style={{ color: '#fff', whiteSpace: 'nowrap' }}>${subtotal.toFixed(2)}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)' }}>
-                      <span>Shipping</span>
+                      <span>Shipping{state.trim() ? ` (${getShippingZoneLabel(getShippingZone(state))})` : ''}</span>
                       <span style={{ color: '#fff', whiteSpace: 'nowrap' }}>${shippingCost.toFixed(2)}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 12, borderTop: '1px dashed rgba(255,255,255,0.15)', fontSize: '1.1rem', color: '#fff', fontWeight: 800 }}>
@@ -267,9 +264,12 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
                   <option value="zelle">Zelle</option>
                 </select>
               </div>
-              <div className="form-group" style={{ width: 120, marginBottom: 0 }}>
-                <label className="form-label" style={{ color: 'rgba(255,255,255,0.6)' }}>Shipping Cost ($)</label>
-                <input type="number" className="form-input" style={{ background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} value={shippingCostInput} onChange={e => setShippingCostInput(e.target.value)} />
+              <div className="form-group" style={{ width: 190, marginBottom: 0 }}>
+                <label className="form-label" style={{ color: 'rgba(255,255,255,0.6)' }}>Shipping (Set By Destination)</label>
+                <div className="form-input" aria-readonly="true" style={{ background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                  <span style={{ whiteSpace: 'nowrap' }}>${shippingCost.toFixed(2)}</span>
+                  <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.45)', whiteSpace: 'nowrap' }}>{state.trim() ? getShippingZoneLabel(getShippingZone(state)) : 'Enter State'}</span>
+                </div>
               </div>
             </div>
             

@@ -7,6 +7,7 @@ import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
 import { ManualOrderInputSchema } from '@/lib/schemas/order';
 import { logOrderEvent } from '@/lib/order-events';
 import { notifyAdmins } from '@/lib/notify';
+import { calculateShippingCost } from '@/lib/shipping-cost';
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -40,13 +41,17 @@ export async function POST(req: NextRequest) {
     handler: async () => {
   try {
     const supabase = createAdminClient();
-    const { buyerName, buyerEmail, street, city, state, zip, items, subtotal: clientSubtotal, shippingCost, paymentMethod, fulfillmentMethod } = body;
+    const { buyerName, buyerEmail, street, city, state, zip, items, subtotal: clientSubtotal, paymentMethod, fulfillmentMethod } = body;
 
-    // Agent-entered shipping for a manual order. This is agent-authenticated
-    // (not a researcher-facing exploit), but a typo or bad value should never
-    // create an absurd charge, so clamp to a sane range and round to cents.
-    const safeShipping = Math.min(1000, Math.max(0, Math.round((Number(shippingCost) || 0) * 100) / 100));
     const fulfillment = fulfillmentMethod === 'agent_pickup' ? 'agent_pickup' : 'ship';
+    // Pep Nation ships every order at a flat rate keyed on the destination
+    // state. The agent-entered `shippingCost` field is deliberately IGNORED --
+    // it previously let a manual order carry any amount from $0 to $1000,
+    // which would undercut or overcharge against the published rate card.
+    const safeShipping = calculateShippingCost(
+      fulfillment === 'agent_pickup' ? 'agent_pickup' : 'standard',
+      typeof state === 'string' ? state : null,
+    );
 
     const { data: agentProfile, error: agentProfileError } = await supabase.from('profiles').select('tier, parent_agent_id, role, is_sub_agent, account_type, max_auto_approve_limit').eq('id', agentId).maybeSingle();
     if (agentProfileError || !agentProfile) return NextResponse.json({ error: 'Agent Profile Not Found.' }, { status: 404 });

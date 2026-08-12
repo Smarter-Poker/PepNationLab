@@ -8,7 +8,6 @@ import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { calculateShippingCost, getCarrierName } from '@/lib/shipping-cost';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 import { getEffectiveBundlesForStore } from '@/lib/bundles';
-import { quoteCheapestForCheckout, normalizeShippingAddress } from '@/lib/shipping';
 import { resolveCartIdsToProductIds } from '@/lib/cart-ids';
 import { computeLineSplit, type ItemFulfillmentSplit } from '@/lib/order-line-splits';
 import { quantityDiscountPct, isVolumeDiscountExcluded } from '@/lib/quantity-discount';
@@ -1068,39 +1067,18 @@ export async function POST(request: NextRequest) {
     //     shippingOption='agent_pickup' (or anything non-carrier) with a shipped
     //     order previously collapsed shipping to $0 -- free shipping exploit.
     //     Coerce any non-carrier value to the default paid carrier.
-    const CARRIERS = ['fedex', 'usps'] as const;
-    const actualShippingOption: import('@/lib/shipping-cost').ShippingOption = fulfillmentMethod === 'agent_pickup'
-      ? 'agent_pickup'
-      : (CARRIERS.includes(shippingOption as (typeof CARRIERS)[number]) ? (shippingOption as (typeof CARRIERS)[number]) : 'usps');
-    // Shipping charge: prefer the LIVE cheapest carrier rate (EasyPost) from the
-    // agent's warehouse to the buyer's address, so the buyer pays what the
-    // platform actually pays for the label instead of a decoupled flat estimate.
-    // The flat weight table remains the fallback (EasyPost slow/unavailable, no
-    // rate for the destination, or address incomplete). quoteCheapestForCheckout
-    // is non-throwing and hard-bounded by an internal timeout, so it can never
-    // hang or fail the order; on any miss we keep the flat estimate.
-    let shippingCost = calculateShippingCost(actualShippingOption, totalWeightOz);
-    if (actualShippingOption !== 'agent_pickup' && shippingAddress) {
-      try {
-        const to = normalizeShippingAddress(shippingAddress, {
-          full_name: (profile as { full_name?: string | null })?.full_name ?? null,
-        });
-        if (to) {
-          const totalQty = computedItems.reduce((s: number, i: any) => s + (Number(i.quantity) || 0), 0);
-          const live = await quoteCheapestForCheckout({
-            agentId: agentProfile?.id ?? null,
-            to,
-            weightOz: totalWeightOz,
-            totalQty,
-          });
-          if (live && live.amountCents > 0) {
-            shippingCost = Math.round(live.amountCents) / 100;
-          }
-        }
-      } catch {
-        /* keep the flat estimate computed above */
-      }
-    }
+    // Pep Nation fulfills every shipped order, so there is exactly one paid
+    // option ('standard'). Legacy 'fedex'/'usps' values from an older client
+    // are accepted and priced identically rather than rejected.
+    const actualShippingOption: import('@/lib/shipping-cost').ShippingOption =
+      fulfillmentMethod === 'agent_pickup' ? 'agent_pickup' : 'standard';
+    // Shipping charge is a FLAT rate keyed on the destination state -- $20
+    // midwest/inland, $25 coastal, $40 non-contiguous. Live carrier quoting
+    // (EasyPost) was removed from the pricing path: it overrode these rates and
+    // charged the buyer a decoupled amount. Labels are still purchased through
+    // the provider downstream; that cost is Pep Nation's, not the buyer's.
+    const destinationState = (shippingAddress as { state?: string | null } | null)?.state ?? null;
+    let shippingCost = calculateShippingCost(actualShippingOption, destinationState);
 
     // Round the final money total to exact cents so accumulated FP dust never
     // reaches the stored order total or credit/velocity comparisons.

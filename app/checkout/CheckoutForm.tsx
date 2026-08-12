@@ -12,7 +12,7 @@ import PaymentProofUpload from '@/components/PaymentProofUpload';
 import { toTitleCase, getProductImage } from '@/lib/categoryImage';
 import { getBrandNetworkIsSavage } from '@/lib/brand-network-client';
 import { createClient } from '@/lib/supabase/client';
-import { calculateShippingCost as getShippingCost, ShippingOption } from '@/lib/shipping-cost';
+import { calculateShippingCost as getShippingCost, getShippingZone, getShippingZoneLabel, SHIPPING_RATES, ShippingOption } from '@/lib/shipping-cost';
 import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
 import { Copy, Check } from 'lucide-react';
 import { quantityDiscountPct, isVolumeDiscountExcluded } from '@/lib/quantity-discount';
@@ -220,13 +220,9 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     }
   }, [error]);
 
-  const [liveShippingRate, setLiveShippingRate] = useState<number | null>(null);
-  // True when the shown rate is the flat weight-based estimate rather than a
-  // live carrier quote, so the summary can label it honestly.
-  const [shippingEstimated, setShippingEstimated] = useState(false);
-  // Live carrier name (e.g. "USPS") when the rate came back from a real quote.
-  const [shippingCarrier, setShippingCarrier] = useState<string | null>(null);
-  const shippingFetchAbortRef = useRef<AbortController | null>(null);
+  // Shipping is a flat rate keyed on the destination state, so the charge is a
+  // pure local lookup -- no preview request, no "estimated" caveat, and no way
+  // for the quoted rate to disagree with what /api/orders charges.
 
   const getIdempotencyKey = () => {
     if (!idempotencyKeyRef.current) {
@@ -763,51 +759,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     setStorefrontCart(updatedCart);
   };
 
-  const totalWeightOz = (cart || []).reduce((acc, item) => acc + (item.weightOz ?? 0.5) * item.quantity, 0);
 
-  useEffect(() => {
-    if (shippingFetchAbortRef.current) shippingFetchAbortRef.current.abort();
-    const ctrl = new AbortController();
-    shippingFetchAbortRef.current = ctrl;
-    if (shippingOption === 'agent_pickup') { setLiveShippingRate(0); setShippingEstimated(false); setShippingCarrier(null); return; }
-    const addrComplete = !!(street.trim() && city.trim() && state.trim() && zip.trim());
-    (async () => {
-      try {
-        const res = await fetch('/api/shipping-preview', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            weightOz: totalWeightOz,
-            shippingOption,
-            totalQty: (cart || []).reduce((a, it) => a + it.quantity, 0),
-            agentSlug,
-            // Only send a destination once it is complete, so the server can
-            // return a live carrier quote that equals the final charge.
-            to: addrComplete ? { street1: street.trim(), city: city.trim(), state: state.trim(), zip: zip.trim(), country: 'US' } : undefined,
-          }),
-          signal: ctrl.signal,
-        });
-        if (!res.ok) return;
-        const json = await res.json();
-        setLiveShippingRate(Number(json.rate) || 0);
-        setShippingEstimated(!!json.estimated);
-        setShippingCarrier(typeof json.carrier === 'string' && json.carrier ? json.carrier : null);
-      } catch (err) {
-        const fallback = getShippingCost(shippingOption, totalWeightOz);
-        setLiveShippingRate(fallback);
-        setShippingEstimated(true);
-        setShippingCarrier(null);
-        // AbortError is expected whenever this effect re-runs or unmounts -- reporting
-        // it would flood the sink. Only a real failure means we silently charged an
-        // estimated rate instead of the live one.
-        if ((err as { name?: string })?.name !== 'AbortError') {
-          reportClientError('checkout.live-shipping-rate', err, { meta: { fallbackRate: fallback } });
-        }
-      }
-    })();
-    return () => ctrl.abort();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [totalWeightOz, shippingOption, street, city, state, zip, agentSlug]);
 
   const couponAutoAppliedRef = useRef(false);
   useEffect(() => {
@@ -848,10 +800,10 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
   if (!storefrontLoaded) return null;
 
+  const shippingZone = getShippingZone(state);
   const calculateShippingCost = () => {
     if (shippingOption === 'agent_pickup') return 0;
-    if (liveShippingRate !== null) return liveShippingRate;
-    return getShippingCost(shippingOption, totalWeightOz);
+    return getShippingCost(shippingOption, state);
   };
 
   const shippingCost = (agentSlug === 'researchstore' && cartSubtotal >= 100) ? 0 : calculateShippingCost();
@@ -1342,32 +1294,22 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                       </div>
                     </label>
 
-                    <label style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', background: shippingOption === 'fedex' ? 'rgba(192, 184, 168, 0.06)' : 'var(--surface-2)', border: shippingOption === 'fedex' ? '2px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', boxShadow: shippingOption === 'fedex' ? 'var(--shadow-teal-sm)' : 'none', transition: 'all 0.25s ease' }}>
+                    <label style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', background: shippingOption === 'standard' ? 'rgba(192, 184, 168, 0.06)' : 'var(--surface-2)', border: shippingOption === 'standard' ? '2px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', boxShadow: shippingOption === 'standard' ? 'var(--shadow-teal-sm)' : 'none', transition: 'all 0.25s ease' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <input type="radio" name="shippingOption" checked={shippingOption === 'fedex'} onChange={() => { setShippingOption('fedex'); setFulfillmentMethod('ship'); }} style={{ accentColor: 'var(--teal)' }} />
+                          <input type="radio" name="shippingOption" checked={shippingOption === 'standard'} onChange={() => { setShippingOption('standard'); setFulfillmentMethod('ship'); }} style={{ accentColor: 'var(--teal)' }} />
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            <strong style={{ color: 'var(--white)', fontSize: '0.95rem', lineHeight: '1.2' }}>FedEx - UPS</strong>
-                            <span style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginTop: '2px' }}>6-9 Days</span>
+                            <strong style={{ color: 'var(--white)', fontSize: '0.95rem', lineHeight: '1.2' }}>Standard Shipping</strong>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginTop: '2px' }}>Shipped Direct By Pep Nation</span>
                           </div>
                         </div>
-                        <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--teal)' }}>${getShippingCost('fedex', totalWeightOz).toFixed(2)}</span>
+                        <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--teal)' }}>${getShippingCost('standard', state).toFixed(2)}</span>
                       </div>
-                      <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', paddingLeft: 22 }}>Fast Shipping. Base Rate Is $80 For The First 500g, Plus $10 For Each Additional 500g.</span>
-                    </label>
-
-                    <label style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', background: shippingOption === 'usps' ? 'rgba(192, 184, 168, 0.06)' : 'var(--surface-2)', border: shippingOption === 'usps' ? '2px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', boxShadow: shippingOption === 'usps' ? 'var(--shadow-teal-sm)' : 'none', transition: 'all 0.25s ease' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <input type="radio" name="shippingOption" checked={shippingOption === 'usps'} onChange={() => { setShippingOption('usps'); setFulfillmentMethod('ship'); }} style={{ accentColor: 'var(--teal)' }} />
-                          <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            <strong style={{ color: 'var(--white)', fontSize: '0.95rem', lineHeight: '1.2' }}>USPS International</strong>
-                            <span style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginTop: '2px' }}>12-18 Days</span>
-                          </div>
-                        </div>
-                        <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--teal)' }}>${getShippingCost('usps', totalWeightOz).toFixed(2)}</span>
-                      </div>
-                      <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', paddingLeft: 22 }}>Cheaper Shipping. Base Rate Is $40 For The First 500g, Plus $10 For Each Additional 500g.</span>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', paddingLeft: 22 }}>
+                        {state.trim()
+                          ? `Flat $${getShippingCost('standard', state).toFixed(2)} To ${getShippingZoneLabel(shippingZone)} Addresses \u2014 Any Order Size.`
+                          : `Flat Rate By Destination: $${SHIPPING_RATES.midwest} Midwest & Inland, $${SHIPPING_RATES.coastal} East / West Coast, $${SHIPPING_RATES.noncontiguous} Alaska, Hawaii & Territories.`}
+                      </span>
                     </label>
                   </div>
                 </div>
@@ -1729,11 +1671,11 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 </div>
               )}
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', gap: 8 }}>
-                <span style={{ color: 'var(--grey-400)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{shippingCarrier ? shippingCarrier : (shippingOption === 'fedex' ? 'FedEx / UPS Fast' : shippingOption === 'usps' ? 'USPS / China Post Cheap' : 'Fulfillment')}{shippingOption !== 'agent_pickup' && shippingEstimated ? ' (Estimated)' : ''}</span>
+                <span style={{ color: 'var(--grey-400)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{shippingOption === 'agent_pickup' ? 'Fulfillment' : `Standard Shipping${state.trim() ? ` (${getShippingZoneLabel(shippingZone)})` : ''}`}</span>
                 {shippingOption !== 'agent_pickup' ? <strong style={{ color: 'var(--white)', whiteSpace: 'nowrap', flexShrink: 0 }}>${shippingCost.toFixed(2)}</strong> : <strong style={{ color: 'var(--teal)', whiteSpace: 'nowrap', flexShrink: 0 }}>Free Shipping To Agent</strong>}
               </div>
               {shippingOption !== 'agent_pickup' && (
-                <div style={{ fontSize: '0.7rem', color: 'var(--grey-400)', textAlign: 'right', marginTop: -4 }}>Total Weight: {totalWeightOz.toFixed(1)} Oz ({(totalWeightOz * 28.3495).toFixed(0)}g)</div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--grey-400)', textAlign: 'right', marginTop: -4 }}>{state.trim() ? 'Flat Rate — Any Order Size' : 'Select Your State For The Exact Rate'}</div>
               )}
               <div style={{ paddingTop: 'var(--space-3)', display: 'flex', justifyContent: 'space-between', fontSize: '1.05rem', marginTop: 'var(--space-1)', gap: 8 }}>
                 <span style={{ color: 'var(--white)', fontWeight: 600 }}>Total Due</span>

@@ -5,6 +5,8 @@ import { getEffectiveUser } from '@/lib/impersonation';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit } from '@/lib/rate-limit';
 import { computeAgentCostsForAgent, computeAgentTopOfChainCostsForAgent, type AgentTier } from '@/lib/pricing';
+import { calculateShippingCost } from '@/lib/shipping-cost';
+import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 
 /**
  * Researcher Reorder.
@@ -278,6 +280,29 @@ export async function POST(
 
   const subtotal = computed.reduce((acc, it) => acc + it.unit_retail_price * it.quantity, 0);
 
+  // Shipping. Reorders previously hardcoded shipping_cost: 0, so a buyer could
+  // place one order and then reorder indefinitely with free delivery. Pep
+  // Nation ships every order, so a reorder is charged the same flat regional
+  // rate as a fresh checkout -- including the house-store $100+ waiver, so the
+  // two paths cannot disagree for the same cart.
+  const reorderState =
+    (source.shipping_address as { state?: string | null } | null)?.state ?? null;
+  let shippingCost = calculateShippingCost(
+    source.fulfillment_method === 'agent_pickup' ? 'agent_pickup' : 'standard',
+    reorderState,
+  );
+  if (shippingCost > 0 && subtotal >= 100) {
+    const { data: sourceStore } = await service
+      .from('agent_profiles')
+      .select('slug')
+      .eq('id', source.agent_id)
+      .maybeSingle();
+    if ((sourceStore as { slug?: string | null } | null)?.slug === DEFAULT_STORE_SLUG) {
+      shippingCost = 0;
+    }
+  }
+  const reorderTotal = Math.round((subtotal + shippingCost) * 100) / 100;
+
   const idempotencyKey = crypto.randomUUID();
 
   // Denormalized buyer fields for the new order, same as checkout populates
@@ -306,11 +331,11 @@ export async function POST(
         fulfillment_method: source.fulfillment_method,
         payment_method: source.payment_method,
         shipping_address: source.shipping_address,
-        shipping_cost: 0,
+        shipping_cost: shippingCost,
         subtotal,
         discount_amount: 0,
         coupon_code: null,
-        total: subtotal,
+        total: reorderTotal,
         idempotency_key: idempotencyKey,
       },
       p_items: computed.map((c) => ({
