@@ -59,7 +59,7 @@ export function StockBadge({ state }: { state: StockState }) {
     bg = 'rgba(168,180,192,0.15)';
     fg = '#A8B4C0';
     border = 'rgba(168,180,192,0.40)';
-    label = `Backordered: Ships In ${state.days} Days`;
+    label = 'Not Available for Same-Day';
     badgeSrc = '/images/badges/badge_out_of_stock.png';
   } else if (state.kind === 'out_of_stock') {
     bg = 'rgba(229,62,62,0.15)';
