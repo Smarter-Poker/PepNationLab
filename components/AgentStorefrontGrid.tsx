@@ -2417,8 +2417,16 @@ export default function AgentStorefrontGrid({
           msrp={_hasCompare ? _comparePrice : undefined}
           savings={_hasCompare ? Math.floor(_youSave) : undefined}
           wholesalePrice={displayPrice}
-          inStockText={stockState.kind === 'out_of_stock' ? "OUT OF STOCK" : "IN STOCK"}
-          pickupText="AVAILABLE FOR SAME DAY PICKUP"
+          inStockText={
+            stockState.kind === 'in_stock' ? "IN STOCK" :
+            stockState.kind === 'backorder' ? "AVAILABLE" :
+            "OUT OF STOCK"
+          }
+          pickupText={
+            stockState.kind === 'in_stock' ? "AVAILABLE FOR SAME DAY PICKUP" :
+            stockState.kind === 'backorder' ? "NOT AVAILABLE FOR SAME-DAY" :
+            "SOLD OUT"
+          }
           buttonText="Add To Cart"
           imageSrc={group.imageUrl || '/images/peptide_clear.png'}
           cardBg={(() => {

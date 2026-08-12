@@ -337,6 +337,46 @@ export default function PremiumPeptideCard({
             aria-label={buttonText}
           />
           
+          {/* --- DYNAMIC STOCK TEXT COVER (Bottom Strip) --- */}
+          {/* This covers the "IN STOCK" text baked into the JPG and renders the true stock state */}
+          <div style={{
+            position: 'absolute',
+            left: 0, right: 0, bottom: 0, height: px(105),
+            background: 'linear-gradient(to bottom, rgba(17,21,24,0) 0%, rgba(17,21,24,0.95) 30%, rgba(17,21,24,1) 100%)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end',
+            paddingBottom: px(25),
+            zIndex: 35, pointerEvents: 'none'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: px(10) }}>
+              {inStockText === 'IN STOCK' && (
+                <svg width={px(18)} height={px(18)} viewBox="0 0 24 24" fill="none" stroke="#00C7E8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                  <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                  <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                </svg>
+              )}
+              <span style={{
+                fontFamily: 'var(--font-roboto-condensed, sans-serif)',
+                fontWeight: 700, fontSize: px(20), 
+                color: inStockText === 'OUT OF STOCK' ? '#FF3B30' : inStockText === 'AVAILABLE' ? '#A8B4C0' : '#00C7E8',
+                letterSpacing: px(0.5)
+              }}>
+                {inStockText}
+              </span>
+              <span style={{
+                fontFamily: 'var(--font-roboto-condensed, sans-serif)',
+                fontWeight: 700, fontSize: px(20), color: '#4a5056'
+              }}>|</span>
+              <span style={{
+                fontFamily: 'var(--font-roboto-condensed, sans-serif)',
+                fontWeight: 700, fontSize: px(20), color: '#8B8F93'
+              }}>
+                {pickupText}
+              </span>
+            </div>
+          </div>
+          
         </div>
       </div>
     </div>
