@@ -1490,31 +1490,46 @@ function AdminOrdersPageInner() {
                                         <span>Agent Profit</span>
                                         <span>${agentProfit.toFixed(2)}</span>
                                       </div>
+                                      
                                       {selectedOrder.agent?.parent?.full_name ? (
-                                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.86rem", color: "var(--green)", fontWeight: 700 }}>
-                                          <span>Owed To {selectedOrder.agent.parent.full_name}</span>
-                                          <span>${superAgentProfit.toFixed(2)}</span>
+                                        <div style={{ marginTop: "8px", padding: "8px", background: "rgba(255,255,255,0.02)", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.86rem", color: "var(--green)", fontWeight: 700, marginBottom: "4px" }}>
+                                            <span>Owed To Upline ({selectedOrder.agent.parent.full_name})</span>
+                                            <span>${(superAgentProfit + owedToPepNation).toFixed(2)}</span>
+                                          </div>
+                                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem", color: "var(--silver)", paddingLeft: "8px", marginTop: "4px" }}>
+                                            <span>↳ Upline Profit</span>
+                                            <span>${superAgentProfit.toFixed(2)}</span>
+                                          </div>
+                                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem", color: "var(--silver)", paddingLeft: "8px", marginTop: "4px" }}>
+                                            <span>↳ Upline Owes PepNation (Wholesale)</span>
+                                            <span>${(owedToPepNation - shippingToPepNation).toFixed(2)}</span>
+                                          </div>
+                                          {shippingToPepNation > 0 && (
+                                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem", color: "var(--silver)", paddingLeft: "8px", marginTop: "4px" }}>
+                                              <span>↳ Upline Owes PepNation (Shipping)</span>
+                                              <span>${shippingToPepNation.toFixed(2)}</span>
+                                            </div>
+                                          )}
                                         </div>
                                       ) : (
-                                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.86rem", color: "var(--silver)" }}>
-                                          <span>Super Agent Profit</span>
-                                          <span>${superAgentProfit.toFixed(2)}</span>
-                                        </div>
-                                      )}
-                                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.86rem", color: "var(--silver)", marginTop: "4px" }}>
-                                        <span>Owed To PepNation (Wholesale)</span>
-                                        <span>${(owedToPepNation - shippingToPepNation).toFixed(2)}</span>
-                                      </div>
-                                      {shippingToPepNation > 0 && (
-                                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.86rem", color: "var(--silver)" }}>
-                                          <span>Owed To PepNation (Shipping)</span>
-                                          <span>${shippingToPepNation.toFixed(2)}</span>
-                                        </div>
+                                        <>
+                                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.86rem", color: "var(--silver)", marginTop: "4px" }}>
+                                            <span>Owed To PepNation (Wholesale)</span>
+                                            <span>${(owedToPepNation - shippingToPepNation).toFixed(2)}</span>
+                                          </div>
+                                          {shippingToPepNation > 0 && (
+                                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.86rem", color: "var(--silver)" }}>
+                                              <span>Owed To PepNation (Shipping)</span>
+                                              <span>${shippingToPepNation.toFixed(2)}</span>
+                                            </div>
+                                          )}
+                                        </>
                                       )}
                                     </>
                                   )}
                                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.86rem", color: "var(--green)", fontWeight: 700, borderTop: selectedOrder.agent_id ? "1px solid var(--border)" : "none", paddingTop: selectedOrder.agent_id ? "6px" : "0", marginTop: selectedOrder.agent_id ? "4px" : "0" }}>
-                                    <span>{selectedOrder.agent_id ? 'Total Owed To PepNation' : 'Owed To PepNation'}</span>
+                                    <span>Total Owed To PepNation</span>
                                     <span>${owedToPepNation.toFixed(2)}</span>
                                   </div>
                                 </>
