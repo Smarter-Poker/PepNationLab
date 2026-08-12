@@ -1461,11 +1461,13 @@ function AdminOrdersPageInner() {
                               let agentProfit = 0;
                               let superAgentProfit = 0;
                               let owedToPepNation = 0;
+                              let shippingToPepNation = 0;
 
                               if (!selectedOrder.agent_id) {
                                 owedToPepNation = Number(selectedOrder.total || 0);
                               } else {
-                                owedToPepNation = Number(selectedOrder.shipping_cost || 0);
+                                shippingToPepNation = Number(selectedOrder.shipping_cost || 0);
+                                owedToPepNation = shippingToPepNation;
                                 items.forEach(item => {
                                   const baseCost = item.unit_super_agent_cost && item.unit_super_agent_cost > 0 
                                     ? item.unit_super_agent_cost 
@@ -1497,10 +1499,20 @@ function AdminOrdersPageInner() {
                                           <span>${superAgentProfit.toFixed(2)}</span>
                                         </div>
                                       )}
+                                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.86rem", color: "var(--silver)", marginTop: "4px" }}>
+                                        <span>Owed To PepNation (Wholesale)</span>
+                                        <span>${(owedToPepNation - shippingToPepNation).toFixed(2)}</span>
+                                      </div>
+                                      {shippingToPepNation > 0 && (
+                                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.86rem", color: "var(--silver)" }}>
+                                          <span>Owed To PepNation (Shipping)</span>
+                                          <span>${shippingToPepNation.toFixed(2)}</span>
+                                        </div>
+                                      )}
                                     </>
                                   )}
-                                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.86rem", color: "var(--green)", fontWeight: 700 }}>
-                                    <span>Owed To PepNation</span>
+                                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.86rem", color: "var(--green)", fontWeight: 700, borderTop: selectedOrder.agent_id ? "1px solid var(--border)" : "none", paddingTop: selectedOrder.agent_id ? "6px" : "0", marginTop: selectedOrder.agent_id ? "4px" : "0" }}>
+                                    <span>{selectedOrder.agent_id ? 'Total Owed To PepNation' : 'Owed To PepNation'}</span>
                                     <span>${owedToPepNation.toFixed(2)}</span>
                                   </div>
                                 </>
