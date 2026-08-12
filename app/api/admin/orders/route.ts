@@ -198,7 +198,8 @@ export async function POST(req: NextRequest) {
     }
 
     if (updateError) {
-      return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
+      console.error('[admin/orders] POST updateError:', updateError);
+      return NextResponse.json({ error: `Database Error: ${updateError.message || JSON.stringify(updateError)}` }, { status: 500 });
     }
 
     // NOTE: Shipping labels are created MANUALLY (on-demand) only.
@@ -337,6 +338,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('[admin/orders] POST error:', err);
-    return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
+    return NextResponse.json({ error: `Server Error: ${err instanceof Error ? err.message : 'Unknown'}` }, { status: 500 });
   }
 }
