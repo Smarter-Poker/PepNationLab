@@ -1486,10 +1486,17 @@ function AdminOrdersPageInner() {
                                         <span>Agent Profit</span>
                                         <span>${agentProfit.toFixed(2)}</span>
                                       </div>
-                                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.86rem", color: "var(--silver)" }}>
-                                        <span>Super Agent Profit</span>
-                                        <span>${superAgentProfit.toFixed(2)}</span>
-                                      </div>
+                                      {selectedOrder.agent?.parent?.full_name ? (
+                                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.86rem", color: "var(--green)", fontWeight: 700 }}>
+                                          <span>Owed To {selectedOrder.agent.parent.full_name}</span>
+                                          <span>${superAgentProfit.toFixed(2)}</span>
+                                        </div>
+                                      ) : (
+                                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.86rem", color: "var(--silver)" }}>
+                                          <span>Super Agent Profit</span>
+                                          <span>${superAgentProfit.toFixed(2)}</span>
+                                        </div>
+                                      )}
                                     </>
                                   )}
                                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.86rem", color: "var(--green)", fontWeight: 700 }}>
