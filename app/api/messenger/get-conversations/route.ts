@@ -176,6 +176,8 @@ async function buildDownlineRows(
         rows.push(c);
       } else if (cRole === 'admin') {
         rows.push(c);
+      } else if (c.last_message_at != null) {
+        rows.push(c);
       }
     } else if (typeof c.counterparty_id !== 'string') {
       const isDirect = (c.type ?? '').toString() === 'direct';
