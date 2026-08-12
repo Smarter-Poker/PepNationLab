@@ -14,6 +14,7 @@ const PAGE_SIZE = 25;
 interface BuyerProfile {
   full_name: string | null;
   email: string;
+  contact_email: string | null;
   phone: string | null;
 }
 
@@ -1235,6 +1236,7 @@ function AdminOrdersPageInner() {
                       Email: {[
                         selectedOrder.buyer_email,
                         (selectedOrder.shipping_address as any)?.email,
+                        selectedOrder.profiles?.contact_email,
                         selectedOrder.profiles?.email
                       ].find(e => e && !e.includes('@internal.auth')) || "-"}
                     </div>

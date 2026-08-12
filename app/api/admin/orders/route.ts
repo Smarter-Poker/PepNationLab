@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
         'shipping_cost, subtotal, discount_amount, coupon_code, total, tracking_number, ' +
         'agent_approved_at, agent_approval_notes, created_at, is_wholesale_restock, ' +
         'buyer_name, buyer_email, ' +
-        'profiles!orders_buyer_id_fkey(full_name, email, phone), ' +
+        'profiles!orders_buyer_id_fkey(full_name, email, contact_email, phone), ' +
         'agent:profiles!orders_agent_id_fkey(parent:parent_agent_id(full_name))'
       );
 
