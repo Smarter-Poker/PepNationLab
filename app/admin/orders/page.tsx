@@ -55,6 +55,8 @@ interface OrderItem {
   quantity: number;
   unit_retail_price: number;
   unit_cost_price: number;
+  unit_size?: string | null;
+  unit_measure?: string | null;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -1155,8 +1157,20 @@ function AdminOrdersPageInner() {
                             }}
                         >
                           <div style={{ color: "var(--grey-300)" }}>
-                            {item.product_name}{" "}
-                            <span style={{ color: "var(--teal)" }}>
+                            {item.product_name}
+                            {item.unit_size && (
+                              <span
+                                style={{
+                                  color: "var(--teal)",
+                                  fontWeight: 700,
+                                  marginLeft: 4,
+                                  fontSize: "0.75rem",
+                                }}
+                              >
+                                {item.unit_size}{item.unit_measure || "mg"}
+                              </span>
+                            )}{" "}
+                            <span style={{ color: "var(--silver)", opacity: 0.7 }}>
                               x{item.quantity}
                             </span>
                           </div>

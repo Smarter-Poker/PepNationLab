@@ -17,19 +17,32 @@ export async function GET(req: NextRequest) {
   // The shipping role is fulfillment-only and must never see internal cost
   // basis. order_items carries unit_cost_price and unit_super_agent_cost (COGS
   // and super-agent margin); select an explicit column set that excludes those
-  // for non-admins, and only widen to '*' for a true admin.
+  // for non-admins, and only widen to include cost cols for a true admin.
   const isAdmin = gate.isAdmin === true;
   const FULFILLMENT_COLUMNS =
-    'id, order_id, product_id, product_name, quantity, unit_retail_price';
+    'id, order_id, product_id, product_name, quantity, unit_retail_price, products(unit_size, unit_measure)';
 
-  const { data, error } = await supabase
+  const { data: rawData, error } = await supabase
     .from('order_items')
-    .select(isAdmin ? '*' : FULFILLMENT_COLUMNS)
+    .select(isAdmin
+      ? 'id, order_id, product_id, product_name, quantity, unit_retail_price, unit_cost_price, unit_super_agent_cost, lot_number, coa_url, created_at, products(unit_size, unit_measure)'
+      : FULFILLMENT_COLUMNS
+    )
     .eq('order_id', orderId);
 
   if (error) {
     return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
+
+  // Flatten the nested products join so unit_size/unit_measure appear at top level
+  const data = (rawData ?? []).map((item: any) => {
+    const { products, ...rest } = item;
+    return {
+      ...rest,
+      unit_size: products?.unit_size ?? null,
+      unit_measure: products?.unit_measure ?? null,
+    };
+  });
 
   return NextResponse.json({ data });
 }
