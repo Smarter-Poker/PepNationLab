@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { toast } from 'sonner';
-import { getRealEmail } from '@/lib/profile-utils';
 
 const money = (n: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(Number(n) || 0);
@@ -52,7 +51,7 @@ export default function AdminPaymentsPage() {
     const q = query.trim().toLowerCase();
     if (!q) return agents;
     return agents.filter((a) =>
-      (a.full_name || '').toLowerCase().includes(q) || ((getRealEmail(a) || '') || '').toLowerCase().includes(q));
+      (a.full_name || '').toLowerCase().includes(q) || (a.email || '').toLowerCase().includes(q));
   }, [agents, query]);
 
   const idemKeyRef = useRef<string>(
@@ -132,7 +131,7 @@ export default function AdminPaymentsPage() {
                       }}>
                         <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
                           <span style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {a.full_name || (getRealEmail(a) || '')}{a.is_super_agent ? ' - Super' : ''}
+                            {a.full_name || a.email}{a.is_super_agent ? ' - Super' : ''}
                           </span>
                           <span style={{ fontSize: '0.72rem', color: 'var(--grey-500)', textTransform: 'capitalize' }}>
                             {a.account_type || 'unset'}
@@ -154,7 +153,7 @@ export default function AdminPaymentsPage() {
               <p style={{ color: 'var(--grey-500)', margin: 0 }}>Select An Agent To Record A Payment.</p>
             ) : (
               <>
-                <h3 style={{ color: 'var(--white)', marginTop: 0, marginBottom: 10 }}>{selected.full_name || (getRealEmail(selected) || '')}</h3>
+                <h3 style={{ color: 'var(--white)', marginTop: 0, marginBottom: 10 }}>{selected.full_name || selected.email}</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14, fontSize: '0.85rem' }}>
                   <Row label="Account Type" value={(selected.account_type || 'Unset')} cap />
                   {selected.account_type === 'credit' ? (

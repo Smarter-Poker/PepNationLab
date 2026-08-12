@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
   const actorIds = Array.from(new Set(rows.map((r) => r.actor_id).filter(Boolean))) as string[];
   const emailMap: Record<string, string> = {};
   if (actorIds.length > 0) {
-    const { data: actors } = await svc.from('profiles').select('id, email, contact_email').in('id', actorIds);
+    const { data: actors } = await svc.from('profiles').select('id, email').in('id', actorIds);
     for (const a of actors ?? []) emailMap[a.id] = a.email; // @ts-ignore
   }
 

@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Pagination from "@/components/Pagination";
 import { exportCSV, downloadCSV } from "@/lib/export";
-import { getRealEmail } from '@/lib/profile-utils';
 
 const PAGE_SIZE = 25;
 
@@ -77,7 +76,7 @@ function AdminTransactionsPageInner() {
       if (!tx.agent_id || map.has(tx.agent_id)) continue;
       const label =
         tx.profiles?.full_name ||
-        ((getRealEmail(tx.profiles) || '')
+        (tx.profiles?.email
           ? `@${tx.profiles.email.split("@")[0]}`
           : tx.agent_id.slice(0, 8));
       map.set(tx.agent_id, label);
@@ -186,8 +185,8 @@ function AdminTransactionsPageInner() {
                   created_at: new Date(tx.created_at).toISOString(),
                   agent:
                     tx.profiles?.full_name ||
-                    ((getRealEmail(tx.profiles) || '')
-                      ? `@${(getRealEmail(tx.profiles) || '').split("@")[0]}`
+                    (tx.profiles?.email
+                      ? `@${tx.profiles?.email.split("@")[0]}`
                       : "Unknown"),
                   type: meta?.label || tx.type.replace(/_/g, " "),
                   description: tx.description || "",
@@ -485,7 +484,7 @@ function AdminTransactionsPageInner() {
                         }}
                       >
                         {getUsername(
-                          (getRealEmail(tx.profiles) || ''),
+                          tx.profiles?.email,
                           tx.profiles?.full_name,
                         )}
                       </td>

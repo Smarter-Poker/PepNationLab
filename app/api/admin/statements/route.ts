@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
 
     let dbQuery = supabase
       .from('weekly_statements')
-      .select('*, profiles!weekly_statements_agent_id_fkey(full_name, email, contact_email)')
+      .select('*, profiles!weekly_statements_agent_id_fkey(full_name, email)')
       .order('week_start', { ascending: false })
       .limit(5000);
 

@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
   if (authorIds.length > 0) {
     const { data: authors } = await svc
       .from('profiles')
-      .select('id, full_name, email, contact_email')
+      .select('id, full_name, email')
       .in('id', authorIds);
     authorMap = new Map(
       (authors ?? []).map((a: any) => [a.id as string, { name: a.full_name as string | null, email: a.email as string | null }])

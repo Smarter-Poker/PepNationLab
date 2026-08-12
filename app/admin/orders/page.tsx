@@ -8,7 +8,6 @@ import Pagination from "@/components/Pagination";
 import { exportCSV, downloadCSV } from "@/lib/export";
 import { paymentMethodLabel, type PaymentMethodSlug } from "@/lib/payment-method-labels";
 import IframeModal from "@/components/ui/IframeModal";
-import { getRealEmail, getOrderEmail } from '@/lib/profile-utils';
 
 const PAGE_SIZE = 25;
 
@@ -337,7 +336,7 @@ function AdminOrdersPageInner() {
     <div style="flex:1;">
       <div class="section-label">Buyer Information</div>
       <div style="font-weight:600;">${selectedOrder.buyer_name || selectedOrder.profiles?.full_name || '—'}</div>
-      <div style="color:#6b7280;">${getOrderEmail(selectedOrder) || '—'}</div>
+      <div style="color:#6b7280;">${selectedOrder.buyer_email || selectedOrder.profiles?.email || '—'}</div>
     </div>
     <div style="flex:1;">
       <div class="section-label">Payment</div>
@@ -558,7 +557,8 @@ function AdminOrdersPageInner() {
           ""
         ).toLowerCase();
         const email = (
-          (getOrderEmail(order) || '') ||
+          order.profiles?.email ||
+          order.buyer_email ||
           ""
         ).toLowerCase();
         const orderId = order.id.toLowerCase();
@@ -642,7 +642,7 @@ function AdminOrdersPageInner() {
             const rows = filteredOrders.map((o) => ({
               id: o.id,
               created_at: new Date(o.created_at).toISOString(),
-              buyer: o.profiles?.full_name || o.buyer_name || getOrderEmail(o) || "",
+              buyer: o.profiles?.full_name || o.profiles?.email || o.buyer_name || o.buyer_email || "",
               status: STATUS_LABELS[o.status] ?? o.status,
               fulfillment: o.fulfillment_method || "",
               payment_method: o.payment_method || "",
@@ -1233,7 +1233,12 @@ function AdminOrdersPageInner() {
                       Name: {selectedOrder.profiles?.full_name || selectedOrder.buyer_name || "Anonymous"}
                     </div>
                     <div>
-                      Email: {getOrderEmail(selectedOrder) || "-"}
+                      Email: {[
+                        selectedOrder.buyer_email,
+                        (selectedOrder.shipping_address as any)?.email,
+                        selectedOrder.profiles?.contact_email,
+                        selectedOrder.profiles?.email
+                      ].find(e => e && !e.includes('@internal.auth')) || "-"}
                     </div>
                     {selectedOrder.profiles?.phone && (
                       <div>Phone: {selectedOrder.profiles?.phone}</div>

@@ -21,7 +21,7 @@ export async function GET() {
   const svc = await createServiceClient();
   const { data: agents } = await svc
     .from('profiles')
-    .select('id, full_name, email, contact_email, role, is_super_agent, account_type, prepaid_balance, credit_limit, credit_used')
+    .select('id, full_name, email, role, is_super_agent, account_type, prepaid_balance, credit_limit, credit_used')
     .in('role', ['agent', 'super_agent'])
     .order('full_name', { ascending: true });
 

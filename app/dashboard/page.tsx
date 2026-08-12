@@ -2,7 +2,6 @@ import { redirect } from 'next/navigation';
 import { createClient, getCachedUser } from '@/lib/supabase/server';
 import Navbar from '@/components/Navbar';
 import ResearcherDashboard from '@/components/ResearcherDashboard';
-import { getRealEmail } from '@/lib/profile-utils';
 
 export default async function DashboardPage({
   searchParams,
@@ -54,7 +53,7 @@ export default async function DashboardPage({
 
   const params = await searchParams;
   const isWelcome = params?.welcome === '1';
-  const name = profile?.full_name ?? profile?.username ?? (getRealEmail(user) || '')?.split('@')[0] ?? 'Researcher';
+  const name = profile?.full_name ?? profile?.username ?? user.email?.split('@')[0] ?? 'Researcher';
 
   // Get referring agent info
   const agentId: string | null = profile?.referring_agent_id ?? null;
@@ -105,7 +104,7 @@ export default async function DashboardPage({
         <ResearcherDashboard
           userId={user.id}
           userName={name}
-          userEmail={(getRealEmail(user) || '') || ''}
+          userEmail={user.email || ''}
           agentId={agentId}
           agentName={agentName}
           agentSlug={agentSlug}

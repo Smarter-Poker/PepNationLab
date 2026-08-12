@@ -26,7 +26,7 @@ export async function GET() {
   const ids = Array.from(new Set((stmts ?? []).map((s) => s.agent_id)));
   const nameById = new Map<string, { full_name: string | null; email: string }>();
   if (ids.length > 0) {
-    const { data: profs } = await svc.from('profiles').select('id, full_name, email, contact_email').in('id', ids);
+    const { data: profs } = await svc.from('profiles').select('id, full_name, email').in('id', ids);
     for (const p of profs ?? []) nameById.set(p.id, { full_name: p.full_name, email: p.email }); // @ts-ignore
   }
 

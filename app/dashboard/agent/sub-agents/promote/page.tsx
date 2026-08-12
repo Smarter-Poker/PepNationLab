@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import BackButton from '@/components/ui/BackButton';
 import Navbar from '@/components/Navbar';
-import { getRealEmail } from '@/lib/profile-utils';
 
 /**
  * Promote Researcher → Agent or Super Agent.
@@ -197,7 +196,7 @@ export default function PromoteSubAgentPage() {
                   style={{ textAlign: 'left', padding: '10px 12px' }}
                 >
                   <div style={{ fontWeight: 600 }}>{r.full_name || r.username || 'Unnamed Researcher'}</div>
-                  <div style={{ fontSize: '12px', opacity: 0.7 }}>{(getRealEmail(r) || '') || r.id.slice(0, 8)}</div>
+                  <div style={{ fontSize: '12px', opacity: 0.7 }}>{r.email || r.id.slice(0, 8)}</div>
                 </button>
               ))}
             </div>

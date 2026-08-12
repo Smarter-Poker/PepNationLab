@@ -1,6 +1,5 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { getRealEmail } from '@/lib/profile-utils';
 
 export default function PricingAuditLogsPage() {
   const [logs, setLogs] = useState<any[]>([]);
@@ -59,7 +58,7 @@ export default function PricingAuditLogsPage() {
                   </td>
                   <td style={{ padding: 'var(--space-3)', color: 'var(--white)' }}>
                     {log.profiles?.first_name} {log.profiles?.last_name}<br/>
-                    <span style={{ color: 'var(--silver-light)', fontSize: '0.75rem' }}>{(getRealEmail(log.profiles) || '')}</span>
+                    <span style={{ color: 'var(--silver-light)', fontSize: '0.75rem' }}>{log.profiles?.email}</span>
                   </td>
                   <td style={{ padding: 'var(--space-3)', color: 'var(--white)' }}>
                     {log.products?.name}

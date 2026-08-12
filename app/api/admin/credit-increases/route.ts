@@ -28,7 +28,7 @@ export async function GET() {
   if (ids.length > 0) {
     const { data: profs } = await svc
       .from('profiles')
-      .select('id, full_name, email, contact_email, account_type, credit_limit, prepaid_balance')
+      .select('id, full_name, email, account_type, credit_limit, prepaid_balance')
       .in('id', ids);
     for (const p of profs ?? []) {
       nameById.set(p.id, { full_name: p.full_name, email: p.email, account_type: p.account_type, credit_limit: Number(p.credit_limit || 0), prepaid_balance: Number(p.prepaid_balance || 0) }); // @ts-ignore

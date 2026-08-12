@@ -56,29 +56,3 @@ export function getCompletenessData(p: any, ap?: any) {
     missingTasks
   };
 }
-
-export function getRealEmail(profile?: { email?: string | null, contact_email?: string | null } | null): string | null {
-  if (!profile) return null;
-  const isRealEmail = (e: unknown): boolean =>
-    typeof e === 'string' && e.trim() !== '' && !e.includes('@internal.auth') && !e.includes('@pepnationlab.com');
-  
-  if (isRealEmail(profile.contact_email)) return profile.contact_email!;
-  if (isRealEmail(profile.email)) return profile.email!;
-  return null;
-}
-
-export function getOrderEmail(order?: any): string | null {
-  if (!order) return null;
-  const isRealEmail = (e: unknown): boolean =>
-    typeof e === 'string' && e.trim() !== '' && !e.includes('@internal.auth') && !e.includes('@pepnationlab.com');
-
-  if (isRealEmail(order.buyer_email)) return order.buyer_email;
-  if (isRealEmail(order.shipping_address?.email)) return order.shipping_address.email;
-  
-  if (order.profiles) {
-    const realProfileEmail = getRealEmail(order.profiles);
-    if (realProfileEmail) return realProfileEmail;
-  }
-  
-  return null;
-}
