@@ -55,6 +55,7 @@ interface OrderItem {
   quantity: number;
   unit_retail_price: number;
   unit_cost_price: number;
+  unit_super_agent_cost?: number;
   unit_size?: string | null;
   unit_measure?: string | null;
 }
@@ -1437,6 +1438,60 @@ function AdminOrdersPageInner() {
                           <span>Total Cost</span>
                           <span>${Number(selectedOrder.total).toFixed(2)}</span>
                         </div>
+
+                        {userRole === "admin" && (
+                          <div style={{
+                            marginTop: "1rem",
+                            paddingTop: "0.5rem",
+                            borderTop: "1px dashed var(--border)",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "6px"
+                          }}>
+                            {(() => {
+                              let agentProfit = 0;
+                              let superAgentProfit = 0;
+                              let owedToPepNation = 0;
+
+                              if (!selectedOrder.agent_id) {
+                                owedToPepNation = Number(selectedOrder.total || 0);
+                              } else {
+                                owedToPepNation = Number(selectedOrder.shipping_cost || 0);
+                                items.forEach(item => {
+                                  const baseCost = item.unit_super_agent_cost && item.unit_super_agent_cost > 0 
+                                    ? item.unit_super_agent_cost 
+                                    : item.unit_cost_price;
+                                  
+                                  owedToPepNation += baseCost * item.quantity;
+                                  superAgentProfit += (item.unit_cost_price - baseCost) * item.quantity;
+                                  agentProfit += (item.unit_retail_price - item.unit_cost_price) * item.quantity;
+                                });
+                                agentProfit -= Number(selectedOrder.discount_amount || 0);
+                              }
+
+                              return (
+                                <>
+                                  {selectedOrder.agent_id && (
+                                    <>
+                                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.86rem", color: "var(--silver)" }}>
+                                        <span>Agent Profit</span>
+                                        <span>${agentProfit.toFixed(2)}</span>
+                                      </div>
+                                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.86rem", color: "var(--silver)" }}>
+                                        <span>Super Agent Profit</span>
+                                        <span>${superAgentProfit.toFixed(2)}</span>
+                                      </div>
+                                    </>
+                                  )}
+                                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.86rem", color: "var(--green)", fontWeight: 700 }}>
+                                    <span>Owed To PepNation</span>
+                                    <span>${owedToPepNation.toFixed(2)}</span>
+                                  </div>
+                                </>
+                              );
+                            })()}
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
