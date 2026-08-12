@@ -182,14 +182,15 @@ export async function POST(req: NextRequest) {
       // one we validated against. A concurrent cancel/approve on the same order
       // loses this race cleanly (0 rows) instead of overwriting a terminal
       // state (e.g. a stale "mark shipped" clobbering a just-committed cancel).
-      const { data: updatedRows, error } = await supabase
-        .from('orders')
-        .update(updates)
-        .eq('id', id)
-        .eq('status', currentStatus)
-        .select('id');
+      const { data: isSuccess, error } = await supabase.rpc('admin_force_update_order', {
+        p_order_id: id,
+        p_current_status: currentStatus,
+        p_status: status,
+        p_tracking_number: tracking_number ?? null,
+        p_agent_approval_notes: agent_approval_notes ?? null
+      });
       updateError = error;
-      if (!error && (!updatedRows || updatedRows.length === 0)) {
+      if (!error && !isSuccess) {
         return NextResponse.json(
           { error: 'Order Status Changed Concurrently. Please Refresh And Retry.' },
           { status: 409 },
