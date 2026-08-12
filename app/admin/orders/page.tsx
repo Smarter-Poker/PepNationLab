@@ -47,6 +47,11 @@ interface Order {
   buyer_name: string | null;
   buyer_email: string | null;
   profiles: BuyerProfile | null;
+  agent?: {
+    parent?: {
+      full_name: string | null;
+    } | null;
+  } | null;
 }
 
 interface OrderItem {
@@ -1227,7 +1232,11 @@ function AdminOrdersPageInner() {
                       Name: {selectedOrder.profiles?.full_name || selectedOrder.buyer_name || "Anonymous"}
                     </div>
                     <div>
-                      Email: {selectedOrder.profiles?.email || selectedOrder.buyer_email || "-"}
+                      Email: {[
+                        selectedOrder.buyer_email,
+                        (selectedOrder.shipping_address as any)?.email,
+                        selectedOrder.profiles?.email
+                      ].find(e => e && !e.includes('@internal.auth')) || "-"}
                     </div>
                     {selectedOrder.profiles?.phone && (
                       <div>Phone: {selectedOrder.profiles?.phone}</div>

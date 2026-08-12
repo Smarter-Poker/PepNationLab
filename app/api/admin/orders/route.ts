@@ -35,7 +35,8 @@ export async function GET(req: NextRequest) {
         'shipping_cost, subtotal, discount_amount, coupon_code, total, tracking_number, ' +
         'agent_approved_at, agent_approval_notes, created_at, is_wholesale_restock, ' +
         'buyer_name, buyer_email, ' +
-        'profiles!orders_buyer_id_fkey(full_name, email, phone)'
+        'profiles!orders_buyer_id_fkey(full_name, email, phone), ' +
+        'agent:profiles!orders_agent_id_fkey(parent:parent_agent_id(full_name))'
       );
 
     if (status) {
@@ -60,6 +61,11 @@ export async function GET(req: NextRequest) {
         full_name: string | null;
         email: string;
         phone: string | null;
+      } | null;
+      agent: {
+        parent: {
+          full_name: string | null;
+        } | null;
       } | null;
     }
 
