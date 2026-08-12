@@ -65,10 +65,11 @@ export async function GET(req: NextRequest) {
 
     const typedData = (data as unknown) as OrderRow[] | null;
 
-    // Filter out pending_customer_payment and agent_approval_pending orders that belong to an external agent.
+    // Filter out pending_customer_payment and agent_approval_pending orders that belong to an external agent,
+    // EXCEPT for platform admins who have full control over all orders.
     let filteredData = (typedData || []).filter((order) => {
       if (order.status === 'pending_customer_payment' || order.status === 'agent_approval_pending') {
-        if (order.agent_id && order.agent_id !== gate.userId) {
+        if (!gate.isAdmin && order.agent_id && order.agent_id !== gate.userId) {
           return false;
         }
       }
