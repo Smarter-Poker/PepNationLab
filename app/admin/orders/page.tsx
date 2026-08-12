@@ -336,7 +336,14 @@ function AdminOrdersPageInner() {
     <div style="flex:1;">
       <div class="section-label">Buyer Information</div>
       <div style="font-weight:600;">${selectedOrder.buyer_name || selectedOrder.profiles?.full_name || '—'}</div>
-      <div style="color:#6b7280;">${selectedOrder.buyer_email || selectedOrder.profiles?.email || '—'}</div>
+      <div style="color:#6b7280;">${
+        [
+          selectedOrder.buyer_email,
+          (selectedOrder.shipping_address as any)?.email,
+          selectedOrder.profiles?.contact_email,
+          selectedOrder.profiles?.email
+        ].find(e => e && typeof e === 'string' && !e.includes('@internal.auth')) || '—'
+      }</div>
     </div>
     <div style="flex:1;">
       <div class="section-label">Payment</div>
@@ -557,9 +564,12 @@ function AdminOrdersPageInner() {
           ""
         ).toLowerCase();
         const email = (
-          order.profiles?.email ||
-          order.buyer_email ||
-          ""
+          [
+            order.buyer_email,
+            (order.shipping_address as any)?.email,
+            order.profiles?.contact_email,
+            order.profiles?.email
+          ].find(e => e && typeof e === 'string' && !e.includes('@internal.auth')) || ""
         ).toLowerCase();
         const orderId = order.id.toLowerCase();
         const tracking = (order.tracking_number || "").toLowerCase();
@@ -642,7 +652,12 @@ function AdminOrdersPageInner() {
             const rows = filteredOrders.map((o) => ({
               id: o.id,
               created_at: new Date(o.created_at).toISOString(),
-              buyer: o.profiles?.full_name || o.profiles?.email || o.buyer_name || o.buyer_email || "",
+              buyer: o.profiles?.full_name || o.buyer_name || [
+                o.buyer_email,
+                (o.shipping_address as any)?.email,
+                o.profiles?.contact_email,
+                o.profiles?.email
+              ].find(e => e && typeof e === 'string' && !e.includes('@internal.auth')) || "",
               status: STATUS_LABELS[o.status] ?? o.status,
               fulfillment: o.fulfillment_method || "",
               payment_method: o.payment_method || "",
