@@ -4,11 +4,6 @@ const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.
 async function run() {
   const { data: users } = await supabase.auth.admin.listUsers();
   const user = users.users.find(u => u.email === 'test_ws_debug@example.com');
-  if (user) {
-    await supabase.auth.admin.updateUserById(user.id, { password: 'Password123!' });
-    console.log('Password updated');
-  } else {
-    console.log('User not found');
-  }
+  console.log(user);
 }
 run();

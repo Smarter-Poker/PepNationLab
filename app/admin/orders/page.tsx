@@ -589,6 +589,18 @@ function AdminOrdersPageInner() {
     setWholesaleOnly(false);
   }
 
+  function shiftWeek(direction: 1 | -1) {
+    const fromDate = dateFrom ? new Date(dateFrom) : new Date();
+    const toDate = dateTo ? new Date(dateTo) : new Date(fromDate.getTime() + 6 * 86400000);
+    
+    // Add direction * 7 days
+    fromDate.setDate(fromDate.getDate() + direction * 7);
+    toDate.setDate(toDate.getDate() + direction * 7);
+
+    setDateFrom(fromDate.toISOString().slice(0, 10));
+    setDateTo(toDate.toISOString().slice(0, 10));
+  }
+
   return (
     <div style={{ padding: "var(--space-8)" }}>
       {labelModalUrl && (
@@ -746,6 +758,25 @@ function AdminOrdersPageInner() {
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
               />
+            </div>
+
+            <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center" }}>
+              <button
+                className="btn btn-outline"
+                style={{ padding: "0.4rem 0.6rem", fontSize: "0.8rem", height: "38px" }}
+                onClick={() => shiftWeek(-1)}
+                title="Previous 7 Days"
+              >
+                &larr; Prev Week
+              </button>
+              <button
+                className="btn btn-outline"
+                style={{ padding: "0.4rem 0.6rem", fontSize: "0.8rem", height: "38px" }}
+                onClick={() => shiftWeek(1)}
+                title="Next 7 Days"
+              >
+                Next Week &rarr;
+              </button>
             </div>
 
             <label

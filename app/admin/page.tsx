@@ -205,6 +205,14 @@ export default async function AdminDashboard() {
       icon: <svg {...ICON_PROPS}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>,
     },
     {
+      label: 'All Orders',
+      value: String(metrics.totalOrdersLast7d),
+      sub: 'All Orders \u00b7 Past 7 Days',
+      href: `/admin/orders?from=${new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10)}`,
+      color: 'var(--blue)',
+      icon: <svg {...ICON_PROPS}><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>,
+    },
+    {
       label: 'Site Traffic',
       value: String(traffic7.visitors),
       sub: `Visitors \u00b7 7d \u00b7 ${traffic7.signups} New Sign-Ups`,
