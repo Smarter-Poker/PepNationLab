@@ -109,7 +109,7 @@ export async function GET(req: NextRequest) {
   if (wants('users') && tokens.length > 0) {
     let builder = svc
       .from('profiles')
-      .select('id, full_name, username, email, role, is_super_agent')
+      .select('id, full_name, username, email, contact_email, role, is_super_agent')
       .eq('is_active', true);
     builder = applyTokenAndOr(builder, ['full_name', 'username', 'email'], tokens);
     usersP = builder.limit(limitPer);

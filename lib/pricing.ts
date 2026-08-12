@@ -283,7 +283,17 @@ async function resolveChain(
     if (!node || !node.parent_agent_id) {
       // Top of chain (or an unresolvable profile - treat as top so callers
       // still get a defined ladder cost instead of throwing).
-      return { topId: currentId, hopMarkups: hopsBottomUp.reverse() };
+      
+      // Enforce the Super Agent markup cap: if the top ancestor has a custom_markup_override,
+      // no hop below them is allowed to charge a commission higher than that override (as a %).
+      const topOverride = await getAgentMarkupOverride(supabase, currentId);
+      let cap = Infinity;
+      if (topOverride !== null) {
+        cap = Math.round(topOverride * 100);
+      }
+      
+      const cappedHops = hopsBottomUp.reverse().map((hop) => Math.min(hop, cap));
+      return { topId: currentId, hopMarkups: cappedHops };
     }
     // currentId is parented: its own cost is its parent's cost x this hop's
     // markup. Record the hop, then keep walking toward the top ancestor.

@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
 
     if (agentId && !UUID_RE.test(agentId)) return NextResponse.json({ error: 'Invalid Agent_Id Format' }, { status: 400 });
 
-    let query = supabase.from('balance_transactions').select(`id, agent_id, type, amount, balance_before, balance_after, description, reference_id, reference_type, created_at, profiles!balance_transactions_agent_id_fkey ( full_name, email )`).order('created_at', { ascending: false }).limit(limit);
+    let query = supabase.from('balance_transactions').select(`id, agent_id, type, amount, balance_before, balance_after, description, reference_id, reference_type, created_at, profiles!balance_transactions_agent_id_fkey ( full_name, email, contact_email )`).order('created_at', { ascending: false }).limit(limit);
     if (agentId) query = query.eq('agent_id', agentId);
 
     const { data, error } = await query;

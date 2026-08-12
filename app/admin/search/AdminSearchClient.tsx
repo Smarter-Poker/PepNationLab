@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Search, X, Copy, ExternalLink, Filter, AlertTriangle, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { paymentMethodLabel, PAYMENT_METHOD_SLUGS } from '@/lib/payment-method-labels';
+import { getRealEmail } from '@/lib/profile-utils';
 
 // fix-52:  ships items #1-5, 9-15 from the global-search deep-dive.
 // fix-52b: abort in-flight fetch on unmount, router.push for Enter-key nav.
@@ -342,15 +343,15 @@ export default function AdminSearchClient() {
     const q = query.trim();
 
     const userItems: FlatItem[] = results.users.map((u) => {
-      const title = u.full_name || u.username || u.email || u.id;
-      const subtitle = `${roleLabel(u)}${u.username ? ' · @' + u.username : ''}${u.email ? ' · ' + u.email : ''}`;
+      const title = u.full_name || u.username || (getRealEmail(u) || '') || u.id;
+      const subtitle = `${roleLabel(u)}${u.username ? ' · @' + u.username : ''}${(getRealEmail(u) || '') ? ' · ' + (getRealEmail(u) || '') : ''}`;
       return {
         key: 'u:' + u.id,
         type: 'users',
         href: u.role === 'researcher' ? '/admin/researchers' : '/admin/agents',
         title, subtitle,
         ctaLabel: 'Open',
-        copyEmail: u.email ?? undefined,
+        copyEmail: (getRealEmail(u) || '') ?? undefined,
         matchScore: relevanceScore(title, subtitle, q),
         avatarSeed: u.id,
       };

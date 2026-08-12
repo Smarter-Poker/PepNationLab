@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { getRealEmail } from '@/lib/profile-utils';
 
 interface PickableProfile {
   id: string;
@@ -23,7 +24,7 @@ interface Note {
 }
 
 function profileLabel(p: PickableProfile): string {
-  const name = p.full_name || (p.username ? '@' + p.username : null) || p.email || p.id.slice(0, 8);
+  const name = p.full_name || (p.username ? '@' + p.username : null) || (getRealEmail(p) || '') || p.id.slice(0, 8);
   const roleLabel = p.role === 'super_agent' ? 'Super Agent' : p.role.charAt(0).toUpperCase() + p.role.slice(1);
   return `${name} · ${roleLabel}`;
 }
@@ -59,7 +60,7 @@ export default function AdminAgentNotesPage() {
             id: r.id,
             full_name: r.full_name ?? null,
             username: r.username ?? null,
-            email: r.email ?? null,
+            email: (getRealEmail(r) || '') ?? null,
             role: r.role ?? 'agent',
           }));
           setPeople(rows);
@@ -100,7 +101,7 @@ export default function AdminAgentNotesPage() {
     const q = search.trim().toLowerCase();
     if (!q) return people;
     return people.filter((p) => {
-      const blob = `${p.full_name ?? ''} ${p.username ?? ''} ${p.email ?? ''}`.toLowerCase();
+      const blob = `${p.full_name ?? ''} ${p.username ?? ''} ${(getRealEmail(p) || '') ?? ''}`.toLowerCase();
       return blob.includes(q);
     });
   }, [people, search]);

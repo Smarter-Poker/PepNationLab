@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
 
     let query = supabase
       .from('agent_invoices')
-      .select('id, super_agent_id, agent_id, week_start, week_end, total_cogs, total_shipping, total_owed, status, due_date, paid_at, created_at, super_agent:profiles!super_agent_id(full_name, email), downline:profiles!agent_id(full_name, email)')
+      .select('id, super_agent_id, agent_id, week_start, week_end, total_cogs, total_shipping, total_owed, status, due_date, paid_at, created_at, super_agent:profiles!super_agent_id(full_name, email, contact_email), downline:profiles!agent_id(full_name, email, contact_email)')
       .order('week_start', { ascending: false })
       .limit(1000);
 

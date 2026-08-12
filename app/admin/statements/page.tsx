@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { paymentMethodLabel, PAYMENT_METHOD_SLUGS } from "@/lib/payment-method-labels";
 import Pagination from "@/components/Pagination";
+import { getRealEmail } from '@/lib/profile-utils';
 
 const PAGE_SIZE = 25;
 
@@ -89,7 +90,7 @@ export default function AdminStatementsPage() {
   const handleDownloadCSV = () => {
     if (statements.length === 0) return;
     const headers = ["Agent", "Week Start", "Week End", "Cost Of Goods", "Shipping", "Total Owed", "Status"];
-    const rows = statements.map((s) => { const agentName = s.profiles?.full_name || s.profiles?.email || "Agent"; return [`"${agentName}"`, s.week_start, s.week_end, Number(s.total_cogs).toFixed(2), Number(s.total_shipping).toFixed(2), Number(s.total_owed).toFixed(2), s.status]; });
+    const rows = statements.map((s) => { const agentName = s.profiles?.full_name || (getRealEmail(s.profiles) || '') || "Agent"; return [`"${agentName}"`, s.week_start, s.week_end, Number(s.total_cogs).toFixed(2), Number(s.total_shipping).toFixed(2), Number(s.total_owed).toFixed(2), s.status]; });
     const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -133,7 +134,7 @@ export default function AdminStatementsPage() {
                     <div className="" style={{ padding: "var(--space-5)" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "var(--space-3)" }}>
                         <div>
-                          <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "var(--silver)" }}>{s.profiles?.full_name || (s.profiles?.email ? `@${s.profiles.email.split("@")[0]}` : "Agent")}</div>
+                          <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "var(--silver)" }}>{s.profiles?.full_name || ((getRealEmail(s.profiles) || '') ? `@${s.profiles.email.split("@")[0]}` : "Agent")}</div>
                           <div style={{ fontSize: "0.78rem", color: "var(--grey-400)", marginTop: 2 }}>Week Of {s.week_start} To {s.week_end}</div>
                         </div>
                         <span style={{ fontSize: "0.72rem", fontWeight: 700, color: statusColor, background: `${statusColor}15`, border: `1px solid ${statusColor}40`, padding: "4px var(--space-3)", borderRadius: "var(--radius-full)", height: "fit-content" }}>
@@ -187,7 +188,7 @@ export default function AdminStatementsPage() {
           <div className="glass-panel" style={{ width: "100%", maxWidth: 420 }}>
             <div className="" style={{ padding: "var(--space-6)" }}>
               <h2 className="metal-text" style={{ fontSize: "1.25rem", color: "#fff", marginBottom: "var(--space-2)" }}>Mark Statement Paid</h2>
-              <p style={{ fontSize: "0.8rem", color: "var(--grey-400)", marginBottom: "var(--space-6)" }}>{payingStatement.profiles?.full_name || (payingStatement.profiles?.email ? `@${payingStatement.profiles.email.split("@")[0]}` : "Agent")} / Week Of {payingStatement.week_start} / Total ${Number(payingStatement.total_owed).toFixed(2)}</p>
+              <p style={{ fontSize: "0.8rem", color: "var(--grey-400)", marginBottom: "var(--space-6)" }}>{payingStatement.profiles?.full_name || ((getRealEmail(payingStatement.profiles) || '') ? `@${payingStatement.profiles.email.split("@")[0]}` : "Agent")} / Week Of {payingStatement.week_start} / Total ${Number(payingStatement.total_owed).toFixed(2)}</p>
               <form onSubmit={handleMarkPaid}>
                 <div className="form-group"><label className="form-label" htmlFor="pay-method">Payment Method</label>
                   <select id="pay-method" className="form-input" value={payMethod} onChange={(e) => setPayMethod(e.target.value)}>

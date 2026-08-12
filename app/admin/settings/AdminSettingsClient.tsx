@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useTheme } from '@/components/ThemeProvider';
 import AvatarUpload from '@/components/AvatarUpload';
 import PushNotificationToggle from '@/components/PushNotificationToggle';
+import { getRealEmail } from '@/lib/profile-utils';
 import {
   MIN_PASSWORD_LENGTH,
   MAX_PASSWORD_LENGTH,
@@ -35,7 +36,7 @@ export default function AdminSettingsClient({ profile }: AdminSettingsClientProp
         </p>
         <AvatarUpload
           currentAvatarUrl={profile.avatar_url ?? null}
-          name={profile.full_name ?? profile.email?.split('@')[0] ?? 'Admin'}
+          name={profile.full_name ?? (getRealEmail(profile) || '')?.split('@')[0] ?? 'Admin'}
         />
       </div>
 
@@ -44,7 +45,7 @@ export default function AdminSettingsClient({ profile }: AdminSettingsClientProp
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
           <div>
             <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Email</span>
-            <p style={{ fontFamily: 'monospace', color: 'var(--teal)', fontSize: '1rem', margin: '4px 0 0' }}>{profile.email}</p>
+            <p style={{ fontFamily: 'monospace', color: 'var(--teal)', fontSize: '1rem', margin: '4px 0 0' }}>{(getRealEmail(profile) || '')}</p>
           </div>
           <div>
             <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Name</span>

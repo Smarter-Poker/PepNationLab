@@ -8,6 +8,7 @@ import Pagination from '@/components/Pagination';
 import { exportCSV, downloadCSV } from '@/lib/export';
 import type { RangePreset } from '@/lib/sales-range';
 import DownlineInvoicesSection from '@/components/admin/DownlineInvoicesSection';
+import { getRealEmail } from '@/lib/profile-utils';
 
 // ─── Lazy-loaded chart components (~400KB recharts) ───────────────────────────
 const AdminProfitTimeseriesChart = dynamic(
@@ -299,7 +300,7 @@ export default function AdminSalesPage() {
               if (!agentData) return;
               const rows = agentData.agents.map((a) => ({
                 full_name: a.full_name || '',
-                email: a.email || '',
+                email: (getRealEmail(a) || '') || '',
                 tier: a.tier || '',
                 order_count: a.order_count,
                 pending_count: a.pending_count,
@@ -571,7 +572,7 @@ export default function AdminSalesPage() {
                                 </div>
                                 <div>
                                   <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--silver)' }}>{agent.full_name || 'Unknown'}</div>
-                                  <div style={{ fontSize: '0.7rem', color: 'var(--grey-500)' }}>{agent.email}</div>
+                                  <div style={{ fontSize: '0.7rem', color: 'var(--grey-500)' }}>{(getRealEmail(agent) || '')}</div>
                                 </div>
                               </div>
                             </td>

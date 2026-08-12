@@ -10,6 +10,7 @@ import Pagination from '@/components/Pagination';
 import ViewAsButton from '@/components/ViewAsButton';
 import { useAvailability, availabilityMessage } from '@/lib/useAvailability';
 import { MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH, PASSWORD_RULE_TEXT } from '@/lib/password-policy';
+import { getRealEmail } from '@/lib/profile-utils';
 
 const PAGE_SIZE = 25;
 
@@ -482,7 +483,7 @@ function ResearchersAdminPageInner() {
         const ap = Array.isArray(p.agent_profiles) ? p.agent_profiles[0] : p.agent_profiles;
         return {
           id: p.id,
-          label: `${p.full_name || p.username || p.email}${p.is_super_agent ? ' (Super Agent)' : ''}${ap?.slug ? ` - @${ap.slug}` : ''}`,
+          label: `${p.full_name || p.username || (getRealEmail(p) || '')}${p.is_super_agent ? ' (Super Agent)' : ''}${ap?.slug ? ` - @${ap.slug}` : ''}`,
           slug: ap?.slug ?? null,
         };
       })
@@ -500,7 +501,7 @@ function ResearchersAdminPageInner() {
         (p.full_name || '').toLowerCase().includes(q) ||
         (p.username || '').toLowerCase().includes(q) ||
         (p.phone || '').toLowerCase().includes(q) ||
-        (p.email || '').toLowerCase().includes(q);
+        ((getRealEmail(p) || '') || '').toLowerCase().includes(q);
       if (!matchesSearch) return false;
       if (activeTab === 'researchers' && p.role !== 'researcher') return false;
       // Researcher ownership filter: hide agent-assigned researchers from the
@@ -703,17 +704,17 @@ function ResearchersAdminPageInner() {
                 <div className="" style={{ padding: 'var(--space-4) var(--space-5)' }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
                     <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg, var(--teal) 0%, #007A75 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#fff', fontSize: '1.1rem', flexShrink: 0 }}>
-                      {(profile.full_name || profile.email || '?')[0].toUpperCase()}
+                      {(profile.full_name || (getRealEmail(profile) || '') || '?')[0].toUpperCase()}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap', marginBottom: 2 }}>
                         <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--white)' }}>
-                          {profile.full_name || profile.email}
+                          {profile.full_name || (getRealEmail(profile) || '')}
                         </span>
                         {ap?.slug && <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)' }}>(@{ap.slug})</span>}
                       </div>
                       <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginTop: 2 }}>
-                        {profile.username ? `@${profile.username}` : (profile.email ?? '').split('@')[0]}
+                        {profile.username ? `@${profile.username}` : ((getRealEmail(profile) || '') ?? '').split('@')[0]}
                         {profile.phone && ` • ${profile.phone}`}
                       </div>
                       <div style={{ fontSize: '0.74rem', color: 'var(--grey-500)', marginTop: 4 }}>
@@ -760,7 +761,7 @@ function ResearchersAdminPageInner() {
                     <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap', alignItems: 'center' }}>
                       {isAgent && (
                         <>
-                          <ViewAsButton targetUserId={profile.id} targetLabel={profile.full_name ?? profile.email} />
+                          <ViewAsButton targetUserId={profile.id} targetLabel={profile.full_name ?? (getRealEmail(profile) || '')} />
                           <button onClick={() => openEditModal(profile)}
                             style={{ fontSize: '0.75rem', padding: '5px 12px', borderRadius: 6, border: '1px solid rgba(192,184,168,0.3)', background: 'none', color: 'var(--silver)', cursor: 'pointer' }}>
                             Edit
@@ -928,7 +929,7 @@ function ResearchersAdminPageInner() {
                   <select className="form-input" value={newParentAgentId} onChange={e => setNewParentAgentId(e.target.value)} required>
                     <option value="">Select Agent...</option>
                     {profiles.filter(p => p.role === 'agent' || p.role === 'super_agent').map(a => (
-                      <option key={a.id} value={a.id}>{a.full_name || a.email}</option>
+                      <option key={a.id} value={a.id}>{a.full_name || (getRealEmail(a) || '')}</option>
                     ))}
                   </select>
                 </div>
