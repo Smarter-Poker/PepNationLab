@@ -60,6 +60,7 @@ export async function GET(req: NextRequest) {
       profiles: {
         full_name: string | null;
         email: string;
+        contact_email: string | null;
         phone: string | null;
       } | null;
       agent: {
@@ -216,7 +217,10 @@ export async function POST(req: NextRequest) {
     if (status === 'approved_ship' || status === 'approved_pickup') {
       try {
         await supabase.rpc('charge_order_credit_line', { p_order_id: id, p_created_by: gate.userId });
-      } catch { /* credit-line ledger must not break the release */ }
+      } catch (creditErr) {
+        // Log so it surfaces in Vercel logs / Sentry — does not block the release
+        console.error('[admin/orders] charge_order_credit_line failed for order', id, creditErr);
+      }
     }
 
     // Write audit log entry (awaited).
@@ -233,7 +237,7 @@ export async function POST(req: NextRequest) {
           ...(agent_approval_notes !== undefined ? { agent_approval_notes } : {}),
         },
       });
-    } catch { /* ignore audit failure */ }
+    } catch (auditErr) { console.error('[admin/orders] audit log insert failed', id, auditErr); }
 
     // Order timeline event for every admin-driven transition.
     try {

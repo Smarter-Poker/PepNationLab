@@ -552,7 +552,11 @@ function CustomerSupportWidgetInner() {
         setOpen(false);
         setStatusPopoverFor(null);
         setSnoozePopoverFor(null);
-        setMessengerActive(prevActiveBeforeOpenRef.current);
+        // Only restore the prior active conversation if there was one —
+        // don't null out the messenger store when ESC is hit cold.
+        if (prevActiveBeforeOpenRef.current !== null) {
+          setMessengerActive(prevActiveBeforeOpenRef.current);
+        }
         prevActiveBeforeOpenRef.current = null;
       }
     }
@@ -1952,7 +1956,7 @@ function CustomerSupportWidgetInner() {
                       }}
                     >
                       <span style={{ color: 'var(--silver, #C0B8A8)', fontSize: '0.72rem', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {focusedRow.counterparty_full_name || focusedRow.counterparty_username || 'Support Thread'}
+                        {otherName(focusedRow)}
                         {' — '}
                         <span style={{ textTransform: 'capitalize' }}>{(focusedRow.support_status || 'open').replace(/_/g, ' ')}</span>
                       </span>

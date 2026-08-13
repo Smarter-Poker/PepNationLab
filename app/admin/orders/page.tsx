@@ -63,6 +63,7 @@ interface OrderItem {
   unit_retail_price: number;
   unit_cost_price: number;
   unit_super_agent_cost?: number;
+  unit_house_cost?: number | null;
   unit_size?: string | null;
   unit_measure?: string | null;
 }
@@ -1510,6 +1511,7 @@ function AdminOrdersPageInner() {
                               let superAgentProfit = 0;
                               let owedToPepNation = 0;
                               let shippingToPepNation = 0;
+                              let agentCOGS = 0;
 
                               if (!selectedOrder.agent_id) {
                                 owedToPepNation = Number(selectedOrder.total || 0);
@@ -1517,12 +1519,19 @@ function AdminOrdersPageInner() {
                                 shippingToPepNation = Number(selectedOrder.shipping_cost || 0);
                                 owedToPepNation = shippingToPepNation;
                                 items.forEach(item => {
-                                  const baseCost = item.unit_super_agent_cost && item.unit_super_agent_cost > 0 
+                                  const superAgentCost = item.unit_super_agent_cost && item.unit_super_agent_cost > 0 
                                     ? item.unit_super_agent_cost 
-                                    : item.unit_cost_price;
+                                    : null;
                                   
-                                  owedToPepNation += baseCost * item.quantity;
-                                  superAgentProfit += (item.unit_cost_price - baseCost) * item.quantity;
+                                  const pepNationCost = (item.unit_house_cost && item.unit_house_cost > 0)
+                                    ? item.unit_house_cost
+                                    : superAgentCost ?? item.unit_cost_price;
+                                  
+                                  owedToPepNation += pepNationCost * item.quantity;
+                                  if (superAgentCost) {
+                                    superAgentProfit += (superAgentCost - pepNationCost) * item.quantity;
+                                  }
+                                  agentCOGS += item.unit_cost_price * item.quantity;
                                   agentProfit += (item.unit_retail_price - item.unit_cost_price) * item.quantity;
                                 });
                                 agentProfit -= Number(selectedOrder.discount_amount || 0);
@@ -1541,7 +1550,7 @@ function AdminOrdersPageInner() {
                                         <div style={{ marginTop: "8px", padding: "8px", background: "rgba(255,255,255,0.02)", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.05)" }}>
                                           <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.86rem", color: "var(--green)", fontWeight: 700, marginBottom: "4px" }}>
                                             <span>Owed To Upline ({selectedOrder.agent.parent.full_name})</span>
-                                            <span>${(superAgentProfit + owedToPepNation).toFixed(2)}</span>
+                                            <span>${(agentCOGS + shippingToPepNation).toFixed(2)}</span>
                                           </div>
                                           <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem", color: "var(--silver)", paddingLeft: "8px", marginTop: "4px" }}>
                                             <span>↳ Upline Profit</span>
