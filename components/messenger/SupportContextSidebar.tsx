@@ -53,6 +53,7 @@ interface ContextPayload {
     is_super_agent?: boolean | null;
     is_sub_agent?: boolean | null;
     email: string | null;
+    contact_email?: string | null;
     created_at: string | null;
     last_sign_in_at: string | null;
   };
@@ -408,7 +409,14 @@ export default function SupportContextSidebar({
                   )}
                 </div>
                 <div style={{ fontSize: '0.74rem', color: 'var(--silver, #C0B8A8)' }}>
-                  {data.researcher?.username ? `@${data.researcher.username}` : data.researcher?.email || ''}
+                  {data.researcher?.username
+                    ? `@${data.researcher.username}`
+                    : (data.researcher?.contact_email && !data.researcher.contact_email.includes('@internal.auth')
+                        ? data.researcher.contact_email
+                        : data.researcher?.email?.includes('@internal.auth')
+                          ? ''
+                          : data.researcher?.email || '')
+                  }
                 </div>
               </div>
             </div>
