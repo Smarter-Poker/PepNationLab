@@ -523,7 +523,10 @@ function CustomerSupportWidgetInner() {
       )
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'messenger_conversations' },
+        // Filter to only fire on support conversations so non-support
+        // conversation updates don't trigger unnecessary inbox re-fetches
+        // and race against the optimistic resolved state.
+        { event: 'UPDATE', schema: 'public', table: 'messenger_conversations', filter: 'is_support=eq.true' },
         () => { fetchInbox(); },
       )
       .subscribe();
