@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
         'agent_approved_at, agent_approval_notes, created_at, is_wholesale_restock, ' +
         'buyer_name, buyer_email, ' +
         'profiles!orders_buyer_id_fkey(full_name, email, contact_email, phone), ' +
-        'agent:profiles!orders_agent_id_fkey(parent:parent_agent_id(full_name))'
+        'agent:profiles!orders_agent_id_fkey(full_name, parent:parent_agent_id(full_name))',
       );
 
     if (status) {
@@ -63,6 +63,7 @@ export async function GET(req: NextRequest) {
         phone: string | null;
       } | null;
       agent: {
+        full_name: string | null;
         parent: {
           full_name: string | null;
         } | null;

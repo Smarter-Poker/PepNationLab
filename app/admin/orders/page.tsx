@@ -49,6 +49,7 @@ interface Order {
   buyer_email: string | null;
   profiles: BuyerProfile | null;
   agent?: {
+    full_name?: string | null;
     parent?: {
       full_name: string | null;
     } | null;
@@ -1111,6 +1112,36 @@ function AdminOrdersPageInner() {
                           {paymentMethodLabel(order.payment_method)} &bull; $
                           {Number(order.total).toFixed(2)}
                         </div>
+                        {order.agent_id && (
+                          <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", marginTop: 5 }}>
+                            {order.agent?.full_name && (
+                              <span style={{
+                                fontSize: "0.68rem",
+                                fontWeight: 600,
+                                color: "var(--teal)",
+                                background: "rgba(0,229,255,0.08)",
+                                border: "1px solid rgba(0,229,255,0.2)",
+                                borderRadius: "4px",
+                                padding: "1px 6px",
+                              }}>
+                                Agent: {order.agent.full_name}
+                              </span>
+                            )}
+                            {order.agent?.parent?.full_name && (
+                              <span style={{
+                                fontSize: "0.68rem",
+                                fontWeight: 600,
+                                color: "var(--green)",
+                                background: "rgba(104,211,145,0.08)",
+                                border: "1px solid rgba(104,211,145,0.2)",
+                                borderRadius: "4px",
+                                padding: "1px 6px",
+                              }}>
+                                Upline: {order.agent.parent.full_name}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       <span
