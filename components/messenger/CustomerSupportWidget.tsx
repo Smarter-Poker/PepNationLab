@@ -568,7 +568,11 @@ function CustomerSupportWidgetInner() {
     // researcher who clicked into a thread doesn't lose their context.
   }, [open]);
 
-  const totalUnread = rows.reduce((a, r) => a + (r.unread_count || 0), 0);
+  // Only count unread from non-resolved threads. Resolved threads should
+  // never keep the badge lit — the admin has explicitly closed them.
+  const totalUnread = rows
+    .filter((r) => r.support_status !== 'resolved')
+    .reduce((a, r) => a + (r.unread_count || 0), 0);
 
   // Hard isolation: the set of conversation IDs that live in this inbox.
   // The center MessagePane only renders when the active conversation is in
@@ -661,10 +665,14 @@ function CustomerSupportWidgetInner() {
   // When a support thread is selected, the left column collapses to ONLY
   // show that customer's row + their researcher context. Click "All Threads"
   // in the new header strip to expand the full list back.
+  // Search ALL rows (not just visibleRows) so the focused conversation
+  // stays visible even after its status changes (e.g., just resolved).
+  // This prevents the center pane from blanking out immediately after
+  // marking a thread resolved while the inbox re-fetches.
   const focusedRow = useMemo(() => {
     if (!messengerActiveId) return null;
-    return visibleRows.find((r) => r.conversation_id === messengerActiveId) ?? null;
-  }, [visibleRows, messengerActiveId]);
+    return rows.find((r) => r.conversation_id === messengerActiveId) ?? null;
+  }, [rows, messengerActiveId]);
   const focusedList = focusedRow ? [focusedRow] : visibleRows;
 
   const tabCounts = useMemo(() => {
