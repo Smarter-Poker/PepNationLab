@@ -389,7 +389,6 @@ function CustomerSupportWidgetInner() {
 
       if (trimmedDesc.length > 0 && conversationId) {
         try {
-          const supabase = createClient();
           const clientMessageId = (typeof crypto !== 'undefined' && 'randomUUID' in crypto)
             ? crypto.randomUUID()
             : undefined;
@@ -403,7 +402,6 @@ function CustomerSupportWidgetInner() {
               ...(clientMessageId ? { clientMessageId } : {}),
             }),
           });
-          void supabase;
         } catch {}
       }
 
@@ -511,6 +509,14 @@ function CustomerSupportWidgetInner() {
     fetchInbox();
   }, [show, fetchInbox]);
 
+  // Track support conversation IDs in a ref so the realtime INSERT
+  // handler can filter out messages from non-support threads without
+  // creating a new subscription every time rows change.
+  const supportConvIdsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    supportConvIdsRef.current = new Set(rows.map((r) => r.conversation_id));
+  }, [rows]);
+
   useEffect(() => {
     if (!show) return;
     const supabase = createClient();
@@ -519,7 +525,14 @@ function CustomerSupportWidgetInner() {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messenger_messages' },
-        () => { fetchInbox(); },
+        (payload) => {
+          // Only re-fetch when the new message belongs to a support thread
+          // this admin is watching. Prevents unnecessary inbox refreshes
+          // from the main messenger (BUG 9).
+          const convId = (payload.new as { conversation_id?: string })?.conversation_id;
+          if (convId && !supportConvIdsRef.current.has(convId)) return;
+          fetchInbox();
+        },
       )
       .on(
         'postgres_changes',
@@ -534,7 +547,7 @@ function CustomerSupportWidgetInner() {
 
     // Realtime (above) is the primary freshness mechanism; this interval is a
     // fallback ONLY for silently-dropped realtime connections, so 5 minutes
-    // is plenty (was 60s, which just duplicated the subscription's work).
+    // is plenty.
     pollRef.current = setInterval(fetchInbox, 300_000);
 
     return () => {
@@ -1111,20 +1124,18 @@ function CustomerSupportWidgetInner() {
           </span>
         </button>
 
-        <style jsx>{`
-          @media (min-width: 768px) {
-            .cs-widget-bar {
-              right: auto !important;
-              width: 320px !important;
-              border-right: 1px solid ${NICKEL_SOFT} !important;
-            }
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media (min-width: 768px) {
+          .cs-widget-bar {
+            right: auto !important;
+            width: 320px !important;
+            border-right: 1px solid ${NICKEL_SOFT} !important;
           }
-        `}</style>
-        <style jsx global>{`
-          .messenger-sidebar {
-            padding-bottom: calc(60px + env(safe-area-inset-bottom)) !important;
-          }
-        `}</style>
+        }
+        .messenger-sidebar {
+          padding-bottom: calc(60px + env(safe-area-inset-bottom)) !important;
+        }
+      ` }} />
       </>
     );
   }
@@ -1450,7 +1461,7 @@ function CustomerSupportWidgetInner() {
               </div>
             ) : (
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-                {focusedList.map((row) => {
+                {visibleRows.map((row) => {
                   const status: SupportStatus = (row.support_status as SupportStatus) || 'open';
                   const slaSec = row.sla_waiting_seconds || 0;
                   const overdue = slaSec > 1800;
@@ -2159,7 +2170,7 @@ function CustomerSupportWidgetInner() {
         </span>
       </button>
 
-      <style jsx>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         .spin { animation: cs-spin 1s linear infinite; }
         @keyframes cs-spin { to { transform: rotate(360deg); } }
         @media (min-width: 768px) {
@@ -2169,8 +2180,6 @@ function CustomerSupportWidgetInner() {
             border-right: 1px solid ${NICKEL_SOFT} !important;
           }
         }
-      `}</style>
-      <style jsx global>{`
         .messenger-sidebar {
           padding-bottom: calc(60px + env(safe-area-inset-bottom)) !important;
         }
@@ -2184,7 +2193,7 @@ function CustomerSupportWidgetInner() {
         .cs-widget-overlay button[aria-label="Schedule Send"] {
           display: none !important;
         }
-      `}</style>
+      ` }} />
     </>
   );
 }

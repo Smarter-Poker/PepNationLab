@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import IframeLink from '@/components/ui/IframeLink';
 import { createClient } from '@/lib/supabase/client';
@@ -196,40 +196,64 @@ export default function SupportContextSidebar({
   const [loading, setLoading] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  // Module-level cache so switching back to a visited thread is instant.
+  const cacheRef = useRef<Map<string, ContextPayload>>(new Map());
 
   // Gate: admin + support conversation.
   useEffect(() => {
-    let cancelled = false;
+    if (!conversationId) return;
+    const cache = cacheRef.current;
+
+    // Show cached data immediately to avoid blank flash on thread switch.
+    const cached = cache.get(conversationId);
+    if (cached) {
+      setData(cached);
+      setShow(true);
+    }
+
+    // Use AbortController so stale in-flight fetches can't overwrite newer data.
+    const controller = new AbortController();
+    let isCurrent = true;
+
     (async () => {
       try {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user || cancelled) return;
+        if (!isCurrent || controller.signal.aborted) return;
+        if (!user) return;
         const { data: profile } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', user.id)
           .maybeSingle();
-        if (cancelled) return;
+        if (!isCurrent || controller.signal.aborted) return;
         if (profile?.role !== 'admin') return;
 
-        setLoading(true);
+        if (!cached) setLoading(true);
         const res = await fetch(`/api/messenger/support/${encodeURIComponent(conversationId)}/context`, {
           cache: 'no-store',
+          signal: controller.signal,
         });
+        if (!isCurrent || controller.signal.aborted) return;
         if (!res.ok) return;
         const json: ContextPayload = await res.json();
-        if (cancelled) return;
+        if (!isCurrent || controller.signal.aborted) return;
         if (!json.conversation?.is_support) return;
+        cache.set(conversationId, json);
         setData(json);
         setShow(true);
-      } catch {
-        /* silent - sidebar just stays hidden */
+      } catch (err) {
+        if ((err as Error)?.name === 'AbortError') return;
+        /* silent - sidebar stays hidden or shows cached data */
       } finally {
-        if (!cancelled) setLoading(false);
+        if (isCurrent) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+
+    return () => {
+      isCurrent = false;
+      controller.abort();
+    };
   }, [conversationId]);
 
   // Track viewport for mobile-vs-desktop layout.
