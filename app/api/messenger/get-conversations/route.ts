@@ -89,36 +89,36 @@ async function buildDownlineRows(
     if (typeof c.counterparty_id === 'string') byCounterparty.set(c.counterparty_id, c);
   }
 
-  let membersData: { id: string; full_name: string | null; username: string | null; role: string | null }[] = [];
+  let membersData: { id: string; full_name: string | null; username: string | null; role: string | null; avatar_url: string | null }[] = [];
 
   if (parentId) {
     const [byParent, byReferring, bySubReferring] = await Promise.all([
-      svc.from('profiles').select('id, full_name, username, role').eq('parent_agent_id', parentId).eq('is_active', true).limit(500),
-      svc.from('profiles').select('id, full_name, username, role').eq('referring_agent_id', parentId).eq('is_active', true).limit(500),
-      svc.from('profiles').select('id, full_name, username, role').eq('referring_sub_agent_id', parentId).eq('is_active', true).limit(500),
+      svc.from('profiles').select('id, full_name, username, role, avatar_url').eq('parent_agent_id', parentId).eq('is_active', true).limit(500),
+      svc.from('profiles').select('id, full_name, username, role, avatar_url').eq('referring_agent_id', parentId).eq('is_active', true).limit(500),
+      svc.from('profiles').select('id, full_name, username, role, avatar_url').eq('referring_sub_agent_id', parentId).eq('is_active', true).limit(500),
     ]);
     membersData = [...((byParent.data ?? []) as never[]), ...((byReferring.data ?? []) as never[]), ...((bySubReferring.data ?? []) as never[])];
   } else {
     if (callerRole === 'admin') {
       const { data: topAgents } = await svc
         .from('profiles')
-        .select('id, full_name, username, role')
+        .select('id, full_name, username, role, avatar_url')
         .in('role', ['agent', 'super_agent'])
         .is('parent_agent_id', null)
         .eq('is_active', true)
         .limit(500);
       const { data: directResearchers } = await svc
         .from('profiles')
-        .select('id, full_name, username, role')
+        .select('id, full_name, username, role, avatar_url')
         .eq('referring_agent_id', viewerId)
         .eq('is_active', true)
         .limit(500);
       membersData = [...((topAgents ?? []) as never[]), ...((directResearchers ?? []) as never[])];
     } else {
       const [byParent, byReferring, bySubReferring] = await Promise.all([
-        svc.from('profiles').select('id, full_name, username, role').eq('parent_agent_id', viewerId).eq('is_active', true).limit(500),
-        svc.from('profiles').select('id, full_name, username, role').eq('referring_agent_id', viewerId).eq('is_active', true).limit(500),
-        svc.from('profiles').select('id, full_name, username, role').eq('referring_sub_agent_id', viewerId).eq('is_active', true).limit(500),
+        svc.from('profiles').select('id, full_name, username, role, avatar_url').eq('parent_agent_id', viewerId).eq('is_active', true).limit(500),
+        svc.from('profiles').select('id, full_name, username, role, avatar_url').eq('referring_agent_id', viewerId).eq('is_active', true).limit(500),
+        svc.from('profiles').select('id, full_name, username, role, avatar_url').eq('referring_sub_agent_id', viewerId).eq('is_active', true).limit(500),
       ]);
       membersData = [...((byParent.data ?? []) as never[]), ...((byReferring.data ?? []) as never[]), ...((bySubReferring.data ?? []) as never[])];
     }
@@ -154,7 +154,7 @@ async function buildDownlineRows(
         counterparty_full_name: m.full_name,
         counterparty_username: m.username,
         counterparty_role: m.role,
-        counterparty_avatar_url: null,
+        counterparty_avatar_url: (m as { avatar_url?: string | null }).avatar_url ?? null,
       });
     }
   }

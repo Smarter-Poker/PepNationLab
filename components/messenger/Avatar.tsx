@@ -1,4 +1,6 @@
+'use client';
 import Image from 'next/image';
+import { useState } from 'react';
 
 interface AvatarProps {
   name: string | null;
@@ -7,6 +9,8 @@ interface AvatarProps {
 }
 
 export default function Avatar({ name, size = 40, avatarUrl }: AvatarProps) {
+  const [imgError, setImgError] = useState(false);
+
   const initials = (name ?? '?')
     .split(' ')
     .filter(Boolean)
@@ -14,15 +18,22 @@ export default function Avatar({ name, size = 40, avatarUrl }: AvatarProps) {
     .map((w) => w[0]?.toUpperCase())
     .join('');
 
-  if (avatarUrl && avatarUrl !== 'default') {
+  // Validate the URL: must be a real http/https/data URL, not 'default' or empty.
+  const isValidUrl =
+    avatarUrl &&
+    avatarUrl !== 'default' &&
+    (avatarUrl.startsWith('http') || avatarUrl.startsWith('/') || avatarUrl.startsWith('data:'));
+
+  if (isValidUrl && !imgError) {
     return (
       <Image
-        src={avatarUrl}
+        src={avatarUrl!}
         alt={name ?? 'Avatar'}
         width={size}
         height={size}
         unoptimized
-        style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover' }}
+        style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+        onError={() => setImgError(true)}
       />
     );
   }
