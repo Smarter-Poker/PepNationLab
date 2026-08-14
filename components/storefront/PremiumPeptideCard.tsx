@@ -326,7 +326,6 @@ export default function PremiumPeptideCard({
               color: '#9BA3AB',
               textTransform: 'uppercase',
               letterSpacing: px(1),
-              textShadow: `0 0 ${px(10)} rgba(0,0,0,1), 0 0 ${px(20)} rgba(0,0,0,1), 0 0 ${px(30)} rgba(0,0,0,0.9)`,
               zIndex: 29, pointerEvents: 'none'
             }}>
               AGENT PRICE
