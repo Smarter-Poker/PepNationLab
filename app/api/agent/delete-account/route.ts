@@ -83,8 +83,15 @@ export async function POST(req: Request) {
         const { createServiceClient } = await import('@/lib/supabase/server');
         const service = await createServiceClient();
         
-        // Temporarily downgrade the target so the RPC allows it
-        await service.from('profiles').update({ role: 'agent' }).eq('id', body.target_id);
+        // Fetch target profile to save its original state and block platform owner deletion
+        const { data: targetProfile } = await service.from('profiles').select('role, is_admin_account').eq('id', body.target_id).single();
+        
+        if (targetProfile?.role === 'admin') {
+          return NextResponse.json({ error: 'The Super Admin Account Can Never Be Deleted.' }, { status: 403 });
+        }
+
+        // Temporarily downgrade the target so the RPC allows it (must clear is_admin_account too)
+        await service.from('profiles').update({ role: 'agent', is_admin_account: false }).eq('id', body.target_id);
         
         // Retry the RPC
         const retry = await supabase.rpc('soft_delete_account', {
@@ -94,7 +101,11 @@ export async function POST(req: Request) {
         
         if (retry.error) {
           // Restore the role if it failed for another reason (e.g. downline constraint)
-          await service.from('profiles').update({ role: 'admin' }).eq('id', body.target_id);
+          await service.from('profiles').update({ 
+            role: targetProfile?.role || 'super_agent', 
+            is_admin_account: targetProfile?.is_admin_account ?? true 
+          }).eq('id', body.target_id);
+          
           const retryMsg = String(retry.error.message || '');
           const downline = retryMsg.match(/has_downline:(\d+)/);
           if (downline) {
