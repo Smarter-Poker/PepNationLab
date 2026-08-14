@@ -125,7 +125,7 @@ export default function AgentDashboardClient({
   // so it can auto-open the matching order detail modal on mount.
   const orderDeepLink = searchParams.get('order') ?? null;
   
-  const defaultTab = (initialAgentProfile && (!initialAgentProfile.payment_handles || Object.keys(initialAgentProfile.payment_handles || {}).every((k) => !(initialAgentProfile.payment_handles as any)?.[k]))) ? 'Storefront Config' : 'Overview';
+  const defaultTab = 'Overview' as AgentTabName;
 
   // Whitelist of valid tabs. Any unknown / malformed ?tab= value (e.g. a link
   // whose "&" terminated the query string, leaving "Sales ") must fall back to
@@ -1210,16 +1210,6 @@ export default function AgentDashboardClient({
         {/* TAB: Storefront Configuration */}
         {activeTab === 'Storefront Config' && (
           <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            {handlesEmpty && (
-              <div style={{
-                background: 'var(--red-bg)', border: '1px solid var(--red)', borderRadius: 8, padding: 'var(--space-4)', marginBottom: 'var(--space-6)'
-              }}>
-                <h4 style={{ color: 'var(--red)', margin: '0 0 var(--space-2) 0', fontSize: '1rem' }}>Action Required: Add Payment Handles</h4>
-                <p style={{ color: 'var(--red)', fontSize: '0.9rem', margin: 0 }}>
-                  You Must Configure At Least One Payment Method Before You Can Access The Rest Of Your Dashboard. This Ensures Researchers Know How To Pay You.
-                </p>
-              </div>
-            )}
             <AgentStorefrontConfig
               displayName={displayName} setDisplayName={setDisplayName}
               slug={slug} setSlug={setSlug}

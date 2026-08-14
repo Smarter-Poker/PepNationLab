@@ -5,6 +5,7 @@ import { assertSameOrigin } from '@/lib/csrf';
 import { seedStorefrontFromHousePrices } from '@/lib/seed-storefront';
 import { validateStoreSlug } from '@/lib/store-slug';
 import { validatePassword } from '@/lib/password-policy';
+import { notifyWelcome } from '@/lib/notify';
 
 /**
  * GET /api/agent/agents
@@ -245,7 +246,9 @@ export async function POST(req: NextRequest) {
       disclaimer_v1_accepted: true,
       disclaimer_accepted_at: new Date().toISOString(),
       is_active: true,
-      must_change_password: true,
+      // Agent accounts go straight to the dashboard — no forced password change.
+      // A welcome notification guides them to complete their profile at their own pace.
+      must_change_password: false,
       provisioned_password: password,
       updated_at: new Date().toISOString(),
       tier: 'tier_3',
@@ -322,6 +325,10 @@ export async function POST(req: NextRequest) {
     } catch (provisionErr) {
       console.error('Failed to auto-provision agent products:', provisionErr);
     }
+
+    // Fire a welcome notification so the new account sees
+    // "Let's Complete Your Profile" on first login.
+    notifyWelcome(supabase, userId, makeSuperAgent ? 'super_agent' : 'agent').catch(() => {/* non-fatal */});
 
     return NextResponse.json({
       success: true,

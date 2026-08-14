@@ -851,15 +851,21 @@ export default async function proxy(request: NextRequest) {
     return redirectWithCookies(url);
   }
 
-  // Paths that must stay reachable while must_change_password is set:
-  // /account/change-password is the standalone reset page, and
-  // /api/agent/onboarding backs the /onboarding wizard, whose FIRST step is
-  // the in-wizard password change. Without the API exemption a flagged agent
-  // landing directly on /onboarding got a permanent "Could Not Load Your
-  // Setup" dead end (the wizard's initial GET was 403'd before it could even
-  // render the password step).
+  // must_change_password gate — researchers only.
+  //
+  // Researchers receive a provisioned temp password and MUST change it before
+  // accessing any protected surface. Agent/super_agent/sub_agent accounts are
+  // created by admins or super-agents and land directly on their dashboard —
+  // they are never forced to change their password on first login. Instead, a
+  // "Let's Complete Your Profile" welcome notification guides them to the
+  // Storefront Config tab at their own pace.
+  const agentRoles = new Set(['agent', 'super_agent', 'sub_agent', 'admin']);
+  const isAgentRole = agentRoles.has(profile?.role ?? '');
   const mustChangePasswordExempt =
-    pathname === '/account/change-password' || pathname === '/api/agent/onboarding';
+    isAgentRole ||
+    pathname === '/account/change-password' ||
+    pathname === '/api/agent/onboarding' ||
+    pathname === '/api/auth/change-password';
   if ((profile as { must_change_password?: boolean } | null)?.must_change_password === true && !mustChangePasswordExempt) {
     if (pathname.startsWith('/api/')) {
       return NextResponse.json({ error: 'Must change password' }, { status: 403 });

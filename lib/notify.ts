@@ -305,6 +305,36 @@ export async function notifyNewResearcher(
   });
 }
 
+/**
+ * Welcome notification for newly created agent / super_agent / sub_agent accounts.
+ *
+ * Sent immediately after account creation so the user's Notifications tab has
+ * a friendly "Let's Complete Your Profile" prompt waiting on first login.
+ * Clicking it deep-links to Storefront Config where they can add payment
+ * handles, set a display name, etc — completely at their own pace.
+ */
+export async function notifyWelcome(
+  supabase: SupabaseClient,
+  userId: string,
+  role: 'agent' | 'super_agent' | 'sub_agent',
+) {
+  const isSubAgent = role === 'sub_agent';
+  const dashUrl = isSubAgent
+    ? '/dashboard/agent?tab=Overview'
+    : '/dashboard/agent?tab=Storefront+Config';
+
+  await notify(supabase, {
+    userId,
+    type: 'notification',
+    title: `Welcome To Pep Nation Lab 🎉`,
+    body: isSubAgent
+      ? `Your account is ready. Head to your dashboard to get started.`
+      : `Your account is ready! Click here to complete your profile — add your payment handles, set a display name, and configure your storefront whenever you're ready.`,
+    url: dashUrl,
+    withPush: false, // first-login push permission isn't granted yet
+  });
+}
+
 /** Notify researcher/buyer their order was cancelled */
 export async function notifyOrderCancelled(
   supabase: SupabaseClient,
