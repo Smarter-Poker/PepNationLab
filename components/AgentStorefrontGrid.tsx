@@ -3058,7 +3058,7 @@ export default function AgentStorefrontGrid({
                 gap: 7,
                 padding: '8px 16px',
                 borderRadius: 20,
-                border: '2px solid transparent',
+                border: '1.5px solid #9BA3AB',
                 cursor: 'pointer',
                 fontWeight: 700,
                 fontSize: '0.75rem',
@@ -3067,10 +3067,8 @@ export default function AgentStorefrontGrid({
                 transition: 'all 0.2s ease',
                 whiteSpace: 'nowrap',
                 background: showCostView
-                  ? `linear-gradient(180deg, #00C4BC 0%, #009B94 100%) padding-box,
-                     linear-gradient(135deg, #b0b5bc 0%, #5c626b 20%, #e2e6eb 50%, #5c626b 80%, #b0b5bc 100%) border-box`
-                  : `linear-gradient(180deg, #1e2a35 0%, #131d26 100%) padding-box,
-                     linear-gradient(135deg, #b0b5bc 0%, #5c626b 20%, #e2e6eb 50%, #5c626b 80%, #b0b5bc 100%) border-box`,
+                  ? 'linear-gradient(180deg, #00C4BC 0%, #009B94 100%)'
+                  : 'linear-gradient(180deg, #1e2a35 0%, #131d26 100%)',
                 color: showCostView ? '#000d0c' : '#C8CDD4',
                 boxShadow: showCostView
                   ? 'inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 14px rgba(0,196,188,0.3)'
@@ -3079,15 +3077,15 @@ export default function AgentStorefrontGrid({
               onMouseEnter={e => {
                 if (!showCostView) {
                   e.currentTarget.style.color = '#FFFFFF';
-                  e.currentTarget.style.background = `linear-gradient(180deg, #243242 0%, #1a2635 100%) padding-box,
-                     linear-gradient(135deg, #c8cdd4 0%, #7a828c 20%, #f0f3f6 50%, #7a828c 80%, #c8cdd4 100%) border-box`;
+                  e.currentTarget.style.borderColor = '#C8CDD4';
+                  e.currentTarget.style.background = 'linear-gradient(180deg, #243242 0%, #1a2635 100%)';
                 }
               }}
               onMouseLeave={e => {
                 if (!showCostView) {
                   e.currentTarget.style.color = '#C8CDD4';
-                  e.currentTarget.style.background = `linear-gradient(180deg, #1e2a35 0%, #131d26 100%) padding-box,
-                     linear-gradient(135deg, #b0b5bc 0%, #5c626b 20%, #e2e6eb 50%, #5c626b 80%, #b0b5bc 100%) border-box`;
+                  e.currentTarget.style.borderColor = '#9BA3AB';
+                  e.currentTarget.style.background = 'linear-gradient(180deg, #1e2a35 0%, #131d26 100%)';
                 }
               }}
             >
