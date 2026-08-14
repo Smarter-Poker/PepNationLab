@@ -348,28 +348,18 @@ export default function AgentDashboardClient({
       return;
     }
 
-    // Block submit until AT LEAST ONE payment handle is filled in. The storefront
-    // needs at least one offline payment instruction shown to researchers.
+    // Payment handles and warehouse address are optional at setup.
+    // The agent can add them any time from the Storefront Config tab.
     const zelle = setupZelle.trim();
     const cashapp = setupCashApp.trim();
     const venmo = setupVenmo.trim();
     const applePay = setupApplePay.trim();
-    // Require at least one payment method at setup; agents add more later in Settings
-    if (!zelle && !cashapp && !venmo && !applePay) {
-      setError('At Least One Payment Method Is Required (Zelle, Cash App, Venmo, Or Apple Cash).');
-      return;
-    }
 
-    // Block submit until warehouse address is filled in (ship-from address).
     const whName = setupWhName.trim();
     const whStreet1 = setupWhStreet1.trim();
     const whCity = setupWhCity.trim();
     const whState = setupWhState.trim();
     const whZip = setupWhZip.trim();
-    if (!whName || !whStreet1 || !whCity || !whState || !whZip) {
-      setError('Warehouse Address Is Required (Name, Street, City, State, Zip).');
-      return;
-    }
 
     setLoading(true);
 
@@ -381,20 +371,20 @@ export default function AgentDashboardClient({
           slug: cleanSlug,
           display_name: setupDisplayName.trim(),
           is_active: true,
-          payment_handles: {
+          payment_handles: (zelle || cashapp || venmo || applePay) ? {
             zelle,
             cashapp,
             venmo,
             apple_cash: applePay,
-          },
-          warehouse_address: {
+          } : null,
+          warehouse_address: (whName && whStreet1 && whCity && whState && whZip) ? {
             name: whName,
             street1: whStreet1,
             street2: setupWhStreet2.trim() || null,
             city: whCity,
             state: whState,
             zip: whZip,
-          },
+          } : null,
         })
         .select()
         .maybeSingle();
@@ -505,9 +495,9 @@ export default function AgentDashboardClient({
             </div>
 
             <div style={{ paddingTop: 'var(--space-4)', marginTop: 'var(--space-2)' }}>
-              <h4 style={{ color: 'var(--teal)', fontSize: '0.95rem', marginBottom: 'var(--space-2)' }}>Payment Handles</h4>
+              <h4 style={{ color: 'var(--teal)', fontSize: '0.95rem', marginBottom: 'var(--space-2)' }}>Payment Handles <span style={{ fontWeight: 400, color: 'var(--grey-400)', fontSize: '0.82rem' }}>(Optional — add later in Storefront Config)</span></h4>
               <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 'var(--space-3)' }}>
-                Shown To Researchers After Checkout. At Least One Is Required.
+                Shown To Researchers After Checkout. You Can Skip This Now And Add Later.
               </p>
               <div className="grid-2">
                 <div className="form-group" style={{ marginTop: 0 }}>
@@ -532,19 +522,18 @@ export default function AgentDashboardClient({
             </div>
 
             <div style={{ paddingTop: 'var(--space-4)', marginTop: 'var(--space-2)' }}>
-              <h4 style={{ color: 'var(--teal)', fontSize: '0.95rem', marginBottom: 'var(--space-2)' }}>Warehouse Address</h4>
+              <h4 style={{ color: 'var(--teal)', fontSize: '0.95rem', marginBottom: 'var(--space-2)' }}>Warehouse Address <span style={{ fontWeight: 400, color: 'var(--grey-400)', fontSize: '0.82rem' }}>(Optional — add later)</span></h4>
               <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 'var(--space-3)' }}>
-                Used As The Ship-From Address When Buying Labels. Required Before Generating Shipping Labels.
+                Used As The Ship-From Address When Generating Shipping Labels. Not Required To Launch.
               </p>
               <div className="form-group">
                 <label className="form-label">Warehouse Contact Name</label>
-                <input type="text" className="form-input" value={setupWhName} onChange={(e) => setSetupWhName(e.target.value)} required />
+                <input type="text" className="form-input" value={setupWhName} onChange={(e) => setSetupWhName(e.target.value)} />
               </div>
               <div className="form-group">
                 <label className="form-label">Street Address Line 1</label>
                 <AddressAutocompleteInput
                   className="form-input"
-                  required
                   value={setupWhStreet1}
                   onChange={setSetupWhStreet1}
                   onSelect={(a) => { setSetupWhStreet1(a.street1); if (a.city) setSetupWhCity(a.city); if (a.state) setSetupWhState(a.state); if (a.zip) setSetupWhZip(a.zip); }}
@@ -557,15 +546,15 @@ export default function AgentDashboardClient({
               <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 'var(--space-3)' }}>
                 <div className="form-group" style={{ marginTop: 0 }}>
                   <label className="form-label">City</label>
-                  <input type="text" className="form-input" value={setupWhCity} onChange={(e) => setSetupWhCity(e.target.value)} required />
+                  <input type="text" className="form-input" value={setupWhCity} onChange={(e) => setSetupWhCity(e.target.value)} />
                 </div>
                 <div className="form-group" style={{ marginTop: 0 }}>
                   <label className="form-label">State</label>
-                  <input type="text" className="form-input" maxLength={2} value={setupWhState} onChange={(e) => setSetupWhState(e.target.value.toUpperCase())} required />
+                  <input type="text" className="form-input" maxLength={2} value={setupWhState} onChange={(e) => setSetupWhState(e.target.value.toUpperCase())} />
                 </div>
                 <div className="form-group" style={{ marginTop: 0 }}>
                   <label className="form-label">Zip</label>
-                  <input type="text" className="form-input" maxLength={10} value={setupWhZip} onChange={(e) => setSetupWhZip(e.target.value)} required />
+                  <input type="text" className="form-input" maxLength={10} value={setupWhZip} onChange={(e) => setSetupWhZip(e.target.value)} />
                 </div>
               </div>
             </div>
