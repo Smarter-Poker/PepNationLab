@@ -57,12 +57,12 @@ type CatMeta = {
 
 const CAT_META: Record<Category, CatMeta> = {
   order:        { label: 'Orders',         icon: ShoppingBag,  accent: '#00C4BC' },
-  payment:      { label: 'Payments',        icon: Clock,        accent: '#fb923c' },
+  payment:      { label: 'Payments',        icon: Clock,        accent: '#A8B4C0' },
   researcher:   { label: 'Researchers',     icon: UserPlus,     accent: '#7ee787' },
   commission:   { label: 'Commissions',     icon: TrendingUp,   accent: '#00C4BC' },
   referral:     { label: 'Referrals',       icon: Gift,         accent: '#38bdf8' },
-  coupon:       { label: 'Coupons',         icon: Ticket,       accent: '#fb923c' },
-  inventory:    { label: 'Inventory',       icon: AlertTriangle,accent: '#fb923c' },
+  coupon:       { label: 'Coupons',         icon: Ticket,       accent: '#A8B4C0' },
+  inventory:    { label: 'Inventory',       icon: AlertTriangle,accent: '#60a5fa' },
   subagent:     { label: 'Sub-Agents',      icon: Users,        accent: '#60a5fa' },
   wallet:       { label: 'Wallet',          icon: Wallet,       accent: '#a3a3a3' },
   refund:       { label: 'Refunds',         icon: RotateCcw,    accent: '#ff6b6b' },
@@ -70,9 +70,9 @@ const CAT_META: Record<Category, CatMeta> = {
   subscription: { label: 'Subscriptions',   icon: Repeat,       accent: '#60a5fa' },
   invitation:   { label: 'Invitations',     icon: Mail,         accent: '#38bdf8' },
   proof:        { label: 'Receipts',        icon: FileCheck,    accent: '#00E5FF' },
-  broadcast:    { label: 'Broadcasts',      icon: Megaphone,    accent: '#fb923c' },
-  cart:         { label: 'Carts',           icon: ShoppingCart, accent: '#fb923c' },
-  milestone:    { label: 'Milestones',      icon: Trophy,       accent: '#facc15' },
+  broadcast:    { label: 'Broadcasts',      icon: Megaphone,    accent: '#A8B4C0' },
+  cart:         { label: 'Carts',           icon: ShoppingCart, accent: '#60a5fa' },
+  milestone:    { label: 'Milestones',      icon: Trophy,       accent: '#00C4BC' },
 };
 
 const ALL_CATS = Object.keys(CAT_META) as Category[];
@@ -136,9 +136,9 @@ function toCsv(rows: Item[]): string {
 
 /* ── Status badge ──────────────────────────────────────────────────────── */
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
-  pending_customer_payment: { label: 'Awaiting Payment', color: '#fb923c', bg: 'rgba(251,146,60,0.12)' },
-  agent_approval_pending:   { label: 'Needs Approval',   color: '#fb923c', bg: 'rgba(251,146,60,0.12)' },
-  admin_approval_pending:   { label: 'Needs Approval',   color: '#fb923c', bg: 'rgba(251,146,60,0.12)' },
+  pending_customer_payment: { label: 'Awaiting Payment', color: '#A8B4C0', bg: 'rgba(168,180,192,0.10)' },
+  agent_approval_pending:   { label: 'Needs Approval',   color: '#38bdf8', bg: 'rgba(56,189,248,0.10)' },
+  admin_approval_pending:   { label: 'Needs Approval',   color: '#38bdf8', bg: 'rgba(56,189,248,0.10)' },
   approved_ship:            { label: 'Approved',         color: '#4ade80', bg: 'rgba(74,222,128,0.12)' },
   approved_pickup:          { label: 'Approved',         color: '#4ade80', bg: 'rgba(74,222,128,0.12)' },
   in_fulfillment:           { label: 'Fulfillment',      color: '#00C4BC', bg: 'rgba(0,196,188,0.12)' },
@@ -146,7 +146,7 @@ const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> =
   delivered:                { label: 'Delivered',        color: '#4ade80', bg: 'rgba(74,222,128,0.12)' },
   cancelled:                { label: 'Cancelled',        color: '#ff6b6b', bg: 'rgba(255,107,107,0.12)' },
   active:                   { label: 'Active',           color: '#4ade80', bg: 'rgba(74,222,128,0.12)' },
-  paused:                   { label: 'Paused',           color: '#fb923c', bg: 'rgba(251,146,60,0.12)' },
+  paused:                   { label: 'Paused',           color: '#A8B4C0', bg: 'rgba(168,180,192,0.10)' },
   completed:                { label: 'Completed',        color: '#4ade80', bg: 'rgba(74,222,128,0.12)' },
   pending:                  { label: 'Pending',          color: '#a3a3a3', bg: 'rgba(163,163,163,0.12)' },
   failed:                   { label: 'Failed',           color: '#ff6b6b', bg: 'rgba(255,107,107,0.12)' },
@@ -280,7 +280,7 @@ function SummaryBar({
     { label: 'Revenue In',  value: money(summary.totalIn) || '$0.00',       prev: prevSummary?.totalIn,    prevVal: money(prevSummary?.totalIn),  color: '#4ade80', icon: <TrendingUp  size={14} /> },
     { label: 'Paid Out',    value: money(summary.totalOut) || '$0.00',       prev: prevSummary?.totalOut,   prevVal: money(prevSummary?.totalOut), color: '#ff6b6b', icon: <DollarSign  size={14} /> },
     { label: 'Orders',      value: String(summary.orderCount),               prev: prevSummary?.orderCount, color: '#00C4BC', icon: <ShoppingBag  size={14} /> },
-    { label: 'Alerts',      value: String(summary.alertCount),               prev: prevSummary?.alertCount, color: '#fb923c', icon: <AlertTriangle size={14} /> },
+    { label: 'Alerts',      value: String(summary.alertCount),               prev: prevSummary?.alertCount, color: '#A8B4C0', icon: <AlertTriangle size={14} /> },
   ];
 
   return (
@@ -337,12 +337,12 @@ function NeedsAttention({ items, onItemClick }: { items: Item[]; onItemClick: (h
   return (
     <div style={{
       borderRadius: 14, padding: '14px 16px', marginBottom: 20,
-      background: 'linear-gradient(135deg, rgba(251,146,60,0.07), rgba(251,146,60,0.02))',
-      border: '1px solid rgba(251,146,60,0.25)',
+      background: 'linear-gradient(135deg, rgba(56,189,248,0.06), rgba(0,196,188,0.03))',
+      border: '1px solid rgba(56,189,248,0.20)',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-        <AlertTriangle size={15} color="#fb923c" />
-        <span style={{ color: '#fb923c', fontSize: '0.72rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+        <AlertTriangle size={15} color="#38bdf8" />
+        <span style={{ color: '#38bdf8', fontSize: '0.72rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
           Needs Attention · {urgent.length} item{urgent.length !== 1 ? 's' : ''}
         </span>
       </div>
@@ -360,8 +360,8 @@ function NeedsAttention({ items, onItemClick }: { items: Item[]; onItemClick: (h
               className="pna-attn-row"
               style={{
                 display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px',
-                borderRadius: 9, background: 'rgba(251,146,60,0.06)',
-                border: '1px solid rgba(251,146,60,0.15)',
+                borderRadius: 9, background: 'rgba(56,189,248,0.04)',
+                border: '1px solid rgba(56,189,248,0.12)',
                 cursor: 'pointer',
               }}
             >
@@ -373,7 +373,7 @@ function NeedsAttention({ items, onItemClick }: { items: Item[]; onItemClick: (h
                 )}
               </div>
               {it.amount && it.amount > 0 && (
-                <span style={{ color: '#fb923c', fontWeight: 900, fontSize: '0.82rem', flexShrink: 0 }}>
+                <span style={{ color: '#4ade80', fontWeight: 900, fontSize: '0.82rem', flexShrink: 0 }}>
                   {money(it.amount)}
                 </span>
               )}
@@ -385,7 +385,7 @@ function NeedsAttention({ items, onItemClick }: { items: Item[]; onItemClick: (h
           );
         })}
         {urgent.length > 5 && (
-          <div style={{ textAlign: 'center', color: '#fb923c', fontSize: '0.72rem', fontWeight: 700, padding: '4px 0' }}>
+          <div style={{ textAlign: 'center', color: '#38bdf8', fontSize: '0.72rem', fontWeight: 700, padding: '4px 0' }}>
             +{urgent.length - 5} more — filter by category to see all
           </div>
         )}
@@ -615,7 +615,7 @@ export default function AgentActivityFeed() {
         .pna-row       { transition: background 0.15s, transform 0.12s; }
         .pna-row:hover { background: rgba(255,255,255,0.065) !important; transform: translateX(3px); }
         .pna-attn-row  { transition: background 0.15s, transform 0.12s; }
-        .pna-attn-row:hover { background: rgba(251,146,60,0.1) !important; transform: translateX(2px); }
+        .pna-attn-row:hover { background: rgba(56,189,248,0.08) !important; transform: translateX(2px); }
         .pna-chip      { transition: all 0.15s ease; cursor:pointer; }
         .pna-chip:hover { border-color: rgba(255,255,255,0.3) !important; }
         .pna-win-btn   { transition: all 0.15s ease; cursor:pointer; }
