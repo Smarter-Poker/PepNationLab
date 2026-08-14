@@ -201,8 +201,12 @@ async function buildDownlineRows(
 
 async function shouldUseHierarchy(
   svc: Awaited<ReturnType<typeof createServiceClient>>,
-  caller: { id: string; role: string; is_super_agent: boolean; is_sub_agent: boolean },
+  caller: { id: string; role: string; is_super_agent: boolean; is_sub_agent: boolean; is_admin_account: boolean },
 ): Promise<boolean> {
+  // Admin accounts (is_admin_account=true, e.g. Savage Brands) are brand-level
+  // admins, NOT platform superadmins. They must always see the flat messenger
+  // (their own conversations only) — never the platform-wide downline hierarchy.
+  if (caller.is_admin_account) return false;
   if (caller.role === 'admin') return true;
   if (caller.is_super_agent === true) return true;
   if (caller.is_sub_agent === true) return false;
@@ -243,7 +247,7 @@ export async function POST(req: NextRequest) {
 
   const { data: me } = await svc
     .from('profiles')
-    .select('id, role, is_super_agent, is_sub_agent, referring_agent_id, referring_sub_agent_id')
+    .select('id, role, is_super_agent, is_sub_agent, is_admin_account, referring_agent_id, referring_sub_agent_id')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -259,6 +263,7 @@ export async function POST(req: NextRequest) {
       role,
       is_super_agent: (me as { is_super_agent?: boolean }).is_super_agent === true,
       is_sub_agent: (me as { is_sub_agent?: boolean }).is_sub_agent === true,
+      is_admin_account: (me as { is_admin_account?: boolean }).is_admin_account === true,
     });
 
     if (hierarchical) {
