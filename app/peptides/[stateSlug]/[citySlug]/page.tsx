@@ -20,13 +20,14 @@ import { getCityFAQs } from '@/lib/cities/city-content';
 import { getResearchAnchors } from '@/lib/cities/research-anchors';
 import { getCityWikipediaUrl } from '@/lib/cities/wikipedia-links';
 import { buildOffer, getShippingDetailNodes } from '@/lib/structured-data/merchant';
+import { isSeoIndexableCity } from '@/lib/cities/seo-tier';
 
 // ISR: regenerate each city page at most every 5 minutes so the Top 10 grid
 // tracks the live storefront catalog - admin price/name changes flow through
 // without a redeploy.
 export const revalidate = 300;
 
-// ─── Static params (build-time pre-rendering) ─────────────────────
+// ─── Static params (build-time pre-rendering) ─────────────────
 // Scale-ready ISR: at build we pre-render ONLY the highest-priority markets
 // (sorted by tier, then population) up to this small cap. Every other city -
 // and any city added later - is rendered on first request via ISR and cached
@@ -48,7 +49,7 @@ export async function generateStaticParams() {
     }));
 }
 
-// ─── Per-city metadata ──────────────────────────────────────────────────
+// ─── Per-city metadata ──────────────────────────────────────
 export async function generateMetadata({
   params,
 }: {
@@ -58,10 +59,15 @@ export async function generateMetadata({
   const city = getCity(stateSlug, citySlug);
   if (!city) return { robots: { index: false } };
 
-  const title = `Research Peptides In ${city.name}, ${city.stateAbbr} | Pep Nation Lab`;
+  // 2026-08-14 SEO audit: only major metros are indexable (see
+  // lib/cities/seo-tier.ts) and the retained pages target the transactional
+  // phrasing competitors actually rank for ("buy peptides <city>") instead of
+  // the informational "research peptides in <city>" nobody searches.
+  const indexable = isSeoIndexableCity(city);
+  const title = `Buy Research Peptides In ${city.name}, ${city.stateAbbr} | Pep Nation Lab`;
   // Lead with the keyword + city + offer (SERP-visible), then append the city's
   // unique local blurb so every meta description is genuinely distinct.
-  const description = `Research-grade peptides for verified researchers in ${city.name}, ${city.stateAbbr} - BPC-157, Semaglutide, Tirzepatide & 100+ compounds at wholesale pricing. ${city.localBlurb}`;
+  const description = `Buy research-grade peptides for laboratory use in ${city.name}, ${city.stateAbbr} - BPC-157, Semaglutide, Tirzepatide & 100+ compounds for sale at wholesale pricing with batch COAs. ${city.localBlurb}`;
 
   return {
     title,
@@ -87,10 +93,12 @@ export async function generateMetadata({
       images: ['/og-card.png'],
     },
     robots: {
-      index: true,
+      // noindex,FOLLOW for the long tail: links keep flowing through the
+      // city mesh, but only retained metros enter the index.
+      index: indexable,
       follow: true,
       googleBot: {
-        index: true,
+        index: indexable,
         follow: true,
         'max-snippet': -1,
         'max-image-preview': 'large',
@@ -100,7 +108,7 @@ export async function generateMetadata({
   };
 }
 
-// ─── Page shell (server component) ───────────────────────────────────────
+// ─── Page shell (server component) ─────────────────────────────────
 export default async function CityLandingPage({
   params,
 }: {
