@@ -4,6 +4,7 @@ import { assertSameOrigin } from '@/lib/csrf';
 import { requireSession, canInvite } from '@/lib/messenger/server';
 import { messengerRateLimit, messengerRateLimitResponse } from '@/lib/messengerRateLimit';
 import { maskAdminCounterparty } from '@/lib/messenger/identity';
+import { isPlatformAdminId } from '@/lib/platform-admins';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -203,9 +204,12 @@ async function shouldUseHierarchy(
   svc: Awaited<ReturnType<typeof createServiceClient>>,
   caller: { id: string; role: string; is_super_agent: boolean; is_sub_agent: boolean; is_admin_account: boolean },
 ): Promise<boolean> {
-  // Admin accounts (is_admin_account=true, e.g. Savage Brands) are brand-level
-  // admins, NOT platform superadmins. They must always see the flat messenger
-  // (their own conversations only) — never the platform-wide downline hierarchy.
+  // Platform-admin-allowlisted users (e.g. Savage Brands — role='super_agent'
+  // but granted admin-panel access via PLATFORM_ADMIN_IDS) must always see
+  // the flat, agent-level messenger. They are brand owners, not platform ops.
+  if (isPlatformAdminId(caller.id)) return false;
+  // Admin accounts flagged in the DB (is_admin_account=true) also always get
+  // the flat view — they are brand-level admins, not the platform superadmin.
   if (caller.is_admin_account) return false;
   if (caller.role === 'admin') return true;
   if (caller.is_super_agent === true) return true;

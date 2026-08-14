@@ -2969,129 +2969,148 @@ export default function AgentStorefrontGrid({
           prices from retail to the owner's buy cost so they can audit margins
           at a glance without leaving the storefront. */}
       {isStorefrontOwner && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          marginBottom: 20,
-          padding: '11px 16px',
-          borderRadius: 14,
-          // Thick silver gradient border — same chrome treatment as the product cards
-          border: '3px solid transparent',
-          background: showCostView
-            ? `rgba(0, 196, 188, 0.07) padding-box,
-               linear-gradient(135deg, #b0b5bc 0%, #5c626b 20%, #e2e6eb 50%, #5c626b 80%, #b0b5bc 100%) border-box`
-            : `rgba(10, 18, 28, 0.90) padding-box,
-               linear-gradient(135deg, #b0b5bc 0%, #5c626b 20%, #e2e6eb 50%, #5c626b 80%, #b0b5bc 100%) border-box`,
-          backdropFilter: 'blur(12px)',
-          boxShadow: showCostView
-            ? 'inset 0 1px 0 rgba(0,196,188,0.10), 0 6px 24px rgba(0,0,0,0.55)'
-            : 'inset 0 1px 0 rgba(255,255,255,0.05), 0 6px 24px rgba(0,0,0,0.55)',
-          transition: 'all 0.25s ease',
-          flexWrap: 'wrap',
-        }}>
-          {/* Icon + label */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={showCostView ? '#00C4BC' : '#A8B4C0'} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ transition: 'stroke 0.2s' }}>
-              <rect x="3" y="3" width="18" height="18" rx="2"/>
-              <path d="M3 9h18M9 21V9"/>
-            </svg>
-            <span style={{
-              fontSize: '0.68rem',
-              fontWeight: 800,
-              color: showCostView ? '#00C4BC' : '#A8B4C0',
-              textTransform: 'uppercase',
-              letterSpacing: '0.1em',
-              whiteSpace: 'nowrap',
-              transition: 'color 0.2s',
-            }}>
-              Owner View
-            </span>
-          </div>
-
-          {/* Divider */}
-          <div style={{
-            width: 1, height: 18, flexShrink: 0,
-            background: showCostView ? 'rgba(0,196,188,0.3)' : 'rgba(192,197,206,0.2)',
-            transition: 'background 0.2s',
-          }} />
-
-          {/* Status text — slightly larger than before */}
-          <span style={{
-            fontSize: '0.88rem',
-            color: showCostView ? '#A8B4C0' : 'rgba(168,180,192,0.70)',
-            fontWeight: 500,
-            transition: 'color 0.2s',
-            flex: 1,
-            minWidth: 0,
+        <>
+          {/* Mobile-responsive styles for the owner banner */}
+          <style>{`
+            .owner-banner { flex-wrap: nowrap !important; }
+            .owner-banner-desc { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; min-width: 0; }
+            .owner-banner-divider { flex-shrink: 0; }
+            .owner-banner-btn-text { white-space: nowrap; }
+            @media (max-width: 540px) {
+              .owner-banner-desc { display: none !important; }
+              .owner-banner-divider { display: none !important; }
+            }
+            @media (max-width: 360px) {
+              .owner-banner-btn-text { display: none !important; }
+            }
+          `}</style>
+          <div className="owner-banner" style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            marginBottom: 20,
+            padding: '11px 14px',
+            borderRadius: 14,
+            border: '3px solid transparent',
+            background: showCostView
+              ? `rgba(0, 196, 188, 0.07) padding-box,
+                 linear-gradient(135deg, #b0b5bc 0%, #5c626b 20%, #e2e6eb 50%, #5c626b 80%, #b0b5bc 100%) border-box`
+              : `rgba(10, 18, 28, 0.90) padding-box,
+                 linear-gradient(135deg, #b0b5bc 0%, #5c626b 20%, #e2e6eb 50%, #5c626b 80%, #b0b5bc 100%) border-box`,
+            backdropFilter: 'blur(12px)',
+            boxShadow: showCostView
+              ? 'inset 0 1px 0 rgba(0,196,188,0.10), 0 6px 24px rgba(0,0,0,0.55)'
+              : 'inset 0 1px 0 rgba(255,255,255,0.05), 0 6px 24px rgba(0,0,0,0.55)',
+            transition: 'all 0.25s ease',
           }}>
-            {showCostView
-              ? 'Cost Mode Active — Prices shown are your agent buy cost'
-              : 'View your cost of goods for each product'}
-          </span>
+            {/* Icon + label */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={showCostView ? '#00C4BC' : '#A8B4C0'} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ transition: 'stroke 0.2s', flexShrink: 0 }}>
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <path d="M3 9h18M9 21V9"/>
+              </svg>
+              <span style={{
+                fontSize: '0.68rem',
+                fontWeight: 800,
+                color: showCostView ? '#00C4BC' : '#A8B4C0',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                whiteSpace: 'nowrap',
+                transition: 'color 0.2s',
+              }}>
+                Owner View
+              </span>
+            </div>
 
-          {/* Toggle button — thick silver gradient border matching banner */}
-          <button
-            type="button"
-            id="owner-cost-view-toggle"
-            aria-pressed={showCostView}
-            onClick={() => setShowCostView(v => !v)}
-            style={{
-              flexShrink: 0,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 7,
-              padding: '8px 18px',
-              borderRadius: 20,
-              border: '2px solid transparent',
-              cursor: 'pointer',
-              fontWeight: 700,
-              fontSize: '0.75rem',
-              letterSpacing: '0.05em',
-              textTransform: 'uppercase',
-              transition: 'all 0.2s ease',
-              background: showCostView
-                ? `linear-gradient(180deg, #00C4BC 0%, #009B94 100%) padding-box,
-                   linear-gradient(135deg, #b0b5bc 0%, #5c626b 20%, #e2e6eb 50%, #5c626b 80%, #b0b5bc 100%) border-box`
-                : `linear-gradient(180deg, #1e2a35 0%, #131d26 100%) padding-box,
-                   linear-gradient(135deg, #b0b5bc 0%, #5c626b 20%, #e2e6eb 50%, #5c626b 80%, #b0b5bc 100%) border-box`,
-              color: showCostView ? '#000d0c' : '#C8CDD4',
-              boxShadow: showCostView
-                ? 'inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 14px rgba(0,196,188,0.3)'
-                : 'inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 12px rgba(0,0,0,0.5)',
-            }}
-            onMouseEnter={e => {
-              if (!showCostView) {
-                e.currentTarget.style.color = '#FFFFFF';
-                e.currentTarget.style.background = `linear-gradient(180deg, #243242 0%, #1a2635 100%) padding-box,
-                   linear-gradient(135deg, #c8cdd4 0%, #7a828c 20%, #f0f3f6 50%, #7a828c 80%, #c8cdd4 100%) border-box`;
-              }
-            }}
-            onMouseLeave={e => {
-              if (!showCostView) {
-                e.currentTarget.style.color = '#C8CDD4';
-                e.currentTarget.style.background = `linear-gradient(180deg, #1e2a35 0%, #131d26 100%) padding-box,
-                   linear-gradient(135deg, #b0b5bc 0%, #5c626b 20%, #e2e6eb 50%, #5c626b 80%, #b0b5bc 100%) border-box`;
-              }
-            }}
-          >
-            {/* Eye icon */}
-            <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              {showCostView ? (
-                <>
-                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                  <line x1="1" y1="1" x2="23" y2="23"/>
-                </>
-              ) : (
-                <>
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                  <circle cx="12" cy="12" r="3"/>
-                </>
-              )}
-            </svg>
-            {showCostView ? 'Hide My Cost' : 'Show My Cost'}
-          </button>
-        </div>
+            {/* Divider — hidden on mobile */}
+            <div className="owner-banner-divider" style={{
+              width: 1, height: 18,
+              background: showCostView ? 'rgba(0,196,188,0.3)' : 'rgba(192,197,206,0.2)',
+              transition: 'background 0.2s',
+            }} />
+
+            {/* Status text — hidden on small screens, truncates with ellipsis */}
+            <span className="owner-banner-desc" style={{
+              fontSize: '0.88rem',
+              color: showCostView ? '#A8B4C0' : 'rgba(168,180,192,0.70)',
+              fontWeight: 500,
+              transition: 'color 0.2s',
+              flex: 1,
+            }}>
+              {showCostView
+                ? 'Cost Mode Active — Prices shown are your agent buy cost'
+                : 'View your cost of goods for each product'}
+            </span>
+
+            {/* Spacer pushes button to the right when desc is hidden */}
+            <div style={{ flex: 1, minWidth: 0 }} className="owner-banner-spacer" />
+
+            {/* Toggle button */}
+            <button
+              type="button"
+              id="owner-cost-view-toggle"
+              aria-pressed={showCostView}
+              onClick={() => setShowCostView(v => !v)}
+              style={{
+                flexShrink: 0,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 7,
+                padding: '8px 16px',
+                borderRadius: 20,
+                border: '2px solid transparent',
+                cursor: 'pointer',
+                fontWeight: 700,
+                fontSize: '0.75rem',
+                letterSpacing: '0.05em',
+                textTransform: 'uppercase',
+                transition: 'all 0.2s ease',
+                whiteSpace: 'nowrap',
+                background: showCostView
+                  ? `linear-gradient(180deg, #00C4BC 0%, #009B94 100%) padding-box,
+                     linear-gradient(135deg, #b0b5bc 0%, #5c626b 20%, #e2e6eb 50%, #5c626b 80%, #b0b5bc 100%) border-box`
+                  : `linear-gradient(180deg, #1e2a35 0%, #131d26 100%) padding-box,
+                     linear-gradient(135deg, #b0b5bc 0%, #5c626b 20%, #e2e6eb 50%, #5c626b 80%, #b0b5bc 100%) border-box`,
+                color: showCostView ? '#000d0c' : '#C8CDD4',
+                boxShadow: showCostView
+                  ? 'inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 14px rgba(0,196,188,0.3)'
+                  : 'inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 12px rgba(0,0,0,0.5)',
+              }}
+              onMouseEnter={e => {
+                if (!showCostView) {
+                  e.currentTarget.style.color = '#FFFFFF';
+                  e.currentTarget.style.background = `linear-gradient(180deg, #243242 0%, #1a2635 100%) padding-box,
+                     linear-gradient(135deg, #c8cdd4 0%, #7a828c 20%, #f0f3f6 50%, #7a828c 80%, #c8cdd4 100%) border-box`;
+                }
+              }}
+              onMouseLeave={e => {
+                if (!showCostView) {
+                  e.currentTarget.style.color = '#C8CDD4';
+                  e.currentTarget.style.background = `linear-gradient(180deg, #1e2a35 0%, #131d26 100%) padding-box,
+                     linear-gradient(135deg, #b0b5bc 0%, #5c626b 20%, #e2e6eb 50%, #5c626b 80%, #b0b5bc 100%) border-box`;
+                }
+              }}
+            >
+              {/* Eye icon */}
+              <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0 }}>
+                {showCostView ? (
+                  <>
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                  </>
+                ) : (
+                  <>
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </>
+                )}
+              </svg>
+              <span className="owner-banner-btn-text">
+                {showCostView ? 'Hide My Cost' : 'Show My Cost'}
+              </span>
+            </button>
+          </div>
+        </>
       )}
 
       {/* Did You Mean Banner */}
