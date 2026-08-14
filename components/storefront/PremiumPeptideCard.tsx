@@ -9,9 +9,12 @@ interface Props {
   msrp?: number;
   savings?: number;
   /** Label shown next to the savings amount. Defaults to "YOU SAVE".
-   *  Pass "YOUR MARGIN" when rendering in owner cost-view mode. */
+   *  Pass "YOUR PROFIT" when rendering in owner cost-view mode. */
   savingsLabel?: string;
   wholesalePrice?: number;
+  /** When true, overlays "AGENT PRICE" over the baked-in "WHOLESALE PRICE"
+   *  text in the card images. Only true when the owner cost-view toggle is ON. */
+  isOwnerCostMode?: boolean;
   inStockText?: string;
   pickupText?: string;
   buttonText?: string;
@@ -37,6 +40,7 @@ export default function PremiumPeptideCard({
   savings = 25.00,
   savingsLabel = "YOU SAVE",
   wholesalePrice = 29.97,
+  isOwnerCostMode = false,
   inStockText = "IN STOCK",
   pickupText = "AVAILABLE FOR SAME DAY PICKUP",
   buttonText = "Add To Cart",
@@ -308,24 +312,26 @@ export default function PremiumPeptideCard({
             </>
           )}
 
-          {/* Render 'AGENT PRICE' label over the baked-in 'WHOLESALE PRICE' text
-              in the card images. No background box needed — the heavy dark
-              text-shadow knocks back the baked label visually. */}
-          <div style={{
-            position: 'absolute',
-            left: px(380), width: px(280), top: px(660),
-            display: 'flex', justifyContent: 'center',
-            fontFamily: 'var(--font-roboto-condensed, sans-serif)',
-            fontWeight: 700,
-            fontSize: px(21),
-            color: '#9BA3AB',
-            textTransform: 'uppercase',
-            letterSpacing: px(1),
-            textShadow: `0 0 ${px(10)} rgba(0,0,0,1), 0 0 ${px(20)} rgba(0,0,0,1), 0 0 ${px(30)} rgba(0,0,0,0.9)`,
-            zIndex: 29, pointerEvents: 'none'
-          }}>
-            AGENT PRICE
-          </div>
+          {/* "AGENT PRICE" label — only rendered when the owner cost-view
+              toggle is ON. When OFF, the baked-in "WHOLESALE PRICE" text
+              in the card images shows through normally. */}
+          {isOwnerCostMode && (
+            <div style={{
+              position: 'absolute',
+              left: px(380), width: px(280), top: px(660),
+              display: 'flex', justifyContent: 'center',
+              fontFamily: 'var(--font-roboto-condensed, sans-serif)',
+              fontWeight: 700,
+              fontSize: px(21),
+              color: '#9BA3AB',
+              textTransform: 'uppercase',
+              letterSpacing: px(1),
+              textShadow: `0 0 ${px(10)} rgba(0,0,0,1), 0 0 ${px(20)} rgba(0,0,0,1), 0 0 ${px(30)} rgba(0,0,0,0.9)`,
+              zIndex: 29, pointerEvents: 'none'
+            }}>
+              AGENT PRICE
+            </div>
+          )}
 
           {/* Centered Agent Price Digits */}
           <div style={{

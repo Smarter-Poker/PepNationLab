@@ -2456,6 +2456,7 @@ export default function AgentStorefrontGrid({
           })()}
           isPinned={pinnedNames.has(group.name)}
           isWishlisted={wishlist.has(activeVariant.product_id)}
+          isOwnerCostMode={hasCostData}
           onCompareToggle={(e) => {
             if (e.target.checked) {
               if (pinnedNames.size >= 4) { toast.error('You can compare up to 4 compounds at a time.'); return; }
