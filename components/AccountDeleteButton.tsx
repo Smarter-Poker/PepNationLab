@@ -51,14 +51,19 @@ export default function AccountDeleteButton({
         ? `${noun} Was Already Deleted.`
         : `✓ ${targetName ? `"${targetName}"` : noun} Successfully Deleted`;
 
-      // Fire the toast BEFORE closing the modal so it survives the unmount
+      // Reset component state immediately so it's clean
+      setAsking(false);
+      setConfirmText('');
+      setReason('');
+      setWorking(false);
+
+      // Fire toast — Toaster is in root layout (z-index 9999999), survives any modal unmount
       toast.success(successMsg, { duration: 5000 });
 
-      // Small delay so the toast registers in Sonner's portal before
-      // onDeleted() triggers onClose() and unmounts this component
+      // Give the toast 100ms to commit to Sonner's portal, then trigger the parent close
       setTimeout(() => {
         onDeleted?.();
-      }, 80);
+      }, 100);
     } catch {
       toast.error('Network Error. Please Try Again.');
       setWorking(false);
