@@ -108,6 +108,8 @@ export async function POST(req: Request) {
         }
         
         console.log('[delete-account] Success (Admin Bypass). RPC result:', JSON.stringify(retry.data));
+        // Force the profile to be marked as deleted in case the RPC misses it
+        await service.from('profiles').update({ is_active: false, deleted_at: new Date().toISOString() }).eq('id', body.target_id);
         return NextResponse.json({ ok: true, result: retry.data });
       }
       return NextResponse.json({ error: 'Admin Accounts Cannot Be Deleted.' }, { status: 400 });
@@ -125,6 +127,11 @@ export async function POST(req: Request) {
     }
     return safeError('agent.delete-account', error);
   }
+
+  // Force the profile to be marked as deleted in case the RPC misses it
+  const { createServiceClient } = await import('@/lib/supabase/server');
+  const service = await createServiceClient();
+  await service.from('profiles').update({ is_active: false, deleted_at: new Date().toISOString() }).eq('id', body.target_id);
 
   console.log('[delete-account] Success. RPC result:', JSON.stringify(data));
   return NextResponse.json({ ok: true, result: data });
@@ -164,6 +171,11 @@ export async function PATCH(req: Request) {
     }
     return safeError('agent.restore-account', error);
   }
+
+  // Force the profile to be marked as active in case the restore RPC misses it
+  const { createServiceClient } = await import('@/lib/supabase/server');
+  const service = await createServiceClient();
+  await service.from('profiles').update({ is_active: true, deleted_at: null }).eq('id', body.target_id);
 
   return NextResponse.json({ ok: true, result: data });
 }
