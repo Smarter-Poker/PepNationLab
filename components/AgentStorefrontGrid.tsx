@@ -2974,18 +2974,19 @@ export default function AgentStorefrontGrid({
           alignItems: 'center',
           gap: 12,
           marginBottom: 20,
-          padding: '10px 16px',
+          padding: '11px 16px',
           borderRadius: 14,
+          // Thick silver gradient border — same chrome treatment as the product cards
+          border: '3px solid transparent',
           background: showCostView
-            ? 'rgba(0, 196, 188, 0.08)'
-            : 'rgba(15, 25, 35, 0.85)',
-          border: showCostView
-            ? '1px solid rgba(0, 196, 188, 0.35)'
-            : '1px solid rgba(192, 197, 206, 0.15)',
+            ? `rgba(0, 196, 188, 0.07) padding-box,
+               linear-gradient(135deg, #b0b5bc 0%, #5c626b 20%, #e2e6eb 50%, #5c626b 80%, #b0b5bc 100%) border-box`
+            : `rgba(10, 18, 28, 0.90) padding-box,
+               linear-gradient(135deg, #b0b5bc 0%, #5c626b 20%, #e2e6eb 50%, #5c626b 80%, #b0b5bc 100%) border-box`,
           backdropFilter: 'blur(12px)',
           boxShadow: showCostView
-            ? 'inset 0 1px 0 rgba(0,196,188,0.12), 0 4px 20px rgba(0,0,0,0.5)'
-            : 'inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 20px rgba(0,0,0,0.5)',
+            ? 'inset 0 1px 0 rgba(0,196,188,0.10), 0 6px 24px rgba(0,0,0,0.55)'
+            : 'inset 0 1px 0 rgba(255,255,255,0.05), 0 6px 24px rgba(0,0,0,0.55)',
           transition: 'all 0.25s ease',
           flexWrap: 'wrap',
         }}>
@@ -3015,10 +3016,10 @@ export default function AgentStorefrontGrid({
             transition: 'background 0.2s',
           }} />
 
-          {/* Status text */}
+          {/* Status text — slightly larger than before */}
           <span style={{
-            fontSize: '0.78rem',
-            color: showCostView ? '#A8B4C0' : 'rgba(168,180,192,0.55)',
+            fontSize: '0.88rem',
+            color: showCostView ? '#A8B4C0' : 'rgba(168,180,192,0.70)',
             fontWeight: 500,
             transition: 'color 0.2s',
             flex: 1,
@@ -3029,7 +3030,7 @@ export default function AgentStorefrontGrid({
               : 'View your cost of goods for each product'}
           </span>
 
-          {/* Toggle button */}
+          {/* Toggle button — thick silver gradient border matching banner */}
           <button
             type="button"
             id="owner-cost-view-toggle"
@@ -3042,9 +3043,7 @@ export default function AgentStorefrontGrid({
               gap: 7,
               padding: '8px 18px',
               borderRadius: 20,
-              border: showCostView
-                ? '1px solid rgba(0,196,188,0.6)'
-                : '1px solid rgba(192,197,206,0.25)',
+              border: '2px solid transparent',
               cursor: 'pointer',
               fontWeight: 700,
               fontSize: '0.75rem',
@@ -3052,25 +3051,27 @@ export default function AgentStorefrontGrid({
               textTransform: 'uppercase',
               transition: 'all 0.2s ease',
               background: showCostView
-                ? 'linear-gradient(180deg, #00C4BC 0%, #009B94 100%)'
-                : 'linear-gradient(180deg, #1e2a35 0%, #131d26 100%)',
-              color: showCostView ? '#000d0c' : '#A8B4C0',
+                ? `linear-gradient(180deg, #00C4BC 0%, #009B94 100%) padding-box,
+                   linear-gradient(135deg, #b0b5bc 0%, #5c626b 20%, #e2e6eb 50%, #5c626b 80%, #b0b5bc 100%) border-box`
+                : `linear-gradient(180deg, #1e2a35 0%, #131d26 100%) padding-box,
+                   linear-gradient(135deg, #b0b5bc 0%, #5c626b 20%, #e2e6eb 50%, #5c626b 80%, #b0b5bc 100%) border-box`,
+              color: showCostView ? '#000d0c' : '#C8CDD4',
               boxShadow: showCostView
                 ? 'inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 14px rgba(0,196,188,0.3)'
-                : 'inset 0 1px 0 rgba(255,255,255,0.08), 0 2px 8px rgba(0,0,0,0.4)',
+                : 'inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 12px rgba(0,0,0,0.5)',
             }}
             onMouseEnter={e => {
               if (!showCostView) {
-                e.currentTarget.style.background = 'linear-gradient(180deg, #243242 0%, #1a2635 100%)';
-                e.currentTarget.style.borderColor = 'rgba(192,197,206,0.45)';
                 e.currentTarget.style.color = '#FFFFFF';
+                e.currentTarget.style.background = `linear-gradient(180deg, #243242 0%, #1a2635 100%) padding-box,
+                   linear-gradient(135deg, #c8cdd4 0%, #7a828c 20%, #f0f3f6 50%, #7a828c 80%, #c8cdd4 100%) border-box`;
               }
             }}
             onMouseLeave={e => {
               if (!showCostView) {
-                e.currentTarget.style.background = 'linear-gradient(180deg, #1e2a35 0%, #131d26 100%)';
-                e.currentTarget.style.borderColor = 'rgba(192,197,206,0.25)';
-                e.currentTarget.style.color = '#A8B4C0';
+                e.currentTarget.style.color = '#C8CDD4';
+                e.currentTarget.style.background = `linear-gradient(180deg, #1e2a35 0%, #131d26 100%) padding-box,
+                   linear-gradient(135deg, #b0b5bc 0%, #5c626b 20%, #e2e6eb 50%, #5c626b 80%, #b0b5bc 100%) border-box`;
               }
             }}
           >
