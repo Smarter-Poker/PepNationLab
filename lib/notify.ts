@@ -154,7 +154,7 @@ export async function notifyDownlineOrderPlaced(
     type: 'order_placed',
     title: `Downline Sale: Order #${shortId}`,
     body: `A ${totalFormatted} Order Was Just Placed On ${storeLabel} In Your Downline.`,
-    url: `/dashboard/agent?tab=Orders`,
+    url: `/dashboard/agent?tab=Orders&order=${encodeURIComponent(shortId)}`,
   });
 }
 
@@ -171,7 +171,7 @@ export async function notifyOrderAwaitingApproval(
     type: 'order_attention',
     title: `Order #${shortId} Awaits Your Approval`,
     body: `A ${totalFormatted} Order Has Been Forwarded To You For Approval. Please Review It Now.`,
-    url: `/dashboard/agent?tab=Orders`,
+    url: `/dashboard/agent?tab=Orders&order=${encodeURIComponent(shortId)}`,
   });
 }
 
@@ -196,7 +196,9 @@ export async function notifyOrderAttention(
     type: 'order_attention',
     title,
     body,
-    url: opts.url ?? (opts.who === 'admin' ? '/admin/orders' : '/dashboard/agent?tab=Orders'),
+    url: opts.url ?? (opts.who === 'admin'
+      ? `/admin/orders?search=${encodeURIComponent(opts.shortId)}`
+      : `/dashboard/agent?tab=Orders&order=${encodeURIComponent(opts.shortId)}`),
   });
 }
 
@@ -218,7 +220,7 @@ export async function notifyOrderPlaced(
     type: 'order_placed',
     title: `New Order #${shortId}`,
     body: `${researcherName} placed a new order on your storefront.`,
-    url: `/dashboard/agent?tab=orders`,
+    url: `/dashboard/agent?tab=Orders&order=${encodeURIComponent(shortId)}`,
     withPush: false,
   });
 }

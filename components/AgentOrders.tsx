@@ -63,6 +63,8 @@ interface OrderItem {
 interface AgentOrdersProps {
   orders: Order[];
   setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
+  /** When set (from ?order= URL param), auto-open the detail for this short ID */
+  initialOpenShortId?: string | null;
 }
 
 /** Rate option returned by GET /api/agent/shipping/rates (EasyPost Forge). */
@@ -100,7 +102,7 @@ function formatAddress(address: ShippingAddress | null): string {
   return parts.length > 0 ? parts.join(', ') : 'No Shipping Address Provided';
 }
 
-export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
+export default function AgentOrders({ orders, setOrders, initialOpenShortId }: AgentOrdersProps) {
   const [loadingOrderId, setLoadingOrderId] = useState<string | null>(null);
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
   // labelModalUrl is still used to view historical label PDFs on old orders.
@@ -124,6 +126,25 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
   const [detailItems, setDetailItems] = useState<OrderItem[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState('');
+
+  // Auto-open the detail modal when initialOpenShortId is provided (deep-link from notification).
+  // We wait until orders are available and match by the short_id substring that
+  // appears in the notification title (the last 8-char hex segment of the UUID).
+  const deepLinkConsumedRef = useRef(false);
+  useEffect(() => {
+    if (!initialOpenShortId || deepLinkConsumedRef.current || orders.length === 0) return;
+    const upper = initialOpenShortId.toUpperCase();
+    const match = orders.find(
+      (o) => o.id.replace(/-/g, '').toUpperCase().includes(upper)
+        || o.id.toUpperCase().includes(upper)
+    );
+    if (match) {
+      deepLinkConsumedRef.current = true;
+      setDetailOrder(match);
+      // Scroll to top so the modal is fully visible on mobile
+      try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {}
+    }
+  }, [initialOpenShortId, orders]);
 
   // Keep detailOrder synchronized with the parent orders array so the modal updates optimistically
   // or when WebSockets push new status changes (e.g. customer pays while modal is open).

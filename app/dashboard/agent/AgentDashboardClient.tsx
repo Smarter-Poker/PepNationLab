@@ -121,6 +121,9 @@ export default function AgentDashboardClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab') as any;
+  // ?order=<shortId> — deep-link from a notification; passed to AgentOrders
+  // so it can auto-open the matching order detail modal on mount.
+  const orderDeepLink = searchParams.get('order') ?? null;
   
   const defaultTab = (initialAgentProfile && (!initialAgentProfile.payment_handles || Object.keys(initialAgentProfile.payment_handles || {}).every((k) => !(initialAgentProfile.payment_handles as any)?.[k]))) ? 'Storefront Config' : 'Overview';
 
@@ -668,7 +671,7 @@ export default function AgentDashboardClient({
         {/* TAB: Orders & Fulfillment */}
         {activeTab === 'Orders' && (
           <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <AgentOrders orders={orders} setOrders={setOrders} />
+            <AgentOrders orders={orders} setOrders={setOrders} initialOpenShortId={orderDeepLink} />
           </div>
         )}
 
