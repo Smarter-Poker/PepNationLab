@@ -348,6 +348,10 @@ export default function AgentStorefrontGrid({
   const [mounted, setMounted] = useState(false);
   const [showStoreGrid, setShowStoreGrid] = useState(true);
   const [visibleCount, setVisibleCount] = useState(24);
+  // Owner-only toggle: when true, all product cards display the owner's cost
+  // price (cost_price) instead of the retail price, with retail shown as
+  // strikethrough MSRP and the margin shown where "YOU SAVE" normally lives.
+  const [showCostView, setShowCostView] = useState(false);
   // When a logged-out visitor tries a member-only action (e.g. saving to their
   // wishlist), the API returns 401. Instead of silently failing, we surface the
   // sign-in / create-account modal so that guest interest converts to a signup.
@@ -2406,6 +2410,23 @@ export default function AgentStorefrontGrid({
     const _hasCompare = _comparePrice > displayPrice;
     const _youSave = _hasCompare ? _comparePrice - displayPrice : 0;
 
+    // ── Owner cost-view mode ─────────────────────────────────────────────
+    // When showCostView is true and cost_price is available, swap the card's
+    // main price to the owner's buy cost and use the retail price as the
+    // strikethrough MSRP so the margin is immediately visible.
+    const rawCostPrice = (defaultV as any).cost_price;
+    const hasCostData = isStorefrontOwner && showCostView && rawCostPrice != null;
+    const costPerVialDisplay = hasCostData
+      ? (isBW ? Number(rawCostPrice) : Number(rawCostPrice) / 10)
+      : null;
+    const finalDisplayPrice = hasCostData ? (costPerVialDisplay ?? displayPrice) : displayPrice;
+    const finalMsrp = hasCostData ? displayPrice : (_hasCompare ? _comparePrice : undefined);
+    const finalSavings = hasCostData
+      ? Math.max(0, Math.floor(displayPrice - (costPerVialDisplay ?? displayPrice)))
+      : (_hasCompare ? Math.floor(_youSave) : undefined);
+    const finalSavingsLabel = hasCostData ? 'YOUR MARGIN' : 'YOU SAVE';
+    const finalHasCompare = hasCostData ? true : _hasCompare;
+
     return (
       <motion.div
         key={group.name} className="hover-lift stagger-fade-in" variants={itemVariants}
@@ -2414,9 +2435,10 @@ export default function AgentStorefrontGrid({
         <PremiumPeptideCard
           productName={main}
           vialSizeBadge={displaySizeText}
-          msrp={_hasCompare ? _comparePrice : undefined}
-          savings={_hasCompare ? Math.floor(_youSave) : undefined}
-          wholesalePrice={displayPrice}
+          msrp={finalHasCompare ? finalMsrp : undefined}
+          savings={finalHasCompare ? finalSavings : undefined}
+          savingsLabel={finalSavingsLabel}
+          wholesalePrice={finalDisplayPrice}
           inStockText={stockState.kind === 'out_of_stock' ? "OUT OF STOCK" : "IN STOCK"}
           pickupText="AVAILABLE FOR SAME DAY PICKUP"
           buttonText="Add To Cart"
@@ -2939,6 +2961,119 @@ export default function AgentStorefrontGrid({
 
       {/* Grid section - hidden when product detail is shown */}
       <div style={{ display: detailProduct ? 'none' : undefined }}>
+
+      {/* ── Owner Cost View Banner ─────────────────────────────────────────
+          Visible ONLY to the store owner (isStorefrontOwner). Customers and
+          guests never see this. Provides a toggle to switch all product card
+          prices from retail to the owner's buy cost so they can audit margins
+          at a glance without leaving the storefront. */}
+      {isStorefrontOwner && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          marginBottom: 20,
+          padding: '10px 16px',
+          borderRadius: 14,
+          background: showCostView
+            ? 'rgba(234, 179, 8, 0.12)'
+            : 'rgba(234, 179, 8, 0.05)',
+          border: showCostView
+            ? '1px solid rgba(234, 179, 8, 0.45)'
+            : '1px solid rgba(234, 179, 8, 0.20)',
+          backdropFilter: 'blur(8px)',
+          transition: 'all 0.25s ease',
+          flexWrap: 'wrap',
+        }}>
+          {/* Icon + label */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#EAB308" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <path d="M3 9h18M9 21V9"/>
+            </svg>
+            <span style={{
+              fontSize: '0.72rem',
+              fontWeight: 800,
+              color: '#EAB308',
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              whiteSpace: 'nowrap',
+            }}>
+              Owner View
+            </span>
+          </div>
+
+          {/* Status text */}
+          <span style={{
+            fontSize: '0.78rem',
+            color: showCostView ? '#FDE68A' : 'rgba(253,230,138,0.6)',
+            fontWeight: 600,
+            transition: 'color 0.2s',
+            flex: 1,
+            minWidth: 0,
+          }}>
+            {showCostView
+              ? 'Cost Mode Active — Prices shown are your buy cost'
+              : 'View your cost of goods for each product'}
+          </span>
+
+          {/* Toggle button */}
+          <button
+            type="button"
+            id="owner-cost-view-toggle"
+            aria-pressed={showCostView}
+            onClick={() => setShowCostView(v => !v)}
+            style={{
+              flexShrink: 0,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 7,
+              padding: '7px 16px',
+              borderRadius: 20,
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 800,
+              fontSize: '0.78rem',
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+              transition: 'all 0.2s ease',
+              background: showCostView
+                ? '#EAB308'
+                : 'rgba(234, 179, 8, 0.18)',
+              color: showCostView ? '#1a1200' : '#EAB308',
+              boxShadow: showCostView
+                ? '0 4px 12px rgba(234,179,8,0.35)'
+                : 'none',
+            }}
+            onMouseEnter={e => {
+              if (!showCostView) {
+                e.currentTarget.style.background = 'rgba(234, 179, 8, 0.30)';
+              }
+            }}
+            onMouseLeave={e => {
+              if (!showCostView) {
+                e.currentTarget.style.background = 'rgba(234, 179, 8, 0.18)';
+              }
+            }}
+          >
+            {/* Eye icon */}
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              {showCostView ? (
+                <>
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                </>
+              ) : (
+                <>
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </>
+              )}
+            </svg>
+            {showCostView ? 'Hide My Cost' : 'Show My Cost'}
+          </button>
+        </div>
+      )}
 
       {/* Did You Mean Banner */}
       {didYouMeanSuggestion && (

@@ -19,6 +19,7 @@ import CityPage from './CityPage';
 import { getCityFAQs } from '@/lib/cities/city-content';
 import { getResearchAnchors } from '@/lib/cities/research-anchors';
 import { getCityWikipediaUrl } from '@/lib/cities/wikipedia-links';
+import { buildOffer, getShippingDetailNodes } from '@/lib/structured-data/merchant';
 
 // ISR: regenerate each city page at most every 5 minutes so the Top 10 grid
 // tracks the live storefront catalog - admin price/name changes flow through
@@ -211,16 +212,15 @@ export default async function CityLandingPage({
                   name,
                   description: `Research-grade ${p.name} for qualified researchers.`,
                   brand: { '@id': 'https://pepnationlab.com/#organization' },
-                  offers: {
-                    '@type': 'Offer',
-                    price: price.toFixed(2),
-                    priceCurrency: 'USD',
-                    priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-                    itemCondition: 'https://schema.org/NewCondition',
-                    availability: 'https://schema.org/InStock',
+                  // Offer shape (validFrom, priceValidUntil, shippingDetails)
+                  // is owned by lib/structured-data/merchant so this page can
+                  // never drift from the storefront's.
+                  offers: buildOffer({
+                    price,
                     url: `https://pepnationlab.com/${DEFAULT_STORE_SLUG}?product=${p.productId}`,
-                    seller: { '@id': 'https://pepnationlab.com/#organization' },
-                  },
+                    inStock: true,
+                    sku: p.productId ? String(p.productId) : null,
+                  }),
                 };
                 if (p.image) {
                   // Guard: DB image URLs may already be absolute (Supabase storage).
@@ -230,6 +230,8 @@ export default async function CityLandingPage({
                 }
                 return node;
               }),
+            // Emitted once; each offer above references these by @id.
+            ...getShippingDetailNodes(),
           ]
         : []),
       {

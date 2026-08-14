@@ -8,6 +8,9 @@ interface Props {
   vialSizeBadge?: string;
   msrp?: number;
   savings?: number;
+  /** Label shown next to the savings amount. Defaults to "YOU SAVE".
+   *  Pass "YOUR MARGIN" when rendering in owner cost-view mode. */
+  savingsLabel?: string;
   wholesalePrice?: number;
   inStockText?: string;
   pickupText?: string;
@@ -32,6 +35,7 @@ export default function PremiumPeptideCard({
   vialSizeBadge = "10mg Vials",
   msrp = 55.00,
   savings = 25.00,
+  savingsLabel = "YOU SAVE",
   wholesalePrice = 29.97,
   inStockText = "IN STOCK",
   pickupText = "AVAILABLE FOR SAME DAY PICKUP",
@@ -298,7 +302,7 @@ export default function PremiumPeptideCard({
                   textTransform: 'uppercase',
                   zIndex: 30, pointerEvents: 'none'
                 }}>
-                  YOU SAVE ${savings.toFixed(0)}
+                  {savingsLabel} ${savings.toFixed(0)}
                 </div>
               )}
             </>

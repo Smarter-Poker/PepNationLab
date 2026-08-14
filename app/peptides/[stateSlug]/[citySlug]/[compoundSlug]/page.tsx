@@ -30,6 +30,7 @@ import { getResearchAnchors } from '@/lib/cities/research-anchors';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 import { isPilotCompoundCity } from '@/lib/cities/tier3-pilot';
 import { CompoundCityNarrative } from '@/components/cities/CompoundCityNarrative';
+import { buildOffer, getShippingDetailNodes } from '@/lib/structured-data/merchant';
 
 // ISR: regenerate at most every 5 minutes so the live price card tracks the
 // storefront catalog without a redeploy.
@@ -189,16 +190,15 @@ export default async function CompoundCityPage({
         description: `Research-grade ${compound.displayName} (${compound.popularName}) for qualified researchers in ${city.name}, ${city.state}. In vitro laboratory use only.`,
         brand: { '@id': `${BASE}/#organization` },
         category: monograph?.category ?? 'Research Peptide',
-        offers: {
-          '@type': 'Offer',
-          price: (card!.price as number).toFixed(2),
-          priceCurrency: 'USD',
-          priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-          itemCondition: 'https://schema.org/NewCondition',
-          availability: 'https://schema.org/InStock',
+        // Offer shape (validFrom, priceValidUntil, shippingDetails) is owned
+        // by lib/structured-data/merchant, shared with the storefront and the
+        // city index so the three cannot drift apart.
+        offers: buildOffer({
+          price: card!.price as number,
           url: `${BASE}${storeHref}`,
-          seller: { '@id': `${BASE}/#organization` },
-        },
+          inStock: true,
+          sku: card!.productId ? String(card!.productId) : null,
+        }),
       }
     : null;
   if (productNode && card?.image) {
@@ -240,6 +240,8 @@ export default async function CompoundCityPage({
         ],
       },
       ...(productNode ? [productNode] : []),
+      // Emitted once; the offer above references these by @id.
+      ...(productNode ? getShippingDetailNodes() : []),
       {
         '@type': 'FAQPage',
         '@id': `${pageUrl}#faq`,
