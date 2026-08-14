@@ -1,6 +1,6 @@
 /**
  * near-me.ts
- * Pure helper for the "Peptides Near Me" section on city landing pages.
+ * Pure helper for the "Local Research Coverage" section on city landing pages.
  *
  * Given a city, returns up to `limit` related cities from the static CITIES
  * dataset - no database access. Ordering strategy:

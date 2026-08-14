@@ -26,8 +26,6 @@ const PRODUCT_IMAGE_MAP: Record<string, string> = {
   // ── Weight Loss & Metabolism - RED cap ──────────────────────────────────────
   'tirzepatide':                              '/images/products/tirzepatide.png',
   'semaglutide':                              '/images/products/semaglutide.png',
-  'ozempic':                                  '/images/products/semaglutide.png',
-  'wegovy':                                   '/images/products/semaglutide.png',
   'retatrutide':                              '/images/products/retatrutide.png',
   'lemon bottle':                             '/images/products/lemon-bottle.png',
   'l-carnitine blend':                        '/images/products/l-carnitine-blend.png',

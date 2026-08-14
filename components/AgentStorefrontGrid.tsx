@@ -1257,7 +1257,7 @@ export default function AgentStorefrontGrid({
       // Eyes / Vision
       ['eyes', 'vision', 'sight', 'macular', 'retina', 'blindness', 'amd', 'optic', 'ocular'],
       // GLP-1 Specific
-      ['glp1', 'glp-1', 'incretin', 'tirzepatide', 'semaglutide', 'retatrutide', 'ozempic', 'wegovy', 'mounjaro', 'appetite', 'craving', 'satiety', 'weightloss-drug', 'injection-diet', 'dual-agonist', 'triple-agonist'],
+      ['glp1', 'glp-1', 'incretin', 'tirzepatide', 'semaglutide', 'retatrutide', 'appetite', 'craving', 'satiety', 'dual-agonist', 'triple-agonist'],
       // BPC-157 / Repair
       ['bpc157', 'bpc-157', 'wolverine', 'repair', 'gut', 'gastrointestinal'],
       // TB-500 / Healing
