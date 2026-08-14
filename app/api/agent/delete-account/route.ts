@@ -33,10 +33,17 @@ const RestoreBody = z.object({
  */
 export async function POST(req: Request) {
   const csrf = assertSameOrigin(req as any);
-  if (csrf) return csrf;
+  if (csrf) {
+    console.error('[delete-account] CSRF check failed');
+    return csrf;
+  }
 
   const gate = await requireAgentOrAdmin();
-  if (!gate.ok) return gate.response;
+  if (!gate.ok) {
+    console.error('[delete-account] Auth gate failed:', gate.response.status);
+    return gate.response;
+  }
+  console.log('[delete-account] Caller:', gate.user.id, 'isAdmin:', gate.isAdmin, 'impersonating:', gate.impersonating);
 
   const supabase = await createClient();
 
@@ -44,8 +51,10 @@ export async function POST(req: Request) {
   try {
     body = DeleteBody.parse(await req.json());
   } catch (e: any) {
+    console.error('[delete-account] Body parse error:', e.errors);
     return NextResponse.json({ error: 'bad_request', details: e.errors }, { status: 400 });
   }
+  console.log('[delete-account] Deleting target_id:', body.target_id);
 
   const { data, error } = await supabase.rpc('soft_delete_account', {
     p_target_id: body.target_id,
@@ -54,6 +63,7 @@ export async function POST(req: Request) {
 
   if (error) {
     const msg = String(error.message || '');
+    console.error('[delete-account] RPC error:', msg, '| code:', (error as any).code);
     if (msg.includes('unauthorized')) {
       return NextResponse.json({ error: 'Your Session Expired. Please Sign In Again.' }, { status: 401 });
     }
@@ -83,6 +93,7 @@ export async function POST(req: Request) {
     return safeError('agent.delete-account', error);
   }
 
+  console.log('[delete-account] Success. RPC result:', JSON.stringify(data));
   return NextResponse.json({ ok: true, result: data });
 }
 
