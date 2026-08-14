@@ -308,7 +308,31 @@ export default function PremiumPeptideCard({
             </>
           )}
 
-          {/* Centered Wholesale Price Digits */}
+          {/* Cover the baked-in 'WHOLESALE PRICE' label from card images,
+              then render 'AGENT PRICE' (or the appropriate label) on top.
+              Canvas coords: label sits at ~top:660-700 in the 683×1024 space. */}
+          <div style={{
+            position: 'absolute',
+            left: px(370), width: px(300), top: px(655), height: px(60),
+            background: 'rgba(0,0,0,0.92)',
+            zIndex: 28, pointerEvents: 'none',
+          }} />
+          <div style={{
+            position: 'absolute',
+            left: px(380), width: px(280), top: px(660),
+            display: 'flex', justifyContent: 'center',
+            fontFamily: 'var(--font-roboto-condensed, sans-serif)',
+            fontWeight: 700,
+            fontSize: px(20),
+            color: '#8B8F93',
+            textTransform: 'uppercase',
+            letterSpacing: px(1),
+            zIndex: 29, pointerEvents: 'none'
+          }}>
+            AGENT PRICE
+          </div>
+
+          {/* Centered Agent Price Digits */}
           <div style={{
             position: 'absolute',
             left: px(380), width: px(280), top: px(710),

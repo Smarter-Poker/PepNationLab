@@ -185,7 +185,7 @@ export const EXTRACTED_J: Record<string, { 'zh-CN': string; 'zh-TW': string }> =
   "Volume Discounts": { 'zh-CN': "批量折扣", 'zh-TW': "批量折扣" },
   "Volume To Draw": { 'zh-CN': "抽取体积", 'zh-TW': "抽取體積" },
   "Vs # Prior": { 'zh-CN': "较之前 #", 'zh-TW': "較先前 #" },
-  "WHOLESALE PRICE": { 'zh-CN': "批发价", 'zh-TW': "批發價" },
+  "AGENT PRICE": { 'zh-CN': "代理价格", 'zh-TW': "代理價格" },
   "Waist": { 'zh-CN': "腰围", 'zh-TW': "腰圍" },
   "Wallet Balance": { 'zh-CN': "钱包余额", 'zh-TW': "錢包餘額" },
   "Wallet Ledger": { 'zh-CN': "钱包账本", 'zh-TW': "錢包帳本" },

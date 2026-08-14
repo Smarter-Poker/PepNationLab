@@ -2248,7 +2248,7 @@ export default function AgentStorefrontGrid({
               {/* Wholesale Price */}
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: 1.1 }}>
                 <div style={{ fontFamily: 'var(--font-roboto-condensed, sans-serif)', fontWeight: 700, fontSize: px(20), color: '#8B8F93', textTransform: 'uppercase', marginBottom: px(4) }}>
-                  WHOLESALE PRICE
+                  AGENT PRICE
                 </div>
                 <div style={{ fontFamily: 'var(--font-roboto-condensed, sans-serif)', fontWeight: 700, fontSize: px(56), color: '#00D5F2', textShadow: `0 2px 4px rgba(0,0,0,0.5)` }}>
                   ${resolved.finalPrice.toFixed(2)}
@@ -2424,7 +2424,7 @@ export default function AgentStorefrontGrid({
     const finalSavings = hasCostData
       ? Math.max(0, Math.floor(displayPrice - (costPerVialDisplay ?? displayPrice)))
       : (_hasCompare ? Math.floor(_youSave) : undefined);
-    const finalSavingsLabel = hasCostData ? 'YOUR MARGIN' : 'YOU SAVE';
+    const finalSavingsLabel = hasCostData ? 'YOUR PROFIT' : 'YOU SAVE';
     const finalHasCompare = hasCostData ? true : _hasCompare;
 
     return (
@@ -2976,44 +2976,55 @@ export default function AgentStorefrontGrid({
           padding: '10px 16px',
           borderRadius: 14,
           background: showCostView
-            ? 'rgba(234, 179, 8, 0.12)'
-            : 'rgba(234, 179, 8, 0.05)',
+            ? 'rgba(0, 196, 188, 0.08)'
+            : 'rgba(15, 25, 35, 0.85)',
           border: showCostView
-            ? '1px solid rgba(234, 179, 8, 0.45)'
-            : '1px solid rgba(234, 179, 8, 0.20)',
-          backdropFilter: 'blur(8px)',
+            ? '1px solid rgba(0, 196, 188, 0.35)'
+            : '1px solid rgba(192, 197, 206, 0.15)',
+          backdropFilter: 'blur(12px)',
+          boxShadow: showCostView
+            ? 'inset 0 1px 0 rgba(0,196,188,0.12), 0 4px 20px rgba(0,0,0,0.5)'
+            : 'inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 20px rgba(0,0,0,0.5)',
           transition: 'all 0.25s ease',
           flexWrap: 'wrap',
         }}>
           {/* Icon + label */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#EAB308" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={showCostView ? '#00C4BC' : '#A8B4C0'} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ transition: 'stroke 0.2s' }}>
               <rect x="3" y="3" width="18" height="18" rx="2"/>
               <path d="M3 9h18M9 21V9"/>
             </svg>
             <span style={{
-              fontSize: '0.72rem',
+              fontSize: '0.68rem',
               fontWeight: 800,
-              color: '#EAB308',
+              color: showCostView ? '#00C4BC' : '#A8B4C0',
               textTransform: 'uppercase',
-              letterSpacing: '0.08em',
+              letterSpacing: '0.1em',
               whiteSpace: 'nowrap',
+              transition: 'color 0.2s',
             }}>
               Owner View
             </span>
           </div>
 
+          {/* Divider */}
+          <div style={{
+            width: 1, height: 18, flexShrink: 0,
+            background: showCostView ? 'rgba(0,196,188,0.3)' : 'rgba(192,197,206,0.2)',
+            transition: 'background 0.2s',
+          }} />
+
           {/* Status text */}
           <span style={{
             fontSize: '0.78rem',
-            color: showCostView ? '#FDE68A' : 'rgba(253,230,138,0.6)',
-            fontWeight: 600,
+            color: showCostView ? '#A8B4C0' : 'rgba(168,180,192,0.55)',
+            fontWeight: 500,
             transition: 'color 0.2s',
             flex: 1,
             minWidth: 0,
           }}>
             {showCostView
-              ? 'Cost Mode Active — Prices shown are your buy cost'
+              ? 'Cost Mode Active — Prices shown are your agent buy cost'
               : 'View your cost of goods for each product'}
           </span>
 
@@ -3028,36 +3039,42 @@ export default function AgentStorefrontGrid({
               display: 'inline-flex',
               alignItems: 'center',
               gap: 7,
-              padding: '7px 16px',
+              padding: '8px 18px',
               borderRadius: 20,
-              border: 'none',
+              border: showCostView
+                ? '1px solid rgba(0,196,188,0.6)'
+                : '1px solid rgba(192,197,206,0.25)',
               cursor: 'pointer',
-              fontWeight: 800,
-              fontSize: '0.78rem',
-              letterSpacing: '0.04em',
+              fontWeight: 700,
+              fontSize: '0.75rem',
+              letterSpacing: '0.05em',
               textTransform: 'uppercase',
               transition: 'all 0.2s ease',
               background: showCostView
-                ? '#EAB308'
-                : 'rgba(234, 179, 8, 0.18)',
-              color: showCostView ? '#1a1200' : '#EAB308',
+                ? 'linear-gradient(180deg, #00C4BC 0%, #009B94 100%)'
+                : 'linear-gradient(180deg, #1e2a35 0%, #131d26 100%)',
+              color: showCostView ? '#000d0c' : '#A8B4C0',
               boxShadow: showCostView
-                ? '0 4px 12px rgba(234,179,8,0.35)'
-                : 'none',
+                ? 'inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 14px rgba(0,196,188,0.3)'
+                : 'inset 0 1px 0 rgba(255,255,255,0.08), 0 2px 8px rgba(0,0,0,0.4)',
             }}
             onMouseEnter={e => {
               if (!showCostView) {
-                e.currentTarget.style.background = 'rgba(234, 179, 8, 0.30)';
+                e.currentTarget.style.background = 'linear-gradient(180deg, #243242 0%, #1a2635 100%)';
+                e.currentTarget.style.borderColor = 'rgba(192,197,206,0.45)';
+                e.currentTarget.style.color = '#FFFFFF';
               }
             }}
             onMouseLeave={e => {
               if (!showCostView) {
-                e.currentTarget.style.background = 'rgba(234, 179, 8, 0.18)';
+                e.currentTarget.style.background = 'linear-gradient(180deg, #1e2a35 0%, #131d26 100%)';
+                e.currentTarget.style.borderColor = 'rgba(192,197,206,0.25)';
+                e.currentTarget.style.color = '#A8B4C0';
               }
             }}
           >
             {/* Eye icon */}
-            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               {showCostView ? (
                 <>
                   <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
