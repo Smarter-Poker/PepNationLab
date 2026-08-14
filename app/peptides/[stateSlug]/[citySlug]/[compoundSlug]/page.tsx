@@ -28,7 +28,6 @@ import type { CompoundStoreCard } from '@/lib/cities/compound-store';
 import { getRegionLabel, getRegionArea } from '@/lib/cities/city-content';
 import { getResearchAnchors } from '@/lib/cities/research-anchors';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
-import { isPilotCompoundCity } from '@/lib/cities/tier3-pilot';
 import { CompoundCityNarrative } from '@/components/cities/CompoundCityNarrative';
 import { buildOffer, getShippingDetailNodes } from '@/lib/structured-data/merchant';
 
@@ -93,7 +92,13 @@ export async function generateMetadata({
   // Selective indexing: index high-value tier-1/2 markets; noindex (but still
   // follow) the tier-3 long tail so the thin compound-city pages do not dilute
   // crawl budget or trip doorway-content heuristics.
-  const indexable = city.tier <= 2 || isPilotCompoundCity(city, compoundSlug);
+  // 2026-08-14 SEO audit: the entire compound-city layer is noindex,follow.
+  // Every "{compound} in {city}" SERP checked is owned by med-spas, therapy
+  // clinics, and trial finders — treatment intent a mail-order research
+  // supplier structurally cannot serve — so these ~26k potential URLs only
+  // burned crawl budget (GSC: Discovered/Crawled - not indexed). Pages stay
+  // live for users arriving through the city mesh; links still flow.
+  const indexable = false;
 
   const title = `${compound.displayName} In ${city.name}, ${city.stateAbbr} - Research-Grade Supply`;
   const description = `Buy research-grade ${compound.displayName} (${compound.popularName}) for verified researchers in ${city.name}, ${city.state}. Live wholesale pricing, batch COA documentation, fast nationwide shipping. In vitro laboratory use only.`;
