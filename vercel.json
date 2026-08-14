@@ -58,6 +58,7 @@
     { "path": "/api/cron/broken-link-crawler", "schedule": "0 12 * * 6" },
     { "path": "/api/cron/generate-embeddings", "schedule": "0 5 * * *" },
     { "path": "/api/seo/indexnow", "schedule": "0 7 * * *" },
-    { "path": "/api/cron/product-alerts", "schedule": "0 */6 * * *" }
+    { "path": "/api/cron/product-alerts", "schedule": "0 */6 * * *" },
+    { "path": "/api/admin/revalidate-peptides", "schedule": "30 6 * * *" }
   ]
 }
