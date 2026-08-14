@@ -321,14 +321,14 @@ export default function PremiumPeptideCard({
               {/* Solid cover that paints over the baked "WHOLESALE PRICE" text */}
               <div style={{
                 position: 'absolute',
-                left: px(370), width: px(300), top: px(645), height: px(40),
-                background: '#0a1218',
+                left: px(380), width: px(280), top: px(655), height: px(45),
+                background: '#000000',
                 zIndex: 28, pointerEvents: 'none',
               }} />
               {/* "AGENT PRICE" label rendered in place of the covered text */}
               <div style={{
                 position: 'absolute',
-                left: px(370), width: px(300), top: px(648),
+                left: px(380), width: px(280), top: px(662),
                 display: 'flex', justifyContent: 'center',
                 fontFamily: 'var(--font-roboto-condensed, sans-serif)',
                 fontWeight: 700,
