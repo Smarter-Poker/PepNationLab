@@ -17,8 +17,7 @@
  *   8.  Every city URL is present in sitemap.xml
  *   9.  Hero image alt embeds the city ("Research Peptides In {city}")
  *   10. Product card alt SEO present (>= 8 "Available To Researchers In")
- *   11. Hidden At A Glance fact block present in the HTML (visually hidden,
- *       must never be removed - answer-engine content)
+ *   11. Hidden At A Glance block ABSENT (removed 2026-08-14; hidden text = spam risk)
  *   12. Region label wired into the page when the city has a region
  *   13. FAQ content present (>= 3 <details> blocks)
  *   14. Meta description contains the city name
@@ -246,12 +245,11 @@ function checkPage(city, html, finalUrl) {
   if (altCount < 8) {
     failures.push(`product card alt SEO missing (${altCount} occurrences, expected >= 8)`);
   }
-  // 11. Hidden At A Glance fact block must remain in the HTML (it is
-  // visually hidden by design - answer-engine content).
-  if (!normHtml.includes('at a glance')) {
-    failures.push('At A Glance fact block missing from HTML');
-  } else if (city.zips && city.zips.length > 0 && !normHtml.includes('zip codes served')) {
-    failures.push('At A Glance ZIP row missing from HTML');
+  // 11. (Inverted 2026-08-14.) The hidden At A Glance block was REMOVED —
+  // crawler-only clip-rect text is a hidden-text violation of Google's spam
+  // policies. Assert it stays gone so it can't quietly return.
+  if (normHtml.includes('at a glance')) {
+    failures.push('hidden At A Glance block has returned - remove it (spam-policy risk)');
   }
   // 12. Region wiring (region label renders in section headings).
   if (city.region && !normHtml.includes(normalizeText(city.region))) {

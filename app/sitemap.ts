@@ -4,12 +4,12 @@
  */
 import type { MetadataRoute } from 'next';
 import { createServiceClient } from '@/lib/supabase/server';
-import { CITIES, getStatesSlugs, CITY_CONTENT_UPDATED } from '@/lib/cities/cities-data';
+import { getStatesSlugs, CITY_CONTENT_UPDATED } from '@/lib/cities/cities-data';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 import { GUIDES, GUIDES_UPDATED } from '@/lib/research/guides';
 import { COMPARISON_PAIRS, matchupSlug } from '@/lib/research/comparisons';
 import { RESEARCH_AREAS } from '@/lib/compounds';
-import { getPilotCompoundCityUrls } from '@/lib/cities/tier3-pilot';
+import { getSeoIndexableCities } from '@/lib/cities/seo-tier';
 
 // Regenerate at most hourly - each hit builds thousands of URLs and runs up to
 // three 2000-row Supabase queries, which crawlers should not trigger per-request.
@@ -197,7 +197,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     2: 'weekly',
     3: 'monthly',
   };
-  const cityPages: MetadataRoute.Sitemap = CITIES.map((city) => ({
+  // 2026-08-14 SEO audit: only the retained major-metro set is sitemapped
+  // (lib/cities/seo-tier.ts — ~190 cities with population >= 150k plus the
+  // one page Google had already indexed). The long tail is noindex,follow
+  // and deliberately absent here: advertising 2,445 URLs Google refused to
+  // index made the sitemap read as low-quality inventory and burned the
+  // crawl budget the retained set needs.
+  const cityPages: MetadataRoute.Sitemap = getSeoIndexableCities().map((city) => ({
     url: `${BASE}/peptides/${city.stateSlug}/${city.slug}`,
     lastModified: CITY_CONTENT_UPDATED,
     changeFrequency: cityChangeFreq[city.tier] ?? 'monthly',
@@ -209,14 +215,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // "Discovered/Crawled - not indexed"). The routes stay live and tier-1/2
   // remain indexable via internal links.
   
-  // Tier-3 SEO Pilot Pages
-  const pilotUrls = getPilotCompoundCityUrls();
-  const pilotPages: MetadataRoute.Sitemap = pilotUrls.map((url) => ({
-    url,
-    lastModified: CITY_CONTENT_UPDATED,
-    changeFrequency: 'monthly',
-    priority: 0.5,
-  }));
+  // Tier-3 compound-city pilot URLs removed 2026-08-14: the whole
+  // compound-city layer is now noindex (treatment-intent SERPs owned by
+  // clinics — unwinnable for a mail-order research supplier), so
+  // sitemapping the pilots would advertise URLs that ask not to be indexed.
 
-  return [...staticPaths, ...compounds, ...cityPages, ...pilotPages];
+  return [...staticPaths, ...compounds, ...cityPages];
 }

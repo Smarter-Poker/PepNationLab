@@ -16,7 +16,7 @@ import { CITIES } from '@/lib/cities/cities-data';
 import type { City } from '@/lib/cities/cities-data';
 import { CITY_COMPOUNDS } from '@/lib/cities/city-compounds';
 import { FEATURED_PEPTIDES } from '@/lib/cities/keywords';
-import { getCityIntro, getCityFAQs, getCityFacts, VALUE_PROPS, getRegionLabel, getRegionArea } from '@/lib/cities/city-content';
+import { getCityIntro, getCityFAQs, VALUE_PROPS, getRegionLabel, getRegionArea } from '@/lib/cities/city-content';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 import type { StoreTop10Item } from '@/lib/cities/top10-server';
 import { getNearMeCities } from '@/lib/cities/near-me';
@@ -56,7 +56,6 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
   const intro = getCityIntro(city);
   const faqs = getCityFAQs(city);
   const region = getRegionLabel(city);
-  const facts = getCityFacts(city);
 
   // The Top 10 grid mirrors the storefront's "Top 10 Best Peptides" card:
   // identical products, names, sizes, and live prices. Cards deep-link into
@@ -230,7 +229,7 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
         ========================================= */}
         <section style={{ position: 'relative', minHeight: 'clamp(640px, 95vh, 980px)', display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
           {/* BG image */}
-          <Image src="/images/city-hero-peptide.jpg" alt={`Research Peptides In ${city.name}, ${city.state}${city.county ? ` - ${city.county} County` : ''} - Research-Grade Peptide Supply For Verified Researchers`} fill priority
+          <Image src="/images/city-hero-peptide.jpg" alt={`Buy Research Peptides In ${city.name}, ${city.state}${city.county ? ` - ${city.county} County` : ''} - Research-Grade Peptide Supply For Verified Researchers`} fill priority
             fetchPriority="high"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1400px" quality={45}
             style={{ objectFit: 'cover', objectPosition: 'center right', opacity: 0.75 }} />
@@ -293,7 +292,7 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
 
             {/* H1 */}
             <h1 style={{ color: 'var(--white)', fontSize: 'clamp(2.4rem, 6vw, 4.5rem)', fontWeight: 900, lineHeight: 1.05, letterSpacing: '-0.03em', marginBottom: 'var(--space-5)', maxWidth: 700, fontFamily: 'var(--font-brand)' }}>
-              Research Peptides<br />
+              Buy Research Peptides<br />
               In <span style={{ color: 'var(--teal)', textShadow: '0 0 40px rgba(0,196,188,0.5)' }}>{city.name}</span>
             </h1>
 
@@ -447,50 +446,11 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
           </div>
         </section>
 
-        {/* =========================================
-            AT A GLANCE - dense, quotable fact box (answer-engine bait:
-            AI assistants and featured snippets quote exactly this kind
-            of self-contained factual block)
-        ========================================= */}
-        {/* Visually hidden (clip-rect) but fully present in the HTML and
-            accessibility tree. This dense fact block is answer-engine bait -
-            AI assistants and featured snippets quote exactly this kind of
-            self-contained factual content - but it read as a generic text
-            glob on the visible page. Do not remove; hide-only. */}
-        <section aria-label={`${city.name} Research Supply Facts`} style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0 }}>
-          {/* Nano Banana background */}
-          <Image src="/images/city-sections/bg-facts.jpg" alt="" fill aria-hidden
-            sizes="100vw" quality={40} style={{ objectFit: 'cover', objectPosition: 'center top', opacity: 0.22 }} />
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, var(--black) 0%, rgba(5,10,18,0.7) 50%, var(--black) 100%)', zIndex: 1 }} />
-          <div className="container" style={{ position: 'relative', zIndex: 2 }}>
-            <h2 style={{ color: 'var(--white)', fontSize: '1.15rem', fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 'var(--space-4)' }}>
-              Research Peptide Supply In {city.name} - At A Glance
-            </h2>
-            {/* Intro is fact-oriented and does NOT repeat city.localBlurb
-                (which already renders as a standalone paragraph under the H1)
-                to avoid duplicate copy on the same page. */}
-            <p style={{ fontSize: '0.92rem', color: 'var(--silver-light)', lineHeight: 1.75, maxWidth: 780, marginBottom: 'var(--space-5)' }}>
-              Key facts for verified researchers sourcing research-grade peptides in {city.name}, {city.stateAbbr}. Every order ships nationwide with full batch COA documentation, strictly for in vitro laboratory use.
-            </p>
-            <dl style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-              gap: 'var(--space-3)',
-              margin: 0,
-            }}>
-              {facts.map(({ label, value }) => (
-                <div key={label} className="glass-panel" style={{ padding: 'var(--space-4) var(--space-5)', border: 'var(--border-subtle)' }}>
-                  <dt style={{ fontSize: '0.65rem', color: 'var(--grey-500)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>
-                    {label}
-                  </dt>
-                  <dd style={{ fontSize: '0.85rem', color: 'var(--silver-light)', margin: 0, lineHeight: 1.55 }}>
-                    {value}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-        </section>
+        {/* The former hidden "At A Glance" block (clip-rect concealed but
+            crawlable) was removed 2026-08-14: crawler-only text that users
+            cannot see is a hidden-text violation of Google's spam policies,
+            replicated across every city page. If the fact box is worth
+            having, render it visibly. */}
 
         {/* =========================================
             WHY PEP NATION LAB - dynamic BG + Nano Banana 3D icons
@@ -507,8 +467,8 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
                 Why Researchers Choose Us
               </div>
               <h2 style={{ color: 'var(--white)', fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 800, letterSpacing: '-0.025em', marginBottom: 'var(--space-3)' }}>
-                The {region}&apos;s Trusted Source For{' '}
-                <span style={{ color: 'var(--teal)' }}>Research Peptides</span>
+                The Trusted Source For{' '}
+                <span style={{ color: 'var(--teal)' }}>Research Peptides</span> In The {getRegionArea(region)}
               </h2>
               <p style={{ color: 'var(--grey-400)', fontSize: '0.95rem', maxWidth: 480, margin: '0 auto', lineHeight: 1.65 }}>
                 Researchers in {city.name} choose Pep Nation Lab for quality that scales with their lab.
@@ -673,8 +633,7 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
           </div>
         </section>
 
-        {/* PEPTIDES NEAR ME - visible, crawlable geographic coverage block
-            targeting "peptides near me {city}" queries. Adds content only. */}
+        {/* Nearby coverage - visible section (distinct from NearbyStrip). */}
         <NearMeSection city={city} stateSlug={stateSlug} region={region} />
 
         <CountyStrip city={city} />
@@ -776,12 +735,13 @@ function NearbyStrip({ stateSlug, currentCitySlug, stateName, region }: {
   );
 }
 
-// --- Peptides Near Me section ------------------------------------------------
-// Visible, crawlable geographic coverage block rendered before the
-// NearbyStrip. Targets "peptides near me {city}" queries with genuine
-// nearby-city data (same region first, then same state - see
-// lib/cities/near-me.ts). Adds content only; never remove existing sections
-// (the daily city-pages verifier asserts them).
+// --- Nearby coverage section --------------------------------------------------
+// Visible geographic coverage block rendered before the NearbyStrip, built
+// from genuine nearby-city data (same region first, then same state - see
+// lib/cities/near-me.ts). 2026-08-14: no longer phrased around "peptides
+// near me" — those queries resolve to local-service results (clinics with
+// physical premises) that a nationwide mail-order supplier cannot win, and
+// the Title-Case keyword paragraph read as machine-generated spam.
 function NearMeSection({ city, stateSlug, region }: { city: City; stateSlug: string; region: string }) {
   const nearby = getNearMeCities(city);
   if (nearby.length === 0) return null;
@@ -792,16 +752,16 @@ function NearMeSection({ city, stateSlug, region }: { city: City; stateSlug: str
       ? `${topThree[0]}, ${topThree[1]}, And ${topThree[2]}`
       : topThree.join(' And ');
   return (
-    <section aria-label={`Peptides Near Me - ${city.name} Area`} style={{ padding: 'clamp(48px, 6vw, 80px) 0', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+    <section aria-label={`Research Supply Coverage - ${city.name} Area`} style={{ padding: 'clamp(48px, 6vw, 80px) 0', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
       <div className="container">
         <div style={{ color: 'var(--teal)', fontSize: '1rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 'var(--space-2)' }}>
           Local Research Coverage
         </div>
         <h2 style={{ color: 'var(--white)', fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)', fontWeight: 800, letterSpacing: '-0.025em', marginBottom: 'var(--space-3)' }}>
-          Peptides Near Me - <span style={{ color: 'var(--teal)' }}>{city.name} Area</span>
+          Research Supply Coverage - <span style={{ color: 'var(--teal)' }}>{city.name} Area</span>
         </h2>
         <p style={{ color: 'var(--grey-400)', fontSize: '0.92rem', maxWidth: 720, lineHeight: 1.7, marginBottom: 'var(--space-6)' }}>
-          Researchers Searching For Peptides Near Me In The {area} Find Local Coverage Across {nearby.length} Nearby {nearby.length === 1 ? 'City' : 'Cities'} Including {topThreeLabel}. Every Covered City Below Links To Its Own Dedicated Research Supply Page, And All Orders Ship With Full Batch COA Documentation, Strictly For In Vitro Research Use Only.
+          Nationwide shipping covers {nearby.length} nearby {nearby.length === 1 ? 'city' : 'cities'} in the {area}, including {topThreeLabel}. All orders ship with full batch COA documentation, strictly for in vitro research use only.
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: 'var(--space-3)' }}>
           {nearby.map((c) => (
