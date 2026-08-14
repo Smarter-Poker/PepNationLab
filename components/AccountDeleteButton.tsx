@@ -46,16 +46,19 @@ export default function AccountDeleteButton({
         setWorking(false);
         return;
       }
-      toast.success(
-        json?.result?.already_deleted
-          ? `${noun} Was Already Deleted.`
-          : `${noun}${targetName ? ` "${targetName}"` : ''} Deleted.`,
-      );
-      setAsking(false);
-      setConfirmText('');
-      setReason('');
-      setWorking(false);
-      onDeleted?.();
+
+      const successMsg = json?.result?.already_deleted
+        ? `${noun} Was Already Deleted.`
+        : `✓ ${targetName ? `"${targetName}"` : noun} Successfully Deleted`;
+
+      // Fire the toast BEFORE closing the modal so it survives the unmount
+      toast.success(successMsg, { duration: 5000 });
+
+      // Small delay so the toast registers in Sonner's portal before
+      // onDeleted() triggers onClose() and unmounts this component
+      setTimeout(() => {
+        onDeleted?.();
+      }, 80);
     } catch {
       toast.error('Network Error. Please Try Again.');
       setWorking(false);
