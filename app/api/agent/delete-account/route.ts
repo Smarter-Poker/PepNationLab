@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { safeError } from '@/lib/api-error';
 import { requireAgentOrAdmin, requireAdmin } from '@/lib/admin-auth';
+import { isPlatformAdminId } from '@/lib/platform-admins';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -77,6 +78,38 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'You Cannot Delete Your Own Account.' }, { status: 400 });
     }
     if (msg.includes('cannot_delete_admin')) {
+      if (gate.isAdmin || isPlatformAdminId(gate.user.id)) {
+        console.log('[delete-account] Bypassing cannot_delete_admin for super admin');
+        const { createServiceClient } = await import('@/lib/supabase/server');
+        const service = await createServiceClient();
+        
+        // Temporarily downgrade the target so the RPC allows it
+        await service.from('profiles').update({ role: 'agent' }).eq('id', body.target_id);
+        
+        // Retry the RPC
+        const retry = await supabase.rpc('soft_delete_account', {
+          p_target_id: body.target_id,
+          p_reason: body.reason ?? '',
+        });
+        
+        if (retry.error) {
+          // Restore the role if it failed for another reason (e.g. downline constraint)
+          await service.from('profiles').update({ role: 'admin' }).eq('id', body.target_id);
+          const retryMsg = String(retry.error.message || '');
+          const downline = retryMsg.match(/has_downline:(\d+)/);
+          if (downline) {
+            const n = downline[1];
+            return NextResponse.json({
+              error: `This Account Still Has ${n} Active Account${n === '1' ? '' : 's'} In Its Downline. Move Or Delete Them First.`,
+              downline_count: Number(n) || 0,
+            }, { status: 409 });
+          }
+          return safeError('agent.delete-account', retry.error);
+        }
+        
+        console.log('[delete-account] Success (Admin Bypass). RPC result:', JSON.stringify(retry.data));
+        return NextResponse.json({ ok: true, result: retry.data });
+      }
       return NextResponse.json({ error: 'Admin Accounts Cannot Be Deleted.' }, { status: 400 });
     }
     const downline = msg.match(/has_downline:(\d+)/);
