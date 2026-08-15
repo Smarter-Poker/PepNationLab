@@ -943,7 +943,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                     {typeof order.profit === 'number' && (
                       <div style={{ marginTop: '8px', fontSize: '0.8rem', color: 'var(--grey-400)', fontWeight: 600 }}>
                         {order.is_downline_order ? 'Your Profit On This Sale' : 'Your Profit'}:{' '}
-                        <span style={{ color: '#48BB78', fontWeight: 700 }}>
+                        <span style={{ color: '#22C55E', fontWeight: 700 }}>
                           ${order.profit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
                       </div>
@@ -1794,12 +1794,12 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                             <span>Gross (Before Discount)</span><span>{fmt(grossCustomerPmt)}</span>
                           </div>
                           {discount > 0 && (
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.83rem', color: '#FC8181' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.83rem', color: 'var(--red)' }}>
                               <span>Discount{detailOrder.coupon_code ? ` (${detailOrder.coupon_code})` : ''}</span>
                               <span>-{fmt(discount)}</span>
                             </div>
                           )}
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.83rem', color: discount > 0 ? '#48BB78' : 'var(--silver)', fontWeight: 600 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.83rem', color: discount > 0 ? '#22C55E' : 'var(--silver)', fontWeight: 600 }}>
                             <span>Customer Paid</span><span>{fmt(netYouCollect)}</span>
                           </div>
                         </div>
@@ -1815,7 +1815,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                                 {detailOrder.downline_agent_name ? `${detailOrder.downline_agent_name} Owes You` : 'Downline Owes You'}
                                 <span style={{ fontSize: '0.73rem', color: 'var(--grey-400)', marginLeft: 6 }}>(Cost + Markup + Shipping)</span>
                               </span>
-                              <span style={{ color: '#48BB78', fontWeight: 700 }}>{fmt(dlOwesYou)}</span>
+                              <span style={{ color: '#22C55E', fontWeight: 700 }}>{fmt(dlOwesYou)}</span>
                             </div>
 
                             {/* What SB owes PN = unit_super_agent_cost × qty + ship */}
@@ -1824,14 +1824,14 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                                 You Owe Pep Nation
                                 <span style={{ fontSize: '0.73rem', color: 'var(--grey-400)', marginLeft: 6 }}>(Cost of Goods + Shipping)</span>
                               </span>
-                              <span style={{ color: '#FC8181', fontWeight: 700 }}>-{fmt(youOwePepNation)}</span>
+                              <span style={{ color: 'var(--red)', fontWeight: 700 }}>-{fmt(youOwePepNation)}</span>
                             </div>
 
                             <div style={{ height: 1, background: 'rgba(0,196,188,0.12)' }} />
 
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 800 }}>
                               <span style={{ color: 'var(--white)' }}>Your Net Profit</span>
-                              <span style={{ color: uplProfit >= 0 ? 'var(--brand-yellow, #FFD700)' : '#FC8181' }}>{fmt(uplProfit)}</span>
+                              <span style={{ color: uplProfit >= 0 ? '#22C55E' : 'var(--red)' }}>{fmt(uplProfit)}</span>
                             </div>
                           </>
                         ) : (
@@ -1843,7 +1843,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                                 You Owe Savage Brands
                                 <span style={{ fontSize: '0.73rem', color: 'var(--grey-400)', marginLeft: 6 }}>(Cost of Goods + Markup + Shipping)</span>
                               </span>
-                              <span style={{ color: '#FC8181', fontWeight: 700 }}>-{fmt(youOweSB)}</span>
+                              <span style={{ color: 'var(--red)', fontWeight: 700 }}>-{fmt(youOweSB)}</span>
                             </div>
 
                             {/* Sub-breakdown using unit_super_agent_cost as authoritative COG */}
@@ -1869,7 +1869,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
 
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 800 }}>
                               <span style={{ color: 'var(--white)' }}>Your Net Profit</span>
-                              <span style={{ color: ownProfit >= 0 ? 'var(--brand-yellow, #FFD700)' : '#FC8181' }}>{fmt(ownProfit)}</span>
+                              <span style={{ color: ownProfit >= 0 ? '#22C55E' : 'var(--red)' }}>{fmt(ownProfit)}</span>
                             </div>
                           </>
                         )}
