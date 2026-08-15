@@ -1498,11 +1498,11 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                     dismissed, or when no reconstitution vials are in the cart. */}
                 {neededBacWaterVials > 0 && bacProduct && !bacReminderDismissed && (
                   <div role="status" style={{ background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.35)', borderRadius: 'var(--radius-md)', padding: 'var(--space-4)', boxShadow: '0 0 18px rgba(0,196,188,0.10)' }}>
-                    <strong style={{ display: 'block', color: 'var(--white)', fontSize: '0.85rem', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>Wait Does Your Lab Have BAC Water?</strong>
+                    <strong style={{ display: 'block', color: 'var(--white)', fontSize: '0.85rem', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>Wait. Does Your Lab Have BAC Water?</strong>
                     {bacProduct.imageUrl && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '0 0 10px' }}>
                         <img src={brandSafeImage(bacProduct.imageUrl, bacProduct.name) ?? bacProduct.imageUrl} alt={`Bacteriostatic Water${bacProduct.unitSize ? ` ${bacProduct.unitSize}${bacProduct.unitMeasure || 'ml'}` : ''}`} width={50} height={50} loading="lazy" decoding="async" style={{ flex: '0 0 auto', width: 50, height: 50, objectFit: 'contain', borderRadius: 6, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(0,196,188,0.3)', padding: 3 }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
-                        <span style={{ color: 'var(--teal)', fontSize: '0.8rem', fontWeight: 700, lineHeight: 1.3 }}>Bacteriostatic Water{bacProduct.unitSize ? ` ${bacProduct.unitSize}${bacProduct.unitMeasure || 'ml'} Vials` : ''}</span>
+                        <span style={{ color: 'var(--teal)', fontSize: '0.8rem', fontWeight: 700, lineHeight: 1.3 }}>Bacteriostatic Water{bacProduct.unitSize ? ` (${bacProduct.unitSize}${bacProduct.unitMeasure || 'ml'} Vials)` : ''}</span>
                       </div>
                     )}
                     <p style={{ color: 'var(--silver-light)', fontSize: '0.8rem', margin: '0 0 12px', lineHeight: 1.5 }}>
@@ -1515,7 +1515,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                         className="btn-neon-cyan"
                         style={{ flex: '1 1 230px', padding: '11px 14px', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', borderRadius: 6, cursor: 'pointer' }}
                       >
-                        Add {neededBacWaterVials} BAC Water Vial{neededBacWaterVials !== 1 ? 's' : ''} ${((isAgentSelfBuy ? bacProduct.costPrice : bacProduct.retailPrice) * neededBacWaterVials).toFixed(2)}
+                        Add {neededBacWaterVials} BAC Water Vial{neededBacWaterVials !== 1 ? 's' : ''} (${((isAgentSelfBuy ? bacProduct.costPrice : bacProduct.retailPrice) * neededBacWaterVials).toFixed(2)})
                       </button>
                       <button
                         type="button"
@@ -1628,7 +1628,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                   {bacProduct.imageUrl && (
                     <img src={brandSafeImage(bacProduct.imageUrl, bacProduct.name) ?? bacProduct.imageUrl} alt={`Bacteriostatic Water${bacProduct.unitSize ? ` ${bacProduct.unitSize}${bacProduct.unitMeasure || 'ml'}` : ''}`} width={54} height={54} loading="lazy" decoding="async" style={{ flex: '0 0 auto', width: 54, height: 54, objectFit: 'contain', borderRadius: 6, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(0,196,188,0.25)', padding: 3 }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
                   )}
-                  <p style={{ color: 'var(--silver-light)', fontSize: '0.76rem', margin: 0, lineHeight: 1.4 }}>Your Order Contains <strong style={{ color: 'var(--white)' }}>{bacPeptideVialsDisplay}</strong> Research Vial{bacPeptideVialsDisplay !== 1 ? 's' : ''} Requiring BAC Water Approximately <strong style={{ color: 'var(--teal)' }}>{bacTotalMlNeeded} mL</strong> Total Based On Per-Vial Strength. We Recommend <strong style={{ color: 'var(--white)' }}>{requiredBacWaterVials}</strong> × <strong style={{ color: 'var(--teal)' }}>{bacProduct.unitSize || '10'}{bacProduct.unitMeasure || 'ml'}</strong> Vial{requiredBacWaterVials !== 1 ? 's' : ''} Of Bacteriostatic Water.</p>
+                  <p style={{ color: 'var(--silver-light)', fontSize: '0.76rem', margin: 0, lineHeight: 1.4 }}>Your Order Contains <strong style={{ color: 'var(--white)' }}>{bacPeptideVialsDisplay}</strong> Research Vial{bacPeptideVialsDisplay !== 1 ? 's' : ''} Requiring BAC Water: Approximately <strong style={{ color: 'var(--teal)' }}>{bacTotalMlNeeded} mL</strong> Total Based On Per-Vial Strength. We Recommend <strong style={{ color: 'var(--white)' }}>{requiredBacWaterVials}</strong> × <strong style={{ color: 'var(--teal)' }}>{bacProduct.unitSize || '10'}{bacProduct.unitMeasure || 'ml'}</strong> Vial{requiredBacWaterVials !== 1 ? 's' : ''} Of Bacteriostatic Water.</p>
                 </div>
                 <button type="button" onClick={handleAddBacWater} className="btn-neon-cyan" style={{ width: '100%', padding: '8px 12px', fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer', borderRadius: 6, transition: 'all 0.2s ease' }}>
                   <span>Add {neededBacWaterVials} × {bacProduct.unitSize || '10'}{bacProduct.unitMeasure || 'ml'} Vial{neededBacWaterVials !== 1 ? 's' : ''} To Order</span>
