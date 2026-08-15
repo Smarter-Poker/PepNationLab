@@ -71,8 +71,9 @@ export async function GET(req: NextRequest) {
       if (product) {
         item.unit_size = product.unit_size;
         item.unit_measure = product.unit_measure;
-        // base_cost = Pep Nation's raw cost (what Savage Brands owes Pep Nation).
-        // unit_cost_price = base_cost × (1 + markup) = what the agent owes Savage Brands.
+        // base_cost is stored as integer "dimes" (e.g. 92 = $9.20). Divide by 10 = dollar value.
+        // This is Pep Nation's raw supplier COGS per unit — for display transparency only.
+        // The authoritative "SB owes PN" figure is unit_super_agent_cost (already on order_items in dollars).
         item.unit_base_cost = product.base_cost != null ? Number(product.base_cost) / 10 : null;
       }
 
