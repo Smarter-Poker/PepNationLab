@@ -68,7 +68,10 @@ export async function POST(request: NextRequest) {
     const validation = CheckoutSchema.safeParse(rawBody);
 
     if (!validation.success) {
-      return NextResponse.json({ error: 'Invalid Checkout Data.', details: validation.error.issues }, { status: 400 });
+      const firstIssue = validation.error.issues[0];
+      const fieldPath = firstIssue?.path.join('.');
+      const errorMsg = firstIssue ? `Invalid Checkout Data: ${firstIssue.message}${fieldPath ? ` at ${fieldPath}` : ''}` : 'Invalid Checkout Data.';
+      return NextResponse.json({ error: errorMsg, details: validation.error.issues }, { status: 400 });
     }
 
     const {
