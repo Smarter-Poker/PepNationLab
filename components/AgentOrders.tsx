@@ -1826,20 +1826,57 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                         </div>
                       )}
 
-                      {/* Own (non-downline) orders: show simple profit line */}
+                      {/* Own (non-downline) orders: full agent ledger */}
                       {!isDownline && (
                         <div
                           style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            fontSize: '0.95rem',
-                            color: 'var(--brand-yellow, #FFD700)',
                             marginBottom: 12,
-                            fontWeight: 700,
+                            padding: '14px 16px',
+                            borderRadius: 12,
+                            background: 'rgba(0,196,188,0.06)',
+                            border: '1px solid rgba(0,196,188,0.2)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 8,
                           }}
                         >
-                          <span>Your Profit</span>
-                          <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(netProfit)}</span>
+                          {/* Section header */}
+                          <div style={{ fontSize: '0.75rem', color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800, marginBottom: 4 }}>
+                            Your Settlement
+                          </div>
+
+                          {/* Row: You Collect */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
+                            <span style={{ color: 'var(--silver)' }}>
+                              You Collect
+                              <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', marginLeft: 6 }}>(Customer Payment)</span>
+                            </span>
+                            <span style={{ color: '#48BB78', fontWeight: 700 }}>
+                              {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(detailOrder.total) || 0)}
+                            </span>
+                          </div>
+
+                          {/* Row: You Owe Savage Brands */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
+                            <span style={{ color: 'var(--silver)' }}>
+                              You Owe Savage Brands
+                              <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', marginLeft: 6 }}>(Cost of Goods + Shipping)</span>
+                            </span>
+                            <span style={{ color: '#FC8181', fontWeight: 700 }}>
+                              -{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(youOweTotal)}
+                            </span>
+                          </div>
+
+                          {/* Divider */}
+                          <div style={{ height: 1, background: 'rgba(0,196,188,0.15)', margin: '2px 0' }} />
+
+                          {/* Row: Net Profit */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 800 }}>
+                            <span style={{ color: 'var(--white)' }}>Your Net Profit</span>
+                            <span style={{ color: netProfit >= 0 ? 'var(--brand-yellow, #FFD700)' : '#FC8181' }}>
+                              {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(netProfit)}
+                            </span>
+                          </div>
                         </div>
                       )}
                     </>
