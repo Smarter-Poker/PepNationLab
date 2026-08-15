@@ -1740,33 +1740,41 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                   const discount     = Number(detailOrder.discount_amount || 0);
                   const isDownline   = !!(detailOrder.is_downline_order || detailOrder.is_sub_agent_order);
 
-                  let agentOwesTotal = 0;
-                  let sbCostTotal    = 0;
-                  let cogTotal       = 0;
-                  let retailTotal    = 0;
+                  // unit_cost_price        = what ordering agent (Eddie) pays Savage Brands   [COG + SB markup baked in]
+                  // unit_super_agent_cost  = what Savage Brands pays Pep Nation               [SB's wholesale cost from PN]
+                  // unit_retail_price      = what the customer paid per unit (pre-discount)
+                  let agentOwesTotal = 0;  // unit_cost_price × qty  → what Eddie owes SB
+                  let sbCostTotal    = 0;  // unit_super_agent_cost × qty → what SB owes PN ("COG" in ledger)
+                  let retailTotal    = 0;  // unit_retail_price × qty → gross pre-discount
 
                   detailItems.forEach(item => {
                     const qty = Number(item.quantity) || 0;
                     if (qty <= 0) return;
                     const ucp = Number(item.unit_cost_price       || 0);
                     const usc = Number(item.unit_super_agent_cost || 0);
-                    const ucb = item.unit_base_cost != null ? Number(item.unit_base_cost) : null;
                     const urp = Number(item.unit_retail_price     || 0);
                     agentOwesTotal += ucp * qty;
                     if (usc > 0) sbCostTotal += usc * qty;
-                    if (ucb !== null) cogTotal += ucb * qty;
                     retailTotal += urp * qty;
                   });
 
-                  const sbCostBasis      = sbCostTotal > 0 ? sbCostTotal : cogTotal;
-                  const markupPortion    = cogTotal > 0 ? agentOwesTotal - cogTotal : null;
+                  // Spread: how much of what Eddie pays stays with Savage Brands (their markup)
+                  // sbCostTotal  = SB pays PN  (e.g. $41.13)
+                  // markupSpread = SB keeps     (= agentOwesTotal − sbCostTotal, e.g. $41.13)
+                  const hasSbCost      = sbCostTotal > 0;
+                  const markupSpread   = hasSbCost ? agentOwesTotal - sbCostTotal : null;
+
+                  // Own-order (Eddie) figures
                   const grossCustomerPmt = retailTotal + shippingCost;
                   const netYouCollect    = Number(detailOrder.total) || 0;
                   const youOweSB         = agentOwesTotal + shippingCost;
                   const ownProfit        = netYouCollect - youOweSB;
+
+                  // Upline (Savage Brands) figures
                   const dlOwesYou        = agentOwesTotal + shippingCost;
-                  const youOwePepNation  = sbCostBasis + shippingCost;
-                  const uplProfit        = agentOwesTotal - sbCostBasis;
+                  const youOwePepNation  = sbCostTotal + shippingCost;
+                  const uplProfit        = agentOwesTotal - sbCostTotal;
+
                   const fmt = (n: number) =>
                     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
 
@@ -1779,6 +1787,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                           {isDownline ? 'Upline Ledger — Your Settlement' : 'Your Settlement'}
                         </div>
 
+                        {/* Order Summary sub-box — shown for both views */}
                         <div style={{ padding: '8px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column', gap: 4 }}>
                           <div style={{ fontSize: '0.71rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Order Summary</div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.83rem', color: 'var(--silver)' }}>
@@ -1798,45 +1807,55 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                         <div style={{ height: 1, background: 'rgba(0,196,188,0.12)' }} />
 
                         {isDownline ? (
+                          /* ── UPLINE VIEW: Savage Brands seeing Eddie's order ── */
                           <>
+                            {/* What Eddie (downline) owes SB = unit_cost_price × qty + ship */}
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
                               <span style={{ color: 'var(--silver)' }}>
                                 {detailOrder.downline_agent_name ? `${detailOrder.downline_agent_name} Owes You` : 'Downline Owes You'}
-                                <span style={{ fontSize: '0.73rem', color: 'var(--grey-400)', marginLeft: 6 }}>(COG + Markup + Shipping)</span>
+                                <span style={{ fontSize: '0.73rem', color: 'var(--grey-400)', marginLeft: 6 }}>(Cost + Markup + Shipping)</span>
                               </span>
                               <span style={{ color: '#48BB78', fontWeight: 700 }}>{fmt(dlOwesYou)}</span>
                             </div>
+
+                            {/* What SB owes PN = unit_super_agent_cost × qty + ship */}
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
                               <span style={{ color: 'var(--silver)' }}>
                                 You Owe Pep Nation
-                                <span style={{ fontSize: '0.73rem', color: 'var(--grey-400)', marginLeft: 6 }}>(Your Cost + Shipping)</span>
+                                <span style={{ fontSize: '0.73rem', color: 'var(--grey-400)', marginLeft: 6 }}>(Cost of Goods + Shipping)</span>
                               </span>
                               <span style={{ color: '#FC8181', fontWeight: 700 }}>-{fmt(youOwePepNation)}</span>
                             </div>
+
                             <div style={{ height: 1, background: 'rgba(0,196,188,0.12)' }} />
+
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 800 }}>
                               <span style={{ color: 'var(--white)' }}>Your Net Profit</span>
                               <span style={{ color: uplProfit >= 0 ? 'var(--brand-yellow, #FFD700)' : '#FC8181' }}>{fmt(uplProfit)}</span>
                             </div>
                           </>
                         ) : (
+                          /* ── OWN ORDER VIEW: Eddie seeing his own order ── */
                           <>
+                            {/* Total Eddie owes SB */}
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
                               <span style={{ color: 'var(--silver)' }}>
                                 You Owe Savage Brands
-                                <span style={{ fontSize: '0.73rem', color: 'var(--grey-400)', marginLeft: 6 }}>(COG + Markup + Shipping)</span>
+                                <span style={{ fontSize: '0.73rem', color: 'var(--grey-400)', marginLeft: 6 }}>(Cost of Goods + Markup + Shipping)</span>
                               </span>
                               <span style={{ color: '#FC8181', fontWeight: 700 }}>-{fmt(youOweSB)}</span>
                             </div>
-                            {cogTotal > 0 && markupPortion !== null && (
+
+                            {/* Sub-breakdown using unit_super_agent_cost as authoritative COG */}
+                            {hasSbCost && markupSpread !== null && (
                               <div style={{ display: 'flex', flexDirection: 'column', gap: 3, paddingLeft: 14, borderLeft: '2px solid rgba(252,129,129,0.2)' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--grey-400)' }}>
                                   <span>{"└ Cost of Goods "}<span style={{ opacity: 0.7, fontSize: '0.7rem' }}>(Savage Brands pays Pep Nation)</span></span>
-                                  <span>{fmt(cogTotal)}</span>
+                                  <span>{fmt(sbCostTotal)}</span>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--grey-400)' }}>
                                   <span>{"└ Markup "}<span style={{ opacity: 0.7, fontSize: '0.7rem' }}>(Savage Brands keeps)</span></span>
-                                  <span>{fmt(markupPortion)}</span>
+                                  <span>{fmt(markupSpread)}</span>
                                 </div>
                                 {shippingCost > 0 && (
                                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--grey-400)' }}>
@@ -1845,7 +1864,9 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                                 )}
                               </div>
                             )}
+
                             <div style={{ height: 1, background: 'rgba(0,196,188,0.12)' }} />
+
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 800 }}>
                               <span style={{ color: 'var(--white)' }}>Your Net Profit</span>
                               <span style={{ color: ownProfit >= 0 ? 'var(--brand-yellow, #FFD700)' : '#FC8181' }}>{fmt(ownProfit)}</span>
