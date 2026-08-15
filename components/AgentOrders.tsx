@@ -1737,37 +1737,112 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                 <div style={{ flex: 1 }} />
                 
                 {detailItems && detailItems.length > 0 && (() => {
-                  let profit = 0;
+                  // --- Compute both sides of the upline ledger ---
+                  let cogTotal = 0;    // Cost of goods (what upline pays Pep Nation)
+                  let revenueTotal = 0; // What downline owes upline (retail price they collected)
+
                   detailItems.forEach(item => {
                     const qty = Number(item.quantity || 1);
-                    const ucp = Number(item.unit_cost_price || 0);
-                    const urp = Number(item.unit_retail_price || 0);
-                    const usc = Number(item.unit_super_agent_cost || 0);
-                    
-                    if (detailOrder.is_sub_agent_order) {
-                      profit += (usc > 0 ? usc - ucp : 0) * qty;
+                    const ucp = Number(item.unit_cost_price || 0);  // upline's cost from Pep Nation
+                    const usc = Number(item.unit_super_agent_cost || 0); // what upline charges downline
+                    const urp = Number(item.unit_retail_price || 0); // retail / what customer paid
+
+                    cogTotal += ucp * qty;
+
+                    if (detailOrder.is_downline_order || detailOrder.is_sub_agent_order) {
+                      // Downline order: what downline owes upline = super_agent_cost (the price
+                      // at which the upline sells to the downline). If not snapshotted, fall back
+                      // to retail (conservative — never inflates the upline's due).
+                      revenueTotal += (usc > 0 ? usc : urp) * qty;
                     } else {
-                      profit += (urp - ucp) * qty;
+                      revenueTotal += urp * qty;
                     }
                   });
-                  if (!detailOrder.is_sub_agent_order) {
-                    profit -= Number(detailOrder.discount_amount || 0);
-                  }
-                  
+
+                  const shippingCost = Number(detailOrder.shipping_cost || 0);
+                  const discount = !detailOrder.is_downline_order && !detailOrder.is_sub_agent_order
+                    ? Number(detailOrder.discount_amount || 0)
+                    : 0;
+
+                  const youOweTotal   = cogTotal + shippingCost; // what upline pays Pep Nation
+                  const netProfit     = revenueTotal - cogTotal - discount;
+
+                  const isDownline = detailOrder.is_downline_order || detailOrder.is_sub_agent_order;
+
                   return (
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        fontSize: '0.95rem',
-                        color: 'var(--brand-yellow, #FFD700)',
-                        marginBottom: 12,
-                        fontWeight: 700,
-                      }}
-                    >
-                      <span>Your Profit</span>
-                      <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(profit)}</span>
-                    </div>
+                    <>
+                      {isDownline && (
+                        <div
+                          style={{
+                            marginBottom: 12,
+                            padding: '14px 16px',
+                            borderRadius: 12,
+                            background: 'rgba(0,196,188,0.06)',
+                            border: '1px solid rgba(0,196,188,0.2)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 8,
+                          }}
+                        >
+                          {/* Section header */}
+                          <div style={{ fontSize: '0.75rem', color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800, marginBottom: 4 }}>
+                            Upline Ledger
+                          </div>
+
+                          {/* Row: Downline Owes You */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
+                            <span style={{ color: 'var(--silver)' }}>
+                              {detailOrder.downline_agent_name
+                                ? `${detailOrder.downline_agent_name} Owes You`
+                                : 'Downline Owes You'}
+                              <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', marginLeft: 6 }}>(Cost + Markup + Shipping)</span>
+                            </span>
+                            <span style={{ color: '#48BB78', fontWeight: 700 }}>
+                              {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(revenueTotal + shippingCost)}
+                            </span>
+                          </div>
+
+                          {/* Row: You Owe Pep Nation */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
+                            <span style={{ color: 'var(--silver)' }}>
+                              You Owe Pep Nation
+                              <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', marginLeft: 6 }}>(Cost of Goods + Shipping)</span>
+                            </span>
+                            <span style={{ color: '#FC8181', fontWeight: 700 }}>
+                              -{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(youOweTotal)}
+                            </span>
+                          </div>
+
+                          {/* Divider */}
+                          <div style={{ height: 1, background: 'rgba(0,196,188,0.15)', margin: '2px 0' }} />
+
+                          {/* Row: Net Profit */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 800 }}>
+                            <span style={{ color: 'var(--white)' }}>Your Net Profit</span>
+                            <span style={{ color: netProfit >= 0 ? 'var(--brand-yellow, #FFD700)' : '#FC8181' }}>
+                              {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(netProfit)}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Own (non-downline) orders: show simple profit line */}
+                      {!isDownline && (
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            fontSize: '0.95rem',
+                            color: 'var(--brand-yellow, #FFD700)',
+                            marginBottom: 12,
+                            fontWeight: 700,
+                          }}
+                        >
+                          <span>Your Profit</span>
+                          <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(netProfit)}</span>
+                        </div>
+                      )}
+                    </>
                   );
                 })()}
 
