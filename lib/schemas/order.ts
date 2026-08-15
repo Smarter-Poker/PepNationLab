@@ -23,7 +23,7 @@ export const CheckoutSchema = z.object({
     )
     .min(1, 'Cart Cannot Be Empty.'),
   fulfillmentMethod: z.enum(['ship', 'agent_pickup']),
-  shippingOption: z.enum(['fedex', 'usps', 'agent_pickup']).optional(),
+  shippingOption: z.enum(['fedex', 'usps', 'standard', 'agent_pickup']).optional(),
   paymentMethod: PaymentMethodEnum,
   shippingAddress: ShippingAddressSchema.optional().nullable(),
   couponCode: z.string().optional().nullable(),
