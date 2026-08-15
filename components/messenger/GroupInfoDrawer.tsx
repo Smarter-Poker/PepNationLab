@@ -150,6 +150,27 @@ export default function GroupInfoDrawer({
     }
   };
 
+  const handleDeleteConversation = async () => {
+    if (!window.confirm('Delete This Conversation? It will be removed from your inbox.')) return;
+    try {
+      const res = await fetch('/api/messenger/delete-conversation', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ conversationId: conversation.conversation_id }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        toast(json.error ?? 'Could Not Delete Conversation');
+        return;
+      }
+      setConversations(conversations.filter((c) => c.conversation_id !== conversation.conversation_id));
+      setActive(null);
+      onClose();
+    } catch {
+      toast('Network Error');
+    }
+  };
+
   const openAddPeople = async () => {
     setAdding(true);
     if (contacts.length > 0) return;
@@ -421,6 +442,26 @@ export default function GroupInfoDrawer({
               </button>
             </section>
           )}
+
+          <section>
+            <button
+              type="button"
+              onClick={handleDeleteConversation}
+              style={{
+                padding: '8px 12px',
+                borderRadius: 8,
+                border: '1px solid var(--danger, #E53E3E)',
+                background: 'transparent',
+                color: 'var(--danger, #E53E3E)',
+                cursor: 'pointer',
+                fontWeight: 700,
+                fontSize: '0.86rem',
+                width: '100%',
+              }}
+            >
+              Delete Conversation
+            </button>
+          </section>
         </div>
 
         {adding && (

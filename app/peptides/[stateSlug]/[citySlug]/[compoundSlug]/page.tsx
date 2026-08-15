@@ -23,13 +23,10 @@ import { CITY_COMPOUNDS, getCityCompound } from '@/lib/cities/city-compounds';
 import type { CityCompound } from '@/lib/cities/city-compounds';
 import { getCompound } from '@/lib/compounds-server';
 import { evidenceTier } from '@/lib/compounds';
-import { getCompoundStoreCards } from '@/lib/cities/compound-store';
-import type { CompoundStoreCard } from '@/lib/cities/compound-store';
 import { getRegionLabel, getRegionArea } from '@/lib/cities/city-content';
 import { getResearchAnchors } from '@/lib/cities/research-anchors';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 import { CompoundCityNarrative } from '@/components/cities/CompoundCityNarrative';
-import { buildOffer, getShippingDetailNodes } from '@/lib/structured-data/merchant';
 
 // ISR: regenerate at most every 5 minutes so the live price card tracks the
 // storefront catalog without a redeploy.
@@ -101,7 +98,7 @@ export async function generateMetadata({
   const indexable = false;
 
   const title = `${compound.displayName} In ${city.name}, ${city.stateAbbr} - Research-Grade Supply`;
-  const description = `Buy research-grade ${compound.displayName} (${compound.popularName}) for verified researchers in ${city.name}, ${city.state}. Live wholesale pricing, batch COA documentation, fast nationwide shipping. In vitro laboratory use only.`;
+  const description = `Research-grade ${compound.displayName} for verified researchers in ${city.name}, ${city.state}. Wholesale pricing, batch COA documentation, fast nationwide shipping. In vitro laboratory use only.`;
   const url = `${BASE}/peptides/${stateSlug}/${citySlug}/${compoundSlug}`;
 
   return {
@@ -148,20 +145,14 @@ export default async function CompoundCityPage({
   if (!city || !compound) notFound();
 
   const region = getRegionLabel(city);
-  const [monograph, storeCards] = await Promise.all([
-    getCompound(compound.slug),
-    getCompoundStoreCards(),
-  ]);
-  const card: CompoundStoreCard | null = storeCards[compound.slug] ?? null;
+  const monograph = await getCompound(compound.slug);
 
   const faqs = buildFAQs(city, compound);
   const tier = monograph ? evidenceTier(monograph.evidence_tier) : null;
 
   const pageUrl = `${BASE}/peptides/${stateSlug}/${citySlug}/${compoundSlug}`;
   const monographUrl = `${BASE}/research/${compound.slug}`;
-  const storeHref = card
-    ? `/${DEFAULT_STORE_SLUG}?product=${card.productId}`
-    : `/${DEFAULT_STORE_SLUG}`;
+  const storeHref = `/${DEFAULT_STORE_SLUG}`;
 
   // Sibling compounds in the SAME city (3-4).
   const siblings = CITY_COMPOUNDS.filter((c) => c.slug !== compound.slug).slice(0, 4);
@@ -181,37 +172,11 @@ export default async function CompoundCityPage({
     })
     .slice(0, 8);
 
-  // JSON-LD graph (server-rendered). A Product node is only emitted when a
-  // real price exists: Google's Product spec requires offers/review/rating,
-  // and a Product with none of them draws "missing field (offers)" warnings
-  // in Search Console. With no price we fall back to a plain Thing via the
-  // WebPage `about` node below, which carries no such requirement.
-  const hasOffer = Boolean(card && Number.isFinite(card.price) && card.price > 0);
-  const productNode: Record<string, unknown> | null = hasOffer
-    ? {
-        '@type': 'Product',
-        '@id': `${pageUrl}#product`,
-        name: `${compound.displayName} - Research Grade`,
-        description: `Research-grade ${compound.displayName} (${compound.popularName}) for qualified researchers in ${city.name}, ${city.state}. In vitro laboratory use only.`,
-        brand: { '@id': `${BASE}/#organization` },
-        category: monograph?.category ?? 'Research Peptide',
-        // Offer shape (validFrom, priceValidUntil, shippingDetails) is owned
-        // by lib/structured-data/merchant, shared with the storefront and the
-        // city index so the three cannot drift apart.
-        offers: buildOffer({
-          price: card!.price as number,
-          url: `${BASE}${storeHref}`,
-          inStock: true,
-          sku: card!.productId ? String(card!.productId) : null,
-        }),
-      }
-    : null;
-  if (productNode && card?.image) {
-    // Guard: DB image URLs may already be absolute (Supabase storage).
-    productNode.image = String(card.image).startsWith('http')
-      ? card.image
-      : `${BASE}${card.image}`;
-  }
+  // NOTE: No Product/Offer schema is emitted on compound-city pages.
+  // These pages are noindex,follow (see generateMetadata above) and emitting
+  // commercial Product schema for unapproved research compounds on noindex
+  // pages is both contradictory and a potential Google manual-action risk.
+  // Schema is limited to BreadcrumbList + FAQPage + WebPage only.
 
   // Regional research institutions for this metro, emitted as schema.org
   // `mentions` on the WebPage node - honest entity/topical context for the
@@ -244,9 +209,6 @@ export default async function CompoundCityPage({
           { '@type': 'ListItem', position: 5, name: compound.displayName, item: pageUrl },
         ],
       },
-      ...(productNode ? [productNode] : []),
-      // Emitted once; the offer above references these by @id.
-      ...(productNode ? getShippingDetailNodes() : []),
       {
         '@type': 'FAQPage',
         '@id': `${pageUrl}#faq`,
@@ -264,7 +226,6 @@ export default async function CompoundCityPage({
         inLanguage: 'en-US',
         isPartOf: { '@id': `${BASE}/#website` },
         breadcrumb: { '@id': `${pageUrl}#breadcrumb` },
-        ...(productNode ? { mainEntity: { '@id': `${pageUrl}#product` } } : {}),
         publisher: { '@id': `${BASE}/#organization` },
         datePublished: '2026-07-10',
         dateModified: CITY_CONTENT_UPDATED.toISOString().slice(0, 10),
@@ -415,54 +376,20 @@ export default async function CompoundCityPage({
               </Link>
             </div>
 
-            {/* Live price card */}
-            <div style={{ ...glass, padding: 'clamp(22px, 3vw, 34px)', position: 'relative', overflow: 'hidden' }}>
-              <h2 style={{ color: 'var(--white, #fff)', fontSize: 'clamp(1.3rem, 2.6vw, 1.7rem)', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 'var(--space-2, 8px)' }}>
-                Live {compound.displayName} Pricing
-              </h2>
-              <p style={{ fontSize: '0.85rem', color: 'var(--grey-400, #9aa6b2)', lineHeight: 1.6, marginBottom: 'var(--space-5, 20px)' }}>
-                Wholesale pricing for verified researchers in {city.name}, {city.stateAbbr}, mirrored live from the Pep Nation Lab research store.
-              </p>
-
-              {card ? (
-                <Link href={storeHref} style={{ textDecoration: 'none', display: 'block' }}>
-                  <div style={{ background: 'linear-gradient(180deg, #1a1f2e 0%, #111520 100%)', borderRadius: 15, border: '1px solid rgba(192,184,168,0.15)', overflow: 'hidden' }}>
-                    <div style={{ position: 'relative', height: 200, background: 'var(--surface-2, #162230)' }}>
-                      <Image
-                        src={card.image}
-                        alt={`${compound.displayName} (${compound.popularName}) Research Peptide ${card.sizeLabel} - Available To Researchers In ${city.name}, ${city.stateAbbr}`}
-                        fill
-                        sizes="(max-width: 768px) 100vw, 420px"
-                        style={{ objectFit: 'cover' }}
-                        unoptimized={card.image.startsWith('http')}
-                      />
-                    </div>
-                    <div style={{ padding: 'var(--space-5, 20px)', textAlign: 'center' }}>
-                      <h3 style={{ fontFamily: 'var(--font-brand, inherit)', fontSize: '1.25rem', color: 'var(--white, #fff)', marginBottom: card.subtitle ? 2 : 8, lineHeight: 1.2 }}>{card.name}</h3>
-                      {card.subtitle && (
-                        <span style={{ fontSize: '0.78rem', color: 'var(--grey-400, #9aa6b2)', display: 'block', marginBottom: 8 }}>({card.subtitle})</span>
-                      )}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 'var(--space-4, 16px)' }}>
-                        {card.originalPrice !== null && (
-                          <span style={{ fontSize: '0.95rem', color: 'var(--grey-500, #8593a0)', textDecoration: 'line-through', fontWeight: 600 }}>${card.originalPrice.toFixed(2)}</span>
-                        )}
-                        <span style={{ fontSize: '1.2rem', fontWeight: 800, fontFamily: 'var(--font-brand, inherit)', color: 'var(--white, #fff)' }}>
-                          {card.sizeLabel} &nbsp;${card.price.toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ marginTop: 'var(--space-4, 16px)', textAlign: 'center', padding: '12px 18px', borderRadius: 999, background: 'var(--teal, #00C4BC)', color: '#04211f', fontWeight: 800, fontSize: '0.9rem' }}>
-                    View {compound.displayName} In The Research Store
-                  </div>
-                </Link>
-              ) : (
-                <Link href={storeHref} style={{ display: 'block', textAlign: 'center', padding: '14px 18px', borderRadius: 999, background: 'var(--teal, #00C4BC)', color: '#04211f', fontWeight: 800, fontSize: '0.9rem', textDecoration: 'none' }}>
-                  Browse {compound.displayName} In The Research Store
-                </Link>
-              )}
-
-              <div data-nosnippet style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginTop: 'var(--space-5, 20px)', background: 'rgba(229,62,62,0.06)', border: '1px solid rgba(229,62,62,0.18)', borderRadius: 12, padding: '11px 15px' }}>
+            {/* Research Store CTA */}
+            <div style={{ ...glass, padding: 'clamp(22px, 3vw, 34px)', display: 'flex', flexDirection: 'column', gap: 'var(--space-5, 20px)' }}>
+              <div>
+                <h2 style={{ color: 'var(--white, #fff)', fontSize: 'clamp(1.3rem, 2.6vw, 1.7rem)', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 'var(--space-2, 8px)' }}>
+                  {compound.displayName} — Research Store
+                </h2>
+                <p style={{ fontSize: '0.85rem', color: 'var(--grey-400, #9aa6b2)', lineHeight: 1.6, margin: 0 }}>
+                  Verified researchers in {city.name}, {city.stateAbbr} access wholesale pricing on the full Pep Nation Lab catalog — including {compound.displayName} — after account verification.
+                </p>
+              </div>
+              <Link href={storeHref} style={{ display: 'block', textAlign: 'center', padding: '14px 18px', borderRadius: 999, background: 'var(--teal, #00C4BC)', color: '#04211f', fontWeight: 800, fontSize: '0.9rem', textDecoration: 'none' }}>
+                Browse {compound.displayName} In The Research Store
+              </Link>
+              <div data-nosnippet style={{ display: 'flex', gap: 10, alignItems: 'flex-start', background: 'rgba(229,62,62,0.06)', border: '1px solid rgba(229,62,62,0.18)', borderRadius: 12, padding: '11px 15px' }}>
                 <p style={{ fontSize: '0.72rem', color: 'var(--silver, #A8B4C0)', margin: 0, lineHeight: 1.6 }}>
                   Strictly For <strong style={{ color: 'var(--red, #E53E3E)' }}>In Vitro Research Use Only.</strong> Not For Human Or Animal Consumption. Verified Researchers Only.
                 </p>

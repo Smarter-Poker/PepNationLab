@@ -52,6 +52,7 @@ interface OrderItem {
   quantity: number;
   unit_retail_price: number;
   unit_cost_price: number | null;
+  unit_super_agent_cost?: number | null;
   unit_size?: number | null;
   unit_measure?: string | null;
   stackData?: {
@@ -1733,7 +1734,134 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                     </span>
                   </div>
                 )}
-                <div style={{ flex: 1 }} />
+                {detailItems && detailItems.length > 0 && (() => {
+                  const shippingCost = Number(detailOrder.shipping_cost || 0);
+                  const discount = Number(detailOrder.discount_amount || 0);
+                  const isDownline = !!(detailOrder.is_downline_order || detailOrder.is_sub_agent_order);
+
+                  // ── Per-item cost & revenue accumulators ──────────────────────
+                  let cogTotal     = 0; // sum of (unit_cost_price × qty) — what this agent pays platform
+                  let revenueTotal = 0; // sum of (what this agent collects per item)
+
+                  detailItems.forEach(item => {
+                    const qty = Number(item.quantity) || 0;  // never inflate: 0 items = $0
+                    if (qty <= 0) return;
+                    const ucp = Number(item.unit_cost_price || 0);   // this agent's cost from Savage Brands
+                    const usc = Number(item.unit_super_agent_cost || 0); // price upline sells to downline
+                    const urp = Number(item.unit_retail_price || 0);     // customer-facing retail price
+
+                    cogTotal += ucp * qty;
+
+                    if (isDownline) {
+                      // Downline order: upline collects usc from the downline agent.
+                      // If usc wasn't snapshotted (0 / null), fall back to urp (conservative).
+                      revenueTotal += (usc > 0 ? usc : urp) * qty;
+                    } else {
+                      // Own order: agent collects the retail price from the customer.
+                      revenueTotal += urp * qty;
+                    }
+                  });
+
+                  // ── Derived totals ─────────────────────────────────────────────
+                  //
+                  // OWN ORDER (agent sells direct to customer):
+                  //   You Collect   = order.total  (authoritative: subtotal + shipping − discount)
+                  //   You Owe       = COG + shipping  (platform bills agent cost + shipping)
+                  //   Net Profit    = order.total − youOweTotal
+                  //                 = retail − discount + shipping − COG − shipping
+                  //                 = retail − discount − COG   ✓ matches server formula
+                  //
+                  // DOWNLINE ORDER (agent is upline, downline sold to customer):
+                  //   Downline Owes You = revenueTotal (product) + shipping (re-billed pass-through)
+                  //   You Owe Platform  = COG + shipping (same pass-through)
+                  //   Net Profit        = revenueTotal − COG
+                  //                     (shipping cancels: collected from DL, paid to platform)
+                  //   Discounts are borne by the selling agent's margin, not the upline's.
+
+                  const youCollect  = isDownline
+                    ? revenueTotal + shippingCost          // downline pays upline: product + shipping
+                    : Number(detailOrder.total) || 0;      // customer paid the order total (authoritative)
+
+                  const youOweTotal = cogTotal + shippingCost; // COG + shipping to platform / Savage Brands
+
+                  const netProfit = isDownline
+                    ? revenueTotal - cogTotal              // shipping nets to zero (pass-through)
+                    : youCollect   - youOweTotal;          // = retail − discount − COG (matches server)
+
+                  return (
+                    <>
+                      <div style={{ flex: 1 }} />
+
+                      <div
+                        style={{
+                          marginBottom: 12,
+                          padding: '14px 16px',
+                          borderRadius: 12,
+                          background: 'rgba(0,196,188,0.06)',
+                          border: '1px solid rgba(0,196,188,0.2)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 8,
+                        }}
+                      >
+                        {/* Section header */}
+                        <div style={{ fontSize: '0.75rem', color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800, marginBottom: 4 }}>
+                          {isDownline ? 'Upline Ledger' : 'Your Settlement'}
+                        </div>
+
+                        {/* Row 1: What this agent collects */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
+                          <span style={{ color: 'var(--silver)' }}>
+                            {isDownline
+                              ? (detailOrder.downline_agent_name
+                                  ? `${detailOrder.downline_agent_name} Owes You`
+                                  : 'Downline Owes You')
+                              : 'You Collect'}
+                            <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', marginLeft: 6 }}>
+                              {isDownline ? '(Cost + Markup + Shipping)' : '(Customer Payment)'}
+                            </span>
+                          </span>
+                          <span style={{ color: '#48BB78', fontWeight: 700 }}>
+                            {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(youCollect)}
+                          </span>
+                        </div>
+
+                        {/* Row 2: What this agent owes the platform/Savage Brands */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
+                          <span style={{ color: 'var(--silver)' }}>
+                            {isDownline ? 'You Owe Pep Nation' : 'You Owe Savage Brands'}
+                            <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', marginLeft: 6 }}>(Cost of Goods + Shipping)</span>
+                          </span>
+                          <span style={{ color: '#FC8181', fontWeight: 700 }}>
+                            -{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(youOweTotal)}
+                          </span>
+                        </div>
+
+                        {/* Show discount line if applicable (own orders only) */}
+                        {!isDownline && discount > 0 && (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--grey-400)' }}>
+                            <span>Coupon Discount{detailOrder.coupon_code ? ` (${detailOrder.coupon_code})` : ''} <span style={{ fontSize: '0.75rem' }}>(absorbed by you)</span></span>
+                            <span style={{ color: '#FC8181' }}>
+                              -{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(discount)}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Divider */}
+                        <div style={{ height: 1, background: 'rgba(0,196,188,0.15)', margin: '2px 0' }} />
+
+                        {/* Row 3: Net Profit */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 800 }}>
+                          <span style={{ color: 'var(--white)' }}>Your Net Profit</span>
+                          <span style={{ color: netProfit >= 0 ? 'var(--brand-yellow, #FFD700)' : '#FC8181' }}>
+                            {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(netProfit)}
+                          </span>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
+
                 <div
                   style={{
                     display: 'flex',

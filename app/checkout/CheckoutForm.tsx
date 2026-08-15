@@ -358,28 +358,25 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
           if (agentProfile) {
             if (!bac) {
-              const { data: apRows } = await supabase
+              const { data: apBac } = await supabase
                 .from('agent_products')
                 .select(`id, product_id, retail_price, custom_image_url, products!inner ( name, unit_size, unit_measure, weight_oz, compound_slug, image_url )`)
                 .eq('agent_id', agentProfile.id)
                 .eq('is_visible', true)
-                .eq('products.compound_slug', 'bac-water')
-                .limit(5);
-              const ap = (apRows ?? []).find((row: any) => {
-                const pr = (Array.isArray(row.products) ? row.products[0] : row.products) as any;
-                return String(pr?.unit_size) === '10';
-              }) ?? (apRows ?? [])[0] ?? null;
-              if (ap) {
-                const retail = ap.retail_price / 10;
-                const prod = (Array.isArray(ap.products) ? ap.products[0] : ap.products) as any;
+                .or('name.ilike.%bacteriostatic water%,name.ilike.%bac%water%', { foreignTable: 'products' })
+                .limit(1)
+                .maybeSingle();
+              if (apBac) {
+                const retail = apBac.retail_price / 10;
+                const prod = (Array.isArray(apBac.products) ? apBac.products[0] : apBac.products) as any;
                 const sizeLabel = prod?.unit_size ? `(${prod.unit_size}${prod.unit_measure || ''})` : '';
                 bac = {
-                  id: ap.product_id, agentProductId: ap.id,
-                  name: `${prod?.name || 'Bac. Water'} ${sizeLabel}`.trim(),
+                  id: apBac.product_id, agentProductId: apBac.id,
+                  name: `${prod?.name || 'BAC Water'} ${sizeLabel}`.trim(),
                   retailPrice: retail, costPrice: retail,
                   weightOz: Number(prod?.weight_oz) || 0.5,
                   unitSize: prod?.unit_size ?? null, unitMeasure: prod?.unit_measure ?? null,
-                  imageUrl: (ap as any).custom_image_url ?? prod?.image_url ?? null,
+                  imageUrl: (apBac as any).custom_image_url ?? prod?.image_url ?? null,
                 };
               }
             }
@@ -390,7 +387,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 .select(`id, product_id, retail_price, custom_image_url, products!inner ( name, unit_size, unit_measure, weight_oz, compound_slug, image_url )`)
                 .eq('agent_id', agentProfile.id)
                 .eq('is_visible', true)
-                .ilike('products.name', '%acetic acid%')
+                .ilike('name', '%acetic acid%', { foreignTable: 'products' })
                 .limit(1)
                 .maybeSingle();
               if (apAcetic) {
@@ -417,7 +414,8 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
           const { data: bacRows } = await supabase
             .from('products')
             .select('id, name, base_cost, max_retail_price, weight_oz, unit_size, unit_measure, image_url')
-            .eq('compound_slug', 'bac-water')
+            .or('name.ilike.%bacteriostatic water%,name.ilike.%bac%water%')
+            .eq('is_active', true)
             .limit(5);
           const p = (bacRows ?? []).find(r => String(r.unit_size) === '10') ?? (bacRows ?? [])[0] ?? null;
           if (p) {
@@ -491,6 +489,23 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
         if (!cancelled && typeof json?.totalMlNeeded === 'number') {
           setSmartBacMl(json.totalMlNeeded);
           if (typeof json?.totalPeptideVials === 'number') setSmartPeptideVials(json.totalPeptideVials);
+          if (json.bacWaterProduct) {
+            setBacProduct((prev) => {
+              if (prev) return prev;
+              const sizeLabel = json.bacWaterProduct.unit_size ? `(${json.bacWaterProduct.unit_size}${json.bacWaterProduct.unit_measure || ''})` : '';
+              return {
+                id: json.bacWaterProduct.id,
+                agentProductId: json.bacWaterProduct.id,
+                name: `${json.bacWaterProduct.name} ${sizeLabel}`.trim(),
+                retailPrice: json.bacWaterProduct.retail_price || 0,
+                costPrice: json.bacWaterProduct.retail_price || 0,
+                weightOz: 0.5,
+                unitSize: json.bacWaterProduct.unit_size ?? null,
+                unitMeasure: json.bacWaterProduct.unit_measure ?? null,
+                imageUrl: json.bacWaterProduct.image_url ?? null,
+              };
+            });
+          }
         }
       } catch { /* keep the conservative fallback estimate */ }
     })();

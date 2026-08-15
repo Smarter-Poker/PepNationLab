@@ -68,7 +68,10 @@ export async function POST(request: NextRequest) {
     const validation = CheckoutSchema.safeParse(rawBody);
 
     if (!validation.success) {
-      return NextResponse.json({ error: 'Invalid Checkout Data.', details: validation.error.issues }, { status: 400 });
+      const firstIssue = validation.error.issues[0];
+      const fieldPath = firstIssue?.path.join('.');
+      const errorMsg = firstIssue ? `Invalid Checkout Data: ${firstIssue.message}${fieldPath ? ` at ${fieldPath}` : ''}` : 'Invalid Checkout Data.';
+      return NextResponse.json({ error: errorMsg, details: validation.error.issues }, { status: 400 });
     }
 
     const {
@@ -521,7 +524,7 @@ export async function POST(request: NextRequest) {
         }
       }
     }
-    const isValidBundleLine = (bundleName: string | undefined, productId: string): boolean => {
+    const isValidBundleLine = (bundleName: string | null | undefined, productId: string): boolean => {
       if (!bundleName) return false;
       const members = validBundleMembers.get(bundleName.trim().toLowerCase());
       return !!members && members.has(productId);
@@ -530,7 +533,7 @@ export async function POST(request: NextRequest) {
     // the factor is computed per-line by callers using bundleCustomPriceByName.
     // Defaults to the legacy 10% only for a validated bundle line whose bundle
     // somehow carries no percent.
-    const bundleDiscountFactor = (bundleName: string | undefined): number => {
+    const bundleDiscountFactor = (bundleName: string | null | undefined): number => {
       if (!bundleName) return 1;
       // Custom price bundles: handled separately, return 1 here so the caller
       // can apply the per-item custom price proportionally.
