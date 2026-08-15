@@ -106,3 +106,32 @@ The `products` table is **shared across all storefronts**. Its `image_url` colum
 
 **If you need to update Savage Brands product images:** Update `agent_products.custom_image_url` WHERE `agent_id = (SELECT id FROM agent_profiles WHERE slug = 'savagebrands')` — never touch `products.image_url`.
 <!-- END:products-table-image-protection -->
+
+
+<!-- BEGIN:ui-ux-event-bubbling-rule -->
+# HARD RULE: Never Nest Interactive Elements Inside Labels
+
+Never place a `<button>`, `<a>`, or other interactive elements inside a `<label>` element.
+
+**Why:** The HTML spec strictly forbids interactive elements inside labels (except for the single specific `<input>` the label is for). Placing a secondary interactive element (like a "Test" or "Info" button) inside a label causes event bubbling bugs: when a user clicks the button, the browser inherently triggers the label, which will immediately toggle the associated checkbox and mutate state unintentionally.
+
+**The Correct Architecture:**
+If you need a toggle switch or checkbox with an associated secondary button:
+```tsx
+// ❌ WRONG (Accidental toggling)
+<label>
+  <input type="checkbox" />
+  <span>Enable Feature</span>
+  <button onClick={doSomethingElse}>Test</button>
+</label>
+
+// ✅ CORRECT (Isolated hit areas)
+<div>
+  <label>
+    <input type="checkbox" />
+    <span>Enable Feature</span>
+  </label>
+  <button onClick={doSomethingElse}>Test</button>
+</div>
+```
+<!-- END:ui-ux-event-bubbling-rule -->
