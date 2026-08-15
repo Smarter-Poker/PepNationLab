@@ -1051,6 +1051,7 @@ export default function MessagePane({ userId }: Props) {
         }}
       >
         <div
+          onClick={() => setInfoOpen(true)}
           style={{
             fontWeight: 800,
             fontSize: '1.05rem',
@@ -1062,6 +1063,7 @@ export default function MessagePane({ userId }: Props) {
             whiteSpace: 'nowrap',
             flex: '1 1 0',
             minWidth: 0,
+            cursor: 'pointer',
           }}
         >
           {headerLabel}
