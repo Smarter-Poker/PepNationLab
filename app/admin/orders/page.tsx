@@ -8,6 +8,7 @@ import Pagination from "@/components/Pagination";
 import { exportCSV, downloadCSV } from "@/lib/export";
 import { paymentMethodLabel, type PaymentMethodSlug } from "@/lib/payment-method-labels";
 import IframeModal from "@/components/ui/IframeModal";
+import { computeOwnOrderLedger, computeUplineLedger } from "@/lib/agent-ledger";
 
 const PAGE_SIZE = 25;
 
@@ -1498,32 +1499,32 @@ function AdminOrdersPageInner() {
                         </div>
 
                         {userRole === "admin" && items.length > 0 && selectedOrder.agent_id && (() => {
-                          const fmt = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
-                          const shippingCost = Number(selectedOrder.shipping_cost || 0);
-                          const discount     = Number(selectedOrder.discount_amount || 0);
+                          const ownLedger = computeOwnOrderLedger(selectedOrder, items);
+                          const uplineLedger = computeUplineLedger(selectedOrder, items);
+                          
+                          const {
+                            grossCustomerPmt,
+                            netYouCollect,
+                            discount,
+                            shippingCost,
+                            ownProfit,
+                            hasSbCost,
+                            sbCostTotal,
+                            markupSpread
+                          } = ownLedger;
 
-                          let agentOwesTotal = 0;
-                          let sbCostTotal    = 0;
-                          let retailTotal    = 0;
+                          const {
+                            dlOwesYou,
+                            youOwePepNation,
+                            uplProfit
+                          } = uplineLedger;
 
-                          items.forEach(item => {
-                            const qty = Number(item.quantity) || 0;
-                            if (qty <= 0) return;
-                            agentOwesTotal += Number(item.unit_cost_price || 0) * qty;
-                            const usc = Number(item.unit_super_agent_cost || 0);
-                            if (usc > 0) sbCostTotal += usc * qty;
-                            retailTotal += Number(item.unit_retail_price || 0) * qty;
-                          });
-
-                          const hasSbCost      = sbCostTotal > 0;
-                          const markupSpread   = hasSbCost ? agentOwesTotal - sbCostTotal : null;
-                          const grossCustomerPmt = retailTotal + shippingCost;
-                          const netCustomerPaid  = Number(selectedOrder.total || 0);
-                          const agentOwesUpline  = agentOwesTotal + shippingCost;
-                          const agentProfit      = netCustomerPaid - agentOwesUpline;
-                          const uplineOwesPN     = sbCostTotal + shippingCost;
-                          const uplineProfit     = agentOwesTotal - sbCostTotal;
                           const uplineName       = selectedOrder.agent?.parent?.full_name;
+                          const agentOwesUpline  = dlOwesYou;
+                          const agentProfit      = ownProfit;
+                          const uplineOwesPN     = youOwePepNation;
+                          const netCustomerPaid  = netYouCollect;
+                          const fmt = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
 
                           return (
                             <div style={{ marginTop: "1rem", paddingTop: "0.5rem", borderTop: "1px dashed var(--border)" }}>
