@@ -9,29 +9,8 @@ import { maskAdminIdentity } from '@/lib/messenger/identity';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-interface MessageRow {
-  id: string;
-  client_message_id: string | null;
-  conversation_id: string;
-  sender_id: string;
-  text: string | null;
-  message_type: string;
-  media_url: string | null;
-  media_metadata: unknown;
-  reply_to_id: string | null;
-  thread_parent_id: string | null;
-  is_edited: boolean;
-  is_deleted: boolean;
-  delete_scope: string | null;
-  priority: string | null;
-  status: string | null;
-  labels: unknown;
-  expires_at: string | null;
-  metadata: unknown;
-  created_at: string;
-  updated_at: string;
-}
+import { Database } from '@/types/database.types';
+type MessageRow = Database['public']['Tables']['messenger_messages']['Row'];
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -66,9 +45,7 @@ export async function POST(req: NextRequest) {
 
   let query = svc
     .from('messenger_messages')
-    .select(
-      'id, client_message_id, conversation_id, sender_id, text, message_type, media_url, media_metadata, reply_to_id, thread_parent_id, is_edited, is_deleted, delete_scope, priority, status, labels, expires_at, metadata, created_at, updated_at'
-    )
+    .select('*')
     .eq('conversation_id', parsed.data.conversationId)
     .is('thread_parent_id', null)
     .order('created_at', { ascending: false })
