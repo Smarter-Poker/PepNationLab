@@ -358,14 +358,25 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
           if (agentProfile) {
             if (!bac) {
-              const { data: apBac } = await supabase
+              // Canonical resolution is by compound_slug -- NOT by name. Name
+              // matching has broken this feature twice (a `.limit(1)` name
+              // match can return the 3 mL vial, silently producing the wrong
+              // volume and price). compound_slug is the stable identity; the
+              // name `.or()` is only a secondary net for rows missing a slug.
+              // Fetch several and explicitly PREFER the 10 mL vial.
+              const { data: apBacRows, error: apBacErr } = await supabase
                 .from('agent_products')
                 .select(`id, product_id, retail_price, custom_image_url, products!inner ( name, unit_size, unit_measure, weight_oz, compound_slug, image_url )`)
                 .eq('agent_id', agentProfile.id)
                 .eq('is_visible', true)
-                .or('name.ilike.%bacteriostatic water%,name.ilike.%bac%water%', { foreignTable: 'products' })
-                .limit(1)
-                .maybeSingle();
+                .or('compound_slug.eq.bac-water,name.ilike.%bacteriostatic water%,name.ilike.%bac%water%', { referencedTable: 'products' })
+                .limit(10);
+              if (apBacErr) console.error('[checkout] store BAC water lookup failed:', apBacErr.message);
+              const rowSize = (row: any) => {
+                const pr = Array.isArray(row?.products) ? row.products[0] : row?.products;
+                return String(pr?.unit_size ?? '');
+              };
+              const apBac = (apBacRows ?? []).find((r: any) => rowSize(r) === '10') ?? (apBacRows ?? [])[0] ?? null;
               if (apBac) {
                 const retail = apBac.retail_price / 10;
                 const prod = (Array.isArray(apBac.products) ? apBac.products[0] : apBac.products) as any;
@@ -382,14 +393,19 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             }
 
             if (!acetic) {
-              const { data: apAcetic } = await supabase
+              const { data: apAcetic, error: apAceticErr } = await supabase
                 .from('agent_products')
                 .select(`id, product_id, retail_price, custom_image_url, products!inner ( name, unit_size, unit_measure, weight_oz, compound_slug, image_url )`)
                 .eq('agent_id', agentProfile.id)
                 .eq('is_visible', true)
-                .ilike('name', '%acetic acid%', { foreignTable: 'products' })
+                // Embedded-table columns are filtered with the DOTTED path.
+                // `.ilike('name', ..., { foreignTable })` silently filters
+                // agent_products.name -- a column that does not exist -- so
+                // PostgREST answered 400 and this upsell died without a trace.
+                .ilike('products.name', '%acetic acid%')
                 .limit(1)
                 .maybeSingle();
+              if (apAceticErr) console.error('[checkout] store acetic acid lookup failed:', apAceticErr.message);
               if (apAcetic) {
                 const retail = apAcetic.retail_price / 10;
                 const prod = (Array.isArray(apAcetic.products) ? apAcetic.products[0] : apAcetic.products) as any;
