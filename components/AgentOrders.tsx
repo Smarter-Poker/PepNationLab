@@ -52,6 +52,7 @@ interface OrderItem {
   quantity: number;
   unit_retail_price: number;
   unit_cost_price: number | null;
+  unit_super_agent_cost?: number | null;
   unit_size?: number | null;
   unit_measure?: string | null;
   stackData?: {
@@ -1734,6 +1735,42 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                   </div>
                 )}
                 <div style={{ flex: 1 }} />
+                
+                {detailItems && detailItems.length > 0 && (() => {
+                  let profit = 0;
+                  detailItems.forEach(item => {
+                    const qty = Number(item.quantity || 1);
+                    const ucp = Number(item.unit_cost_price || 0);
+                    const urp = Number(item.unit_retail_price || 0);
+                    const usc = Number(item.unit_super_agent_cost || 0);
+                    
+                    if (detailOrder.is_sub_agent_order) {
+                      profit += (usc > 0 ? usc - ucp : 0) * qty;
+                    } else {
+                      profit += (urp - ucp) * qty;
+                    }
+                  });
+                  if (!detailOrder.is_sub_agent_order) {
+                    profit -= Number(detailOrder.discount_amount || 0);
+                  }
+                  
+                  return (
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        fontSize: '0.95rem',
+                        color: 'var(--brand-yellow, #FFD700)',
+                        marginBottom: 12,
+                        fontWeight: 700,
+                      }}
+                    >
+                      <span>Your Profit</span>
+                      <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(profit)}</span>
+                    </div>
+                  );
+                })()}
+
                 <div
                   style={{
                     display: 'flex',
