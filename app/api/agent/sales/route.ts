@@ -52,8 +52,12 @@ export async function GET(req: NextRequest) {
       for (let depth = 1; depth <= MAX_DOWNLINE_DEPTH && frontier.length > 0; depth++) {
         const { data: children, error: childErr } = await supabase
           .from('profiles')
-          .select('id, full_name, parent_agent_id')
-          .in('parent_agent_id', frontier);
+          .select('id, full_name, parent_agent_id, role')
+          .in('parent_agent_id', frontier)
+          // Never include admin accounts in any agent's downline tree.
+          // Admins (e.g. Daniel Bekavac) place Pep Nation direct orders that
+          // only the platform owner should see.
+          .neq('role', 'admin');
         if (childErr) {
           return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
         }
@@ -61,6 +65,8 @@ export async function GET(req: NextRequest) {
         for (const c of children ?? []) {
           const id = c.id as string;
           if (seen.has(id)) continue; // cycle guard
+          // Belt-and-suspenders: skip admins even if the .neq above somehow missed one.
+          if ((c as { role?: string }).role === 'admin') continue;
           seen.add(id);
           downlineNames.set(id, (c as { full_name?: string | null }).full_name ?? null);
           parentOf.set(id, (c as { parent_agent_id?: string | null }).parent_agent_id as string);
@@ -124,6 +130,13 @@ export async function GET(req: NextRequest) {
       // Exclude cancelled orders so voided sales don't distort profit/discount totals
       // (matches coupon-performance, redemptions, and sub-agent-rollup readers).
       .neq('status', 'cancelled')
+      // Hard-exclude admin-placed orders (Pep Nation direct / Daniel Bekavac).
+      // These are platform-owner orders and must never appear in any agent's feed.
+      // Primary gate is the downline walk above; this is the safety-net filter.
+      .not('agent_id', 'in', `(${[
+        'b8bd12e6-8196-401e-b37b-f742caf1596c', // Daniel Bekavac (admin)
+        'a253044b-2250-4187-9af5-78cbca2d4e67', // unnamed admin account
+      ].join(',')})`)
       .order('created_at', { ascending: false })
       .limit(2500);
 
