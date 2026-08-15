@@ -76,6 +76,14 @@ export async function GET(req: NextRequest) {
     // Filter out pending_customer_payment and agent_approval_pending orders that belong to an external agent,
     // EXCEPT for platform admins who have full control over all orders.
     let filteredData = (typedData || []).filter((order) => {
+      // 1. Hard privacy boundary: Only true admins can see Pep Nation direct orders or Daniel Bekavac's orders.
+      // Savage Brands (who is a platform admin but role='super_agent') must never see these.
+      if (gate.role !== 'admin') {
+        if (!order.agent_id) return false; // Pep Nation Direct
+        if (order.agent_id === 'b8bd12e6-8196-401e-b37b-f742caf1596c') return false; // Daniel Bekavac
+      }
+
+      // 2. Pending customer payment boundary
       if (order.status === 'pending_customer_payment' || order.status === 'agent_approval_pending') {
         if (!gate.isAdmin && order.agent_id && order.agent_id !== gate.userId) {
           return false;
