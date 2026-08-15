@@ -1497,101 +1497,126 @@ function AdminOrdersPageInner() {
                           <span>${Number(selectedOrder.total).toFixed(2)}</span>
                         </div>
 
-                        {userRole === "admin" && (
-                          <div style={{
-                            marginTop: "1rem",
-                            paddingTop: "0.5rem",
-                            borderTop: "1px dashed var(--border)",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "6px"
-                          }}>
-                            {(() => {
-                              let agentProfit = 0;
-                              let superAgentProfit = 0;
-                              let owedToPepNation = 0;
-                              let shippingToPepNation = 0;
-                              let agentCOGS = 0;
+                        {userRole === "admin" && items.length > 0 && selectedOrder.agent_id && (() => {
+                          const fmt = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
+                          const shippingCost = Number(selectedOrder.shipping_cost || 0);
+                          const discount     = Number(selectedOrder.discount_amount || 0);
 
-                              if (!selectedOrder.agent_id) {
-                                owedToPepNation = Number(selectedOrder.total || 0);
-                              } else {
-                                shippingToPepNation = Number(selectedOrder.shipping_cost || 0);
-                                owedToPepNation = shippingToPepNation;
-                                items.forEach(item => {
-                                  const superAgentCost = item.unit_super_agent_cost && item.unit_super_agent_cost > 0 
-                                    ? item.unit_super_agent_cost 
-                                    : null;
-                                  
-                                  const pepNationCost = (item.unit_house_cost && item.unit_house_cost > 0)
-                                    ? item.unit_house_cost
-                                    : superAgentCost ?? item.unit_cost_price;
-                                  
-                                  owedToPepNation += pepNationCost * item.quantity;
-                                  if (superAgentCost) {
-                                    superAgentProfit += (superAgentCost - pepNationCost) * item.quantity;
-                                  }
-                                  agentCOGS += item.unit_cost_price * item.quantity;
-                                  agentProfit += (item.unit_retail_price - item.unit_cost_price) * item.quantity;
-                                });
-                                agentProfit -= Number(selectedOrder.discount_amount || 0);
-                              }
+                          let agentOwesTotal = 0;
+                          let sbCostTotal    = 0;
+                          let retailTotal    = 0;
 
-                              return (
-                                <>
-                                  {selectedOrder.agent_id && (
-                                    <>
-                                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.86rem", color: "var(--silver)" }}>
-                                        <span>Agent Profit</span>
-                                        <span>${agentProfit.toFixed(2)}</span>
-                                      </div>
-                                      
-                                      {selectedOrder.agent?.parent?.full_name ? (
-                                        <div style={{ marginTop: "8px", padding: "8px", background: "rgba(255,255,255,0.02)", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.05)" }}>
-                                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.86rem", color: "var(--green)", fontWeight: 700, marginBottom: "4px" }}>
-                                            <span>Owed To Upline ({selectedOrder.agent.parent.full_name})</span>
-                                            <span>${(agentCOGS + shippingToPepNation).toFixed(2)}</span>
-                                          </div>
-                                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem", color: "var(--silver)", paddingLeft: "8px", marginTop: "4px" }}>
-                                            <span>↳ Upline Profit</span>
-                                            <span>${superAgentProfit.toFixed(2)}</span>
-                                          </div>
-                                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem", color: "var(--silver)", paddingLeft: "8px", marginTop: "4px" }}>
-                                            <span>↳ Upline Owes PepNation (Wholesale)</span>
-                                            <span>${(owedToPepNation - shippingToPepNation).toFixed(2)}</span>
-                                          </div>
-                                          {shippingToPepNation > 0 && (
-                                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem", color: "var(--silver)", paddingLeft: "8px", marginTop: "4px" }}>
-                                              <span>↳ Upline Owes PepNation (Shipping)</span>
-                                              <span>${shippingToPepNation.toFixed(2)}</span>
-                                            </div>
-                                          )}
-                                        </div>
-                                      ) : (
-                                        <>
-                                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.86rem", color: "var(--silver)", marginTop: "4px" }}>
-                                            <span>Owed To PepNation (Wholesale)</span>
-                                            <span>${(owedToPepNation - shippingToPepNation).toFixed(2)}</span>
-                                          </div>
-                                          {shippingToPepNation > 0 && (
-                                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.86rem", color: "var(--silver)" }}>
-                                              <span>Owed To PepNation (Shipping)</span>
-                                              <span>${shippingToPepNation.toFixed(2)}</span>
-                                            </div>
-                                          )}
-                                        </>
-                                      )}
-                                    </>
-                                  )}
-                                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.86rem", color: "var(--green)", fontWeight: 700, borderTop: selectedOrder.agent_id ? "1px solid var(--border)" : "none", paddingTop: selectedOrder.agent_id ? "6px" : "0", marginTop: selectedOrder.agent_id ? "4px" : "0" }}>
-                                    <span>Total Owed To PepNation</span>
-                                    <span>${owedToPepNation.toFixed(2)}</span>
+                          items.forEach(item => {
+                            const qty = Number(item.quantity) || 0;
+                            if (qty <= 0) return;
+                            agentOwesTotal += Number(item.unit_cost_price || 0) * qty;
+                            const usc = Number(item.unit_super_agent_cost || 0);
+                            if (usc > 0) sbCostTotal += usc * qty;
+                            retailTotal += Number(item.unit_retail_price || 0) * qty;
+                          });
+
+                          const hasSbCost      = sbCostTotal > 0;
+                          const markupSpread   = hasSbCost ? agentOwesTotal - sbCostTotal : null;
+                          const grossCustomerPmt = retailTotal + shippingCost;
+                          const netCustomerPaid  = Number(selectedOrder.total || 0);
+                          const agentOwesUpline  = agentOwesTotal + shippingCost;
+                          const agentProfit      = netCustomerPaid - agentOwesUpline;
+                          const uplineOwesPN     = sbCostTotal + shippingCost;
+                          const uplineProfit     = agentOwesTotal - sbCostTotal;
+                          const uplineName       = selectedOrder.agent?.parent?.full_name;
+
+                          return (
+                            <div style={{ marginTop: "1rem", paddingTop: "0.5rem", borderTop: "1px dashed var(--border)" }}>
+                              {/* New settlement ledger — matches AgentOrders.tsx desktop exactly */}
+                              <div style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.2)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                <div style={{ fontSize: '0.68rem', color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 800 }}>
+                                  {uplineName ? `Upline Ledger — ${uplineName}` : 'Settlement Ledger'}
+                                </div>
+
+                                {/* Order Summary */}
+                                <div style={{ padding: '6px 8px', borderRadius: 7, background: 'rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                  <div style={{ fontSize: '0.66rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Order Summary</div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: 'var(--silver)' }}>
+                                    <span>Gross (Before Discount)</span><span>{fmt(grossCustomerPmt)}</span>
                                   </div>
-                                </>
-                              );
-                            })()}
-                          </div>
-                        )}
+                                  {discount > 0 && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: 'var(--red)' }}>
+                                      <span>Discount{selectedOrder.coupon_code ? ` (${selectedOrder.coupon_code})` : ''}</span>
+                                      <span>-{fmt(discount)}</span>
+                                    </div>
+                                  )}
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: discount > 0 ? '#22C55E' : 'var(--silver)', fontWeight: 600 }}>
+                                    <span>Customer Paid</span><span>{fmt(netCustomerPaid)}</span>
+                                  </div>
+                                </div>
+
+                                <div style={{ height: 1, background: 'rgba(0,196,188,0.12)' }} />
+
+                                {/* Agent → Upline */}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.86rem' }}>
+                                  <span style={{ color: 'var(--silver)' }}>
+                                    {uplineName ? `Agent Owes ${uplineName}` : 'Agent Owes Upline'}
+                                    <span style={{ fontSize: '0.71rem', color: 'var(--grey-400)', marginLeft: 5 }}>(Cost + Markup + Shipping)</span>
+                                  </span>
+                                  <span style={{ color: 'var(--red)', fontWeight: 700 }}>-{fmt(agentOwesUpline)}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.86rem' }}>
+                                  <span style={{ color: 'var(--silver)' }}>Agent Net Profit</span>
+                                  <span style={{ color: agentProfit >= 0 ? '#22C55E' : 'var(--red)', fontWeight: 700 }}>{fmt(agentProfit)}</span>
+                                </div>
+
+                                {uplineName && (
+                                  <>
+                                    <div style={{ height: 1, background: 'rgba(0,196,188,0.12)' }} />
+
+                                    {/* Upline → PN */}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.86rem' }}>
+                                      <span style={{ color: 'var(--silver)' }}>
+                                        {uplineName} Collects From Agent
+                                      </span>
+                                      <span style={{ color: '#22C55E', fontWeight: 700 }}>{fmt(agentOwesUpline)}</span>
+                                    </div>
+
+                                    {hasSbCost && markupSpread !== null && (
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, paddingLeft: 12, borderLeft: '2px solid rgba(252,129,129,0.2)' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--grey-400)' }}>
+                                          <span>{"└ Cost of Goods "}<span style={{ opacity: 0.7, fontSize: '0.7rem' }}>(pays Pep Nation)</span></span>
+                                          <span>{fmt(sbCostTotal)}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--grey-400)' }}>
+                                          <span>{"└ Markup "}<span style={{ opacity: 0.7, fontSize: '0.7rem' }}>(upline keeps)</span></span>
+                                          <span>{fmt(markupSpread)}</span>
+                                        </div>
+                                        {shippingCost > 0 && (
+                                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--grey-400)' }}>
+                                            <span>{"└ Shipping"}</span><span>{fmt(shippingCost)}</span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+
+                                    {hasSbCost && (
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.86rem' }}>
+                                        <span style={{ color: 'var(--silver)' }}>
+                                          {uplineName} Owes Pep Nation
+                                          <span style={{ fontSize: '0.71rem', color: 'var(--grey-400)', marginLeft: 5 }}>(COG + Shipping)</span>
+                                        </span>
+                                        <span style={{ color: 'var(--red)', fontWeight: 700 }}>-{fmt(uplineOwesPN)}</span>
+                                      </div>
+                                    )}
+
+                                    <div style={{ height: 1, background: 'rgba(0,196,188,0.12)' }} />
+
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem', fontWeight: 800 }}>
+                                      <span style={{ color: 'var(--white)' }}>{uplineName} Net Profit</span>
+                                      <span style={{ color: uplineProfit >= 0 ? '#22C55E' : 'var(--red)' }}>{fmt(uplineProfit)}</span>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   )}
