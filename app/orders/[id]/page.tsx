@@ -19,6 +19,7 @@ import { paymentMethodLabel } from '@/lib/payment-method-labels';
 import HelpHint from '@/components/help/HelpHint';
 import { getPopularName } from '@/lib/peptide-popular-names';
 import { carrierInfo } from '@/lib/carrier';
+import { computeOwnOrderLedger, computeUplineLedger } from '@/lib/agent-ledger';
 
 // R28: map order status → matching FAQ id so the contextual help pill lands
 // the buyer on the exact answer for their state (not the FAQ root). Every id
@@ -700,31 +701,31 @@ export default async function OrderDetailPage(
               unit_cost_price   = what this agent owes their upline (Savage Brands)
               unit_super_agent_cost = what upline owes Pep Nation (their COG) */}
           {(viewerRole === 'agent' || viewerRole === 'super_agent' || viewerRole === 'admin') && order.agent_id && (() => {
-            const shippingCost = num(order.shipping_cost);
-            const discount     = num(order.discount_amount);
+            const ownLedger = computeOwnOrderLedger(order, order.order_items);
+            const uplineLedger = computeUplineLedger(order, order.order_items);
+            
+            const {
+              grossCustomerPmt,
+              netYouCollect,
+              discount,
+              shippingCost,
+              ownProfit,
+              hasSbCost,
+              sbCostTotal,
+              markupSpread
+            } = ownLedger;
 
-            let agentOwesTotal = 0;  // unit_cost_price × qty
-            let sbCostTotal    = 0;  // unit_super_agent_cost × qty
-            let retailTotal    = 0;  // unit_retail_price × qty
+            const {
+              dlOwesYou,
+              youOwePepNation,
+              uplProfit
+            } = uplineLedger;
 
-            order.order_items.forEach(item => {
-              const qty = Number(item.quantity) || 0;
-              if (qty <= 0) return;
-              agentOwesTotal += num(item.unit_cost_price) * qty;
-              const usc = num(item.unit_super_agent_cost ?? 0);
-              if (usc > 0) sbCostTotal += usc * qty;
-              retailTotal += num(item.unit_retail_price) * qty;
-            });
-
-            const hasSbCost      = sbCostTotal > 0;
-            const markupSpread   = hasSbCost ? agentOwesTotal - sbCostTotal : null;
-            const grossCustomerPmt = retailTotal + shippingCost;
-            const netYouCollect    = num(order.total);
             const uplineName       = order.agent?.parent?.full_name;
-            const agentOwesUpline  = agentOwesTotal + shippingCost;
-            const agentProfit      = netYouCollect - agentOwesUpline;
-            const uplineOwesPN     = sbCostTotal + shippingCost;
-            const uplineProfit     = agentOwesTotal - sbCostTotal;
+            const agentOwesUpline  = dlOwesYou;
+            const agentProfit      = ownProfit;
+            const uplineOwesPN     = youOwePepNation;
+            const fmt = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
 
             return (
               <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-5)', animationDelay: '0.25s' }}>
