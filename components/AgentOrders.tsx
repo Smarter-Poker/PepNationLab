@@ -1737,149 +1737,121 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                 )}
                 {detailItems && detailItems.length > 0 && (() => {
                   const shippingCost = Number(detailOrder.shipping_cost || 0);
-                  const discount = Number(detailOrder.discount_amount || 0);
-                  const isDownline = !!(detailOrder.is_downline_order || detailOrder.is_sub_agent_order);
+                  const discount     = Number(detailOrder.discount_amount || 0);
+                  const isDownline   = !!(detailOrder.is_downline_order || detailOrder.is_sub_agent_order);
 
-                  // ── Per-item accumulators ────────────────────────────────────
-                  let agentCogTotal  = 0; // base_cost × qty = Pep Nation's cut (what Savage Brands owes PN)
-                  let agentOwesTotal = 0; // unit_cost_price × qty = what agent owes Savage Brands (COG + markup)
-                  let revenueTotal   = 0; // what this agent collects per item
+                  let agentOwesTotal = 0;
+                  let sbCostTotal    = 0;
+                  let cogTotal       = 0;
+                  let retailTotal    = 0;
 
                   detailItems.forEach(item => {
                     const qty = Number(item.quantity) || 0;
                     if (qty <= 0) return;
-                    const ucp  = Number(item.unit_cost_price || 0);    // COG + markup → agent owes Savage Brands
-                    const ucb  = item.unit_base_cost != null ? Number(item.unit_base_cost) : null; // raw COG
-                    const usc  = Number(item.unit_super_agent_cost || 0);
-                    const urp  = Number(item.unit_retail_price || 0);
-
+                    const ucp = Number(item.unit_cost_price       || 0);
+                    const usc = Number(item.unit_super_agent_cost || 0);
+                    const ucb = item.unit_base_cost != null ? Number(item.unit_base_cost) : null;
+                    const urp = Number(item.unit_retail_price     || 0);
                     agentOwesTotal += ucp * qty;
-                    if (ucb !== null) agentCogTotal += ucb * qty;
-
-                    if (isDownline) {
-                      revenueTotal += (usc > 0 ? usc : urp) * qty;
-                    } else {
-                      revenueTotal += urp * qty;
-                    }
+                    if (usc > 0) sbCostTotal += usc * qty;
+                    if (ucb !== null) cogTotal += ucb * qty;
+                    retailTotal += urp * qty;
                   });
 
-                  // ── Derived totals ───────────────────────────────────────────
-                  // OWN ORDER:
-                  //   You Collect        = order.total (subtotal + shipping − discount, authoritative)
-                  //   You Owe SB         = agentOwesTotal + shippingCost  (COG+markup per item + shipping)
-                  //   Net Profit         = You Collect − You Owe SB
-                  //                      = (retail + ship − disc) − (agentOwes + ship)
-                  //                      = retail − disc − agentOwes  ✓ matches server formula
-                  // DOWNLINE ORDER:
-                  //   Downline Owes You  = revenueTotal + shippingCost (pass-through)
-                  //   You Owe Platform   = agentOwesTotal + shippingCost
-                  //   Net Profit         = revenueTotal − agentOwesTotal (shipping nets to zero)
-
-                  const youOweSavageBrands = agentOwesTotal + shippingCost;
-                  const savageBrandsOwesPepNation = agentCogTotal > 0 ? agentCogTotal + shippingCost : null;
-                  const markupTotal = agentCogTotal > 0 ? agentOwesTotal - agentCogTotal : null;
-
-                  const youCollect = isDownline
-                    ? revenueTotal + shippingCost
-                    : Number(detailOrder.total) || 0;
-
-                  const netProfit = isDownline
-                    ? revenueTotal - agentOwesTotal
-                    : youCollect - youOweSavageBrands;
+                  const sbCostBasis      = sbCostTotal > 0 ? sbCostTotal : cogTotal;
+                  const markupPortion    = cogTotal > 0 ? agentOwesTotal - cogTotal : null;
+                  const grossCustomerPmt = retailTotal + shippingCost;
+                  const netYouCollect    = Number(detailOrder.total) || 0;
+                  const youOweSB         = agentOwesTotal + shippingCost;
+                  const ownProfit        = netYouCollect - youOweSB;
+                  const dlOwesYou        = agentOwesTotal + shippingCost;
+                  const youOwePepNation  = sbCostBasis + shippingCost;
+                  const uplProfit        = agentOwesTotal - sbCostBasis;
+                  const fmt = (n: number) =>
+                    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
 
                   return (
                     <>
                       <div style={{ flex: 1 }} />
+                      <div style={{ marginBottom: 12, padding: '16px 18px', borderRadius: 12, background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.2)', display: 'flex', flexDirection: 'column', gap: 10 }}>
 
-                      <div
-                        style={{
-                          marginBottom: 12,
-                          padding: '14px 16px',
-                          borderRadius: 12,
-                          background: 'rgba(0,196,188,0.06)',
-                          border: '1px solid rgba(0,196,188,0.2)',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: 8,
-                        }}
-                      >
-                        {/* Section header */}
-                        <div style={{ fontSize: '0.75rem', color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800, marginBottom: 4 }}>
-                          {isDownline ? 'Upline Ledger' : 'Your Settlement'}
+                        <div style={{ fontSize: '0.72rem', color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 800 }}>
+                          {isDownline ? 'Upline Ledger — Your Settlement' : 'Your Settlement'}
                         </div>
 
-                        {/* Row 1: What this agent collects */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
-                          <span style={{ color: 'var(--silver)' }}>
-                            {isDownline
-                              ? (detailOrder.downline_agent_name ? `${detailOrder.downline_agent_name} Owes You` : 'Downline Owes You')
-                              : 'You Collect'}
-                            <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', marginLeft: 6 }}>
-                              {isDownline ? '(Cost + Markup + Shipping)' : '(Customer Payment)'}
-                            </span>
-                          </span>
-                          <span style={{ color: '#48BB78', fontWeight: 700 }}>
-                            {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(youCollect)}
-                          </span>
-                        </div>
-
-                        {/* Row 2: What agent owes Savage Brands (COG + markup + shipping) */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
-                          <span style={{ color: 'var(--silver)' }}>
-                            {isDownline ? 'You Owe Pep Nation' : 'You Owe Savage Brands'}
-                            <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', marginLeft: 6 }}>(Cost of Goods + Markup + Shipping)</span>
-                          </span>
-                          <span style={{ color: '#FC8181', fontWeight: 700 }}>
-                            -{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(youOweSavageBrands)}
-                          </span>
-                        </div>
-
-                        {/* Sub-breakdown: COG vs Markup (only when base_cost is available) */}
-                        {!isDownline && agentCogTotal > 0 && markupTotal !== null && (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 3, paddingLeft: 12, borderLeft: '2px solid rgba(252,129,129,0.25)', marginTop: -2 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--grey-400)' }}>
-                              <span>└ Cost of Goods (Savage Brands pays Pep Nation)</span>
-                              <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(agentCogTotal)}</span>
+                        <div style={{ padding: '8px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <div style={{ fontSize: '0.71rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Order Summary</div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.83rem', color: 'var(--silver)' }}>
+                            <span>Gross (Before Discount)</span><span>{fmt(grossCustomerPmt)}</span>
+                          </div>
+                          {discount > 0 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.83rem', color: '#FC8181' }}>
+                              <span>Discount{detailOrder.coupon_code ? ` (${detailOrder.coupon_code})` : ''}</span>
+                              <span>-{fmt(discount)}</span>
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--grey-400)' }}>
-                              <span>└ Markup (Savage Brands keeps)</span>
-                              <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(markupTotal)}</span>
+                          )}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.83rem', color: discount > 0 ? '#48BB78' : 'var(--silver)', fontWeight: 600 }}>
+                            <span>Customer Paid</span><span>{fmt(netYouCollect)}</span>
+                          </div>
+                        </div>
+
+                        <div style={{ height: 1, background: 'rgba(0,196,188,0.12)' }} />
+
+                        {isDownline ? (
+                          <>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
+                              <span style={{ color: 'var(--silver)' }}>
+                                {detailOrder.downline_agent_name ? `${detailOrder.downline_agent_name} Owes You` : 'Downline Owes You'}
+                                <span style={{ fontSize: '0.73rem', color: 'var(--grey-400)', marginLeft: 6 }}>(COG + Markup + Shipping)</span>
+                              </span>
+                              <span style={{ color: '#48BB78', fontWeight: 700 }}>{fmt(dlOwesYou)}</span>
                             </div>
-                            {shippingCost > 0 && (
-                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--grey-400)' }}>
-                                <span>└ Shipping</span>
-                                <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(shippingCost)}</span>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
+                              <span style={{ color: 'var(--silver)' }}>
+                                You Owe Pep Nation
+                                <span style={{ fontSize: '0.73rem', color: 'var(--grey-400)', marginLeft: 6 }}>(Your Cost + Shipping)</span>
+                              </span>
+                              <span style={{ color: '#FC8181', fontWeight: 700 }}>-{fmt(youOwePepNation)}</span>
+                            </div>
+                            <div style={{ height: 1, background: 'rgba(0,196,188,0.12)' }} />
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 800 }}>
+                              <span style={{ color: 'var(--white)' }}>Your Net Profit</span>
+                              <span style={{ color: uplProfit >= 0 ? 'var(--brand-yellow, #FFD700)' : '#FC8181' }}>{fmt(uplProfit)}</span>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
+                              <span style={{ color: 'var(--silver)' }}>
+                                You Owe Savage Brands
+                                <span style={{ fontSize: '0.73rem', color: 'var(--grey-400)', marginLeft: 6 }}>(COG + Markup + Shipping)</span>
+                              </span>
+                              <span style={{ color: '#FC8181', fontWeight: 700 }}>-{fmt(youOweSB)}</span>
+                            </div>
+                            {cogTotal > 0 && markupPortion !== null && (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 3, paddingLeft: 14, borderLeft: '2px solid rgba(252,129,129,0.2)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--grey-400)' }}>
+                                  <span>{"└ Cost of Goods "}<span style={{ opacity: 0.7, fontSize: '0.7rem' }}>(Savage Brands pays Pep Nation)</span></span>
+                                  <span>{fmt(cogTotal)}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--grey-400)' }}>
+                                  <span>{"└ Markup "}<span style={{ opacity: 0.7, fontSize: '0.7rem' }}>(Savage Brands keeps)</span></span>
+                                  <span>{fmt(markupPortion)}</span>
+                                </div>
+                                {shippingCost > 0 && (
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--grey-400)' }}>
+                                    <span>{"└ Shipping"}</span><span>{fmt(shippingCost)}</span>
+                                  </div>
+                                )}
                               </div>
                             )}
-                          </div>
+                            <div style={{ height: 1, background: 'rgba(0,196,188,0.12)' }} />
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 800 }}>
+                              <span style={{ color: 'var(--white)' }}>Your Net Profit</span>
+                              <span style={{ color: ownProfit >= 0 ? 'var(--brand-yellow, #FFD700)' : '#FC8181' }}>{fmt(ownProfit)}</span>
+                            </div>
+                          </>
                         )}
-
-                        {/* Savage Brands → Pep Nation line (own orders only, when base_cost known) */}
-                        {!isDownline && savageBrandsOwesPepNation !== null && (
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: 'var(--grey-400)', paddingTop: 2 }}>
-                            <span>Savage Brands Owes Pep Nation <span style={{ fontSize: '0.72rem' }}>(COG only)</span></span>
-                            <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(agentCogTotal)}</span>
-                          </div>
-                        )}
-
-                        {/* Coupon discount line */}
-                        {!isDownline && discount > 0 && (
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--grey-400)' }}>
-                            <span>Coupon Discount{detailOrder.coupon_code ? ` (${detailOrder.coupon_code})` : ''} <span style={{ fontSize: '0.75rem' }}>(absorbed by you)</span></span>
-                            <span style={{ color: '#FC8181' }}>-{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(discount)}</span>
-                          </div>
-                        )}
-
-                        {/* Divider */}
-                        <div style={{ height: 1, background: 'rgba(0,196,188,0.15)', margin: '2px 0' }} />
-
-                        {/* Row 3: Net Profit */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 800 }}>
-                          <span style={{ color: 'var(--white)' }}>Your Net Profit</span>
-                          <span style={{ color: netProfit >= 0 ? 'var(--brand-yellow, #FFD700)' : '#FC8181' }}>
-                            {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(netProfit)}
-                          </span>
-                        </div>
                       </div>
                     </>
                   );
