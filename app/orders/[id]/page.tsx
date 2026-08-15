@@ -720,18 +720,20 @@ export default async function OrderDetailPage(
             const markupSpread   = hasSbCost ? agentOwesTotal - sbCostTotal : null;
             const grossCustomerPmt = retailTotal + shippingCost;
             const netYouCollect    = num(order.total);
-            const youOweSB         = agentOwesTotal + shippingCost;
-            const ownProfit        = netYouCollect - youOweSB;
-            const youOwePepNation  = sbCostTotal + shippingCost;
-            const fmt = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
+            const uplineName       = order.agent?.parent?.full_name;
+            const agentOwesUpline  = agentOwesTotal + shippingCost;
+            const agentProfit      = netYouCollect - agentOwesUpline;
+            const uplineOwesPN     = sbCostTotal + shippingCost;
+            const uplineProfit     = agentOwesTotal - sbCostTotal;
 
             return (
               <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-5)', animationDelay: '0.25s' }}>
-                <div style={{ marginBottom: 12, padding: '16px 18px', borderRadius: 12, background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.2)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ padding: '16px 18px', borderRadius: 12, background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.2)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 800 }}>
+                    {uplineName ? `Upline Ledger — ${uplineName}` : 'Settlement Ledger'}
+                  </div>
 
-                  <div style={{ fontSize: '0.72rem', color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 800 }}>Your Settlement</div>
-
-                  {/* Order Summary sub-box */}
+                  {/* Order Summary */}
                   <div style={{ padding: '8px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column', gap: 4 }}>
                     <div style={{ fontSize: '0.71rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Order Summary</div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.83rem', color: 'var(--silver)' }}>
@@ -750,50 +752,67 @@ export default async function OrderDetailPage(
 
                   <div style={{ height: 1, background: 'rgba(0,196,188,0.12)' }} />
 
-                  {/* You Owe Upline */}
+                  {/* Agent → Upline */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
                     <span style={{ color: 'var(--silver)' }}>
-                      You Owe Upline
-                      <span style={{ fontSize: '0.73rem', color: 'var(--grey-400)', marginLeft: 6 }}>(Cost of Goods + Markup + Shipping)</span>
+                      {uplineName ? `You Owe ${uplineName}` : 'You Owe Upline'}
+                      <span style={{ fontSize: '0.73rem', color: 'var(--grey-400)', marginLeft: 6 }}>(Cost + Markup + Shipping)</span>
                     </span>
-                    <span style={{ color: 'var(--red)', fontWeight: 700 }}>-{fmt(youOweSB)}</span>
+                    <span style={{ color: 'var(--red)', fontWeight: 700 }}>-{fmt(agentOwesUpline)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
+                    <span style={{ color: 'var(--silver)' }}>Your Net Profit</span>
+                    <span style={{ color: agentProfit >= 0 ? '#22C55E' : 'var(--red)', fontWeight: 700 }}>{fmt(agentProfit)}</span>
                   </div>
 
-                  {/* COG / Markup breakdown */}
-                  {hasSbCost && markupSpread !== null && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 3, paddingLeft: 14, borderLeft: '2px solid rgba(252,129,129,0.2)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--grey-400)' }}>
-                        <span>{"└ Cost of Goods "}<span style={{ opacity: 0.7, fontSize: '0.7rem' }}>(Upline pays Pep Nation)</span></span>
-                        <span>{fmt(sbCostTotal)}</span>
+                  {uplineName && (
+                    <>
+                      <div style={{ height: 1, background: 'rgba(0,196,188,0.12)' }} />
+
+                      {/* Upline → PN */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
+                        <span style={{ color: 'var(--silver)' }}>
+                          {uplineName} Collects From You
+                        </span>
+                        <span style={{ color: '#22C55E', fontWeight: 700 }}>{fmt(agentOwesUpline)}</span>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--grey-400)' }}>
-                        <span>{"└ Markup "}<span style={{ opacity: 0.7, fontSize: '0.7rem' }}>(Upline keeps)</span></span>
-                        <span>{fmt(markupSpread)}</span>
-                      </div>
-                      {shippingCost > 0 && (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--grey-400)' }}>
-                          <span>{"└ Shipping"}</span><span>{fmt(shippingCost)}</span>
+
+                      {hasSbCost && markupSpread !== null && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, paddingLeft: 14, borderLeft: '2px solid rgba(252,129,129,0.2)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--grey-400)' }}>
+                            <span>{"└ Cost of Goods "}<span style={{ opacity: 0.7, fontSize: '0.7rem' }}>(pays Pep Nation)</span></span>
+                            <span>{fmt(sbCostTotal)}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--grey-400)' }}>
+                            <span>{"└ Markup "}<span style={{ opacity: 0.7, fontSize: '0.7rem' }}>(keeps)</span></span>
+                            <span>{fmt(markupSpread)}</span>
+                          </div>
+                          {shippingCost > 0 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--grey-400)' }}>
+                              <span>{"└ Shipping"}</span><span>{fmt(shippingCost)}</span>
+                            </div>
+                          )}
                         </div>
                       )}
-                    </div>
+
+                      {hasSbCost && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
+                          <span style={{ color: 'var(--silver)' }}>
+                            {uplineName} Owes Pep Nation
+                            <span style={{ fontSize: '0.73rem', color: 'var(--grey-400)', marginLeft: 6 }}>(COG + Shipping)</span>
+                          </span>
+                          <span style={{ color: 'var(--red)', fontWeight: 700 }}>-{fmt(uplineOwesPN)}</span>
+                        </div>
+                      )}
+
+                      <div style={{ height: 1, background: 'rgba(0,196,188,0.12)' }} />
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 800 }}>
+                        <span style={{ color: 'var(--white)' }}>{uplineName} Net Profit</span>
+                        <span style={{ color: uplineProfit >= 0 ? '#22C55E' : 'var(--red)' }}>{fmt(uplineProfit)}</span>
+                      </div>
+                    </>
                   )}
-
-                  {hasSbCost && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
-                      <span style={{ color: 'var(--silver)' }}>
-                        Upline Owes Pep Nation
-                        <span style={{ fontSize: '0.73rem', color: 'var(--grey-400)', marginLeft: 6 }}>(Cost of Goods + Shipping)</span>
-                      </span>
-                      <span style={{ color: 'var(--red)', fontWeight: 700 }}>-{fmt(youOwePepNation)}</span>
-                    </div>
-                  )}
-
-                  <div style={{ height: 1, background: 'rgba(0,196,188,0.12)' }} />
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 800 }}>
-                    <span style={{ color: 'var(--white)' }}>Your Net Profit</span>
-                    <span style={{ color: ownProfit >= 0 ? '#22C55E' : 'var(--red)' }}>{fmt(ownProfit)}</span>
-                  </div>
                 </div>
               </div>
             );
