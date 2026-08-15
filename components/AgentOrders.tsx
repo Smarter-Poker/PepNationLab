@@ -51,7 +51,8 @@ interface OrderItem {
   product_name: string;
   quantity: number;
   unit_retail_price: number;
-  unit_cost_price: number | null;
+  unit_cost_price: number | null;       // what agent owes Savage Brands (COG + markup)
+  unit_base_cost?: number | null;       // Pep Nation's raw COG (what Savage Brands owes Pep Nation)
   unit_super_agent_cost?: number | null;
   unit_size?: number | null;
   unit_measure?: string | null;
@@ -1739,54 +1740,52 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                   const discount = Number(detailOrder.discount_amount || 0);
                   const isDownline = !!(detailOrder.is_downline_order || detailOrder.is_sub_agent_order);
 
-                  // ── Per-item cost & revenue accumulators ──────────────────────
-                  let cogTotal     = 0; // sum of (unit_cost_price × qty) — what this agent pays platform
-                  let revenueTotal = 0; // sum of (what this agent collects per item)
+                  // ── Per-item accumulators ────────────────────────────────────
+                  let agentCogTotal  = 0; // base_cost × qty = Pep Nation's cut (what Savage Brands owes PN)
+                  let agentOwesTotal = 0; // unit_cost_price × qty = what agent owes Savage Brands (COG + markup)
+                  let revenueTotal   = 0; // what this agent collects per item
 
                   detailItems.forEach(item => {
-                    const qty = Number(item.quantity) || 0;  // never inflate: 0 items = $0
+                    const qty = Number(item.quantity) || 0;
                     if (qty <= 0) return;
-                    const ucp = Number(item.unit_cost_price || 0);   // this agent's cost from Savage Brands
-                    const usc = Number(item.unit_super_agent_cost || 0); // price upline sells to downline
-                    const urp = Number(item.unit_retail_price || 0);     // customer-facing retail price
+                    const ucp  = Number(item.unit_cost_price || 0);    // COG + markup → agent owes Savage Brands
+                    const ucb  = item.unit_base_cost != null ? Number(item.unit_base_cost) : null; // raw COG
+                    const usc  = Number(item.unit_super_agent_cost || 0);
+                    const urp  = Number(item.unit_retail_price || 0);
 
-                    cogTotal += ucp * qty;
+                    agentOwesTotal += ucp * qty;
+                    if (ucb !== null) agentCogTotal += ucb * qty;
 
                     if (isDownline) {
-                      // Downline order: upline collects usc from the downline agent.
-                      // If usc wasn't snapshotted (0 / null), fall back to urp (conservative).
                       revenueTotal += (usc > 0 ? usc : urp) * qty;
                     } else {
-                      // Own order: agent collects the retail price from the customer.
                       revenueTotal += urp * qty;
                     }
                   });
 
-                  // ── Derived totals ─────────────────────────────────────────────
-                  //
-                  // OWN ORDER (agent sells direct to customer):
-                  //   You Collect   = order.total  (authoritative: subtotal + shipping − discount)
-                  //   You Owe       = COG + shipping  (platform bills agent cost + shipping)
-                  //   Net Profit    = order.total − youOweTotal
-                  //                 = retail − discount + shipping − COG − shipping
-                  //                 = retail − discount − COG   ✓ matches server formula
-                  //
-                  // DOWNLINE ORDER (agent is upline, downline sold to customer):
-                  //   Downline Owes You = revenueTotal (product) + shipping (re-billed pass-through)
-                  //   You Owe Platform  = COG + shipping (same pass-through)
-                  //   Net Profit        = revenueTotal − COG
-                  //                     (shipping cancels: collected from DL, paid to platform)
-                  //   Discounts are borne by the selling agent's margin, not the upline's.
+                  // ── Derived totals ───────────────────────────────────────────
+                  // OWN ORDER:
+                  //   You Collect        = order.total (subtotal + shipping − discount, authoritative)
+                  //   You Owe SB         = agentOwesTotal + shippingCost  (COG+markup per item + shipping)
+                  //   Net Profit         = You Collect − You Owe SB
+                  //                      = (retail + ship − disc) − (agentOwes + ship)
+                  //                      = retail − disc − agentOwes  ✓ matches server formula
+                  // DOWNLINE ORDER:
+                  //   Downline Owes You  = revenueTotal + shippingCost (pass-through)
+                  //   You Owe Platform   = agentOwesTotal + shippingCost
+                  //   Net Profit         = revenueTotal − agentOwesTotal (shipping nets to zero)
 
-                  const youCollect  = isDownline
-                    ? revenueTotal + shippingCost          // downline pays upline: product + shipping
-                    : Number(detailOrder.total) || 0;      // customer paid the order total (authoritative)
+                  const youOweSavageBrands = agentOwesTotal + shippingCost;
+                  const savageBrandsOwesPepNation = agentCogTotal > 0 ? agentCogTotal + shippingCost : null;
+                  const markupTotal = agentCogTotal > 0 ? agentOwesTotal - agentCogTotal : null;
 
-                  const youOweTotal = cogTotal + shippingCost; // COG + shipping to platform / Savage Brands
+                  const youCollect = isDownline
+                    ? revenueTotal + shippingCost
+                    : Number(detailOrder.total) || 0;
 
                   const netProfit = isDownline
-                    ? revenueTotal - cogTotal              // shipping nets to zero (pass-through)
-                    : youCollect   - youOweTotal;          // = retail − discount − COG (matches server)
+                    ? revenueTotal - agentOwesTotal
+                    : youCollect - youOweSavageBrands;
 
                   return (
                     <>
@@ -1813,9 +1812,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
                           <span style={{ color: 'var(--silver)' }}>
                             {isDownline
-                              ? (detailOrder.downline_agent_name
-                                  ? `${detailOrder.downline_agent_name} Owes You`
-                                  : 'Downline Owes You')
+                              ? (detailOrder.downline_agent_name ? `${detailOrder.downline_agent_name} Owes You` : 'Downline Owes You')
                               : 'You Collect'}
                             <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', marginLeft: 6 }}>
                               {isDownline ? '(Cost + Markup + Shipping)' : '(Customer Payment)'}
@@ -1826,24 +1823,50 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                           </span>
                         </div>
 
-                        {/* Row 2: What this agent owes the platform/Savage Brands */}
+                        {/* Row 2: What agent owes Savage Brands (COG + markup + shipping) */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
                           <span style={{ color: 'var(--silver)' }}>
                             {isDownline ? 'You Owe Pep Nation' : 'You Owe Savage Brands'}
-                            <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', marginLeft: 6 }}>(Cost of Goods + Shipping)</span>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', marginLeft: 6 }}>(Cost of Goods + Markup + Shipping)</span>
                           </span>
                           <span style={{ color: '#FC8181', fontWeight: 700 }}>
-                            -{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(youOweTotal)}
+                            -{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(youOweSavageBrands)}
                           </span>
                         </div>
 
-                        {/* Show discount line if applicable (own orders only) */}
+                        {/* Sub-breakdown: COG vs Markup (only when base_cost is available) */}
+                        {!isDownline && agentCogTotal > 0 && markupTotal !== null && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 3, paddingLeft: 12, borderLeft: '2px solid rgba(252,129,129,0.25)', marginTop: -2 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--grey-400)' }}>
+                              <span>└ Cost of Goods (Savage Brands pays Pep Nation)</span>
+                              <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(agentCogTotal)}</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--grey-400)' }}>
+                              <span>└ Markup (Savage Brands keeps)</span>
+                              <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(markupTotal)}</span>
+                            </div>
+                            {shippingCost > 0 && (
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--grey-400)' }}>
+                                <span>└ Shipping</span>
+                                <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(shippingCost)}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Savage Brands → Pep Nation line (own orders only, when base_cost known) */}
+                        {!isDownline && savageBrandsOwesPepNation !== null && (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: 'var(--grey-400)', paddingTop: 2 }}>
+                            <span>Savage Brands Owes Pep Nation <span style={{ fontSize: '0.72rem' }}>(COG only)</span></span>
+                            <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(agentCogTotal)}</span>
+                          </div>
+                        )}
+
+                        {/* Coupon discount line */}
                         {!isDownline && discount > 0 && (
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--grey-400)' }}>
                             <span>Coupon Discount{detailOrder.coupon_code ? ` (${detailOrder.coupon_code})` : ''} <span style={{ fontSize: '0.75rem' }}>(absorbed by you)</span></span>
-                            <span style={{ color: '#FC8181' }}>
-                              -{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(discount)}
-                            </span>
+                            <span style={{ color: '#FC8181' }}>-{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(discount)}</span>
                           </div>
                         )}
 

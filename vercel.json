@@ -17,6 +17,7 @@
     { "path": "/api/cron/invoices", "schedule": "59 5 * * 1" },
     { "path": "/api/cron/push-dispatch", "schedule": "*/5 * * * *" },
     { "path": "/api/cron/push-health", "schedule": "0 13 * * *" },
+    { "path": "/api/cron/checkout-guard", "schedule": "0 12 * * *" },
     { "path": "/api/cron/recommendations-refresh", "schedule": "0 4 * * *" },
     { "path": "/api/cron/refill-reminders", "schedule": "0 15 * * *" },
     { "path": "/api/cron/tier-recompute", "schedule": "0 8 * * *" },
