@@ -85,9 +85,16 @@ async function buildDownlineRows(
   callerRole: string,
   existing: RawConv[],
 ): Promise<RawConv[]> {
+  // fn_get_user_conversations returns rows ORDER BY last_message_at DESC NULLS LAST.
+  // A user may have multiple conversations with the same counterparty (e.g. a regular
+  // direct DM stub AND a support thread). We must keep only the FIRST one encountered
+  // (the most recent / most relevant) — Map.set() would otherwise overwrite it with the
+  // last one iterated, which is the NULL-timestamp empty stub, hiding the support thread.
   const byCounterparty = new Map<string, RawConv>();
   for (const c of existing) {
-    if (typeof c.counterparty_id === 'string') byCounterparty.set(c.counterparty_id, c);
+    if (typeof c.counterparty_id === 'string' && !byCounterparty.has(c.counterparty_id)) {
+      byCounterparty.set(c.counterparty_id, c);
+    }
   }
 
   let membersData: { id: string; full_name: string | null; username: string | null; role: string | null; avatar_url: string | null }[] = [];
