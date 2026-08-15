@@ -174,26 +174,20 @@ function faqPool(city: City): { core: FAQ[]; rotating: FAQ[] } {
         question: `How are temperature-sensitive peptides shipped to ${city.state}?`,
         answer: `Most of our lyophilized peptides are stable at ambient temperatures during transit. However, for specific temperature-sensitive compounds, we utilize advanced cold-chain logistics and insulated packaging to ensure the integrity of the product upon arrival at your ${city.name} laboratory.`,
       },
-      {
-        question: `How should peptides be stored after delivery in ${city.stateAbbr}?`,
-        answer: `Upon arrival in ${city.name}, lyophilized (freeze-dried) peptides should be stored in a freezer at -20°C or below for long-term stability. Once reconstituted for research use, they must be kept refrigerated at 2°C to 8°C and utilized within the timeframe specified in the compound's documentation.`,
-      },
+
       {
         question: `Are your peptides tested in US-based analytical laboratories?`,
         answer: `Absolutely. While we source high-quality raw materials globally, all analytical testing, verification, and lot certification are performed by independent, accredited third-party laboratories within the United States. This guarantees that researchers in ${city.state} receive compounds meeting stringent domestic quality standards.`,
       },
       {
         question: `What payment methods are accepted for verified accounts in ${city.state}?`,
-        answer: `Verified research institutions and independent investigators in ${city.name} can utilize multiple secure payment methods, including major credit cards, bank transfers, and specialized institutional payment gateways designed for laboratory procurement.`,
+        answer: `Verified research institutions and independent investigators in ${city.name} utilize secure peer-to-peer payment methods including Zelle, Cash App, Venmo, and Apple Pay / Apple Cash. Specific payment instructions are provided after account verification. All payments are processed per the platform's Research Use Only purchase agreement.`,
       },
       {
         question: `What is the standard shelf life of lyophilized peptides upon arrival in ${city.name}?`,
         answer: `When properly stored in a frozen state (-20°C or below) away from light and moisture, lyophilized peptides maintain their stability and purity for several years. We recommend ${city.state} researchers strictly follow the handling guidelines provided with each batch.`,
       },
-      {
-        question: `What is the reconstitution process for Pep Nation Lab products?`,
-        answer: `Reconstitution protocols vary by compound and specific research application. Generally, researchers in ${city.name} utilize bacteriostatic water or sterile saline. We provide comprehensive handling guidelines, but investigators are responsible for determining the appropriate diluent and volume for their specific in vitro assays.`,
-      },
+
       {
         question: `Do you offer bulk or institutional discounts for research facilities in ${city.name}?`,
         answer: `Yes. Our agent-based wholesale distribution model inherently provides significant savings. For large-scale studies or high-volume institutional procurement in ${city.state}, we offer specialized pricing tiers and dedicated account management to ensure a consistent, cost-effective supply chain.`,
