@@ -10,6 +10,7 @@ import { paymentMethodLabel } from '@/lib/payment-method-labels';
 import IframeLink from '@/components/ui/IframeLink';
 import IframeModal from '@/components/ui/IframeModal';
 import OrderStageTimeline from '@/components/OrderStageTimeline';
+import { computeOwnOrderLedger, computeUplineLedger } from '@/lib/agent-ledger';
 
 export interface ShippingAddress {
   line1?: string;
@@ -1736,44 +1737,27 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                   </div>
                 )}
                 {detailItems && detailItems.length > 0 && (() => {
-                  const shippingCost = Number(detailOrder.shipping_cost || 0);
-                  const discount     = Number(detailOrder.discount_amount || 0);
-                  const isDownline   = !!(detailOrder.is_downline_order || detailOrder.is_sub_agent_order);
+                  const isDownline = !!(detailOrder.is_downline_order || detailOrder.is_sub_agent_order);
+                  const ownLedger = computeOwnOrderLedger(detailOrder, detailItems);
+                  const uplineLedger = computeUplineLedger(detailOrder, detailItems);
 
-                  // unit_cost_price        = what ordering agent (Eddie) pays Savage Brands   [COG + SB markup baked in]
-                  // unit_super_agent_cost  = what Savage Brands pays Pep Nation               [SB's wholesale cost from PN]
-                  // unit_retail_price      = what the customer paid per unit (pre-discount)
-                  let agentOwesTotal = 0;  // unit_cost_price × qty  → what Eddie owes SB
-                  let sbCostTotal    = 0;  // unit_super_agent_cost × qty → what SB owes PN ("COG" in ledger)
-                  let retailTotal    = 0;  // unit_retail_price × qty → gross pre-discount
+                  const {
+                    grossCustomerPmt,
+                    netYouCollect,
+                    discount,
+                    youOweSB,
+                    sbCostTotal,
+                    markupSpread,
+                    shippingCost,
+                    ownProfit,
+                    hasSbCost
+                  } = ownLedger;
 
-                  detailItems.forEach(item => {
-                    const qty = Number(item.quantity) || 0;
-                    if (qty <= 0) return;
-                    const ucp = Number(item.unit_cost_price       || 0);
-                    const usc = Number(item.unit_super_agent_cost || 0);
-                    const urp = Number(item.unit_retail_price     || 0);
-                    agentOwesTotal += ucp * qty;
-                    if (usc > 0) sbCostTotal += usc * qty;
-                    retailTotal += urp * qty;
-                  });
-
-                  // Spread: how much of what Eddie pays stays with Savage Brands (their markup)
-                  // sbCostTotal  = SB pays PN  (e.g. $41.13)
-                  // markupSpread = SB keeps     (= agentOwesTotal − sbCostTotal, e.g. $41.13)
-                  const hasSbCost      = sbCostTotal > 0;
-                  const markupSpread   = hasSbCost ? agentOwesTotal - sbCostTotal : null;
-
-                  // Own-order (Eddie) figures
-                  const grossCustomerPmt = retailTotal + shippingCost;
-                  const netYouCollect    = Number(detailOrder.total) || 0;
-                  const youOweSB         = agentOwesTotal + shippingCost;
-                  const ownProfit        = netYouCollect - youOweSB;
-
-                  // Upline (Savage Brands) figures
-                  const dlOwesYou        = agentOwesTotal + shippingCost;
-                  const youOwePepNation  = sbCostTotal + shippingCost;
-                  const uplProfit        = agentOwesTotal - sbCostTotal;
+                  const {
+                    dlOwesYou,
+                    youOwePepNation,
+                    uplProfit
+                  } = uplineLedger;
 
                   const fmt = (n: number) =>
                     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
