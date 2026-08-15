@@ -521,7 +521,7 @@ export async function POST(request: NextRequest) {
         }
       }
     }
-    const isValidBundleLine = (bundleName: string | undefined, productId: string): boolean => {
+    const isValidBundleLine = (bundleName: string | null | undefined, productId: string): boolean => {
       if (!bundleName) return false;
       const members = validBundleMembers.get(bundleName.trim().toLowerCase());
       return !!members && members.has(productId);
@@ -530,7 +530,7 @@ export async function POST(request: NextRequest) {
     // the factor is computed per-line by callers using bundleCustomPriceByName.
     // Defaults to the legacy 10% only for a validated bundle line whose bundle
     // somehow carries no percent.
-    const bundleDiscountFactor = (bundleName: string | undefined): number => {
+    const bundleDiscountFactor = (bundleName: string | null | undefined): number => {
       if (!bundleName) return 1;
       // Custom price bundles: handled separately, return 1 here so the caller
       // can apply the per-item custom price proportionally.
