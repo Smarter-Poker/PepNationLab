@@ -76,9 +76,7 @@ const NICKNAME_MAP: Record<string, string> = {
   'cagrilintide': 'The Appetite Off Switch',
   'mots-c': 'The Exercise Mimetic',
   'retatrutide': 'The Triple Threat',
-  'semaglutide': 'Ozempic',
   'survodutide': 'The Dual Agonist',
-  'tirzepatide': 'Mounjaro',
 };
 
 export function getPopularName(productName: string): string | null {

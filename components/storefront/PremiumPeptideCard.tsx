@@ -312,24 +312,35 @@ export default function PremiumPeptideCard({
             </>
           )}
 
-          {/* "AGENT PRICE" label — only rendered when the owner cost-view
-              toggle is ON. When OFF, the baked-in "WHOLESALE PRICE" text
-              in the card images shows through normally. */}
+          {/* Price label — "WHOLESALE PRICE" is baked into the card image PNG.
+              In owner cost-view mode we cover it with a solid patch then
+              render "AGENT PRICE" in its place. Normal view = nothing rendered
+              here so the baked PNG text shows through untouched. */}
           {isOwnerCostMode && (
-            <div style={{
-              position: 'absolute',
-              left: px(380), width: px(280), top: px(660),
-              display: 'flex', justifyContent: 'center',
-              fontFamily: 'var(--font-roboto-condensed, sans-serif)',
-              fontWeight: 700,
-              fontSize: px(21),
-              color: '#9BA3AB',
-              textTransform: 'uppercase',
-              letterSpacing: px(1),
-              zIndex: 29, pointerEvents: 'none'
-            }}>
-              AGENT PRICE
-            </div>
+            <>
+              {/* Solid cover that paints over the baked "WHOLESALE PRICE" text */}
+              <div style={{
+                position: 'absolute',
+                left: px(380), width: px(280), top: px(655), height: px(45),
+                background: '#000000',
+                zIndex: 28, pointerEvents: 'none',
+              }} />
+              {/* "AGENT PRICE" label rendered in place of the covered text */}
+              <div style={{
+                position: 'absolute',
+                left: px(380), width: px(280), top: px(662),
+                display: 'flex', justifyContent: 'center',
+                fontFamily: 'var(--font-roboto-condensed, sans-serif)',
+                fontWeight: 700,
+                fontSize: px(21),
+                color: '#9BA3AB',
+                textTransform: 'uppercase',
+                letterSpacing: px(1),
+                zIndex: 29, pointerEvents: 'none',
+              }}>
+                AGENT PRICE
+              </div>
+            </>
           )}
 
           {/* Centered Agent Price Digits */}

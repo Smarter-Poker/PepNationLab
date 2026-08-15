@@ -21,7 +21,7 @@ import { revalidatePath } from 'next/cache';
  *   curl -X POST https://pepnationlab.com/api/admin/revalidate-peptides \
  *        -H "Authorization: Bearer $CRON_SECRET"
  */
-function handle(req: NextRequest) {
+async function handle(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
   if (!secret) {
     return NextResponse.json({ error: 'CRON_SECRET Not Configured' }, { status: 503 });

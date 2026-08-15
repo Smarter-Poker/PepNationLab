@@ -203,9 +203,6 @@
     "slug": "semaglutide",
     "display_name": "Semaglutide",
     "aliases": [
-      "Ozempic",
-      "Wegovy",
-      "Rybelsus",
       "NN9535",
       "Semaglutide peptide",
       "GLP-1 agonist semaglutide",
@@ -250,8 +247,6 @@
     "slug": "tirzepatide",
     "display_name": "Tirzepatide",
     "aliases": [
-      "Mounjaro",
-      "Zepbound",
       "LY3298176",
       "Tirzepatide peptide",
       "GIP GLP-1 dual agonist",
