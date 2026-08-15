@@ -11,6 +11,7 @@ import IframeLink from '@/components/ui/IframeLink';
 import IframeModal from '@/components/ui/IframeModal';
 import OrderStageTimeline from '@/components/OrderStageTimeline';
 import { computeOwnOrderLedger, computeUplineLedger } from '@/lib/agent-ledger';
+import LedgerBreakdown from '@/components/LedgerBreakdown';
 
 export interface ShippingAddress {
   line1?: string;
@@ -45,6 +46,7 @@ interface Order {
   is_downline_order?: boolean;
   downline_agent_id?: string | null;
   downline_agent_name?: string | null;
+  super_agent_name?: string | null;
 }
 
 interface OrderItem {
@@ -1741,27 +1743,6 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                   const ownLedger = computeOwnOrderLedger(detailOrder, detailItems);
                   const uplineLedger = computeUplineLedger(detailOrder, detailItems);
 
-                  const {
-                    grossCustomerPmt,
-                    netYouCollect,
-                    discount,
-                    youOweSB,
-                    sbCostTotal,
-                    markupSpread,
-                    shippingCost,
-                    ownProfit,
-                    hasSbCost
-                  } = ownLedger;
-
-                  const {
-                    dlOwesYou,
-                    youOwePepNation,
-                    uplProfit
-                  } = uplineLedger;
-
-                  const fmt = (n: number) =>
-                    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
-
                   return (
                     <>
                       <div style={{ flex: 1 }} />
@@ -1771,95 +1752,15 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                           {isDownline ? 'Upline Ledger — Your Settlement' : 'Your Settlement'}
                         </div>
 
-                        {/* Order Summary sub-box — shown for both views */}
-                        <div style={{ padding: '8px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                          <div style={{ fontSize: '0.71rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Order Summary</div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.83rem', color: 'var(--silver)' }}>
-                            <span>Gross (Before Discount)</span><span>{fmt(grossCustomerPmt)}</span>
-                          </div>
-                          {discount > 0 && (
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.83rem', color: 'var(--red)' }}>
-                              <span>Discount{detailOrder.coupon_code ? ` (${detailOrder.coupon_code})` : ''}</span>
-                              <span>-{fmt(discount)}</span>
-                            </div>
-                          )}
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.83rem', color: discount > 0 ? '#22C55E' : 'var(--silver)', fontWeight: 600 }}>
-                            <span>Customer Paid</span><span>{fmt(netYouCollect)}</span>
-                          </div>
-                        </div>
-
-                        <div style={{ height: 1, background: 'rgba(0,196,188,0.12)' }} />
-
-                        {/* ── UNIFIED FULL TREE LEDGER ── */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
-                          <span style={{ color: 'var(--silver)' }}>
-                            {isDownline
-                              ? `${detailOrder.downline_agent_name || 'Agent'} Owes You`
-                              : `You Owe ${detailOrder.super_agent_name || 'Upline'}`}
-                            <span style={{ fontSize: '0.73rem', color: 'var(--grey-400)', marginLeft: 6 }}>(Cost + Markup + Shipping)</span>
-                          </span>
-                          <span style={{ color: isDownline ? '#22C55E' : 'var(--red)', fontWeight: 700 }}>
-                            {isDownline ? '' : '-'}{fmt(dlOwesYou)}
-                          </span>
-                        </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
-                          <span style={{ color: 'var(--silver)' }}>
-                            {isDownline ? `${detailOrder.downline_agent_name || 'Agent'} Net Profit` : 'Your Net Profit'}
-                          </span>
-                          <span style={{ color: ownProfit >= 0 ? '#22C55E' : 'var(--red)', fontWeight: 700 }}>{fmt(ownProfit)}</span>
-                        </div>
-
-                        <div style={{ height: 1, background: 'rgba(0,196,188,0.12)' }} />
-
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
-                          <span style={{ color: 'var(--silver)' }}>
-                            {isDownline ? 'You Collect From Agent' : `${detailOrder.super_agent_name || 'Upline'} Collects From You`}
-                          </span>
-                          <span style={{ color: isDownline ? '#22C55E' : 'var(--silver)', fontWeight: isDownline ? 700 : 400 }}>{fmt(dlOwesYou)}</span>
-                        </div>
-
-                        {hasSbCost && markupSpread !== null && (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 3, paddingLeft: 14, borderLeft: '2px solid rgba(252,129,129,0.2)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--grey-400)' }}>
-                              <span>{"└ Cost of Goods "}<span style={{ opacity: 0.7, fontSize: '0.7rem' }}>({isDownline ? 'You pay PN' : 'pays Pep Nation'})</span></span>
-                              <span>{fmt(sbCostTotal)}</span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--grey-400)' }}>
-                              <span>{"└ Markup "}<span style={{ opacity: 0.7, fontSize: '0.7rem' }}>({isDownline ? 'You keep' : 'keeps'})</span></span>
-                              <span>{fmt(markupSpread)}</span>
-                            </div>
-                            {shippingCost > 0 && (
-                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--grey-400)' }}>
-                                <span>{"└ Shipping"}</span><span>{fmt(shippingCost)}</span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {hasSbCost && (
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
-                            <span style={{ color: 'var(--silver)' }}>
-                              {isDownline ? 'You Owe Pep Nation' : `${detailOrder.super_agent_name || 'Upline'} Owes Pep Nation`}
-                              <span style={{ fontSize: '0.73rem', color: 'var(--grey-400)', marginLeft: 6 }}>(COG + Shipping)</span>
-                            </span>
-                            <span style={{ color: isDownline ? 'var(--red)' : 'var(--silver)', fontWeight: isDownline ? 700 : 400 }}>
-                              {isDownline ? '-' : ''}{fmt(youOwePepNation)}
-                            </span>
-                          </div>
-                        )}
-
-                        {hasSbCost && (
-                          <>
-                            <div style={{ height: 1, background: 'rgba(0,196,188,0.12)' }} />
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 800 }}>
-                              <span style={{ color: 'var(--white)' }}>
-                                {isDownline ? 'Your Net Profit' : `${detailOrder.super_agent_name || 'Upline'} Net Profit`}
-                              </span>
-                              <span style={{ color: uplProfit >= 0 ? '#22C55E' : 'var(--red)' }}>{fmt(uplProfit)}</span>
-                            </div>
-                          </>
-                        )}
+                        <LedgerBreakdown
+                          ownLedger={ownLedger}
+                          uplineLedger={uplineLedger}
+                          viewerRole={isDownline ? 'super_agent' : 'agent'}
+                          isOwnOrder={!isDownline}
+                          agentName={detailOrder.downline_agent_name || 'Agent'}
+                          uplineName={detailOrder.super_agent_name || 'Upline'}
+                          couponCode={detailOrder.coupon_code}
+                        />
                       </div>
                     </>
                   );
