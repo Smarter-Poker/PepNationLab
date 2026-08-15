@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import AgentAccountDetail from '@/components/AgentAccountDetail';
 import DownlineTree from '@/components/DownlineTree';
+import AccountDeleteButton from '@/components/AccountDeleteButton';
 import { freshDefaultLadder, GAMIFICATION_MAX_PCT } from '@/lib/gamification';
 import {
   MIN_PASSWORD_LENGTH,
@@ -703,6 +704,14 @@ export default function AdminAgents() {
                   >
                     View Downlines
                   </button>
+
+                  <AccountDeleteButton
+                    targetId={agent.id}
+                    targetName={agent.full_name || agent.username || null}
+                    kind="agent"
+                    compact
+                    onDeleted={() => { fetchAgents(); }}
+                  />
 
                   {/* Assign to Parent — only shown for super agents */}
                   {agent.is_super_agent && (() => {
