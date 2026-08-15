@@ -1547,7 +1547,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                         onClick={() => { setAceticAddedQty(neededAceticAcidVials); handleAddAceticAcid(); }}
                         style={{ flex: '1 1 230px', padding: '11px 14px', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', borderRadius: 6, cursor: 'pointer', background: 'transparent', border: '1px solid #EBB236', color: '#EBB236' }}
                       >
-                        Add {neededAceticAcidVials} Acetic Acid Vial{neededAceticAcidVials !== 1 ? 's' : ''} — ${((isAgentSelfBuy ? aceticProduct.costPrice : aceticProduct.retailPrice) * neededAceticAcidVials).toFixed(2)}
+                        Add {neededAceticAcidVials} Acetic Acid Vial{neededAceticAcidVials !== 1 ? 's' : ''} - ${((isAgentSelfBuy ? aceticProduct.costPrice : aceticProduct.retailPrice) * neededAceticAcidVials).toFixed(2)}
                       </button>
                       <button
                         type="button"
@@ -1706,7 +1706,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 {shippingOption !== 'agent_pickup' ? <strong style={{ color: 'var(--white)', whiteSpace: 'nowrap', flexShrink: 0 }}>${shippingCost.toFixed(2)}</strong> : <strong style={{ color: 'var(--teal)', whiteSpace: 'nowrap', flexShrink: 0 }}>Free Shipping To Agent</strong>}
               </div>
               {shippingOption !== 'agent_pickup' && (
-                <div style={{ fontSize: '0.7rem', color: 'var(--grey-400)', textAlign: 'right', marginTop: -4 }}>{state.trim() ? 'Flat Rate — Any Order Size' : 'Select Your State For The Exact Rate'}</div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--grey-400)', textAlign: 'right', marginTop: -4 }}>{state.trim() ? 'Flat Rate - Any Order Size' : 'Select Your State For The Exact Rate'}</div>
               )}
               <div style={{ paddingTop: 'var(--space-3)', display: 'flex', justifyContent: 'space-between', fontSize: '1.05rem', marginTop: 'var(--space-1)', gap: 8 }}>
                 <span style={{ color: 'var(--white)', fontWeight: 600 }}>Total Due</span>
