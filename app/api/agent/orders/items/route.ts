@@ -64,13 +64,16 @@ export async function GET(req: NextRequest) {
     if (item.product_id) {
       const { data: product } = await supabase
         .from('products')
-        .select('compound_slug, unit_size, unit_measure')
+        .select('compound_slug, unit_size, unit_measure, base_cost')
         .eq('id', item.product_id)
         .maybeSingle();
 
       if (product) {
         item.unit_size = product.unit_size;
         item.unit_measure = product.unit_measure;
+        // base_cost = Pep Nation's raw cost (what Savage Brands owes Pep Nation).
+        // unit_cost_price = base_cost × (1 + markup) = what the agent owes Savage Brands.
+        item.unit_base_cost = product.base_cost != null ? Number(product.base_cost) / 10 : null;
       }
 
       if (product?.compound_slug) {
