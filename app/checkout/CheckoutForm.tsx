@@ -417,7 +417,8 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
           const { data: bacRows } = await supabase
             .from('products')
             .select('id, name, base_cost, max_retail_price, weight_oz, unit_size, unit_measure, image_url')
-            .eq('compound_slug', 'bac-water')
+            .or('name.ilike.%bacteriostatic water%,name.ilike.%bac%water%')
+            .eq('is_active', true)
             .limit(5);
           const p = (bacRows ?? []).find(r => String(r.unit_size) === '10') ?? (bacRows ?? [])[0] ?? null;
           if (p) {
@@ -491,6 +492,23 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
         if (!cancelled && typeof json?.totalMlNeeded === 'number') {
           setSmartBacMl(json.totalMlNeeded);
           if (typeof json?.totalPeptideVials === 'number') setSmartPeptideVials(json.totalPeptideVials);
+          if (json.bacWaterProduct) {
+            setBacProduct((prev) => {
+              if (prev) return prev;
+              const sizeLabel = json.bacWaterProduct.unit_size ? `(${json.bacWaterProduct.unit_size}${json.bacWaterProduct.unit_measure || ''})` : '';
+              return {
+                id: json.bacWaterProduct.id,
+                agentProductId: json.bacWaterProduct.id,
+                name: `${json.bacWaterProduct.name} ${sizeLabel}`.trim(),
+                retailPrice: json.bacWaterProduct.retail_price || 0,
+                costPrice: json.bacWaterProduct.retail_price || 0,
+                weightOz: 0.5,
+                unitSize: json.bacWaterProduct.unit_size ?? null,
+                unitMeasure: json.bacWaterProduct.unit_measure ?? null,
+                imageUrl: json.bacWaterProduct.image_url ?? null,
+              };
+            });
+          }
         }
       } catch { /* keep the conservative fallback estimate */ }
     })();
