@@ -212,40 +212,43 @@ export default function NotificationCenterClient({
               </h2>
 
               {/* Master Toggle */}
-              <label style={{ display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer', paddingBottom: 20, borderBottom: BORDER }}>
-                <input
-                  type="checkbox"
-                  checked={pushSupported && pushPermission === 'granted' && prefs.push_enabled}
-                  disabled={pushBusy || (pushSupported && pushPermission === 'denied')}
-                  onChange={(e) => {
-                    if (e.target.checked) handleEnablePush();
-                    else handleDisablePush();
-                  }}
-                  style={{ width: 18, height: 18, accentColor: TEAL, cursor: 'pointer' }}
-                />
-                <div style={{ flex: 1 }}>
-                  <div style={{ color: 'var(--white)', fontSize: '0.9rem', fontWeight: 700 }}>Enable Push Notifications</div>
-                  <div style={{ color: SILVER, fontSize: '0.78rem', marginTop: 2 }}>
-                    Receive alerts on your device even when the browser is closed. Turn this on to enable the alerts below.
-                    {pushSupported && pushPermission === 'denied' && (
-                      <span style={{ color: '#E53E3E', marginLeft: 6 }}>(Blocked - Check Browser Settings)</span>
-                    )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, paddingBottom: 20, borderBottom: BORDER }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer', flex: 1, margin: 0 }}>
+                  <input
+                    type="checkbox"
+                    checked={pushSupported && pushPermission === 'granted' && prefs.push_enabled}
+                    disabled={pushBusy || (pushSupported && pushPermission === 'denied')}
+                    onChange={(e) => {
+                      if (e.target.checked) handleEnablePush();
+                      else handleDisablePush();
+                    }}
+                    style={{ width: 18, height: 18, accentColor: TEAL, cursor: 'pointer' }}
+                  />
+                  <div>
+                    <div style={{ color: 'var(--white)', fontSize: '0.9rem', fontWeight: 700 }}>Enable Push Notifications</div>
+                    <div style={{ color: SILVER, fontSize: '0.78rem', marginTop: 2 }}>
+                      Receive alerts on your device even when the browser is closed. Turn this on to enable the alerts below.
+                      {pushSupported && pushPermission === 'denied' && (
+                        <span style={{ color: '#E53E3E', marginLeft: 6 }}>(Blocked - Check Browser Settings)</span>
+                      )}
+                    </div>
                   </div>
-                </div>
+                </label>
                 {pushSupported && pushPermission === 'granted' && prefs.push_enabled && (
                   <button
-                    onClick={(e) => { e.preventDefault(); handleTestPush(); }}
+                    onClick={handleTestPush}
                     disabled={pushBusy}
                     style={{
                       background: 'transparent', color: TEAL, border: `1px solid ${TEAL}`,
                       borderRadius: 6, padding: '6px 12px', fontSize: '0.75rem', fontWeight: 600,
                       cursor: pushBusy ? 'wait' : 'pointer', opacity: pushBusy ? 0.5 : 1,
+                      marginLeft: 'auto'
                     }}
                   >
                     Test
                   </button>
                 )}
-              </label>
+              </div>
 
               {pushMsg && (
                 <div style={{ fontSize: '0.78rem', color: pushMsg.ok ? TEAL : '#E53E3E', marginTop: 12, marginBottom: 4 }}>
