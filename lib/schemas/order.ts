@@ -18,7 +18,7 @@ export const CheckoutSchema = z.object({
       z.object({
         id: uuidString,
         quantity: lineQuantity,
-        bundleName: z.string().optional(),
+        bundleName: z.string().nullable().optional(),
       })
     )
     .min(1, 'Cart Cannot Be Empty.'),
