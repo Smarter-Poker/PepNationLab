@@ -190,7 +190,10 @@ export async function POST(req: NextRequest) {
 
     for (const p of products ?? []) {
       if (!p.id) continue;
-      if (p.is_active === false || p.is_banned === true) continue;
+      // Banned products are excluded. DEACTIVATED ones are NOT: a product that
+      // is in a live cart is being sold, and skipping it here silently zeroed
+      // the whole estimate and made both checkout panels disappear.
+      if (p.is_banned === true) continue;
 
       const isBacWater = BAC_WATER_RE.test(p.name);
       const isAceticAcid = ACETIC_ACID_RE.test(p.name);
@@ -211,6 +214,21 @@ export async function POST(req: NextRequest) {
       peptideCount += 1;
       totalPeptideVials += qty;
       totalMlRaw += lineReconstitutionMl(p.name, p.unit_size, p.unit_measure, qty);
+    }
+
+    // SILENT-VANISH FLOOR.
+    // Both checkout panels render only when vialsNeeded > 0, so any cart whose
+    // items all resolve to 0 mL made the entire BAC water recommendation
+    // disappear with no explanation -- indistinguishable from the feature being
+    // broken, and the exact symptom reported repeatedly. A cart holding real
+    // research vials always gets a recommendation: when the strength-based sum
+    // comes to nothing (mislabelled unit_measure, a stale duplicate SKU, a
+    // missing strength), fall back to the same conservative ~2 mL per vial the
+    // client uses before this endpoint answers. Carts that legitimately contain
+    // only diluents or supplies never reach here -- those are filtered above and
+    // leave totalPeptideVials at 0.
+    if (totalMlRaw <= 0 && totalPeptideVials > 0) {
+      totalMlRaw = totalPeptideVials * 2;
     }
 
     // Aggregate mL needed for the WHOLE order, rounded up to a clean 0.5 mL.
