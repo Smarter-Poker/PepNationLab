@@ -125,7 +125,7 @@ export default async function NetworkDashboardPage() {
   const profilesMap = new Map((profilesData ?? []).map(p => [p.id, p]));
 
   const agents = Array.from(agentsMap.values()).map((a) => {
-    const p = profilesMap.get(a.id) || {};
+    const p = (profilesMap.get(a.id) || {}) as any;
     return {
       id: a.id,
       username: a.username,

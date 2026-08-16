@@ -124,21 +124,14 @@ export async function GET(req: NextRequest) {
         'profiles!orders_buyer_id_fkey(full_name, email)'
       )
       .in('agent_id', agentIds)
-      // Exclude wholesale restock orders from the sales view.
-      // Restocks were appearing as zero-profit 'sales' in the agent dashboard.
       .eq('is_wholesale_restock', false)
-      // Exclude cancelled orders so voided sales don't distort profit/discount totals
-      // (matches coupon-performance, redemptions, and sub-agent-rollup readers).
       .neq('status', 'cancelled')
-      // Hard-exclude admin-placed orders (Pep Nation direct / Daniel Bekavac).
-      // These are platform-owner orders and must never appear in any agent's feed.
-      // Primary gate is the downline walk above; this is the safety-net filter.
       .not('agent_id', 'in', `(${[
         'b8bd12e6-8196-401e-b37b-f742caf1596c', // Daniel Bekavac (admin)
         'a253044b-2250-4187-9af5-78cbca2d4e67', // unnamed admin account
       ].join(',')})`)
       .order('created_at', { ascending: false })
-      .limit(2500);
+      .limit(2500) as any;
 
     if (ordersError) {
       return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });

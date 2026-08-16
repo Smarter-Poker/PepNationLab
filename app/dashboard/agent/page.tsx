@@ -107,6 +107,10 @@ export default async function AgentDashboardPage() {
       agent_id
     `)
     .in('agent_id', agentIds)
+    .not('agent_id', 'in', `(${[
+      'b8bd12e6-8196-401e-b37b-f742caf1596c', // Daniel Bekavac (admin)
+      'a253044b-2250-4187-9af5-78cbca2d4e67', // unnamed admin account
+    ].join(',')})`)
     .order('created_at', { ascending: false });
 
   const orders = (ordersData || []).map((order: any) => {

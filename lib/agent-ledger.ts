@@ -1,14 +1,16 @@
 export interface LedgerItem {
-  quantity: number | string | null;
-  unit_retail_price: number | string | null;
-  unit_cost_price: number | string | null;
-  unit_super_agent_cost: number | string | null;
+  quantity?: number | string | null;
+  unit_retail_price?: number | string | null;
+  unit_cost_price?: number | string | null;
+  unit_super_agent_cost?: number | string | null;
 }
 
 export interface LedgerOrder {
-  total: number | string | null;
-  shipping_cost: number | string | null;
-  discount_amount: number | string | null;
+  total?: number | string | null;
+  shipping_cost?: number | string | null;
+  discount_amount?: number | string | null;
+  is_downline_order?: boolean | null;
+  is_sub_agent_order?: boolean | null;
 }
 
 export interface OwnOrderLedger {

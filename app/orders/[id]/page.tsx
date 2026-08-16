@@ -728,15 +728,15 @@ export default async function OrderDetailPage(
               <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-5)', animationDelay: '0.25s' }}>
                 <div style={{ padding: '16px 18px', borderRadius: 12, background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.2)', display: 'flex', flexDirection: 'column', gap: 10 }}>
                   <div style={{ fontSize: '0.72rem', color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 800 }}>
-                    {uplineName ? `Upline Ledger — ${uplineName}` : 'Settlement Ledger'}
+                    Settlement Ledger
                   </div>
                   <LedgerBreakdown
                     ownLedger={ownLedger}
                     uplineLedger={uplineLedger}
                     viewerRole={viewerRole}
                     isOwnOrder={!!isOwnOrder}
-                    agentName={order.agent?.full_name || 'Agent'}
-                    uplineName={uplineName || 'Upline'}
+                    agentName={'Agent'}
+                    uplineName={'Upline'}
                     couponCode={order.coupon_code}
                   />
                 </div>

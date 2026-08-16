@@ -54,43 +54,49 @@ function makeAdmin(opts: MockOptions = {}) {
     from(table: string) {
       return {
         select(_cols: string) {
-          return {
-            eq(key: string, value: unknown) {
-              return {
-                async maybeSingle() {
-                  if (table === 'agent_profiles' && key === 'slug') {
-                    return { data: agents[String(value)] ?? null };
-                  }
-                  if (table === 'profiles' && key === 'id') {
-                    if (value === USER_ID) return { data: profileRow };
-                    return { data: accounts[String(value)] ?? null };
-                  }
-                  // Username availability probe: always available.
-                  if (table === 'profiles' && key === 'username') return { data: null };
-                  return { data: null };
-                },
-              };
+          const query = {
+            key: '',
+            value: null as unknown,
+            eq(k: string, v: unknown) {
+              if (!this.key) {
+                this.key = k;
+                this.value = v;
+              }
+              return this;
             },
-            // Duplicate-email probe: .or(...).neq(...).limit(1).maybeSingle()
-            or(_filter: string) {
-              return {
-                neq(_k: string, _v: unknown) {
-                  return {
-                    limit(_n: number) {
-                      return {
-                        async maybeSingle() {
-                          return { data: opts.emailOwner ?? null };
-                        },
-                      };
-                    },
-                  };
-                },
-              };
+            neq(_k: string, _v: unknown) { return this; },
+            or(_filter: string) { return this; },
+            limit(_n: number) { return this; },
+            is(_k: string, _v: unknown) { return this; },
+            order(_c: string, _opts: unknown) { return this; },
+            async maybeSingle() {
+              if (table === 'agent_profiles' && this.key === 'slug') {
+                return { data: agents[String(this.value)] ?? null };
+              }
+              if (table === 'profiles' && this.key === 'id') {
+                if (this.value === USER_ID) return { data: profileRow };
+                const res = accounts[String(this.value)] ?? null;
+                if (this.value === '123e4567-e89b-42d3-a456-426614174000') {
+                  console.log('fetching sub-agent! result:', res);
+                }
+                return { data: res };
+              }
+              // Duplicate-email probe returns opts.emailOwner
+              if (table === 'profiles' && !this.key) {
+                return { data: opts.emailOwner ?? null };
+              }
+              // Username availability probe: always available.
+              if (table === 'profiles' && this.key === 'username') return { data: null };
+              return { data: null };
             },
           };
+          return query;
         },
         async upsert(row: Record<string, unknown>) {
           writes.upserts.push(row);
+          return { error: null };
+        },
+        async insert(row: Record<string, unknown>) {
           return { error: null };
         },
         update(row: Record<string, unknown>) {
@@ -341,7 +347,7 @@ describe('ensureOAuthResearcherProfile', () => {
       agents: { savagebrands: { id: AGENT_ID } },
       accounts: { [AGENT_ID]: { id: AGENT_ID, is_active: true } },
     });
-    await ensureOAuthResearcherProfile(admin, googleUser, 'SavageBrands');
+    const result = await ensureOAuthResearcherProfile(admin, googleUser, 'SavageBrands');
     expect(writes.upserts[0].referring_agent_id).toBe(AGENT_ID);
   });
 
@@ -446,7 +452,7 @@ describe('ensureOAuthResearcherProfile', () => {
       agents: { savagebrands: { id: AGENT_ID } },
       accounts: {
         [AGENT_ID]: { id: AGENT_ID, is_active: true },
-        [SUB_AGENT_ID]: { id: SUB_AGENT_ID, is_sub_agent: true, parent_agent_id: AGENT_ID },
+        [SUB_AGENT_ID]: { id: SUB_AGENT_ID, is_sub_agent: true, parent_agent_id: AGENT_ID, is_active: true },
       },
     });
     await ensureOAuthResearcherProfile(admin, googleUser, 'savagebrands', SUB_AGENT_ID);
@@ -460,7 +466,7 @@ describe('ensureOAuthResearcherProfile', () => {
       agents: { savagebrands: { id: AGENT_ID } },
       accounts: {
         [AGENT_ID]: { id: AGENT_ID, is_active: true },
-        [SUB_AGENT_ID]: { id: SUB_AGENT_ID, is_sub_agent: true, parent_agent_id: AGENT_ID },
+        [SUB_AGENT_ID]: { id: SUB_AGENT_ID, is_sub_agent: true, parent_agent_id: AGENT_ID, is_active: true },
       },
     });
     await ensureOAuthResearcherProfile(admin, googleUser, 'savagebrands', SUB_AGENT_ID);
