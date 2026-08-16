@@ -523,12 +523,12 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
     // collapsed secondary fallback when the agent has one-click labels.
     const pasteBackSection = (
       <>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'flex-start' }}>
           <button
             type="button"
             className="btn btn-secondary"
             onClick={() => handleCopyAddress(order)}
-            style={{ padding: '8px 14px', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}
+            style={{ padding: '8px 14px', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'flex-start', gap: '6px' }}
           >
             <ClipboardCopy size={14} />
             Copy Address
@@ -546,14 +546,14 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
               color: 'var(--teal)',
               borderRadius: '8px',
               display: 'inline-flex',
-              alignItems: 'center',
+              alignItems: 'flex-start',
               gap: '6px',
             }}
           >
             Open Pirate Ship
           </IframeLink>
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'flex-start' }}>
           <input
             type="text"
             placeholder="Paste Tracking Number"
@@ -583,7 +583,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
             className="btn btn-primary"
             onClick={() => handleMarkShipped(order.id)}
             disabled={shippingOrderId === order.id || !(trackingNumbers[order.id] || '').trim()}
-            style={{ padding: '10px 20px', fontSize: '0.9rem', fontWeight: 700, borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}
+            style={{ padding: '10px 20px', fontSize: '0.9rem', fontWeight: 700, borderRadius: '8px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}
           >
             {shippingOrderId === order.id ? 'Marking Shipped...' : 'Mark Shipped'}
           </button>
@@ -608,7 +608,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
           gap: '12px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--teal)', fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', color: 'var(--teal)', fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
           <Ship size={16} />
           Ship It
         </div>
@@ -625,7 +625,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                 className="btn btn-primary"
                 onClick={() => handleGetRates(order.id)}
                 disabled={ratesLoadingId === order.id}
-                style={{ alignSelf: 'flex-start', padding: '10px 20px', fontSize: '0.9rem', fontWeight: 700, borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}
+                style={{ alignSelf: 'flex-start', padding: '10px 20px', fontSize: '0.9rem', fontWeight: 700, borderRadius: '8px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}
               >
                 <Zap size={15} />
                 {ratesLoadingId === order.id ? 'Fetching Rates...' : 'Buy Label'}
@@ -644,7 +644,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                       style={{
                         display: 'flex',
                         flexWrap: 'wrap',
-                        alignItems: 'center',
+                        alignItems: 'flex-start',
                         gap: '10px',
                         padding: '10px 14px',
                         borderRadius: '10px',
@@ -734,7 +734,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
           <a
             href="/api/agent/shipping/export"
             className="btn btn-secondary btn-sm"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}
+            style={{ display: 'inline-flex', alignItems: 'flex-start', gap: '6px', textDecoration: 'none' }}
           >
             <Download size={14} />
             Export To Pirate Ship
@@ -743,7 +743,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
             className="btn btn-secondary btn-sm"
             onClick={() => importInputRef.current?.click()}
             disabled={importingCsv}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            style={{ display: 'inline-flex', alignItems: 'flex-start', gap: '6px' }}
           >
             <Upload size={14} />
             {importingCsv ? 'Importing...' : 'Import Tracking CSV'}
@@ -826,7 +826,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                 {/* Header row: Order ID, Date, and Status */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', flexWrap: 'wrap' }}>
                       <span style={{ 
                         fontSize: '1.2rem', 
                         fontWeight: 800,
@@ -850,7 +850,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                         })}
                       </span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
                       <span style={{ 
                         fontSize: '0.8rem', 
                         color: 'var(--teal)', 
@@ -922,7 +922,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                     <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px', fontWeight: 600 }}>Details</div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                       <span style={{ fontSize: '0.9rem', color: 'var(--silver)' }}>Method</span>
-                      <span style={{ fontSize: '0.9rem', color: 'var(--white)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '0.9rem', color: 'var(--white)', fontWeight: 600, display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
                         {order.fulfillment_method === 'agent_pickup' ? (
                           <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> Agent Pickup</>
                         ) : (
@@ -932,7 +932,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                       <span style={{ fontSize: '0.9rem', color: 'var(--silver)' }}>Payment</span>
-                      <span style={{ fontSize: '0.9rem', color: 'var(--white)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '0.9rem', color: 'var(--white)', fontWeight: 600, display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
                         {paymentMethodLabel(order.payment_method)}
                       </span>
@@ -998,7 +998,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                       display: 'flex',
                       flexWrap: 'wrap',
                       gap: '12px',
-                      alignItems: 'center',
+                      alignItems: 'flex-start',
                       justifyContent: 'flex-end',
                     }}
                   >
@@ -1019,7 +1019,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                     )}
                     
                       {confirmCancelId === order.id ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
                           <span style={{ fontSize: '0.85rem', color: '#FFAAAA', fontWeight: 600 }}>Confirm Cancel?</span>
                           <button
                             onClick={(e) => { e.stopPropagation(); handleUpdateOrderStatus(order.id, 'cancelled'); setConfirmCancelId(null); }}
@@ -1060,7 +1060,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                           boxShadow: '0 4px 15px rgba(252, 129, 129, 0.2), inset 0 1px 0 rgba(255,160,160,0.2), inset 0 -2px 0 rgba(0,0,0,0.4)',
                           textShadow: '0 1px 2px rgba(0,0,0,0.6)',
                           display: 'flex',
-                          alignItems: 'center',
+                          alignItems: 'flex-start',
                           gap: '8px'
                         }}
                         disabled={loadingOrderId === order.id}
@@ -1084,7 +1084,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                           borderRadius: '10px',
                           textShadow: '0 1px 2px rgba(0,0,0,0.3)',
                           display: 'flex',
-                          alignItems: 'center',
+                          alignItems: 'flex-start',
                           gap: '8px'
                         }}
                         disabled={loadingOrderId === order.id}
@@ -1111,7 +1111,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                           borderRadius: '10px',
                           textShadow: '0 1px 2px rgba(0,0,0,0.3)',
                           display: 'flex',
-                          alignItems: 'center',
+                          alignItems: 'flex-start',
                           gap: '8px'
                         }}
                         disabled={loadingOrderId === order.id}
@@ -1140,7 +1140,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center',
+              alignItems: 'flex-start',
               marginTop: 'var(--space-4)',
               padding: '12px 24px',
               borderRadius: '16px',
@@ -1154,7 +1154,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                 width: '100%',
                 display: 'flex',
                 justifyContent: 'space-between',
-                alignItems: 'center',
+                alignItems: 'flex-start',
                 boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.6)'
               }}>
                 <button
@@ -1236,7 +1236,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
             inset: 0,
             background: 'rgba(0,0,0,0.85)',
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'flex-start',
             justifyContent: 'center',
             zIndex: 1000,
             padding: 'max(var(--space-6), env(safe-area-inset-top, 0px)) var(--space-6) max(var(--space-6), env(safe-area-inset-bottom, 0px))',
@@ -1573,7 +1573,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                           fontSize: '1rem',
                           wordBreak: 'break-all',
                           display: 'flex',
-                          alignItems: 'center',
+                          alignItems: 'flex-start',
                           gap: 'var(--space-3)',
                           flexWrap: 'wrap',
                         }}
@@ -1642,7 +1642,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                     style={{
                       marginTop: 'var(--space-3)',
                       display: 'inline-flex',
-                      alignItems: 'center',
+                      alignItems: 'flex-start',
                       gap: '6px',
                       fontSize: '0.85rem',
                       padding: '8px 16px',
@@ -1770,7 +1770,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
-                    alignItems: 'center',
+                    alignItems: 'flex-start',
                     fontSize: '1.2rem',
                     color: 'var(--white)',
                     fontWeight: 800,
