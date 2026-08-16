@@ -113,7 +113,7 @@ export async function claimCronRun(
  */
 export async function finishCronRun(
   id: string,
-  status: 'succeeded' | 'failed',
+  status: 'succeeded' | 'failed' | 'partial_failure',
   notes?: string
 ): Promise<void> {
   try {

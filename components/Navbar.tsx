@@ -139,7 +139,7 @@ export default function Navbar({ onMenuClick, isOpen, title, agentSlug: propAgen
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
-  const [profile, setProfile] = useState<{ full_name?: string | null; role?: string; referring_agent_id?: string | null; is_super_agent?: boolean | null; is_sub_agent?: boolean | null; is_manufacturer?: boolean | null; locale?: string | null } | null>(null);
+  const [profile, setProfile] = useState<{ full_name?: string | null; role?: string; referring_agent_id?: string | null; is_super_agent?: boolean | null; is_sub_agent?: boolean | null; is_manufacturer?: boolean | null; locale?: string | null; is_admin_account?: boolean | null } | null>(null);
   const [agentSlug, setAgentSlug] = useState<string | null>(null);
   const [agentName, setAgentName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);

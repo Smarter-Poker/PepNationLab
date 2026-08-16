@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
   // used only for the mask decision and is never emitted (preserving the audit9
   // contract that non-admins don't learn other participants' roles).
   const messagesWithSenders = visibleMessages.map((m) => {
-    const raw = senderMap.get(m.sender_id) ?? null;
+    const raw = senderMap.get(m.sender_id as string) ?? null;
     const masked = maskAdminIdentity(raw, viewerIsAdmin);
     const sender = masked
       ? {

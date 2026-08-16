@@ -433,7 +433,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             .or('name.ilike.%bacteriostatic water%,name.ilike.%bac%water%')
             .eq('is_active', true)
             .limit(5);
-          const p = (bacRows ?? []).find(r => String(r.unit_size) === '10') ?? (bacRows ?? [])[0] ?? null;
+          const p = ((bacRows as any) ?? []).find((r: any) => String(r.unit_size) === '10') ?? ((bacRows as any) ?? [])[0] ?? null;
           if (p) {
             // Canonical per-vial retail is the admin ceiling price (max_retail_price,
             // stored per 10-pack) / 10 -- e.g. $89.70/pack -> $8.97/vial. Only if

@@ -325,7 +325,7 @@ export async function notifyWelcome(
 
   await notify(supabase, {
     userId,
-    type: 'notification',
+    type: 'system',
     title: `Welcome To Pep Nation Lab 🎉`,
     body: isSubAgent
       ? `Your account is ready. Head to your dashboard to get started.`

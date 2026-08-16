@@ -137,7 +137,7 @@ export async function POST(
       .select('id, tier, parent_agent_id, is_sub_agent, is_manufacturer, manufacturer_commission_pct')
       .eq('id', source.agent_id)
       .maybeSingle();
-    agentRow = ap as typeof agentRow;
+    agentRow = ap as any;
 
     if (agentRow) {
       isManufacturerStore = agentRow.is_manufacturer === true;
