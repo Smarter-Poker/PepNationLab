@@ -1,4 +1,4 @@
-// v12: PUSH RELIABILITY (2026-08-04). Root-cause work for "no pushes on my
+// v13: PUSH RELIABILITY (2026-08-04). Root-cause work for "no pushes on my
 //      phone in days": subscriptions rot silently (browser rotates the
 //      endpoint, PWA reinstall, endpoint reassigned to another account) and
 //      nothing ever repaired or even detected it. This version adds:
@@ -34,11 +34,11 @@
 // v10: Cache-version bump to deliver Module 1 + 2 quiz gate enforcement,
 //      data-v14 protection for #s2, route.ts no-store header, and markdown
 //      rendering fix for the Ask AI assistant modal.
-const CACHE_VERSION = 'pnl-sw-v12';
-const STATIC_CACHE_NAME = 'pnl-static-cache-v12';
-const DYNAMIC_CACHE_NAME = 'pnl-dynamic-cache-v12';
-const CATALOG_CACHE_NAME = 'pnl-catalog-cache-v12';
-const IMAGE_CACHE_NAME = 'pnl-image-cache-v12';
+const CACHE_VERSION = 'pnl-sw-v13';
+const STATIC_CACHE_NAME = 'pnl-static-cache-v13';
+const DYNAMIC_CACHE_NAME = 'pnl-dynamic-cache-v13';
+const CATALOG_CACHE_NAME = 'pnl-catalog-cache-v13';
+const IMAGE_CACHE_NAME = 'pnl-image-cache-v13';
 
 // Catalog cache TTL in the service worker (5 min = 300,000 ms)
 // Matches the s-maxage set on the API route's Cache-Control header.
@@ -134,7 +134,7 @@ self.addEventListener('push', (event) => {
 // ---------------------------------------------------------------------
 // SUBSCRIPTION SELF-HEAL
 // Browsers rotate push subscriptions (endpoint + keys) whenever they like.
-// Before v12 this event was unhandled, so a rotation orphaned the device:
+// Before v13 this event was unhandled, so a rotation orphaned the device:
 // the server kept sending to the OLD endpoint (often still accepted with a
 // 2xx by the push service) while the device listened on a new one it never
 // told the server about. Re-subscribe and re-register immediately.
