@@ -137,6 +137,28 @@ if (checkout) {
       'nothing. Note the price is rendered as literal "$" + a JSX expression --\n' +
       'when removing a dash before it, keep the "$".');
   }
+
+  // ---- 4b. The reminder must render in BOTH checkout steps --------------
+  // The panel disappeared from step 1 (Fulfillment Method) while still
+  // rendering on step 3, because the two were separate copies of the same
+  // JSX and only one survived an edit. It is now ONE shared element used in
+  // two places. Deleting either render site is the exact regression this
+  // rule exists to block.
+  const panelDefs = (checkout.match(/const bacWaterReminderPanel = \(/g) || []).length;
+  const panelUses = (checkout.match(/\{bacWaterReminderPanel\}/g) || []).length;
+  if (panelDefs !== 1) {
+    fail(
+      `bacWaterReminderPanel is defined ${panelDefs} time(s), expected exactly 1`,
+      'The reminder must stay a SINGLE shared element. Duplicating the JSX is\n' +
+      'how the two checkout copies drifted apart and one silently vanished.');
+  }
+  if (panelUses < 2) {
+    fail(
+      `bacWaterReminderPanel is rendered ${panelUses} time(s), expected at least 2`,
+      'It must render BOTH under Fulfillment Method (step 1) AND on the\n' +
+      'Compliance step (step 3). Removing either one is a user-visible\n' +
+      'regression that was reported in production.');
+  }
 }
 
 // ---- 5. Both halves of the safety net must still be wired up ------------
