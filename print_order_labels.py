@@ -10,7 +10,8 @@ files = [
     "glow-tb10-bpc10-ghk50-bbg70.png",
     "nad-nj100.png",
     "mots-c-ms10.png",
-    "bac-water-ba10.png"
+    "bac-water-ba10.png",
+    "savage/bac-water-ba10.png"
 ]
 
 base_url = "https://tmyyofivcbfncypsubkq.supabase.co/storage/v1/object/public/print-labels/"
