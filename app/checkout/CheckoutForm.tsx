@@ -1226,6 +1226,55 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     );
   }
 
+  // SINGLE SOURCE OF TRUTH for the reconstitution reminder. It is rendered
+  // in TWO places (under Fulfillment Method on step 1, and again on the
+  // Compliance step) from this one definition, so the two copies can never
+  // drift apart or silently vanish from one of them the way they did before.
+  const bacWaterReminderPanel = (
+    <>
+      {/* End-of-checkout BAC water reminder: reviews the order, states
+          the calculated amount needed for the WHOLE order, and adds the
+          suggested quantity in one click. Hidden once covered,
+          dismissed, or when no reconstitution vials are in the cart. */}
+      {neededBacWaterVials > 0 && bacProduct && !bacReminderDismissed && (
+        <div role="status" style={{ background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.35)', borderRadius: 'var(--radius-md)', padding: 'var(--space-4)', boxShadow: '0 0 18px rgba(0,196,188,0.10)' }}>
+          <strong style={{ display: 'block', color: 'var(--white)', fontSize: '0.85rem', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>Wait Does Your Lab Have BAC Water?</strong>
+          {bacProduct.imageUrl && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '0 0 10px' }}>
+              <img src={brandSafeImage(bacProduct.imageUrl, bacProduct.name) ?? bacProduct.imageUrl} alt={`Bacteriostatic Water${bacProduct.unitSize ? ` ${bacProduct.unitSize}${bacProduct.unitMeasure || 'ml'}` : ''}`} width={50} height={50} loading="lazy" decoding="async" style={{ flex: '0 0 auto', width: 50, height: 50, objectFit: 'contain', borderRadius: 6, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(0,196,188,0.3)', padding: 3 }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+              <span style={{ color: 'var(--teal)', fontSize: '0.8rem', fontWeight: 700, lineHeight: 1.3 }}>Bacteriostatic Water{bacProduct.unitSize ? ` ${bacProduct.unitSize}${bacProduct.unitMeasure || 'ml'} Vials` : ''}</span>
+            </div>
+          )}
+          <p style={{ color: 'var(--silver-light)', fontSize: '0.8rem', margin: '0 0 12px', lineHeight: 1.5 }}>
+            We Reviewed Your Order: <strong style={{ color: 'var(--white)' }}>{bacPeptideVialsDisplay}</strong> Research Vial{bacPeptideVialsDisplay !== 1 ? 's' : ''} Require{bacPeptideVialsDisplay === 1 ? 's' : ''} Bacteriostatic Water For Reconstitution{currentBacWaterVials > 0 ? <> And Your Cart Currently Includes <strong style={{ color: 'var(--white)' }}>{currentBacWaterVials}</strong> BAC Water Vial{currentBacWaterVials !== 1 ? 's' : ''}</> : ', And Your Cart Has None'}. Based On Per-Vial Strength, This Order Needs Approximately <strong style={{ color: 'var(--white)' }}>{bacTotalMlNeeded} mL</strong> Of BAC Water Suggested: <strong style={{ color: 'var(--white)' }}>{neededBacWaterVials}</strong> × {bacProduct.unitSize || '10'}{bacProduct.unitMeasure || 'ml'} Vial{neededBacWaterVials !== 1 ? 's' : ''}.
+          </p>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => { setBacAddedQty(neededBacWaterVials); handleAddBacWater(); }}
+              className="btn-neon-cyan"
+              style={{ flex: '1 1 230px', padding: '11px 14px', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', borderRadius: 6, cursor: 'pointer' }}
+            >
+              Add {neededBacWaterVials} BAC Water Vial{neededBacWaterVials !== 1 ? 's' : ''} ${((isAgentSelfBuy ? bacProduct.costPrice : bacProduct.retailPrice) * neededBacWaterVials).toFixed(2)}
+            </button>
+            <button
+              type="button"
+              onClick={() => setBacReminderDismissed(true)}
+              style={{ flex: '0 1 auto', padding: '11px 14px', fontSize: '0.78rem', background: 'transparent', border: '1px solid rgba(255,255,255,0.18)', color: 'var(--silver)', borderRadius: 6, cursor: 'pointer' }}
+            >
+              My Lab Is Covered
+            </button>
+          </div>
+        </div>
+      )}
+      {bacAddedQty > 0 && neededBacWaterVials === 0 && (
+        <div role="status" style={{ background: 'rgba(45,212,191,0.07)', border: '1px solid rgba(45,212,191,0.3)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', color: '#2DD4BF', fontSize: '0.8rem', fontWeight: 600 }}>
+          {bacAddedQty} Vial{bacAddedQty !== 1 ? 's' : ''} Of Bacteriostatic Water Added To Your Order.
+        </div>
+      )}
+    </>
+  );
+
   return (
     <div className="checkout-container page-transition" style={{ padding: 'var(--space-6)', maxWidth: 1200, margin: '0 auto', paddingBottom: '100px' }}>
       
@@ -1344,6 +1393,8 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                     </label>
                   </div>
                 </div>
+
+                {bacWaterReminderPanel}
 
                 {fulfillmentMethod === 'ship' && (
                   <div>
@@ -1492,46 +1543,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                   <p style={{ color: 'var(--silver-light)', fontSize: '0.78rem', margin: 0, lineHeight: 1.5 }}>Acceptance Of These Agreements Digitally Validates Your Institutional Consent. False Audits May Result In Restrictive Ban Of Profile Access To All Catalog Inventory.</p>
                 </div>
 
-                {/* End-of-checkout BAC water reminder: reviews the order, states
-                    the calculated amount needed for the WHOLE order, and adds the
-                    suggested quantity in one click. Hidden once covered,
-                    dismissed, or when no reconstitution vials are in the cart. */}
-                {neededBacWaterVials > 0 && bacProduct && !bacReminderDismissed && (
-                  <div role="status" style={{ background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.35)', borderRadius: 'var(--radius-md)', padding: 'var(--space-4)', boxShadow: '0 0 18px rgba(0,196,188,0.10)' }}>
-                    <strong style={{ display: 'block', color: 'var(--white)', fontSize: '0.85rem', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>Wait Does Your Lab Have BAC Water?</strong>
-                    {bacProduct.imageUrl && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '0 0 10px' }}>
-                        <img src={brandSafeImage(bacProduct.imageUrl, bacProduct.name) ?? bacProduct.imageUrl} alt={`Bacteriostatic Water${bacProduct.unitSize ? ` ${bacProduct.unitSize}${bacProduct.unitMeasure || 'ml'}` : ''}`} width={50} height={50} loading="lazy" decoding="async" style={{ flex: '0 0 auto', width: 50, height: 50, objectFit: 'contain', borderRadius: 6, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(0,196,188,0.3)', padding: 3 }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
-                        <span style={{ color: 'var(--teal)', fontSize: '0.8rem', fontWeight: 700, lineHeight: 1.3 }}>Bacteriostatic Water{bacProduct.unitSize ? ` ${bacProduct.unitSize}${bacProduct.unitMeasure || 'ml'} Vials` : ''}</span>
-                      </div>
-                    )}
-                    <p style={{ color: 'var(--silver-light)', fontSize: '0.8rem', margin: '0 0 12px', lineHeight: 1.5 }}>
-                      We Reviewed Your Order: <strong style={{ color: 'var(--white)' }}>{bacPeptideVialsDisplay}</strong> Research Vial{bacPeptideVialsDisplay !== 1 ? 's' : ''} Require{bacPeptideVialsDisplay === 1 ? 's' : ''} Bacteriostatic Water For Reconstitution{currentBacWaterVials > 0 ? <> And Your Cart Currently Includes <strong style={{ color: 'var(--white)' }}>{currentBacWaterVials}</strong> BAC Water Vial{currentBacWaterVials !== 1 ? 's' : ''}</> : ', And Your Cart Has None'}. Based On Per-Vial Strength, This Order Needs Approximately <strong style={{ color: 'var(--white)' }}>{bacTotalMlNeeded} mL</strong> Of BAC Water Suggested: <strong style={{ color: 'var(--white)' }}>{neededBacWaterVials}</strong> × {bacProduct.unitSize || '10'}{bacProduct.unitMeasure || 'ml'} Vial{neededBacWaterVials !== 1 ? 's' : ''}.
-                    </p>
-                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                      <button
-                        type="button"
-                        onClick={() => { setBacAddedQty(neededBacWaterVials); handleAddBacWater(); }}
-                        className="btn-neon-cyan"
-                        style={{ flex: '1 1 230px', padding: '11px 14px', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', borderRadius: 6, cursor: 'pointer' }}
-                      >
-                        Add {neededBacWaterVials} BAC Water Vial{neededBacWaterVials !== 1 ? 's' : ''} ${((isAgentSelfBuy ? bacProduct.costPrice : bacProduct.retailPrice) * neededBacWaterVials).toFixed(2)}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setBacReminderDismissed(true)}
-                        style={{ flex: '0 1 auto', padding: '11px 14px', fontSize: '0.78rem', background: 'transparent', border: '1px solid rgba(255,255,255,0.18)', color: 'var(--silver)', borderRadius: 6, cursor: 'pointer' }}
-                      >
-                        My Lab Is Covered
-                      </button>
-                    </div>
-                  </div>
-                )}
-                {bacAddedQty > 0 && neededBacWaterVials === 0 && (
-                  <div role="status" style={{ background: 'rgba(45,212,191,0.07)', border: '1px solid rgba(45,212,191,0.3)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', color: '#2DD4BF', fontSize: '0.8rem', fontWeight: 600 }}>
-                    {bacAddedQty} Vial{bacAddedQty !== 1 ? 's' : ''} Of Bacteriostatic Water Added To Your Order.
-                  </div>
-                )}
+                {bacWaterReminderPanel}
 
                 {/* Acetic-acid parity: GLP-1/IGF-class vials reconstitute with
                     acetic acid, not BAC water. Same end-of-checkout treatment. */}
