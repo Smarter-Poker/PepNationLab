@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   // for non-admins, and only widen to include cost cols for a true admin.
   const isAdmin = gate.isAdmin === true;
   const FULFILLMENT_COLUMNS = 'id, order_id, product_id, product_name, quantity, unit_retail_price';
-  const ADMIN_COLUMNS = 'id, order_id, product_id, product_name, quantity, unit_retail_price, unit_cost_price, unit_super_agent_cost, unit_house_cost, unit_size, unit_measure, lot_number, coa_url, created_at';
+  const ADMIN_COLUMNS = 'id, order_id, product_id, product_name, quantity, unit_retail_price, unit_cost_price, unit_super_agent_cost, unit_house_cost, lot_number, coa_url, created_at';
 
   const { data: items, error } = await supabase
     .from('order_items')
