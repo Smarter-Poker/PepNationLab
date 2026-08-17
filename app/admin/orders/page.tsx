@@ -133,6 +133,7 @@ function AdminOrdersPageInner() {
   const [bulkRunning, setBulkRunning] = useState(false);
 
   const [userRole, setUserRole] = useState<string>("");
+  const [userEmail, setUserEmail] = useState<string>("");
 
   const [labelModalUrl, setLabelModalUrl] = useState<string | null>(null);
 
@@ -189,6 +190,7 @@ function AdminOrdersPageInner() {
         data: { user },
       } = await supabase.auth.getUser();
       if (user) {
+        setUserEmail(user.email || "");
         const { data } = await supabase
           .from("profiles")
           .select("role")
@@ -1567,6 +1569,68 @@ function AdminOrdersPageInner() {
                                   couponCode={selectedOrder.coupon_code}
                                 />
                               </div>
+
+                              {userEmail === "daniel@bekavactrading.com" && (() => {
+                                let houseCostTotal = 0;
+                                let agentOwesTotal = 0;
+                                let sbCostTotal = 0;
+                                let retailTotal = 0;
+
+                                items.forEach(item => {
+                                  const qty = Number(item.quantity) || 0;
+                                  if (qty <= 0) return;
+                                  const ucp = Number(item.unit_cost_price || 0);
+                                  const usc = Number(item.unit_super_agent_cost || 0);
+                                  const uhc = Number(item.unit_house_cost || 0);
+                                  const urp = Number(item.unit_retail_price || 0);
+                                  
+                                  agentOwesTotal += ucp * qty;
+                                  if (usc > 0) sbCostTotal += usc * qty;
+                                  houseCostTotal += uhc * qty;
+                                  retailTotal += urp * qty;
+                                });
+
+                                let houseCollects = 0;
+                                let collectSource = "";
+                                if (sbCostTotal > 0) {
+                                  houseCollects = sbCostTotal + shippingCost;
+                                  collectSource = uplineName || "Savage Brands";
+                                } else if (selectedOrder.agent_id) {
+                                  houseCollects = agentOwesTotal + shippingCost;
+                                  collectSource = selectedOrder.agent?.full_name || "Agent";
+                                } else {
+                                  houseCollects = retailTotal + shippingCost - discount;
+                                  collectSource = "Customer (Direct)";
+                                }
+
+                                const houseProfit = houseCollects - (houseCostTotal + shippingCost);
+                                const fmt = (val: number) => `$${val.toFixed(2)}`;
+
+                                return (
+                                  <div style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(252, 129, 129, 0.06)', border: '1px solid rgba(252, 129, 129, 0.2)', display: 'flex', flexDirection: 'column', gap: 8, marginTop: "1rem" }}>
+                                    <div style={{ fontSize: '0.68rem', color: 'var(--red)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 800 }}>
+                                      Admin View Only — True House Ledger
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
+                                        <span style={{ color: 'var(--silver)' }}>Pep Nation Collects From {collectSource}</span>
+                                        <span style={{ color: 'var(--white)' }}>{fmt(houseCollects)}</span>
+                                      </div>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
+                                        <span style={{ color: 'var(--silver)' }}>Pep Nation True COG</span>
+                                        <span style={{ color: 'var(--red)' }}>-{fmt(houseCostTotal + shippingCost)}</span>
+                                      </div>
+                                      
+                                      <div style={{ height: 1, background: 'rgba(252, 129, 129, 0.12)' }} />
+                                      
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 800 }}>
+                                        <span style={{ color: 'var(--white)' }}>Pep Nation True Profit</span>
+                                        <span style={{ color: houseProfit >= 0 ? '#22C55E' : 'var(--red)' }}>{fmt(houseProfit)}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                             </div>
                           );
                         })()}
