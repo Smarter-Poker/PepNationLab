@@ -38,26 +38,27 @@ export async function GET(req: NextRequest) {
   // Collect unique product_ids so we can fetch unit_size + unit_measure
   const productIds = [...new Set(items.map((i: any) => i.product_id).filter(Boolean))];
 
-  let sizeMap: Record<string, { unit_size: string | null; unit_measure: string | null }> = {};
+  let sizeMap: Record<string, { unit_size: string | null; unit_measure: string | null; true_house_cost: number | null }> = {};
 
   if (productIds.length > 0) {
     const { data: products } = await supabase
       .from('products')
-      .select('id, unit_size, unit_measure')
+      .select('id, unit_size, unit_measure, house_cost')
       .in('id', productIds);
 
     if (products) {
       for (const p of products) {
-        sizeMap[p.id] = { unit_size: p.unit_size ?? null, unit_measure: p.unit_measure ?? null };
+        sizeMap[p.id] = { unit_size: p.unit_size ?? null, unit_measure: p.unit_measure ?? null, true_house_cost: p.house_cost ?? null };
       }
     }
   }
 
-  // Merge size info onto each item
+  // Merge size and cost info onto each item
   const data = items.map((item: any) => ({
     ...item,
     unit_size: sizeMap[item.product_id]?.unit_size ?? null,
     unit_measure: sizeMap[item.product_id]?.unit_measure ?? null,
+    true_house_cost: sizeMap[item.product_id]?.true_house_cost ?? null,
   }));
 
   return NextResponse.json({ data });

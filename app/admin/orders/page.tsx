@@ -66,6 +66,7 @@ interface OrderItem {
   unit_cost_price: number;
   unit_super_agent_cost?: number;
   unit_house_cost?: number | null;
+  true_house_cost?: number | null;
   unit_size?: string | null;
   unit_measure?: string | null;
 }
@@ -1581,7 +1582,7 @@ function AdminOrdersPageInner() {
                                   if (qty <= 0) return;
                                   const ucp = Number(item.unit_cost_price || 0);
                                   const usc = Number(item.unit_super_agent_cost || 0);
-                                  const uhc = Number(item.unit_house_cost || 0);
+                                  const uhc = Number(item.true_house_cost || item.unit_house_cost || 0);
                                   const urp = Number(item.unit_retail_price || 0);
                                   
                                   agentOwesTotal += ucp * qty;
