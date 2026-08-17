@@ -25,8 +25,8 @@ export async function GET(req: NextRequest) {
       const { data: orders, error } = await supabase
         .from('orders')
         .select(`
-          id, total, status, agent_id, created_at,
-          order_items ( quantity, unit_cost_price, unit_retail_price, unit_super_agent_cost, unit_house_cost, products ( base_cost ) )
+          id, total, status, agent_id, created_at, shipping_cost, discount_amount,
+          order_items ( quantity, unit_cost_price, unit_retail_price, unit_super_agent_cost, unit_house_cost, products ( base_cost, house_cost ) )
         `)
         .gte('created_at', from.toISOString())
         .lt('created_at', to.toISOString())
@@ -45,10 +45,9 @@ export async function GET(req: NextRequest) {
       const agentSet = new Set<string>();
 
       for (const o of live) {
-        const total = Number(o.total || 0);
-        revenue += total;
+        let orderHouseRevenue = 0;
+        let orderHouseProfit = 0;
 
-        let houseProfit = 0;
         for (const item of ((o as any).order_items || [])) {
            const qty = Number(item.quantity || 1);
            const ucp = Number(item.unit_cost_price || 0);
@@ -65,22 +64,36 @@ export async function GET(req: NextRequest) {
            // them unchanged.
            const uhc = Number(item.unit_house_cost || 0);
            const houseCollect = uhc > 0 ? uhc : (usc > 0 ? usc : ucp);
-           const baseCostPer10 = Number(item.products?.base_cost || 0);
+           const baseCostPer10 = Number(item.products?.house_cost || item.products?.base_cost || 0);
            const baseCostPerVial = baseCostPer10 / 10;
            
            if (o.agent_id) {
-             houseProfit += (houseCollect - baseCostPerVial) * qty;
+             orderHouseRevenue += houseCollect * qty;
+             orderHouseProfit += (houseCollect - baseCostPerVial) * qty;
            } else {
-             houseProfit += (urp - baseCostPerVial) * qty;
+             orderHouseRevenue += urp * qty;
+             orderHouseProfit += (urp - baseCostPerVial) * qty;
            }
         }
-        profit += houseProfit;
+        
+        const shipping = Number(o.shipping_cost || 0);
+        orderHouseRevenue += shipping;
+        
+        if (!o.agent_id) {
+           const discount = Number(o.discount_amount || 0);
+           orderHouseRevenue -= discount;
+           orderHouseProfit -= discount;
+           if (orderHouseRevenue < 0) orderHouseRevenue = 0;
+        }
+
+        revenue += orderHouseRevenue;
+        profit += orderHouseProfit;
 
         if (o.agent_id) {
-          agentRevenue += total;
+          agentRevenue += orderHouseRevenue;
           agentSet.add(o.agent_id);
         } else {
-          directRevenue += total;
+          directRevenue += orderHouseRevenue;
         }
       }
 

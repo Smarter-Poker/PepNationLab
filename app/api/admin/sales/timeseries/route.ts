@@ -22,8 +22,8 @@ export async function GET(req: NextRequest) {
     const { data: orders, error } = await supabase
       .from('orders')
       .select(`
-        total, status, created_at, agent_id,
-        order_items ( quantity, unit_cost_price, unit_retail_price, unit_super_agent_cost, unit_house_cost, products ( base_cost ) )
+        total, status, created_at, agent_id, shipping_cost, discount_amount,
+        order_items ( quantity, unit_cost_price, unit_retail_price, unit_super_agent_cost, unit_house_cost, products ( base_cost, house_cost ) )
       `)
       .gte('created_at', start.toISOString())
       .lt('created_at', end.toISOString())
@@ -39,33 +39,41 @@ export async function GET(req: NextRequest) {
       const day = o.created_at?.slice(0, 10) ?? '';
       if (!day) continue;
       if (!byDay[day]) byDay[day] = { revenue: 0, profit: 0, orders: 0 };
-      const total = Number(o.total || 0);
-      byDay[day].revenue += total;
+      
+      let orderHouseRevenue = 0;
+      let orderHouseProfit = 0;
 
-      let houseProfit = 0;
       for (const item of ((o as any).order_items || [])) {
          const qty = Number(item.quantity || 1);
          const ucp = Number(item.unit_cost_price || 0);
          const urp = Number(item.unit_retail_price || 0);
-         // Chained orders: house collects unit_super_agent_cost (see kpis route).
          const usc = Number(item.unit_super_agent_cost || 0);
-         // unit_house_cost (top-of-chain cost, captured at checkout) is the
-         // correct house collect under 3+ level chains (see kpis route).
-         // Historical rows predate the column (NULL) and are 2-level sales,
-         // where usc is correct -- the usc fallback keeps them unchanged.
          const uhc = Number(item.unit_house_cost || 0);
          const houseCollect = uhc > 0 ? uhc : (usc > 0 ? usc : ucp);
-         const baseCostPer10 = Number(item.products?.base_cost || 0);
+         const baseCostPer10 = Number(item.products?.house_cost || item.products?.base_cost || 0);
          const baseCostPerVial = baseCostPer10 / 10;
          
          if (o.agent_id) {
-           houseProfit += (houseCollect - baseCostPerVial) * qty;
+           orderHouseRevenue += houseCollect * qty;
+           orderHouseProfit += (houseCollect - baseCostPerVial) * qty;
          } else {
-           houseProfit += (urp - baseCostPerVial) * qty;
+           orderHouseRevenue += urp * qty;
+           orderHouseProfit += (urp - baseCostPerVial) * qty;
          }
       }
       
-      byDay[day].profit += houseProfit;
+      const shipping = Number(o.shipping_cost || 0);
+      orderHouseRevenue += shipping;
+      
+      if (!o.agent_id) {
+         const discount = Number(o.discount_amount || 0);
+         orderHouseRevenue -= discount;
+         orderHouseProfit -= discount;
+         if (orderHouseRevenue < 0) orderHouseRevenue = 0;
+      }
+      
+      byDay[day].revenue += orderHouseRevenue;
+      byDay[day].profit += orderHouseProfit;
       byDay[day].orders += 1;
     }
 
