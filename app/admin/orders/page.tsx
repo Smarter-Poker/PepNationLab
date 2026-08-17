@@ -1392,7 +1392,7 @@ function AdminOrdersPageInner() {
                     >
                       {items.map((item) => {
                         let profitLabel = null;
-                        if (userRole === "admin") {
+                        if (userRole === "admin" || userRole === "super_agent") {
                           const qty = item.quantity || 0;
                           const retail = Number(item.unit_retail_price || 0);
                           if (selectedOrder.agent_id) {
@@ -1529,7 +1529,7 @@ function AdminOrdersPageInner() {
                           <span>${Number(selectedOrder.total).toFixed(2)}</span>
                         </div>
 
-                        {userRole === "admin" && items.length > 0 && selectedOrder.agent_id && (() => {
+                        {(userRole === "admin" || userRole === "super_agent") && items.length > 0 && selectedOrder.agent_id && (() => {
                           const ownLedger = computeOwnOrderLedger(selectedOrder, items);
                           const uplineLedger = computeUplineLedger(selectedOrder, items);
                           
