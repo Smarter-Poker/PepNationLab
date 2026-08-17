@@ -1390,44 +1390,74 @@ function AdminOrdersPageInner() {
                         gap: "var(--space-2)",
                       }}
                     >
-                      {items.map((item) => (
-                        <div
-                          key={item.id}
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            fontSize: "0.78rem",
-                            padding: "4px 0",
-                            }}
-                        >
-                          <div style={{ color: "var(--grey-300)" }}>
-                            {item.product_name}
-                            {item.unit_size && (
-                              <span
-                                style={{
-                                  color: "var(--teal)",
-                                  fontWeight: 700,
-                                  marginLeft: 4,
-                                  fontSize: "0.75rem",
-                                }}
-                              >
-                                {item.unit_size}{item.unit_measure || "mg"}
-                              </span>
-                            )}{" "}
-                            <span style={{ color: "var(--silver)", opacity: 0.7 }}>
-                              x{item.quantity}
-                            </span>
-                          </div>
+                      {items.map((item) => {
+                        let profitLabel = null;
+                        if (userRole === "admin") {
+                          const qty = item.quantity || 0;
+                          const retail = Number(item.unit_retail_price || 0);
+                          if (selectedOrder.agent_id) {
+                            const cost = Number(item.unit_cost_price || 0);
+                            const scost = Number(item.unit_super_agent_cost || 0);
+                            const profit = (cost - scost) * qty;
+                            profitLabel = `PN Margin: $${profit.toFixed(2)}`;
+                          } else {
+                            const scost = Number(item.unit_super_agent_cost || 0);
+                            const profit = (retail - scost) * qty;
+                            profitLabel = `Profit: $${profit.toFixed(2)}`;
+                          }
+                        }
+
+                        return (
                           <div
-                            style={{ color: "var(--silver)", fontWeight: 600 }}
+                            key={item.id}
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              padding: "4px 0",
+                            }}
                           >
-                            $
-                            {(item.unit_retail_price * item.quantity).toFixed(
-                              2,
+                            <div
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                fontSize: "0.78rem",
+                              }}
+                            >
+                              <div style={{ color: "var(--grey-300)" }}>
+                                {item.product_name}
+                                {item.unit_size && (
+                                  <span
+                                    style={{
+                                      color: "var(--teal)",
+                                      fontWeight: 700,
+                                      marginLeft: 4,
+                                      fontSize: "0.75rem",
+                                    }}
+                                  >
+                                    {item.unit_size}{item.unit_measure || "mg"}
+                                  </span>
+                                )}{" "}
+                                <span style={{ color: "var(--silver)", opacity: 0.7 }}>
+                                  x{item.quantity}
+                                </span>
+                              </div>
+                              <div
+                                style={{ color: "var(--silver)", fontWeight: 600 }}
+                              >
+                                $
+                                {(item.unit_retail_price * item.quantity).toFixed(
+                                  2,
+                                )}
+                              </div>
+                            </div>
+                            {profitLabel && (
+                              <div style={{ fontSize: "0.68rem", color: "var(--teal)", textAlign: "right", marginTop: "2px" }}>
+                                {profitLabel}
+                              </div>
                             )}
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                       {/* Totals */}
                       <div
                         style={{
