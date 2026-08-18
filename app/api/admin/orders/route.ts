@@ -227,7 +227,7 @@ export async function POST(req: NextRequest) {
     // unbilled goods. On failure, put the order back to admin review and tell
     // the admin instead of shipping it with no billing row.
     if (status === 'approved_ship' || status === 'approved_pickup') {
-      const { error: creditErr } = await supabase.rpc('charge_order_credit_line', { p_order_id: id, p_created_by: gate.userId });
+      const { error: creditErr } = await supabase.rpc('admin_charge_order_billing', { p_order_id: id, p_created_by: gate.userId });
       if (creditErr) {
         console.error('[admin/orders] charge_order_credit_line failed for order', id, creditErr.message);
         const { error: revertErr } = await supabase

@@ -128,7 +128,7 @@ export default async function AdminDashboard() {
       label: 'Awaiting My Approval',
       value: String(metrics.awaitingAdminApproval),
       sub: 'Agent-Approved, Needs Admin Release',
-      href: '/admin/orders?status=approved_ship',
+      href: '/admin/orders?status=admin_approval_pending',
       color: metrics.awaitingAdminApproval > 0 ? 'var(--red)' : 'var(--grey-400)',
       icon: <svg {...ICON_PROPS}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>,
     },
