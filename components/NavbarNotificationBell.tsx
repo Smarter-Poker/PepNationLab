@@ -26,6 +26,77 @@ interface NotifItem {
   created_at: string;
 }
 
+/* ─── Smart URL resolver ────────────────────────────────────────────────────── */
+/**
+ * Resolve the deepest meaningful page for a notification.
+ * Priority: stored url (always most specific) → type-based fallback.
+ * Admins land on admin pages; researchers/agents land on their dashboards.
+ */
+function resolveNotifUrl(n: NotifItem): string {
+  if (n.url) return n.url;
+
+  // Type-based smart fallbacks when url was not stored (legacy rows)
+  switch (n.type) {
+    case 'order_placed':
+    case 'order_approved':
+    case 'order_shipped':
+    case 'order_delivered':
+    case 'order_cancelled':
+    case 'payment_confirmed':
+      // Try to pull order short-id from title: "#0369167D …"
+      // eslint-disable-next-line no-case-declarations
+      const orderMatch = n.title.match(/#([A-Z0-9]+)/);
+      if (orderMatch) return `/orders?search=${encodeURIComponent(orderMatch[1])}`;
+      return '/orders';
+
+    case 'order_attention':
+      // Admin-facing: "Awaiting Admin Release" goes to admin orders queue
+      if (/admin/i.test(n.title) || /admin/i.test(n.body ?? '')) {
+        return '/admin/orders?status=admin_approval_pending';
+      }
+      // eslint-disable-next-line no-case-declarations
+      const attnMatch = n.title.match(/#([A-Z0-9]+)/);
+      return attnMatch
+        ? `/dashboard/agent?tab=Orders&order=${encodeURIComponent(attnMatch[1])}`
+        : '/dashboard/agent?tab=Orders';
+
+    case 'new_researcher':
+      return '/dashboard/agent?tab=researchers';
+
+    case 'new_message':
+    case 'support_message':
+      return '/messenger';
+
+    case 'commission_earned':
+      return '/dashboard/agent?tab=commissions';
+
+    case 'invoice':
+    case 'payment_reminder':
+      return '/dashboard/agent?tab=statements';
+
+    case 'cart_reminder':
+      return '/cart';
+
+    case 'referral':
+      return '/dashboard';
+
+    case 'system':
+      // "Push Health" → admin push-health tools
+      if (/push.health/i.test(n.title)) return '/admin/errors';
+      // "Daily Digest" → admin attention board
+      if (/daily.digest/i.test(n.title)) return '/admin/attention';
+      // "Low Margin Warning" → products tab
+      if (/margin/i.test(n.title)) return '/dashboard/agent?tab=products';
+      // "Balance Updated" → balance tab
+      if (/balance/i.test(n.title)) return '/dashboard/agent?tab=balance';
+      return '/dashboard';
+
+    default:
+      return '/dashboard';
+  }
+}
+
+
 /* ─── Icon map by type ─────────────────────────────────────────────────────── */
 function NotifIcon({ type }: { type: string }) {
   const icons: Record<string, React.ReactNode> = {
@@ -474,75 +545,93 @@ export default function NavbarNotificationBell() {
                 </div>
               </div>
             ) : (
-              items.map((n, i) => (
-                <Link
-                  key={n.id}
-                  href={n.url || '/dashboard'}
-                  onClick={() => { markOneRead(String(n.id)); setOpen(false); }}
-                  className="pnl-notif-item"
-                  style={{
-                    display: 'flex',
-                    gap: 12,
-                    padding: '12px 16px',
-                    borderBottom: i < items.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
-                    textDecoration: 'none',
-                    background: !n.read_at ? 'rgba(192,184,168,0.04)' : 'transparent',
-                    transition: 'background 0.15s',
-                    animationDelay: `${i * 20}ms`,
-                    position: 'relative',
-                  }}
-                >
-                  {/* Unread indicator dot */}
-                  {!n.read_at && (
-                    <span style={{
-                      position: 'absolute',
-                      top: '50%',
-                      left: 6,
-                      transform: 'translateY(-50%)',
-                      width: 5,
-                      height: 5,
-                      borderRadius: '50%',
-                      background: 'var(--teal)',
-                      flexShrink: 0,
-                    }} />
-                  )}
-                  <div style={{ paddingLeft: !n.read_at ? 4 : 0, flexShrink: 0, marginTop: 1 }}>
-                    <NotifIcon type={n.type} />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{
-                      color: n.read_at ? 'rgba(255,255,255,0.7)' : 'var(--white)',
-                      fontSize: '0.84rem',
-                      fontWeight: n.read_at ? 400 : 600,
-                      lineHeight: 1.3,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      textTransform: 'capitalize',
-                    }}>
-                      {n.title}
+              items.map((n, i) => {
+                const dest = resolveNotifUrl(n);
+                return (
+                  <div
+                    key={n.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => {
+                      markOneRead(String(n.id));
+                      setOpen(false);
+                      router.push(dest);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        markOneRead(String(n.id));
+                        setOpen(false);
+                        router.push(dest);
+                      }
+                    }}
+                    className="pnl-notif-item"
+                    style={{
+                      display: 'flex',
+                      gap: 12,
+                      padding: '12px 16px',
+                      borderBottom: i < items.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                      textDecoration: 'none',
+                      background: !n.read_at ? 'rgba(192,184,168,0.04)' : 'transparent',
+                      transition: 'background 0.15s',
+                      animationDelay: `${i * 20}ms`,
+                      position: 'relative',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {/* Unread indicator dot */}
+                    {!n.read_at && (
+                      <span style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: 6,
+                        transform: 'translateY(-50%)',
+                        width: 5,
+                        height: 5,
+                        borderRadius: '50%',
+                        background: 'var(--teal)',
+                        flexShrink: 0,
+                      }} />
+                    )}
+                    <div style={{ paddingLeft: !n.read_at ? 4 : 0, flexShrink: 0, marginTop: 1 }}>
+                      <NotifIcon type={n.type} />
                     </div>
-                    {n.body && (
+                    <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{
-                        color: 'rgba(192,184,168,0.55)',
-                        fontSize: '0.75rem',
-                        marginTop: 2,
-                        lineHeight: 1.4,
+                        color: n.read_at ? 'rgba(255,255,255,0.7)' : 'var(--white)',
+                        fontSize: '0.84rem',
+                        fontWeight: n.read_at ? 400 : 600,
+                        lineHeight: 1.3,
                         overflow: 'hidden',
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
                         textTransform: 'capitalize',
                       }}>
-                        {n.body}
+                        {n.title}
                       </div>
-                    )}
-                    <div style={{ color: 'rgba(192,184,168,0.3)', fontSize: '0.68rem', marginTop: 4 }}>
-                      {timeAgo(n.created_at)}
+                      {n.body && (
+                        <div style={{
+                          color: 'rgba(192,184,168,0.55)',
+                          fontSize: '0.75rem',
+                          marginTop: 2,
+                          lineHeight: 1.4,
+                          overflow: 'hidden',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          textTransform: 'capitalize',
+                        }}>
+                          {n.body}
+                        </div>
+                      )}
+                      <div style={{ color: 'rgba(192,184,168,0.3)', fontSize: '0.68rem', marginTop: 4 }}>
+                        {timeAgo(n.created_at)}
+                      </div>
                     </div>
                   </div>
-                </Link>
-              ))
+                );
+              })
+
             )}
           </div>
 
