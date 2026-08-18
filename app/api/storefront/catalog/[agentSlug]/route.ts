@@ -108,11 +108,13 @@ async function buildCatalogPayload(agentSlug: string): Promise<CatalogResult> {
           image_url,
           category,
           inventory_count,
+          low_stock_threshold,
           backorder_days,
           unit_size,
           unit_measure,
           weight_oz,
-          compound_slug
+          compound_slug,
+          market_avg_price
         )
       `)
       .eq('agent_id', agent.id)
