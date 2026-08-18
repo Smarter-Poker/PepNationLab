@@ -55,7 +55,8 @@ function resolveNotifUrl(n: NotifItem): string {
   const isGeneric = !stored ||
     stored === '/dashboard' ||
     stored === '/dashboard/agent' ||
-    stored === '/dashboard/agent?tab=Overview';
+    stored === '/dashboard/agent?tab=Overview' ||
+    stored === '/admin';
 
   if (!isGeneric) return stored!;
 
