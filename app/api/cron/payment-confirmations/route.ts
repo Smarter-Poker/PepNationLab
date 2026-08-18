@@ -166,9 +166,9 @@ export async function GET(req: NextRequest) {
             type: 'payment_reminder',
             title: `Did You Receive Payment? Order #${short}`,
             body: buyerSaysSent
-              ? `The Buyer Confirmed Sending ${totalFmt} For Order #${short}. Confirm You Received It So The Order Can Be Processed.`
-              : `Order #${short} (${totalFmt}) Has No Confirmed Payment Yet. Confirm Receipt As Soon As The Buyer's Payment Lands.`,
-            url: '/dashboard/agent?tab=Orders',
+              ? `The Buyer Confirmed Sending ${totalFmt} For Order #${short}. Click Here To Go To The Order And Confirm Receipt So It Can Be Processed.`
+              : `Order #${short} (${totalFmt}) Has No Confirmed Payment Yet. Click Here To Go To The Order And Confirm Receipt As Soon As The Buyer's Payment Lands.`,
+            url: `/dashboard/agent?tab=Orders&order=${short}`,
           });
           agentNudges++;
         }
@@ -194,8 +194,8 @@ export async function GET(req: NextRequest) {
             userId: uplineId,
             type: 'payment_reminder',
             title: `Did You Receive Payment? Order #${short}`,
-            body: `${agent?.full_name || 'Your Downline Agent'} Owes You ${totalFmt} For Order #${short}. Confirm You Received Their Payment In Your Wallet's Invoices Tab.`,
-            url: '/wallet?tab=invoices',
+            body: `${agent?.full_name || 'Your Downline Agent'} Owes You ${totalFmt} For Order #${short}. Click Here To Go To The Order And Confirm Receipt.`,
+            url: `/dashboard/agent?tab=Orders&order=${short}`,
           });
           uplineNudges++;
         }
