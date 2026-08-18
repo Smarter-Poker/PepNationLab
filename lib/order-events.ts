@@ -15,6 +15,8 @@ export type OrderEventName =
   | 'placed'
   | 'auto_approved'
   | 'payment_confirmed'
+  | 'buyer_payment_sent'
+  | 'upline_payment_confirmed'
   | 'approved'
   | 'forwarded_to_super'
   | 'demoted_admin_review'

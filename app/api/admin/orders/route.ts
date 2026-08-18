@@ -221,13 +221,26 @@ export async function POST(req: NextRequest) {
 
     // NOTE: Shipping labels are created MANUALLY (on-demand) only.
 
-    // Credit-line agents: debit their running credit balance for this order's COGS + shipping.
+    // Credit-line agents: debit their running credit balance for this order.
+    // supabase-js returns RPC failures in { error } - it does NOT throw, so
+    // the old try/catch here NEVER fired and a failed charge silently released
+    // unbilled goods. On failure, put the order back to admin review and tell
+    // the admin instead of shipping it with no billing row.
     if (status === 'approved_ship' || status === 'approved_pickup') {
-      try {
-        await supabase.rpc('charge_order_credit_line', { p_order_id: id, p_created_by: gate.userId });
-      } catch (creditErr) {
-        // Log so it surfaces in Vercel logs / Sentry — does not block the release
-        console.error('[admin/orders] charge_order_credit_line failed for order', id, creditErr);
+      const { error: creditErr } = await supabase.rpc('charge_order_credit_line', { p_order_id: id, p_created_by: gate.userId });
+      if (creditErr) {
+        console.error('[admin/orders] charge_order_credit_line failed for order', id, creditErr.message);
+        const { error: revertErr } = await supabase
+          .from('orders')
+          .update({ status: 'admin_approval_pending', updated_at: new Date().toISOString() })
+          .eq('id', id);
+        if (revertErr) {
+          console.error('[admin/orders] CRITICAL: failed to demote order after charge failure', id, revertErr.message);
+        }
+        return NextResponse.json(
+          { error: `Credit Charge Failed (${creditErr.message}). The Order Was Returned To Admin Review Instead Of Releasing Unbilled.` },
+          { status: 409 },
+        );
       }
     }
 

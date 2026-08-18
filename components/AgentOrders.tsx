@@ -41,6 +41,8 @@ interface Order {
   tracking_number?: string | null;
   label_url?: string | null;
   agent_id?: string;
+  payment_confirmed_at?: string | null;
+  buyer_payment_sent_at?: string | null;
   is_sub_agent_order?: boolean;
   profit?: number;
   is_downline_order?: boolean;
@@ -376,11 +378,11 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
       setOrders((prev) =>
         prev.map((o) =>
           o.id === orderId
-            ? { ...o, status: data.newStatus }
+            ? { ...o, status: data.newStatus, payment_confirmed_at: new Date().toISOString() }
             : o
         )
       );
-      toast.success('Order Marked As Paid!');
+      toast.success('Payment Receipt Confirmed!');
     } catch (err: any) {
       toast.error(err.message ?? 'An Error Occurred Marking Order As Paid.');
     } finally {
@@ -1070,28 +1072,47 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                       </button>
                       )}
                     
-                    {isPendingPayment && !order.is_sub_agent_order && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleMarkPaid(order.id); }}
-                        className="btn btn-primary pulse-primary"
-                        style={{ 
-                          fontSize: '0.9rem', 
-                          padding: '10px 24px', 
-                          fontWeight: 700,
-                          background: 'linear-gradient(180deg, #DCD3C3 0%, #B3A992 100%)',
-                          color: '#0A1018',
-                          border: 'none',
-                          borderRadius: '10px',
-                          textShadow: '0 1px 2px rgba(0,0,0,0.3)',
-                          display: 'flex',
-                          alignItems: 'flex-start',
-                          gap: '8px'
-                        }}
-                        disabled={loadingOrderId === order.id}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                        {loadingOrderId === order.id ? 'Processing...' : 'Mark As Paid'}
-                      </button>
+                    {/* Payment-receipt confirmation: shown until the agent
+                        answers it, at every active pre-delivery stage (many
+                        storefront orders skip pending_customer_payment
+                        entirely). Ship orders cannot be approved until this
+                        is confirmed. */}
+                    {!order.payment_confirmed_at
+                      && !order.is_sub_agent_order
+                      && ['pending_customer_payment', 'agent_approval_pending', 'admin_approval_pending', 'approved_ship', 'approved_pickup', 'in_fulfillment'].includes(order.status) && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        {order.buyer_payment_sent_at && (
+                          <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#2DD4BF', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            Buyer Confirmed Payment Sent
+                          </span>
+                        )}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleMarkPaid(order.id); }}
+                          className="btn btn-primary pulse-primary"
+                          style={{
+                            fontSize: '0.9rem',
+                            padding: '10px 24px',
+                            fontWeight: 700,
+                            background: 'linear-gradient(180deg, #DCD3C3 0%, #B3A992 100%)',
+                            color: '#0A1018',
+                            border: 'none',
+                            borderRadius: '10px',
+                            textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '8px'
+                          }}
+                          disabled={loadingOrderId === order.id}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                          {loadingOrderId === order.id ? 'Confirming...' : 'Did You Receive Payment? Confirm'}
+                        </button>
+                      </div>
+                    )}
+                    {order.payment_confirmed_at && !order.is_sub_agent_order && (
+                      <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#2DD4BF', textTransform: 'uppercase', letterSpacing: '0.04em', alignSelf: 'center' }}>
+                        Payment Received ✓
+                      </span>
                     )}
                     
                     {canApprove && (

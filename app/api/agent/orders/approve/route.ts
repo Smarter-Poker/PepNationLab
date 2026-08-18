@@ -86,6 +86,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Order Is No Longer Pending Approval' }, { status: 400 });
     }
 
+    // PAYMENT-BEFORE-SHIPMENT GATE. A ship order whose buyer pays per order
+    // (offline P2P - anything except a credit-line account billed weekly)
+    // must have its payment RECEIPT confirmed by the agent before it can be
+    // approved to ship. Before this gate, "Approve Order" was offered while
+    // the order was still pending payment, so orders shipped with
+    // payment_confirmed_at NULL forever. Pickup orders are exempt: the
+    // hand-off is in person and payment usually changes hands at pickup.
+    if (newStatus === 'approved_ship' && order.buyer_id && !order.payment_confirmed_at) {
+      const { data: buyerProf } = await supabase
+        .from('profiles')
+        .select('account_type')
+        .eq('id', order.buyer_id)
+        .maybeSingle();
+      const buyerPaysPerOrder = buyerProf?.account_type !== 'credit';
+      if (buyerPaysPerOrder) {
+        return NextResponse.json(
+          {
+            error: 'Confirm Payment First. Tap "Did You Receive Payment?" On This Order Before Approving It To Ship.',
+            code: 'payment_confirmation_required',
+          },
+          { status: 409 }
+        );
+      }
+    }
+
     if (newStatus === 'cancelled') {
       const { error: cancelError } = await supabase.rpc('cancel_order', {
         p_order_id: orderId,

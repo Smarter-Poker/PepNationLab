@@ -23,6 +23,7 @@
     { "path": "/api/cron/tier-recompute", "schedule": "0 8 * * *" },
     { "path": "/api/cron/referrals-fulfil", "schedule": "30 * * * *" },
     { "path": "/api/cron/reminders", "schedule": "0 */6 * * *" },
+    { "path": "/api/cron/payment-confirmations", "schedule": "45 * * * *" },
     { "path": "/api/cron/proof-review-reminders", "schedule": "30 * * * *" },
     { "path": "/api/cron/admin-digest", "schedule": "30 12 * * *" },
     { "path": "/api/cron/settlement-reminders", "schedule": "0 22,23 * * *" },
