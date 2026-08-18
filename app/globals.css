@@ -4591,3 +4591,17 @@ li a:not(.btn):not([class*="btn"]) {
     forced-color-adjust: auto;
   }
 }
+
+
+/* While the guest conversion banner is on screen (GuestCTA sets this class
+   on <body>), lift the storefront's floating cart above it. Without this the
+   160px cart hitbox (z-index 9999) covered the banner's dismiss X (z-index
+   9000), so tapping the X opened the cart instead of closing the banner. */
+body.guest-cta-visible .floating-cart-wrapper {
+  bottom: 125px;
+}
+@media (max-width: 768px) {
+  body.guest-cta-visible .floating-cart-wrapper {
+    bottom: 90px;
+  }
+}

@@ -109,10 +109,14 @@ export default async function AgentDashboardPage() {
       agent_id
     `)
     .in('agent_id', agentIds)
+    // Admin-account orders stay hidden from OTHER agents' feeds (security
+    // rule from 1c93aa46), but an admin viewing their OWN agent dashboard
+    // must still see their own store's orders - excluding the caller made
+    // the admin's Orders tab permanently empty.
     .not('agent_id', 'in', `(${[
       'b8bd12e6-8196-401e-b37b-f742caf1596c', // Daniel Bekavac (admin)
       'a253044b-2250-4187-9af5-78cbca2d4e67', // unnamed admin account
-    ].join(',')})`)
+    ].filter((id) => id !== user.id).join(',') || '00000000-0000-0000-0000-000000000000'})`)
     .order('created_at', { ascending: false });
 
   const orders = (ordersData || []).map((order: any) => {
