@@ -130,6 +130,10 @@ function mergeCallRows(existing: CallSignalRow, incoming: CallSignalRow): CallSi
     ...incoming,
     caller_name: incoming.caller_name ?? existing.caller_name,
     caller_username: incoming.caller_username ?? existing.caller_username,
+    // Group fields arrive only on the enriched broadcast/API rows, never on
+    // postgres_changes — preserve them across whichever source lands second.
+    conversation_type: incoming.conversation_type ?? existing.conversation_type,
+    conversation_title: incoming.conversation_title ?? existing.conversation_title,
   };
 }
 
@@ -218,7 +222,11 @@ export default function GlobalCallListener() {
         }
 
         for (const c of calls) {
-          if (c.status !== 'ringing') continue;
+          // An ACTIVE group call is joinable — surface it as a "call in
+          // progress, tap to join" screen on app open, exactly like Zoom's
+          // meeting-in-progress banner. Direct calls keep ringing-only.
+          const joinableGroup = c.status === 'active' && c.conversation_type === 'group';
+          if (c.status !== 'ringing' && !joinableGroup) continue;
           if (c.initiator_id === user.id) continue;
           const alreadyAnswered = (() => {
             try { return Boolean(sessionStorage.getItem(`answered_call_${c.id}`)); } catch { return false; }
@@ -259,15 +267,31 @@ export default function GlobalCallListener() {
         });
       },
       onUpdate: (c) => {
-        if (c.status !== 'ringing') {
+        const terminal = c.status === 'ended' || c.status === 'declined' || c.status === 'missed';
+        if (terminal) {
           setIncomingCalls((cur) => cur.filter((x) => x.id !== c.id));
         } else {
-          // Still ringing - merge into existing entry so caller_name from
-          // a delayed broadcast is preserved.
+          // ringing OR active — merge so caller/group fields from a delayed
+          // broadcast are preserved. When the first person accepts a GROUP
+          // call (status -> active) the others must NOT lose their ring
+          // screen: it flips into a joinable "call in progress" screen
+          // instead. For DIRECT calls an accept anywhere dismisses the ring
+          // exactly as before. The type comes from the merged entry, since
+          // postgres_changes rows never carry it.
           setIncomingCalls((cur) => {
             const idx = cur.findIndex((x) => x.id === c.id);
             if (idx === -1) return cur;
-            return cur.map((x, i) => (i === idx ? mergeCallRows(x, c) : x));
+            const merged = mergeCallRows(cur[idx], c);
+            if (c.status === 'active' && merged.conversation_type !== 'group') {
+              return cur.filter((x) => x.id !== c.id);
+            }
+            const answeredHere = (() => {
+              try { return Boolean(sessionStorage.getItem(`answered_call_${c.id}`)); } catch { return false; }
+            })();
+            if (c.status === 'active' && answeredHere) {
+              return cur.filter((x) => x.id !== c.id);
+            }
+            return cur.map((x, i) => (i === idx ? merged : x));
           });
         }
         setActiveCall((cur) => {

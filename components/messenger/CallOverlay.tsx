@@ -218,9 +218,13 @@ interface FaceTimeCallViewProps {
   isE2EE: boolean;
   counterpartyName: string;
   counterpartyAvatar: string | null;
+  /** Live remote-participant count, reported up so the overlay (outside the
+   *  LiveKitRoom tree) can tell "leave a group call others are still on"
+   *  apart from "end the call" without re-deriving room state. */
+  onRemoteCount?: (n: number) => void;
 }
 
-function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterpartyName, counterpartyAvatar }: FaceTimeCallViewProps) {
+function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterpartyName, counterpartyAvatar, onRemoteCount }: FaceTimeCallViewProps) {
   const { localParticipant } = useLocalParticipant();
   const remoteParticipants = useRemoteParticipants();
   const connectionState = useConnectionState();
@@ -300,8 +304,11 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
   const onHangUpRef = useRef(onHangUp);
   useEffect(() => { onHangUpRef.current = onHangUp; }, [onHangUp]);
   const hasSeenRemoteRef = useRef(false);
+  const onRemoteCountRef = useRef(onRemoteCount);
+  useEffect(() => { onRemoteCountRef.current = onRemoteCount; }, [onRemoteCount]);
   useEffect(() => {
     if (remoteParticipants.length > 0) hasSeenRemoteRef.current = true;
+    try { onRemoteCountRef.current?.(remoteParticipants.length); } catch { /* advisory */ }
   }, [remoteParticipants.length]);
   useEffect(() => {
     if (!hasSeenRemoteRef.current) return;
@@ -684,6 +691,20 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
   const [isSignaling, setIsSignaling] = useState(false);
   const userClosedRef = useRef(false);
 
+  // ---- Group-call support -------------------------------------------------
+  // conversation_type rides on enriched call rows (start response, broadcast,
+  // list-active-calls). postgres_changes rows lack it, so the participant
+  // count from the profile fetch below doubles as a fallback signal.
+  const [participantTotal, setParticipantTotal] = useState<number | null>(null);
+  const isGroupConv =
+    call.conversation_type === 'group' ||
+    (call.conversation_type == null && participantTotal !== null && participantTotal > 2);
+  const isGroupConvRef = useRef(isGroupConv);
+  useEffect(() => { isGroupConvRef.current = isGroupConv; }, [isGroupConv]);
+  // Live remote count, reported by FaceTimeCallView. 0 until connected.
+  const remoteCountRef = useRef(0);
+  const handleRemoteCount = useCallback((n: number) => { remoteCountRef.current = n; }, []);
+
   const activeStartedAtRef = useRef<number | null>(null);
   if (call.status === 'active' && activeStartedAtRef.current === null) {
     const anyCall = call as CallSignalRow & { answered_at?: string | null };
@@ -735,6 +756,7 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
             username?: string | null; avatar_url?: string | null;
           }>;
         };
+        if (!cancelled) setParticipantTotal((json.participants ?? []).length);
         const other = (json.participants ?? []).find((p) => p.user_id !== selfId);
         if (other && !cancelled) {
           setCounterpartyName((cur) => other.full_name ?? other.username ?? cur);
@@ -870,6 +892,11 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
       const cid = latestCounterpartyIdRef.current;
       const cl = latestCallRef.current;
       if (!cl || cl.status === 'ended' || cl.status === 'declined' || cl.status === 'missed') return;
+      // GROUP CALLS: one participant closing their tab must not hang up the
+      // meeting for everyone still talking. Just disconnect (LiveKit tears the
+      // connection down with the page); the last person out ends the call via
+      // the auto-hangup-when-alone path.
+      if (isGroupConvRef.current && cl.status === 'active' && remoteCountRef.current > 0) return;
       if (cid) {
         try {
           const bodyEnded = JSON.stringify({ type: 'broadcast', event: 'call_ended', payload: cl });
@@ -897,6 +924,19 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
   }, [call.id]);
 
   const handleHangUp = async () => {
+    // GROUP CALLS — leave, don't end. In a 1:1 call, hanging up ends the
+    // call: with you gone there is no call. In a group call, you leaving is
+    // just you leaving; Bob and Carol keep talking. So when others are still
+    // connected we simply close (LiveKitRoom unmount disconnects us) and
+    // leave the DB row active. The LAST person out arrives here via the
+    // auto-hangup-when-alone path with zero remotes and performs the real
+    // end-for-all, which writes the "Call Ended" system message once.
+    // userClosedRef stays false on a leave so the unmount cleanup does not
+    // broadcast a bogus call_ended to anyone.
+    if (isGroupConv && call.status === 'active' && remoteCountRef.current > 0) {
+      onClose();
+      return;
+    }
     userClosedRef.current = true;
     if (counterpartyId) {
       try {
@@ -987,8 +1027,11 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
 
   const isVideo = call.call_type === 'video';
   const isInitiator = call.initiator_id === selfId;
-  const initials = counterpartyName
-    ? counterpartyName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+  // A group call is named after the conversation, never after whichever
+  // single member happened to resolve first.
+  const displayName = isGroupConv ? (call.conversation_title || 'Group Call') : counterpartyName;
+  const initials = displayName
+    ? displayName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
     : '?';
 
   const livekitOptions = asRoomOptions(e2ee);
@@ -1047,7 +1090,7 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
             {counterpartyAvatar && !avatarError ? (
               <Image
                 src={counterpartyAvatar}
-                alt={counterpartyName}
+                alt={displayName}
                 width={120}
                 height={120}
                 unoptimized
@@ -1057,7 +1100,7 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
             ) : (
               <div className="pnl-avatar-placeholder pnl-pulse-avatar-ring">{initials}</div>
             )}
-            <div className="pnl-ringing-name">{counterpartyName}</div>
+            <div className="pnl-ringing-name">{displayName}</div>
             <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.95rem', marginBottom: 32 }} aria-live="polite">
               {isInitiator ? 'Calling...' : 'Ringing...'}
             </div>
@@ -1138,8 +1181,9 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
             onHangUp={handleHangUp}
             startedAtMs={activeStartedAtRef.current ?? Date.now()}
             isE2EE={Boolean(e2ee)}
-            counterpartyName={counterpartyName}
-            counterpartyAvatar={counterpartyAvatar}
+            counterpartyName={displayName}
+            counterpartyAvatar={isGroupConv ? null : counterpartyAvatar}
+            onRemoteCount={handleRemoteCount}
           />
         </LiveKitRoom>
       )}

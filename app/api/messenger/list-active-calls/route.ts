@@ -37,13 +37,23 @@ export async function POST(req: NextRequest) {
   const ids = ((parts ?? []) as Array<{ conversation_id: string }>).map((p) => p.conversation_id);
   if (ids.length === 0) return NextResponse.json({ calls: [] });
 
+  // conversation type/title ride along so the client can tell a joinable
+  // group call from a direct one when resuming after a reload/app-open.
   const { data, error: qErr } = await svc
     .from('messenger_calls')
-    .select('*')
+    .select('*, conversation:messenger_conversations(type, title)')
     .in('conversation_id', ids)
     .in('status', ['ringing', 'active'])
     .order('started_at', { ascending: false })
     .limit(10);
   if (qErr) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
-  return NextResponse.json({ calls: data ?? [] });
+  const calls = ((data ?? []) as Array<Record<string, unknown>>).map((row) => {
+    const conv = row.conversation as { type?: string | null; title?: string | null } | null;
+    const flat: Record<string, unknown> = { ...row };
+    delete flat.conversation;
+    flat.conversation_type = conv?.type ?? null;
+    flat.conversation_title = conv?.title ?? null;
+    return flat;
+  });
+  return NextResponse.json({ calls });
 }
