@@ -7,14 +7,21 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
-import { Package, CheckCircle, Truck, Gift, XCircle, DollarSign, User, MessageSquare, FileText, Clock, ShoppingCart, Link2, Bell, X, ArrowRight } from 'lucide-react';
+import {
+  Package, CheckCircle, Truck, Gift, XCircle, DollarSign, User,
+  MessageSquare, FileText, Clock, ShoppingCart, Link2, Bell, X,
+  ArrowRight, Phone, PhoneMissed, Tag, RefreshCw, TrendingUp,
+  AlertTriangle,
+} from 'lucide-react';
 
-/* ─── Types ────────────────────────────────────────────────────────────────── */
+/* ─── Types (mirrors DB notifications.type CHECK constraint exactly) ────────── */
 export type NotifType =
   | 'order_placed' | 'order_approved' | 'order_shipped' | 'order_delivered'
   | 'order_cancelled' | 'commission_earned' | 'new_researcher' | 'new_message'
   | 'invoice' | 'payment_reminder' | 'cart_reminder' | 'referral' | 'system'
-  | 'payment_confirmed' | 'order_attention';
+  | 'low_stock' | 'incoming_call' | 'missed_call' | 'payment_confirmed'
+  | 'order_attention' | 'coupon_redeemed' | 'support_message'
+  | 'refill_reminder' | 'tier_levelup';
 
 interface NotifItem {
   id: string;
@@ -29,66 +36,103 @@ interface NotifItem {
 /* ─── Smart URL resolver ────────────────────────────────────────────────────── */
 /**
  * Resolve the deepest meaningful page for a notification.
- * Priority: stored url (always most specific) → type-based fallback.
- * Admins land on admin pages; researchers/agents land on their dashboards.
+ *
+ * Priority:
+ *  1. Stored url that is non-null AND not the generic '/dashboard' fallback
+ *     (old feed API code coerced null → '/dashboard'; we now fix that at
+ *     source, but legacy rows in the DB may still have '/dashboard' stored)
+ *  2. Type-based + title-pattern smart fallback using EXACT valid tab names
+ *
+ * Valid agent dashboard tabs (from AgentDashboardClient VALID_TABS):
+ *   Overview | Sales & Accounting | Orders | Researchers | My Sub-Agents |
+ *   My Agent Accounts | Store Products | Research Bundles | Inventory |
+ *   Coupons | Storefront Config
  */
 function resolveNotifUrl(n: NotifItem): string {
-  if (n.url) return n.url;
+  // Use stored url only when it's specific (not the generic dashboard fallback).
+  // URL-encode check: '/dashboard' and '/dashboard/agent' are both generic.
+  const stored = n.url;
+  const isGeneric = !stored ||
+    stored === '/dashboard' ||
+    stored === '/dashboard/agent' ||
+    stored === '/dashboard/agent?tab=Overview';
 
-  // Type-based smart fallbacks when url was not stored (legacy rows)
+  if (!isGeneric) return stored!;
+
+  // ── Type-based smart routing ──────────────────────────────────────────────
   switch (n.type) {
+    // Order lifecycle events — researcher side
     case 'order_placed':
     case 'order_approved':
     case 'order_shipped':
     case 'order_delivered':
     case 'order_cancelled':
-    case 'payment_confirmed':
-      // Try to pull order short-id from title: "#0369167D …"
-      // eslint-disable-next-line no-case-declarations
-      const orderMatch = n.title.match(/#([A-Z0-9]+)/);
-      if (orderMatch) return `/orders?search=${encodeURIComponent(orderMatch[1])}`;
-      return '/orders';
+    case 'payment_confirmed': {
+      const m = n.title.match(/#([A-Z0-9]+)/);
+      return m ? `/orders/${m[1]}` : '/orders';
+    }
 
-    case 'order_attention':
-      // Admin-facing: "Awaiting Admin Release" goes to admin orders queue
-      if (/admin/i.test(n.title) || /admin/i.test(n.body ?? '')) {
-        return '/admin/orders?status=admin_approval_pending';
-      }
-      // eslint-disable-next-line no-case-declarations
-      const attnMatch = n.title.match(/#([A-Z0-9]+)/);
-      return attnMatch
-        ? `/dashboard/agent?tab=Orders&order=${encodeURIComponent(attnMatch[1])}`
+    // Order attention — could be agent or admin view
+    case 'order_attention': {
+      const isAdmin = /admin/i.test(n.title) || /admin\s+release/i.test(n.body ?? '');
+      if (isAdmin) return '/admin/orders?status=admin_approval_pending';
+      const m = n.title.match(/#([A-Z0-9]+)/);
+      return m
+        ? `/dashboard/agent?tab=Orders&order=${encodeURIComponent(m[1])}`
         : '/dashboard/agent?tab=Orders';
+    }
 
     case 'new_researcher':
-      return '/dashboard/agent?tab=researchers';
+      return '/dashboard/agent?tab=Researchers';
 
     case 'new_message':
+      return '/messenger';
+
     case 'support_message':
+      return '/admin/messenger';
+
+    case 'incoming_call':
+    case 'missed_call':
       return '/messenger';
 
     case 'commission_earned':
-      return '/dashboard/agent?tab=commissions';
+      return '/dashboard/agent?tab=Sales+%26+Accounting';
 
     case 'invoice':
     case 'payment_reminder':
-      return '/dashboard/agent?tab=statements';
+      return '/dashboard/agent?tab=Sales+%26+Accounting';
+
+    case 'coupon_redeemed':
+      return '/dashboard/agent?tab=Coupons';
 
     case 'cart_reminder':
-      return '/cart';
+      return '/products';  // /cart doesn't exist; /products is the storefront
+
+    case 'refill_reminder':
+      return '/products';
+
+    case 'low_stock':
+      return '/admin/products';
+
+    case 'tier_levelup':
+      return '/dashboard/agent?tab=Overview';
 
     case 'referral':
-      return '/dashboard';
+      return '/dashboard/agent?tab=Sales+%26+Accounting';
 
     case 'system':
-      // "Push Health" → admin push-health tools
-      if (/push.health/i.test(n.title)) return '/admin/errors';
-      // "Daily Digest" → admin attention board
-      if (/daily.digest/i.test(n.title)) return '/admin/attention';
-      // "Low Margin Warning" → products tab
-      if (/margin/i.test(n.title)) return '/dashboard/agent?tab=products';
-      // "Balance Updated" → balance tab
-      if (/balance/i.test(n.title)) return '/dashboard/agent?tab=balance';
+      if (/push.health/i.test(n.title))    return '/admin/errors';
+      if (/daily.digest/i.test(n.title))   return '/admin/attention';
+      if (/margin/i.test(n.title))         return '/dashboard/agent?tab=Store+Products';
+      if (/balance/i.test(n.title))        return '/dashboard/agent?tab=Sales+%26+Accounting';
+      if (/promoted.*sub.agent/i.test(n.title) || /sub.agent/i.test(n.title))
+                                           return '/dashboard/agent?tab=My+Sub-Agents';
+      if (/agent.*status.*revoked/i.test(n.title))
+                                           return '/dashboard';
+      if (/subscription.*paused/i.test(n.title))
+                                           return '/account/refills';
+      if (/complete.*profile/i.test(n.title) || /welcome/i.test(n.title))
+                                           return '/dashboard/agent?tab=Storefront+Config';
       return '/dashboard';
 
     default:
@@ -96,25 +140,31 @@ function resolveNotifUrl(n: NotifItem): string {
   }
 }
 
-
-/* ─── Icon map by type ─────────────────────────────────────────────────────── */
+/* ─── Icon map by type (all DB types covered) ───────────────────────────────── */
 function NotifIcon({ type }: { type: string }) {
   const icons: Record<string, React.ReactNode> = {
-    order_placed:      <Package size={14} style={{ color: 'var(--teal)' }} />,
-    order_approved:    <CheckCircle size={14} style={{ color: '#48BB78' }} />,
-    order_shipped:     <Truck size={14} style={{ color: '#63B3ED' }} />,
-    order_delivered:   <Gift size={14} style={{ color: '#9F7AEA' }} />,
-    order_cancelled:   <XCircle size={14} style={{ color: '#F56565' }} />,
-    commission_earned: <DollarSign size={14} style={{ color: '#48BB78' }} />,
-    new_researcher:    <User size={14} style={{ color: '#A0AEC0' }} />,
+    order_placed:      <Package      size={14} style={{ color: 'var(--teal)' }} />,
+    order_approved:    <CheckCircle  size={14} style={{ color: '#48BB78' }} />,
+    order_shipped:     <Truck        size={14} style={{ color: '#63B3ED' }} />,
+    order_delivered:   <Gift         size={14} style={{ color: '#9F7AEA' }} />,
+    order_cancelled:   <XCircle      size={14} style={{ color: '#F56565' }} />,
+    commission_earned: <DollarSign   size={14} style={{ color: '#48BB78' }} />,
+    new_researcher:    <User         size={14} style={{ color: '#A0AEC0' }} />,
     new_message:       <MessageSquare size={14} style={{ color: 'var(--teal)' }} />,
-    invoice:           <FileText size={14} style={{ color: '#F6AD55' }} />,
-    payment_reminder:  <Clock size={14} style={{ color: '#FC8181' }} />,
+    support_message:   <MessageSquare size={14} style={{ color: '#F6AD55' }} />,
+    invoice:           <FileText     size={14} style={{ color: '#F6AD55' }} />,
+    payment_reminder:  <Clock        size={14} style={{ color: '#FC8181' }} />,
+    payment_confirmed: <DollarSign   size={14} style={{ color: '#48BB78' }} />,
     cart_reminder:     <ShoppingCart size={14} style={{ color: '#F6AD55' }} />,
-    referral:          <Link2 size={14} style={{ color: '#63B3ED' }} />,
-    system:            <Bell size={14} style={{ color: '#A0AEC0' }} />,
-    payment_confirmed: <DollarSign size={14} style={{ color: '#48BB78' }} />,
-    order_attention:   <Clock size={14} style={{ color: '#E53E3E' }} />,
+    refill_reminder:   <RefreshCw    size={14} style={{ color: '#63B3ED' }} />,
+    referral:          <Link2        size={14} style={{ color: '#63B3ED' }} />,
+    system:            <Bell         size={14} style={{ color: '#A0AEC0' }} />,
+    order_attention:   <Clock        size={14} style={{ color: '#E53E3E' }} />,
+    low_stock:         <AlertTriangle size={14} style={{ color: '#F6AD55' }} />,
+    incoming_call:     <Phone        size={14} style={{ color: '#48BB78' }} />,
+    missed_call:       <PhoneMissed  size={14} style={{ color: '#F56565' }} />,
+    coupon_redeemed:   <Tag          size={14} style={{ color: '#9F7AEA' }} />,
+    tier_levelup:      <TrendingUp   size={14} style={{ color: '#48BB78' }} />,
   };
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, width: 26, height: 26, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }}>
@@ -136,7 +186,9 @@ function timeAgo(iso: string): string {
   return `${d}d Ago`;
 }
 
+
 /* ─── Bell animation keyframe injection ────────────────────────────────────── */
+
 const BELL_ANIM_ID = 'pnl-bell-ring';
 function injectBellAnim() {
   if (typeof document === 'undefined') return;
