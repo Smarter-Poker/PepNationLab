@@ -547,6 +547,21 @@ function AdminOrdersPageInner() {
     }
   }
 
+  // React to ?highlight=<order uuid> arriving AFTER mount. The initial state
+  // above only reads searchParams once, so a notification tapped while the
+  // admin is already ON /admin/orders changed the URL and nothing else - the
+  // list kept whatever filter was there. Watching the param makes every
+  // notification land on its own order, first visit or not. The effect below
+  // then rewrites the URL as ?q=..., which clears highlight and stops this
+  // from re-firing.
+  useEffect(() => {
+    const highlight = searchParams.get("highlight");
+    if (highlight && highlight !== searchQuery) {
+      setSearchQuery(highlight);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   useEffect(() => {
     const params = new URLSearchParams();
     if (searchQuery) params.set("q", searchQuery);
