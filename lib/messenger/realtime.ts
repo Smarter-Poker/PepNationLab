@@ -223,6 +223,12 @@ export interface CallSignalRow {
   caller_name?: string;
   caller_username?: string | null;
   caller_avatar?: string | null;
+  // Group-call support: populated by the server broadcast and the enriched
+  // API responses (start / list-active-calls). ABSENT on raw postgres_changes
+  // rows — these are not messenger_calls columns — so treat undefined as
+  // "unknown", never as "direct".
+  conversation_type?: 'direct' | 'group' | 'announcement' | null;
+  conversation_title?: string | null;
 }
 
 interface CallSignalHandlers {

@@ -9,6 +9,7 @@
  */
 
 import {
+  useLocalParticipant,
   useRemoteParticipants,
   useTracks,
   VideoTrack,
@@ -28,11 +29,15 @@ function gridColumns(count: number): string {
 interface TileProps {
   participant: Participant;
   videoTrackRef: import('@livekit/components-react').TrackReference | undefined;
+  /** Local tile: labelled "You", camera mirrored like every selfie view. */
+  isLocal?: boolean;
 }
 
-function CallGridTile({ participant, videoTrackRef }: TileProps) {
+function CallGridTile({ participant, videoTrackRef, isLocal = false }: TileProps) {
   const speaking = useIsSpeaking(participant);
   const micOn = participant.isMicrophoneEnabled;
+  const displayLabel = isLocal ? 'You' : (participant.name || participant.identity);
+  const mirror = isLocal && videoTrackRef?.source === Track.Source.Camera;
   const initials = (participant.name || participant.identity || '?')
     .split(/\s+/)
     .map((w) => w[0])
@@ -62,7 +67,7 @@ function CallGridTile({ participant, videoTrackRef }: TileProps) {
       {videoTrackRef ? (
         <VideoTrack
           trackRef={videoTrackRef}
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', transform: mirror ? 'scaleX(-1)' : undefined }}
         />
       ) : (
         <div
@@ -108,9 +113,9 @@ function CallGridTile({ participant, videoTrackRef }: TileProps) {
             whiteSpace: 'nowrap',
             maxWidth: 'calc(100% - 28px)',
           }}
-          title={participant.name || participant.identity}
+          title={displayLabel}
         >
-          {participant.name || participant.identity}
+          {displayLabel}
         </span>
         {micOn ? (
           <Mic size={14} style={{ color: 'rgba(255, 255, 255, 0.7)' }} />
@@ -123,6 +128,7 @@ function CallGridTile({ participant, videoTrackRef }: TileProps) {
 }
 
 export default function CallGridView() {
+  const { localParticipant } = useLocalParticipant();
   const remoteParticipants = useRemoteParticipants();
   const allTracks = useTracks(
     [
@@ -133,9 +139,10 @@ export default function CallGridView() {
   ) as Array<import('@livekit/components-react').TrackReference>;
 
   // Map participant sid -> best video track (screen share beats camera).
+  // Local tracks are included: the local user gets a real tile in the grid —
+  // "all of us on screen at once", not everyone-except-you.
   const trackByParticipant = new Map<string, import('@livekit/components-react').TrackReference>();
   for (const t of allTracks) {
-    if (t.participant.isLocal) continue;
     const existing = trackByParticipant.get(t.participant.sid);
     if (!existing) {
       trackByParticipant.set(t.participant.sid, t);
@@ -144,7 +151,7 @@ export default function CallGridView() {
     }
   }
 
-  const cols = gridColumns(remoteParticipants.length);
+  const cols = gridColumns(remoteParticipants.length + 1);
 
   return (
     <div
@@ -172,6 +179,12 @@ export default function CallGridView() {
             videoTrackRef={trackByParticipant.get(p.sid)}
           />
         ))}
+        <CallGridTile
+          key={localParticipant.sid}
+          participant={localParticipant}
+          videoTrackRef={trackByParticipant.get(localParticipant.sid)}
+          isLocal
+        />
       </div>
     </div>
   );
