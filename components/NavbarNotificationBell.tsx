@@ -153,7 +153,7 @@ function resolveNotifUrl(n: NotifItem): string {
       return '/dashboard/agent?tab=Sales+%26+Accounting';
 
     case 'system':
-      if (/push.health/i.test(n.title))    return '/admin/errors';
+      if (/push.health/i.test(n.title))    return '/admin/push-health';
       if (/daily.digest/i.test(n.title))   return '/admin/attention';
       if (/margin/i.test(n.title))         return '/dashboard/agent?tab=Store+Products';
       if (/balance/i.test(n.title))        return '/dashboard/agent?tab=Sales+%26+Accounting';
