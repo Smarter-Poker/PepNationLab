@@ -124,9 +124,18 @@ const nextConfig = {
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           {
             key: "Permissions-Policy",
-            // microphone=(self) is required for VoiceRecorder (getUserMedia({ audio: true })).
-            // camera=() remains blocked — no video calling in-browser (calls use LiveKit server-side).
-            value: "camera=(), microphone=(self), geolocation=()",
+            // microphone=(self): VoiceRecorder and every call.
+            // camera=(self): REQUIRED for video calls. This used to be
+            //   camera=(), on the since-outdated belief that there was "no
+            //   video calling in-browser". There is — the messenger's
+            //   FaceTime-style calls publish the local camera through LiveKit
+            //   from the browser, and a blocked camera makes
+            //   getUserMedia({ video: true }) reject with NotAllowedError on
+            //   production only, where nothing in local dev would show it.
+            // display-capture=(self): screen sharing during a call. Its
+            //   default allowlist is already self, but naming it here keeps a
+            //   future tightening pass from silently killing the feature.
+            value: "camera=(self), microphone=(self), display-capture=(self), geolocation=()",
           },
           // Cross-origin isolation / XS-Leak hardening. same-origin-allow-popups
           // keeps any future OAuth/popup flow working while severing the
