@@ -161,7 +161,7 @@ export async function GET(req: NextRequest) {
         type: 'system',
         title: `Push Health: ${problems.length} Issue(s) Detected`,
         body: problems.join(' • ').slice(0, 490),
-        url: '/admin',
+        url: '/admin/errors',
       });
     }
   } catch (err: unknown) {
