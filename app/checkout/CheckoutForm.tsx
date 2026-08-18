@@ -17,6 +17,7 @@ import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
 import { Copy, Check } from 'lucide-react';
 import { quantityDiscountPct, isVolumeDiscountExcluded } from '@/lib/quantity-discount';
 import { trackStorefrontEvent } from '@/lib/track';
+import ProfileGateModal from '@/components/checkout/ProfileGateModal';
 
 type PaymentMethodId = 'zelle' | 'cashapp' | 'venmo' | 'apple_pay' | 'apple_cash' | 'paypal' | 'google_wallet' | 'wise' | 'chime' | 'varo';
 
@@ -68,6 +69,10 @@ interface CheckoutFormProps {
   volumeDiscountsEnabled?: boolean;
   /** Manufacturer store: items trade in multiples of 10, no coupons ever. */
   manufacturerStore?: boolean;
+  /** Profile gate: fields missing from the user's profile that block checkout */
+  missingCheckoutFields?: string[];
+  /** Current profile values for pre-filling the gate form */
+  profileInitialValues?: { first_name: string; last_name: string; phone: string };
 }
 
 interface SavedAddress {
@@ -92,7 +97,7 @@ interface ActiveFlashSale {
   ends_at: string;
 }
 
-export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, agentSlug, agentPaymentHandles, minOverallQty = 1, minOrderQty = 1, volumeDiscountsEnabled = true, manufacturerStore = false }: CheckoutFormProps) {
+export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, agentSlug, agentPaymentHandles, minOverallQty = 1, minOrderQty = 1, volumeDiscountsEnabled = true, manufacturerStore = false, missingCheckoutFields = [], profileInitialValues = { first_name: '', last_name: '', phone: '' } }: CheckoutFormProps) {
   // Brand-safe image resolver for the diluent upsell tiles: on a
   // Savage-network storefront (verdict persisted by the storefront grid),
   // never render a Pep Nation vial -- getProductImage swaps in the savage
@@ -115,6 +120,10 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     : ALL_PAYMENT_METHODS;
   const { cart: contextCart, cartSubtotal: contextSubtotal, clearCart, addToCart } = useCart();
   const router = useRouter();
+
+  // Profile gate: if the user has missing required fields, show the gate modal.
+  // gateCleared flips to true after a successful profile save + router.refresh().
+  const [gateCleared, setGateCleared] = useState(missingCheckoutFields.length === 0);
 
   const storefrontCartKey = agentSlug
     ? `pnl_storefront_cart_${agentSlug}`
@@ -1277,7 +1286,19 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
   return (
     <div className="checkout-container page-transition" style={{ padding: 'var(--space-6)', maxWidth: 1200, margin: '0 auto', paddingBottom: '100px' }}>
-      
+
+      {/* Profile gate — renders before anything else if required fields are missing */}
+      {!gateCleared && (
+        <ProfileGateModal
+          missingFields={missingCheckoutFields}
+          initialValues={profileInitialValues}
+          onComplete={() => {
+            router.refresh();
+            setGateCleared(true);
+          }}
+        />
+      )}
+
       {!meetsOverallMin && totalCartQty > 0 && (
         <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)', color: '#fca5a5', textAlign: 'center' }}>
           <strong>Order Minimum Not Met:</strong> This Storefront Requires An Overall Minimum Order Of {minOverallQty} Items. You Currently Have {totalCartQty} Item{totalCartQty !== 1 ? 's' : ''} In Your Cart.

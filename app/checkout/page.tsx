@@ -25,10 +25,10 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
     redirect(`/login?redirect=${encodeURIComponent(redirectTarget)}`);
   }
 
-  // Get profile
+  // Get profile — include checkout-required identity fields for the profile gate
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, role, tier, referring_agent_id, is_sub_agent')
+    .select('full_name, first_name, last_name, phone, role, tier, referring_agent_id, is_sub_agent')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -150,6 +150,15 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
     volumeDiscountsEnabled = false;
   }
 
+  // Profile gate: compute which checkout-required fields are missing.
+  // Admins are excluded — they place test orders and shouldn't be gated.
+  const missingCheckoutFields: string[] = [];
+  if (profile.role !== 'admin') {
+    if (!profile.first_name?.trim()) missingCheckoutFields.push('first_name');
+    if (!profile.last_name?.trim())  missingCheckoutFields.push('last_name');
+    if (!profile.phone?.trim())      missingCheckoutFields.push('phone');
+  }
+
   return (
     <CheckoutForm
       userProfile={profile}
@@ -161,6 +170,12 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
       minOrderQty={minOrderQty}
       volumeDiscountsEnabled={volumeDiscountsEnabled}
       manufacturerStore={manufacturerStore}
+      missingCheckoutFields={missingCheckoutFields}
+      profileInitialValues={{
+        first_name: profile.first_name ?? '',
+        last_name:  profile.last_name  ?? '',
+        phone:      profile.phone      ?? '',
+      }}
     />
   );
 }
