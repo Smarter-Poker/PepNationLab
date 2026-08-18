@@ -89,7 +89,27 @@ function resolveNotifUrl(n: NotifItem): string {
     return false;
   }
 
-  if (!isGenericUrl(stored)) return stored!;
+  /**
+   * Upgrade an Orders-tab URL that names no specific order.
+   *
+   * Notifications created before the deep-link work stored a bare
+   * `/dashboard/agent?tab=Orders`. That URL is "valid" (the tab exists), so it
+   * was returned verbatim - and tapping it from the Orders tab navigated to
+   * the page you were already on, which is exactly the reported "clicking the
+   * notification doesn't take me to the notification's page". Every one of
+   * these titles carries the order's short id (#0722A724), so recover it and
+   * point at the actual order. Also future-proofs any new notification that
+   * forgets the &order= param.
+   */
+  function withOrderDeepLink(url: string): string {
+    if (!/^\/dashboard\/agent\?tab=Orders/.test(url)) return url;
+    if (/[?&]order=/.test(url)) return url;
+    const m = n.title.match(/#([A-Za-z0-9]{6,})/);
+    if (!m) return url;
+    return `${url}&order=${encodeURIComponent(m[1].toUpperCase())}`;
+  }
+
+  if (!isGenericUrl(stored)) return withOrderDeepLink(stored!);
 
   // ── Type-based smart routing ──────────────────────────────────────────────
   switch (n.type) {
@@ -135,8 +155,15 @@ function resolveNotifUrl(n: NotifItem): string {
     case 'commission_earned':
       return '/dashboard/agent?tab=Sales+%26+Accounting';
 
+    case 'payment_reminder': {
+      // "Did You Receive Payment? Order #XXXX" - the button that answers it
+      // lives ON the order, not in Sales & Accounting.
+      const m = n.title.match(/#([A-Za-z0-9]{6,})/);
+      if (m) return `/dashboard/agent?tab=Orders&order=${encodeURIComponent(m[1].toUpperCase())}`;
+      return '/dashboard/agent?tab=Sales+%26+Accounting';
+    }
+
     case 'invoice':
-    case 'payment_reminder':
       return '/dashboard/agent?tab=Sales+%26+Accounting';
 
     case 'coupon_redeemed':
