@@ -85,7 +85,7 @@ export async function GET(req: NextRequest) {
 
       // 2. Pending customer payment boundary
       if (order.status === 'pending_customer_payment' || order.status === 'agent_approval_pending') {
-        if (!gate.isAdmin && order.agent_id && order.agent_id !== gate.userId) {
+        if (order.agent_id && order.agent_id !== gate.userId) {
           return false;
         }
       }
