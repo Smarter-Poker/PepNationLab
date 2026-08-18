@@ -237,7 +237,7 @@ export default function DownlineBalances() {
                                 minHeight: 36, whiteSpace: 'nowrap',
                               }}
                             >
-                              {isConfirming ? 'Confirming...' : 'Confirm Payment Received'}
+                              {isConfirming ? 'Confirming...' : 'Did You Receive Payment? Confirm'}
                             </button>
                           </div>
                           {err && <span style={{ color: '#ff6b6b', fontSize: '0.72rem' }}>{err}</span>}

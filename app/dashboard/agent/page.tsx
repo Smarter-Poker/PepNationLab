@@ -103,6 +103,8 @@ export default async function AgentDashboardPage() {
       created_at,
       tracking_number,
       label_url,
+      payment_confirmed_at,
+      buyer_payment_sent_at,
       profiles!buyer_id(full_name, email),
       agent_id
     `)
@@ -140,6 +142,8 @@ export default async function AgentDashboardPage() {
       tracking_number: order.tracking_number,
       label_url: order.label_url,
       agent_id: order.agent_id,
+      payment_confirmed_at: order.payment_confirmed_at ?? null,
+      buyer_payment_sent_at: order.buyer_payment_sent_at ?? null,
       is_sub_agent_order: order.agent_id !== user.id
     };
   });

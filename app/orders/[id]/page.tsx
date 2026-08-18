@@ -15,6 +15,7 @@ import ReorderOrderButton from './ReorderOrderButton';
 import CancelOrderButton from './CancelOrderButton';
 import ReorderStackButton from './ReorderStackButton';
 import ChangePaymentMethod from '@/components/ChangePaymentMethod';
+import ConfirmPaymentSentButton from './ConfirmPaymentSentButton';
 import { paymentMethodLabel } from '@/lib/payment-method-labels';
 import HelpHint from '@/components/help/HelpHint';
 import { getPopularName } from '@/lib/peptide-popular-names';
@@ -99,6 +100,8 @@ interface Order {
   shipping_address: any;
   agent_id: string | null;
   buyer_id: string;
+  buyer_payment_sent_at: string | null;
+  payment_confirmed_at: string | null;
   order_items: OrderItem[];
   profiles: { full_name: string | null; email: string } | null;
 }
@@ -130,6 +133,7 @@ export default async function OrderDetailPage(
       id, status, created_at, payment_method, fulfillment_method,
       subtotal, discount_amount, coupon_code, shipping_cost, total,
       tracking_number, label_url, shipped_at, delivered_at, updated_at, shipping_address, agent_id, buyer_id,
+      buyer_payment_sent_at, payment_confirmed_at,
       order_items (id, agent_product_id, product_id, product_name, quantity, unit_retail_price, unit_cost_price, unit_super_agent_cost, lot_number, coa_url, products(compound_slug)),
       profiles:buyer_id (full_name, email)
     `)
@@ -820,6 +824,23 @@ export default async function OrderDetailPage(
               <p style={{ fontSize: '0.78rem', color: 'var(--grey-500)', marginTop: 'var(--space-3)' }}>
                 Include Order #{order.id.slice(0, 8).toUpperCase()} In The Memo.
               </p>
+            </div>
+          )}
+
+          {/* Buyer payment-sent confirmation: one tap tells the agent the
+              money is on its way and stops the buyer's 12-hour reminders.
+              Shown to the buyer at every active pre-delivery stage. */}
+          {order.buyer_id === user.id
+            && !['cancelled', 'shipped', 'delivered'].includes(order.status) && (
+            <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-5)', marginBottom: 'var(--space-5)', animationDelay: '0.42s' }}>
+              <h2 style={{ fontSize: '0.95rem', color: 'var(--white)', marginBottom: 'var(--space-3)' }}>
+                Payment Confirmation
+              </h2>
+              <ConfirmPaymentSentButton
+                orderId={order.id}
+                buyerPaymentSentAt={order.buyer_payment_sent_at}
+                paymentConfirmedAt={order.payment_confirmed_at}
+              />
             </div>
           )}
 

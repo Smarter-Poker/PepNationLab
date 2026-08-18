@@ -28,7 +28,9 @@ export async function GET() {
 
 const Body = z.object({
   enabled: z.boolean(),
-  handle: z.enum(['zelle', 'venmo', 'cashapp', 'apple_pay']).optional(),
+  // Must cover every option WalletSettings offers - it lists Varo too, and a
+  // narrower enum here made saving Varo 400 on every attempt.
+  handle: z.enum(['zelle', 'venmo', 'cashapp', 'apple_pay', 'varo']).optional(),
 });
 
 export async function PATCH(req: Request) {

@@ -18,8 +18,15 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  * statement/invoice like credit accounts), so their upline has to manually
  * acknowledge each order's payment was received. This is that acknowledgment
  * - the upline (the order agent's parent_agent_id) or an admin confirms
- * receipt, stamping orders.payment_confirmed_at / payment_confirmed_by,
- * logging a timeline event, and notifying the downline agent.
+ * receipt, stamping orders.upline_payment_confirmed_at / _by, logging a
+ * timeline event, and notifying the downline agent.
+ *
+ * COLUMN COLLISION FIX (2026-08-18): this route previously wrote
+ * payment_confirmed_at - the SAME column mark-paid uses for "the agent
+ * received the BUYER's payment". Whichever confirmation happened first
+ * permanently blocked the other (the second caller got a 409), and any order
+ * the downline had marked paid could never be settlement-acknowledged by the
+ * upline. The upline acknowledgment now lives in its own column.
  */
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -40,7 +47,7 @@ export async function POST(req: NextRequest) {
 
   const { data: order, error: orderErr } = await svc
     .from('orders')
-    .select('id, agent_id, status, total, payment_confirmed_at')
+    .select('id, agent_id, status, total, upline_payment_confirmed_at')
     .eq('id', orderId)
     .maybeSingle();
 
@@ -90,7 +97,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'This Order Was Cancelled.' }, { status: 409 });
   }
 
-  if (order.payment_confirmed_at) {
+  if (order.upline_payment_confirmed_at) {
     return NextResponse.json({ error: 'Payment Was Already Confirmed.' }, { status: 409 });
   }
 
@@ -99,9 +106,9 @@ export async function POST(req: NextRequest) {
   // Compare-and-swap: only the first caller to hit an unconfirmed order wins.
   const { data: claimed, error: updateErr } = await svc
     .from('orders')
-    .update({ payment_confirmed_at: nowIso, payment_confirmed_by: callerId })
+    .update({ upline_payment_confirmed_at: nowIso, upline_payment_confirmed_by: callerId })
     .eq('id', orderId)
-    .is('payment_confirmed_at', null)
+    .is('upline_payment_confirmed_at', null)
     .select('id');
 
   if (updateErr) {
@@ -115,7 +122,7 @@ export async function POST(req: NextRequest) {
   try {
     await logOrderEvent(svc, {
       orderId,
-      event: 'payment_confirmed',
+      event: 'upline_payment_confirmed',
       actorId: callerId,
       actorRole: 'agent',
       payload: { downline_acknowledgment: true },

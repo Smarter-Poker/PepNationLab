@@ -156,7 +156,10 @@ export async function GET() {
       .from('orders')
       .select('id, agent_id, total, created_at')
       .in('agent_id', prepaidIds)
-      .is('payment_confirmed_at', null)
+      // Upline settlement acknowledgment lives in its OWN column. Filtering on
+      // payment_confirmed_at here hid every order the downline had marked paid
+      // (buyer-payment confirmation) from the upline's confirmation queue.
+      .is('upline_payment_confirmed_at', null)
       .in('status', ACTIVE_ORDER_STATUSES)
       .gte('created_at', thirtyDaysAgoIso)
       .order('created_at', { ascending: false })

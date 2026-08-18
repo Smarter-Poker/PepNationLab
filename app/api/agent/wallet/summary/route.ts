@@ -25,24 +25,39 @@ export async function GET() {
     .maybeSingle();
   if (!profile) return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
 
-  const ALLOWED_ROLES = ['agent', 'super_agent', 'admin'];
+  // Researchers are allowed too: /wallet is linked for every role from the
+  // navbar badge, and blocking researchers here made the whole wallet page
+  // throw "Could Not Load Your Wallet" for them despite /api/wallet working.
+  // A researcher simply gets a prepaid-shaped summary with no statements.
+  const ALLOWED_ROLES = ['agent', 'super_agent', 'admin', 'researcher'];
   if (!ALLOWED_ROLES.includes(profile.role)) {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   }
 
-  // Owed this week - sum of open / pending statements
-  const { data: openStmts } = await svc
-    .from('weekly_statements')
-    .select('id, total_owed, status, week_start, week_end, due_date')
-    .eq('agent_id', effectiveUserId)
-    .in('status', ['open', 'pending_payment'])
-    .order('week_start', { ascending: false });
+  // Owed this week - open / pending statements PLUS open super-agent invoices
+  // billed to this agent. Nested agents are billed via agent_invoices, not
+  // weekly_statements; omitting them showed "$0 Owed This Week" to agents
+  // whose Open Invoices list right below was non-empty.
+  const [{ data: openStmts }, { data: openInvoices }] = await Promise.all([
+    svc
+      .from('weekly_statements')
+      .select('id, total_owed, status, week_start, week_end, due_date')
+      .eq('agent_id', effectiveUserId)
+      .in('status', ['open', 'pending_payment'])
+      .order('week_start', { ascending: false }),
+    svc
+      .from('agent_invoices')
+      .select('id, total_owed, status')
+      .eq('agent_id', effectiveUserId)
+      .eq('status', 'open'),
+  ]);
 
-  const owedThisWeek = (openStmts ?? []).reduce(
-    (sum: number, s: any) => sum + Number(s.total_owed || 0),
-    0
-  );
-  const hasOpenStatement = (openStmts ?? []).some((s: any) => Number(s.total_owed || 0) > 0);
+  const owedThisWeek =
+    (openStmts ?? []).reduce((sum: number, s: any) => sum + Number(s.total_owed || 0), 0)
+    + (openInvoices ?? []).reduce((sum: number, i: any) => sum + Number(i.total_owed || 0), 0);
+  const hasOpenStatement =
+    (openStmts ?? []).some((s: any) => Number(s.total_owed || 0) > 0)
+    || (openInvoices ?? []).some((i: any) => Number(i.total_owed || 0) > 0);
 
   // Next statement date - Sunday 23:59 UTC of current week
   const now = new Date();
