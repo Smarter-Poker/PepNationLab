@@ -26,18 +26,43 @@ export default function CoaBackButton({
   fallbackLabel?: string;
 }) {
   const router = useRouter();
-  // Assume history exists until the client proves otherwise (avoids a flash of
-  // the wrong label during hydration).
+  // history.length === 1 is the only case we can detect synchronously, and it
+  // is NOT reliable on its own (a tab opened via target=_blank or a typed URL
+  // reports 2 while still having nowhere useful to go). So the button does not
+  // rely on detection at all - see handleBack.
   const [canGoBack, setCanGoBack] = useState(true);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    // history.length === 1 means this tab has nowhere to go back to. Also
-    // treat "no referrer AND a single entry" as a cold start (QR scan, shared
-    // link, PWA launch).
-    const hasHistory = window.history.length > 1;
-    setCanGoBack(hasHistory);
+    setCanGoBack(window.history.length > 1);
   }, []);
+
+  /**
+   * Try to go back; if nothing actually moves, take the guaranteed exit.
+   *
+   * This is the belt-and-braces part. router.back() is a no-op when the entry
+   * we would pop belongs to another site or does not exist (QR scan off a
+   * vial, a shared link, a PWA cold start, a tab opened from an external app).
+   * Detection alone cannot cover every one of those, so instead of guessing we
+   * simply watch: if we are still on this page a moment later, navigate to
+   * fallbackHref. The user can never be stranded, which was the whole bug.
+   */
+  const handleBack = () => {
+    if (typeof window === 'undefined') return;
+    const before = window.location.href;
+    let moved = false;
+    const onLeave = () => { moved = true; };
+    window.addEventListener('popstate', onLeave, { once: true });
+    window.addEventListener('pagehide', onLeave, { once: true });
+    router.back();
+    window.setTimeout(() => {
+      window.removeEventListener('popstate', onLeave);
+      window.removeEventListener('pagehide', onLeave);
+      if (!moved && window.location.href === before) {
+        window.location.href = fallbackHref;
+      }
+    }, 600);
+  };
 
   const style: React.CSSProperties = {
     display: 'inline-flex',
@@ -86,7 +111,7 @@ export default function CoaBackButton({
   return (
     <button
       type="button"
-      onClick={() => router.back()}
+      onClick={handleBack}
       aria-label="Go back to previous page"
       style={style}
       onMouseEnter={e => ((e.currentTarget as HTMLButtonElement).style.color = '#FFFFFF')}
