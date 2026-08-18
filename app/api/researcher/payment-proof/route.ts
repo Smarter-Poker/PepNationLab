@@ -313,7 +313,7 @@ export async function POST(req: NextRequest) {
         type: 'system',
         title: 'Payment Proof Received',
         body: `Your Researcher Submitted A Payment Proof For Order #${shortId}. Review And Mark As Paid Once Verified.`,
-        url: '/dashboard/agent?tab=Orders',
+        url: `/dashboard/agent?tab=Orders&order=${shortId}`,
       });
       const { data: agentProf } = await service.from('profiles').select('parent_agent_id').eq('id', order.agent_id).maybeSingle();
       if (agentProf?.parent_agent_id) {
@@ -322,7 +322,7 @@ export async function POST(req: NextRequest) {
           type: 'system',
           title: 'Sub-Agent Payment Proof Received',
           body: `A Researcher For Your Sub-Agent Submitted A Payment Proof For Order #${shortId}.`,
-          url: '/dashboard/agent?tab=Orders',
+          url: `/dashboard/agent?tab=Orders&order=${shortId}`,
         });
       }
     }
@@ -342,7 +342,7 @@ export async function POST(req: NextRequest) {
           type: 'order_attention',
           title: `Duplicate Payment Proof Warning: Order #${shortId}`,
           body: `The Receipt Submitted For Order #${shortId} Is Identical To One Already Submitted For Order #${dupShort}. Verify The Payment Carefully Before Marking Paid.`,
-          url: '/dashboard/agent?tab=Orders',
+          url: `/dashboard/agent?tab=Orders&order=${shortId}`,
         });
       }
       await notifyAdmins(service, {

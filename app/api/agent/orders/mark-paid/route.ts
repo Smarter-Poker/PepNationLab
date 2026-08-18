@@ -211,7 +211,7 @@ export async function POST(req: NextRequest) {
         body: `${agentName || 'Your Sub-Agent'} Confirmed A ${totalFmt} Payment On Order #${short}. It Now Awaits Approval.`,
         // NOTE: /dashboard?tab=Orders loses the tab through the role redirect
         // (redirect('/dashboard/agent') drops the query) - link directly.
-        url: '/dashboard/agent?tab=Orders',
+        url: `/dashboard/agent?tab=Orders&order=${short}`,
       });
     }
     await notifyAdmins(svc, {

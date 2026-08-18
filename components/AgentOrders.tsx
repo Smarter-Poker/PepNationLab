@@ -43,6 +43,8 @@ interface Order {
   agent_id?: string;
   payment_confirmed_at?: string | null;
   buyer_payment_sent_at?: string | null;
+  upline_payment_confirmed_at?: string | null;
+  downline_prepaid?: boolean;
   is_sub_agent_order?: boolean;
   profit?: number;
   is_downline_order?: boolean;
@@ -368,6 +370,36 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
     }
   };
 
+  // Upline settlement acknowledgment for PREPAID downline orders: "Did You
+  // Receive Payment From <downline>?" Confirming stamps
+  // orders.upline_payment_confirmed_at via confirm-downline-payment and stops
+  // the upline's 12-hour reminders. Distinct from handleMarkPaid, which is the
+  // DIRECT agent confirming the buyer's payment.
+  const handleConfirmDownlinePayment = async (orderId: string) => {
+    setLoadingOrderId(orderId);
+    try {
+      const res = await fetch('/api/agent/orders/confirm-downline-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed To Confirm The Downline Payment.');
+      }
+      const nowIso = new Date().toISOString();
+      setOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, upline_payment_confirmed_at: nowIso } : o))
+      );
+      setDetailOrder((prev) => (prev && prev.id === orderId ? { ...prev, upline_payment_confirmed_at: nowIso } : prev));
+      toast.success('Downline Payment Confirmed!');
+    } catch (err: any) {
+      toast.error(err.message ?? 'An Error Occurred Confirming The Payment.');
+    } finally {
+      setLoadingOrderId(null);
+    }
+  };
+
   const handleMarkPaid = async (orderId: string) => {
     setLoadingOrderId(orderId);
     try {
@@ -388,6 +420,11 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
             ? { ...o, status: data.newStatus, payment_confirmed_at: new Date().toISOString() }
             : o
         )
+      );
+      setDetailOrder((prev) =>
+        prev && prev.id === orderId
+          ? { ...prev, status: data.newStatus, payment_confirmed_at: new Date().toISOString() }
+          : prev
       );
       toast.success('Payment Receipt Confirmed!');
     } catch (err: any) {
@@ -813,6 +850,15 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
             // now accepts because it checks the parent_agent_id chain)
             const canCancel = !isTerminal;
 
+            // Upline settlement acknowledgment: PREPAID downline orders settle
+            // per order, so the upline answers "Did You Receive Payment From
+            // <downline>?" right here. Only once the order is approved (that
+            // is when the settlement actually happens) and until confirmed.
+            const canConfirmDownline = !!order.is_sub_agent_order
+              && !!order.downline_prepaid
+              && !order.upline_payment_confirmed_at
+              && ['approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered'].includes(order.status);
+
 
             return (
               <div
@@ -1005,7 +1051,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                 </div>
 
                 {/* Actions row */}
-                {(canApprove || canCancel) && (
+                {(canApprove || canCancel || canConfirmDownline) && (
                   <div
                     onClick={(e) => e.stopPropagation()}
                     style={{
@@ -1149,6 +1195,38 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                     {order.payment_confirmed_at && !order.is_sub_agent_order && (
                       <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#2DD4BF', textTransform: 'uppercase', letterSpacing: '0.04em', alignSelf: 'center' }}>
                         Payment Received ✓
+                      </span>
+                    )}
+
+                    {/* Upline: prepaid downline settlement Yes / No */}
+                    {canConfirmDownline && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, background: 'rgba(0,196,188,0.05)', border: '1px solid rgba(0,196,188,0.3)', borderRadius: 10, padding: '10px 14px' }}>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--white)' }}>
+                          Did You Receive Payment From {order.downline_agent_name || 'Your Downline Agent'}?
+                        </span>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleConfirmDownlinePayment(order.id); }}
+                            className="btn btn-primary"
+                            style={{ fontSize: '0.84rem', padding: '9px 18px', fontWeight: 700, background: 'linear-gradient(180deg, #2DD4BF 0%, #14B8A6 100%)', color: '#04211D', border: 'none', borderRadius: '8px' }}
+                            disabled={loadingOrderId === order.id}
+                          >
+                            {loadingOrderId === order.id ? 'Confirming...' : 'Yes, Payment Received'}
+                          </button>
+                          <button
+                            onClick={(e) => e.stopPropagation()}
+                            className="btn btn-secondary"
+                            style={{ fontSize: '0.84rem', padding: '9px 18px', fontWeight: 600, background: 'transparent', border: '1px solid rgba(255,255,255,0.18)', color: 'var(--silver)', borderRadius: '8px' }}
+                            title="You Will Be Reminded Again In 12 Hours"
+                          >
+                            Not Yet
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {order.is_sub_agent_order && order.upline_payment_confirmed_at && (
+                      <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#2DD4BF', textTransform: 'uppercase', letterSpacing: '0.04em', alignSelf: 'center' }}>
+                        Downline Payment Received ✓
                       </span>
                     )}
                     
@@ -1847,6 +1925,75 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
             {isShipReady(detailOrder) && (
               <div style={{ marginBottom: 'var(--space-6)' }}>
                 {renderShipPanel(detailOrder)}
+              </div>
+            )}
+
+            {/* Payment-confirmation actions INSIDE the modal: notification
+                deep-links (?order=<shortId>) open this modal directly, so the
+                person the push asked "Did You Receive Payment?" must be able
+                to answer right here without hunting through the list. */}
+            {!detailOrder.is_sub_agent_order
+              && !detailOrder.payment_confirmed_at
+              && ['pending_customer_payment', 'agent_approval_pending', 'admin_approval_pending', 'approved_ship', 'approved_pickup', 'in_fulfillment'].includes(detailOrder.status) && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: 'rgba(0,196,188,0.05)', border: '1px solid rgba(0,196,188,0.3)', borderRadius: 10, padding: '12px 16px', marginTop: 'var(--space-4)' }}>
+                <span style={{ fontSize: '0.86rem', fontWeight: 700, color: 'var(--white)' }}>
+                  Did You Receive Payment For This Order?
+                </span>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => handleMarkPaid(detailOrder.id)}
+                    className="btn btn-primary"
+                    style={{ fontSize: '0.86rem', padding: '10px 20px', fontWeight: 700, background: 'linear-gradient(180deg, #2DD4BF 0%, #14B8A6 100%)', color: '#04211D', border: 'none', borderRadius: '8px' }}
+                    disabled={loadingOrderId === detailOrder.id}
+                  >
+                    {loadingOrderId === detailOrder.id ? 'Confirming...' : 'Yes, Payment Received'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDetailOrder(null)}
+                    className="btn btn-secondary"
+                    style={{ fontSize: '0.86rem', padding: '10px 20px', fontWeight: 600, background: 'transparent', border: '1px solid rgba(255,255,255,0.18)', color: 'var(--silver)', borderRadius: '8px' }}
+                    title="You Will Be Reminded Again In 12 Hours"
+                  >
+                    Not Yet
+                  </button>
+                </div>
+              </div>
+            )}
+            {detailOrder.is_sub_agent_order
+              && detailOrder.downline_prepaid
+              && !detailOrder.upline_payment_confirmed_at
+              && ['approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered'].includes(detailOrder.status) && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: 'rgba(0,196,188,0.05)', border: '1px solid rgba(0,196,188,0.3)', borderRadius: 10, padding: '12px 16px', marginTop: 'var(--space-4)' }}>
+                <span style={{ fontSize: '0.86rem', fontWeight: 700, color: 'var(--white)' }}>
+                  Did You Receive Payment From {detailOrder.downline_agent_name || 'Your Downline Agent'}?
+                </span>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => handleConfirmDownlinePayment(detailOrder.id)}
+                    className="btn btn-primary"
+                    style={{ fontSize: '0.86rem', padding: '10px 20px', fontWeight: 700, background: 'linear-gradient(180deg, #2DD4BF 0%, #14B8A6 100%)', color: '#04211D', border: 'none', borderRadius: '8px' }}
+                    disabled={loadingOrderId === detailOrder.id}
+                  >
+                    {loadingOrderId === detailOrder.id ? 'Confirming...' : 'Yes, Payment Received'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDetailOrder(null)}
+                    className="btn btn-secondary"
+                    style={{ fontSize: '0.86rem', padding: '10px 20px', fontWeight: 600, background: 'transparent', border: '1px solid rgba(255,255,255,0.18)', color: 'var(--silver)', borderRadius: '8px' }}
+                    title="You Will Be Reminded Again In 12 Hours"
+                  >
+                    Not Yet
+                  </button>
+                </div>
+              </div>
+            )}
+            {((detailOrder.payment_confirmed_at && !detailOrder.is_sub_agent_order) || (detailOrder.is_sub_agent_order && detailOrder.upline_payment_confirmed_at)) && (
+              <div style={{ marginTop: 'var(--space-4)', color: '#2DD4BF', fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Payment Received ✓
               </div>
             )}
 
