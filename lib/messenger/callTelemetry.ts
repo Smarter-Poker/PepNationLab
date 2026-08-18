@@ -16,6 +16,9 @@ import { createServiceClient } from '@/lib/supabase/server';
 export type CallTelemetryAction =
   | 'messenger_call.start'
   | 'messenger_call.accept'
+  /** A LATER participant joining an already-active call (group calls). The
+   *  first answer is an 'accept'; everyone after that is a 'join'. */
+  | 'messenger_call.join'
   | 'messenger_call.decline'
   | 'messenger_call.hangup'
   | 'messenger_call.missed_timeout'
