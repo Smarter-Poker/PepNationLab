@@ -109,7 +109,13 @@ function AdminOrdersPageInner() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [searchQuery, setSearchQuery] = useState(searchParams.get("q") ?? "");
+  // ?highlight=<order uuid> comes from notification deep links. The search
+  // filter below already matches on order.id, so seeding it from highlight
+  // lands the admin on exactly the order the notification is about instead
+  // of an unfiltered list (the param was previously ignored entirely).
+  const [searchQuery, setSearchQuery] = useState(
+    searchParams.get("q") ?? searchParams.get("highlight") ?? "",
+  );
   const [statusFilter, setStatusFilter] = useState<string>(
     searchParams.get("status") ?? "all",
   );

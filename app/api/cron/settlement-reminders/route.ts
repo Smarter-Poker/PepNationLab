@@ -242,8 +242,9 @@ export async function GET(req: Request) {
                 userId: parentId,
                 type: 'payment_reminder',
                 title: `${count} Downline Payments To Confirm`,
-                body: `You Have ${count} Prepaid Downline Orders Awaiting Your Payment Confirmation.`,
-                url: WALLET_URL,
+                body: `You Have ${count} Prepaid Downline Orders Awaiting Your Payment Confirmation. Open Your Orders To Confirm Each One.`,
+                // The confirm buttons live on the ORDERS tab, not the wallet.
+                url: '/dashboard/agent?tab=Orders',
               });
               prepaidPromptsSent++;
             } catch (err) {

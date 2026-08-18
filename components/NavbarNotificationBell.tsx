@@ -77,6 +77,10 @@ function resolveNotifUrl(n: NotifItem): string {
   function isGenericUrl(url: string | null): boolean {
     if (!url) return true;
     if (url === '/dashboard' || url === '/dashboard/agent' || url === '/admin') return true;
+    // The bare homepage is not an answer to any notification.
+    if (url === '/') return true;
+    // Legacy route that never existed (/dashboard/agent/orders/<id>) - 404s.
+    if (/^\/dashboard\/agent\/orders\//.test(url)) return true;
     // Dashboard agent with a tab param
     const tabMatch = url.match(/^\/dashboard\/agent\?tab=(.+?)(?:&|$)/);
     if (tabMatch) {
