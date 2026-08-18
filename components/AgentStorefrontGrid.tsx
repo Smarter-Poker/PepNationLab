@@ -2405,7 +2405,7 @@ export default function AgentStorefrontGrid({
     const displayPrice = isBW ? perVialDisplay * 10 : perVialDisplay;
     const _marketAvgVial = Number((defaultV as any).products?.market_avg_price) || 0;
     const _marketAvgDisplay = isBW ? _marketAvgVial * 10 : _marketAvgVial;
-    const _showMarketAvg = (agentSlug === 'researchstore' || agentSlug === 'savagebrands') && _marketAvgDisplay > displayPrice;
+    const _showMarketAvg = _marketAvgDisplay > displayPrice;
     const _comparePrice = _showMarketAvg ? _marketAvgDisplay : (isOnSale ? (isBW ? perVialBase * 10 : perVialBase) : 0);
     const _hasCompare = _comparePrice > displayPrice;
     const _youSave = _hasCompare ? _comparePrice - displayPrice : 0;

@@ -318,10 +318,11 @@ export default function PremiumPeptideCard({
               here so the baked PNG text shows through untouched. */}
           {isOwnerCostMode && (
             <>
-              {/* Solid cover that paints over the baked "WHOLESALE PRICE" text */}
+              {/* Solid cover that paints over the baked "WHOLESALE PRICE" text
+                  AND any decorative separator lines in the card image below it */}
               <div style={{
                 position: 'absolute',
-                left: px(380), width: px(280), top: px(655), height: px(45),
+                left: px(375), width: px(290), top: px(643), height: px(65),
                 background: '#000000',
                 zIndex: 28, pointerEvents: 'none',
               }} />
@@ -336,6 +337,7 @@ export default function PremiumPeptideCard({
                 color: '#9BA3AB',
                 textTransform: 'uppercase',
                 letterSpacing: px(1),
+                textDecoration: 'none',
                 zIndex: 29, pointerEvents: 'none',
               }}>
                 AGENT PRICE
