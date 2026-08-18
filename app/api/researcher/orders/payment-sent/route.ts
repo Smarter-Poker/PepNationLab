@@ -84,6 +84,17 @@ export async function POST(req: NextRequest) {
   const total = Number(order.total) || 0;
   const totalFmt = `$${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+  // Clear the buyer's now-answered "Did You Send Payment?" reminders.
+  try {
+    await svc
+      .from('notifications')
+      .update({ read_at: nowIso })
+      .eq('user_id', callerId)
+      .eq('type', 'payment_reminder')
+      .is('read_at', null)
+      .ilike('url', `%/orders/${orderId}%`);
+  } catch { /* best-effort */ }
+
   try {
     await logOrderEvent(svc, {
       orderId,

@@ -122,6 +122,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Payment Was Already Confirmed.' }, { status: 409 });
   }
 
+  // Clear the upline's now-answered "Did You Receive Payment?" reminders.
+  try {
+    const shortForCleanup = shortOrderId(orderId);
+    await svc
+      .from('notifications')
+      .update({ read_at: nowIso })
+      .eq('user_id', callerId)
+      .eq('type', 'payment_reminder')
+      .is('read_at', null)
+      .ilike('url', `%order=${shortForCleanup}%`);
+  } catch { /* best-effort */ }
+
   try {
     await logOrderEvent(svc, {
       orderId,

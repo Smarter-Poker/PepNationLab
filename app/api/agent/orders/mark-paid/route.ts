@@ -78,6 +78,12 @@ export async function POST(req: NextRequest) {
     'approved_ship',
     'approved_pickup',
     'in_fulfillment',
+    // Money is still owed after the box leaves: the reminder loop keeps
+    // nudging on shipped/delivered orders, so the answer must stay possible
+    // (previously the nudge deep-linked to a modal with no button and the
+    // API returned 400 - an unanswerable infinite reminder).
+    'shipped',
+    'delivered',
   ];
   if (!CONFIRMABLE_STATUSES.includes(order.status)) {
     return NextResponse.json(
@@ -151,6 +157,29 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error('[mark-paid] proof verification stamp failed:', err);
   }
+
+  // Clear now-moot confirmation reminders (best-effort): the agent's
+  // "Did You Receive Payment?" rows and the buyer's "Did You Send Payment?"
+  // rows for this order stop cluttering the bell once receipt is confirmed.
+  try {
+    const cleanupUserIds = [...new Set([callerId, order.agent_id].filter((v): v is string => !!v))];
+    await svc
+      .from('notifications')
+      .update({ read_at: nowIso })
+      .in('user_id', cleanupUserIds)
+      .eq('type', 'payment_reminder')
+      .is('read_at', null)
+      .ilike('url', `%order=${short}%`);
+    if (order.buyer_id) {
+      await svc
+        .from('notifications')
+        .update({ read_at: nowIso })
+        .eq('user_id', order.buyer_id)
+        .eq('type', 'payment_reminder')
+        .is('read_at', null)
+        .ilike('url', `%/orders/${orderId}%`);
+    }
+  } catch { /* best-effort */ }
 
   // Order timeline.
   await logOrderEvent(svc, {

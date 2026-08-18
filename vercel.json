@@ -24,6 +24,7 @@
     { "path": "/api/cron/referrals-fulfil", "schedule": "30 * * * *" },
     { "path": "/api/cron/reminders", "schedule": "0 */6 * * *" },
     { "path": "/api/cron/payment-confirmations", "schedule": "45 * * * *" },
+    { "path": "/api/cron/payment-confirmation-health", "schedule": "30 13 * * *" },
     { "path": "/api/cron/auto-pay-invoices", "schedule": "30 20 * * *" },
     { "path": "/api/cron/auto-cancel-stale", "schedule": "30 9 * * *" },
     { "path": "/api/cron/proof-review-reminders", "schedule": "30 * * * *" },
