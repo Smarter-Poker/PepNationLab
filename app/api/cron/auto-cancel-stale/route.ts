@@ -88,7 +88,7 @@ export async function GET(req: NextRequest) {
             type: 'order_cancelled',
             title: `Order #${short} Auto-Cancelled`,
             body: `Order #${short} Sat ${days} Days With No Payment Confirmation And Was Auto-Cancelled. The Buyer Can Reorder Any Time.`,
-            url: '/dashboard/agent?tab=Orders',
+            url: `/dashboard/agent?tab=Orders&order=${short}`,
           });
         }
       } catch (err) {

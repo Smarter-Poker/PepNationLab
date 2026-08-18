@@ -77,13 +77,22 @@ export default async function AgentDashboardPage() {
     last_sign_in_at: (r as { last_sign_in_at?: string | null }).last_sign_in_at ?? null,
   }));
 
-  // 5.5. Fetch Sub-Agents (if this user is a Super Agent)
+  // 5.5. Fetch Sub-Agents (if this user is a Super Agent). account_type and
+  // full_name feed the per-order upline payment-confirmation button: prepaid
+  // downlines settle per order, so their upline confirms receipt right on
+  // the order card / detail modal.
   const { data: subAgents } = await supabase
     .from('profiles')
-    .select('id')
+    .select('id, account_type, full_name')
     .eq('parent_agent_id', user.id);
   const agentIds = [user.id, ...(subAgents || []).map((a: any) => a.id)];
   const activeAgentsCount = (subAgents || []).length;
+  const prepaidDownlineIds = new Set(
+    (subAgents || []).filter((a: any) => a.account_type === 'prepaid').map((a: any) => a.id)
+  );
+  const downlineNameById = new Map(
+    (subAgents || []).map((a: any) => [a.id, a.full_name as string | null])
+  );
 
   // 6. Fetch referred/assigned orders
   const { data: ordersData } = await supabase
@@ -105,6 +114,7 @@ export default async function AgentDashboardPage() {
       label_url,
       payment_confirmed_at,
       buyer_payment_sent_at,
+      upline_payment_confirmed_at,
       profiles!buyer_id(full_name, email),
       agent_id
     `)
@@ -148,7 +158,13 @@ export default async function AgentDashboardPage() {
       agent_id: order.agent_id,
       payment_confirmed_at: order.payment_confirmed_at ?? null,
       buyer_payment_sent_at: order.buyer_payment_sent_at ?? null,
-      is_sub_agent_order: order.agent_id !== user.id
+      upline_payment_confirmed_at: order.upline_payment_confirmed_at ?? null,
+      is_sub_agent_order: order.agent_id !== user.id,
+      // Prepaid downlines settle per order; the upline confirms receipt
+      // directly on the order (confirm-downline-payment). Credit downlines
+      // settle via weekly invoices, so no per-order button for them.
+      downline_prepaid: order.agent_id !== user.id && prepaidDownlineIds.has(order.agent_id),
+      downline_agent_name: order.agent_id !== user.id ? (downlineNameById.get(order.agent_id) ?? null) : null
     };
   });
 

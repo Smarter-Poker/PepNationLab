@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
       type: 'payment_confirmed',
       title: `Payment Confirmed For Order #${short}`,
       body: `Your Upline Confirmed Receipt Of Your Payment For Order #${short}.`,
-      url: '/dashboard?tab=Orders',
+      url: `/dashboard/agent?tab=Orders&order=${short}`,
     });
   } catch (err) {
     console.error('[confirm-downline-payment] notification error:', err);

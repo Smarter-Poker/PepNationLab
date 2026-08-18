@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
         type: 'system',
         title: `Order #${short} Cancelled By Admin`,
         body: `Order #${short} On Your Store Was Cancelled By An Administrator.${reason ? ` Reason: ${reason}` : ''}`,
-        url: '/dashboard?tab=Orders',
+        url: `/dashboard/agent?tab=Orders&order=${short}`,
       });
     }
 

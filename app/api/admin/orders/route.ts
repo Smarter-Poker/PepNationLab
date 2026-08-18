@@ -310,7 +310,7 @@ export async function POST(req: NextRequest) {
             type: 'system',
             title: `Order #${short} Update`,
             body: agentBodies[status],
-            url: '/dashboard?tab=Orders',
+            url: `/dashboard/agent?tab=Orders&order=${short}`,
           });
         }
 

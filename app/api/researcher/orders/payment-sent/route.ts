@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
         type: 'payment_reminder',
         title: `Did You Receive Payment? Order #${short}`,
         body: `The Buyer Confirmed Sending ${totalFmt} For Order #${short}. Tap To Confirm You Received It So The Order Can Be Processed.`,
-        url: '/dashboard/agent?tab=Orders',
+        url: `/dashboard/agent?tab=Orders&order=${short}`,
       });
     }
   } catch (err) {
