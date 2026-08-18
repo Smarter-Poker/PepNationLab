@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "prebuild": "node scripts/ci/checkout-diluent-guard.mjs",
+    "prebuild": "node scripts/ci/checkout-diluent-guard.mjs && node scripts/ci/payment-confirmation-guard.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "echo 'Skipping lint on Vercel' && exit 0",

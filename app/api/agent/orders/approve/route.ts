@@ -237,6 +237,12 @@ export async function POST(req: NextRequest) {
         .in('status', ['pending_customer_payment', 'agent_approval_pending'])
         .select('id');
       if (manuErr) {
+        if (String(manuErr.message || '').includes('payment_confirmation_required')) {
+          return NextResponse.json(
+            { error: 'Confirm Payment First. Tap "Did You Receive Payment?" On This Order Before Approving It To Ship.', code: 'payment_confirmation_required' },
+            { status: 409 },
+          );
+        }
         logError('agent.orders.approve.manufacturer_claim', { orderId, agentId: order.agent_id }, manuErr);
         captureError(manuErr, { context: 'agent.orders.approve.manufacturer_claim', orderId });
         return NextResponse.json({ error: 'Failed To Update Order Status' }, { status: 500 });
@@ -384,6 +390,13 @@ export async function POST(req: NextRequest) {
       .in('status', ['pending_customer_payment', 'agent_approval_pending'])
       .select('id');
     if (updateError) {
+      // DB ship gate (defense in depth behind the route-level check above).
+      if (String(updateError.message || '').includes('payment_confirmation_required')) {
+        return NextResponse.json(
+          { error: 'Confirm Payment First. Tap "Did You Receive Payment?" On This Order Before Approving It To Ship.', code: 'payment_confirmation_required' },
+          { status: 409 },
+        );
+      }
       logError('agent.orders.approve.claim_update', { orderId, agentId: primaryBilledAgentId }, updateError);
       captureError(updateError, { context: 'agent.orders.approve.claim_update', orderId });
       return NextResponse.json({ error: 'Failed To Update Order Status' }, { status: 500 });

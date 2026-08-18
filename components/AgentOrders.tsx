@@ -1162,7 +1162,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                         is confirmed. */}
                     {!order.payment_confirmed_at
                       && !order.is_sub_agent_order
-                      && ['pending_customer_payment', 'agent_approval_pending', 'admin_approval_pending', 'approved_ship', 'approved_pickup', 'in_fulfillment'].includes(order.status) && (
+                      && ['pending_customer_payment', 'agent_approval_pending', 'admin_approval_pending', 'approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered'].includes(order.status) && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                         {order.buyer_payment_sent_at && (
                           <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#2DD4BF', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
@@ -1934,7 +1934,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                 to answer right here without hunting through the list. */}
             {!detailOrder.is_sub_agent_order
               && !detailOrder.payment_confirmed_at
-              && ['pending_customer_payment', 'agent_approval_pending', 'admin_approval_pending', 'approved_ship', 'approved_pickup', 'in_fulfillment'].includes(detailOrder.status) && (
+              && ['pending_customer_payment', 'agent_approval_pending', 'admin_approval_pending', 'approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered'].includes(detailOrder.status) && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: 'rgba(0,196,188,0.05)', border: '1px solid rgba(0,196,188,0.3)', borderRadius: 10, padding: '12px 16px', marginTop: 'var(--space-4)' }}>
                 <span style={{ fontSize: '0.86rem', fontWeight: 700, color: 'var(--white)' }}>
                   Did You Receive Payment For This Order?

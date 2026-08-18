@@ -160,6 +160,21 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Abuse cap: a handful of proofs per order is legitimate (wrong screenshot,
+  // second payment); dozens is a storage / notification-spam loop. Each
+  // upload fans out messenger inserts, broadcasts, and agent + upline
+  // notifications, so this must be bounded.
+  const { count: existingProofs } = await service
+    .from('payment_proofs')
+    .select('id', { count: 'exact', head: true })
+    .eq('order_id', orderId);
+  if ((existingProofs ?? 0) >= 10) {
+    return NextResponse.json(
+      { error: 'Upload Limit Reached For This Order. Contact Your Agent If You Need To Replace A Proof.' },
+      { status: 429 },
+    );
+  }
+
   const ext = EXT_BY_MIME[file.type] || 'bin';
   const key = `${orderId}/${crypto.randomUUID()}.${ext}`;
   const arrayBuffer = await file.arrayBuffer();
@@ -196,6 +211,17 @@ export async function POST(req: NextRequest) {
     await service.storage.from('payment-proofs').remove([key]).catch(() => {});
     return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
+
+  // Uploading a payment screenshot IS confirming you sent payment - stamp
+  // buyer_payment_sent_at (CAS, first writer wins) so the buyer's 12-hour
+  // "Did You Send Payment?" reminders stop without needing a second tap.
+  try {
+    await service
+      .from('orders')
+      .update({ buyer_payment_sent_at: new Date().toISOString(), buyer_payment_sent_by: user.id })
+      .eq('id', orderId)
+      .is('buyer_payment_sent_at', null);
+  } catch { /* best-effort - the proof itself is already saved */ }
 
   const { data: signed } = await service.storage
     .from('payment-proofs')

@@ -215,6 +215,15 @@ export async function POST(req: NextRequest) {
     }
 
     if (updateError) {
+      // DB ship gate (trg_enforce_payment_confirmation_before_ship): a ship
+      // order whose buyer pays per order cannot be released unconfirmed.
+      // Surface it as an actionable 409, not a raw database error.
+      if (String(updateError.message || '').includes('payment_confirmation_required')) {
+        return NextResponse.json(
+          { error: 'Payment Not Confirmed. Confirm The Buyer\'s Payment (Did You Receive Payment?) On The Order Before Approving It To Ship.', code: 'payment_confirmation_required' },
+          { status: 409 },
+        );
+      }
       console.error('[admin/orders] POST updateError:', updateError);
       return NextResponse.json({ error: `Database Error: ${updateError.message || JSON.stringify(updateError)}` }, { status: 500 });
     }

@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 import { notify } from '@/lib/notify';
+import { emailConfigured, sendPaymentActionReminderEmail } from '@/lib/email';
 import { shortOrderId } from '@/lib/push-enqueue';
 
 export const dynamic = 'force-dynamic';
@@ -76,6 +77,10 @@ export async function GET(req: NextRequest) {
         buyer_payment_sent_at, payment_confirmed_at, upline_payment_confirmed_at,
         buyer_sent_reminder_at, agent_received_reminder_at, upline_received_reminder_at`)
       .in('status', [...new Set([...BUYER_AGENT_STATUSES, ...UPLINE_STATUSES])])
+      // Only rows with at least one confirmation still missing: without this
+      // filter, fully-confirmed shipped/delivered orders consumed the 500-row
+      // cap and starved the newest unconfirmed orders of reminders.
+      .or('payment_confirmed_at.is.null,buyer_payment_sent_at.is.null,upline_payment_confirmed_at.is.null')
       .gte('created_at', lookbackIso)
       .order('created_at', { ascending: true })
       .limit(500);
@@ -88,20 +93,64 @@ export async function GET(req: NextRequest) {
     const buyerIds = [...new Set(rows.map(o => o.buyer_id).filter((v): v is string => !!v))];
     const agentIds = [...new Set(rows.map(o => o.agent_id).filter((v): v is string => !!v))];
     const profileIds = [...new Set([...buyerIds, ...agentIds])];
-    const profileById = new Map<string, { account_type: string | null; parent_agent_id: string | null; full_name: string | null }>();
+    type ReminderProfile = { account_type: string | null; parent_agent_id: string | null; full_name: string | null; email: string | null; email_opt_out: boolean };
+    const profileById = new Map<string, ReminderProfile>();
+    const PROFILE_COLS = 'id, account_type, parent_agent_id, full_name, email, contact_email, email_verified, email_opt_out';
+    const toReminderProfile = (p: any): ReminderProfile => ({
+      account_type: p.account_type ?? null,
+      parent_agent_id: p.parent_agent_id ?? null,
+      full_name: p.full_name ?? null,
+      email: (p.contact_email && p.email_verified ? p.contact_email : p.email) ?? null,
+      email_opt_out: p.email_opt_out === true,
+    });
     if (profileIds.length > 0) {
-      const { data: profs } = await svc
-        .from('profiles')
-        .select('id, account_type, parent_agent_id, full_name')
-        .in('id', profileIds);
-      for (const p of profs ?? []) {
-        profileById.set(p.id, {
-          account_type: p.account_type ?? null,
-          parent_agent_id: p.parent_agent_id ?? null,
-          full_name: p.full_name ?? null,
-        });
+      const { data: profs } = await svc.from('profiles').select(PROFILE_COLS).in('id', profileIds);
+      for (const p of profs ?? []) profileById.set(p.id, toReminderProfile(p));
+    }
+
+    // Push reach: recipients with no active push subscription get the same
+    // reminder by EMAIL. Most staff accounts have never enabled push (see
+    // /admin/push-health), so a push-only loop was invisible to them outside
+    // the in-app bell. Same 12h cadence - the per-role clocks gate both.
+    const uplineIds = [...new Set(
+      rows
+        .map((o) => (o.agent_id ? profileById.get(o.agent_id)?.parent_agent_id : null))
+        .filter((v): v is string => !!v)
+    )];
+    const missingUplines = uplineIds.filter((id) => !profileById.has(id));
+    if (missingUplines.length > 0) {
+      const { data: ups } = await svc.from('profiles').select(PROFILE_COLS).in('id', missingUplines);
+      for (const p of ups ?? []) profileById.set(p.id, toReminderProfile(p));
+    }
+    const pushReachable = new Set<string>();
+    const allRecipientIds = [...new Set([...profileIds, ...uplineIds])];
+    if (allRecipientIds.length > 0) {
+      const { data: subs } = await svc
+        .from('push_subscriptions')
+        .select('user_id')
+        .eq('is_active', true)
+        .in('user_id', allRecipientIds);
+      for (const su of subs ?? []) {
+        if (su.user_id) pushReachable.add(su.user_id);
       }
     }
+
+    const remind = async (userId: string, title: string, body: string, url: string) => {
+      await notify(svc, { userId, type: 'payment_reminder', title, body, url });
+      if (!pushReachable.has(userId) && emailConfigured()) {
+        const prof = profileById.get(userId);
+        if (prof?.email && !prof.email_opt_out) {
+          await sendPaymentActionReminderEmail({
+            to: prof.email,
+            fullName: prof.full_name,
+            title,
+            bodyText: body,
+            actionUrl: url,
+            actionLabel: 'Open The Order',
+          }).catch(() => {});
+        }
+      }
+    };
 
     const due = (last: string | null, createdAt: string): boolean => {
       const anchor = last ?? createdAt;
@@ -134,13 +183,12 @@ export async function GET(req: NextRequest) {
           .is('buyer_payment_sent_at', null)
           .select('id');
         if (claimedRow && claimedRow.length > 0) {
-          await notify(svc, {
-            userId: o.buyer_id as string,
-            type: 'payment_reminder',
-            title: `Did You Send Payment? Order #${short}`,
-            body: `Once You Have Sent ${totalFmt} To Your Agent, Tap "I Sent Payment" On The Order So It Can Be Processed.`,
-            url: `/orders/${o.id}`,
-          });
+          await remind(
+            o.buyer_id as string,
+            `Did You Send Payment? Order #${short}`,
+            `Once You Have Sent ${totalFmt} To Your Agent, Tap "I Sent Payment" On The Order So It Can Be Processed.`,
+            `/orders/${o.id}`,
+          );
           buyerNudges++;
         }
       }
@@ -161,15 +209,14 @@ export async function GET(req: NextRequest) {
           .select('id');
         if (claimedRow && claimedRow.length > 0) {
           const buyerSaysSent = !!o.buyer_payment_sent_at;
-          await notify(svc, {
-            userId: o.agent_id,
-            type: 'payment_reminder',
-            title: `Did You Receive Payment? Order #${short}`,
-            body: buyerSaysSent
+          await remind(
+            o.agent_id,
+            `Did You Receive Payment? Order #${short}`,
+            buyerSaysSent
               ? `The Buyer Confirmed Sending ${totalFmt} For Order #${short}. Click Here To Go To The Order And Confirm Receipt So It Can Be Processed.`
               : `Order #${short} (${totalFmt}) Has No Confirmed Payment Yet. Click Here To Go To The Order And Confirm Receipt As Soon As The Buyer's Payment Lands.`,
-            url: `/dashboard/agent?tab=Orders&order=${short}`,
-          });
+            `/dashboard/agent?tab=Orders&order=${short}`,
+          );
           agentNudges++;
         }
       }
@@ -190,13 +237,12 @@ export async function GET(req: NextRequest) {
           .is('upline_payment_confirmed_at', null)
           .select('id');
         if (claimedRow && claimedRow.length > 0) {
-          await notify(svc, {
-            userId: uplineId,
-            type: 'payment_reminder',
-            title: `Did You Receive Payment? Order #${short}`,
-            body: `${agent?.full_name || 'Your Downline Agent'} Owes You ${totalFmt} For Order #${short}. Click Here To Go To The Order And Confirm Receipt.`,
-            url: `/dashboard/agent?tab=Orders&order=${short}`,
-          });
+          await remind(
+            uplineId,
+            `Did You Receive Payment? Order #${short}`,
+            `${agent?.full_name || 'Your Downline Agent'} Owes You ${totalFmt} For Order #${short}. Click Here To Go To The Order And Confirm Receipt.`,
+            `/dashboard/agent?tab=Orders&order=${short}`,
+          );
           uplineNudges++;
         }
       }
