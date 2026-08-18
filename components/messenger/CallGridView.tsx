@@ -31,12 +31,15 @@ interface TileProps {
   videoTrackRef: import('@livekit/components-react').TrackReference | undefined;
   /** Local tile: labelled "You", camera mirrored like every selfie view. */
   isLocal?: boolean;
+  /** This participant is sharing their screen — give the tile the full row. */
+  isPresenting?: boolean;
 }
 
-function CallGridTile({ participant, videoTrackRef, isLocal = false }: TileProps) {
+function CallGridTile({ participant, videoTrackRef, isLocal = false, isPresenting = false }: TileProps) {
   const speaking = useIsSpeaking(participant);
   const micOn = participant.isMicrophoneEnabled;
-  const displayLabel = isLocal ? 'You' : (participant.name || participant.identity);
+  const baseLabel = isLocal ? 'You' : (participant.name || participant.identity);
+  const displayLabel = isPresenting ? `${baseLabel} — Sharing Screen` : baseLabel;
   const mirror = isLocal && videoTrackRef?.source === Track.Source.Camera;
   const initials = (participant.name || participant.identity || '?')
     .split(/\s+/)
@@ -56,7 +59,8 @@ function CallGridTile({ participant, videoTrackRef, isLocal = false }: TileProps
           ? '0 0 0 3px rgba(0, 196, 188, 0.85), 0 8px 24px rgba(0,0,0,0.4)'
           : '0 8px 24px rgba(0,0,0,0.4)',
         transition: 'box-shadow 0.2s',
-        minHeight: 160,
+        minHeight: isPresenting ? 240 : 160,
+        gridColumn: isPresenting ? '1 / -1' : undefined,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -67,7 +71,13 @@ function CallGridTile({ participant, videoTrackRef, isLocal = false }: TileProps
       {videoTrackRef ? (
         <VideoTrack
           trackRef={videoTrackRef}
-          style={{ width: '100%', height: '100%', objectFit: 'cover', transform: mirror ? 'scaleX(-1)' : undefined }}
+          style={{
+            width: '100%', height: '100%',
+            // Faces fill their tile; a shared screen is shown whole.
+            objectFit: videoTrackRef.source === Track.Source.ScreenShare ? 'contain' : 'cover',
+            background: videoTrackRef.source === Track.Source.ScreenShare ? '#000' : undefined,
+            transform: mirror ? 'scaleX(-1)' : undefined,
+          }}
         />
       ) : (
         <div
@@ -153,6 +163,15 @@ export default function CallGridView() {
 
   const cols = gridColumns(remoteParticipants.length + 1);
 
+  // SCREEN SHARE TAKES THE STAGE. In an equal grid, a shared spreadsheet ends
+  // up the same size as a face — unreadable on a phone, which defeats the
+  // point of sharing. When anyone is sharing, that tile spans the full width
+  // of the grid and everyone else tucks underneath.
+  const sharingSid = (() => {
+    const t = allTracks.find((x) => x.source === Track.Source.ScreenShare);
+    return t ? t.participant.sid : null;
+  })();
+
   return (
     <div
       style={{
@@ -177,6 +196,7 @@ export default function CallGridView() {
             key={p.sid}
             participant={p}
             videoTrackRef={trackByParticipant.get(p.sid)}
+            isPresenting={p.sid === sharingSid}
           />
         ))}
         <CallGridTile
@@ -184,6 +204,7 @@ export default function CallGridView() {
           participant={localParticipant}
           videoTrackRef={trackByParticipant.get(localParticipant.sid)}
           isLocal
+          isPresenting={localParticipant.sid === sharingSid}
         />
       </div>
     </div>

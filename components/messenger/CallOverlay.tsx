@@ -18,7 +18,7 @@ import { createRingTone } from '@/lib/messenger/ringTone';
 import { captureCallError, captureCallEvent } from '@/lib/messenger/sentryCall';
 import { createE2EESetup, asRoomOptions, type E2EESetup } from '@/lib/messenger/livekitE2EE';
 import CallGridView from './CallGridView';
-import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, SwitchCamera, ScreenShare, ScreenShareOff, Pause, Play, Maximize2 } from 'lucide-react';
+import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, SwitchCamera, ScreenShare, ScreenShareOff, Pause, Play, Maximize2, Minimize2 } from 'lucide-react';
 import IframeLink from '@/components/ui/IframeLink';
 import { toast } from 'sonner';
 import { Track, DisconnectReason, ConnectionState, ConnectionQuality } from 'livekit-client';
@@ -218,13 +218,18 @@ interface FaceTimeCallViewProps {
   isE2EE: boolean;
   counterpartyName: string;
   counterpartyAvatar: string | null;
-  /** Live remote-participant count, reported up so the overlay (outside the
-   *  LiveKitRoom tree) can tell "leave a group call others are still on"
-   *  apart from "end the call" without re-deriving room state. */
-  onRemoteCount?: (n: number) => void;
+  /** Live remote-participant count + whether a remote was EVER seen,
+   *  reported up so the overlay (outside the LiveKitRoom tree) can tell
+   *  "leave a group call others are still on" and "last one out" apart from
+   *  "bailed while still connecting" without re-deriving room state. */
+  onRemoteCount?: (n: number, everSawRemote: boolean) => void;
+  /** Collapse the call to a floating window so the rest of the app is usable. */
+  minimized?: boolean;
+  onMinimize?: () => void;
+  onExpand?: () => void;
 }
 
-function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterpartyName, counterpartyAvatar, onRemoteCount }: FaceTimeCallViewProps) {
+function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterpartyName, counterpartyAvatar, onRemoteCount, minimized = false, onMinimize, onExpand }: FaceTimeCallViewProps) {
   const { localParticipant } = useLocalParticipant();
   const remoteParticipants = useRemoteParticipants();
   const connectionState = useConnectionState();
@@ -243,13 +248,39 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
   ) as Array<import('@livekit/components-react').TrackReference>;
 
   const localCamTrack = trackReferences.find((t) => t.participant.isLocal && t.source === Track.Source.Camera);
-  const remoteVideoTrack = trackReferences.find(
-    (t) => !t.participant.isLocal && (t.source === Track.Source.Camera || t.source === Track.Source.ScreenShare),
+  // SCREEN SHARE WINS. This used to be a plain .find() across camera OR
+  // screen share, so whichever track was published first was displayed —
+  // meaning someone sharing their screen while their camera was still on
+  // could be talking over a document the other person could not see. If any
+  // remote is sharing, that is what everyone wants on the main stage.
+  const remoteScreenTrack = trackReferences.find(
+    (t) => !t.participant.isLocal && t.source === Track.Source.ScreenShare,
   );
+  const remoteCameraTrack = trackReferences.find(
+    (t) => !t.participant.isLocal && t.source === Track.Source.Camera,
+  );
+  const remoteVideoTrack = remoteScreenTrack ?? remoteCameraTrack;
+  // Your OWN share, so the sharer sees exactly what they are broadcasting
+  // instead of a black rectangle and a guess.
+  const localScreenTrack = trackReferences.find(
+    (t) => t.participant.isLocal && t.source === Track.Source.ScreenShare,
+  );
+  const someoneIsSharing = Boolean(remoteScreenTrack ?? localScreenTrack);
+  const sharerName = remoteScreenTrack
+    ? (remoteScreenTrack.participant.name || remoteScreenTrack.participant.identity)
+    : localScreenTrack
+      ? 'You'
+      : '';
 
   const [isMuted, setIsMuted] = useState(false);
   const [isCamDisabled, setIsCamDisabled] = useState(!isVideo);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
+  // Mirror the actually-published track. Chrome/Edge show their own
+  // "Stop sharing" bar, so a share can end without our button ever being
+  // clicked; trusting the optimistic flag left the button lit and made the
+  // next click RE-start the share instead of stopping it.
+  const hasLocalScreenShare = Boolean(localScreenTrack);
+  useEffect(() => { setIsScreenSharing(hasLocalScreenShare); }, [hasLocalScreenShare]);
   const [isOnHold, setIsOnHold] = useState(false);
   const preHoldRef = useRef<{ mic: boolean; cam: boolean } | null>(null);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
@@ -308,7 +339,7 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
   useEffect(() => { onRemoteCountRef.current = onRemoteCount; }, [onRemoteCount]);
   useEffect(() => {
     if (remoteParticipants.length > 0) hasSeenRemoteRef.current = true;
-    try { onRemoteCountRef.current?.(remoteParticipants.length); } catch { /* advisory */ }
+    try { onRemoteCountRef.current?.(remoteParticipants.length, hasSeenRemoteRef.current); } catch { /* advisory */ }
   }, [remoteParticipants.length]);
   useEffect(() => {
     if (!hasSeenRemoteRef.current) return;
@@ -341,11 +372,17 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
     } catch (err) { captureCallError(err, 'overlay', { stage_detail: 'toggle_camera' }); }
   });
   const toggleScreenShare = wrap(async () => {
+    const next = !localParticipant.isScreenShareEnabled;
     try {
-      const next = !localParticipant.isScreenShareEnabled;
       await localParticipant.setScreenShareEnabled(next);
-      setIsScreenSharing(next);
+      setIsScreenSharing(localParticipant.isScreenShareEnabled);
     } catch (err) {
+      // Resync to whatever actually happened before deciding how loud to be.
+      setIsScreenSharing(localParticipant.isScreenShareEnabled);
+      // Dismissing the browser's screen picker is a deliberate user choice,
+      // not an error — no red toast, no Sentry noise.
+      const name = (err as { name?: string } | null)?.name;
+      if (name === 'NotAllowedError' || name === 'AbortError') return;
       captureCallError(err, 'overlay', { stage_detail: 'toggle_screen_share' });
       toast.error('Could Not Share Screen');
     }
@@ -377,7 +414,12 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
       return;
     }
     try {
-      const el = document.querySelector<HTMLVideoElement>('video[data-pnl-local-video="true"]');
+      // Prefer the REMOTE feed: the point of picture-in-picture is to keep
+      // seeing the person you are talking to while you do something else.
+      // Falls back to your own camera when they have no video published.
+      const el =
+        document.querySelector<HTMLVideoElement>('video[data-pnl-remote-video="true"]') ??
+        document.querySelector<HTMLVideoElement>('video[data-pnl-local-video="true"]');
       if (!el) return;
       await el.requestPictureInPicture();
     } catch (err) { captureCallError(err, 'overlay', { stage_detail: 'pip' }); }
@@ -433,6 +475,111 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
     ? counterpartyName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
     : '?';
 
+  // ── MINIMIZED (floating window) ────────────────────────────────────────
+  // Everything above this point is hooks, so returning here is safe: React
+  // sees the same hook sequence in both modes. Only the CHILDREN of
+  // LiveKitRoom swap — LiveKitRoom itself keeps its slot in the tree, so the
+  // media session is untouched by minimizing.
+  if (minimized) {
+    // Same priority in the little window: a shared screen is why you
+    // minimized in the first place.
+    const miniTrack = remoteScreenTrack ?? localScreenTrack ?? remoteCameraTrack ?? localCamTrack;
+    return (
+      <div
+        style={{ position: 'absolute', inset: 0, background: '#03080F', overflow: 'hidden' }}
+        onClick={() => onExpand?.()}
+        role="button"
+        tabIndex={0}
+        aria-label="Return To Call"
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onExpand?.(); } }}
+      >
+        {miniTrack ? (
+          <VideoTrack
+            trackRef={miniTrack}
+            style={{
+              width: '100%', height: '100%',
+              objectFit: (remoteScreenTrack ?? localScreenTrack) ? 'contain' : 'cover',
+              background: '#000',
+            }}
+          />
+        ) : (
+          <div style={{
+            width: '100%', height: '100%', display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center', gap: 8,
+            background: 'radial-gradient(circle at center, #0B1E30 0%, #03080F 100%)',
+          }}>
+            <div style={{
+              width: 44, height: 44, borderRadius: '50%',
+              background: 'linear-gradient(135deg, #00C4BC 0%, #0B1E30 100%)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#FFF', fontWeight: 700, fontSize: '1rem',
+            }}>{counterpartyInitials}</div>
+            <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.72rem', fontWeight: 600, padding: '0 8px', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
+              {counterpartyName}
+            </div>
+          </div>
+        )}
+
+        {/* Live duration + speaking indicator so the window is informative at a glance */}
+        <div style={{
+          position: 'absolute', top: 6, left: 6, right: 6,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          pointerEvents: 'none',
+        }}>
+          <span style={{
+            background: 'rgba(0,0,0,0.55)', color: '#FFF', fontSize: '0.62rem',
+            fontWeight: 700, padding: '2px 6px', borderRadius: 6,
+            fontVariantNumeric: 'tabular-nums',
+          }}>{formatCallDuration(elapsedMs)}</span>
+          {isMuted && (
+            <span style={{ background: '#E53E3E', color: '#FFF', borderRadius: 6, padding: '2px 4px', display: 'inline-flex' }}>
+              <MicOff size={11} />
+            </span>
+          )}
+        </div>
+
+        {/* Mic + hang up stay reachable without expanding. stopPropagation so
+            tapping a control never counts as "expand". */}
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            position: 'absolute', bottom: 6, left: 0, right: 0,
+            display: 'flex', justifyContent: 'center', gap: 8,
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => void toggleMute()}
+            aria-label={isMuted ? 'Unmute Microphone' : 'Mute Microphone'}
+            title={isMuted ? 'Unmute' : 'Mute'}
+            style={{
+              width: 30, height: 30, borderRadius: '50%', border: 0, cursor: 'pointer',
+              background: isMuted ? '#E53E3E' : 'rgba(255,255,255,0.16)', color: '#FFF',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              backdropFilter: 'blur(8px)',
+            }}
+          >
+            {isMuted ? <MicOff size={14} /> : <Mic size={14} />}
+          </button>
+          <button
+            type="button"
+            onClick={onHangUp}
+            aria-label="End Call"
+            title="End Call"
+            style={{
+              width: 30, height: 30, borderRadius: '50%', border: 0, cursor: 'pointer',
+              background: '#E53E3E', color: '#FFF',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <PhoneOff size={14} />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', background: '#000' }}>
       {speakerCandidate && (
@@ -452,11 +599,23 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
           <CallGridView />
         ) : (
           <div style={{ width: '100%', height: '100%' }}>
-            {isVideo && remoteVideoTrack ? (
+            {localScreenTrack && !remoteScreenTrack ? (
+              // You are sharing and they are not: show your own share so you
+              // can see what they are seeing (objectFit contain — a screen is
+              // not a face, cropping it hides the thing you are pointing at).
+              <VideoTrack
+                trackRef={localScreenTrack}
+                style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }}
+              />
+            ) : isVideo && remoteVideoTrack ? (
               <VideoTrack
                 trackRef={remoteVideoTrack}
+                data-pnl-remote-video="true"
                 style={{
-                  width: '100%', height: '100%', objectFit: 'cover',
+                  width: '100%', height: '100%',
+                  // Faces look best filling the frame; a shared screen must be
+                  // shown whole or the content being pointed at gets cropped.
+                  objectFit: remoteScreenTrack ? 'contain' : 'cover',
                   transition: 'box-shadow 0.3s',
                   boxShadow: remoteIsSpeaking ? 'inset 0 0 0 4px rgba(0, 196, 188, 0.6)' : 'none',
                 }}
@@ -496,6 +655,38 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
           </div>
         )}
       </div>
+
+      {someoneIsSharing && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 'calc(env(safe-area-inset-top, 0px) + 12px)',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'rgba(0, 196, 188, 0.92)',
+            color: '#04211F',
+            fontSize: '0.76rem',
+            fontWeight: 800,
+            letterSpacing: '0.02em',
+            padding: '6px 12px',
+            borderRadius: 999,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            zIndex: 150,
+            pointerEvents: 'none',
+            boxShadow: '0 6px 18px rgba(0,0,0,0.4)',
+            maxWidth: 'calc(100% - 32px)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+          aria-live="polite"
+        >
+          <ScreenShare size={14} aria-hidden="true" />
+          {sharerName === 'You' ? 'You Are Sharing Your Screen' : `${sharerName} Is Sharing Their Screen`}
+        </div>
+      )}
 
       {!isGroup && isVideo && localCamTrack && localParticipant.isCameraEnabled && (
         <div style={{
@@ -591,6 +782,18 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
           boxSizing: 'border-box',
         }}
       >
+        {onMinimize && (
+          <button
+            type="button" onClick={() => { showToolbar(); onMinimize(); }}
+            className="pnl-toolbar-btn"
+            style={{ background: 'rgba(255,255,255,0.08)' }}
+            title="Minimize — Keep Talking While You Use The App"
+            aria-label="Minimize Call And Continue Using The App"
+          >
+            <Minimize2 size={20} />
+          </button>
+        )}
+
         <button
           type="button" onClick={() => void toggleMute()}
           className="pnl-toolbar-btn"
@@ -623,6 +826,9 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
           </button>
         )}
 
+        {/* getDisplayMedia does not exist on iOS Safari and is unreliable on
+            Android browsers, so the control is desktop-only rather than a
+            button that fails when tapped. */}
         {!isMobile && (
           <button
             type="button" onClick={() => void toggleScreenShare()}
@@ -701,9 +907,75 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
     (call.conversation_type == null && participantTotal !== null && participantTotal > 2);
   const isGroupConvRef = useRef(isGroupConv);
   useEffect(() => { isGroupConvRef.current = isGroupConv; }, [isGroupConv]);
+  // ── Minimized ("keep talking while you use the app") ──────────────────
+  // GlobalCallListener lives in the ROOT layout, outside {children}, so this
+  // component already survives client-side navigation — LiveKitRoom is never
+  // unmounted by moving between pages. What blocked using the site mid-call
+  // was purely that the overlay is a full-screen fixed layer that eats every
+  // click. Minimizing shrinks that layer to a small draggable window and
+  // hands the page back to the user.
+  const [minimized, setMinimized] = useState(false);
+  const MINI_W = 132;
+  const MINI_H = 186;
+  const [miniPos, setMiniPos] = useState<{ x: number; y: number } | null>(null);
+  const dragRef = useRef<{ dx: number; dy: number; moved: boolean; active: boolean }>(
+    { dx: 0, dy: 0, moved: false, active: false }
+  );
+
+  const clampMini = useCallback((x: number, y: number) => {
+    if (typeof window === 'undefined') return { x, y };
+    const maxX = Math.max(8, window.innerWidth - MINI_W - 8);
+    const maxY = Math.max(8, window.innerHeight - MINI_H - 8);
+    return { x: Math.min(Math.max(8, x), maxX), y: Math.min(Math.max(8, y), maxY) };
+  }, []);
+
+  // Park it bottom-right on first minimize, and keep it on screen if the
+  // window is resized or the phone is rotated mid-call.
+  useEffect(() => {
+    if (!minimized) return;
+    setMiniPos((cur) => cur ?? clampMini(window.innerWidth - MINI_W - 12, window.innerHeight - MINI_H - 90));
+    const onResize = () => setMiniPos((cur) => (cur ? clampMini(cur.x, cur.y) : cur));
+    window.addEventListener('resize', onResize);
+    window.addEventListener('orientationchange', onResize);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      window.removeEventListener('orientationchange', onResize);
+    };
+  }, [minimized, clampMini]);
+
+  const onMiniPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!minimized || !miniPos) return;
+    dragRef.current = { dx: e.clientX - miniPos.x, dy: e.clientY - miniPos.y, moved: false, active: true };
+    // moved is deliberately reset here (not on pointerup): the click that
+    // follows a drag needs to still see moved === true to suppress itself.
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* older browsers */ }
+  }, [minimized, miniPos]);
+
+  const onMiniPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const d = dragRef.current;
+    if (!d.active) return;
+    const nx = e.clientX - d.dx;
+    const ny = e.clientY - d.dy;
+    // A few pixels of slop so a tap with a shaky thumb still counts as a tap.
+    if (Math.abs(nx - (miniPos?.x ?? nx)) > 4 || Math.abs(ny - (miniPos?.y ?? ny)) > 4) d.moved = true;
+    setMiniPos(clampMini(nx, ny));
+  }, [miniPos, clampMini]);
+
+  const onMiniPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const d = dragRef.current;
+    d.active = false;
+    try { e.currentTarget.releasePointerCapture(e.pointerId); } catch { /* noop */ }
+    // Swallow the click that follows a drag so dragging never expands the call.
+    if (d.moved) { e.preventDefault(); e.stopPropagation(); }
+  }, []);
+
   // Live remote count, reported by FaceTimeCallView. 0 until connected.
   const remoteCountRef = useRef(0);
-  const handleRemoteCount = useCallback((n: number) => { remoteCountRef.current = n; }, []);
+  const everSawRemoteRef = useRef(false);
+  const handleRemoteCount = useCallback((n: number, everSaw: boolean) => {
+    remoteCountRef.current = n;
+    if (everSaw || n > 0) everSawRemoteRef.current = true;
+  }, []);
 
   const activeStartedAtRef = useRef<number | null>(null);
   if (call.status === 'active' && activeStartedAtRef.current === null) {
@@ -896,7 +1168,10 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
       // meeting for everyone still talking. Just disconnect (LiveKit tears the
       // connection down with the page); the last person out ends the call via
       // the auto-hangup-when-alone path.
-      if (isGroupConvRef.current && cl.status === 'active' && remoteCountRef.current > 0) return;
+      if (isGroupConvRef.current && cl.status === 'active') {
+        if (remoteCountRef.current > 0) return; // others talking — just drop
+        if (!everSawRemoteRef.current && cl.initiator_id !== selfId) return; // bailed mid-connect
+      }
       if (cid) {
         try {
           const bodyEnded = JSON.stringify({ type: 'broadcast', event: 'call_ended', payload: cl });
@@ -923,6 +1198,12 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
     return () => window.removeEventListener('pagehide', handler);
   }, [call.id]);
 
+  // If the call ends while minimized, do not leave the next call to start in
+  // a tiny window.
+  useEffect(() => {
+    if (call.status !== 'active') setMinimized(false);
+  }, [call.status]);
+
   const handleHangUp = async () => {
     // GROUP CALLS — leave, don't end. In a 1:1 call, hanging up ends the
     // call: with you gone there is no call. In a group call, you leaving is
@@ -933,9 +1214,25 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
     // end-for-all, which writes the "Call Ended" system message once.
     // userClosedRef stays false on a leave so the unmount cleanup does not
     // broadcast a bogus call_ended to anyone.
-    if (isGroupConv && call.status === 'active' && remoteCountRef.current > 0) {
-      onClose();
-      return;
+    if (isGroupConv && call.status === 'active') {
+      // Others still connected -> LEAVE (close; LiveKitRoom unmount
+      // disconnects us; the DB row stays active for them).
+      if (remoteCountRef.current > 0) {
+        onClose();
+        return;
+      }
+      // Alone AFTER having been in the room with others -> we are the last
+      // one out; fall through and perform the real end-for-all below.
+      //
+      // Alone WITHOUT ever seeing another participant -> we bailed while
+      // still connecting. A non-initiator ending here would tear down a
+      // meeting that Bob and Carol are mid-join on, so just leave quietly;
+      // the initiator cancelling their own un-joined call, however, should
+      // genuinely end it (nobody else is on it yet).
+      if (!everSawRemoteRef.current && call.initiator_id !== selfId) {
+        onClose();
+        return;
+      }
     }
     userClosedRef.current = true;
     if (counterpartyId) {
@@ -1036,13 +1333,46 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
 
   const livekitOptions = asRoomOptions(e2ee);
 
+  // Minimizing is only meaningful once connected; a ringing call stays
+  // full-screen so nobody misses it.
+  const isMini = minimized && call.status === 'active' && !error;
+
   return (
     <div
-      style={{
-        position: 'fixed', inset: 0, background: '#000',
-        display: 'flex', flexDirection: 'column', zIndex: 2000,
-      }}
-      role="dialog" aria-modal="true"
+      onPointerDown={isMini ? onMiniPointerDown : undefined}
+      onPointerMove={isMini ? onMiniPointerMove : undefined}
+      onPointerUp={isMini ? onMiniPointerUp : undefined}
+      onPointerCancel={isMini ? onMiniPointerUp : undefined}
+      style={
+        isMini
+          ? {
+              position: 'fixed',
+              left: miniPos?.x ?? 0,
+              top: miniPos?.y ?? 0,
+              width: MINI_W,
+              height: MINI_H,
+              background: '#000',
+              display: 'flex',
+              flexDirection: 'column',
+              zIndex: 2000,
+              borderRadius: 14,
+              overflow: 'hidden',
+              boxShadow: '0 12px 32px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.12)',
+              // Without this, dragging on a touch screen scrolls the page
+              // underneath instead of moving the window.
+              touchAction: 'none',
+              cursor: 'grab',
+              // Belt and braces: an invisible full-screen layer would silently
+              // eat every click on the site behind it.
+              pointerEvents: 'auto',
+            }
+          : {
+              position: 'fixed', inset: 0, background: '#000',
+              display: 'flex', flexDirection: 'column', zIndex: 2000,
+            }
+      }
+      role="dialog"
+      aria-modal={isMini ? undefined : true}
       aria-label={isVideo ? 'Video Call' : 'Voice Call'}
     >
       {error && (
@@ -1087,7 +1417,10 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
                 avatar's 32px bottom margin, making the box-shadow ring an oval).
                 onError falls the broken/missing avatar back to the initials
                 placeholder instead of the browser's broken-image icon. */}
-            {counterpartyAvatar && !avatarError ? (
+            {/* A group call rings with the conversation's identity, not one
+                member's face — showing Bridget's avatar for a 3-way call
+                reads as a call FROM Bridget. */}
+            {counterpartyAvatar && !avatarError && !isGroupConv ? (
               <Image
                 src={counterpartyAvatar}
                 alt={displayName}
@@ -1173,7 +1506,7 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
               toast.error('Call Connection Error');
             }
           }}
-          style={{ flex: 1, background: '#000' }}
+          style={{ flex: 1, background: '#000', minHeight: 0 }}
         >
           <RoomAudioRenderer />
           <FaceTimeCallView
@@ -1184,6 +1517,15 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
             counterpartyName={displayName}
             counterpartyAvatar={isGroupConv ? null : counterpartyAvatar}
             onRemoteCount={handleRemoteCount}
+            minimized={isMini}
+            onMinimize={() => setMinimized(true)}
+            onExpand={() => {
+              // A drag ends with a click event on most browsers, so without
+              // this a user repositioning the window would have it snap back
+              // to full screen the moment they let go.
+              if (dragRef.current.moved) { dragRef.current.moved = false; return; }
+              setMinimized(false);
+            }}
           />
         </LiveKitRoom>
       )}
