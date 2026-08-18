@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createServiceClient } from '@/lib/supabase/server';
 import { generateQrDataUrl } from '@/lib/qr';
 import CertificateDocument, { type CertificateData } from '@/components/coa/CertificateDocument';
 import PrintButton from './PrintButton';
+import CoaBackButton from '../../CoaBackButton';
 import { getLabInfo } from '@/lib/labs';
 
 export const dynamic = 'force-dynamic';
@@ -124,24 +124,16 @@ export default async function CertificatePage({ params }: { params: Promise<{ lo
         className="coa-actions"
         style={{ maxWidth: 780, margin: '0 auto 1.5rem', display: 'flex', flexWrap: 'wrap', gap: '1rem', justifyContent: 'space-between', alignItems: 'center' }}
       >
-        <Link
-          href={`/coa?lot=${encodeURIComponent(record.lot_number)}`}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            color: '#A8B4C0',
-            fontSize: '1.15rem',
-            fontWeight: 600,
-            textDecoration: 'none',
-            padding: '0.5rem 0',
-          }}
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-          Back To Verification
-        </Link>
+        {/* Back goes to WHERE YOU CAME FROM (product page, order, storefront),
+            not to a fixed verification page - landing somewhere you never
+            were is how this page felt like a dead end on mobile. When there
+            is no history (QR scan off a vial, shared link, PWA cold start)
+            the button becomes a real link to the verification lookup so there
+            is always a way out. */}
+        <CoaBackButton
+          fallbackHref={`/coa?lot=${encodeURIComponent(record.lot_number)}`}
+          fallbackLabel="Back To Verification"
+        />
         <PrintButton />
       </div>
 

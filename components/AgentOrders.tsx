@@ -142,21 +142,32 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
   // Auto-open the detail modal when initialOpenShortId is provided (deep-link from notification).
   // We wait until orders are available and match by the short_id substring that
   // appears in the notification title (the last 8-char hex segment of the UUID).
-  const deepLinkConsumedRef = useRef(false);
+  // Track WHICH short id was consumed, not merely THAT one was. A plain
+  // boolean latched on the first deep link and never reset, so tapping a
+  // second notification (or the same one again after closing the modal)
+  // changed the URL but opened nothing - the notification looked broken.
+  const deepLinkConsumedRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!initialOpenShortId || deepLinkConsumedRef.current || orders.length === 0) return;
+    if (!initialOpenShortId || orders.length === 0) return;
+    if (deepLinkConsumedRef.current === initialOpenShortId) return;
     const upper = initialOpenShortId.toUpperCase();
     const match = orders.find(
       (o) => o.id.replace(/-/g, '').toUpperCase().includes(upper)
         || o.id.toUpperCase().includes(upper)
     );
     if (match) {
-      deepLinkConsumedRef.current = true;
+      deepLinkConsumedRef.current = initialOpenShortId;
       setDetailOrder(match);
       // Scroll to top so the modal is fully visible on mobile
       try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {}
     }
   }, [initialOpenShortId, orders]);
+
+  // Closing the modal releases the deep link, so tapping the SAME notification
+  // again reopens the order instead of doing nothing.
+  useEffect(() => {
+    if (detailOrder === null) deepLinkConsumedRef.current = null;
+  }, [detailOrder]);
 
   // Keep detailOrder synchronized with the parent orders array so the modal updates optimistically
   // or when WebSockets push new status changes (e.g. customer pays while modal is open).

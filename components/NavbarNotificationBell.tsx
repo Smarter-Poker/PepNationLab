@@ -100,8 +100,13 @@ function resolveNotifUrl(n: NotifItem): string {
     case 'order_delivered':
     case 'order_cancelled':
     case 'payment_confirmed': {
-      const m = n.title.match(/#([A-Z0-9]+)/);
-      return m ? `/orders/${m[1]}` : '/orders';
+      // /orders/[id] resolves a FULL uuid. The short id in a notification
+      // title (#0722A724) is NOT one, so building `/orders/<short>` from it
+      // sent every one of these fallbacks to "Order Not Found". The orders
+      // list always resolves, so land there instead of on an error page.
+      // (This is only a fallback - these notifications normally carry a
+      // stored /orders/<uuid> url, which is used verbatim above.)
+      return '/orders';
     }
 
     // Order attention — could be agent or admin view
