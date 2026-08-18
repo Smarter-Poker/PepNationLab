@@ -220,7 +220,11 @@ export async function GET(req: Request) {
             .select('id, agent_id')
             .in('agent_id', prepaidIds)
             .in('status', ['approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered'])
-            .is('payment_confirmed_at', null)
+            // Upline settlement acknowledgment moved to its own column
+            // (2026-08-18); payment_confirmed_at is the buyer-payment
+            // confirmation and counting it here nudged uplines about orders
+            // they could never actually confirm.
+            .is('upline_payment_confirmed_at', null)
             .gt('created_at', thirtyDaysAgoIso)
             .limit(300);
 
