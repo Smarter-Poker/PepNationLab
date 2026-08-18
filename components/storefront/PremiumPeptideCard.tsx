@@ -319,10 +319,12 @@ export default function PremiumPeptideCard({
           {isOwnerCostMode && (
             <>
               {/* Solid cover that paints over the baked "WHOLESALE PRICE" text
-                  AND any decorative separator lines in the card image below it */}
+                  AND the cyan separator line baked into the card image above it.
+                  The line lives at ~y=610 in the 683×1024 canvas so we start
+                  the cover at px(598) to be safely above it. */}
               <div style={{
                 position: 'absolute',
-                left: px(375), width: px(290), top: px(643), height: px(65),
+                left: px(375), width: px(290), top: px(598), height: px(110),
                 background: '#000000',
                 zIndex: 28, pointerEvents: 'none',
               }} />
