@@ -124,7 +124,7 @@ export default async function OrderDetailPage(
     .eq('id', user.id)
     .maybeSingle();
   const viewerRole = viewerProfile?.role ?? 'researcher';
-  const canCancelOrder = viewerRole === 'admin' || viewerRole === 'agent';
+  const canCancelOrder = viewerRole === 'admin' || viewerRole === 'agent' || viewerRole === 'super_agent';
 
   // RLS enforces buyer_id = auth.uid() for researchers; admins/agents may also pass.
   const { data: orderData, error } = await supabase

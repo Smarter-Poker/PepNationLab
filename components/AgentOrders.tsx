@@ -112,6 +112,9 @@ function formatAddress(address: ShippingAddress | null): string {
 export default function AgentOrders({ orders, setOrders, initialOpenShortId }: AgentOrdersProps) {
   const [loadingOrderId, setLoadingOrderId] = useState<string | null>(null);
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
+  // Stores the typed cancellation reason per order before submitting.
+  const [cancelReasonMap, setCancelReasonMap] = useState<Record<string, string>>({});
+
   // labelModalUrl is still used to view historical label PDFs on old orders.
   const [labelModalUrl, setLabelModalUrl] = useState<string | null>(null);
   const [trackingNumbers, setTrackingNumbers] = useState<Record<string, string>>({});
@@ -198,8 +201,9 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
     let cancelReason = '';
     if (newStatus === 'cancelled') {
-      cancelReason = window.prompt('Please provide a reason for cancellation (Required):') || '';
-      if (!cancelReason.trim()) {
+      // Reason is collected via inline textarea (cancelReasonMap), not window.prompt().
+      cancelReason = (cancelReasonMap[orderId] || '').trim();
+      if (!cancelReason) {
         toast.error('Cancellation Reason Is Required.');
         return;
       }
@@ -211,11 +215,13 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
         const res = await fetch('/api/agent/orders/cancel', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderId, reason: cancelReason.trim() }),
+          body: JSON.stringify({ orderId, reason: cancelReason }),
         });
         const data = await res.json().catch(() => ({} as { error?: string }));
         if (!res.ok) throw new Error(data.error || 'Failed To Cancel Order.');
         
+        // Clear the drafted reason and update local state.
+        setCancelReasonMap((prev) => { const next = { ...prev }; delete next[orderId]; return next; });
         setOrders((prev) =>
           prev.map((o) =>
             o.id === orderId ? { ...o, status: 'cancelled' } : o
@@ -226,6 +232,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
       }
 
       const tracking = trackingNumbers[orderId] || null;
+
       const idemKey = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
       const res = await fetch('/api/agent/orders/approve', {
         method: 'POST',
@@ -784,7 +791,9 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
           {paginatedOrders.map((order) => {
             const isPendingPayment = order.status === 'pending_customer_payment';
             const isPendingApproval = order.status === 'agent_approval_pending';
-            
+            const isTerminal = ['shipped', 'delivered', 'cancelled'].includes(order.status);
+
+            // canApprove: approve/payment-confirmation buttons
             let canApprove = false;
             let approveText = 'Approve Order';
 
@@ -798,6 +807,12 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                 canApprove = true;
               }
             }
+
+            // canCancel: any non-terminal order visible to this agent/super-agent
+            // (super-agents see downline orders via is_sub_agent_order, which the API
+            // now accepts because it checks the parent_agent_id chain)
+            const canCancel = !isTerminal;
+
 
             return (
               <div
@@ -990,7 +1005,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                 </div>
 
                 {/* Actions row */}
-                {canApprove && (
+                {(canApprove || canCancel) && (
                   <div
                     onClick={(e) => e.stopPropagation()}
                     style={{
@@ -1004,7 +1019,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                       justifyContent: 'flex-end',
                     }}
                   >
-                    {order.fulfillment_method === 'ship' && isPendingApproval && (
+                    {canApprove && order.fulfillment_method === 'ship' && isPendingApproval && (
                       <input
                         type="text"
                         placeholder="Tracking Number (USPS/UPS)"
@@ -1020,58 +1035,80 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
                       />
                     )}
                     
-                      {confirmCancelId === order.id ? (
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                          <span style={{ fontSize: '0.85rem', color: '#FFAAAA', fontWeight: 600 }}>Confirm Cancel?</span>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleUpdateOrderStatus(order.id, 'cancelled'); setConfirmCancelId(null); }}
-                            className="btn btn-secondary"
+                    {/* Cancel section — available for all non-terminal orders */}
+                    {canCancel && (
+                      confirmCancelId === order.id ? (
+                        <div style={{
+                          display: 'flex', flexDirection: 'column', gap: '10px',
+                          background: 'rgba(92,30,30,0.25)', border: '1px solid rgba(252,129,129,0.25)',
+                          borderRadius: '12px', padding: '14px 16px', width: '100%',
+                        }}>
+                          <span style={{ fontSize: '0.85rem', color: '#FFAAAA', fontWeight: 700 }}>
+                            {order.is_sub_agent_order ? '⚠️ Cancel Downline Order — Enter Reason' : '⚠️ Confirm Cancellation — Enter Reason'}
+                          </span>
+                          <textarea
+                            placeholder="Required: Why are you cancelling this order?"
+                            value={cancelReasonMap[order.id] || ''}
+                            onChange={(e) => setCancelReasonMap((prev) => ({ ...prev, [order.id]: e.target.value }))}
+                            rows={2}
                             style={{
-                              border: 'none',
-                              color: '#FFAAAA',
-                              background: 'linear-gradient(180deg, #5C1E1E 0%, #3B1111 100%)',
-                              fontSize: '0.85rem',
-                              padding: '8px 16px',
-                              fontWeight: 700,
-                              borderRadius: '8px',
+                              width: '100%', resize: 'vertical',
+                              background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(252,129,129,0.35)',
+                              borderRadius: '8px', color: '#fff', fontSize: '0.9rem', padding: '10px 12px',
+                              outline: 'none',
                             }}
-                            disabled={loadingOrderId === order.id}
-                          >
-                            Yes, Cancel
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setConfirmCancelId(null); }}
-                            className="btn btn-ghost"
-                            style={{ fontSize: '0.85rem', padding: '8px 14px', borderRadius: '8px' }}
-                          >
-                            Keep
-                          </button>
+                          />
+                          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleUpdateOrderStatus(order.id, 'cancelled');
+                                setConfirmCancelId(null);
+                              }}
+                              className="btn btn-secondary"
+                              style={{
+                                border: 'none', color: '#FFAAAA',
+                                background: 'linear-gradient(180deg, #5C1E1E 0%, #3B1111 100%)',
+                                fontSize: '0.85rem', padding: '8px 18px', fontWeight: 700, borderRadius: '8px',
+                              }}
+                              disabled={loadingOrderId === order.id || !(cancelReasonMap[order.id] || '').trim()}
+                            >
+                              {loadingOrderId === order.id ? 'Cancelling…' : 'Yes, Cancel'}
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setConfirmCancelId(null);
+                                setCancelReasonMap((prev) => { const next = { ...prev }; delete next[order.id]; return next; });
+                              }}
+                              className="btn btn-ghost"
+                              style={{ fontSize: '0.85rem', padding: '8px 14px', borderRadius: '8px' }}
+                            >
+                              Keep Order
+                            </button>
+                          </div>
                         </div>
                       ) : (
                         <button
-                        onClick={(e) => { e.stopPropagation(); setConfirmCancelId(order.id); }}
-                        className="btn btn-secondary"
-                        style={{
-                          border: 'none',
-                          color: '#FFAAAA',
-                          background: 'linear-gradient(180deg, #5C1E1E 0%, #3B1111 100%)',
-                          fontSize: '0.9rem',
-                          padding: '10px 20px',
-                          fontWeight: 700,
-                          borderRadius: '10px',
-                          boxShadow: '0 4px 15px rgba(252, 129, 129, 0.2), inset 0 1px 0 rgba(255,160,160,0.2), inset 0 -2px 0 rgba(0,0,0,0.4)',
-                          textShadow: '0 1px 2px rgba(0,0,0,0.6)',
-                          display: 'flex',
-                          alignItems: 'flex-start',
-                          gap: '8px'
-                        }}
-                        disabled={loadingOrderId === order.id}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                        Cancel
-                      </button>
-                      )}
+                          onClick={(e) => { e.stopPropagation(); setConfirmCancelId(order.id); }}
+                          className="btn btn-secondary"
+                          style={{
+                            border: 'none', color: '#FFAAAA',
+                            background: 'linear-gradient(180deg, #5C1E1E 0%, #3B1111 100%)',
+                            fontSize: '0.9rem', padding: '10px 20px', fontWeight: 700, borderRadius: '10px',
+                            boxShadow: '0 4px 15px rgba(252,129,129,0.2), inset 0 1px 0 rgba(255,160,160,0.2), inset 0 -2px 0 rgba(0,0,0,0.4)',
+                            textShadow: '0 1px 2px rgba(0,0,0,0.6)',
+                            display: 'flex', alignItems: 'center', gap: '8px',
+                          }}
+                          disabled={loadingOrderId === order.id}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                          {order.is_sub_agent_order ? 'Cancel Downline Order' : 'Cancel'}
+                        </button>
+                      )
+                    )}
                     
+
                     {/* Payment-receipt confirmation: shown until the agent
                         answers it, at every active pre-delivery stage (many
                         storefront orders skip pending_customer_payment
