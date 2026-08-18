@@ -1,13 +1,16 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { requireAgent } from '@/lib/admin-auth';
+// requireAgentOrAdmin: admins operate their own house storefront through
+// these agent routes (every check below is ownership-scoped), and the plain
+// requireAgent gate 403'd the admin's own dashboard buttons.
+import { requireAgentOrAdmin } from '@/lib/admin-auth';
 import { isAgentAncestorOf } from '@/lib/agent-auth';
 
 // GET: Line items for a single order. The agent must own the order (or be its
 // super-agent ancestor); admins are always allowed.
 export async function GET(req: NextRequest) {
-  const gate = await requireAgent();
+  const gate = await requireAgentOrAdmin();
   if (!gate.ok) return gate.response;
 
   const supabase = createAdminClient();
