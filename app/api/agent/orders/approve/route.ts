@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { requireAgent } from '@/lib/admin-auth';
+// requireAgentOrAdmin: admins operate their own house storefront through
+// these agent routes (every check below is ownership-scoped), and the plain
+// requireAgent gate 403'd the admin's own dashboard buttons.
+import { requireAgentOrAdmin } from '@/lib/admin-auth';
 import { pickOne } from '@/lib/relations';
 import { computeAgentCostForAgent, type AgentTier } from '@/lib/pricing';
 import { enqueueWebhook, fetchOrderForWebhook } from '@/lib/webhook-dispatch';
@@ -46,7 +49,7 @@ export async function POST(req: NextRequest) {
   if (csrf) return csrf;
 
   try {
-    const gate = await requireAgent();
+    const gate = await requireAgentOrAdmin();
     if (!gate.ok) return gate.response;
 
     const supabase = createAdminClient();
