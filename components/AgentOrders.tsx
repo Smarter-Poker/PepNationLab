@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { ClipboardCopy, Download, Ship, Upload, Zap, Undo2 } from 'lucide-react';
 import AgentManualOrder from './AgentManualOrder';
@@ -146,6 +147,15 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
   // boolean latched on the first deep link and never reset, so tapping a
   // second notification (or the same one again after closing the modal)
   // changed the URL but opened nothing - the notification looked broken.
+  // Held in refs so consuming the URL param cannot re-trigger the deep-link
+  // effect (router/searchParams identities change on every navigation).
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const routerRef = useRef(router);
+  routerRef.current = router;
+  const searchParamsRef = useRef(searchParams);
+  searchParamsRef.current = searchParams;
+
   const deepLinkConsumedRef = useRef<string | null>(null);
   useEffect(() => {
     if (!initialOpenShortId || orders.length === 0) return;
@@ -160,6 +170,23 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
       setDetailOrder(match);
       // Scroll to top so the modal is fully visible on mobile
       try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {}
+      // CONSUME the ?order= param now that the modal is open.
+      //
+      // Without this the URL stays pinned at ?order=<id>, so tapping the SAME
+      // notification again pushes a URL identical to the current one: Next
+      // does not change searchParams, this effect never re-runs, and the tap
+      // appears to do nothing. Stripping the param puts the URL back to a
+      // plain ?tab=Orders, so the next tap is a real navigation that opens
+      // the order again. It also stops a refresh from silently reopening a
+      // modal the user already dismissed.
+      try {
+        const params = new URLSearchParams(searchParamsRef.current?.toString() ?? '');
+        if (params.has('order')) {
+          params.delete('order');
+          const qs = params.toString();
+          routerRef.current?.replace(qs ? `?${qs}` : '?tab=Orders', { scroll: false });
+        }
+      } catch { /* URL cleanup is best-effort - never block the modal */ }
     }
   }, [initialOpenShortId, orders]);
 
