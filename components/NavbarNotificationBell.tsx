@@ -49,16 +49,47 @@ interface NotifItem {
  *   Coupons | Storefront Config
  */
 function resolveNotifUrl(n: NotifItem): string {
-  // Use stored url only when it's specific (not the generic dashboard fallback).
-  // URL-encode check: '/dashboard' and '/dashboard/agent' are both generic.
   const stored = n.url;
-  const isGeneric = !stored ||
-    stored === '/dashboard' ||
-    stored === '/dashboard/agent' ||
-    stored === '/dashboard/agent?tab=Overview' ||
-    stored === '/admin';
 
-  if (!isGeneric) return stored!;
+  /**
+   * A stored URL is "generic" (i.e., too vague to be useful) when it is:
+   * - null/empty
+   * - a bare top-level fallback (/dashboard, /admin)
+   * - a dashboard/agent URL with NO tab (just /dashboard/agent)
+   * - a dashboard/agent URL with the DEFAULT tab (Overview — no content change on click)
+   * - a dashboard/agent URL with an INVALID tab name (old broken lowercase tabs like
+   *   ?tab=researchers, ?tab=commissions, ?tab=statements, ?tab=balance, ?tab=team,
+   *   ?tab=products, ?tab=overview — these all silently render the Overview panel).
+   *
+   * Valid agent dashboard tabs (VALID_TABS in AgentDashboardClient):
+   *   Overview | Sales & Accounting | Orders | Researchers | My Sub-Agents |
+   *   My Agent Accounts | Store Products | Research Bundles | Inventory |
+   *   Coupons | Storefront Config
+   */
+  const VALID_AGENT_TABS = new Set([
+    'Overview', 'Sales+%26+Accounting', 'Sales & Accounting',
+    'Orders', 'Researchers', 'My+Sub-Agents', 'My Sub-Agents',
+    'My+Agent+Accounts', 'My Agent Accounts', 'Store+Products', 'Store Products',
+    'Research+Bundles', 'Research Bundles', 'Inventory',
+    'Coupons', 'Storefront+Config', 'Storefront Config',
+  ]);
+
+  function isGenericUrl(url: string | null): boolean {
+    if (!url) return true;
+    if (url === '/dashboard' || url === '/dashboard/agent' || url === '/admin') return true;
+    // Dashboard agent with a tab param
+    const tabMatch = url.match(/^\/dashboard\/agent\?tab=(.+?)(?:&|$)/);
+    if (tabMatch) {
+      const tab = decodeURIComponent(tabMatch[1]);
+      // 'Overview' is the default — clicking it doesn't take you anywhere specific
+      if (tab === 'Overview') return true;
+      // Any unrecognised/invalid tab (old broken lowercase ones) → generic
+      if (!VALID_AGENT_TABS.has(tab) && !VALID_AGENT_TABS.has(tabMatch[1])) return true;
+    }
+    return false;
+  }
+
+  if (!isGenericUrl(stored)) return stored!;
 
   // ── Type-based smart routing ──────────────────────────────────────────────
   switch (n.type) {
