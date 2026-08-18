@@ -173,7 +173,15 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
   const cart = storefrontCart.length > 0 ? storefrontCart : contextCart;
   const totalCartQty = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const meetsOverallMin = totalCartQty >= minOverallQty;
+  // Order minimums count PEPTIDES only: reconstitution supplies (BAC water,
+  // acetic acid) are add-ons this checkout itself recommends, and letting
+  // them satisfy the minimum meant 2 peptides + 1 BAC water vial passed a
+  // 3-vial minimum. Mirrors the server-side rule in /api/orders.
+  const peptideCartQty = cart.reduce((sum, item) => {
+    if (/bacteriostatic|bac\s*water|acetic\s*acid/i.test(String(item.name ?? ''))) return sum;
+    return sum + item.quantity;
+  }, 0);
+  const meetsOverallMin = peptideCartQty >= minOverallQty;
 
   const cartSubtotal = storefrontCart.length > 0
     ? storefrontCart.reduce((sum, item) => {
@@ -871,7 +879,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     setError(null);
     if (step === 1) {
       if (!meetsOverallMin) {
-        setError(`This Storefront Requires A Minimum Overall Order Of ${minOverallQty} Items. Please Add More Items To Proceed.`);
+        setError(`This Storefront Requires A Minimum Overall Order Of ${minOverallQty} Peptides. Reconstitution Supplies Like BAC Water Do Not Count. Please Add More Peptides To Proceed.`);
         return;
       }
       const violatingItem = cart.find(item => !isDiluentName(item.name) && item.quantity < minOrderQty);
@@ -952,7 +960,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     // 10-vial minimum removed: agents can order any quantity from their own store.
 
     if (!meetsOverallMin) {
-      setError(`This Storefront Requires A Minimum Overall Order Of ${minOverallQty} Items. Please Add More Items To Proceed.`);
+      setError(`This Storefront Requires A Minimum Overall Order Of ${minOverallQty} Peptides. Reconstitution Supplies Like BAC Water Do Not Count. Please Add More Peptides To Proceed.`);
       return;
     }
     const violatingItem = cart.find(item => !isDiluentName(item.name) && item.quantity < minOrderQty);
@@ -1301,7 +1309,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
       {!meetsOverallMin && totalCartQty > 0 && (
         <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)', color: '#fca5a5', textAlign: 'center' }}>
-          <strong>Order Minimum Not Met:</strong> This Storefront Requires An Overall Minimum Order Of {minOverallQty} Items. You Currently Have {totalCartQty} Item{totalCartQty !== 1 ? 's' : ''} In Your Cart.
+          <strong>Order Minimum Not Met:</strong> This Storefront Requires An Overall Minimum Order Of {minOverallQty} Peptides. You Currently Have {peptideCartQty} Peptide{peptideCartQty !== 1 ? 's' : ''} In Your Cart. Reconstitution Supplies Like BAC Water Do Not Count Toward The Minimum.
           {/* CRO: the banner told users to go back but gave them no way to -
               a dead-end error state at the top of the funnel. */}
           <div style={{ marginTop: 'var(--space-3)' }}>

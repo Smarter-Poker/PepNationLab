@@ -348,14 +348,27 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      const totalRequestedQty = items.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
+      // Order minimums count PEPTIDES only. Reconstitution supplies (BAC
+      // water, acetic acid) are add-ons the checkout itself recommends;
+      // letting them satisfy the minimum meant 2 peptides + 1 BAC water vial
+      // passed a 3-item minimum. They are excluded from the overall count AND
+      // from the per-item minimum (a single recommended BAC vial must not be
+      // rejected by a per-peptide minimum of 3).
+      const isReconstitutionSupply = (name: string | null | undefined): boolean =>
+        /bacteriostatic|bac\s*water|acetic\s*acid/i.test(String(name ?? ''));
+      const peptideRequestedQty = items.reduce((acc, item) => {
+        const dbName = productById.get(item.id)?.name;
+        if (isReconstitutionSupply(dbName)) return acc;
+        return acc + (Number(item.quantity) || 0);
+      }, 0);
       const minQty = Number(storefrontAgent.min_overall_qty) || 1;
-      if (totalRequestedQty < minQty) {
-        return NextResponse.json({ error: `This Storefront Requires A Minimum Overall Order Of ${minQty} Items.` }, { status: 400 });
+      if (peptideRequestedQty < minQty) {
+        return NextResponse.json({ error: `This Storefront Requires A Minimum Overall Order Of ${minQty} Peptides. Reconstitution Supplies Like BAC Water Do Not Count Toward The Minimum.` }, { status: 400 });
       }
 
       const minPerItem = Number(storefrontAgent.min_order_qty) || 1;
       for (const item of items) {
+        if (isReconstitutionSupply(productById.get(item.id)?.name)) continue;
         if ((Number(item.quantity) || 0) < minPerItem) {
           return NextResponse.json({ error: `This Storefront Requires A Minimum Of ${minPerItem} Per Peptide.` }, { status: 400 });
         }

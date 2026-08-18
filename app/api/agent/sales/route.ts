@@ -126,10 +126,13 @@ export async function GET(req: NextRequest) {
       .in('agent_id', agentIds)
       .eq('is_wholesale_restock', false)
       .neq('status', 'cancelled')
+      // Admin-account orders stay hidden from OTHER agents' feeds (security
+      // rule from 1c93aa46), but the admin's OWN sales must show on their own
+      // Sales & Accounting page - excluding the caller zeroed every stat.
       .not('agent_id', 'in', `(${[
         'b8bd12e6-8196-401e-b37b-f742caf1596c', // Daniel Bekavac (admin)
         'a253044b-2250-4187-9af5-78cbca2d4e67', // unnamed admin account
-      ].join(',')})`)
+      ].filter((id) => id !== agentId).join(',') || '00000000-0000-0000-0000-000000000000'})`)
       .order('created_at', { ascending: false })
       .limit(2500) as any;
 

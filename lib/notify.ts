@@ -329,7 +329,7 @@ export async function notifyWelcome(
     title: `Welcome To Pep Nation Lab 🎉`,
     body: isSubAgent
       ? `Your account is ready. Head to your dashboard to get started.`
-      : `Your account is ready! Click here to complete your profile — add your payment handles, set a display name, and configure your storefront whenever you're ready.`,
+      : `Your account is ready! Click here to complete your profile, add your payment handles, set a display name, and configure your storefront whenever you're ready.`,
     url: dashUrl,
     withPush: false, // first-login push permission isn't granted yet
   });
