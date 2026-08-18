@@ -96,11 +96,37 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Display name for the call UI. This is what shows under each tile in the
+  // group grid, so it must be a HUMAN name: agent accounts authenticate with
+  // synthetic <username>@internal.auth addresses, and user.email put
+  // "savagebrands@internal.auth" on screen in front of everyone on the call.
+  // Falls back through username -> the local part of a real email -> the raw
+  // id, so a tile is never blank.
+  let displayName = '';
+  try {
+    const { data: prof } = await svc
+      .from('profiles')
+      .select('full_name, username, email')
+      .eq('id', user.id)
+      .maybeSingle();
+    const p = prof as { full_name?: string | null; username?: string | null; email?: string | null } | null;
+    displayName =
+      (p?.full_name && String(p.full_name).trim()) ||
+      (p?.username && String(p.username).trim()) ||
+      '';
+  } catch {
+    // Profile lookup is best-effort — never block joining a call over a name.
+  }
+  if (!displayName) {
+    const email = user.email ?? '';
+    displayName = email && !email.endsWith('@internal.auth') ? email.split('@')[0] : (email.split('@')[0] || user.id);
+  }
+
   try {
     const { AccessToken } = await import('livekit-server-sdk');
     const at = new AccessToken(apiKey, apiSecret, {
       identity: user.id,
-      name: user.email ?? user.id,
+      name: displayName,
       ttl: '6h',
     });
     at.addGrant({
