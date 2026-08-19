@@ -109,14 +109,60 @@ export async function POST(req: NextRequest) {
       .order('started_at', { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (existingCall) {
-      // A call is already ringing/active in this conversation. Returning the
-      // row (enriched) lets the caller's client join it — for a group this is
-      // exactly the "tap the camera icon to join the ongoing call" path.
+    // Is that existing row a LIVE call, or wreckage?
+    //
+    // Reusing it unconditionally was a trap. If a call ends badly — everyone's
+    // network drops at once, or the last person's tab is killed while
+    // backgrounded — nobody is left to write status='ended', and the row sits
+    // there 'active'. The stale-call sweep only collects rows four hours old,
+    // so for four hours every single attempt to call in this conversation
+    // short-circuited to THIS branch: no new row, no ring, no push, everyone
+    // dropped silently into a LiveKit room that had been empty for hours. One
+    // bad call bricked the conversation for the rest of the evening — exactly
+    // when you would be trying hardest to get back on.
+    //
+    // A genuinely live call is one that is still ringing, or that was answered
+    // recently enough to plausibly still be going. Anything older with no
+    // participants is wreckage: end it and start fresh.
+    const REJOINABLE_ACTIVE_MS = 90 * 60 * 1000; // 90 minutes
+    const existingRow = existingCall as CallRow | null;
+    const answeredMs = existingRow?.answered_at ? Date.parse(existingRow.answered_at) : NaN;
+    const looksLive =
+      existingRow?.status === 'ringing' ||
+      (existingRow?.status === 'active' &&
+        Number.isFinite(answeredMs) &&
+        Date.now() - answeredMs < REJOINABLE_ACTIVE_MS);
+
+    if (existingRow && looksLive) {
+      // A call really is up in this conversation. Returning the row (enriched)
+      // lets the caller's client join it — for a group this is exactly the
+      // "tap the camera icon to join the ongoing call" path.
       return NextResponse.json({
-        call: { ...existingCall, conversation_type: convType, conversation_title: convTitle },
+        call: { ...existingRow, conversation_type: convType, conversation_title: convTitle },
         alreadyActive: true,
       });
+    }
+
+    if (existingRow) {
+      // Wreckage. Close it (compare-and-swap so a real participant hanging up
+      // at the same moment still wins) and fall through to a fresh call.
+      try {
+        await svc
+          .from('messenger_calls')
+          .update({ status: 'ended', ended_at: new Date().toISOString() })
+          .eq('id', existingRow.id)
+          .in('status', ['ringing', 'active']);
+        await recordCallTelemetry('messenger_call.stale_active_sweep', user.id, {
+          call_id: existingRow.id,
+          conversation_id: existingRow.conversation_id,
+          initiator_id: existingRow.initiator_id,
+          call_type: existingRow.call_type,
+          reason: 'stranded_before_new_call',
+        }, ip, ua);
+      } catch (err) {
+        // Never block a new call on tidying up an old one.
+        console.warn('[call-signal] could not sweep stranded call', existingRow.id, err);
+      }
     }
 
     const livekitRoom = `call-${crypto.randomUUID()}`;
@@ -344,10 +390,17 @@ export async function POST(req: NextRequest) {
   if ((call as CallRow).status === 'ended' || (call as CallRow).status === 'declined' || (call as CallRow).status === 'missed') {
     return NextResponse.json({ call });
   }
+  // Compare-and-swap, like accept and decline already do. Two people saying
+  // "bye" and tapping at the same instant — or the last two clients' alone-
+  // timers firing in the same second — both read 'active', both updated, and
+  // both wrote a "Call Ended" system message. The conversation showed the call
+  // ending twice. Narrowing the update to rows that are STILL live means the
+  // loser gets updated === null and writes nothing.
   const { data: updated, error: upErr } = await svc
     .from('messenger_calls')
     .update({ status: 'ended', ended_at: new Date().toISOString() })
     .eq('id', callId)
+    .in('status', ['ringing', 'active'])
     .select('*')
     .maybeSingle();
   if (upErr) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });

@@ -245,18 +245,25 @@ interface FaceTimeCallViewProps {
    *  "leave a group call others are still on" and "last one out" apart from
    *  "bailed while still connecting" without re-deriving room state. */
   onRemoteCount?: (n: number, everSawRemote: boolean) => void;
+  /** True while our own connection is healthy. "Nobody else is here" is only
+   *  meaningful when we can actually see the room. */
+  onConnectionHealth?: (healthy: boolean) => void;
+  /** Devices that exist right now, re-probed on devicechange. LiveKitRoom
+   *  applies its video/audio props only on a fresh SignalConnected, so a
+   *  webcam plugged in mid-call has to be published explicitly. */
+  publishVideo?: boolean;
+  publishAudio?: boolean;
   /** Collapse the call to a floating window so the rest of the app is usable. */
   minimized?: boolean;
   onMinimize?: () => void;
   onExpand?: () => void;
 }
 
-function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterpartyName, counterpartyAvatar, onRemoteCount, minimized = false, onMinimize, onExpand }: FaceTimeCallViewProps) {
+function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterpartyName, counterpartyAvatar, onRemoteCount, onConnectionHealth, publishVideo = true, publishAudio = true, minimized = false, onMinimize, onExpand }: FaceTimeCallViewProps) {
   const { localParticipant } = useLocalParticipant();
   const remoteParticipants = useRemoteParticipants();
   const connectionState = useConnectionState();
   const speakerCandidate = remoteParticipants[0];
-  const isMobile = useIsMobile();
   const screenShareSupported = useCanShareScreen();
 
   const [remoteIsSpeaking, setRemoteIsSpeaking] = useState(false);
@@ -270,30 +277,52 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
     { onlySubscribed: false }
   ) as Array<import('@livekit/components-react').TrackReference>;
 
-  const localCamTrack = trackReferences.find((t) => t.participant.isLocal && t.source === Track.Source.Camera);
+  // useTracks returns a reference for every matching PUBLICATION, including
+  // ones that are muted or not yet subscribed. Rendering those gave a frozen
+  // last frame when someone turned their camera off — and a black rectangle
+  // for the first second of every call, before subscription completed —
+  // instead of falling through to the avatar.
+  const usable = (r: import('@livekit/components-react').TrackReference | undefined) =>
+    Boolean(r && r.publication && !r.publication.isMuted && r.publication.isSubscribed !== false);
+
+  const localCamTrack = trackReferences.find((t) => t.participant.isLocal && t.source === Track.Source.Camera && usable(t));
   // SCREEN SHARE WINS. This used to be a plain .find() across camera OR
   // screen share, so whichever track was published first was displayed —
   // meaning someone sharing their screen while their camera was still on
   // could be talking over a document the other person could not see. If any
   // remote is sharing, that is what everyone wants on the main stage.
   const remoteScreenTrack = trackReferences.find(
-    (t) => !t.participant.isLocal && t.source === Track.Source.ScreenShare,
+    (t) => !t.participant.isLocal && t.source === Track.Source.ScreenShare && usable(t),
   );
   const remoteCameraTrack = trackReferences.find(
-    (t) => !t.participant.isLocal && t.source === Track.Source.Camera,
+    (t) => !t.participant.isLocal && t.source === Track.Source.Camera && usable(t),
   );
   const remoteVideoTrack = remoteScreenTrack ?? remoteCameraTrack;
   // Your OWN share, so the sharer sees exactly what they are broadcasting
   // instead of a black rectangle and a guess.
   const localScreenTrack = trackReferences.find(
-    (t) => t.participant.isLocal && t.source === Track.Source.ScreenShare,
+    (t) => t.participant.isLocal && t.source === Track.Source.ScreenShare && usable(t),
   );
   const someoneIsSharing = Boolean(remoteScreenTrack ?? localScreenTrack);
-  const sharerName = remoteScreenTrack
-    ? (remoteScreenTrack.participant.name || remoteScreenTrack.participant.identity)
-    : localScreenTrack
-      ? 'You'
-      : '';
+  // Who belongs in the little corner window: normally you, but the other
+  // person when your own screen has taken over the main stage.
+  const localStageIsMine = Boolean(localScreenTrack && !remoteScreenTrack);
+  const pipTrack = localStageIsMine
+    ? (remoteCameraTrack ?? (localParticipant.isCameraEnabled ? localCamTrack : undefined))
+    : (localParticipant.isCameraEnabled ? localCamTrack : undefined);
+  const pipIsSelf = pipTrack === localCamTrack;
+  // Name whoever's screen is ON THE MAIN STAGE. Preferring the remote sharer
+  // unconditionally meant that if you were both sharing, the banner read
+  // "Bob Is Sharing Their Screen" while your own desktop was the thing being
+  // broadcast — and you had no idea yours was still going out.
+  const sharerName = localScreenTrack && !remoteScreenTrack
+    ? 'You'
+    : remoteScreenTrack
+      ? (remoteScreenTrack.participant.name || remoteScreenTrack.participant.identity)
+      : localScreenTrack
+        ? 'You'
+        : '';
+  const bothSharing = Boolean(localScreenTrack && remoteScreenTrack);
 
   const [isMuted, setIsMuted] = useState(false);
   const [isCamDisabled, setIsCamDisabled] = useState(!isVideo);
@@ -360,6 +389,33 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
   const hasSeenRemoteRef = useRef(false);
   const onRemoteCountRef = useRef(onRemoteCount);
   useEffect(() => { onRemoteCountRef.current = onRemoteCount; }, [onRemoteCount]);
+  const onConnectionHealthRef = useRef(onConnectionHealth);
+  useEffect(() => { onConnectionHealthRef.current = onConnectionHealth; }, [onConnectionHealth]);
+  useEffect(() => {
+    try { onConnectionHealthRef.current?.(connectionState === ConnectionState.Connected); } catch { /* advisory */ }
+  }, [connectionState]);
+
+  // A camera or microphone that appears mid-call (headset plugged in, or a
+  // webcam that was busy in another app and has been released) must actually
+  // start publishing. LiveKitRoom's video/audio props are applied only when
+  // the SDK emits SignalConnected — i.e. on a fresh connect — so changing them
+  // later did nothing at all on its own.
+  const userDisabledCamRef = useRef(false);
+  const userDisabledMicRef = useRef(false);
+  useEffect(() => {
+    if (!isVideo || !publishVideo || userDisabledCamRef.current) return;
+    if (localParticipant.isCameraEnabled) return;
+    void localParticipant.setCameraEnabled(true).catch((err) => {
+      captureCallError(err, 'overlay', { stage_detail: 'late_camera_enable' });
+    });
+  }, [publishVideo, isVideo, localParticipant]);
+  useEffect(() => {
+    if (!publishAudio || userDisabledMicRef.current) return;
+    if (localParticipant.isMicrophoneEnabled) return;
+    void localParticipant.setMicrophoneEnabled(true).catch((err) => {
+      captureCallError(err, 'overlay', { stage_detail: 'late_mic_enable' });
+    });
+  }, [publishAudio, localParticipant]);
   useEffect(() => {
     if (remoteParticipants.length > 0) hasSeenRemoteRef.current = true;
     try { onRemoteCountRef.current?.(remoteParticipants.length, hasSeenRemoteRef.current); } catch { /* advisory */ }
@@ -388,6 +444,7 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
   const toggleMute = wrap(async () => {
     try {
       const current = localParticipant.isMicrophoneEnabled;
+      userDisabledMicRef.current = current; // turning it off now => stay off
       await localParticipant.setMicrophoneEnabled(!current);
       setIsMuted(current);
     } catch (err) { captureCallError(err, 'overlay', { stage_detail: 'toggle_mute' }); }
@@ -395,6 +452,7 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
   const toggleCamera = wrap(async () => {
     try {
       const current = localParticipant.isCameraEnabled;
+      userDisabledCamRef.current = current; // turning it off now => stay off
       await localParticipant.setCameraEnabled(!current);
       setIsCamDisabled(current);
     } catch (err) { captureCallError(err, 'overlay', { stage_detail: 'toggle_camera' }); }
@@ -712,11 +770,21 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
           aria-live="polite"
         >
           <ScreenShare size={14} aria-hidden="true" />
-          {sharerName === 'You' ? 'You Are Sharing Your Screen' : `${sharerName} Is Sharing Their Screen`}
+          {bothSharing
+            ? `You And ${remoteScreenTrack?.participant.name || remoteScreenTrack?.participant.identity} Are Both Sharing`
+            : sharerName === 'You'
+              ? 'You Are Sharing Your Screen'
+              : `${sharerName} Is Sharing Their Screen`}
         </div>
       )}
 
-      {!isGroup && isVideo && localCamTrack && localParticipant.isCameraEnabled && (
+      {/* Picture-in-picture. Normally this is you. But while YOU are the one
+          sharing, the main stage is your own desktop — and hard-wiring the
+          small window to your own camera as well meant the person you were
+          talking to disappeared from the screen completely for the whole
+          share. When your screen is on the stage, the other person goes in
+          the corner. */}
+      {!isGroup && isVideo && pipTrack && (
         <div style={{
           position: 'absolute',
           top: 'calc(env(safe-area-inset-top, 0px) + 16px)',
@@ -729,9 +797,14 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
           pointerEvents: 'none',
         }}>
             <VideoTrack
-              trackRef={localCamTrack}
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              data-pnl-local-video="true"
+              trackRef={pipTrack}
+              style={{
+                width: '100%', height: '100%', objectFit: 'cover',
+                // Only mirror your OWN camera; mirroring the other person is
+                // disorienting and makes any text they hold up unreadable.
+                transform: pipIsSelf ? 'scaleX(-1)' : undefined,
+              }}
+              data-pnl-local-video={pipIsSelf ? 'true' : undefined}
             />
         </div>
       )}
@@ -967,9 +1040,15 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
   const [minimized, setMinimized] = useState(false);
   const MINI_W = 132;
   const MINI_H = 186;
-  const [miniPos, setMiniPos] = useState<{ x: number; y: number } | null>(null);
-  const dragRef = useRef<{ dx: number; dy: number; moved: boolean; active: boolean }>(
-    { dx: 0, dy: 0, moved: false, active: false }
+  // Seeded eagerly: leaving this null meant the first render of the floating
+  // window landed at left:0/top:0 and visibly jumped to the corner it was
+  // supposed to start in.
+  const [miniPos, setMiniPos] = useState<{ x: number; y: number } | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return { x: Math.max(8, window.innerWidth - 132 - 12), y: Math.max(8, window.innerHeight - 186 - 90) };
+  });
+  const dragRef = useRef<{ dx: number; dy: number; startX: number; startY: number; moved: boolean; active: boolean }>(
+    { dx: 0, dy: 0, startX: 0, startY: 0, moved: false, active: false }
   );
 
   const clampMini = useCallback((x: number, y: number) => {
@@ -995,7 +1074,11 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
 
   const onMiniPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (!minimized || !miniPos) return;
-    dragRef.current = { dx: e.clientX - miniPos.x, dy: e.clientY - miniPos.y, moved: false, active: true };
+    dragRef.current = {
+      dx: e.clientX - miniPos.x, dy: e.clientY - miniPos.y,
+      startX: e.clientX, startY: e.clientY,
+      moved: false, active: true,
+    };
     // moved is deliberately reset here (not on pointerup): the click that
     // follows a drag needs to still see moved === true to suppress itself.
     try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* older browsers */ }
@@ -1006,8 +1089,12 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
     if (!d.active) return;
     const nx = e.clientX - d.dx;
     const ny = e.clientY - d.dy;
-    // A few pixels of slop so a tap with a shaky thumb still counts as a tap.
-    if (Math.abs(nx - (miniPos?.x ?? nx)) > 4 || Math.abs(ny - (miniPos?.y ?? ny)) > 4) d.moved = true;
+    // Distance from where the finger went DOWN — not from the previous move.
+    // pointermove fires 60-120 times a second, so a normal drag travels only
+    // a pixel or two per event and the old comparison never crossed the
+    // threshold: every drag was still treated as a tap and snapped the call
+    // back to full screen.
+    if (Math.abs(e.clientX - d.startX) > 4 || Math.abs(e.clientY - d.startY) > 4) d.moved = true;
     setMiniPos(clampMini(nx, ny));
   }, [miniPos, clampMini]);
 
@@ -1022,6 +1109,14 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
   // Live remote count, reported by FaceTimeCallView. 0 until connected.
   const remoteCountRef = useRef(0);
   const everSawRemoteRef = useRef(false);
+  // Whether OUR OWN connection is healthy. remoteParticipants.length drops to
+  // zero during our own reconnect, and every "am I the last one here?"
+  // decision read that zero as gospel. Tapping Hang Up during a two-second
+  // Wi-Fi hiccup therefore ended the meeting for everyone still talking.
+  const connectionHealthyRef = useRef(true);
+  const handleConnectionHealth = useCallback((healthy: boolean) => {
+    connectionHealthyRef.current = healthy;
+  }, []);
   const handleRemoteCount = useCallback((n: number, everSaw: boolean) => {
     remoteCountRef.current = n;
     if (everSaw || n > 0) everSawRemoteRef.current = true;
@@ -1221,12 +1316,25 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
       const cid = latestCounterpartyIdRef.current;
       const cl = latestCallRef.current;
       if (!cl || cl.status === 'ended' || cl.status === 'declined' || cl.status === 'missed') return;
-      // GROUP CALLS: one participant closing their tab must not hang up the
-      // meeting for everyone still talking. Just disconnect (LiveKit tears the
-      // connection down with the page); the last person out ends the call via
-      // the auto-hangup-when-alone path.
+      // Leaving must never hang up on people who are still talking — and this
+      // applies to DIRECT calls too, not just groups.
+      //
+      // The `persisted` check above is close to useless in practice: a page
+      // holding an open RTCPeerConnection is not eligible for the back/forward
+      // cache, so during a live call `persisted` is false even when the phone
+      // is merely being backgrounded. Relying on it meant locking your screen
+      // still fired the full hangup beacon and ended the call for both sides.
+      //
+      // So the real rule is the honest one: if anyone else is on this call, we
+      // just disconnect and say nothing. The remaining side's alone-timer is
+      // now long enough (20s) to be the authority on when a call is over, and
+      // the server sweep is the backstop.
+      // Same trap as the Hang Up button: during our own reconnect the remote
+      // count reads zero because we cannot SEE anyone, not because nobody is
+      // there. Backgrounding the phone in that window would have sent the
+      // hangup beacon and ended the meeting for everyone still talking.
+      if (cl.status === 'active' && (remoteCountRef.current > 0 || !connectionHealthyRef.current)) return;
       if (isGroupConvRef.current && cl.status === 'active') {
-        if (remoteCountRef.current > 0) return; // others talking — just drop
         if (!everSawRemoteRef.current && cl.initiator_id !== selfId) return; // bailed mid-connect
       }
       if (cid) {
@@ -1274,7 +1382,12 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
     if (isGroupConv && call.status === 'active') {
       // Others still connected -> LEAVE (close; LiveKitRoom unmount
       // disconnects us; the DB row stays active for them).
-      if (remoteCountRef.current > 0) {
+      //
+      // "Zero remotes" is only trustworthy when OUR connection is healthy.
+      // While we are reconnecting the list is empty because we cannot see
+      // anyone, not because nobody is there — and ending the call on that
+      // basis threw Bob and Carol out mid-sentence.
+      if (remoteCountRef.current > 0 || !connectionHealthyRef.current) {
         onClose();
         return;
       }
@@ -1387,6 +1500,47 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
   const initials = displayName
     ? displayName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
     : '?';
+
+  // These two MUST be stable. useLiveKitRoom keys its connect effect on the
+  // onError identity, so a fresh arrow on every render re-ran it — and the
+  // SDK's "already connected" early-out only covers the Connected state, not
+  // the reconnecting one. A re-render during a reconnect therefore replaced
+  // LiveKit's own resume with a cold connection ("Reconnection attempt
+  // replaced by new connection attempt"), which also re-fires the publish
+  // handler: the user gets force-unmuted and their screen share is stopped.
+  // CallOverlay re-renders often — it subscribes to the messenger store and
+  // receives a new `call` object on every unfiltered messenger_calls UPDATE —
+  // so this was firing constantly, in exactly the window we least want it.
+  const handleRoomDisconnected = useCallback((reason?: DisconnectReason) => {
+    if (reason === DisconnectReason.DUPLICATE_IDENTITY) {
+      toast.info('Call Answered On Another Device');
+    } else if (latestCallRef.current?.status === 'active') {
+      // Not a deliberate exit: the connection gave up. Say so, and make the
+      // way back obvious — the call itself may well still be running.
+      toast.error('You Were Disconnected From The Call. Tap The Call Button To Rejoin.');
+    }
+    onClose();
+  }, [onClose]);
+
+  const handleRoomError = useCallback((err: Error) => {
+    captureCallError(err, 'realtime', { call_id: call.id, stage_detail: 'livekit_room_error' });
+    const msg = err?.message || '';
+    // Do NOT setError here. The room is rendered behind `!error`, so setting
+    // it unmounted LiveKitRoom and killed the whole call — including audio
+    // that was working perfectly — because the CAMERA alone was refused. The
+    // SDK wraps mic, camera and screen share in a single Promise.all, so one
+    // failing device surfaces as one error for all three. A toast tells the
+    // user what happened without hanging up on everyone.
+    if (/permission|denied|notallowed/i.test(msg)) {
+      toast.error('Camera Or Microphone Access Was Blocked — Others May Not See Or Hear You.');
+    } else if (/notfound/i.test(msg)) {
+      toast.error('No Microphone Or Camera Found — You Can Still Watch And Listen.');
+    } else if (/notreadable|inuse|track start/i.test(msg)) {
+      toast.error('Your Camera Or Microphone Is In Use By Another App.');
+    } else {
+      toast.error('Call Connection Error');
+    }
+  }, [call.id]);
 
   const livekitOptions = asRoomOptions(e2ee);
 
@@ -1566,24 +1720,8 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
           video={publishVideo}
           audio={publishAudio}
           options={livekitOptions}
-          onDisconnected={(reason) => {
-            if (reason === DisconnectReason.DUPLICATE_IDENTITY) {
-              toast.info('Call Answered On Another Device');
-            }
-            onClose();
-          }}
-          onError={(err) => {
-            captureCallError(err, 'realtime', { call_id: call.id, stage_detail: 'livekit_room_error' });
-            const msg = err?.message || '';
-            if (/permission|denied|notallowed/i.test(msg)) {
-              setError('Microphone Or Camera Permission Denied');
-              toast.error('Microphone Or Camera Permission Denied');
-            } else if (/notfound/i.test(msg)) {
-              toast.error('No Microphone Or Camera Found');
-            } else {
-              toast.error('Call Connection Error');
-            }
-          }}
+          onDisconnected={handleRoomDisconnected}
+          onError={handleRoomError}
           style={{ flex: 1, background: '#000', minHeight: 0 }}
         >
           <RoomAudioRenderer />
@@ -1595,6 +1733,9 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
             counterpartyName={displayName}
             counterpartyAvatar={isGroupConv ? null : counterpartyAvatar}
             onRemoteCount={handleRemoteCount}
+            onConnectionHealth={handleConnectionHealth}
+            publishVideo={publishVideo}
+            publishAudio={publishAudio}
             minimized={isMini}
             onMinimize={() => setMinimized(true)}
             onExpand={() => {
