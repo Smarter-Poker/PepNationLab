@@ -425,7 +425,7 @@ export function MatchResultsDrawer({
                           src={r.image_url}
                           alt={r.display_name}
                           onClick={() => onOpenProduct(r.product_id)}
-                          style={{ width: 72, height: 72, borderRadius: 10, objectFit: 'cover', cursor: 'pointer', flexShrink: 0 }}
+                          style={{ width: 72, height: 72, borderRadius: 10, objectFit: 'contain', cursor: 'pointer', flexShrink: 0 }}
                           width={200} height={200} unoptimized
                         />
                       ) : (
@@ -541,7 +541,7 @@ export function MatchResultsDrawer({
                           src={r.image_url}
                           alt={r.display_name}
                           onClick={() => { if (r.product_id) onOpenProduct(r.product_id); }}
-                          style={{ width: 72, height: 72, borderRadius: 10, objectFit: 'cover', cursor: r.product_id ? 'pointer' : 'default', flexShrink: 0 }}
+                          style={{ width: 72, height: 72, borderRadius: 10, objectFit: 'contain', cursor: r.product_id ? 'pointer' : 'default', flexShrink: 0 }}
                           width={200} height={200} unoptimized
                         />
                       ) : (

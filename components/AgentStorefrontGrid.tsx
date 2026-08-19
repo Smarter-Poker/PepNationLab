@@ -3491,7 +3491,7 @@ export default function AgentStorefrontGrid({
                         alt={name}
                         width={64}
                         height={64}
-                        style={{ width: 64, height: 64, borderRadius: 10, objectFit: 'cover', flexShrink: 0, background: '#0F1923' }}
+                        style={{ width: 64, height: 64, borderRadius: 10, objectFit: 'contain', flexShrink: 0, background: '#0F1923' }}
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
                           const fallback = getProductImage(null, item.products?.category || 'Other', name, false, agentSlug, isSavageBrandsNetwork);
@@ -3652,7 +3652,7 @@ export default function AgentStorefrontGrid({
                             alt={name}
                             width={56}
                             height={56}
-                            style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'cover', flexShrink: 0, background: '#0F1923', opacity: 0.9 }}
+                            style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'contain', flexShrink: 0, background: '#0F1923', opacity: 0.9 }}
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
                               const fallback = getProductImage(null, item.products?.category || 'Other', name, false, agentSlug, isSavageBrandsNetwork);
@@ -4922,7 +4922,7 @@ export default function AgentStorefrontGrid({
                             width={48}
                             height={48}
                             unoptimized
-                            style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }}
+                            style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'contain', flexShrink: 0 }}
                             onError={(e) => { const t = e.target as HTMLImageElement; if (!t.src.includes('/images/peptide_clear.png')) { t.srcset = ''; t.src = '/images/peptide_clear.png'; } }}
                           />
                           <div style={{ flex: 1, minWidth: 0 }}>

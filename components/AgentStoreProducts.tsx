@@ -678,7 +678,7 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
                         alt={displayName}
                         width={80}
                         height={80}
-                        style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}
+                        style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'contain', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
                           if (!target.src.includes('/images/peptide_clear.png')) {
@@ -775,7 +775,7 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
                         width={80}
                         height={80}
                         unoptimized
-                        style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}
+                        style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'contain', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}
                         onError={(e) => { (e.target as any).src = '/images/peptide_clear.png'; }}
                       />
                       <div className="agentprod-info" style={{ flex: 1, minWidth: 0 }}>
@@ -906,7 +906,7 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
                         width={80}
                         height={80}
                         unoptimized
-                        style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}
+                        style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'contain', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}
                         onError={(e) => { (e.target as any).src = '/images/peptide_clear.png'; }}
                       />
                       <div className="agentprod-info" style={{ flex: 1, minWidth: 0 }}>
@@ -996,7 +996,7 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
                         width={80}
                         height={80}
                         unoptimized
-                        style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}
+                        style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'contain', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}
                         onError={(e) => { (e.target as any).src = '/images/peptide_clear.png'; }}
                       />
                       <div className="agentprod-info" style={{ flex: 1, minWidth: 0 }}>

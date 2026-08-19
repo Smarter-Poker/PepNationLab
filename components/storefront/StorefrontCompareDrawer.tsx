@@ -1124,7 +1124,7 @@ export default function StorefrontCompareDrawer({
                           alt={item.productName}
                           width={108}
                           height={108}
-                          style={{ width: 108, height: 108, borderRadius: 8, objectFit: 'cover', background: '#0F1923', flexShrink: 0 }}
+                          style={{ width: 108, height: 108, borderRadius: 8, objectFit: 'contain', background: '#0F1923', flexShrink: 0 }}
                          unoptimized />
                       ) : (
                         <div style={{ width: 108, height: 108, borderRadius: 8, background: `${primaryColor}25`, flexShrink: 0 }} aria-hidden="true" />
@@ -1297,7 +1297,7 @@ export default function StorefrontCompareDrawer({
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4, paddingTop: 6, borderTop: '2px solid rgba(155, 163, 174, 0.4)' }}>
                           {p.imageUrl && (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <Image src={p.imageUrl} alt={p.productName} width={108} height={108} unoptimized style={{ borderRadius: 6, objectFit: 'cover' }} />
+                            <Image src={p.imageUrl} alt={p.productName} width={108} height={108} unoptimized style={{ borderRadius: 6, objectFit: 'contain' }} />
                           )}
                           <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                             <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--white)', wordBreak: 'break-word' }}>{p.productName}</div>
@@ -1404,7 +1404,7 @@ export default function StorefrontCompareDrawer({
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 }}>
                           {p.imageUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <Image src={p.imageUrl} alt={p.productName} width={84} height={84} unoptimized style={{ borderRadius: 6, objectFit: 'cover' }} />
+                            <Image src={p.imageUrl} alt={p.productName} width={84} height={84} unoptimized style={{ borderRadius: 6, objectFit: 'contain' }} />
                           ) : (
                             <div style={{ width: 84, height: 84, borderRadius: 6, background: `${primaryColor}20` }} />
                           )}
@@ -1491,7 +1491,7 @@ export default function StorefrontCompareDrawer({
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 }}>
                           {p.imageUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <Image src={p.imageUrl} alt={p.productName} width={84} height={84} unoptimized style={{ borderRadius: 6, objectFit: 'cover' }} />
+                            <Image src={p.imageUrl} alt={p.productName} width={84} height={84} unoptimized style={{ borderRadius: 6, objectFit: 'contain' }} />
                           ) : (
                             <div style={{ width: 84, height: 84, borderRadius: 6, background: `${primaryColor}20` }} />
                           )}
@@ -1575,7 +1575,7 @@ export default function StorefrontCompareDrawer({
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 }}>
                           {p.imageUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <Image src={p.imageUrl} alt={p.productName} width={84} height={84} unoptimized style={{ borderRadius: 6, objectFit: 'cover' }} />
+                            <Image src={p.imageUrl} alt={p.productName} width={84} height={84} unoptimized style={{ borderRadius: 6, objectFit: 'contain' }} />
                           ) : (
                             <div style={{ width: 84, height: 84, borderRadius: 6, background: `${primaryColor}20` }} />
                           )}
@@ -1635,7 +1635,7 @@ export default function StorefrontCompareDrawer({
                               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 }}>
                                 {v.item.p.imageUrl ? (
                                   // eslint-disable-next-line @next/next/no-img-element
-                                  <Image src={v.item.p.imageUrl} alt={v.item.p.productName} width={84} height={84} unoptimized style={{ borderRadius: 6, objectFit: 'cover' }} />
+                                  <Image src={v.item.p.imageUrl} alt={v.item.p.productName} width={84} height={84} unoptimized style={{ borderRadius: 6, objectFit: 'contain' }} />
                                 ) : (
                                   <div style={{ width: 84, height: 84, borderRadius: 6, background: `${v.color}20` }} />
                                 )}
@@ -1714,7 +1714,7 @@ export default function StorefrontCompareDrawer({
                               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
                                 {p.imageUrl && (
                                   // eslint-disable-next-line @next/next/no-img-element
-                                  <Image src={p.imageUrl} alt={p.productName} width={120} height={120} unoptimized style={{ borderRadius: 8, objectFit: 'cover' }} />
+                                  <Image src={p.imageUrl} alt={p.productName} width={120} height={120} unoptimized style={{ borderRadius: 8, objectFit: 'contain' }} />
                                 )}
                                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                                   <div style={{ fontSize: '1rem', fontWeight: 900, color: 'var(--white)', wordBreak: 'break-word' }}>{p.productName}</div>
@@ -1858,7 +1858,7 @@ export default function StorefrontCompareDrawer({
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                               {p.imageUrl && (
                                 // eslint-disable-next-line @next/next/no-img-element
-                                <Image src={p.imageUrl} alt={p.productName} width={96} height={96} unoptimized style={{ borderRadius: 6, objectFit: 'cover' }} />
+                                <Image src={p.imageUrl} alt={p.productName} width={96} height={96} unoptimized style={{ borderRadius: 6, objectFit: 'contain' }} />
                               )}
                               <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                                 <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--white)', wordBreak: 'break-word' }}>{p.productName}</div>
