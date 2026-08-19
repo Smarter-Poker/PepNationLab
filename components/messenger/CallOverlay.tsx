@@ -248,6 +248,36 @@ function useIsMobile(): boolean {
   return mobile;
 }
 
+/**
+ * A call clock that owns its own 1s interval.
+ *
+ * This used to be a `forceTimerTick` state setter fired every second inside
+ * FaceTimeCallView — a ~1800-line component that derives LiveKit track
+ * references, groups participants and renders the entire toolbar on every
+ * render. So a silent 60-times-a-minute full re-render ran for the whole
+ * duration of every call, on phones, on battery. Isolating the clock means
+ * the second-by-second update repaints one <span>.
+ */
+function CallClock({ startedAtMs, className, style }: { startedAtMs: number; className?: string; style?: React.CSSProperties }) {
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => tick((n) => (n + 1) | 0), 1000);
+    const onVis = () => {
+      // Coming back from a backgrounded tab: repaint immediately instead of
+      // showing a stale duration until the next interval fires.
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        tick((n) => (n + 1) | 0);
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, []);
+  return <span className={className} style={style}>{formatCallDuration(Date.now() - startedAtMs)}</span>;
+}
+
 interface FaceTimeCallViewProps {
   isVideo: boolean;
   onHangUp: () => void;
@@ -389,21 +419,8 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
     }
   }, [toolbarVisible, showToolbar]);
 
-  const [, forceTimerTick] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => forceTimerTick((n) => (n + 1) | 0), 1000);
-    return () => clearInterval(id);
-  }, []);
-  useEffect(() => {
-    const onVis = () => {
-      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-        forceTimerTick((n) => (n + 1) | 0);
-      }
-    };
-    document.addEventListener('visibilitychange', onVis);
-    return () => document.removeEventListener('visibilitychange', onVis);
-  }, []);
-  const elapsedMs = Date.now() - startedAtMs;
+  // The call clock lives in <CallClock/> so its 1s tick repaints one span
+  // instead of re-rendering this entire component every second.
 
   useEffect(() => {
     setIsMuted(!localParticipant.isMicrophoneEnabled);
@@ -639,11 +656,11 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           pointerEvents: 'none',
         }}>
-          <span style={{
+          <CallClock startedAtMs={startedAtMs} style={{
             background: 'rgba(0,0,0,0.55)', color: '#FFF', fontSize: '0.62rem',
             fontWeight: 700, padding: '2px 6px', borderRadius: 6,
             fontVariantNumeric: 'tabular-nums',
-          }}>{formatCallDuration(elapsedMs)}</span>
+          }} />
           {isMuted && (
             <span style={{ background: '#E53E3E', color: '#FFF', borderRadius: 6, padding: '2px 4px', display: 'inline-flex' }}>
               <MicOff size={11} />
@@ -859,7 +876,7 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
           className="pnl-call-timer" aria-label="Call Duration" aria-live="off"
           style={{ opacity: toolbarVisible ? 1 : 0, transition: 'opacity 0.3s ease' }}
         >
-          {formatCallDuration(elapsedMs)}
+          <CallClock startedAtMs={startedAtMs} />
           <SignalBars quality={worstQuality} />
         </span>
         {isE2EE && (
