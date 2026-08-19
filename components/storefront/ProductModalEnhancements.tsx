@@ -187,7 +187,7 @@ function SupplyMiniCard({
           alt={supply.name}
           width={48}
           height={48}
-          style={{ width: 48, height: 48, borderRadius: 10, objectFit: 'cover', flexShrink: 0, background: '#0F1923' }}
+          style={{ width: 48, height: 48, borderRadius: 10, objectFit: 'contain', flexShrink: 0, background: '#0F1923' }}
          unoptimized />
       ) : (
         <div
@@ -1110,7 +1110,7 @@ export default function ProductModalEnhancements({
                       <Image
                         src={imageUrl}
                         alt={groupName}
-                        style={{ width: 80, height: 80, borderRadius: 10, objectFit: 'cover', background: '#0F1923', marginBottom: 4 }}
+                        style={{ width: 80, height: 80, borderRadius: 10, objectFit: 'contain', background: '#0F1923', marginBottom: 4 }}
                        width={200} height={200} unoptimized />
                     ) : (
                       <div style={{ width: 80, height: 80, borderRadius: 10, background: `${primaryColor}20`, marginBottom: 4 }} aria-hidden="true" />
@@ -1293,7 +1293,7 @@ export default function ProductModalEnhancements({
                       alt={group.name}
                       width={80}
                       height={80}
-                      style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover', background: '#0F1923' }}
+                      style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'contain', background: '#0F1923' }}
                      unoptimized />
                   ) : (
                     <div style={{ width: 80, height: 80, borderRadius: 8, background: `${primaryColor}20` }} aria-hidden="true" />
