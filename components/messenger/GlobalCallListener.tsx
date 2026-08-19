@@ -233,6 +233,17 @@ export default function GlobalCallListener() {
         if (activeCallRef.current?.id === c.id) continue;
         if (c.status === 'ringing' && c.initiator_id === user.id) continue;
 
+        // A call the user explicitly declined or dismissed must STAY
+        // dismissed (owner report 2026-08-19: "making random calls all by
+        // itself"). Without this marker, every focus/visibility/online event
+        // re-surfaced the full-screen card for a group call the user had
+        // already waved away - decline leaves a group call ringing for the
+        // OTHERS by design, so the row was always found again.
+        const dismissedHere = (() => {
+          try { return Boolean(sessionStorage.getItem(`dismissed_call_${c.id}`)); } catch { return false; }
+        })();
+        if (dismissedHere) continue;
+
         // The `answered_call_*` marker exists to stop a ring re-appearing
         // after you have picked up. It must NOT hide a rejoin offer: the
         // people who answered are precisely the people who get dropped, and
@@ -367,6 +378,9 @@ export default function GlobalCallListener() {
   }, []);
 
   const handleDecline = useCallback((call: CallSignalRow) => {
+    // Remember the dismissal for this browser session so the resume sweep
+    // never re-surfaces a call the user already said no to.
+    try { sessionStorage.setItem(`dismissed_call_${call.id}`, 'true'); } catch { /* best-effort */ }
     setIncomingCalls((cur) => cur.filter((x) => x.id !== call.id));
 
     import('@/lib/messenger/realtime').then(({ broadcastCallSignal }) => {

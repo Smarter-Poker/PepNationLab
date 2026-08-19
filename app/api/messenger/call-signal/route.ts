@@ -7,6 +7,7 @@ import { getClientIp } from '@/lib/rate-limit';
 import { StartCallSchema } from '@/lib/messenger/schemas';
 import { recordCallTelemetry } from '@/lib/messenger/callTelemetry';
 import { enqueueCallRingPush, sendCallRingPushNow } from '@/lib/messenger/callPush';
+import { livekitRoomIsEmpty, pastOccupancyGrace } from '@/lib/messenger/roomOccupancy';
 import { z } from 'zod';
 import crypto from 'crypto';
 
@@ -127,11 +128,25 @@ export async function POST(req: NextRequest) {
     const REJOINABLE_ACTIVE_MS = 90 * 60 * 1000; // 90 minutes
     const existingRow = existingCall as CallRow | null;
     const answeredMs = existingRow?.answered_at ? Date.parse(existingRow.answered_at) : NaN;
-    const looksLive =
+    let looksLive =
       existingRow?.status === 'ringing' ||
       (existingRow?.status === 'active' &&
         Number.isFinite(answeredMs) &&
         Date.now() - answeredMs < REJOINABLE_ACTIVE_MS);
+
+    // Age alone is not proof of life (owner report 2026-08-19). An 'active'
+    // row younger than 90 minutes whose LiveKit room is EMPTY is wreckage:
+    // reusing it would drop the caller alone into a dead room AND ring
+    // nobody. Ask LiveKit; on 'null' (check failed) keep the age-based
+    // answer, never end a call because a status probe errored.
+    if (
+      looksLive &&
+      existingRow?.status === 'active' &&
+      pastOccupancyGrace(existingRow.answered_at, existingRow.started_at)
+    ) {
+      const empty = await livekitRoomIsEmpty(existingRow.livekit_room);
+      if (empty === true) looksLive = false;
+    }
 
     if (existingRow && looksLive) {
       // A call really is up in this conversation. Returning the row (enriched)
