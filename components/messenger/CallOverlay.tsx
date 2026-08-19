@@ -141,7 +141,11 @@ function injectPulseRingAnim() {
       border-radius: 999px; border: 1px solid rgba(0, 196, 188, 0.35);
     }
     .pnl-toolbar-btn {
-      width: 44px; height: 44px;
+      /* Fluid size: 44px on desktop, shrinking to 36px on the narrowest
+         phones, so all controls fit ONE horizontal row across the bottom
+         (owner request 2026-08-19 — the wrapped multi-row card read as a
+         floating rectangle in the middle of the screen). */
+      width: clamp(36px, 9.5vw, 44px); height: clamp(36px, 9.5vw, 44px);
       border: none; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       cursor: pointer; transition: background 0.2s, transform 0.1s; outline: none;
@@ -835,12 +839,23 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
         maxWidth: 'calc(100vw - 32px)',
         pointerEvents: 'none',
       }}>
-        <span className="pnl-call-timer" aria-label="Call Duration" aria-live="off">
+        {/* Timer + bars follow the toolbar's tap-to-show visibility (owner
+            request 2026-08-19): a permanently-running counter over the video
+            is noise. Tap the screen to check the time; it fades with the
+            controls. The Reconnecting pill below stays always-visible —
+            hiding an active failure state would be lying. */}
+        <span
+          className="pnl-call-timer" aria-label="Call Duration" aria-live="off"
+          style={{ opacity: toolbarVisible ? 1 : 0, transition: 'opacity 0.3s ease' }}
+        >
           {formatCallDuration(elapsedMs)}
           <SignalBars quality={worstQuality} />
         </span>
         {isE2EE && (
-          <span className="pnl-e2ee-pill" title="End-To-End Encrypted">End-To-End Encrypted</span>
+          <span
+            className="pnl-e2ee-pill" title="End-To-End Encrypted"
+            style={{ opacity: toolbarVisible ? 1 : 0, transition: 'opacity 0.3s ease' }}
+          >End-To-End Encrypted</span>
         )}
         {isReconnecting && (
           <span className="pnl-reconnect-pill" role="status" aria-live="assertive">
@@ -887,27 +902,29 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
+          // One horizontal bar laid ACROSS the bottom of the screen (owner
+          // request 2026-08-19): anchored left+right instead of centered
+          // shrink-to-fit, single row, never wraps. Buttons are fluid
+          // (clamp 36-44px in .pnl-toolbar-btn) so even 8 controls fit the
+          // narrowest phones in one row — the old wrap turned the bar into
+          // a tall floating rectangle mid-screen.
           position: 'absolute',
           bottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)',
-          left: '50%',
-          transform: `translateX(-50%) translateY(${toolbarVisible ? 0 : 24}px)`,
+          left: 'calc(env(safe-area-inset-left, 0px) + 10px)',
+          right: 'calc(env(safe-area-inset-right, 0px) + 10px)',
+          transform: `translateY(${toolbarVisible ? 0 : 24}px)`,
           opacity: toolbarVisible ? 1 : 0,
           pointerEvents: toolbarVisible ? 'auto' : 'none',
           transition: 'opacity 0.3s ease, transform 0.3s ease',
           background: 'rgba(11, 30, 48, 0.78)',
           backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-          padding: '8px 12px', borderRadius: 32,
-          // WRAP, never clip. The buttons are a fixed 44px and do not shrink,
-          // so on a narrow phone a single nowrap row overflowed its own
-          // rounded container and pushed the outermost controls — Hang Up
-          // among them — past the edge of the screen. Wrapping to a second row
-          // is unremarkable to look at and keeps every control reachable.
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          gap: 6, flexWrap: 'wrap', rowGap: 8,
+          padding: '8px 10px', borderRadius: 32,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-evenly',
+          gap: 4, flexWrap: 'nowrap',
           zIndex: 200,
           border: '1px solid rgba(255,255,255,0.08)',
           boxShadow: '0 12px 32px rgba(0,0,0,0.5)',
-          maxWidth: 'calc(100vw - 24px)',
+          maxWidth: 560, margin: '0 auto',
           boxSizing: 'border-box',
         }}
       >

@@ -69,6 +69,16 @@ export default function ConversationList({ selfId }: Props) {
     void fetchConversations(currentParent?.parentId ?? null);
   }, [fetchConversations, currentParent?.parentId]);
 
+  // Refetch when the shell detects a message for a conversation this client
+  // has never seen (a group you were just added to, a fresh DM). Without
+  // this the list was fetched exactly once per mount, so new conversations
+  // stayed invisible until a full page reload.
+  useEffect(() => {
+    const onRefresh = () => { void fetchConversations(currentParent?.parentId ?? null); };
+    window.addEventListener('messenger:conversations-refresh', onRefresh);
+    return () => window.removeEventListener('messenger:conversations-refresh', onRefresh);
+  }, [fetchConversations, currentParent?.parentId]);
+
   const handleDrillInto = useCallback((c: { counterparty_id?: string | null; counterparty_full_name?: string | null; counterparty_username?: string | null; counterparty_role?: string | null }) => {
     if (!c.counterparty_id) return;
     const role = (c.counterparty_role ?? '').toString();
