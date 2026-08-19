@@ -15,6 +15,7 @@ import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
 import { purchaseLabelForOrder } from '@/lib/shipping';
 import { emailConfigured, sendOrderShippedEmail, sendOrderDeliveredEmail, sendOrderCancelledEmail } from '@/lib/email';
 import { logOrderEvent } from '@/lib/order-events';
+import { recomputeBillingForCancelledOrder } from '@/lib/statement-recompute';
 
 // Labels are purchased synchronously from EasyPost in this request (manual, on
 // admin click) - never via a background cron - so allow extra wall-clock time.
@@ -117,6 +118,10 @@ export async function POST(req: NextRequest) {
           p_actor_id: gate.userId,
         });
         upErr = error ? { message: error.message } : null;
+        if (!error) {
+          // Re-settle any weekly bill this order was already rolled into.
+          await recomputeBillingForCancelledOrder(supabase, id, gate.userId).catch(() => { /* best-effort */ });
+        }
       } else {
         const updates: Record<string, string | boolean> = {
           status: target,

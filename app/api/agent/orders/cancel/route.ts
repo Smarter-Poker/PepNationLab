@@ -7,6 +7,7 @@ import { logOrderEvent } from '@/lib/order-events';
 import { notifyOrderCancelled, notify } from '@/lib/notify';
 import { emailConfigured, sendOrderCancelledEmail } from '@/lib/email';
 import { shortOrderId } from '@/lib/push-enqueue';
+import { recomputeBillingForCancelledOrder } from '@/lib/statement-recompute';
 
 const CancelSchema = z.object({
   orderId: z.string().uuid(),
@@ -73,6 +74,9 @@ export async function POST(req: NextRequest) {
   if (rpcError) {
     return NextResponse.json({ error: 'Failed to cancel order. Please try again.' }, { status: 422 });
   }
+
+  // Re-settle any weekly bill this order was already rolled into.
+  await recomputeBillingForCancelledOrder(service, orderId, callerId).catch(() => { /* best-effort */ });
 
   // Fan-out: notifications + audit log. Best-effort — cancel is already committed.
   try {
