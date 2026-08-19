@@ -4605,3 +4605,14 @@ body.guest-cta-visible .floating-cart-wrapper {
     bottom: 90px;
   }
 }
+
+/* The wallet page sets text-transform: capitalize on its root for label copy.
+   That inherits into form controls, so anything the user TYPES was re-cased on
+   screen while the stored value stayed as entered. Exempt the controls and the
+   places that render user-supplied text verbatim. */
+.wallet-capitalize input,
+.wallet-capitalize textarea,
+.wallet-capitalize select,
+.wallet-capitalize [data-user-text] {
+  text-transform: none !important;
+}

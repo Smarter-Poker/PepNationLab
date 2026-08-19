@@ -5,6 +5,7 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgentOrAdmin } from '@/lib/admin-auth';
+import { safeError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -21,7 +22,13 @@ export async function GET() {
     .order('accrued_at', { ascending: false })
     .limit(500);
 
-  if (error) return NextResponse.json({ pending: [], settled: [], totals: { pending: 0, settled: 0 } });
+  // A database error is not "you have earned nothing". Returning zeros with a
+  // 200 made an outage indistinguishable from an empty ledger, and the client
+  // rendered "Pending $0.00 / Settled $0.00" to an agent who had just earned
+  // commission.
+  if (error) {
+    return safeError('wallet.commissions', error, 500, 'Could Not Load Commissions. Please Try Again.');
+  }
 
   // Normalize a `date` field (settled rows show settled_at, otherwise accrued_at)
   // so the client renders one consistent column regardless of bucket.

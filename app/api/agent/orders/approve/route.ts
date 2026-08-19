@@ -413,7 +413,19 @@ export async function POST(req: NextRequest) {
     let oldBalance = 0;
     if (primaryProfile.account_type === 'prepaid') {
       oldBalance = Number(primaryProfile.prepaid_balance) || 0;
-      const { data: deductSuccess, error: deductError } = await supabase.rpc('deduct_prepaid_balance', { agent_id: primaryBilledAgentId, amount: totalOwed });
+      // p_order_id is REQUIRED. Omitting it wrote a ledger row with a NULL
+      // reference_id, and admin_charge_order_billing's "already charged?" guard
+      // keys on that reference - so a prepaid order parked at the admin gate
+      // was charged a SECOND time on release. That happened in production
+      // (order 0369167d, charged $56.48 twice). It also made the debit
+      // invisible to every reversal and cancellation path, which all look the
+      // order up by reference_id.
+      const { data: deductSuccess, error: deductError } = await supabase.rpc('deduct_prepaid_balance', {
+        agent_id: primaryBilledAgentId,
+        amount: totalOwed,
+        p_order_id: orderId,
+        p_description: `Order charge (${String(orderId).slice(0, 8)})`,
+      });
       if (deductError || !deductSuccess) {
         // Money did not move -- release the claim so the agent can retry.
         const { error: revertErr } = await supabase

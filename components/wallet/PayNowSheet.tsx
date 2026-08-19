@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { money, fmtDate } from './format';
+import { walletErrorMessage } from './error-messages';
 
 const HANDLES = ['zelle', 'venmo', 'cashapp', 'apple_pay', 'varo'] as const;
 type Handle = (typeof HANDLES)[number];
@@ -55,7 +56,7 @@ export default function PayNowSheet({
       toast.success('Marked Paid - Recipient Wallet Topped Off');
       onPaid();
     } catch (e: any) {
-      toast.error('Pay Failed: ' + (e.message || 'Unknown'));
+      toast.error(walletErrorMessage(e, 'Payment Could Not Be Completed. Please Try Again.'));
     } finally {
       setSubmitting(false);
     }

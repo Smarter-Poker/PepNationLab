@@ -7,6 +7,7 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
+import { safeError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -24,13 +25,21 @@ export async function GET(req: Request) {
   const end = `${year + 1}-01-01T00:00:00Z`;
 
   const svc = await createServiceClient();
-  const { data: rows } = await svc
+  // The error MUST be handled. The header comment above records that a
+  // swallowed error once made every 1099 report $0; the table name was fixed
+  // but the swallowing was not. A tax document that silently reports zero
+  // earnings under a payer name and EIN is worse than an error page.
+  const { data: rows, error: rowsError } = await svc
     .from('sub_agent_commission_ledger')
     .select('commission_amount, status, settled_at')
     .eq('sub_agent_id', gate.user.id)
     .eq('status', 'settled')
     .gte('settled_at', start)
     .lt('settled_at', end);
+
+  if (rowsError) {
+    return safeError('wallet.1099', rowsError, 500, 'Could Not Load Your Commission History. Please Try Again.');
+  }
 
   const total = (rows ?? []).reduce((s: number, r: any) => s + Number(r.commission_amount ?? 0), 0);
   const totalCents = Math.round(total * 100);

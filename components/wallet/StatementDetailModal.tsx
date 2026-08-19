@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { money, fmtDate, statusLabel } from './format';
 import { paymentMethodLabel } from '@/lib/payment-method-labels';
+import { walletErrorMessage } from './error-messages';
 
 export default function StatementDetailModal({
   statementId, onClose, targetType = 'statement',
@@ -82,7 +83,7 @@ export default function StatementDetailModal({
       setReason('');
       load();
     } catch (e: any) {
-      toast.error('Dispute Failed: ' + (e.message || 'Unknown'));
+      toast.error(walletErrorMessage(e, 'Could Not File That Dispute. Please Try Again.'));
     } finally {
       setSubmitting(false);
     }

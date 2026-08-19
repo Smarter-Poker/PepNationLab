@@ -534,52 +534,53 @@ export async function persistStatement(
   // Refuse to overwrite a paid statement - even when force=true. A paid
   // statement is settled history; regenerating it would silently roll back
   // the agent's balance and corrupt the ledger.
-  const { data: existing } = await supabase
-    .from('weekly_statements')
-    .select('id, status')
-    .eq('agent_id', agentId)
-    .eq('week_start', weekStart)
-    .maybeSingle();
+  //
+  // The read-then-upsert this used to do was a TOCTOU: computeStatement makes
+  // several round trips between the two, and pay_invoice can commit in that
+  // window - locking the row, marking it paid, releasing the payer's credit
+  // and crediting the payee. The upsert would then flip it back to
+  // pending_payment at a lower total with paid_at still populated, and the
+  // nightly auto-pay cron would collect it a SECOND time. That window barely
+  // mattered when only the Monday cron wrote statements; it matters now that
+  // every order cancellation and a nightly reconciler do too.
+  //
+  // upsert_weekly_statement_atomic carries the "never touch a paid row" rule
+  // into the same statement as the write (WHERE status <> 'paid'), which is
+  // exactly what upsert_agent_invoice_atomic has always done for invoices.
+  const isZeroBalance = computed.totalOwed <= 0;
+  const status = isZeroBalance ? 'paid' : 'pending_payment';
 
-  if (existing?.status === 'paid') {
+  const { data: upsertRows, error: upsertError } = await supabase.rpc('upsert_weekly_statement_atomic', {
+    p_agent_id: agentId,
+    p_week_start: weekStart,
+    p_week_end: computed.weekEnd,
+    p_total_cogs: computed.totalCogs,
+    p_total_shipping: computed.totalShipping,
+    p_total_owed: computed.totalOwed,
+    p_status: status,
+    // A $0 statement has nothing to collect - close it immediately so it never
+    // shows as outstanding in the admin panel, the wallet, or a balance query.
+    p_paid_at: isZeroBalance ? new Date().toISOString() : null,
+    p_payment_reference: isZeroBalance ? 'Auto-closed: no balance due' : null,
+  });
+
+  const row = Array.isArray(upsertRows) ? upsertRows[0] : (upsertRows as unknown as { statement_id?: string; was_skipped?: boolean } | null);
+
+  if (upsertError || !row?.statement_id) {
+    return { ok: false, error: upsertError?.message ?? 'Failed To Save Statement.' };
+  }
+
+  const statement = { id: row.statement_id as string };
+
+  if (row.was_skipped === true) {
+    // The row was already settled. Leave its order links alone too - rewriting
+    // them would change what a paid bill claims to be for.
     return {
       ok: true,
-      statementId: existing.id as string,
+      statementId: statement.id,
       skipped: true,
       reason: 'paid',
     };
-  }
-
-  // If we found a non-paid row, always let the upsert proceed so totals
-  // are refreshed for the same week (regardless of force flag).
-
-  // A $0 statement has nothing to collect -- close it immediately so it never
-  // appears as "outstanding" in the admin panel, wallet, or any balance query.
-  const isZeroBalance = computed.totalOwed <= 0;
-  const upsertPayload: Record<string, unknown> = {
-    agent_id: agentId,
-    week_start: weekStart,
-    week_end: computed.weekEnd,
-    total_cogs: computed.totalCogs,
-    total_shipping: computed.totalShipping,
-    total_owed: computed.totalOwed,
-    status: isZeroBalance ? 'paid' : 'pending_payment',
-  };
-  if (isZeroBalance) {
-    upsertPayload.paid_at = new Date().toISOString();
-    upsertPayload.payment_method = null;
-    upsertPayload.payment_reference = 'Auto-closed: no balance due';
-  }
-
-  const { data: statement, error: upsertError } = await supabase
-    .from('weekly_statements')
-    //  Database schema mismatch from generated types
-    .upsert(upsertPayload, { onConflict: 'agent_id,week_start' })
-    .select('id')
-    .maybeSingle();
-
-  if (upsertError || !statement) {
-    return { ok: false, error: upsertError?.message ?? 'Failed To Save Statement.' };
   }
 
   const { error: deleteError } = await supabase.from('statement_orders').delete().eq('statement_id', statement.id);

@@ -159,7 +159,15 @@ export async function POST(req: NextRequest) {
         await supabase.from('orders').delete().eq('id', newOrder.id);
         return NextResponse.json({ error: `Insufficient Prepaid Balance. Requires $${manualCogs.toFixed(2)}, But Balance Is $${balance.toFixed(2)}. Please Recharge Your Account.` }, { status: 402 });
       }
-      const { data: deductOk, error: deductErr } = await supabase.rpc('deduct_prepaid_balance', { agent_id: agentId, amount: manualCogs });
+      // p_order_id is REQUIRED - see the note in agent/orders/approve. Without
+      // it the ledger row carries a NULL reference_id, the duplicate-charge
+      // guard cannot match, and the order is charged again on admin release.
+      const { data: deductOk, error: deductErr } = await supabase.rpc('deduct_prepaid_balance', {
+        agent_id: agentId,
+        amount: manualCogs,
+        p_order_id: newOrder.id,
+        p_description: `Order charge (${String(newOrder.id).slice(0, 8)})`,
+      });
       if (deductErr || !deductOk) {
         await supabase.from('order_items').delete().eq('order_id', newOrder.id);
         await supabase.from('orders').delete().eq('id', newOrder.id);
