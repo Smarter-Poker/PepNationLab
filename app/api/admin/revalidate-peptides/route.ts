@@ -21,7 +21,7 @@ import { revalidatePath } from 'next/cache';
  *   curl -X POST https://pepnationlab.com/api/admin/revalidate-peptides \
  *        -H "Authorization: Bearer $CRON_SECRET"
  */
-export async function POST(req: NextRequest) {
+async function handle(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
   if (!secret) {
     return NextResponse.json({ error: 'CRON_SECRET Not Configured' }, { status: 503 });
@@ -44,4 +44,16 @@ export async function POST(req: NextRequest) {
     revalidated: ['/peptides (layout scope: hub, states, cities, compound pages)', '/sitemap.xml'],
     at: new Date().toISOString(),
   });
+}
+
+export async function POST(req: NextRequest) {
+  return handle(req);
+}
+
+// Vercel cron invocations arrive as GET with the same Bearer CRON_SECRET
+// header. The daily schedule in vercel.json is the standing defense against
+// the stale-edge-cache bug (audit: a canonical city URL served months-old
+// pre-enrichment HTML despite revalidate=300).
+export async function GET(req: NextRequest) {
+  return handle(req);
 }

@@ -27,7 +27,7 @@ import { isSeoIndexableCity } from '@/lib/cities/seo-tier';
 // without a redeploy.
 export const revalidate = 300;
 
-// ─── Static params (build-time pre-rendering) ─────────────────────
+// ─── Static params (build-time pre-rendering) ─────────────────
 // Scale-ready ISR: at build we pre-render ONLY the highest-priority markets
 // (sorted by tier, then population) up to this small cap. Every other city -
 // and any city added later - is rendered on first request via ISR and cached
@@ -49,7 +49,7 @@ export async function generateStaticParams() {
     }));
 }
 
-// ─── Per-city metadata ──────────────────────────────────────────────────
+// ─── Per-city metadata ──────────────────────────────────────
 export async function generateMetadata({
   params,
 }: {
@@ -108,7 +108,7 @@ export async function generateMetadata({
   };
 }
 
-// ─── Page shell (server component) ───────────────────────────────────────
+// ─── Page shell (server component) ─────────────────────────────────
 export default async function CityLandingPage({
   params,
 }: {
