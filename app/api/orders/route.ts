@@ -19,7 +19,6 @@ import { logOrderEvent } from '@/lib/order-events';
 import { PAYMENT_METHOD_LABELS } from '@/lib/payment-method-labels';
 import { captureError } from '@/lib/sentry';
 import { logError } from '@/lib/log';
-import { assertChainCanTransact } from '@/lib/billing-chain';
 // CheckoutSchema lives in lib/schemas/order.ts -- the shared client/server
 // single source of truth for the checkout contract. The client
 // (app/checkout/CheckoutForm.tsx) parses the response against
@@ -186,14 +185,37 @@ export async function POST(request: NextRequest) {
 
       const freezeRoot = agentProfile?.id ?? null;
       if (freezeRoot) {
-        const chain = await assertChainCanTransact(serviceSupabase, freezeRoot, 0);
-        // Only the freeze half of the check applies here (423). The credit
-        // half is deliberately left to the existing checkSuperAgentCredit
-        // logic further down, which prices the real cart - passing 0 here
-        // means the credit branch can only fire if the chain is ALREADY over
-        // its limit, which is a legitimate refusal either way.
-        if (!chain.ok && chain.status === 423) {
-          return NextResponse.json({ error: chain.error }, { status: 423 });
+        // Only the FREEZE half is wanted here - the credit half is handled by
+        // checkSuperAgentCredit further down, which prices the real cart.
+        // Calling assertChainCanTransact ran both, and its credit result was
+        // provably discarded: a recursive CTE plus two aggregate scans per
+        // chain level on every single checkout, for nothing.
+        const { data: frozenRows, error: frozenErr } = await serviceSupabase.rpc('is_chain_frozen', {
+          p_agent_id: freezeRoot,
+        });
+
+        if (frozenErr) {
+          // FAIL CLOSED. Falling through on an RPC error let a frozen - or
+          // deleted - agent's storefront transact freely for as long as the
+          // check was unavailable, which defeats the entire gate.
+          logError('orders.POST.freeze_check_failed', { agentId: freezeRoot }, frozenErr);
+          captureError(frozenErr, { context: 'orders.POST.freeze_check_failed', severity: 'critical', agentId: freezeRoot });
+          return NextResponse.json(
+            { error: 'We Could Not Verify This Store Right Now. Please Try Again In A Moment.' },
+            { status: 503 }
+          );
+        }
+
+        const frozen = Array.isArray(frozenRows) ? frozenRows[0] : (frozenRows as { frozen?: boolean } | null);
+        if (frozen?.frozen === true) {
+          // The person reading this is a RESEARCHER checking out, not the
+          // agent. The billing-chain copy ("Contact Your Upline To Resolve
+          // Before Placing Orders") is meaningless to them - they have no
+          // upline and no idea what one is.
+          return NextResponse.json(
+            { error: 'This Store Is Not Accepting Orders Right Now. Please Contact The Store Owner Or Try Another Store.' },
+            { status: 423 }
+          );
         }
       }
     }

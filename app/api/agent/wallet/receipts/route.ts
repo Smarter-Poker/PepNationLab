@@ -25,21 +25,29 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url);
   const limit = Math.min(parseInt(url.searchParams.get('limit') ?? '100', 10) || 100, 500);
-  const offset = parseInt(url.searchParams.get('offset') ?? '0', 10) || 0;
+  // Clamp: a negative offset produced .range(-5, 94), which PostgREST rejects.
+  const offset = Math.max(0, parseInt(url.searchParams.get('offset') ?? '0', 10) || 0);
 
   const svc = await createServiceClient();
-  // Get all payment_proofs for orders where this user is the agent OR buyer
-  const { data: agentOrders } = await svc.from('orders').select('id').eq('agent_id', user.id);
-  const orderIds = (agentOrders ?? []).map((o: any) => o.id);
-  if (orderIds.length === 0) return NextResponse.json({ receipts: [], count: 0 });
 
+  // Join from payment_proofs to orders rather than materialising every order id
+  // in Node first. The old shape fetched ALL of the agent's order ids with no
+  // limit and no ordering - PostgREST caps that at 1000 rows, so a busy agent
+  // silently lost an arbitrary subset of their receipts (and the count was
+  // wrong too), and 1000 UUIDs interpolated into .in() is a ~37KB query string
+  // that hits URL length limits before it reaches Postgres.
   const { data, count, error } = await svc
     .from('payment_proofs')
-    .select('id, order_id, storage_key, mime_type, size_bytes, uploaded_at, uploader_id, verified_at', { count: 'exact' })
-    .in('order_id', orderIds)
+    .select(
+      'id, order_id, storage_key, mime_type, size_bytes, uploaded_at, uploader_id, verified_at, orders!inner(agent_id)',
+      { count: 'exact' },
+    )
+    .eq('orders.agent_id', user.id)
     .order('uploaded_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
   if (error) return safeError('wallet.receipts', error, 400);
-  return NextResponse.json({ receipts: data ?? [], count: count ?? 0 });
+  // Strip the join artifact so the client shape is unchanged.
+  const receipts = (data ?? []).map(({ orders: _orders, ...rest }: any) => rest);
+  return NextResponse.json({ receipts, count: count ?? 0 });
 }

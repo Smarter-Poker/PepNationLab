@@ -149,6 +149,9 @@ export default function StatementDetailModal({
             )}
 
             <h3 style={{ color: 'var(--white)', fontSize: '0.95rem', margin: '12px 0 8px' }}>Orders In This Statement</h3>
+            <p style={{ color: 'var(--grey-500)', fontSize: '0.76rem', margin: '0 0 8px' }}>
+              Amounts Below Are What You Were Billed For Each Order. They Add Up To The Total Owed.
+            </p>
             {(data.orders ?? []).length === 0 ? (
               <p style={{ color: 'var(--grey-500)' }}>No Orders Found.</p>
             ) : (
@@ -160,13 +163,25 @@ export default function StatementDetailModal({
                   }}>
                     <summary style={{ cursor: 'pointer', color: 'var(--white)', display: 'flex', justifyContent: 'space-between', gap: 8 }}>
                       <span>{o.buyer_name} - {fmtDate(o.order_created_at)}</span>
-                      <strong style={{ color: 'var(--teal)' }}>{money(Number(o.total || 0))}</strong>
+                      {/* What THIS bill charged for the order, not what the
+                          customer paid. Showing the retail total here is why
+                          the rows never summed to the amount owed. */}
+                      <strong style={{ color: 'var(--teal)' }}>
+                        {money(Number(o.billed_total ?? o.total ?? 0))}
+                      </strong>
                     </summary>
                     <ul style={{ listStyle: 'none', padding: '10px 0 0', margin: 0, fontSize: '0.85rem' }}>
                       {(o.line_items ?? []).map((li: any, i: number) => (
                         <li key={i} style={{ color: 'var(--grey-300)', display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
                           <span>{li.product_name} × {li.quantity}</span>
-                          <span>{money(Number(li.line_total || 0))}</span>
+                          <span>
+                            {money(Number(li.line_total || 0))}
+                            {li.line_retail_total != null && Number(li.line_retail_total) > 0 && (
+                              <span style={{ color: 'var(--grey-500)', marginLeft: 6, fontSize: '0.78rem' }}>
+                                (Sold {money(Number(li.line_retail_total))})
+                              </span>
+                            )}
+                          </span>
                         </li>
                       ))}
                     </ul>
