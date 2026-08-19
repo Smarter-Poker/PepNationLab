@@ -43,6 +43,41 @@ function callsConfigured(): boolean {
 
 
 
+/**
+ * Fan a call signal out to EVERY other participant of the conversation.
+ *
+ * Before this, `broadcastCallSignalServer` was called in exactly one place —
+ * the initial `incoming_call` ring. Every later signal (accepted / declined /
+ * ended) was broadcast CLIENT-side to a single `counterpartyId`. In a 1:1
+ * call that is the whole audience, so it worked; in a group call it meant
+ * only one of the other participants was ever told. Concretely: Daniel calls
+ * Savage and Danimal, Savage answers and later the call ends — Danimal's
+ * phone was told nothing and kept ringing a call that no longer existed.
+ *
+ * Best-effort: a broadcast failure must never fail the state transition that
+ * already committed to the database.
+ */
+async function fanOutToParticipants(
+  svc: Awaited<ReturnType<typeof createAdminClient>>,
+  conversationId: string,
+  excludeUserId: string,
+  event: 'call_accepted' | 'call_declined' | 'call_ended',
+  payload: Record<string, unknown>,
+): Promise<void> {
+  try {
+    const { data: parts } = await svc
+      .from('messenger_participants')
+      .select('user_id')
+      .eq('conversation_id', conversationId)
+      .neq('user_id', excludeUserId);
+    for (const p of ((parts ?? []) as Array<{ user_id: string }>)) {
+      try {
+        await broadcastCallSignalServer(p.user_id, event, payload);
+      } catch { /* one dead channel must not stop the rest */ }
+    }
+  } catch { /* fan-out is best-effort */ }
+}
+
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -331,6 +366,18 @@ export async function POST(req: NextRequest) {
       ring_ms: Math.max(0, answeredAt - startedAt),
     }, ip, ua);
 
+    // Let the rest of the conversation know this participant joined. In a
+    // group call the others keep ringing (they can still join) — but the
+    // initiator's UI needs to leave the "ringing" state, and previously only
+    // a client-side 1:1 broadcast carried that.
+    await fanOutToParticipants(
+      svc,
+      (updated as CallRow).conversation_id,
+      user.id,
+      'call_accepted',
+      updated as unknown as Record<string, unknown>,
+    );
+
     return NextResponse.json({ call: updated });
   }
 
@@ -422,6 +469,19 @@ export async function POST(req: NextRequest) {
     .select('*')
     .maybeSingle();
   if (upErr) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
+
+  if (updated) {
+    // Everyone still on (or still being rung by) this call learns it ended.
+    // The client only ever broadcast this to a single counterparty, which
+    // left the third person in a group call ringing a dead call.
+    await fanOutToParticipants(
+      svc,
+      (updated as CallRow).conversation_id,
+      user.id,
+      'call_ended',
+      updated as unknown as Record<string, unknown>,
+    );
+  }
 
   if (updated) {
     const u = updated as CallRow;
