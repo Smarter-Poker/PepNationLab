@@ -56,21 +56,26 @@ export default function DownlineBalances() {
   const [now, setNow] = useState<number>(() => Date.now());
   const [confirmingIds, setConfirmingIds] = useState<Record<string, boolean>>({});
   const [confirmErrors, setConfirmErrors] = useState<Record<string, string>>({});
+  // Loading, empty and errored were previously all "return null", so a failed
+  // request looked exactly like having no downline - and the parent rendered a
+  // heading over the resulting dead space.
+  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         const res = await fetch('/api/agent/downline-balances', { cache: 'no-store' });
-        if (!res.ok) return;
+        if (cancelled) return;
+        if (!res.ok) { setLoadState('error'); return; }
         const j = await res.json();
         if (cancelled) return;
         const list: Downline[] = Array.isArray(j?.downlines) ? j.downlines : [];
-        if (list.length === 0) return;
         setDownlines(list);
         setWeekEndsAtIso(typeof j?.weekEndsAtIso === 'string' ? j.weekEndsAtIso : null);
+        setLoadState('ready');
       } catch {
-        // Network or parse failure - component stays hidden.
+        if (!cancelled) setLoadState('error');
       }
     })();
     return () => {
@@ -127,14 +132,47 @@ export default function DownlineBalances() {
     }
   }, []);
 
+  const heading = (
+    <h2 style={{ color: 'var(--white)', margin: 0, fontSize: '1.1rem', fontFamily: 'var(--font-brand)' }}>
+      Downline Balances
+    </h2>
+  );
+
+  if (loadState === 'loading') {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {heading}
+        <p style={{ color: 'var(--grey-500)', fontSize: '0.85rem', margin: 0 }}>Loading Downline Balances...</p>
+      </div>
+    );
+  }
+
+  if (loadState === 'error') {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {heading}
+        <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem', margin: 0 }}>
+          Could Not Load Downline Balances.{' '}
+          <button
+            type="button"
+            onClick={() => { setLoadState('loading'); window.location.reload(); }}
+            style={{ background: 'none', border: 'none', color: 'var(--teal)', cursor: 'pointer', fontWeight: 700, padding: 0, fontSize: '0.85rem' }}
+          >
+            Retry
+          </button>
+        </p>
+      </div>
+    );
+  }
+
+  // Loaded, and there is genuinely no downline. That is a normal permanent
+  // state for most agents - render nothing at all rather than an empty panel.
   if (!downlines || downlines.length === 0) return null;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div>
-        <h2 style={{ color: 'var(--white)', margin: 0, fontSize: '1.1rem', fontFamily: 'var(--font-brand)' }}>
-          Downline Balances
-        </h2>
+        {heading}
         {weekEndsAtIso && (
           <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem', margin: '4px 0 0' }}>
             {weekCloseText(weekEndsAtIso, now)}

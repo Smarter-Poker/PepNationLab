@@ -14,6 +14,58 @@ function addDays(dateStr: string, days: number): string {
 
 const round = (n: number) => Math.round(n * 100) / 100;
 
+/**
+ * What a single order contributed to a bill belonging to `agentId`, on the
+ * SAME cost basis the biller used.
+ *
+ * This matters more than it looks: a top-level statement bills a downline's
+ * order at the HOUSE basis (unit_house_cost), not at the seller's own cost.
+ * Crediting or subtracting the seller's basis would move roughly double the
+ * money that was actually charged. Mirrors computeStatement exactly.
+ */
+async function orderContribution(
+  supabase: ServiceClient,
+  orderId: string,
+  agentId: string
+): Promise<number> {
+  const { data: order } = await supabase
+    .from('orders')
+    .select('id, agent_id, order_items(quantity, unit_cost_price, unit_super_agent_cost, unit_house_cost)')
+    .eq('id', orderId)
+    .maybeSingle();
+
+  if (!order) return 0;
+
+  let amount = 0;
+  const items = (order.order_items as unknown) as Array<{
+    quantity: number;
+    unit_cost_price: number | null;
+    unit_super_agent_cost: number | null;
+    unit_house_cost: number | null;
+  }>;
+
+  for (const item of items ?? []) {
+    const qty = Number(item.quantity) || 0;
+    if (order.agent_id === agentId) {
+      amount += (Number(item.unit_cost_price) || 0) * qty;
+    } else {
+      const houseCost = Number(item.unit_house_cost);
+      const superCost = Number(item.unit_super_agent_cost);
+      const agentCost = Number(item.unit_cost_price);
+      const effective = Number.isFinite(houseCost) && houseCost > 0
+        ? houseCost
+        : Number.isFinite(superCost) && superCost > 0
+          ? superCost
+          : Number.isFinite(agentCost) && agentCost > 0
+            ? agentCost
+            : 0;
+      amount += effective * qty;
+    }
+  }
+
+  return round(amount);
+}
+
 export interface RecomputeOutcome {
   /** Statements whose total_owed was corrected downward. */
   corrected: Array<{ statementId: string; from: number; to: number }>;
@@ -78,7 +130,7 @@ export async function recomputeBillingForCancelledOrder(
     for (const statementId of statementIds) {
       const { data: stmt } = await supabase
         .from('weekly_statements')
-        .select('id, agent_id, week_start, status, total_owed')
+        .select('id, agent_id, week_start, status, total_owed, total_cogs')
         .eq('id', statementId)
         .maybeSingle();
 
@@ -116,15 +168,48 @@ export async function recomputeBillingForCancelledOrder(
       }
 
       // A cancellation must never make a bill go UP. computeStatement re-reads
-      // the whole week, so in principle it could sweep in an order that landed
-      // in this week after the statement was cut. Leaving the total alone in
-      // that case is the conservative choice: the worst outcome is that we
-      // under-bill by an amount that was never billed before this cancel
-      // either, and the reconcile cron surfaces it rather than a researcher's
-      // cancellation quietly raising their agent's invoice.
+      // the whole WEEK, so it can sweep in an order that became billable after
+      // the statement was cut, and a full rewrite would then hand the agent a
+      // larger invoice because their customer cancelled something.
+      //
+      // The first version of this simply skipped - which left the cancelled
+      // order attached to the statement, still billed, still enforced to the
+      // cent by pay_invoice, and still rendered as a "cancelled" line item
+      // inside a bill the agent had to pay. That is the original bug, not a
+      // safe fallback.
+      //
+      // Do the narrow, provably-downward thing instead: subtract exactly this
+      // order's contribution and unlink exactly this order, leaving the rest
+      // of the statement untouched.
       if (round(computed.data.totalOwed) > round(storedTotal)) {
+        const delta = await orderContribution(supabase, orderId, stmt.agent_id as string);
+        const target = Math.max(0, round(storedTotal - delta));
+
+        const { error: trimErr } = await supabase
+          .from('weekly_statements')
+          .update({
+            total_owed: target,
+            total_cogs: Math.max(0, round(Number(stmt.total_cogs ?? storedTotal) - delta)),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', statementId)
+          .neq('status', 'paid');
+
+        if (trimErr) {
+          outcome.errors.push(`trim ${statementId}: ${trimErr.message}`);
+          continue;
+        }
+
+        await supabase
+          .from('statement_orders')
+          .delete()
+          .eq('statement_id', statementId)
+          .eq('order_id', orderId);
+
+        outcome.corrected.push({ statementId, from: storedTotal, to: target });
         outcome.errors.push(
-          `recompute ${statementId} would raise total ${storedTotal} -> ${computed.data.totalOwed}; left unchanged`
+          `recompute ${statementId} would have raised the total (${storedTotal} -> ${computed.data.totalOwed}), ` +
+          `so only this order's ${delta} was removed; the week has orders that were never billed and needs review`
         );
         continue;
       }
@@ -174,10 +259,18 @@ export async function recomputeBillingForCancelledOrder(
 }
 
 /**
- * The downline invoice covering this order's week, if any. Unlike statements
- * there is no join table, so we reconstruct the week from the order's own
- * billing timestamp (agent_approved_at, created_at fallback - the same key
- * the biller uses) and correct that week's unpaid invoice in place.
+ * Every invoice that this order's week rolled into, corrected in place.
+ *
+ * Unlike statements there is no join table, so the week is reconstructed from
+ * the order's own billing timestamp (agent_approved_at, created_at fallback -
+ * the same key the biller uses).
+ *
+ * CRUCIALLY this walks the WHOLE ancestor chain, not just the seller. A nested
+ * Super Agent is invoiced for their entire subtree (computeSuperDownlineSubtreeBilling),
+ * so in a chain A(seller) -> B(nested super) -> C(top level), a cancelled order
+ * of A's appears in A's invoice to B *and* in B's invoice to C. The first
+ * version of this only corrected A's, so B carried on paying for a cancelled
+ * order indefinitely and nothing anywhere surfaced it.
  */
 async function recomputeInvoiceForOrder(
   supabase: ServiceClient,
@@ -192,21 +285,48 @@ async function recomputeInvoiceForOrder(
 
   if (!order?.agent_id) return;
 
-  const { data: agent } = await supabase
-    .from('profiles')
-    .select('id, parent_agent_id, account_type, is_super_agent')
-    .eq('id', order.agent_id as string)
-    .maybeSingle();
-
-  // Only parented accounts are invoiced by an upline; top-level agents are
-  // handled by the weekly_statements branch above.
-  if (!agent?.parent_agent_id) return;
-
   const billedAt = (order.agent_approved_at as string | null) ?? (order.created_at as string | null);
   if (!billedAt) return;
 
   const weekStart = chicagoWeekStartForInstant(new Date(billedAt));
 
+  // Walk up from the seller. Depth is capped at the same 6 levels the billing
+  // chain uses, with a seen-set so a cycle in parent_agent_id cannot spin.
+  const seen = new Set<string>();
+  let cursor: string | null = order.agent_id as string;
+
+  for (let depth = 0; depth < 6 && cursor && !seen.has(cursor); depth++) {
+    seen.add(cursor);
+    const { data: node } = (await supabase
+      .from('profiles')
+      .select('id, parent_agent_id, account_type, is_super_agent')
+      .eq('id', cursor)
+      .maybeSingle()) as { data: InvoiceNode | null };
+
+    if (!node) return;
+    cursor = (node.parent_agent_id as string | null) ?? null;
+
+    // Only parented accounts are invoiced by an upline; the top-level account
+    // is billed through weekly_statements, handled above.
+    if (!node.parent_agent_id) return;
+
+    await correctOneInvoice(supabase, node as InvoiceNode, weekStart, outcome);
+  }
+}
+
+interface InvoiceNode {
+  id: string;
+  parent_agent_id: string | null;
+  account_type: string | null;
+  is_super_agent: boolean | null;
+}
+
+async function correctOneInvoice(
+  supabase: ServiceClient,
+  agent: InvoiceNode,
+  weekStart: string,
+  outcome: RecomputeOutcome
+): Promise<void> {
   const { data: invoice } = await supabase
     .from('agent_invoices')
     .select('id, status, total_owed')
@@ -243,7 +363,13 @@ async function recomputeInvoiceForOrder(
       total_cogs: totals.totalCogs,
       total_shipping: totals.totalShipping,
       total_owed: totals.totalOwed,
-      ...(totals.totalOwed <= 0 ? { status: 'paid', paid_at: new Date().toISOString() } : {}),
+      updated_at: new Date().toISOString(),
+      // A bill that fell to zero because its only order was cancelled was NOT
+      // paid - nobody sent money. It was closed. Mark it closed and say why,
+      // so the upline's collections view does not read it as cash received.
+      ...(totals.totalOwed <= 0
+        ? { status: 'paid', paid_at: new Date().toISOString(), payment_method: 'auto_closed_no_balance' }
+        : {}),
     })
     .eq('id', invoice.id as string)
     .neq('status', 'paid');
@@ -355,44 +481,8 @@ async function recordStatementCredit(
   agentId: string,
   actorId: string | null
 ): Promise<{ ok: true; amount: number } | { ok: false; error: string }> {
-  // What this order actually contributed to that statement, on the same cost
-  // basis the statement used.
-  const { data: order } = await supabase
-    .from('orders')
-    .select('id, agent_id, order_items(quantity, unit_cost_price, unit_super_agent_cost, unit_house_cost)')
-    .eq('id', orderId)
-    .maybeSingle();
+  const amount = await orderContribution(supabase, orderId, agentId);
 
-  if (!order) return { ok: false, error: 'order not found' };
-
-  let amount = 0;
-  const items = (order.order_items as unknown) as Array<{
-    quantity: number;
-    unit_cost_price: number | null;
-    unit_super_agent_cost: number | null;
-    unit_house_cost: number | null;
-  }>;
-
-  for (const item of items ?? []) {
-    const qty = Number(item.quantity) || 0;
-    if (order.agent_id === agentId) {
-      amount += (Number(item.unit_cost_price) || 0) * qty;
-    } else {
-      const houseCost = Number(item.unit_house_cost);
-      const superCost = Number(item.unit_super_agent_cost);
-      const agentCost = Number(item.unit_cost_price);
-      const effective = Number.isFinite(houseCost) && houseCost > 0
-        ? houseCost
-        : Number.isFinite(superCost) && superCost > 0
-          ? superCost
-          : Number.isFinite(agentCost) && agentCost > 0
-            ? agentCost
-            : 0;
-      amount += effective * qty;
-    }
-  }
-
-  amount = round(amount);
   if (amount <= 0) return { ok: true, amount: 0 };
 
   // Unique on (statement_id, order_id) so repeated calls are no-ops rather
@@ -420,7 +510,12 @@ async function recordStatementCredit(
     type: 'system',
     title: 'Credit Owed On A Paid Statement',
     body: `An order was cancelled after its statement was paid. $${amount.toFixed(2)} is owed back and needs to be refunded or applied to the next bill.`,
-    url: `/admin/statements?highlight=${statementId}`,
+    // /admin/statements now shows a "Credits Owed Back" panel at the top of
+    // the page, so this lands somewhere the amount is actually visible and
+    // actionable. It previously pointed at ?highlight=<id>, which that page
+    // has never read - the admin arrived at an unfiltered list with no
+    // indication of which statement was meant.
+    url: '/admin/statements',
   }).catch(() => { /* best-effort */ });
 
   return { ok: true, amount };

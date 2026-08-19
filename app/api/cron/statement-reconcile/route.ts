@@ -45,10 +45,15 @@ export async function GET(req: NextRequest) {
     // Cancelled orders that a statement still claims. statement_orders is
     // rewritten wholesale by persistStatement, so a corrected statement drops
     // its link and stops matching here - the query is self-clearing.
+    // Deterministic ordering. Without it the 200-slot budget was filled by
+    // whatever Postgres happened to return, and rows that can never clear
+    // (a cancelled order attached to a PAID statement keeps its link by
+    // design) could crowd out genuinely-broken new ones forever.
     const { data: links, error: linkErr } = await svc
       .from('statement_orders')
       .select('order_id, statement_id, orders!inner(id, status)')
       .eq('orders.status', 'cancelled')
+      .order('order_id', { ascending: true })
       .limit(MAX_ORDERS_PER_RUN + 1);
 
     if (linkErr) {
@@ -57,10 +62,25 @@ export async function GET(req: NextRequest) {
     }
 
     const rows = links ?? [];
-    const truncated = rows.length > MAX_ORDERS_PER_RUN;
-    const orderIds = Array.from(
-      new Set(rows.slice(0, MAX_ORDERS_PER_RUN).map((r: { order_id: string }) => r.order_id))
+
+    // Orders already credited on a paid statement are permanently done - the
+    // link stays by design (a settled bill must keep saying what it was for),
+    // so they would re-match every night forever. Drop them before spending
+    // any of the run budget on them.
+    const { data: settled } = await svc
+      .from('statement_adjustments')
+      .select('order_id')
+      .not('order_id', 'is', null);
+    const alreadyCredited = new Set(
+      (settled ?? []).map((a: { order_id: string | null }) => a.order_id).filter(Boolean) as string[]
     );
+
+    const candidates = Array.from(
+      new Set(rows.map((r: { order_id: string }) => r.order_id))
+    ).filter((id) => !alreadyCredited.has(id));
+
+    const truncated = candidates.length > MAX_ORDERS_PER_RUN;
+    const orderIds = candidates.slice(0, MAX_ORDERS_PER_RUN);
 
     for (const orderId of orderIds) {
       scanned++;
@@ -85,10 +105,25 @@ export async function GET(req: NextRequest) {
       }).catch(() => { /* best-effort */ });
     }
 
-    if (truncated) {
-      console.warn(
-        `[statement-reconcile] hit the ${MAX_ORDERS_PER_RUN}-order cap; more remain and will be picked up on the next run`
-      );
+    // Errors used to be accumulated and returned in the HTTP body, which for a
+    // Vercel cron means returned to nobody. Anything that fails here has
+    // already failed once at cancel time (the inline call is best-effort), so
+    // a silent second failure is how a mis-billed statement becomes permanent.
+    if (errors.length > 0 || truncated) {
+      await notifyAdmins(svc, {
+        type: 'system',
+        title: 'Billing Reconciler Needs Attention',
+        body:
+          (errors.length > 0
+            ? `${errors.length} statement(s) could not be re-settled automatically. First: ${errors[0]}. `
+            : '') +
+          (truncated
+            ? `More than ${MAX_ORDERS_PER_RUN} cancelled orders are still attached to bills; the rest run tomorrow.`
+            : ''),
+        url: '/admin/statements',
+      }).catch(() => { /* best-effort */ });
+
+      console.warn('[statement-reconcile] errors:', errors.slice(0, 25), 'truncated:', truncated);
     }
 
     return NextResponse.json({

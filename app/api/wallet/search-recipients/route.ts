@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -19,9 +20,22 @@ export const runtime = 'nodejs';
  * supplied wildcard).
  */
 
-function escapeLikePattern(value: string): string {
-  // Escape PostgreSQL ILIKE special characters: \ % _ and [ (POSIX char-class).
-  return value.replace(/\\/g, '\\\\').replace(/[%_[]/g, (m) => '\\' + m);
+/**
+ * The query is interpolated into a PostgREST `.or()` clause, which has its own
+ * mini-grammar: commas separate filters, dots separate column.operator.value,
+ * and parentheses group. Escaping only the ILIKE metacharacters (% _ [ \\) left
+ * that grammar wide open - a `q` containing a comma closed the intended filter
+ * and opened an attacker-chosen one, evaluated by a SERVICE-ROLE client with
+ * RLS bypassed. `?q=aa,username.ilike.%` matched every profile on the platform
+ * and returned names, usernames and emails; `?q=!!!!,credit_limit.gt.50000,...`
+ * turned it into a boolean oracle over columns that are never selected.
+ *
+ * So: strip the grammar characters outright rather than trying to escape them.
+ * A recipient search has no legitimate use for , ( ) . * % _ [ ] or backslash.
+ * app/api/admin/global-search/route.ts already does exactly this.
+ */
+function sanitizeSearchToken(value: string): string {
+  return value.replace(/[,()*_[\]\\%.]/g, '').trim();
 }
 
 export async function GET(req: NextRequest) {
@@ -43,6 +57,18 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
+  // This endpoint enumerates people. Throttle it so it cannot be walked
+  // prefix-by-prefix into a full directory dump.
+  const rl = await rateLimit({
+    key: 'wallet_search_recipients',
+    limit: 30,
+    windowSeconds: 60,
+    identifier: user.id,
+  });
+  if (!rl.allowed) {
+    return NextResponse.json({ error: 'Too Many Searches. Wait A Moment Then Try Again.' }, { status: 429 });
+  }
+
   const url = new URL(req.url);
   const q = (url.searchParams.get('q') || '').trim().toLowerCase();
 
@@ -55,7 +81,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ results: [] });
   }
 
-  const pattern = `%${escapeLikePattern(q)}%`;
+  const safe = sanitizeSearchToken(q);
+  // Stripping can empty the input (e.g. q="...."). Never fall through to a
+  // bare `%%` pattern, which would match every profile.
+  if (safe.length < 2) {
+    return NextResponse.json({ results: [] });
+  }
+
+  const pattern = `%${safe}%`;
 
   // OR across the three identity columns. Using PostgREST's or(...) lets us
   // hit all three in a single query.

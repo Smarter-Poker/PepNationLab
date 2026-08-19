@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { resolveEffectiveUserId } from '@/lib/impersonation';
 import { computeForecast } from '@/lib/statements';
+import { safeError } from '@/lib/api-error';
 import { chicagoMidnightIso, currentWeekStartCst } from '@/lib/time-cst';
 
 export const dynamic = 'force-dynamic';
@@ -46,7 +47,7 @@ export async function GET() {
   // billed to this agent. Nested agents are billed via agent_invoices, not
   // weekly_statements; omitting them showed "$0 Owed This Week" to agents
   // whose Open Invoices list right below was non-empty.
-  const [{ data: openStmts }, { data: openInvoices }] = await Promise.all([
+  const [{ data: openStmts, error: stmtsError }, { data: openInvoices, error: invoicesError }] = await Promise.all([
     svc
       .from('weekly_statements')
       .select('id, total_owed, status, week_start, week_end, due_date')
@@ -59,6 +60,14 @@ export async function GET() {
       .eq('agent_id', effectiveUserId)
       .eq('status', 'open'),
   ]);
+
+  // A failed read here rendered "$0 Owed This Week" and hasOpenStatement:false,
+  // which is the flag that decides whether Pay Now appears at all. An agent
+  // with an outstanding bill would be told they owe nothing. The comment above
+  // records that this exact symptom was already a fielded bug once.
+  if (stmtsError || invoicesError) {
+    return safeError('wallet.summary.owed', stmtsError ?? invoicesError, 500, 'Could Not Load Your Wallet. Please Try Again.');
+  }
 
   const owedThisWeek =
     (openStmts ?? []).reduce((sum: number, s: any) => sum + Number(s.total_owed || 0), 0)

@@ -275,7 +275,14 @@ export default function IframeModal({ url, title, onClose }: IframeModalProps) {
                /api/proxy origin, so allow-same-origin would let proxied
                third-party HTML read our storage and call our APIs with the
                user's cookies. Internal links are trusted and need same-origin. */
-            sandbox={`allow-scripts allow-popups allow-forms allow-popups-to-escape-sandbox${!isExternal ? ' allow-same-origin' : ''}`}
+            /* allow-modals is required for window.print(). Without it Chrome
+               refuses with "Ignored call to 'print()'. The document is
+               sandboxed, and the 'allow-modals' keyword is not set." - which is
+               why the Print button inside a printable invoice did nothing at
+               all, silently (PrintButton swallows the throw). Granted only to
+               INTERNAL documents; proxied third-party HTML must not be able to
+               open blocking modals. */
+            sandbox={`allow-scripts allow-popups allow-forms allow-popups-to-escape-sandbox${!isExternal ? ' allow-same-origin allow-modals' : ''}`}
           />
         </div>
       </motion.div>
