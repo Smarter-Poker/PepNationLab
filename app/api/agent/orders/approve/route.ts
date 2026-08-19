@@ -16,6 +16,7 @@ import { logError } from '@/lib/log';
 import { notifyOrderApproved, notifyOrderCancelled, notifyOrderAwaitingApproval, notifyAdmins } from '@/lib/notify';
 import { emailConfigured, sendOrderApprovedEmail, sendOrderCancelledEmail } from '@/lib/email';
 import { logOrderEvent } from '@/lib/order-events';
+import { recomputeBillingForCancelledOrder } from '@/lib/statement-recompute';
 
 /**
  * Resolve a buyer's best deliverable email: verified contact email first,
@@ -125,6 +126,9 @@ export async function POST(req: NextRequest) {
         console.error('Cancel order RPC failed:', cancelError.message);
         return NextResponse.json({ error: 'Failed To Cancel Order. Please Try Again.' }, { status: 500 });
       }
+
+      // Re-settle any weekly bill this order was already rolled into.
+      await recomputeBillingForCancelledOrder(supabase, orderId, callerId).catch(() => { /* best-effort */ });
       try {
         const orderPayload = await fetchOrderForWebhook(supabase, orderId);
         if (orderPayload) {

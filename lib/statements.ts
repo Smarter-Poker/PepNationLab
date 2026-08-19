@@ -1,7 +1,7 @@
 
 import { createServiceClient } from '@/lib/supabase/server';
 import { chicagoMidnightIso } from '@/lib/time-cst';
-import { computeAgentCostsForAgent } from '@/lib/pricing';
+import { computeAgentCostsForAgent, computeSubAgentBaselineCost } from '@/lib/pricing';
 
 function addDays(dateStr: string, days: number): string {
   const d = new Date(`${dateStr}T00:00:00Z`);
@@ -346,6 +346,174 @@ export async function computeStatement(
       orderIds,
     },
   };
+}
+
+export interface DownlineInvoiceProfile {
+  id: string;
+  parent_agent_id: string | null;
+  account_type: string | null;
+  is_super_agent: boolean | null;
+}
+
+export interface DownlineInvoiceResult {
+  totalCogs: number;
+  totalShipping: number;
+  totalOwed: number;
+}
+
+/**
+ * What a PARENTED (downline) agent owes their direct upline for one billing
+ * week - the hop-by-hop invoice half of the weekly trickle-down.
+ *
+ * Extracted verbatim from the weekly invoice cron so there is exactly ONE
+ * copy of this formula. The wallet's forecast previously reimplemented its
+ * own (retail-based) version and drifted badly; anything that needs to know
+ * what a downline will be invoiced must call this.
+ *
+ *   (a) The downline's OWN orders at their own snapshotted chain cost.
+ *       Skipped for prepaid downlines - those are settled per-order at
+ *       approval time, so invoicing them again would double-bill.
+ *   (b) For a NESTED Super Agent, their entire subtree at their own cost
+ *       basis. Without this a nested Super is never billed for their
+ *       downlines' sales.
+ */
+export async function computeDownlineInvoice(
+  supabase: ServiceClient,
+  downline: DownlineInvoiceProfile,
+  window: { rangeStart: string; rangeEndExclusive: string }
+): Promise<DownlineInvoiceResult> {
+  const isPrepaid = downline.account_type === 'prepaid';
+  let totalCogs = 0;
+  let totalShipping = 0;
+
+  // (a) The downline's own orders.
+  if (!isPrepaid) {
+    const { data: orders } = await supabase
+      .from('orders')
+      .select('id, shipping_cost, order_items(product_id, quantity, unit_super_agent_cost, unit_cost_price)')
+      .eq('agent_id', downline.id)
+      .neq('status', 'cancelled')
+      .neq('status', 'pending_customer_payment')
+      .neq('status', 'agent_approval_pending')
+      .neq('is_wholesale_restock', true)
+      .or(
+        `and(agent_approved_at.gte.${window.rangeStart},agent_approved_at.lt.${window.rangeEndExclusive}),` +
+        `and(agent_approved_at.is.null,created_at.gte.${window.rangeStart},created_at.lt.${window.rangeEndExclusive})`
+      );
+
+    for (const order of orders ?? []) {
+      totalShipping += Number(order.shipping_cost) || 0;
+      const items = (order.order_items as unknown) as Array<{
+        product_id: string | null;
+        quantity: number;
+        unit_super_agent_cost: number | null;
+        unit_cost_price: number | null;
+      }>;
+
+      for (const item of items ?? []) {
+        const qty = Number(item.quantity) || 0;
+        if (qty <= 0) continue;
+
+        // The downline owes their upline the unit_cost_price (their own
+        // chain cost, snapshotted at checkout).
+        const stored = Number(item.unit_cost_price);
+        if (Number.isFinite(stored) && stored >= 0) {
+          totalCogs += stored * qty;
+        } else if (item.product_id && downline.parent_agent_id) {
+          // computeSubAgentBaselineCost returns a per-10-vial-pack cost while
+          // the stored path above is per-vial and qty counts individual vials.
+          // Divide by 10 so the fallback matches (was a 10x over-bill).
+          const recomputed = await computeSubAgentBaselineCost(
+            supabase,
+            item.product_id,
+            downline.parent_agent_id
+          );
+          totalCogs += (recomputed / 10) * qty;
+        }
+      }
+    }
+  }
+
+  // (b) Nested Super Agent: their whole subtree at their own cost basis.
+  if (downline.is_super_agent) {
+    const subtree = await computeSuperDownlineSubtreeBilling(supabase, downline.id, window);
+    totalCogs += subtree.cogs;
+    totalShipping += subtree.shipping;
+  }
+
+  const round = (n: number) => Math.round(n * 100) / 100;
+  return {
+    totalCogs: round(totalCogs),
+    totalShipping: round(totalShipping),
+    totalOwed: round(totalCogs + totalShipping),
+  };
+}
+
+/**
+ * Dry-run projection of what `agentId` will be billed for `weekStart` - the
+ * number behind the wallet's "Forecast Next" tile.
+ *
+ * This deliberately runs the SAME code the biller runs. The old
+ * forecast_next_statement RPC was a separate hand-written query that summed
+ * RETAIL subtotals over a UTC week and it was wrong in eight distinct ways
+ * (retail instead of COGS, phantom shipping subtraction, no status gating, a
+ * 5-6h timezone skew, keyed on created_at instead of agent_approved_at, no
+ * downline subtree roll-up for Super Agents, no eligibility gating, and it
+ * hid self-buys that ARE billed). Agents were shown a figure that could be
+ * several times too high or, for a Super Agent with a downline, far too low.
+ *
+ * Nothing is persisted here - computeStatement / computeDownlineInvoice are
+ * pure reads, so this is inherently a dry run.
+ *
+ * Returns 0 for anyone who will not receive a bill for the week (prepaid and
+ * manufacturer accounts settle elsewhere), rather than a phantom number for
+ * a statement that will never exist.
+ */
+export async function computeForecast(
+  supabase: ServiceClient,
+  agentId: string,
+  weekStart: string
+): Promise<number> {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id, parent_agent_id, account_type, is_super_agent, is_manufacturer')
+    .eq('id', agentId)
+    .maybeSingle();
+
+  if (!profile) return 0;
+
+  // Manufacturers settle through the commission ledger, never a COGS bill.
+  if ((profile as { is_manufacturer?: boolean | null }).is_manufacturer === true) return 0;
+
+  const isPrepaid = profile.account_type === 'prepaid';
+
+  // Parented accounts are invoiced by their upline, not by admin. A prepaid
+  // nested Super still owes for their SUBTREE (their own orders settle at
+  // checkout), which computeDownlineInvoice already accounts for - so we only
+  // short-circuit a prepaid downline that is NOT a super agent.
+  if (profile.parent_agent_id) {
+    if (isPrepaid && profile.is_super_agent !== true) return 0;
+    const result = await computeDownlineInvoice(
+      supabase,
+      {
+        id: profile.id as string,
+        parent_agent_id: profile.parent_agent_id as string,
+        account_type: profile.account_type as string | null,
+        is_super_agent: profile.is_super_agent as boolean | null,
+      },
+      {
+        rangeStart: chicagoMidnightIso(weekStart),
+        rangeEndExclusive: chicagoMidnightIso(addDays(weekStart, 7)),
+      }
+    );
+    return result.totalOwed;
+  }
+
+  // Top-level prepaid agents are debited at order approval - no weekly bill.
+  if (isPrepaid) return 0;
+
+  const computed = await computeStatement(supabase, agentId, weekStart);
+  return computed.ok ? computed.data.totalOwed : 0;
 }
 
 export interface PersistOptions {

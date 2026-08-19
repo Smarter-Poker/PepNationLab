@@ -19,6 +19,7 @@ import { logOrderEvent } from '@/lib/order-events';
 import { PAYMENT_METHOD_LABELS } from '@/lib/payment-method-labels';
 import { captureError } from '@/lib/sentry';
 import { logError } from '@/lib/log';
+import { assertChainCanTransact } from '@/lib/billing-chain';
 // CheckoutSchema lives in lib/schemas/order.ts -- the shared client/server
 // single source of truth for the checkout contract. The client
 // (app/checkout/CheckoutForm.tsx) parses the response against
@@ -122,7 +123,7 @@ export async function POST(request: NextRequest) {
     // Get researcher profile (full_name added for buyer_name on order insert)
     const { data: profile, error: profileError } = await serviceSupabase
       .from('profiles')
-      .select('id, full_name, contact_email, email_verified, referring_agent_id, role, tier, parent_agent_id, account_type, prepaid_balance, credit_limit, max_auto_approve_limit, auto_approve_orders, is_sub_agent, referring_sub_agent_id, is_manufacturer, manufacturer_commission_pct')
+      .select('id, full_name, contact_email, email_verified, referring_agent_id, role, tier, parent_agent_id, account_type, prepaid_balance, credit_limit, max_auto_approve_limit, auto_approve_orders, is_sub_agent, referring_sub_agent_id, is_manufacturer, manufacturer_commission_pct, is_transactions_frozen')
       .eq('id', user.id)
       .maybeSingle();
 
@@ -160,6 +161,41 @@ export async function POST(request: NextRequest) {
         { error: 'Sub-Agent Account Configuration Error. Please Contact Your Parent Agent.' },
         { status: 403 }
       );
+    }
+
+    // FREEZE GATE. Until now the frozen-chain check lived ONLY in the agent
+    // approval route, so a frozen account could still take orders all day:
+    // checkout succeeded, the researcher got a confirmation, inventory was
+    // held, and the order sat in the queue until a human noticed and declined
+    // it. Freezing is also how a DELETED account is tombstoned, so a deleted
+    // agent's storefront kept accepting orders that could never be fulfilled.
+    //
+    // Refuse at the door instead. The walk starts at the AGENT OF RECORD
+    // because walk_billing_chain climbs parent_agent_id - a researcher is
+    // attached to their store by referring_agent_id, so walking from the
+    // buyer would stop at their own row and miss the store owner entirely.
+    // The buyer's own flag is checked separately for the same reason.
+    {
+      const buyerFrozen = (profile as { is_transactions_frozen?: boolean | null }).is_transactions_frozen === true;
+      if (buyerFrozen) {
+        return NextResponse.json(
+          { error: 'This Account Is Frozen And Cannot Place Orders. Please Contact Support.' },
+          { status: 423 }
+        );
+      }
+
+      const freezeRoot = agentProfile?.id ?? null;
+      if (freezeRoot) {
+        const chain = await assertChainCanTransact(serviceSupabase, freezeRoot, 0);
+        // Only the freeze half of the check applies here (423). The credit
+        // half is deliberately left to the existing checkSuperAgentCredit
+        // logic further down, which prices the real cart - passing 0 here
+        // means the credit branch can only fire if the chain is ALREADY over
+        // its limit, which is a legitimate refusal either way.
+        if (!chain.ok && chain.status === 423) {
+          return NextResponse.json({ error: chain.error }, { status: 423 });
+        }
+      }
     }
 
     // MANUFACTURER STORES (2026-07-15): the agent of record is the factory

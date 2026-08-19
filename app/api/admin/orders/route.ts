@@ -11,6 +11,7 @@ import { assertSameOrigin } from '@/lib/csrf';
 import { notifyAdminOrderStatusChange, notify } from '@/lib/notify';
 import { emailConfigured, sendOrderShippedEmail, sendOrderDeliveredEmail, sendOrderCancelledEmail } from '@/lib/email';
 import { logOrderEvent } from '@/lib/order-events';
+import { recomputeBillingForCancelledOrder } from '@/lib/statement-recompute';
 
 // GET: List all orders with buyer profile join
 export async function GET(req: NextRequest) {
@@ -193,6 +194,10 @@ export async function POST(req: NextRequest) {
         p_actor_id: gate.userId,
       });
       updateError = error;
+      if (!error) {
+        // Re-settle any weekly bill this order was already rolled into.
+        await recomputeBillingForCancelledOrder(supabase, id, gate.userId).catch(() => { /* best-effort */ });
+      }
     } else {
       // Optimistic lock: only apply the transition if the status is still the
       // one we validated against. A concurrent cancel/approve on the same order

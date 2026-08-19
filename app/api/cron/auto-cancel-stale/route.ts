@@ -4,6 +4,7 @@ import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 import { notify, notifyOrderCancelled } from '@/lib/notify';
 import { logOrderEvent } from '@/lib/order-events';
 import { shortOrderId } from '@/lib/push-enqueue';
+import { recomputeBillingForCancelledOrder } from '@/lib/statement-recompute';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -69,6 +70,11 @@ export async function GET(req: NextRequest) {
         continue;
       }
       cancelled++;
+
+      // Re-settle any weekly bill this order was already rolled into. Stale
+      // sweeps run daily and can easily catch an order from a week that has
+      // already been billed.
+      await recomputeBillingForCancelledOrder(svc, o.id, null).catch(() => { /* best-effort */ });
 
       const short = shortOrderId(o.id);
       try {
