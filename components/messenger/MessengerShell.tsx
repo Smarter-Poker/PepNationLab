@@ -197,6 +197,18 @@ export default function MessengerShell({ userId }: Props) {
     const allowConvIds = selfRole === 'admin'
       ? undefined
       : new Set<string>(conversations.map((c) => c.conversation_id));
+    // A message for a conversation NOT in the list = a conversation this
+    // client has never seen (new group, new DM). Refetch the list so it
+    // appears live instead of waiting for a full page reload. Debounced:
+    // several messages can land in a fresh group within a second.
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleListRefresh = () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => {
+        try { window.dispatchEvent(new CustomEvent('messenger:conversations-refresh')); } catch { /* SSR-safe */ }
+      }, 800);
+    };
+
     const ch = subscribeMyIncomingMessages(
       userId,
       (m: IncomingMessageNotification & { sender_id?: string }) => {
@@ -216,9 +228,16 @@ export default function MessengerShell({ userId }: Props) {
         }
       },
       allowConvIds,
+      (m: IncomingMessageNotification & { sender_id?: string }) => {
+        if (m.sender_id === userId) return;
+        scheduleListRefresh();
+      },
     );
 
-    return () => { unsubscribe(ch); };
+    return () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      unsubscribe(ch);
+    };
   }, [userId, conversations, selfRole]);
 
   useEffect(() => {
