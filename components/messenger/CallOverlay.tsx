@@ -141,17 +141,28 @@ function injectPulseRingAnim() {
       border-radius: 999px; border: 1px solid rgba(0, 196, 188, 0.35);
     }
     .pnl-toolbar-btn {
-      /* Fluid size: 44px on desktop, shrinking to 36px on the narrowest
-         phones, so all controls fit ONE horizontal row across the bottom
-         (owner request 2026-08-19 — the wrapped multi-row card read as a
-         floating rectangle in the middle of the screen). */
-      width: clamp(36px, 9.5vw, 44px); height: clamp(36px, 9.5vw, 44px);
+      /* Owner report 2026-08-19: the End Call button was cut off on iPhone.
+         The old clamp() had a hard 36px floor with flex-shrink:0, so on a
+         320pt viewport (iPhone SE, or ANY iPhone with Display Zoom on) eight
+         buttons needed 316px in a ~280px row and the LAST one - End Call -
+         overflowed off-screen. Buttons are now true flex items: they share
+         the row equally, cap at 44px on wide screens, and COMPRESS as far as
+         needed on narrow ones (aspect-ratio keeps them circular). The row
+         can mathematically never overflow, portrait or landscape, no matter
+         how many controls a video call renders. */
+      flex: 1 1 0;
+      min-width: 0;
+      max-width: 44px;
+      height: auto;
+      aspect-ratio: 1 / 1;
       border: none; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       cursor: pointer; transition: background 0.2s, transform 0.1s; outline: none;
       color: white; background: rgba(255,255,255,0.08);
-      flex-shrink: 0;
     }
+    /* Icons scale with their button so a compressed 30px circle is not
+       wall-to-wall glyph. */
+    .pnl-toolbar-btn svg { width: 55%; height: 55%; min-width: 14px; min-height: 14px; }
     .pnl-toolbar-btn:active { transform: scale(0.92); }
     .pnl-toolbar-btn:disabled { opacity: 0.6; cursor: not-allowed; }
   `;

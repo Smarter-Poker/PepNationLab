@@ -84,6 +84,28 @@ export default function ContactPicker({ contacts, multi, selectedIds, onChange, 
     return out;
   }, [contacts, excludeIds]);
 
+  // Root cause of the 2026-08-19 "group did nothing for Danimal" report: TWO
+  // accounts displayed the same person name ("Danimal Bekavac" the retired
+  // researcher vs "DANIMAL BEKAVAC" the live super agent), the wrong one got
+  // picked, and every message and call went to an account nobody signs into.
+  // Any name shared by more than one contact now carries a loud warning so
+  // the picker itself surfaces the trap.
+  const duplicateNames = useMemo(() => {
+    const seen = new Map<string, number>();
+    for (const c of contacts) {
+      if (excludeIds?.has(c.id)) continue;
+      const key = (c.full_name ?? '').trim().toLowerCase();
+      if (!key) continue;
+      seen.set(key, (seen.get(key) ?? 0) + 1);
+    }
+    const dups = new Set<string>();
+    for (const [key, n] of seen.entries()) if (n > 1) dups.add(key);
+    return dups;
+  }, [contacts, excludeIds]);
+
+  const isDuplicateName = (c: Contact): boolean =>
+    duplicateNames.has((c.full_name ?? '').trim().toLowerCase());
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return contacts.filter((c) => {
@@ -252,12 +274,24 @@ export default function ContactPicker({ contacts, multi, selectedIds, onChange, 
                   <div
                     style={{
                       fontSize: '0.75rem',
-                      color: 'var(--grey-400, #A8B4C0)',
+                      color: isDuplicateName(c) ? '#FFB020' : 'var(--grey-400, #A8B4C0)',
+                      fontWeight: isDuplicateName(c) ? 700 : 400,
                     }}
                   >
                     {roleLabel(c)}
                     {c.username && ` · @${c.username}`}
                   </div>
+                  {isDuplicateName(c) && (
+                    <div
+                      style={{
+                        fontSize: '0.7rem',
+                        color: '#FFB020',
+                        marginTop: 2,
+                      }}
+                    >
+                      Warning: Another Account Has This Same Name - Check The Username Before Selecting
+                    </div>
+                  )}
                 </div>
               </label>
             );
