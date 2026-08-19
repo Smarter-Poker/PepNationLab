@@ -334,6 +334,18 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
   const hasLocalScreenShare = Boolean(localScreenTrack);
   useEffect(() => { setIsScreenSharing(hasLocalScreenShare); }, [hasLocalScreenShare]);
   const [isOnHold, setIsOnHold] = useState(false);
+  // In-overlay banner for "screen share can't work on this device". The
+  // bottom-corner toast alone was invisible enough mid-call that the dimmed
+  // button read as broken (owner report 2026-08-19) — surface the reason at
+  // the top of the call view where the eye already is.
+  const [shareUnsupportedHint, setShareUnsupportedHint] = useState(false);
+  const shareHintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (shareHintTimerRef.current) clearTimeout(shareHintTimerRef.current); }, []);
+  const flashShareUnsupportedHint = useCallback(() => {
+    setShareUnsupportedHint(true);
+    if (shareHintTimerRef.current) clearTimeout(shareHintTimerRef.current);
+    shareHintTimerRef.current = setTimeout(() => setShareUnsupportedHint(false), 6000);
+  }, []);
   const preHoldRef = useRef<{ mic: boolean; cam: boolean } | null>(null);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
 
@@ -809,12 +821,17 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
         </div>
       )}
 
+      {/* Timer + connection bars live in the top-LEFT corner (owner request
+          2026-08-19): centered, they sat over the remote video's face and
+          collided with the self-view PiP pinned top-right. Small top offset
+          keeps them at the very top; the safe-area inset still clears the
+          notch on iOS. */}
       <div style={{
         position: 'absolute',
-        top: 'calc(env(safe-area-inset-top, 0px) + 16px)',
-        left: '50%',
-        transform: 'translateX(-50%)', zIndex: 150,
-        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+        top: 'calc(env(safe-area-inset-top, 0px) + 8px)',
+        left: 'calc(env(safe-area-inset-left, 0px) + 12px)',
+        zIndex: 150,
+        display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6,
         maxWidth: 'calc(100vw - 32px)',
         pointerEvents: 'none',
       }}>
@@ -829,6 +846,11 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
           <span className="pnl-reconnect-pill" role="status" aria-live="assertive">
             <span className="pnl-reconnect-dot" />
             Reconnecting...
+          </span>
+        )}
+        {shareUnsupportedHint && (
+          <span className="pnl-e2ee-pill" role="status" aria-live="polite" style={{ textTransform: 'none', letterSpacing: 'normal' }}>
+            Screen Sharing Needs A Computer — Phone Browsers Can&apos;t Capture The Screen
           </span>
         )}
       </div>
@@ -942,11 +964,11 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
             cannot interrogate. On a computer it simply works. */}
         <button
           type="button"
-          onClick={() =>
-            screenShareSupported
-              ? void toggleScreenShare()
-              : toast.info('Screen Sharing Works From A Computer — Phone And Tablet Browsers Cannot Share Their Screen.')
-          }
+          onClick={() => {
+            if (screenShareSupported) { void toggleScreenShare(); return; }
+            flashShareUnsupportedHint();
+            toast.info('Screen Sharing Works From A Computer — Phone And Tablet Browsers Cannot Share Their Screen.');
+          }}
           className="pnl-toolbar-btn"
           style={{
             background: isScreenSharing ? '#00C4BC' : 'rgba(255,255,255,0.08)',
