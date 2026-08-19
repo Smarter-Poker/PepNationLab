@@ -1153,8 +1153,13 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
   // decision read that zero as gospel. Tapping Hang Up during a two-second
   // Wi-Fi hiccup therefore ended the meeting for everyone still talking.
   const connectionHealthyRef = useRef(true);
+  // Forward-declared so handleConnectionHealth (defined here, above the
+  // rejoin block) can reset the retry budget the moment a connection is
+  // healthy again - a rejoin that succeeds earns back its full 5 attempts.
+  const rejoinAttemptsResetRef = useRef<() => void>(() => {});
   const handleConnectionHealth = useCallback((healthy: boolean) => {
     connectionHealthyRef.current = healthy;
+    if (healthy) rejoinAttemptsResetRef.current();
   }, []);
   const handleRemoteCount = useCallback((n: number, everSaw: boolean) => {
     remoteCountRef.current = n;
@@ -1255,7 +1260,15 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
   const [url, setUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchToken = useCallback(async (signal?: AbortSignal): Promise<boolean> => {
+  // 'ok'    - token minted, state updated.
+  // 'fatal' - the call is over / unjoinable (already handled: closed or error
+  //           screen shown). Do NOT retry.
+  // 'retry' - transient (network hiccup, 5xx). Safe to try again.
+  type TokenFetchResult = 'ok' | 'fatal' | 'retry';
+  const fetchToken = useCallback(async (
+    signal?: AbortSignal,
+    opts?: { silent?: boolean },
+  ): Promise<TokenFetchResult> => {
     try {
       const res = await fetch('/api/messenger/livekit-token', {
         method: 'POST',
@@ -1263,18 +1276,29 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
         body: JSON.stringify({ callId: call.id }),
         signal,
       });
-      if (res.status === 503) { setError('Calls Not Configured'); return false; }
-      if (res.status === 410) { onClose(); return false; }
-      if (!res.ok) { setError('Could Not Join Call'); return false; }
+      if (res.status === 503) { setError('Calls Not Configured'); return 'fatal'; }
+      if (res.status === 410) { onClose(); return 'fatal'; }
+      if (!res.ok) {
+        // 5xx / rate limit is transient during a rejoin; only the initial
+        // join surfaces it as a hard error screen.
+        if (res.status >= 500 || res.status === 429) {
+          if (!opts?.silent) setError('Could Not Join Call');
+          return opts?.silent ? 'retry' : 'fatal';
+        }
+        if (!opts?.silent) setError('Could Not Join Call');
+        return 'fatal';
+      }
       const json = (await res.json()) as { token: string; url: string };
       setToken(json.token);
       setUrl(json.url);
-      return true;
+      return 'ok';
     } catch (err) {
-      if ((err as { name?: string } | null)?.name === 'AbortError') return false;
+      if ((err as { name?: string } | null)?.name === 'AbortError') return 'fatal';
       captureCallError(err, 'token_fetch', { call_id: call.id });
-      setError('Network Error');
-      return false;
+      // A network error mid-call is exactly what the auto-rejoin loop exists
+      // for - only the very first join shows the hard error screen.
+      if (!opts?.silent) setError('Network Error');
+      return 'retry';
     }
   }, [call.id, onClose]);
 
@@ -1287,9 +1311,79 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
   useEffect(() => {
     if (call.status !== 'active') return;
     const REFRESH_MS = (6 * 60 - 5) * 60 * 1000;
-    const id = setInterval(() => { void fetchToken(); }, REFRESH_MS);
+    // silent: a hiccup on the periodic refresh must never unmount a call
+    // that is working fine on its current (still valid) token.
+    const id = setInterval(() => { void fetchToken(undefined, { silent: true }); }, REFRESH_MS);
     return () => clearInterval(id);
   }, [call.status, fetchToken]);
+
+  // ── AUTO-RECONNECT (cold rejoin) ─────────────────────────────────────────
+  // LiveKit's own resume handles short blips (the "Reconnecting..." pill).
+  // But when the SDK gives up - long tunnel, Wi-Fi -> cellular handoff that
+  // outlives its retry budget, server-side signal close - onDisconnected
+  // fires and, before this block, the overlay just CLOSED with a "tap to
+  // rejoin" toast. In a group call that silently dropped one person out of a
+  // meeting that kept going; on a 1:1 it stranded both sides. Now an
+  // unexpected disconnect from a still-active call triggers an automatic
+  // cold rejoin: mint a fresh token, remount the room (new key), retry with
+  // backoff (0.3s, 2s, 4s, 8s, 8s), and only after MAX attempts fall back to
+  // the old toast + close. Applies identically to direct and group calls.
+  const MAX_REJOIN_ATTEMPTS = 5;
+  const [rejoinWait, setRejoinWait] = useState(false);
+  const [rejoinEpoch, setRejoinEpoch] = useState(0);
+  const rejoinWaitRef = useRef(false);
+  useEffect(() => { rejoinWaitRef.current = rejoinWait; }, [rejoinWait]);
+  const rejoinAttemptsRef = useRef(0);
+  rejoinAttemptsResetRef.current = () => { rejoinAttemptsRef.current = 0; };
+  const rejoinTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const unmountedRef = useRef(false);
+  useEffect(() => {
+    unmountedRef.current = false;
+    return () => {
+      unmountedRef.current = true;
+      if (rejoinTimerRef.current) clearTimeout(rejoinTimerRef.current);
+    };
+  }, []);
+
+  const attemptRejoin = useCallback(function tryRejoin() {
+    if (unmountedRef.current) return;
+    const attempt = rejoinAttemptsRef.current + 1;
+    rejoinAttemptsRef.current = attempt;
+    if (attempt > MAX_REJOIN_ATTEMPTS) {
+      setRejoinWait(false);
+      toast.error('You Were Disconnected From The Call. Tap The Call Button To Rejoin.');
+      captureCallEvent('auto-rejoin gave up', 'realtime', 'warning', {
+        call_id: latestCallRef.current?.id, attempts: String(attempt - 1),
+      });
+      onClose();
+      return;
+    }
+    setRejoinWait(true);
+    const delay = attempt === 1 ? 300 : Math.min(8000, 1000 * 2 ** (attempt - 1));
+    if (rejoinTimerRef.current) clearTimeout(rejoinTimerRef.current);
+    rejoinTimerRef.current = setTimeout(() => {
+      void (async () => {
+        if (unmountedRef.current) return;
+        // Offline is not a failed attempt - wait for the network to return
+        // (the 'online' event) instead of burning retries into the void.
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+          rejoinAttemptsRef.current = attempt - 1;
+          const onBack = () => { window.removeEventListener('online', onBack); tryRejoin(); };
+          window.addEventListener('online', onBack, { once: true });
+          return;
+        }
+        const result = await fetchToken(undefined, { silent: true });
+        if (unmountedRef.current) return;
+        if (result === 'fatal') return; // call over: fetchToken already closed us
+        if (result === 'retry') { tryRejoin(); return; }
+        captureCallEvent('auto-rejoin reconnected', 'realtime', 'info', {
+          call_id: latestCallRef.current?.id, attempts: String(attempt),
+        });
+        setRejoinEpoch((e) => e + 1); // new key -> clean cold connect
+        setRejoinWait(false);
+      })();
+    }, delay);
+  }, [fetchToken, onClose]);
 
   useEffect(() => {
     if (call.status !== 'active') return;
@@ -1551,15 +1645,30 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
   // receives a new `call` object on every unfiltered messenger_calls UPDATE —
   // so this was firing constantly, in exactly the window we least want it.
   const handleRoomDisconnected = useCallback((reason?: DisconnectReason) => {
+    // While a rejoin is being orchestrated the LiveKitRoom unmount fires a
+    // CLIENT_INITIATED disconnect of its own - ignore it or the rejoin we
+    // just scheduled would be cancelled by our own cleanup.
+    if (rejoinWaitRef.current) return;
     if (reason === DisconnectReason.DUPLICATE_IDENTITY) {
       toast.info('Call Answered On Another Device');
-    } else if (latestCallRef.current?.status === 'active') {
-      // Not a deliberate exit: the connection gave up. Say so, and make the
-      // way back obvious — the call itself may well still be running.
-      toast.error('You Were Disconnected From The Call. Tap The Call Button To Rejoin.');
+      onClose();
+      return;
+    }
+    // Deliberate exits and server-side removals must not fight their way
+    // back in; everything else gets the automatic cold rejoin.
+    const noRejoin =
+      reason === DisconnectReason.CLIENT_INITIATED ||
+      reason === DisconnectReason.ROOM_DELETED ||
+      reason === DisconnectReason.PARTICIPANT_REMOVED;
+    if (!noRejoin && latestCallRef.current?.status === 'active' && !userClosedRef.current) {
+      captureCallEvent('unexpected disconnect - auto-rejoining', 'realtime', 'warning', {
+        call_id: latestCallRef.current?.id, reason: String(reason ?? 'unknown'),
+      });
+      attemptRejoin();
+      return;
     }
     onClose();
-  }, [onClose]);
+  }, [onClose, attemptRejoin]);
 
   const handleRoomError = useCallback((err: Error) => {
     captureCallError(err, 'realtime', { call_id: call.id, stage_detail: 'livekit_room_error' });
@@ -1751,8 +1860,12 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
         </div>
       )}
 
-      {!error && call.status === 'active' && token && url && (
+      {!error && call.status === 'active' && token && url && !rejoinWait && (
         <LiveKitRoom
+          // The epoch key forces a FULL remount after an auto-rejoin. Feeding
+          // a fresh token to a mounted LiveKitRoom whose engine already gave
+          // up does not reliably cold-connect; a remount always does.
+          key={`lk-${call.id}-${rejoinEpoch}`}
           serverUrl={url}
           token={token}
           connect={true}
@@ -1788,7 +1901,7 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
         </LiveKitRoom>
       )}
 
-      {!error && call.status === 'active' && (!token || !url) && (
+      {!error && call.status === 'active' && (rejoinWait || !token || !url) && (
         <div style={{
           color: 'var(--white, #FFFFFF)',
           display: 'flex', flexDirection: 'column',
@@ -1804,8 +1917,22 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
             <Phone size={32} style={{ color: '#00C4BC' }} />
           </div>
           <div style={{ fontSize: '1.2rem', fontWeight: 600, letterSpacing: '0.05em' }} aria-live="polite">
-            Connecting To Conference...
+            {rejoinWait ? 'Connection Lost - Reconnecting...' : 'Connecting To Conference...'}
           </div>
+          {rejoinWait && (
+            <button
+              type="button"
+              onClick={handleHangUp}
+              style={{
+                marginTop: 28, background: '#E53E3E', color: '#FFF', border: 0,
+                padding: '10px 22px', borderRadius: 8, cursor: 'pointer',
+                fontWeight: 700, fontSize: '0.9rem',
+              }}
+              aria-label="Leave Call"
+            >
+              Leave Call
+            </button>
+          )}
         </div>
       )}
     </div>
