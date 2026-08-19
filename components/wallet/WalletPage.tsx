@@ -8,6 +8,7 @@ import CommissionsTab from './CommissionsTab';
 import ReceiptVault from './ReceiptVault';
 import CreditIncreaseForm from './CreditIncreaseForm';
 import WalletSettings from './WalletSettings';
+import PaymentsToConfirm from './PaymentsToConfirm';
 import WalletSendSheet from './WalletSendSheet';
 import IframeLink from '@/components/ui/IframeLink';
 import DownlineBalances from './DownlineBalances';
@@ -21,6 +22,7 @@ const money = (n: number) =>
 const STATUS_LABEL: Record<string, string> = {
   paid: 'Paid',
   pending_payment: 'Pending Payment',
+  pending_verification: 'Awaiting Confirmation',
   open: 'Open',
   disputed: 'Disputed',
   cancelled: 'Cancelled',
@@ -37,6 +39,9 @@ const statusColors = (s: string | null | undefined): { fg: string; bg: string } 
   const k = (s || '').toLowerCase();
   if (k === 'paid')             return { fg: '#2ed573', bg: 'rgba(46,213,115,0.20)' };
   if (k === 'pending_payment')  return { fg: 'var(--teal)', bg: 'rgba(0,196,188,0.18)' };
+  // Submitted by the payer, not yet confirmed received - deliberately amber,
+  // not green: no money has settled and the credit line is still consumed.
+  if (k === 'pending_verification') return { fg: '#F6AD55', bg: 'rgba(246,173,85,0.18)' };
   if (k === 'open')             return { fg: '#ffb800', bg: 'rgba(255,184,0,0.18)' };
   if (k === 'disputed')         return { fg: '#ff6b6b', bg: 'rgba(229,62,62,0.20)' };
   if (k === 'cancelled')        return { fg: 'var(--grey-500)', bg: 'rgba(168,180,192,0.15)' };
@@ -90,6 +95,11 @@ type StatementRow = {
   paid_at?: string | null;
   target_type: 'statement' | 'agent_invoice';
   bills_from?: 'admin' | 'super_agent';
+  // A dispute stamps only this - statement_status has no 'disputed' value - so
+  // the badge and the "is this payable" filter both key on it.
+  disputed_at?: string | null;
+  dispute_reason?: string | null;
+  payment_submitted_at?: string | null;
 };
 
 // Own-account real-time snapshot returned in the `self` block of
@@ -202,7 +212,20 @@ export default function WalletPage({
   // Open invoices = anything that isn't paid/cancelled AND has an actual balance.
   // $0 statements should never be shown as outstanding - they have nothing to pay.
   const openInvoices = useMemo(
-    () => statements.filter((s) => s.status !== 'paid' && s.status !== 'cancelled' && Number(s.total_owed || 0) > 0),
+    () => statements.filter(
+      (s) =>
+        s.status !== 'paid' &&
+        s.status !== 'cancelled' &&
+        // Already submitted and sitting with the recipient - paying again would
+        // just create a second claim for the same bill.
+        s.status !== 'pending_verification' &&
+        // A bill you are actively disputing should not sit under "Bills To Pay"
+        // with a live Pay Now button. The dispute route only stamps disputed_at
+        // (there is no 'disputed' status), so the badge and this filter both
+        // have to key on the timestamp.
+        !s.disputed_at &&
+        Number(s.total_owed || 0) > 0,
+    ),
     [statements],
   );
   const hasOpenStatement = openInvoices.length > 0;
@@ -264,7 +287,12 @@ export default function WalletPage({
             </thead>
             <tbody>
               {(rows || []).slice(0, visibleRows).map((s) => {
-                const colors = statusColors(s.status);
+                // disputed_at is the only marker a dispute leaves - there is
+                // no 'disputed' value in statement_status - so the row has to
+                // derive it, otherwise a successfully disputed bill still read
+                // "Pending Payment" with Pay Now enabled.
+                const effectiveStatus = s.disputed_at && s.status !== 'paid' ? 'disputed' : s.status;
+                const colors = statusColors(effectiveStatus);
                 const billsFromLabel = s.target_type === 'agent_invoice' ? 'Super Agent' : 'Admin';
                 return (
                   <tr key={`${s.target_type}-${s.id}`}
@@ -278,7 +306,7 @@ export default function WalletPage({
                       <span style={{
                         padding: '4px 10px', borderRadius: 6, fontSize: '0.72rem', fontWeight: 700,
                         background: colors.bg, color: colors.fg,
-                      }}>{statusLabel(s.status)}</span>
+                      }}>{statusLabel(effectiveStatus)}</span>
                     </td>
                     <td style={{ padding: '10px 8px', textAlign: 'center' }}>
                       <IframeLink
@@ -634,6 +662,10 @@ export default function WalletPage({
                 )}
               </section>
 
+              {/* Money someone says they sent ME. Sits above my own bills
+                  because it is blocking their settlement, not mine. */}
+              {isAgentRole && <PaymentsToConfirm onChanged={refresh} />}
+
               {/* "Bills To Pay" means UNPAID. It was rendering every statement
                   including settled ones, so a fully-paid-up agent saw a list of
                   bills under a heading telling them to pay them. */}
@@ -666,7 +698,16 @@ export default function WalletPage({
           onPaid={() => { setPayOpen(false); refresh(); }}
         />
       )}
-      {detailId && <StatementDetailModal statementId={detailId} targetType={detailType} onClose={() => setDetailId(null)} />}
+      {/* refresh on close: filing a dispute changed server state, but the
+          parent never refetched, so the badge reverted the moment the modal
+          closed. */}
+      {detailId && (
+        <StatementDetailModal
+          statementId={detailId}
+          targetType={detailType}
+          onClose={() => { setDetailId(null); refresh(); }}
+        />
+      )}
       {creditOpen && (
         <CreditIncreaseForm
           currentLimit={summary?.creditLimit ?? 0}

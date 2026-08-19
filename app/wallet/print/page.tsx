@@ -409,7 +409,7 @@ export default async function WalletPrintPage({ searchParams }: { searchParams: 
         <div className="footer">
           <strong>Payment Instructions:</strong> Pay via Zelle, Venmo, CashApp, or Apple Pay using your preferred handle on file.
           Use Invoice Number <strong>{invoiceNumber}</strong> as the memo. Payment posts to your Wallet once recorded by the
-          billing party. No automated billing or late fees are applied.
+          billing party. No late fees are applied. If you have enabled Auto-Pay, bills are settled automatically from your prepaid balance.
           <br /><br />
           Pep Nation Lab - Research Use Only - Not For Human Consumption
         </div>

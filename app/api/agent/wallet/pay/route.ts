@@ -1,7 +1,10 @@
-// Invoice v2 - unified Pay Now endpoint.
-// Calls pay_invoice(target_type, target_id, handle, amount, proof_id) which
-// marks the bill paid, releases the payer's credit line, and credits the
-// payee's prepaid_balance.
+// Unified "I have paid this" endpoint.
+//
+// This SUBMITS A CLAIM; it does not settle anything. pay_invoice records the
+// proof and parks the bill in pending_verification. The credit line is not
+// released and the payee's wallet is not credited until the person who was
+// supposed to receive the money confirms it arrived, via
+// /api/agent/wallet/confirm-payment.
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
@@ -23,7 +26,10 @@ const Body = z.object({
   statement_id: z.string().uuid().optional(),
   handle: z.string().min(1).max(64),
   amount: z.number().positive().finite().max(1_000_000),
-  proof_id: z.string().uuid().nullable().optional(),
+  // Proof is now MANDATORY. Payment used to settle the bill, release the
+  // payer's credit line and credit the payee's spendable wallet on the payer's
+  // word alone, while discarding this field entirely.
+  proof_id: z.string().uuid(),
 }).refine(
   (v) => !!(v.target_id || v.statement_id),
   { message: 'Missing target_id (or legacy statement_id).' }
@@ -39,6 +45,9 @@ const Body = z.object({
  */
 const SENTINELS: Array<{ match: string; status: number; message: string }> = [
   { match: 'amount_mismatch', status: 409, message: 'That Amount No Longer Matches This Bill. Refresh And Try Again.' },
+  { match: 'proof_required', status: 400, message: 'Attach Proof Of Payment Before Submitting.' },
+  { match: 'proof_invalid', status: 400, message: 'That Proof Does Not Match This Bill. Upload It Again.' },
+  { match: 'already_submitted', status: 409, message: 'A Payment For This Bill Is Already Awaiting Confirmation.' },
   { match: 'already_paid', status: 409, message: 'This Bill Has Already Been Paid.' },
   { match: 'forbidden', status: 403, message: 'This Bill Does Not Belong To Your Account.' },
   { match: 'unauthorized', status: 401, message: 'Please Sign In Again.' },
@@ -88,7 +97,7 @@ export async function POST(req: Request) {
     userId: gate.user.id,
     route: '/api/agent/wallet/pay',
     key: readIdempotencyKey(req as any),
-    request: { targetType, targetId, amount: body.amount, handle: body.handle },
+    request: { targetType, targetId, amount: body.amount, handle: body.handle, proofId: body.proof_id },
     handler: async () => {
       const supabase = await createClient();
 
@@ -100,7 +109,7 @@ export async function POST(req: Request) {
         p_target_id: targetId,
         p_handle: body.handle,
         p_amount: body.amount,
-        p_proof_id: body.proof_id ?? null,
+        p_proof_id: body.proof_id,
       });
 
       if (error) {

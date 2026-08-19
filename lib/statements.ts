@@ -476,7 +476,7 @@ export async function computeForecast(
 ): Promise<number> {
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, parent_agent_id, account_type, is_super_agent, is_manufacturer')
+    .select('id, role, parent_agent_id, account_type, is_super_agent, is_manufacturer')
     .eq('id', agentId)
     .maybeSingle();
 
@@ -484,6 +484,14 @@ export async function computeForecast(
 
   // Manufacturers settle through the commission ledger, never a COGS bill.
   if ((profile as { is_manufacturer?: boolean | null }).is_manufacturer === true) return 0;
+
+  // Admins are never billed - the invoice cron only walks role IN
+  // ('agent','super_agent'). But the house storefront is an admin-owned agent
+  // profile, so every public-signup order carries the house account as its
+  // agent_id; running computeStatement over that returned the platform's
+  // entire weekly COGS as the admin's personal "Forecast Next". A large,
+  // confident, fabricated number for a bill that will never arrive.
+  if ((profile as { role?: string | null }).role === 'admin') return 0;
 
   const isPrepaid = profile.account_type === 'prepaid';
 

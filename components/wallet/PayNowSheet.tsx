@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { money, fmtDate } from './format';
 import { walletErrorMessage } from './error-messages';
+import { paymentMethodLabel } from '@/lib/payment-method-labels';
 
 const HANDLES = ['zelle', 'venmo', 'cashapp', 'apple_pay', 'varo'] as const;
 type Handle = (typeof HANDLES)[number];
@@ -26,13 +27,38 @@ export default function PayNowSheet({
   const [selectedId, setSelectedId] = useState<string>(openStatements[0]?.id ?? '');
   const [handle, setHandle] = useState<Handle>((preferredHandle as Handle) || 'zelle');
   const [submitting, setSubmitting] = useState(false);
+  // Proof of payment is now required before a bill can be submitted, and the
+  // bill is not settled until the recipient confirms the money arrived.
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement | null>(null);
 
   const stmt = openStatements.find((s) => s.id === selectedId) ?? openStatements[0];
 
   async function submit() {
     if (!stmt) return;
+    if (!proofFile) {
+      toast.error('Attach A Screenshot Or Receipt Of The Payment First.');
+      return;
+    }
     setSubmitting(true);
     try {
+      const targetTypeForProof = stmt.target_type ?? 'statement';
+
+      // 1. Upload the evidence and get its id.
+      setUploading(true);
+      const fd = new FormData();
+      fd.append('file', proofFile);
+      fd.append('targetType', targetTypeForProof);
+      fd.append('targetId', stmt.id);
+      const upRes = await fetch('/api/agent/wallet/bill-proof', { method: 'POST', body: fd });
+      const upJson = await upRes.json().catch(() => ({}));
+      setUploading(false);
+      if (!upRes.ok || !upJson?.proofId) {
+        throw new Error(upJson?.error || 'Could Not Upload That Proof.');
+      }
+      const proofId: string = upJson.proofId;
+
       // Invoice v2 - send target_type so the unified pay_invoice RPC routes
       // both weekly_statements and agent_invoices correctly. Defaults to
       // 'statement' when not present so older callers still work.
@@ -48,16 +74,17 @@ export default function PayNowSheet({
           statement_id: targetType === 'statement' ? stmt.id : undefined,
           handle,
           amount: Number(stmt.total_owed || 0),
-          proof_id: null,
+          proof_id: proofId,
         }),
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j.error || 'pay_failed');
-      toast.success('Marked Paid - Recipient Wallet Topped Off');
+      toast.success('Payment Submitted - Awaiting Confirmation From The Recipient');
       onPaid();
     } catch (e: any) {
       toast.error(walletErrorMessage(e, 'Payment Could Not Be Completed. Please Try Again.'));
     } finally {
+      setUploading(false);
       setSubmitting(false);
     }
   }
@@ -72,6 +99,10 @@ export default function PayNowSheet({
         border: '1px solid rgba(255,255,255,0.1)', maxHeight: '85dvh', overflowY: 'auto',
       }}>
         <h2 style={{ color: 'var(--white)', fontSize: '1.2rem', margin: '0 0 12px' }}>Pay Invoice</h2>
+        <p style={{ color: 'var(--grey-500)', fontSize: '0.8rem', margin: '0 0 14px' }}>
+          Send The Payment, Then Attach Proof Here. The Bill Settles Once The
+          Recipient Confirms They Received It.
+        </p>
 
         {!stmt ? (
           <p style={{ color: 'var(--grey-500)' }}>No Open Invoices.</p>
@@ -108,9 +139,11 @@ export default function PayNowSheet({
                       background: handle === h ? 'var(--teal)' : 'rgba(255,255,255,0.04)',
                       color: handle === h ? 'var(--black)' : 'var(--white)',
                       border: `1px solid ${handle === h ? 'var(--teal)' : 'rgba(255,255,255,0.1)'}`,
-                      cursor: 'pointer', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.82rem',
+                      cursor: 'pointer', fontWeight: 700, fontSize: '0.82rem',
                     }}>
-                    {h.replace('_', ' ')}
+                    {/* paymentMethodLabel is the canonical map. Rolling our own
+                        uppercase+replace here rendered "CASHAPP" and "APPLE PAY". */}
+                    {paymentMethodLabel(h)}
                   </button>
                 ))}
               </div>
@@ -124,6 +157,29 @@ export default function PayNowSheet({
               </p>
             </div>
 
+            <div style={{ marginBottom: 18 }}>
+              <label htmlFor="pay-proof" style={{ color: 'var(--grey-400)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Proof Of Payment (Required)
+              </label>
+              <input
+                id="pay-proof"
+                ref={fileRef}
+                type="file"
+                accept="image/png,image/jpeg,application/pdf"
+                onChange={(e) => setProofFile(e.target.files?.[0] ?? null)}
+                style={{
+                  width: '100%', padding: '12px', marginTop: 4, borderRadius: 8,
+                  background: 'rgba(255,255,255,0.04)', color: 'var(--white)',
+                  border: `1px solid ${proofFile ? 'var(--teal)' : 'rgba(255,255,255,0.1)'}`,
+                  fontSize: '16px', boxSizing: 'border-box',
+                }}
+              />
+              <p style={{ color: 'var(--grey-500)', fontSize: '0.75rem', margin: '6px 0 0' }}>
+                Screenshot Or Receipt, PNG / JPG / PDF, Up To 10 MB. The Recipient
+                Confirms They Received The Money Before This Bill Is Marked Paid.
+              </p>
+            </div>
+
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={onClose} disabled={submitting} style={{
                 flex: 1, padding: '14px', borderRadius: 8, minHeight: 44,
@@ -134,7 +190,7 @@ export default function PayNowSheet({
                 flex: 2, padding: '14px', borderRadius: 8, minHeight: 44,
                 background: 'var(--teal)', color: 'var(--black)', border: 'none',
                 cursor: submitting ? 'wait' : 'pointer', fontWeight: 800,
-              }}>{submitting ? 'Processing...' : 'Confirm Payment'}</button>
+              }}>{uploading ? 'Uploading Proof...' : submitting ? 'Submitting...' : 'Submit Payment For Confirmation'}</button>
             </div>
           </>
         )}
