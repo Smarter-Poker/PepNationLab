@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { preflightMedia } from '@/lib/messenger/mediaPreflight';
 import type { CallSignalRow } from '@/lib/messenger/realtime';
 import { useMessengerStore } from '@/stores/messengerStore';
 import { createClient } from '@/lib/supabase/client';
@@ -68,18 +69,19 @@ export default function CallButton({ conversationId, onCallStarted }: Props) {
     setBusy(true);
     triggerStartHaptics();
 
-    // pre-acquire mic/cam permissions INSIDE the user-gesture context so Safari caches the grant
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: callType === 'video',
-      });
-      stream.getTracks().forEach((t) => t.stop());
-    } catch (err) {
-      toast.error('Camera And Microphone Required. Please Allow Access To Start The Call.');
+    // Pre-acquire mic/cam INSIDE the user-gesture context so Safari caches the
+    // grant. preflightMedia degrades instead of failing: a machine with a
+    // microphone but no webcam — every desktop tower, every Mac Studio — used
+    // to be refused the call outright, because the old all-or-nothing
+    // getUserMedia({audio, video}) rejects with NotFoundError and that was
+    // read as "permission denied". Only a real refusal stops the call now.
+    const media = await preflightMedia(callType === 'video');
+    if (!media.canJoin) {
+      toast.error(media.message);
       setBusy(false);
       return;
     }
+    if (media.message) toast.info(media.message);
 
     try {
       const res = await fetch('/api/messenger/call-signal', {

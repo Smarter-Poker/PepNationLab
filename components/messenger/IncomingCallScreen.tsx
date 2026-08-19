@@ -4,6 +4,7 @@ import { Phone, PhoneOff, Video, LogIn } from 'lucide-react';
 import type { CallSignalRow } from '@/lib/messenger/realtime';
 import { createRingTone } from '@/lib/messenger/ringTone';
 import { toast } from 'sonner';
+import { preflightMedia } from '@/lib/messenger/mediaPreflight';
 
 interface Props {
   call: CallSignalRow;
@@ -139,18 +140,23 @@ export default function IncomingCallScreen({ call, onAccept, onDecline }: Props)
     // later async chain. Tracks are stopped immediately; we only want the
     // grant.
     if (action === 'accept') {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-          video: call.call_type === 'video',
-        });
-        stream.getTracks().forEach((t) => t.stop());
-      } catch (err) {
-        toast.error('Camera And Microphone Required. Please Allow Access To Answer The Call.');
+      // Answering must NEVER be turned into declining. This used to call
+      // onDecline() whenever getUserMedia threw — so a person on a desktop
+      // with no webcam, who pressed Answer, sent the caller a "Declined" they
+      // never chose. Worse, the message blamed permissions, so they went
+      // hunting through browser settings for a camera that does not exist.
+      //
+      // Now the only thing that stops us answering is an outright refusal the
+      // user has to reverse themselves. Missing hardware just means you join
+      // with whatever you do have — and with nothing at all you can still
+      // watch and listen, which needs no permission.
+      const media = await preflightMedia(call.call_type === 'video');
+      if (!media.canJoin) {
+        toast.error(media.message);
         setIsBusy(false);
-        onDecline();
         return;
       }
+      if (media.message) toast.info(media.message);
     }
 
     if (action === 'accept') {
