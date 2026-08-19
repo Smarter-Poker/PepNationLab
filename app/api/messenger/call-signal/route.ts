@@ -241,7 +241,10 @@ export async function POST(req: NextRequest) {
             type: 'incoming_call',
             title: `Incoming ${callTypeLabel} Call`,
             body: `${callerName} Is Calling You`,
-            url: '/messenger',
+            // Deep-link with ?call=<id> so tapping the bell entry while the
+            // call is still ringing auto-accepts it (GlobalCallListener reads
+            // the param) - the same behavior the web-push tap already has.
+            url: `/messenger?call=${(inserted as CallRow).id}`,
           }))
         );
       } catch { /* in-app notification is best-effort */ }
