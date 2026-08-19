@@ -90,7 +90,8 @@ export default function AccountDeleteButton({
         <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', lineHeight: 1.5 }}>
           This Removes The Account From All Lists And Blocks Login Immediately. Their Username,
           Email And Referral Code Are Released For Re-Use. Order And Payment History Is Kept For
-          Your Records. An Admin Can Restore The Account If This Was A Mistake.
+          Your Records. Any Agents Or Researchers Beneath Them Are Automatically Moved To The Main
+          Admin Account, So Nothing Is Ever Lost. An Admin Can Restore The Account If This Was A Mistake.
         </div>
         <input
           value={reason}
