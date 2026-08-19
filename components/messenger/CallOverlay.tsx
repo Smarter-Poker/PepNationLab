@@ -17,6 +17,7 @@ import Image from 'next/image';
 import { createRingTone } from '@/lib/messenger/ringTone';
 import { captureCallError, captureCallEvent } from '@/lib/messenger/sentryCall';
 import { createE2EESetup, asRoomOptions, type E2EESetup } from '@/lib/messenger/livekitE2EE';
+import { canShareScreen, listDeviceKinds } from '@/lib/messenger/mediaPreflight';
 import CallGridView from './CallGridView';
 import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, SwitchCamera, ScreenShare, ScreenShareOff, Pause, Play, Maximize2, Minimize2 } from 'lucide-react';
 import IframeLink from '@/components/ui/IframeLink';
@@ -162,7 +163,14 @@ function formatCallDuration(ms: number): string {
   return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
 }
 
-const ALONE_HANGUP_GRACE_MS = 500;
+// How long everyone else must be GONE before we conclude the call is over.
+// This was 500ms, which is shorter than any real network hiccup: a phone
+// handing off between Wi-Fi and cellular, or LiveKit's own reconnect, empties
+// the participant list for several seconds and then refills it. At 500ms the
+// remaining side treated that blink as "everybody left" and hung up on a call
+// that was about to recover. Twenty seconds is longer than a reconnect and
+// still short enough that a genuinely abandoned call closes itself.
+const ALONE_HANGUP_GRACE_MS = 20_000;
 const TOOLBAR_HIDE_AFTER_MS = 5_000;
 
 function SignalBars({ quality }: { quality: ConnectionQuality | undefined }) {
@@ -202,6 +210,20 @@ function RemoteSpeakingProbe({
   return null;
 }
 
+/**
+ * Whether this device can capture its own screen at all.
+ *
+ * Read once on mount rather than during render so the server and the first
+ * client render agree. Feature detection, never the user agent: iPadOS Safari
+ * calls itself "Macintosh", so sniffing offered iPads a button that could only
+ * fail while denying it to desktop browsers with unusual user agents.
+ */
+function useCanShareScreen(): boolean {
+  const [ok, setOk] = useState(false);
+  useEffect(() => { setOk(canShareScreen()); }, []);
+  return ok;
+}
+
 function useIsMobile(): boolean {
   const [mobile, setMobile] = useState(false);
   useEffect(() => {
@@ -235,6 +257,7 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
   const connectionState = useConnectionState();
   const speakerCandidate = remoteParticipants[0];
   const isMobile = useIsMobile();
+  const screenShareSupported = useCanShareScreen();
 
   const [remoteIsSpeaking, setRemoteIsSpeaking] = useState(false);
   const handleRemoteSpeakingChange = useCallback((b: boolean) => setRemoteIsSpeaking(b), []);
@@ -344,13 +367,18 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
   useEffect(() => {
     if (!hasSeenRemoteRef.current) return;
     if (remoteParticipants.length > 0) return;
+    // Belt and braces alongside the longer grace: while LiveKit is
+    // reconnecting, an empty participant list means "we cannot see anyone
+    // right now", not "nobody is there". Ending the call here would be
+    // hanging up on people who are still on it.
+    if (connectionState !== ConnectionState.Connected) return;
     const t = setTimeout(() => {
       try { onHangUpRef.current(); } catch (err) {
         captureCallError(err, 'overlay', { stage_detail: 'auto_hangup_handler' });
       }
     }, ALONE_HANGUP_GRACE_MS);
     return () => clearTimeout(t);
-  }, [remoteParticipants.length]);
+  }, [remoteParticipants.length, connectionState]);
 
   const wrap = (fn: () => Promise<void> | void) => async () => {
     showToolbar();
@@ -752,13 +780,13 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
       )}
 
       {/*
-        fix-44: SINGLE-LINE auto-hiding toolbar.
-          - flexWrap: nowrap so it stays one row.
+        Auto-hiding call toolbar.
+          - Wraps to a second row rather than overflowing: every control stays
+            reachable at any width.
           - maxWidth: calc(100vw - 24px) so it never overflows the viewport.
           - Auto-hides after 5s; tap the video area to toggle.
-          - On mobile we hide the Screen Share button entirely because iOS
-            Safari does not implement getDisplayMedia.
-          - The Headphones button was removed entirely per user request.
+          - Screen Share is always rendered, and explains itself on devices
+            whose browser cannot capture a screen.
           - Camera Flip uses SwitchCamera icon for visual clarity.
       */}
       <div
@@ -774,7 +802,13 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
           background: 'rgba(11, 30, 48, 0.78)',
           backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
           padding: '8px 12px', borderRadius: 32,
-          display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'nowrap',
+          // WRAP, never clip. The buttons are a fixed 44px and do not shrink,
+          // so on a narrow phone a single nowrap row overflowed its own
+          // rounded container and pushed the outermost controls — Hang Up
+          // among them — past the edge of the screen. Wrapping to a second row
+          // is unremarkable to look at and keeps every control reachable.
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          gap: 6, flexWrap: 'wrap', rowGap: 8,
           zIndex: 200,
           border: '1px solid rgba(255,255,255,0.08)',
           boxShadow: '0 12px 32px rgba(0,0,0,0.5)',
@@ -826,23 +860,39 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
           </button>
         )}
 
-        {/* getDisplayMedia does not exist on iOS Safari and is unreliable on
-            Android browsers, so the control is desktop-only rather than a
-            button that fails when tapped. */}
-        {!isMobile && (
-          <button
-            type="button" onClick={() => void toggleScreenShare()}
-            className="pnl-toolbar-btn"
-            style={{
-              background: isScreenSharing ? '#00C4BC' : 'rgba(255,255,255,0.08)',
-              color: isScreenSharing ? '#000' : 'white',
-            }}
-            title={isScreenSharing ? 'Stop Sharing Screen' : 'Share Screen'}
-            aria-label={isScreenSharing ? 'Stop Sharing Screen' : 'Share Screen'}
-          >
-            {isScreenSharing ? <ScreenShareOff size={20} /> : <ScreenShare size={20} />}
-          </button>
-        )}
+        {/* The control is ALWAYS rendered. It used to be hidden whenever the
+            user agent looked mobile, which meant someone who had been told the
+            app supports screen sharing opened a call, found no button, and had
+            no way to learn why. iOS Safari and Chrome on Android really cannot
+            capture a screen from a web page — but "here is the button, and
+            here is why it will not work on this device" beats an absence you
+            cannot interrogate. On a computer it simply works. */}
+        <button
+          type="button"
+          onClick={() =>
+            screenShareSupported
+              ? void toggleScreenShare()
+              : toast.info('Screen Sharing Works From A Computer — Phone And Tablet Browsers Cannot Share Their Screen.')
+          }
+          className="pnl-toolbar-btn"
+          style={{
+            background: isScreenSharing ? '#00C4BC' : 'rgba(255,255,255,0.08)',
+            color: isScreenSharing ? '#000' : 'white',
+            opacity: screenShareSupported ? 1 : 0.45,
+          }}
+          title={
+            !screenShareSupported
+              ? 'Screen Sharing Requires A Computer'
+              : isScreenSharing ? 'Stop Sharing Screen' : 'Share Screen'
+          }
+          aria-label={
+            !screenShareSupported
+              ? 'Screen Sharing Is Not Available On This Device'
+              : isScreenSharing ? 'Stop Sharing Screen' : 'Share Screen'
+          }
+        >
+          {isScreenSharing ? <ScreenShareOff size={20} /> : <ScreenShare size={20} />}
+        </button>
 
         <button
           type="button" onClick={() => void toggleHold()}
@@ -1160,7 +1210,14 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
 
   useEffect(() => {
     const callId = call.id;
-    const handler = () => {
+    const handler = (ev: PageTransitionEvent) => {
+      // THE BIG ONE. On a phone, pagehide fires when you lock the screen or
+      // switch apps, not just when you close the tab — and iOS auto-locks
+      // after 30 seconds. This handler was ending the call for everyone every
+      // time someone glanced at another app. persisted === true means the page
+      // is going into the back/forward cache and is expected to come back, so
+      // it must never be read as hanging up.
+      if (ev?.persisted) return;
       const cid = latestCounterpartyIdRef.current;
       const cl = latestCallRef.current;
       if (!cl || cl.status === 'ended' || cl.status === 'declined' || cl.status === 'missed') return;
@@ -1333,6 +1390,27 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
 
   const livekitOptions = asRoomOptions(e2ee);
 
+  // What can this machine actually publish? A desktop with no webcam used to
+  // ask LiveKit for a camera it did not have; the request threw, and the
+  // failure surfaced as a toast over a call where nobody could work out why
+  // they were invisible. undefined means "we could not tell" (Safari hides
+  // this before a permission grant) and must be treated as "try anyway",
+  // never as "absent".
+  const [devices, setDevices] = useState<{ camera?: boolean; mic?: boolean }>({});
+  useEffect(() => {
+    let cancelled = false;
+    const probe = () => { void listDeviceKinds().then((d) => { if (!cancelled) setDevices(d); }); };
+    probe();
+    // Plugging in a headset or webcam mid-call should be noticed.
+    navigator.mediaDevices?.addEventListener?.('devicechange', probe);
+    return () => {
+      cancelled = true;
+      navigator.mediaDevices?.removeEventListener?.('devicechange', probe);
+    };
+  }, []);
+  const publishVideo = isVideo && devices.camera !== false;
+  const publishAudio = devices.mic !== false;
+
   // Minimizing is only meaningful once connected; a ringing call stays
   // full-screen so nobody misses it.
   const isMini = minimized && call.status === 'active' && !error;
@@ -1485,8 +1563,8 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
           serverUrl={url}
           token={token}
           connect={true}
-          video={isVideo}
-          audio={true}
+          video={publishVideo}
+          audio={publishAudio}
           options={livekitOptions}
           onDisconnected={(reason) => {
             if (reason === DisconnectReason.DUPLICATE_IDENTITY) {
