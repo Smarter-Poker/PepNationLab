@@ -114,7 +114,11 @@ export default function IncomingCallScreen({ call, onAccept, onDecline }: Props)
   }, [authExpired, isJoin]);
 
   const handleAction = async (action: 'accept' | 'decline') => {
-    if (isBusy) return;
+    // Decline is deliberately NOT gated on isBusy. Accepting raises the
+    // browser's camera/microphone prompt and blocks on it; with a single busy
+    // flag, someone who left that prompt sitting there could no longer
+    // decline either — the call just rang on with both buttons dead.
+    if (isBusy && action !== 'decline') return;
     setIsBusy(true);
 
     // Dismissing a joinable in-progress call is local-only: there is nothing

@@ -151,8 +151,15 @@ export default function CallGridView() {
   // Map participant sid -> best video track (screen share beats camera).
   // Local tracks are included: the local user gets a real tile in the grid —
   // "all of us on screen at once", not everyone-except-you.
+  // A muted or not-yet-subscribed publication still comes back from
+  // useTracks. Rendering one shows a frozen last frame after someone turns
+  // their camera off, instead of their avatar.
+  const usable = (r: import('@livekit/components-react').TrackReference) =>
+    Boolean(r.publication && !r.publication.isMuted && r.publication.isSubscribed !== false);
+
   const trackByParticipant = new Map<string, import('@livekit/components-react').TrackReference>();
   for (const t of allTracks) {
+    if (!usable(t)) continue;
     const existing = trackByParticipant.get(t.participant.sid);
     if (!existing) {
       trackByParticipant.set(t.participant.sid, t);
@@ -167,10 +174,12 @@ export default function CallGridView() {
   // up the same size as a face — unreadable on a phone, which defeats the
   // point of sharing. When anyone is sharing, that tile spans the full width
   // of the grid and everyone else tucks underneath.
-  const sharingSid = (() => {
-    const t = allTracks.find((x) => x.source === Track.Source.ScreenShare);
-    return t ? t.participant.sid : null;
-  })();
+  // EVERY sharer presents, not just whichever track happened to sort first.
+  // Picking one meant that when two people shared at once, the second one's
+  // tile silently swapped their face for a postage-stamp-sized screen.
+  const sharingSids = new Set(
+    allTracks.filter((x) => x.source === Track.Source.ScreenShare && usable(x)).map((x) => x.participant.sid),
+  );
 
   return (
     <div
@@ -196,7 +205,7 @@ export default function CallGridView() {
             key={p.sid}
             participant={p}
             videoTrackRef={trackByParticipant.get(p.sid)}
-            isPresenting={p.sid === sharingSid}
+            isPresenting={sharingSids.has(p.sid)}
           />
         ))}
         <CallGridTile
@@ -204,7 +213,7 @@ export default function CallGridView() {
           participant={localParticipant}
           videoTrackRef={trackByParticipant.get(localParticipant.sid)}
           isLocal
-          isPresenting={localParticipant.sid === sharingSid}
+          isPresenting={sharingSids.has(localParticipant.sid)}
         />
       </div>
     </div>
