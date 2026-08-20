@@ -17,8 +17,8 @@ import type { Compound } from '@/lib/compounds';
 
 // ─── Cache Config ──────────────────────────────────────────────────────────────
 
-/** Bump this version when the shape of CatalogPayload changes. */
-export const CATALOG_CACHE_VERSION = 'v2';
+/** Bump this version when the shape of CatalogPayload changes or when a forced flush is needed. */
+export const CATALOG_CACHE_VERSION = 'v3';
 
 /** How long a cached catalog is considered "fresh" on the client (10 min). */
 export const CATALOG_TTL_MS = 10 * 60 * 1000;

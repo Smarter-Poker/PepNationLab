@@ -2447,6 +2447,7 @@ export default function AgentStorefrontGrid({
           pickupText="AVAILABLE FOR SAME DAY PICKUP"
           buttonText="Add To Cart"
           imageSrc={group.imageUrl || '/images/peptide_clear.png'}
+          imageObjectFit={group.imageUrl?.includes('stack') || group.name.toLowerCase().includes('stack') ? 'cover' : 'contain'}
           cardBg={(() => {
             const slug = group.compoundSlug ?? '';
             if (!slug) return undefined;
