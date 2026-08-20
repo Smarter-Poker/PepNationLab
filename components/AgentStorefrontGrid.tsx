@@ -3981,17 +3981,12 @@ export default function AgentStorefrontGrid({
                 style={{ background: `radial-gradient(circle at 50% 50%, ${primaryColor}20 0%, var(--black) 100%)` }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <Image
+                <img
                   src={getProductImage(detailProduct.imageUrl, detailProduct.category || 'Other', detailProduct.name, true, agentSlug, isSavageBrandsNetwork)}
                   alt={detailProduct.name}
-                  fill
-                  unoptimized
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  style={{ objectFit: 'contain', objectPosition: 'center', transition: 'transform 0.4s ease' }}
+                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', transition: 'transform 0.4s ease' }}
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    // Hard fallback — if the image truly fails, show clear vial
-                    target.srcset = '';
                     target.src = '/images/peptide_clear.png';
                     target.style.opacity = '0.9';
                   }}
@@ -4791,13 +4786,10 @@ export default function AgentStorefrontGrid({
                   style={{ width: '100%', background: 'var(--surface-3)', cursor: 'pointer', position: 'relative', height: 'auto' }}
                   onClick={() => setFullScreenImage(selectedBundle.vial_image_url || selectedBundle.image_url || null)}
                 >
-                  <Image
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
                     src={selectedBundle.vial_image_url || selectedBundle.image_url || ''}
                     alt={selectedBundle.name}
-                    width={800}
-                    height={1200}
-                    unoptimized
-                    sizes="100vw"
                     style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'contain' }}
                   />
                   <div style={{
@@ -4828,13 +4820,11 @@ export default function AgentStorefrontGrid({
                   }}
                   onClick={() => setFullScreenImage(selectedBundle.vial_image_url || selectedBundle.image_url || null)}
                 >
-                  <Image
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
                     src={selectedBundle.vial_image_url || selectedBundle.image_url || ''}
                     alt={selectedBundle.name}
-                    fill
-                    unoptimized
-                    sizes="560px"
-                    style={{ objectFit: 'contain' }}
+                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }}
                   />
                   <div style={{
                     position: 'absolute',
