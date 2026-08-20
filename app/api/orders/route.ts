@@ -286,7 +286,7 @@ export async function POST(request: NextRequest) {
     // Retrieve active product definitions matching requested cart item IDs
     const { data: dbProducts, error: dbProductsError } = await serviceSupabase
       .from('products')
-      .select('id, name, base_cost, weight_oz, is_active, is_banned, sku, inventory_count, admin_bulk_price, admin_bulk_threshold')
+      .select('id, name, base_cost, house_cost, weight_oz, is_active, is_banned, sku, inventory_count, admin_bulk_price, admin_bulk_threshold')
       .in('id', items.map(i => i.id));
 
     if (dbProductsError || !dbProducts || dbProducts.length === 0) {
@@ -881,22 +881,9 @@ export async function POST(request: NextRequest) {
         superAgentCost = isFinite(superAgentCost) ? Math.round(superAgentCost * 100) / 100 : null;
       }
 
-      // Fix 3 (2026-07-21): capture the TOP-of-chain house cost per unit at
-      // sale time. Chain sale (agent has a parent) -> the top ancestor's own
-      // ladder cost, ignoring every downstream hop's markup. Top-level agent
-      // sale (no parent) -> the agent's own (already fully adjusted & rounded)
-      // cost IS the house edge. Manufacturer branch and no-agent (direct/house)
-      // orders leave this NULL.
-      if (agentProfile && !isManufacturerStore) {
-        if (superAgentProfile) {
-          const topRaw = topOfChainCosts.get(dbProduct.id);
-          houseCost = topRaw !== undefined && topRaw !== null
-            ? Math.round(topRaw * 100) / 100
-            : null;
-        } else {
-          houseCost = costPrice;
-        }
-      }
+      // The true house cost (what Pep Nation pays the manufacturer)
+      houseCost = dbProduct.house_cost != null ? Number(dbProduct.house_cost) : Number(dbProduct.base_cost);
+      houseCost = isFinite(houseCost) ? Math.round(houseCost * 100) / 100 : null;
 
       const finalProductName = isBundleLine ? `${dbProduct.name} [Part of: ${cartItem.bundleName}]` : dbProduct.name;
 

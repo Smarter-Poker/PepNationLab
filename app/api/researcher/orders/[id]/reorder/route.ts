@@ -84,7 +84,7 @@ export async function POST(
   const productIds = Array.from(new Set(sourceItems.map((it) => it.product_id).filter(Boolean)));
   const { data: products } = await service
     .from('products')
-    .select('id, name, base_cost, is_active, is_banned, inventory_count')
+    .select('id, name, base_cost, house_cost, is_active, is_banned, inventory_count')
     .in('id', productIds);
   const productById = new Map((products ?? []).map((p) => [p.id, p]));
 
@@ -239,15 +239,11 @@ export async function POST(
         superAgentCost = superRaw !== undefined && superRaw !== null
           ? Math.round((superRaw) * 100) / 100
           : null;
-
-        const topRaw = topOfChainCosts.get(it.product_id);
-        houseCost = topRaw !== undefined && topRaw !== null
-          ? Math.round((topRaw) * 100) / 100
-          : null;
-      } else {
-        // Top-of-chain (or unparented) agent: their own cost IS the house edge.
-        houseCost = costPrice;
       }
+
+      // The true house cost (what Pep Nation pays the manufacturer)
+      houseCost = product.house_cost != null ? Number(product.house_cost) : Number(product.base_cost);
+      houseCost = isFinite(houseCost) ? Math.round(houseCost * 100) / 100 : null;
 
       // Platform rule: researcher-facing lines floored at cost x 1.10 - same
       // fail-safe checkout applies as the authoritative last step.
