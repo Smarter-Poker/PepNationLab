@@ -19,7 +19,7 @@ import { captureCallError, captureCallEvent } from '@/lib/messenger/sentryCall';
 import { createE2EESetup, asRoomOptions, type E2EESetup } from '@/lib/messenger/livekitE2EE';
 import { canShareScreen, listDeviceKinds } from '@/lib/messenger/mediaPreflight';
 import CallGridView from './CallGridView';
-import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, SwitchCamera, ScreenShare, ScreenShareOff, Pause, Play, Maximize2, Minimize2 } from 'lucide-react';
+import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, SwitchCamera, ScreenShare, ScreenShareOff, Pause, Play, Minimize2 } from 'lucide-react';
 import IframeLink from '@/components/ui/IframeLink';
 import { toast } from 'sonner';
 import { Track, DisconnectReason, ConnectionState, ConnectionQuality } from 'livekit-client';
@@ -538,22 +538,9 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
       preHoldRef.current = null;
     }
   });
-  const requestPip = wrap(async () => {
-    if (typeof document === 'undefined' || !document.pictureInPictureEnabled) {
-      toast.info('Picture-In-Picture Not Supported In This Browser');
-      return;
-    }
-    try {
-      // Prefer the REMOTE feed: the point of picture-in-picture is to keep
-      // seeing the person you are talking to while you do something else.
-      // Falls back to your own camera when they have no video published.
-      const el =
-        document.querySelector<HTMLVideoElement>('video[data-pnl-remote-video="true"]') ??
-        document.querySelector<HTMLVideoElement>('video[data-pnl-local-video="true"]');
-      if (!el) return;
-      await el.requestPictureInPicture();
-    } catch (err) { captureCallError(err, 'overlay', { stage_detail: 'pip' }); }
-  });
+  // requestPip() was removed with the Picture-In-Picture toolbar button
+  // (owner request 2026-08-19). Minimize covers the same need - keep talking
+  // while you use the app - with a window the user can actually drag.
 
   const flipCamera = wrap(async () => {
     if (!localParticipant.isCameraEnabled) return;
@@ -937,9 +924,11 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
           // narrowest phones in one row — the old wrap turned the bar into
           // a tall floating rectangle mid-screen.
           position: 'absolute',
-          bottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)',
-          left: 'calc(env(safe-area-inset-left, 0px) + 10px)',
-          right: 'calc(env(safe-area-inset-right, 0px) + 10px)',
+          // max() keeps a real gap above the home indicator on phones that
+          // report a safe-area inset AND on those that report 0.
+          bottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 10px), 16px)',
+          left: 'calc(env(safe-area-inset-left, 0px) + 8px)',
+          right: 'calc(env(safe-area-inset-right, 0px) + 8px)',
           transform: `translateY(${toolbarVisible ? 0 : 24}px)`,
           opacity: toolbarVisible ? 1 : 0,
           pointerEvents: toolbarVisible ? 'auto' : 'none',
@@ -1047,15 +1036,11 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
           {isOnHold ? <Play size={20} /> : <Pause size={20} />}
         </button>
 
-        {isVideo && (
-          <button
-            type="button" onClick={() => void requestPip()}
-            className="pnl-toolbar-btn"
-            title="Picture-In-Picture" aria-label="Picture-In-Picture"
-          >
-            <Maximize2 size={20} />
-          </button>
-        )}
+        {/* The Picture-In-Picture ("expand") button was REMOVED at the owner's
+            request 2026-08-19. It was the least-used control, it read as a
+            confusing twin of Minimize, and on a video call it was the eighth
+            button competing for a phone-width row - dropping it gives every
+            remaining control real breathing room on the narrowest iPhone. */}
 
         <button
           type="button" onClick={handleHangUpClick}
@@ -1776,6 +1761,13 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
             }
           : {
               position: 'fixed', inset: 0, background: '#000',
+              // iOS Safari resolves `inset: 0` against a viewport TALLER than
+              // the visible area whenever its bottom toolbar is showing, so
+              // the true bottom of a fixed overlay sits BEHIND that toolbar -
+              // which is what cut the End Call button off. 100dvh is the
+              // dynamic viewport (what you can actually see) and is the same
+              // fix IframeModal already uses for exactly this reason.
+              height: '100dvh', maxHeight: '100dvh',
               display: 'flex', flexDirection: 'column', zIndex: 2000,
             }
       }
