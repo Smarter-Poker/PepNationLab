@@ -519,9 +519,7 @@ export async function POST(request: NextRequest) {
     // cost basis under 3+ level chains -- it's just the next hop up. Resolving
     // agentProfile's own chain to its top ancestor gives the actual house cost,
     // regardless of how many Super Agent hops sit in between.
-    let topOfChainCosts = new Map<string, number>();
     if (superAgentProfile && agentProfile && !isManufacturerStore) {
-      topOfChainCosts = await computeAgentTopOfChainCostsForAgent(serviceSupabase, agentProfile.id, agentTier, productListForPricing);
     }
 
     let flashSaleDiscountPct = 0;

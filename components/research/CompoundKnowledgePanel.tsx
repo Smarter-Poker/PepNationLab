@@ -68,7 +68,7 @@ export default function CompoundKnowledgePanel({
         </p>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+      <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, margin: 0 }}>
         <KV label="Molecular Weight" value={compound.molecular_weight_da ? `${compound.molecular_weight_da} Da` : (compound.identity?.molecular_weight ?? 'Not Listed')} />
         <KV label="Year Discovered" value={compound.year_discovered?.toString() ?? 'Unknown'} />
         <KV label="PubMed Citations" value={compound.pubmed_citation_count ? compound.pubmed_citation_count.toLocaleString() : 'N/A'} />
@@ -76,7 +76,7 @@ export default function CompoundKnowledgePanel({
         <KV label="Half-Life" value={compound.half_life ?? 'See Monograph'} />
         <KV label="Storage" value={compound.handling?.storage_temp ?? 'See Monograph'} />
         <KV label="Administration" value={nasal.routesLabel} />
-      </div>
+      </dl>
 
       {nasal.nasal && (
         <div style={{
@@ -148,11 +148,11 @@ export default function CompoundKnowledgePanel({
 
 function KV({ label, value }: { label: string; value: string }) {
   return (
-    <div>
-      <div style={{ fontSize: 10, color: '#A8B4C0', letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 2 }}>
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <dt style={{ fontSize: 10, color: '#A8B4C0', letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 2 }}>
         {label}
-      </div>
-      <div style={{ fontSize: 13, color: '#FFFFFF', fontWeight: 600 }}>{value}</div>
+      </dt>
+      <dd style={{ margin: 0, fontSize: 13, color: '#FFFFFF', fontWeight: 600 }}>{value}</dd>
     </div>
   );
 }

@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
   });
 
   try {
-    revalidateTag('storefront-catalog');
+    revalidateTag('storefront-catalog', { expire: 0 });
   } catch {}
 
   return NextResponse.json({ success: true });

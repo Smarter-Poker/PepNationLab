@@ -84,7 +84,11 @@ function groupByName(products: RawProduct[]): GroupedProductInternal[] {
     }
   }
 
-  return Array.from(map.values());
+  const arr = Array.from(map.values());
+  for (const g of arr) {
+    g.variants.sort((a, b) => Number(a.unit_size || 0) - Number(b.unit_size || 0));
+  }
+  return arr;
 }
 
 function fuzzyMatch(text: string, query: string): boolean {
@@ -699,12 +703,12 @@ export default function ProductCatalogClient({
                         >
                           {editingHouseCostGroupId === p.id ? (
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} onClick={e => e.stopPropagation()}>
-                              <span style={{ color: '#F87171' }}>$</span>
+                              <span style={{ color: '#FFFFFF' }}>$</span>
                               <input
                                 type="text"
                                 autoFocus
                                 className="form-input"
-                                style={{ width: 60, padding: '2px 4px', height: 24, fontSize: '0.85rem', background: 'var(--bg-metal-dark)', border: '1px solid #F87171', color: '#fff' }}
+                                style={{ width: 60, padding: '2px 4px', height: 24, fontSize: '0.85rem', background: 'var(--bg-metal-dark)', border: '1px solid #FFFFFF', color: '#fff' }}
                                 value={editHouseCostText}
                                 onChange={e => {
                                   let clean = e.target.value.replace(/[^0-9.]/g, '');
@@ -723,9 +727,9 @@ export default function ProductCatalogClient({
                               />
                             </div>
                           ) : (
-                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 8px', background: 'rgba(248,113,113,0.05)', borderRadius: 6, border: '1px dashed rgba(248,113,113,0.3)', transition: 'all 0.2s' }} onMouseOver={e => e.currentTarget.style.background='rgba(248,113,113,0.1)'} onMouseOut={e => e.currentTarget.style.background='rgba(248,113,113,0.05)'}>
-                              <div style={{ color: '#F87171', fontWeight: 600 }}>${p.houseCost.toFixed(2)}</div>
-                              <span style={{ fontSize: '0.65rem', color: '#F87171', textTransform: 'uppercase', fontWeight: 700, marginLeft: 4 }}>Edit</span>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 8px', background: 'rgba(255,255,255,0.05)', borderRadius: 6, border: '1px dashed rgba(255,255,255,0.3)', transition: 'all 0.2s' }} onMouseOver={e => e.currentTarget.style.background='rgba(255,255,255,0.1)'} onMouseOut={e => e.currentTarget.style.background='rgba(255,255,255,0.05)'}>
+                              <div style={{ color: '#FFFFFF', fontWeight: 600 }}>${p.houseCost.toFixed(2)}</div>
+                              <span style={{ fontSize: '0.65rem', color: '#FFFFFF', textTransform: 'uppercase', fontWeight: 700, marginLeft: 4 }}>Edit</span>
                             </div>
                           )}
                         </td>
@@ -954,12 +958,12 @@ export default function ProductCatalogClient({
                               >
                                 {editingHouseCostVariantId === v.id ? (
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} onClick={e => e.stopPropagation()}>
-                                    <span style={{ color: '#F87171' }}>$</span>
+                                    <span style={{ color: '#FFFFFF' }}>$</span>
                                     <input
                                       type="text"
                                       autoFocus
                                       className="form-input"
-                                      style={{ width: 50, padding: '2px 4px', height: 22, fontSize: '0.80rem', background: 'var(--bg-metal-dark)', border: '1px solid #F87171', color: '#fff' }}
+                                      style={{ width: 50, padding: '2px 4px', height: 22, fontSize: '0.80rem', background: 'var(--bg-metal-dark)', border: '1px solid #FFFFFF', color: '#fff' }}
                                       value={editHouseCostText}
                                       onChange={e => {
                                         let clean = e.target.value.replace(/[^0-9.]/g, '');
@@ -978,9 +982,9 @@ export default function ProductCatalogClient({
                                     />
                                   </div>
                                 ) : (
-                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 6px', background: 'rgba(248,113,113,0.03)', borderRadius: 4, border: '1px dashed rgba(248,113,113,0.2)', transition: 'all 0.2s' }} onMouseOver={e => e.currentTarget.style.background='rgba(248,113,113,0.08)'} onMouseOut={e => e.currentTarget.style.background='rgba(248,113,113,0.03)'}>
-                                    <div style={{ color: '#F87171', fontWeight: 600 }}>${vHouse.toFixed(2)}</div>
-                                    <span style={{ fontSize: '0.60rem', color: '#F87171', textTransform: 'uppercase', fontWeight: 700, marginLeft: 2 }}>Edit</span>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 6px', background: 'rgba(255,255,255,0.03)', borderRadius: 4, border: '1px dashed rgba(255,255,255,0.2)', transition: 'all 0.2s' }} onMouseOver={e => e.currentTarget.style.background='rgba(255,255,255,0.08)'} onMouseOut={e => e.currentTarget.style.background='rgba(255,255,255,0.03)'}>
+                                    <div style={{ color: '#FFFFFF', fontWeight: 600 }}>${vHouse.toFixed(2)}</div>
+                                    <span style={{ fontSize: '0.60rem', color: '#FFFFFF', textTransform: 'uppercase', fontWeight: 700, marginLeft: 2 }}>Edit</span>
                                   </div>
                                 )}
                               </td>
