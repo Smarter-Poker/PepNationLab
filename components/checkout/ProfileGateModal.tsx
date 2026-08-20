@@ -28,6 +28,8 @@ export default function ProfileGateModal({ missingFields, initialValues, onCompl
   const [lastName, setLastName] = useState(initialValues.last_name);
   const [phone, setPhone] = useState(initialValues.phone);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
 
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -73,6 +75,7 @@ export default function ProfileGateModal({ missingFields, initialValues, onCompl
   const handleSave = async () => {
     if (!canSave || saving) return;
     setSaving(true);
+    setSaveError(null);
     try {
       const patch: Record<string, string> = {};
       if (needsFirstName) patch.first_name = firstName.trim();
@@ -85,11 +88,12 @@ export default function ProfileGateModal({ missingFields, initialValues, onCompl
         body: JSON.stringify(patch),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Could not save profile.');
+      if (!res.ok) throw new Error(json.error || 'Could not save profile. Please try again.');
       toast.success('Profile updated — continuing to checkout.');
       onComplete();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Save failed. Please try again.');
+      const msg = err instanceof Error ? err.message : 'Could not save profile. Please try again.';
+      setSaveError(msg);
     } finally {
       setSaving(false);
     }
@@ -247,6 +251,33 @@ export default function ProfileGateModal({ missingFields, initialValues, onCompl
 
             </div>
 
+            {/* ── Inline error banner — stays visible so user can read it ── */}
+            {saveError && (
+              <div
+                role="alert"
+                style={{
+                  marginTop: 'var(--space-4)',
+                  padding: '12px 16px',
+                  borderRadius: 10,
+                  background: 'rgba(229,62,62,0.12)',
+                  border: '1px solid rgba(229,62,62,0.45)',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 10,
+                }}
+              >
+                <span style={{ fontSize: '1.1rem', flexShrink: 0 }} aria-hidden="true">⚠️</span>
+                <div>
+                  <p style={{ margin: 0, fontWeight: 700, fontSize: '0.85rem', color: '#FC8181' }}>
+                    Couldn&apos;t save your profile
+                  </p>
+                  <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: 'var(--silver)', lineHeight: 1.5 }}>
+                    {saveError}
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div style={{ marginTop: 'var(--space-5)', display: 'flex', justifyContent: 'flex-end' }}>
               <button
                 type="button"
@@ -265,3 +296,4 @@ export default function ProfileGateModal({ missingFields, initialValues, onCompl
     </div>
   );
 }
+
