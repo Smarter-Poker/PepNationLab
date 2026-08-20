@@ -262,7 +262,7 @@ async function fetchStoreTop10(): Promise<StoreTop10Item[]> {
       const v = pickDefaultVariant(g.variants);
       const size = v.products?.unit_size || '10';
       const measure = v.products?.unit_measure || 'mg';
-      const perVialBase = v.retail_price / 10;
+      const perVialBase = v.retail_price;
       const onSale = Boolean(v.is_on_sale && v.sale_price);
       const perVialDisplay = onSale ? (v.sale_price as number) / 10 : perVialBase;
       const isBW = isBacWaterItem(g.name, v.products?.compound_slug);

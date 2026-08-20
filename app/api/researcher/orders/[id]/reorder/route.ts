@@ -113,7 +113,7 @@ export async function POST(
 
   // Resolve the storefront agent's chain-aware cost basis (mirrors checkout's
   // manufacturer / super-agent / plain-agent branches in app/api/orders/route.ts).
-  // Previously this route priced every line off raw products.base_cost / 10,
+  // Previously this route priced every line off raw products.base_cost,
   // recording it as unit_cost_price with no unit_super_agent_cost at all -
   // bypassing every markup hop in the chain.
   let agentRow: {

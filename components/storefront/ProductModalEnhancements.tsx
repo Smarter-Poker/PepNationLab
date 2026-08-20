@@ -205,7 +205,7 @@ function SupplyMiniCard({
       >
         {supply.name}
         <div style={{ fontSize: '0.74rem', color: 'var(--grey-400)', fontWeight: 500 }}>
-          ${formatMoney(supply.lowestPrice / 10)} Per Vial
+          ${formatMoney(supply.lowestPrice)} Per Vial
         </div>
       </button>
       <button
@@ -1081,7 +1081,7 @@ export default function ProductModalEnhancements({
               {stackComponents.map((sc) => {
                 const groupName = sc.group?.name || sc.displayLabel;
                 const imageUrl = sc.group?.imageUrl;
-                const pricePerVial = sc.group?.lowestPrice ? sc.group.lowestPrice / 10 : null;
+                const pricePerVial = sc.group?.lowestPrice ? sc.group.lowestPrice : null;
                 return (
                   <button
                     key={sc.token}
@@ -1156,14 +1156,14 @@ export default function ProductModalEnhancements({
               gap: 10, color: 'var(--white)',
             }}>
               <span style={{ fontSize: '1.4rem', fontWeight: 800, fontFamily: 'var(--font-brand)' }}>
-                Save ${formatMoney(saveVsSeparately.savings / 10)}
+                Save ${formatMoney(saveVsSeparately.savings)}
               </span>
               <span style={{ fontSize: '0.86rem', color: 'var(--grey-300)' }}>
                 ({saveVsSeparately.pct.toFixed(0)}% Off Separate Vials)
               </span>
             </div>
             <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginTop: 6 }}>
-              Separate Vials Add Up To ${formatMoney(saveVsSeparately.separateTotal / 10)}. The Stack Is ${formatMoney(saveVsSeparately.bundle / 10)}.
+              Separate Vials Add Up To ${formatMoney(saveVsSeparately.separateTotal)}. The Stack Is ${formatMoney(saveVsSeparately.bundle)}.
             </div>
           </section>
         </>
@@ -1221,7 +1221,7 @@ export default function ProductModalEnhancements({
             productName={currentProductName}
             imageUrl={currentImageUrl ?? null}
             pricePerVialDollars={
-              currentBundlePriceDollars != null ? Number(currentBundlePriceDollars) / 10 : null
+              currentBundlePriceDollars != null ? Number(currentBundlePriceDollars) : null
             }
             evidenceTierKey={currentCompound?.evidence_tier ?? undefined}
             category={currentCompound?.category ?? null}
@@ -1253,7 +1253,7 @@ export default function ProductModalEnhancements({
             }}>
             {similarProducts.map(({ ref, group }) => {
               if (!group) return null;
-              const pricePerVial = group.lowestPrice ? group.lowestPrice / 10 : null;
+              const pricePerVial = group.lowestPrice ? group.lowestPrice : null;
               // Show up to 2 research area labels
               const areaLabels = (ref.research_areas || []).slice(0, 2).map(researchAreaLabel);
               return (
