@@ -672,12 +672,15 @@ export default function ProductCatalogClient({
                               />
                             </div>
                           ) : (
-                            <>
-                              ${p.baseCost.toFixed(2)}
-                              <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.18)', marginTop: 2, fontFamily: 'var(--font-brand)' }}>
-                                House: ${(p.houseCost).toFixed(2)}
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 8px', background: 'rgba(0,229,255,0.05)', borderRadius: 6, border: '1px dashed rgba(0,229,255,0.3)', transition: 'all 0.2s' }} onMouseOver={e => e.currentTarget.style.background='rgba(0,229,255,0.1)'} onMouseOut={e => e.currentTarget.style.background='rgba(0,229,255,0.05)'}>
+                              <div>
+                                <div style={{ color: '#00E5FF', fontWeight: 600 }}>${p.baseCost.toFixed(2)}</div>
+                                <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.4)', marginTop: 2, fontFamily: 'var(--font-brand)' }}>
+                                  House: ${(p.houseCost).toFixed(2)}
+                                </div>
                               </div>
-                            </>
+                              <span style={{ fontSize: '0.65rem', color: '#00E5FF', textTransform: 'uppercase', fontWeight: 700, marginLeft: 4 }}>Edit</span>
+                            </div>
                           )}
                         </td>
 
@@ -874,12 +877,15 @@ export default function ProductCatalogClient({
                                     />
                                   </div>
                                 ) : (
-                                  <>
-                                    ${vCost.toFixed(2)}
-                                    <div style={{ fontSize: '0.60rem', color: 'rgba(255,255,255,0.15)', marginTop: 1, fontFamily: 'var(--font-brand)' }}>
-                                      House: ${(vHouse).toFixed(2)}
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 6px', background: 'rgba(0,229,255,0.03)', borderRadius: 4, border: '1px dashed rgba(0,229,255,0.2)', transition: 'all 0.2s' }} onMouseOver={e => e.currentTarget.style.background='rgba(0,229,255,0.08)'} onMouseOut={e => e.currentTarget.style.background='rgba(0,229,255,0.03)'}>
+                                    <div>
+                                      <div style={{ color: '#00E5FF', fontWeight: 600 }}>${vCost.toFixed(2)}</div>
+                                      <div style={{ fontSize: '0.60rem', color: 'rgba(255,255,255,0.3)', marginTop: 1, fontFamily: 'var(--font-brand)' }}>
+                                        House: ${(vHouse).toFixed(2)}
+                                      </div>
                                     </div>
-                                  </>
+                                    <span style={{ fontSize: '0.60rem', color: '#00E5FF', textTransform: 'uppercase', fontWeight: 700, marginLeft: 2 }}>Edit</span>
+                                  </div>
                                 )}
                               </td>
                               {/* Per-unit tier prices */}
