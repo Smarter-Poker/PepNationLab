@@ -235,10 +235,10 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
   const a = useMemo(() => {
     const all = (filteredOrders || []) as any[];
     const absoluteAll = (orders || []) as any[];
-    const absoluteCollected = absoluteAll.filter((o) => COLLECTED.has(o.status));
+    const absoluteCollected = absoluteAll;
     const _sum = (arr: any[], k: string) => arr.reduce((s, o) => s + (Number(o[k]) || 0), 0);
     const absoluteLifetimeRevenue = _sum(absoluteCollected, 'total');
-    const collected = all.filter((o) => COLLECTED.has(o.status));
+    const collected = all;
     const pending = all.filter((o) => PENDING.has(o.status));
 
     const sum = (arr: any[], k: string) => arr.reduce((s, o) => s + (Number(o[k]) || 0), 0);
