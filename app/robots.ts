@@ -95,6 +95,8 @@ const ALLOW = [
   // markdown monographs remain fetchable by AI answer engines.
   '/api/llm',
   '/api/llm/',
+  '/api/openapi',
+  '/.well-known/ai-plugin.json',
   '/llms.txt',
   '/llms-full.txt',
   '/feed.xml',
