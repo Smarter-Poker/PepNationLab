@@ -80,7 +80,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
   const [insights, setInsights] = useState<any | null>(null);
   const [wallet, setWallet] = useState<WalletSummary | null>(null);
   const [commission, setCommission] = useState<{ lifetime: number; thisMonth: number; has: boolean } | null>(null);
-  const [view, setView] = useState<string>('30');
+  
   const [timeFilter, setTimeFilter] = useState('7d');
   
   const filteredOrders = useMemo(() => {
@@ -383,26 +383,17 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
       productMix, topProductSlices, payMix, pnl,
       dailyMap: daily, series7: series(7), series30: series(30), series90: series(90),
     };
-  }, [orders]);
+  }, [orders, filteredOrders]);
 
   // Build chart data from the current view (trailing window or a calendar month).
   const chartData = useMemo(() => {
-    if (view === '7') return a.series7;
-    if (view === '30') return a.series30;
-    if (view === '90') return a.series90;
-    const k = Number(view.slice(1)) || 0;
-    const base = new Date();
-    const y = base.getFullYear(); const m = base.getMonth() - k;
-    const first = new Date(y, m, 1);
-    const days = new Date(y, m + 1, 0).getDate();
-    const out: { date: string; revenue: number; profit: number }[] = [];
-    for (let i = 1; i <= days; i++) {
-      const d = new Date(first.getFullYear(), first.getMonth(), i);
-      const rec = a.dailyMap.get(dayKey(d));
-      out.push({ date: `${d.getMonth() + 1}/${d.getDate()}`, revenue: rec?.revenue || 0, profit: rec?.profit || 0 });
-    }
-    return out;
-  }, [view, a]);
+    if (timeFilter === '7d') return a.series7;
+    if (timeFilter === '30d') return a.series30;
+    if (timeFilter === '90d') return a.series90;
+    if (timeFilter === '1y') return a.series90; // Fallback or could add series365
+    if (timeFilter === 'all') return a.series90; 
+    return a.series30;
+  }, [timeFilter, a]);
 
   const monthOptions = useMemo(() => {
     const out: { value: string; label: string }[] = [];
@@ -737,15 +728,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
         <div className="" style={{ padding: 'var(--space-6)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 'var(--space-4)' }}>
             <h2 className="metal-text" style={{ fontSize: '1.15rem', fontFamily: 'var(--font-brand)', margin: 0 }}>Revenue And Profit</h2>
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-              {['7', '30', '90'].map((r) => (
-                <button key={r} className={`sa-range-btn ${view === r ? 'active' : ''}`} onClick={() => setView(r)}>{r}D</button>
-              ))}
-              <select className="sa-month-select" value={view.startsWith('m') ? view : ''} onChange={(e) => e.target.value && setView(e.target.value)}>
-                <option value="">By Month...</option>
-                {monthOptions.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
-              </select>
-            </div>
+            
           </div>
           <div style={{ width: '100%', height: 320 }} role="img" aria-label="Area Chart Of Revenue And Profit Over The Selected Date Range">
             {a.hasCollected ? (
