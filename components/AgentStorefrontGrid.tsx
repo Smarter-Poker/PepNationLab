@@ -285,6 +285,7 @@ function useCatalogRefresh(agentSlug: string, agentId?: string | null) {
     // ── Realtime: evict + re-fetch the moment any product is updated ────────
     let supabase: ReturnType<typeof createClient> | null = null;
     let realtimeChannel: ReturnType<ReturnType<typeof createClient>['channel']> | null = null;
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
     
     // Only subscribe to realtime if we know the agentId
     if (agentId) {
@@ -301,13 +302,16 @@ function useCatalogRefresh(agentSlug: string, agentId?: string | null) {
               filter: `agent_id=eq.${agentId}`,
             },
             () => {
-              // Evict stale cache and immediately fetch fresh data
-              evictCatalogCache(agentSlug);
-              doRefresh(true);
-              // CRITICAL: Force Next.js to re-fetch the Server Component payload
-              // so the authoritative 'products' prop updates in the UI!
-              // Use soft-reload via router to avoid jarring full page reloads.
-              router.refresh();
+              if (refreshTimer) clearTimeout(refreshTimer);
+              refreshTimer = setTimeout(() => {
+                // Evict stale cache and immediately fetch fresh data
+                evictCatalogCache(agentSlug);
+                doRefresh(true);
+                // CRITICAL: Force Next.js to re-fetch the Server Component payload
+                // so the authoritative 'products' prop updates in the UI!
+                // Use soft-reload via router to avoid jarring full page reloads.
+                router.refresh();
+              }, 1000);
             }
           )
           .subscribe();
@@ -317,12 +321,15 @@ function useCatalogRefresh(agentSlug: string, agentId?: string | null) {
     }
 
     return () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
       if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);
       if (supabase && realtimeChannel) {
         supabase.removeChannel(realtimeChannel);
       }
     };
-  }, [doRefresh, agentSlug, agentId, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doRefresh, agentSlug, agentId]);
+
 }
 
 export default function AgentStorefrontGrid({
@@ -348,8 +355,29 @@ export default function AgentStorefrontGrid({
   const isSavageBrandsNetwork = useMemo(() => {
     // Server-resolved flag first (parent_agent_id chain — covers downlines like
     // /eddierazz whose catalog rows may not carry savage-brands image paths),
-    // then the client-side heuristics as a safety net.
-    return brandNetworkIsSavage || agentSlug === 'savagebrands' || (products ?? []).some(p => p.custom_image_url?.includes('/images/savage-brands/'));
+    // then a client-side heuristic as a safety net for when the server walk
+    // fails closed.
+    if (brandNetworkIsSavage || agentSlug === 'savagebrands') return true;
+
+    // The heuristic used to be `.some(...)` — ONE row carrying a savage path
+    // flipped the whole store to Savage mode. That is not hypothetical: a
+    // KLOW STACK backfill on 2026-08-19 wrote
+    // /images/savage-brands/klow-stack-80mg.jpg onto the KLOW row of ~40
+    // PEP NATION stores. Each of those stores then had exactly 1 savage row
+    // out of ~114, tripped `.some()`, and every OTHER product — whose image
+    // resolves to /images/products/*.png — fell into the savage branch of
+    // getProductImage() and came back as the blank clear vial. The catalog
+    // grid hid the damage because it paints a pre-composited card JPEG and
+    // never renders the vial layer; the detail view and its thumbnails render
+    // it everywhere, which is exactly where the blank vials showed up.
+    //
+    // Require a MAJORITY instead. A real Savage store is ~109/111 savage
+    // rows; a contaminated Pep Nation store is 1/114. One stray row can no
+    // longer misbrand a storefront.
+    const list = products ?? [];
+    if (list.length === 0) return false;
+    const savageRows = list.filter(p => p.custom_image_url?.includes('/images/savage-brands/')).length;
+    return savageRows * 2 > list.length;
   }, [brandNetworkIsSavage, agentSlug, products]);
 
   const [mounted, setMounted] = useState(false);
