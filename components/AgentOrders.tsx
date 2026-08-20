@@ -798,18 +798,11 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
   };
 
   return (
-    <div className="glass-panel" style={{ marginBottom: 'var(--space-6)' }}>
-      {labelModalUrl && (
-        <IframeModal url={labelModalUrl} title="Shipping Label" onClose={() => setLabelModalUrl(null)} />
-      )}
-      <div className="">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)', flexWrap: 'wrap', gap: '16px' }}>
-        <h3 className="metal-text" style={{ fontSize: '1.25rem', fontFamily: 'var(--font-brand)', margin: 0 }}>
-          Completed Sales & Profit
-        </h3>
+    <>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--space-4)' }}>
         <select 
           className="sa-month-select" 
-          style={{ padding: '6px 12px', borderRadius: '8px', background: 'var(--grey-900)', border: '1px solid rgba(255,255,255,0.12)', color: 'var(--white)', fontSize: '0.85rem' }}
+          style={{ padding: '8px 16px', borderRadius: '8px', background: 'var(--grey-900)', border: '1px solid rgba(255,255,255,0.2)', color: 'var(--white)', fontSize: '0.95rem', fontWeight: 800 }}
           value={timeFilter} 
           onChange={(e) => { setTimeFilter(e.target.value); setCurrentPage(1); }}
         >
@@ -819,6 +812,16 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
           <option value="90d">Last 90 Days</option>
           <option value="1y">Last Year</option>
         </select>
+      </div>
+    <div className="glass-panel" style={{ marginBottom: 'var(--space-6)' }}>
+      {labelModalUrl && (
+        <IframeModal url={labelModalUrl} title="Shipping Label" onClose={() => setLabelModalUrl(null)} />
+      )}
+      <div className="">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)', flexWrap: 'wrap', gap: '16px' }}>
+        <h3 className="metal-text" style={{ fontSize: '1.25rem', fontFamily: 'var(--font-brand)', margin: 0 }}>
+          Completed Sales & Profit
+        </h3>
       </div>
       <div
         style={{
@@ -880,7 +883,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
             }
           }}
         />
-      ) : orders.length > 0 ? (
+      ) : filteredOrders.length > 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
           {paginatedOrders.map((order) => {
             const isPendingPayment = order.status === 'pending_customer_payment';
@@ -2115,5 +2118,6 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
       )}
       </div>
     </div>
+    </>
   );
 }
