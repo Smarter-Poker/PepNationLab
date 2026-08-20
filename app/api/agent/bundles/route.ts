@@ -227,8 +227,8 @@ export async function GET() {
           const pid = row.product_id as string;
           if (!pid) continue;
           // costMap value is per 10-vials; divide by 10 for per-vial display.
-          const agentCost = (costMap.get(pid) ?? 0) / 10;
-          const retail = Number(row.retail_price ?? 0) / 10;
+          const agentCost = (costMap.get(pid) ?? 0);
+          const retail = Number(row.retail_price ?? 0);
           priceMap.set(pid, { agent_cost: agentCost, retail_price: retail });
         }
       }
@@ -273,7 +273,7 @@ async function computeMemberSum(svc: Awaited<ReturnType<typeof createServiceClie
   let sum = 0;
   if (rows) {
     for (const r of rows) {
-      sum += (Number(r.retail_price) || 0) / 10;
+      sum += (Number(r.retail_price) || 0);
     }
   }
   return sum;

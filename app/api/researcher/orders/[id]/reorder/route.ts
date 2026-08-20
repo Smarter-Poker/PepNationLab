@@ -212,7 +212,7 @@ export async function POST(
 
     // NOTE: retail_price / base_cost in DB are per-10-vial-pack, but order
     // quantity is number of individual vials. Divide by 10 → per-vial unit.
-    let retailPrice = apMatch ? apMatch.price / 10 : Number(product.base_cost) / 10;
+    let retailPrice = apMatch ? apMatch.price : Number(product.base_cost);
 
     let costPrice: number;
     let superAgentCost: number | null = null;
@@ -231,18 +231,18 @@ export async function POST(
       costPrice = Math.round(retailPrice * (manufacturerCommissionPct / 100) * 100) / 100;
     } else {
       const raw = agentCosts.get(it.product_id);
-      costPrice = raw !== undefined && raw !== null ? raw / 10 : Number(product.base_cost) / 10;
+      costPrice = raw !== undefined && raw !== null ? raw : Number(product.base_cost);
       costPrice = isFinite(costPrice) ? Math.round(costPrice * 100) / 100 : 0;
 
       if (superAgentHasParent) {
         const superRaw = superAgentCosts.get(it.product_id);
         superAgentCost = superRaw !== undefined && superRaw !== null
-          ? Math.round((superRaw / 10) * 100) / 100
+          ? Math.round((superRaw) * 100) / 100
           : null;
 
         const topRaw = topOfChainCosts.get(it.product_id);
         houseCost = topRaw !== undefined && topRaw !== null
-          ? Math.round((topRaw / 10) * 100) / 100
+          ? Math.round((topRaw) * 100) / 100
           : null;
       } else {
         // Top-of-chain (or unparented) agent: their own cost IS the house edge.

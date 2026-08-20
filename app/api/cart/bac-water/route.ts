@@ -306,7 +306,7 @@ export async function POST(req: NextRequest) {
             const raw = apRow.is_on_sale && apRow.sale_price != null
               ? Number(apRow.sale_price)
               : Number(apRow.retail_price);
-            const perVial = Number.isFinite(raw) && raw > 0 ? raw / 10 : 0;
+            const perVial = Number.isFinite(raw) && raw > 0 ? raw : 0;
             if (perVial > 0) bacWaterProduct.retail_price = perVial;
           }
         } else {
@@ -326,7 +326,7 @@ export async function POST(req: NextRequest) {
               .eq('product_id', preferredBac.id)
               .maybeSingle();
             if (pubRow?.retail_price) {
-              bacWaterProduct.retail_price = Number(pubRow.retail_price) / 10;
+              bacWaterProduct.retail_price = Number(pubRow.retail_price);
             }
           }
         }
