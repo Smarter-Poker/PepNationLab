@@ -49,6 +49,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { ArrowRight, Plus, Beaker, ChevronDown, ChevronUp, BookmarkPlus, AlertCircle, CheckCircle2, Shield, AlertTriangle, BookOpen, Trophy, Clock, Sparkles, Thermometer } from 'lucide-react';
 import PinToCompareButton from '../research/PinToCompareButton';
+import { optimizedImageSrc, makeImageErrorHandler } from '@/lib/imageOptimize';
 import DynamicDetailButton from './DynamicDetailButton';
 import ImageAddToCartButton from './ImageAddToCartButton';
 import { scoreCompound } from '../research/CompareTool';
@@ -181,10 +182,17 @@ function SupplyMiniCard({
       }}
     >
       {supply.imageUrl ? (
+        // MOBILE BLANK-VIAL FIX: 48px thumb, so request a 96px AVIF instead of
+        // the 1024px original. See lib/imageOptimize.ts.
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={supply.imageUrl}
+          src={optimizedImageSrc(supply.imageUrl, 48)}
           alt={supply.name}
+          width={48}
+          height={48}
+          loading="lazy"
+          decoding="async"
+          onError={makeImageErrorHandler(supply.imageUrl)}
           style={{ width: 48, height: 48, borderRadius: 10, objectFit: 'contain', flexShrink: 0, background: '#0F1923' }}
         />
       ) : (
@@ -488,7 +496,7 @@ function IsThisRightForMe({
         onMouseOver={e => e.currentTarget.style.transform = 'scale(1.01)'}
         onMouseOut={e => e.currentTarget.style.transform = 'none'}
       >
-        // eslint-disable-next-line @next/next/no-img-element
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/images/right-for-my-research-btn.png"
           alt="Is This Right For My Research?"
@@ -643,7 +651,7 @@ function ReconstitutionCalc({
         onMouseOver={e => e.currentTarget.style.transform = 'scale(1.01)'}
         onMouseOut={e => e.currentTarget.style.transform = 'none'}
       >
-        // eslint-disable-next-line @next/next/no-img-element
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/images/reconstitution-calculator-btn.png"
           alt="Reconstitution Calculator"
@@ -1106,10 +1114,17 @@ export default function ProductModalEnhancements({
                     }}
                   >
                     {imageUrl ? (
+                      // MOBILE BLANK-VIAL FIX: 80px thumb -> 256px AVIF, not the
+                      // 1024px original. See lib/imageOptimize.ts.
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={imageUrl}
+                        src={optimizedImageSrc(imageUrl, 80)}
                         alt={groupName}
+                        width={80}
+                        height={80}
+                        loading="lazy"
+                        decoding="async"
+                        onError={makeImageErrorHandler(imageUrl)}
                         style={{ width: 80, height: 80, borderRadius: 10, objectFit: 'contain', background: '#0F1923', marginBottom: 4 }}
                       />
                     ) : (
@@ -1287,10 +1302,17 @@ export default function ProductModalEnhancements({
                     </div>
                   )}
                   {group.imageUrl ? (
+                    // MOBILE BLANK-VIAL FIX: 80px thumb -> 256px AVIF, not the
+                    // 1024px original. See lib/imageOptimize.ts.
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={group.imageUrl}
+                      src={optimizedImageSrc(group.imageUrl, 80)}
                       alt={group.name}
+                      width={80}
+                      height={80}
+                      loading="lazy"
+                      decoding="async"
+                      onError={makeImageErrorHandler(group.imageUrl)}
                       style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'contain', background: '#0F1923' }}
                     />
                   ) : (
