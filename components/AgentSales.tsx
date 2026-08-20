@@ -491,6 +491,20 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '-16px' }}>
+        <select 
+          className="sa-month-select" 
+          style={{ padding: '8px 16px', borderRadius: '8px', background: 'var(--grey-900)', border: '1px solid rgba(255,255,255,0.2)', color: 'var(--white)', fontSize: '0.95rem', fontWeight: 800, cursor: 'pointer' }}
+          value={timeFilter} 
+          onChange={(e) => setTimeFilter(e.target.value)}
+        >
+          <option value="all">All Time</option>
+          <option value="7d">Last 7 Days</option>
+          <option value="30d">Last 30 Days</option>
+          <option value="90d">Last 90 Days</option>
+          <option value="1y">Last Year</option>
+        </select>
+      </div>
       <style dangerouslySetInnerHTML={{ __html: `
         .sa-label { font-size: 0.72rem; color: var(--grey-400); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
         .sa-stat { font-size: 1.9rem; font-weight: 800; font-family: var(--font-brand); color: var(--white); line-height: 1.1; }
