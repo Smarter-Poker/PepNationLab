@@ -19,8 +19,8 @@ BEGIN
 END;
 $$;
 
-DROP TRIGGER IF EXISTS tr_sync_savage_brands_pricing ON public.agent_products;
-CREATE TRIGGER tr_sync_savage_brands_pricing
+DROP TRIGGER IF EXISTS trz_sync_savage_brands_pricing ON public.agent_products;
+CREATE TRIGGER trz_sync_savage_brands_pricing
 AFTER UPDATE OF retail_price, sale_price ON public.agent_products
 FOR EACH ROW
 EXECUTE FUNCTION public.sync_savage_brands_pricing();
