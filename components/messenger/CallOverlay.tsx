@@ -19,7 +19,7 @@ import { captureCallError, captureCallEvent } from '@/lib/messenger/sentryCall';
 import { createE2EESetup, asRoomOptions, type E2EESetup } from '@/lib/messenger/livekitE2EE';
 import { canShareScreen, listDeviceKinds } from '@/lib/messenger/mediaPreflight';
 import CallGridView from './CallGridView';
-import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, SwitchCamera, ScreenShare, ScreenShareOff, Pause, Play, Minimize2 } from 'lucide-react';
+import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, SwitchCamera, ScreenShare, ScreenShareOff, Pause, Play, Maximize2, Minimize2 } from 'lucide-react';
 import IframeLink from '@/components/ui/IframeLink';
 import { toast } from 'sonner';
 import { Track, DisconnectReason, ConnectionState, ConnectionQuality } from 'livekit-client';
@@ -140,19 +140,37 @@ function injectPulseRingAnim() {
       padding: 2px 8px; background: rgba(0, 196, 188, 0.12);
       border-radius: 999px; border: 1px solid rgba(0, 196, 188, 0.35);
     }
+    /* THE CONTROL BAR (owner request 2026-08-19: stack it into two rows in
+       portrait so nothing is ever cut off).
+
+       A GRID, not a flex row. The column count is handed in as --pnl-cols,
+       computed from how many controls this particular call actually renders
+       (a video call has 8, an audio call 5), so the split is deliberate -
+       4 + 4 - instead of a ragged wrap that leaves one lonely button on the
+       second row. Columns are minmax(0, 1fr): they divide the available
+       width exactly, so the row can never overflow the phone no matter how
+       narrow it is.
+
+       On a wide screen (landscape phone, tablet, desktop) there is plenty of
+       room, so --pnl-cols-wide puts every control back on ONE row. */
+    .pnl-call-toolbar {
+      display: grid;
+      grid-template-columns: repeat(var(--pnl-cols, 4), minmax(0, 1fr));
+      justify-items: center;
+      align-items: center;
+      gap: 10px 6px;
+    }
+    @media (min-width: 600px) {
+      .pnl-call-toolbar {
+        grid-template-columns: repeat(var(--pnl-cols-wide, 8), minmax(0, 1fr));
+      }
+    }
     .pnl-toolbar-btn {
-      /* Owner report 2026-08-19: the End Call button was cut off on iPhone.
-         The old clamp() had a hard 36px floor with flex-shrink:0, so on a
-         320pt viewport (iPhone SE, or ANY iPhone with Display Zoom on) eight
-         buttons needed 316px in a ~280px row and the LAST one - End Call -
-         overflowed off-screen. Buttons are now true flex items: they share
-         the row equally, cap at 44px on wide screens, and COMPRESS as far as
-         needed on narrow ones (aspect-ratio keeps them circular). The row
-         can mathematically never overflow, portrait or landscape, no matter
-         how many controls a video call renders. */
-      flex: 1 1 0;
+      /* Fills its grid cell, capped so buttons never balloon on a desktop.
+         aspect-ratio keeps them perfectly circular at every size. */
+      width: 100%;
+      max-width: 52px;
       min-width: 0;
-      max-width: 44px;
       height: auto;
       aspect-ratio: 1 / 1;
       border: none; border-radius: 50%;
@@ -538,9 +556,22 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
       preHoldRef.current = null;
     }
   });
-  // requestPip() was removed with the Picture-In-Picture toolbar button
-  // (owner request 2026-08-19). Minimize covers the same need - keep talking
-  // while you use the app - with a window the user can actually drag.
+  const requestPip = wrap(async () => {
+    if (typeof document === 'undefined' || !document.pictureInPictureEnabled) {
+      toast.info('Picture-In-Picture Not Supported In This Browser');
+      return;
+    }
+    try {
+      // Prefer the REMOTE feed: the point of picture-in-picture is to keep
+      // seeing the person you are talking to while you do something else.
+      // Falls back to your own camera when they have no video published.
+      const el =
+        document.querySelector<HTMLVideoElement>('video[data-pnl-remote-video="true"]') ??
+        document.querySelector<HTMLVideoElement>('video[data-pnl-local-video="true"]');
+      if (!el) return;
+      await el.requestPictureInPicture();
+    } catch (err) { captureCallError(err, 'overlay', { stage_detail: 'pip' }); }
+  });
 
   const flipCamera = wrap(async () => {
     if (!localParticipant.isCameraEnabled) return;
@@ -586,6 +617,25 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
     };
     return rank(localQuality) < rank(remoteQuality) ? localQuality : remoteQuality;
   })();
+
+  // How many controls will the bar actually render for THIS call? Must mirror
+  // the render conditions below exactly, because the grid's column count is
+  // derived from it. Video calls show 8 (7 with the camera off, which hides
+  // Flip); audio calls show 5.
+  const controlCount =
+    (onMinimize ? 1 : 0) + // Minimize
+    1 +                    // Mute
+    (isVideo ? 1 : 0) +    // Camera
+    (isVideo && !isCamDisabled ? 1 : 0) + // Flip Camera
+    1 +                    // Screen Share
+    1 +                    // Hold
+    (isVideo ? 1 : 0) +    // Picture-In-Picture
+    1;                     // Hang Up
+  // Portrait: split into two balanced rows once there are more than five
+  // controls (five fit one row on even the narrowest iPhone). The top row
+  // takes the extra button on an odd count, so Hang Up always sits on the
+  // bottom row where the thumb naturally rests.
+  const toolbarCols = controlCount > 5 ? Math.ceil(controlCount / 2) : controlCount;
 
   const isGroup = remoteParticipants.length > 1;
   const counterpartyInitials = counterpartyName
@@ -916,13 +966,16 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
       */}
       <div
         onClick={(e) => e.stopPropagation()}
+        className="pnl-call-toolbar"
         style={{
-          // One horizontal bar laid ACROSS the bottom of the screen (owner
-          // request 2026-08-19): anchored left+right instead of centered
-          // shrink-to-fit, single row, never wraps. Buttons are fluid
-          // (clamp 36-44px in .pnl-toolbar-btn) so even 8 controls fit the
-          // narrowest phones in one row — the old wrap turned the bar into
-          // a tall floating rectangle mid-screen.
+          // TWO STACKED ROWS IN PORTRAIT (owner request 2026-08-19). The
+          // layout itself lives in .pnl-call-toolbar; the column count is
+          // passed in as a CSS variable so the split is computed from the
+          // controls this call actually renders. On screens 600px and wider
+          // (landscape, tablet, desktop) --pnl-cols-wide collapses it back to
+          // a single row.
+          ['--pnl-cols' as string]: String(toolbarCols),
+          ['--pnl-cols-wide' as string]: String(controlCount),
           position: 'absolute',
           // max() keeps a real gap above the home indicator on phones that
           // report a safe-area inset AND on those that report 0.
@@ -935,9 +988,7 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
           transition: 'opacity 0.3s ease, transform 0.3s ease',
           background: 'rgba(11, 30, 48, 0.78)',
           backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-          padding: '8px 10px', borderRadius: 32,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-evenly',
-          gap: 4, flexWrap: 'nowrap',
+          padding: '10px 12px', borderRadius: 28,
           zIndex: 200,
           border: '1px solid rgba(255,255,255,0.08)',
           boxShadow: '0 12px 32px rgba(0,0,0,0.5)',
@@ -1036,11 +1087,15 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
           {isOnHold ? <Play size={20} /> : <Pause size={20} />}
         </button>
 
-        {/* The Picture-In-Picture ("expand") button was REMOVED at the owner's
-            request 2026-08-19. It was the least-used control, it read as a
-            confusing twin of Minimize, and on a video call it was the eighth
-            button competing for a phone-width row - dropping it gives every
-            remaining control real breathing room on the narrowest iPhone. */}
+        {isVideo && (
+          <button
+            type="button" onClick={() => void requestPip()}
+            className="pnl-toolbar-btn"
+            title="Picture-In-Picture" aria-label="Picture-In-Picture"
+          >
+            <Maximize2 size={20} />
+          </button>
+        )}
 
         <button
           type="button" onClick={handleHangUpClick}
