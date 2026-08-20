@@ -195,9 +195,10 @@ export default function ProductCatalogClient({
   const tierPrice = (productId: string, cost: number, tier: string) => {
     const overrideKey = `${productId}:${tier}`;
     const multiplier = overrides[overrideKey] ?? multipliers[tier] ?? 1;
-    // Prices in DB are per-10-vial pack. Show per-unit (/ 10) in the catalog.
-    return `$${((cost * multiplier) / 10).toFixed(2)}`;
+    // base_cost is now per-vial — no /10 needed.
+    return `$${(cost * multiplier).toFixed(2)}`;
   };
+
 
   const toggleGroup = (name: string) => {
     setExpandedGroups((prev) => {
