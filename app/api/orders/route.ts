@@ -644,7 +644,7 @@ export async function POST(request: NextRequest) {
         unitRetail = agentCustomRetail[dbProduct.id];
       } else {
         const retailMultiplier = tierMultipliers['tier_3'] ?? 10;
-        unitRetail = Number(dbProduct.base_cost) * retailMultiplier / 10;
+        unitRetail = Number(dbProduct.base_cost) * retailMultiplier;
       }
       cartBundleUnitRetailSum.set(key, (cartBundleUnitRetailSum.get(key) || 0) + unitRetail);
     }
@@ -706,7 +706,7 @@ export async function POST(request: NextRequest) {
         if (retailMultiplier === undefined || retailMultiplier === null) {
           return NextResponse.json({ error: 'Pricing Configuration Unavailable. Please Try Again.' }, { status: 500 });
         }
-        retailPrice = baseCost * retailMultiplier / 10;
+        retailPrice = baseCost * retailMultiplier;
       }
 
       const itemQty = Number(cartItem.quantity) || 1;
@@ -739,11 +739,11 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Pricing Configuration Unavailable. Please Try Again.' }, { status: 500 });
           }
           superAgentCost = isWholesalePurchase
-            ? (saCostRaw / 10)
+            ? saCostRaw
             : applyBulkPrice(
-                saCostRaw / 10,
+                saCostRaw,
                 itemQty,
-                dbProduct.admin_bulk_price != null ? dbProduct.admin_bulk_price / 10 : null,
+                dbProduct.admin_bulk_price != null ? dbProduct.admin_bulk_price : null,
                 dbProduct.admin_bulk_threshold
               );
 
@@ -759,14 +759,10 @@ export async function POST(request: NextRequest) {
              baselineApplied = true;
              // Sub-agents do not get the bulk_baseline_cost break; they always
              // pay the baseline tier their parent has set.
-             // baseline_cost / bulk_baseline_cost are stored PER-10-VIAL PACK, so
-             // divide by 10 to get the per-vial cost (matches every other price in
-             // this file and the manual invoice path). Without this the buyer is
-             // billed 10x the intended baseline.
              if (!isWholesalePurchase && saConfig.bulk_baseline_cost !== null && itemQty >= saConfig.bulk_threshold) {
-                 costPrice = saConfig.bulk_baseline_cost / 10;
+                 costPrice = saConfig.bulk_baseline_cost;
              } else {
-                 costPrice = saConfig.baseline_cost / 10;
+                 costPrice = saConfig.baseline_cost;
              }
           } else {
              costPrice = superAgentCost;
@@ -782,7 +778,7 @@ export async function POST(request: NextRequest) {
              if (isTierLadderV2()) {
                const aCostRaw = agentCosts.get(dbProduct.id);
                if (aCostRaw !== undefined && aCostRaw !== null) {
-                 costPrice = aCostRaw / 10;
+                 costPrice = aCostRaw;
                } else {
                  costPrice = (superAgentCost ?? 0) * (1 + (agentEffectiveMarkupPct / 100));
                }
@@ -799,11 +795,11 @@ export async function POST(request: NextRequest) {
           // Agent self-buy at a regular agent's storefront: skip bulk pricing.
           // Researcher buying through the agent: keep bulk pricing.
           costPrice = isWholesalePurchase
-            ? (aCostRaw / 10)
+            ? aCostRaw
             : applyBulkPrice(
-                aCostRaw / 10,
+                aCostRaw,
                 itemQty,
-                dbProduct.admin_bulk_price != null ? dbProduct.admin_bulk_price / 10 : null,
+                dbProduct.admin_bulk_price != null ? dbProduct.admin_bulk_price : null,
                 dbProduct.admin_bulk_threshold
               );
         }
@@ -895,7 +891,7 @@ export async function POST(request: NextRequest) {
         if (superAgentProfile) {
           const topRaw = topOfChainCosts.get(dbProduct.id);
           houseCost = topRaw !== undefined && topRaw !== null
-            ? Math.round((topRaw / 10) * 100) / 100
+            ? Math.round(topRaw * 100) / 100
             : null;
         } else {
           houseCost = costPrice;
