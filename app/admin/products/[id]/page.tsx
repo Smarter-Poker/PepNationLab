@@ -199,9 +199,8 @@ export default function EditProductPage() {
     );
   }
 
-  const baseCost = parseFloat(form.base_cost);
-  const validCost = form.base_cost && !isNaN(baseCost);
   const invCount = parseInt(form.inventory_count, 10) || 0;
+
 
   return (
     <div style={{ padding: 'var(--space-8)', maxWidth: 760 }}>
