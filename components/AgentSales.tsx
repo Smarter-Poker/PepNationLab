@@ -81,7 +81,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
   const [wallet, setWallet] = useState<WalletSummary | null>(null);
   const [commission, setCommission] = useState<{ lifetime: number; thisMonth: number; has: boolean } | null>(null);
   const [view, setView] = useState<string>('30');
-  const [timeFilter, setTimeFilter] = useState('all');
+  const [timeFilter, setTimeFilter] = useState('7d');
   
   const filteredOrders = useMemo(() => {
     if (timeFilter === 'all') return orders;
