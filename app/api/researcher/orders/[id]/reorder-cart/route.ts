@@ -151,9 +151,8 @@ export async function POST(
     if (apMatch && !apMatch.is_visible) { skipped.push({ product_name: product.name, reason: 'Hidden From Storefront' }); continue; }
 
     const baseCost = Number(product.base_cost) || 0;
-    // retail_price / base_cost are per-10-vial packs; order quantity is per vial.
-    const retailPerVial = apMatch ? apMatch.price / 10 : baseCost / 10;
-    // Agent self-buys use cost pricing (base_cost / 10), not the storefront retail
+    const retailPerVial = apMatch ? apMatch.price : baseCost;
+    // Agent self-buys use cost pricing (base_cost), not the storefront retail
     // price. This mirrors the server-side pricing in POST /api/orders.
     const costPerVial = baseCost;
     const perVial = isAgentSelfBuy ? costPerVial : retailPerVial;

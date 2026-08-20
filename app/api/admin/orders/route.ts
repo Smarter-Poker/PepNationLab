@@ -84,15 +84,8 @@ export async function GET(req: NextRequest) {
         if (order.agent_id === 'b8bd12e6-8196-401e-b37b-f742caf1596c') return false; // Daniel Bekavac
       }
 
-      // 2. Pending customer payment boundary: scope unconfirmed payment orders
-      // to the owning agent only. agent_approval_pending is intentionally NOT
-      // included here — the admin must see every order awaiting agent action
-      // regardless of which agent owns the store.
-      if (order.status === 'pending_customer_payment') {
-        if (order.agent_id && order.agent_id !== gate.userId) {
-          return false;
-        }
-      }
+      // Removed pending_customer_payment boundary per user request:
+      // "I SHOULD SEE A LIST OF ALL RECENT SALES, REGUARDLESS IF THEY ARE PENDING, APPROVED OR ANYTHING ELSE."
       return true;
     });
 
