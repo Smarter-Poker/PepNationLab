@@ -3982,14 +3982,15 @@ export default function AgentStorefrontGrid({
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <Image
-                  src={detailProduct.imageUrl || '/images/peptide_clear.png'}
+                  src={getProductImage(detailProduct.imageUrl, detailProduct.category || 'Other', detailProduct.name, isSavageBrandsNetwork ? true : !!detailProduct.imageUrl?.includes('/images/savage-brands/'), agentSlug, isSavageBrandsNetwork)}
                   alt={detailProduct.name}
                   fill
                   sizes="(max-width: 768px) 100vw, 50vw"
                   style={{ objectFit: 'contain', objectPosition: 'center', transition: 'transform 0.4s ease' }}
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    const fallback = getProductImage(null, detailProduct.category || 'Other', detailProduct.name, false, agentSlug, isSavageBrandsNetwork);
+                    // For Savage Brands, use allowBrandSpecific=true so the fallback is a real vial, not a blank clear vial
+                    const fallback = getProductImage(detailProduct.imageUrl, detailProduct.category || 'Other', detailProduct.name, true, agentSlug, isSavageBrandsNetwork);
                     if (target.src !== fallback && !target.src.includes(fallback)) {
                       target.srcset = '';
                       target.src = fallback;
