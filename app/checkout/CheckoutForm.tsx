@@ -452,10 +452,12 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             .limit(5);
           const p = ((bacRows as any) ?? []).find((r: any) => String(r.unit_size) === '10') ?? ((bacRows as any) ?? [])[0] ?? null;
           if (p) {
-            // Canonical per-vial retail is the admin ceiling price (max_retail_price,
-            // stored per 10-pack) / 10 -- e.g. $89.70/pack -> $8.97/vial. Only if
-            // that's unset do we fall back to base_cost.
-            const perVial = Number(p.max_retail_price) > 0 ? Number(p.max_retail_price) / 10 : (Number(p.base_cost) || 0);
+            // Canonical per-vial retail is the admin ceiling price. max_retail_price
+            // is PER VIAL (sync_max_retail_price sets it from the per-vial base_cost),
+            // so there is no pack-to-vial divisor -- the /10 that used to be here
+            // auto-added BAC Water at a tenth of its price. Only if that's unset do we
+            // fall back to base_cost.
+            const perVial = Number(p.max_retail_price) > 0 ? Number(p.max_retail_price) : (Number(p.base_cost) || 0);
             const sizeLabel = p.unit_size ? `(${p.unit_size}${p.unit_measure || ''})` : '';
             bac = {
               id: p.id, agentProductId: p.id,

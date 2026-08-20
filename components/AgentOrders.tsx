@@ -127,12 +127,24 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const [showManualOrder, setShowManualOrder] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [timeFilter, setTimeFilter] = useState('all');
+  
+  const filteredOrders = React.useMemo(() => {
+    if (timeFilter === 'all') return orders;
+    const now = Date.now();
+    let cutoff = 0;
+    if (timeFilter === '7d') cutoff = now - 7 * 24 * 60 * 60 * 1000;
+    else if (timeFilter === '30d') cutoff = now - 30 * 24 * 60 * 60 * 1000;
+    else if (timeFilter === '90d') cutoff = now - 90 * 24 * 60 * 60 * 1000;
+    else if (timeFilter === '1y') cutoff = now - 365 * 24 * 60 * 60 * 1000;
+    return orders.filter(o => new Date(o.created_at).getTime() >= cutoff);
+  }, [orders, timeFilter]);
 
   // Pagination Logic
   const PAGE_SIZE = 25;
-  const totalPages = Math.ceil(orders.length / PAGE_SIZE);
+  const totalPages = Math.ceil(filteredOrders.length / PAGE_SIZE);
   const safeCurrentPage = Math.max(1, Math.min(currentPage, totalPages || 1));
-  const paginatedOrders = orders.slice((safeCurrentPage - 1) * PAGE_SIZE, safeCurrentPage * PAGE_SIZE);
+  const paginatedOrders = filteredOrders.slice((safeCurrentPage - 1) * PAGE_SIZE, safeCurrentPage * PAGE_SIZE);
 
   // Detail modal state
   const [detailOrder, setDetailOrder] = useState<Order | null>(null);
@@ -813,7 +825,19 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
           Manage Orders Registered By Your Clients. Click A Row To Open The Detail View. Coordinate
           Cash Settlements Offline And Release For System Fulfillment.
         </p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
+          <select 
+            className="sa-month-select" 
+            style={{ padding: '4px 8px', borderRadius: '4px', background: 'var(--grey-900)', border: '1px solid var(--grey-800)', color: 'var(--white)', fontSize: '0.85rem' }}
+            value={timeFilter} 
+            onChange={(e) => { setTimeFilter(e.target.value); setCurrentPage(1); }}
+          >
+            <option value="all">All Time</option>
+            <option value="7d">Last 7 Days</option>
+            <option value="30d">Last 30 Days</option>
+            <option value="90d">Last 90 Days</option>
+            <option value="1y">Last Year</option>
+          </select>
           {/* Same-origin API download, not an external link - a plain anchor is fine here. */}
           <a
             href="/api/agent/shipping/export"

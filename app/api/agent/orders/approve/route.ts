@@ -298,14 +298,18 @@ export async function POST(req: NextRequest) {
     for (const item of items) {
       const qty = Number(item.quantity) || 0;
       if (qty <= 0) continue;
+      // computeAgentCostForAgent returns a PER-VIAL cost (base_cost is
+      // per-vial) and qty counts individual vials. Nothing is sold or billed
+      // in 10-packs, so no divisor applies. The /10 that used to be on these
+      // two fallbacks under-billed them 10x.
       if (isSubAgentOrder) {
         const stored = Number(item.unit_super_agent_cost);
         if (Number.isFinite(stored) && stored >= 0) totalCogs += stored * qty;
-        else if (item.product_id) totalCogs += (await computeAgentCostForAgent(supabase, item.product_id, primaryBilledAgentId, billedAgentTier) / 10) * qty;
+        else if (item.product_id) totalCogs += (await computeAgentCostForAgent(supabase, item.product_id, primaryBilledAgentId, billedAgentTier)) * qty;
       } else {
         const stored = Number(item.unit_cost_price);
         if (Number.isFinite(stored) && stored >= 0) totalCogs += stored * qty;
-        else if (item.product_id) totalCogs += (await computeAgentCostForAgent(supabase, item.product_id, primaryBilledAgentId, billedAgentTier) / 10) * qty;
+        else if (item.product_id) totalCogs += (await computeAgentCostForAgent(supabase, item.product_id, primaryBilledAgentId, billedAgentTier)) * qty;
       }
     }
 

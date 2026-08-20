@@ -80,7 +80,19 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
   const [insights, setInsights] = useState<any | null>(null);
   const [wallet, setWallet] = useState<WalletSummary | null>(null);
   const [commission, setCommission] = useState<{ lifetime: number; thisMonth: number; has: boolean } | null>(null);
-  const [view, setView] = useState<string>('30'); // '7' | '30' | '90' | 'm0' | 'm1' | ...
+  const [view, setView] = useState<string>('30');
+  const [timeFilter, setTimeFilter] = useState('all');
+  
+  const filteredOrders = useMemo(() => {
+    if (timeFilter === 'all') return orders;
+    const now = Date.now();
+    let cutoff = 0;
+    if (timeFilter === '7d') cutoff = now - 7 * 24 * 60 * 60 * 1000;
+    else if (timeFilter === '30d') cutoff = now - 30 * 24 * 60 * 60 * 1000;
+    else if (timeFilter === '90d') cutoff = now - 90 * 24 * 60 * 60 * 1000;
+    else if (timeFilter === '1y') cutoff = now - 365 * 24 * 60 * 60 * 1000;
+    return orders.filter((o: any) => new Date(o.created_at).getTime() >= cutoff);
+  }, [orders, timeFilter]); // '7' | '30' | '90' | 'm0' | 'm1' | ...
   const [goal, setGoal] = useState<number>(0);
   const [goalLoaded, setGoalLoaded] = useState(false);
   const [editingGoal, setEditingGoal] = useState(false);
@@ -221,7 +233,11 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
 
   // -- All analytics derived from the orders array --
   const a = useMemo(() => {
-    const all = (orders || []) as any[];
+    const all = (filteredOrders || []) as any[];
+    const absoluteAll = (orders || []) as any[];
+    const absoluteCollected = absoluteAll.filter((o) => COLLECTED.has(o.status));
+    const _sum = (arr: any[], k: string) => arr.reduce((s, o) => s + (Number(o[k]) || 0), 0);
+    const absoluteLifetimeRevenue = _sum(absoluteCollected, 'total');
     const collected = all.filter((o) => COLLECTED.has(o.status));
     const pending = all.filter((o) => PENDING.has(o.status));
 
@@ -356,7 +372,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
     }
     const pnl = Array.from(pnlMap.values()).sort((x, y) => y.ts - x.ts).slice(0, 12);
 
-    return {
+    return { absoluteLifetimeRevenue,
       hasCollected: collected.length > 0,
       lifetimeRevenue, lifetimeProfit, lifetimeOrders, aov, margin, pipeline,
       ownProfit, downlineProfit, downlineSalesTotal, downlineOrderCount,
@@ -405,8 +421,8 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
   const paceGap = Math.abs(a.monthRevenue - expectedByNow);
 
   // Milestones
-  const nextMilestone = MILESTONES.find((m) => a.lifetimeRevenue < m.amount) || null;
-  const achievedMilestones = MILESTONES.filter((m) => a.lifetimeRevenue >= m.amount);
+  const nextMilestone = MILESTONES.find((m) => a.absoluteLifetimeRevenue < m.amount) || null;
+  const achievedMilestones = MILESTONES.filter((m) => a.absoluteLifetimeRevenue >= m.amount);
 
   // -- Celebration: fire once when a new milestone or the monthly goal is crossed.
   //    Seeds silently on first load so we never burst on initial mount. --
@@ -668,7 +684,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 14 }}>
             {MILESTONES.map((m) => {
-              const hit = a.lifetimeRevenue >= m.amount;
+              const hit = a.absoluteLifetimeRevenue >= m.amount;
               return (
                 <span key={m.amount} className="sa-badge" style={{
                   background: hit ? 'rgba(0,255,157,0.12)' : 'rgba(255,255,255,0.04)',
@@ -682,10 +698,10 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
             <div style={{ marginTop: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 6 }}>
                 <span>Next: {nextMilestone.label}</span>
-                <span>{fmt(a.lifetimeRevenue)} / {fmt(nextMilestone.amount)}</span>
+                <span>{fmt(a.absoluteLifetimeRevenue)} / {fmt(nextMilestone.amount)}</span>
               </div>
               <div style={{ height: 8, borderRadius: 999, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
-                <div style={{ width: `${Math.min(100, (a.lifetimeRevenue / nextMilestone.amount) * 100)}%`, height: '100%', background: 'linear-gradient(90deg, #00E5FF, #00FF9D)', borderRadius: 999, transition: 'width 0.6s ease' }} />
+                <div style={{ width: `${Math.min(100, (a.absoluteLifetimeRevenue / nextMilestone.amount) * 100)}%`, height: '100%', background: 'linear-gradient(90deg, #00E5FF, #00FF9D)', borderRadius: 999, transition: 'width 0.6s ease' }} />
               </div>
             </div>
           )}
@@ -695,7 +711,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
       {/* KPI SNAPSHOT */}
       <div className="sa-capitalize-all" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 'var(--space-4)' }}>
         <KpiCard
-          label="Collected Revenue"
+          label={timeFilter === 'all' ? "Lifetime Revenue" : "Revenue"}
           value={fmt(a.lifetimeRevenue)}
           delta={a.revDelta30}
           deltaLabel="Vs Prior 30d"

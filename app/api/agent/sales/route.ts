@@ -184,8 +184,9 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Batch-resolve the needed chain costs (per-10-vial-pack; /10 to per-vial,
-    // checkout's convention). Best-effort: a failed recompute just leaves the
+    // Batch-resolve the needed chain costs. These come back PER VIAL, which is
+    // already checkout's convention -- base_cost is per-vial and nothing is
+    // sold in 10-packs. Best-effort: a failed recompute just leaves the
     // conservative stored-value fallbacks below in charge.
     const recomputedCost = new Map<string, number>(); // `${agentId}:${productId}` -> per-vial
     if (recomputeNeeds.size > 0) {
@@ -205,8 +206,8 @@ export async function GET(req: NextRequest) {
             'tier_3',
             prodList.filter((p) => pids.has(p.id))
           );
-          for (const [pid, packCost] of costs) {
-            recomputedCost.set(`${aid}:${pid}`, packCost / 10);
+          for (const [pid, vialCost] of costs) {
+            recomputedCost.set(`${aid}:${pid}`, vialCost);
           }
         } catch (err) {
           console.error('[agent-sales] chain-cost recompute failed for', aid, err);
