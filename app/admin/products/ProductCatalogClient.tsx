@@ -136,7 +136,8 @@ export default function ProductCatalogClient({
   const [bundles, setBundles] = useState<any[]>([]);
 
   // Inline cost editing
-  const [editingCostIds, setEditingCostIds] = useState<string[] | null>(null);
+  const [editingCostGroupId, setEditingCostGroupId] = useState<string | null>(null);
+  const [editingCostVariantId, setEditingCostVariantId] = useState<string | null>(null);
   const [editCostText, setEditCostText] = useState("");
   const [costSaving, setCostSaving] = useState(false);
 
@@ -315,7 +316,8 @@ export default function ProductCatalogClient({
         return;
       }
       toast.success("Base Cost Updated");
-      setEditingCostIds(null);
+      setEditingCostGroupId(null);
+      setEditingCostVariantId(null);
       window.location.reload();
     } catch (err: any) {
       toast.error(err.message || "Network Error");
@@ -638,11 +640,12 @@ export default function ProductCatalogClient({
                           }}
                           onClick={(e) => {
                             e.stopPropagation();
-                            setEditingCostIds(p.variantIds);
+                            setEditingCostGroupId(p.id);
+                            setEditingCostVariantId(null);
                             setEditCostText(p.houseCost.toFixed(2));
                           }}
                         >
-                          {editingCostIds && editingCostIds === p.variantIds ? (
+                          {editingCostGroupId === p.id ? (
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} onClick={e => e.stopPropagation()}>
                               <span style={{ color: '#00E5FF' }}>$</span>
                               <input
@@ -662,7 +665,7 @@ export default function ProductCatalogClient({
                                 }}
                                 onKeyDown={e => {
                                   if (e.key === 'Enter') handleCostSave(p.variantIds);
-                                  if (e.key === 'Escape') setEditingCostIds(null);
+                                  if (e.key === 'Escape') setEditingCostGroupId(null);
                                 }}
                               />
                             </div>
@@ -838,11 +841,12 @@ export default function ProductCatalogClient({
                                 }}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setEditingCostIds([v.id]);
+                                  setEditingCostVariantId(v.id);
+                                  setEditingCostGroupId(null);
                                   setEditCostText(vHouse.toFixed(2));
                                 }}
                               >
-                                {editingCostIds && editingCostIds.length === 1 && editingCostIds[0] === v.id ? (
+                                {editingCostVariantId === v.id ? (
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} onClick={e => e.stopPropagation()}>
                                     <span style={{ color: '#00E5FF' }}>$</span>
                                     <input
@@ -862,7 +866,7 @@ export default function ProductCatalogClient({
                                       }}
                                       onKeyDown={e => {
                                         if (e.key === 'Enter') handleCostSave([v.id]);
-                                        if (e.key === 'Escape') setEditingCostIds(null);
+                                        if (e.key === 'Escape') setEditingCostVariantId(null);
                                       }}
                                     />
                                   </div>
