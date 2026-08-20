@@ -1124,7 +1124,7 @@ export default function AgentStorefrontGrid({
       group.defaultVariantId = pickDefaultVariant(group.variants);
     }
     return Array.from(map.values());
-  }, [products]);
+  }, [products, isSavageBrandsNetwork, agentSlug]);
 
   const categories = useMemo(() => {
     const cats = new Set<string>();
@@ -3982,23 +3982,18 @@ export default function AgentStorefrontGrid({
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <Image
-                  src={getProductImage(detailProduct.imageUrl, detailProduct.category || 'Other', detailProduct.name, isSavageBrandsNetwork ? true : !!detailProduct.imageUrl?.includes('/images/savage-brands/'), agentSlug, isSavageBrandsNetwork)}
+                  src={getProductImage(detailProduct.imageUrl, detailProduct.category || 'Other', detailProduct.name, true, agentSlug, isSavageBrandsNetwork)}
                   alt={detailProduct.name}
                   fill
+                  unoptimized
                   sizes="(max-width: 768px) 100vw, 50vw"
                   style={{ objectFit: 'contain', objectPosition: 'center', transition: 'transform 0.4s ease' }}
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    // For Savage Brands, use allowBrandSpecific=true so the fallback is a real vial, not a blank clear vial
-                    const fallback = getProductImage(detailProduct.imageUrl, detailProduct.category || 'Other', detailProduct.name, true, agentSlug, isSavageBrandsNetwork);
-                    if (target.src !== fallback && !target.src.includes(fallback)) {
-                      target.srcset = '';
-                      target.src = fallback;
-                    } else {
-                      target.srcset = '';
-                      target.src = '/images/peptide_clear.png';
-                      target.style.opacity = '0.9';
-                    }
+                    // Hard fallback — if the image truly fails, show clear vial
+                    target.srcset = '';
+                    target.src = '/images/peptide_clear.png';
+                    target.style.opacity = '0.9';
                   }}
                 />
                 <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, background: 'linear-gradient(transparent, var(--surface-2))' }} />
