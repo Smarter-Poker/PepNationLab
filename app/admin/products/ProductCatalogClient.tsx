@@ -293,6 +293,7 @@ export default function ProductCatalogClient({
   };
 
   const handleCostSave = async (ids: string[]) => {
+    if (costSaving) return;
     const val = parseFloat(editCostText);
     if (!Number.isFinite(val) || val < 0) {
       toast.error("Invalid Cost");
@@ -663,6 +664,7 @@ export default function ProductCatalogClient({
                                   }
                                   setEditCostText(clean);
                                 }}
+                                onBlur={() => handleCostSave(p.variantIds)}
                                 onKeyDown={e => {
                                   if (e.key === 'Enter') handleCostSave(p.variantIds);
                                   if (e.key === 'Escape') setEditingCostGroupId(null);
@@ -864,6 +866,7 @@ export default function ProductCatalogClient({
                                         }
                                         setEditCostText(clean);
                                       }}
+                                      onBlur={() => handleCostSave([v.id])}
                                       onKeyDown={e => {
                                         if (e.key === 'Enter') handleCostSave([v.id]);
                                         if (e.key === 'Escape') setEditingCostVariantId(null);
