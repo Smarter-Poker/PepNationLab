@@ -34,11 +34,16 @@
 // v10: Cache-version bump to deliver Module 1 + 2 quiz gate enforcement,
 //      data-v14 protection for #s2, route.ts no-store header, and markdown
 //      rendering fix for the Ask AI assistant modal.
-const CACHE_VERSION = 'pnl-sw-v14';
-const STATIC_CACHE_NAME = 'pnl-static-cache-v14';
-const DYNAMIC_CACHE_NAME = 'pnl-dynamic-cache-v14';
-const CATALOG_CACHE_NAME = 'pnl-catalog-cache-v14';
-const IMAGE_CACHE_NAME = 'pnl-image-cache-v14';
+// v15: Cache-version bump for the mobile blank-vial fix. The storefront product
+//      detail view now requests right-sized /_next/image thumbnails instead of
+//      the 1024px vial originals, so every previously cached full-resolution
+//      /images/products/ and /images/savage-brands/ entry is dead weight and is
+//      evicted here. See lib/imageOptimize.ts.
+const CACHE_VERSION = 'pnl-sw-v15';
+const STATIC_CACHE_NAME = 'pnl-static-cache-v15';
+const DYNAMIC_CACHE_NAME = 'pnl-dynamic-cache-v15';
+const CATALOG_CACHE_NAME = 'pnl-catalog-cache-v15';
+const IMAGE_CACHE_NAME = 'pnl-image-cache-v15';
 
 // Catalog cache TTL in the service worker (5 min = 300,000 ms)
 // Matches the s-maxage set on the API route's Cache-Control header.

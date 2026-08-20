@@ -19,6 +19,7 @@ import DynamicCartButton from './storefront/DynamicCartButton';
 import DynamicDetailButton from './storefront/DynamicDetailButton';
 import { evidenceTier, EVIDENCE_TIER, RISK_META, intranasalDisplay, type Compound } from '@/lib/compounds';
 import { getProductImage, toTitleCase } from '@/lib/categoryImage';
+import { optimizedImageSrc, makeImageErrorHandler } from '@/lib/imageOptimize';
 import { setBrandNetworkFlag } from '@/lib/brand-network-client';
 import PeptideVialCard from '@/components/PeptideVialCard';
 import PremiumPeptideCard from '@/components/storefront/PremiumPeptideCard';
@@ -3985,19 +3986,24 @@ export default function AgentStorefrontGrid({
                 className="sf-modal-img"
                 style={{ background: `radial-gradient(circle at 50% 50%, ${primaryColor}20 0%, var(--black) 100%)` }}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={getProductImage(detailProduct.imageUrl, detailProduct.category || 'Other', detailProduct.name, true, agentSlug, isSavageBrandsNetwork)}
-                  alt={detailProduct.name}
-                  style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', transition: 'transform 0.4s ease' }}
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    if (!target.src.includes('peptide_clear')) {
-                      target.src = '/images/peptide_clear.png';
-                      target.style.opacity = '0.9';
-                    }
-                  }}
-                />
+                {(() => {
+                  // MOBILE BLANK-VIAL FIX: the hero vial is painted into a box
+                  // that is at most ~600px wide, but the source art is 1024px+.
+                  // Route it through the Next optimizer so mobile decodes a
+                  // right-sized AVIF instead of the full-resolution original.
+                  // See lib/imageOptimize.ts for the full explanation.
+                  const rawSrc = getProductImage(detailProduct.imageUrl, detailProduct.category || 'Other', detailProduct.name, true, agentSlug, isSavageBrandsNetwork);
+                  return (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={optimizedImageSrc(rawSrc, 320)}
+                      alt={detailProduct.name}
+                      decoding="async"
+                      style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', transition: 'transform 0.4s ease' }}
+                      onError={makeImageErrorHandler(rawSrc)}
+                    />
+                  );
+                })()}
                 <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, background: 'linear-gradient(transparent, var(--surface-2))' }} />
               </div>
 
@@ -4795,8 +4801,10 @@ export default function AgentStorefrontGrid({
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={selectedBundle.vial_image_url || selectedBundle.image_url || ''}
+                    src={optimizedImageSrc(selectedBundle.vial_image_url || selectedBundle.image_url || '', 320)}
                     alt={selectedBundle.name}
+                    decoding="async"
+                    onError={makeImageErrorHandler(selectedBundle.vial_image_url || selectedBundle.image_url || '')}
                     style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'contain' }}
                   />
                   <div style={{
@@ -4829,8 +4837,10 @@ export default function AgentStorefrontGrid({
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={selectedBundle.vial_image_url || selectedBundle.image_url || ''}
+                    src={optimizedImageSrc(selectedBundle.vial_image_url || selectedBundle.image_url || '', 320)}
                     alt={selectedBundle.name}
+                    decoding="async"
+                    onError={makeImageErrorHandler(selectedBundle.vial_image_url || selectedBundle.image_url || '')}
                     style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }}
                   />
                   <div style={{
@@ -4909,14 +4919,19 @@ export default function AgentStorefrontGrid({
                             cursor: 'pointer',
                           }}
                         >
-                          <Image
-                            src={img}
+                          {/* MOBILE BLANK-VIAL FIX: was `unoptimized`, which
+                              shipped the full 1024px original for a 48px thumb.
+                              See lib/imageOptimize.ts. */}
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={optimizedImageSrc(img, 48)}
                             alt={name}
                             width={48}
                             height={48}
-                            unoptimized
+                            loading="lazy"
+                            decoding="async"
                             style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'contain', flexShrink: 0 }}
-                            onError={(e) => { const t = e.target as HTMLImageElement; if (!t.src.includes('/images/peptide_clear.png')) { t.srcset = ''; t.src = '/images/peptide_clear.png'; } }}
+                            onError={makeImageErrorHandler(img)}
                           />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--white)', marginBottom: 2 }}>{name}</div>
