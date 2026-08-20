@@ -87,6 +87,19 @@ export function optimizedImageSrc(
   if (trimmed.startsWith('//')) return trimmed;
   if (!trimmed.startsWith('/') && !/^https?:\/\//i.test(trimmed)) return trimmed;
 
+  // The optimizer rejects a LOCAL `url` param that carries a query string --
+  // it returns HTTP 400 INVALID_IMAGE_OPTIMIZE_REQUEST, which is a broken
+  // image. getProductImage() appends `?v=2` to every /images/savage-brands/
+  // path as an iOS cache-buster, so without this strip the entire Savage
+  // Brands network would 400 and fall all the way back to the 1024px
+  // original -- i.e. the blank-vial bug would survive for half the stores.
+  //
+  // Dropping the buster is safe: the optimizer URL is itself a brand-new URL
+  // that has never been in any HTTP or service-worker cache, so it busts the
+  // stale entry on its own. Remote URLs keep their query (signed Supabase
+  // URLs need it, and remote sources are allowed to carry search params).
+  const source = trimmed.startsWith('/') ? trimmed.split('?')[0] : trimmed;
+
   const target = Math.max(1, Math.round(displayWidth * 2));
   const width =
     NEXT_IMAGE_WIDTHS.find((w) => w >= target) ??
@@ -94,7 +107,7 @@ export function optimizedImageSrc(
 
   const q = ALLOWED_QUALITIES.includes(quality) ? quality : 60;
 
-  return `/_next/image?url=${encodeURIComponent(trimmed)}&w=${width}&q=${q}`;
+  return `/_next/image?url=${encodeURIComponent(source)}&w=${width}&q=${q}`;
 }
 
 /**
