@@ -822,7 +822,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId, tim
       <div className="">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)', flexWrap: 'wrap', gap: '16px' }}>
         <h3 className="metal-text" style={{ fontSize: '1.25rem', fontFamily: 'var(--font-brand)', margin: 0 }}>
-          Completed Sales & Profit
+          All Sales
         </h3>
       </div>
       <div
