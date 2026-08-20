@@ -330,11 +330,46 @@ async function AgentStorefrontDataLoader({
       : [],
   };
 
+  const agentFaqJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: [
+      {
+        '@type': 'Question',
+        name: `Are the peptides sold by ${agent.display_name} 3rd-party tested?`,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: `Yes, all research products available through ${agent.display_name} include verified 3rd-party Certificates of Analysis (CoAs) for purity and identity.`
+        }
+      },
+      {
+        '@type': 'Question',
+        name: `How quickly does ${agent.display_name} ship orders?`,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: `Orders placed through ${agent.display_name} are typically fulfilled within 0-2 business days and arrive within 2-7 days via standard shipping.`
+        }
+      },
+      {
+        '@type': 'Question',
+        name: `What is the refund policy for ${agent.display_name}?`,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: `All research products are sold strictly for in vitro laboratory use. Please refer to our full terms of service and disclaimer regarding sales policies.`
+        }
+      }
+    ]
+  };
+
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(agentFaqJsonLd).replace(/</g, '\\u003c') }}
       />
       <AgentStorefrontGrid
         products={productsWithCost as any}

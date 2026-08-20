@@ -80,6 +80,38 @@ export default function MonographSeoContent({ compound }: { compound: Compound }
   // are often long, semicolon-separated descriptors - take only the first
   // short clause so the sentence stays crisp.
   const firstClause = (s: string) => s.split(/[;,(]/)[0].trim();
+  const faqJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: [
+      {
+        '@type': 'Question',
+        name: `What is ${compound.display_name} used for in research?`,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: `In a laboratory setting, ${compound.display_name} is primarily studied for ${compound.category?.toLowerCase() || 'various research applications'}. It is supplied strictly for in vitro research use only and not for human or animal consumption.`
+        }
+      },
+      {
+        '@type': 'Question',
+        name: `What is the half-life of ${compound.display_name}?`,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: compound.half_life ? `The estimated half-life of ${compound.display_name} is ${compound.half_life}.` : `The half-life of ${compound.display_name} is currently under investigation.`
+        }
+      },
+      {
+        '@type': 'Question',
+        name: `What is the molecular weight of ${compound.display_name}?`,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: molecularWeight ? `The molecular weight of ${compound.display_name} is ${molecularWeight}.` : `The molecular weight is detailed in the compound's Certificate of Analysis.`
+        }
+      }
+    ]
+  };
+
+  const aliases = (compound.aliases ?? []).filter(Boolean);
   const defClass = compound.compound_class ? firstClause(compound.compound_class) : 'research compound';
   const defTarget = compound.molecular_target ? ` targeting ${firstClause(compound.molecular_target)}` : '';
   const defArea = compound.category ? `${compound.category} research` : 'laboratory research';
@@ -104,6 +136,8 @@ export default function MonographSeoContent({ compound }: { compound: Compound }
         border: 0,
       }}
     >
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
       <header>
         <h1 style={{ fontSize: 'clamp(1.6rem, 4vw, 2.4rem)', fontWeight: 800, margin: '0 0 8px' }}>
           {compound.display_name}
