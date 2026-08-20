@@ -596,9 +596,9 @@ export default function ProductCatalogClient({
                             whiteSpace: "nowrap",
                           }}
                         >
-                          ${(p.houseCost / 10).toFixed(2)}
+                          ${p.houseCost.toFixed(2)}
                           <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.18)', marginTop: 2, fontFamily: 'var(--font-brand)' }}>
-                            2x: ${(p.baseCost * 2 / 10).toFixed(2)}
+                            2x: ${(p.baseCost * 2).toFixed(2)}
                           </div>
                         </td>
 
@@ -761,9 +761,9 @@ export default function ProductCatalogClient({
                                   whiteSpace: "nowrap",
                                 }}
                               >
-                                ${(vHouse / 10).toFixed(2)}
+                                ${vHouse.toFixed(2)}
                                 <div style={{ fontSize: '0.60rem', color: 'rgba(255,255,255,0.15)', marginTop: 1, fontFamily: 'var(--font-brand)' }}>
-                                  2x: ${(vCost * 2 / 10).toFixed(2)}
+                                  2x: ${(vCost * 2).toFixed(2)}
                                 </div>
                               </td>
                               {/* Per-unit tier prices */}
