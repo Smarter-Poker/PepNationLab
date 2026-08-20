@@ -34,11 +34,11 @@
 // v10: Cache-version bump to deliver Module 1 + 2 quiz gate enforcement,
 //      data-v14 protection for #s2, route.ts no-store header, and markdown
 //      rendering fix for the Ask AI assistant modal.
-const CACHE_VERSION = 'pnl-sw-v13';
-const STATIC_CACHE_NAME = 'pnl-static-cache-v13';
-const DYNAMIC_CACHE_NAME = 'pnl-dynamic-cache-v13';
-const CATALOG_CACHE_NAME = 'pnl-catalog-cache-v13';
-const IMAGE_CACHE_NAME = 'pnl-image-cache-v13';
+const CACHE_VERSION = 'pnl-sw-v14';
+const STATIC_CACHE_NAME = 'pnl-static-cache-v14';
+const DYNAMIC_CACHE_NAME = 'pnl-dynamic-cache-v14';
+const CATALOG_CACHE_NAME = 'pnl-catalog-cache-v14';
+const IMAGE_CACHE_NAME = 'pnl-image-cache-v14';
 
 // Catalog cache TTL in the service worker (5 min = 300,000 ms)
 // Matches the s-maxage set on the API route's Cache-Control header.
@@ -534,9 +534,34 @@ self.addEventListener('fetch', (event) => {
   const isResearchPage = url.pathname.startsWith('/research');
 
   if (event.request.method === 'GET' && (isStaticAsset || isResearchPage)) {
+    // Brand vial images must ALWAYS be network-first — never serve a stale or
+    // error-cached response for these, as that causes the blank-vial bug on iOS.
+    const isBrandImage = url.pathname.startsWith('/images/savage-brands/');
+
+    if (isBrandImage) {
+      event.respondWith(
+        fetch(event.request).then((networkResponse) => {
+          if (networkResponse.ok) {
+            caches.open(STATIC_CACHE_NAME).then((cache) => {
+              cache.put(event.request, networkResponse.clone());
+            });
+          }
+          return networkResponse;
+        }).catch(() => {
+          // Network failed — serve cache as last resort (but only if ok)
+          return caches.match(event.request).then((cached) => {
+            if (cached && cached.ok) return cached;
+            return new Response('', { status: 503 });
+          });
+        })
+      );
+      return;
+    }
+
     event.respondWith(
       caches.match(event.request).then((cachedResponse) => {
-        if (cachedResponse) {
+        // Never serve a cached error response — go to network instead.
+        if (cachedResponse && cachedResponse.ok) {
           // Update cache in the background
           event.waitUntil(
             fetch(event.request).then((networkResponse) => {
@@ -550,7 +575,7 @@ self.addEventListener('fetch', (event) => {
           return cachedResponse;
         }
 
-        // No cache — wait for network
+        // No cache (or cached error) — wait for network
         return fetch(event.request).then((networkResponse) => {
           if (networkResponse.ok) {
             caches.open(STATIC_CACHE_NAME).then((cache) => {

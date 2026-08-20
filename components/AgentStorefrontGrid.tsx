@@ -3984,11 +3984,13 @@ export default function AgentStorefrontGrid({
                 <img
                   src={getProductImage(detailProduct.imageUrl, detailProduct.category || 'Other', detailProduct.name, true, agentSlug, isSavageBrandsNetwork)}
                   alt={detailProduct.name}
-                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', transition: 'transform 0.4s ease' }}
+                  style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', transition: 'transform 0.4s ease' }}
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    target.src = '/images/peptide_clear.png';
-                    target.style.opacity = '0.9';
+                    if (!target.src.includes('peptide_clear')) {
+                      target.src = '/images/peptide_clear.png';
+                      target.style.opacity = '0.9';
+                    }
                   }}
                 />
                 <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, background: 'linear-gradient(transparent, var(--surface-2))' }} />
