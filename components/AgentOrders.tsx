@@ -127,7 +127,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const [showManualOrder, setShowManualOrder] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [timeFilter, setTimeFilter] = useState('all');
+  const [timeFilter, setTimeFilter] = useState('7d');
   
   const filteredOrders = React.useMemo(() => {
     if (timeFilter === 'all') return orders;
@@ -803,16 +803,23 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
         <IframeModal url={labelModalUrl} title="Shipping Label" onClose={() => setLabelModalUrl(null)} />
       )}
       <div className="">
-      <h3
-        className="metal-text"
-        style={{
-          fontSize: '1.25rem',
-          marginBottom: 'var(--space-6)',
-          fontFamily: 'var(--font-brand)',
-        }}
-      >
-        Completed Sales & Profit
-      </h3>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)', flexWrap: 'wrap', gap: '16px' }}>
+        <h3 className="metal-text" style={{ fontSize: '1.25rem', fontFamily: 'var(--font-brand)', margin: 0 }}>
+          Completed Sales & Profit
+        </h3>
+        <select 
+          className="sa-month-select" 
+          style={{ padding: '6px 12px', borderRadius: '8px', background: 'var(--grey-900)', border: '1px solid rgba(255,255,255,0.12)', color: 'var(--white)', fontSize: '0.85rem' }}
+          value={timeFilter} 
+          onChange={(e) => { setTimeFilter(e.target.value); setCurrentPage(1); }}
+        >
+          <option value="all">All Time</option>
+          <option value="7d">Last 7 Days</option>
+          <option value="30d">Last 30 Days</option>
+          <option value="90d">Last 90 Days</option>
+          <option value="1y">Last Year</option>
+        </select>
+      </div>
       <div
         style={{
           display: 'flex',
@@ -825,19 +832,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
           Manage Orders Registered By Your Clients. Click A Row To Open The Detail View. Coordinate
           Cash Settlements Offline And Release For System Fulfillment.
         </p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
-          <select 
-            className="sa-month-select" 
-            style={{ padding: '4px 8px', borderRadius: '4px', background: 'var(--grey-900)', border: '1px solid var(--grey-800)', color: 'var(--white)', fontSize: '0.85rem' }}
-            value={timeFilter} 
-            onChange={(e) => { setTimeFilter(e.target.value); setCurrentPage(1); }}
-          >
-            <option value="all">All Time</option>
-            <option value="7d">Last 7 Days</option>
-            <option value="30d">Last 30 Days</option>
-            <option value="90d">Last 90 Days</option>
-            <option value="1y">Last Year</option>
-          </select>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'flex-end' }}>
           {/* Same-origin API download, not an external link - a plain anchor is fine here. */}
           <a
             href="/api/agent/shipping/export"
