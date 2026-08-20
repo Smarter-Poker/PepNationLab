@@ -642,7 +642,7 @@ export default function ProductCatalogClient({
                             e.stopPropagation();
                             setEditingCostGroupId(p.id);
                             setEditingCostVariantId(null);
-                            setEditCostText(p.houseCost.toFixed(2));
+                            setEditCostText(p.baseCost.toFixed(2));
                           }}
                         >
                           {editingCostGroupId === p.id ? (
@@ -671,9 +671,9 @@ export default function ProductCatalogClient({
                             </div>
                           ) : (
                             <>
-                              ${p.houseCost.toFixed(2)}
+                              ${p.baseCost.toFixed(2)}
                               <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.18)', marginTop: 2, fontFamily: 'var(--font-brand)' }}>
-                                2x: ${(p.baseCost * 2).toFixed(2)}
+                                House: ${(p.houseCost).toFixed(2)}
                               </div>
                             </>
                           )}
@@ -843,7 +843,7 @@ export default function ProductCatalogClient({
                                   e.stopPropagation();
                                   setEditingCostVariantId(v.id);
                                   setEditingCostGroupId(null);
-                                  setEditCostText(vHouse.toFixed(2));
+                                  setEditCostText(vCost.toFixed(2));
                                 }}
                               >
                                 {editingCostVariantId === v.id ? (
@@ -872,9 +872,9 @@ export default function ProductCatalogClient({
                                   </div>
                                 ) : (
                                   <>
-                                    ${vHouse.toFixed(2)}
+                                    ${vCost.toFixed(2)}
                                     <div style={{ fontSize: '0.60rem', color: 'rgba(255,255,255,0.15)', marginTop: 1, fontFamily: 'var(--font-brand)' }}>
-                                      2x: ${(vCost * 2).toFixed(2)}
+                                      House: ${(vHouse).toFixed(2)}
                                     </div>
                                   </>
                                 )}
