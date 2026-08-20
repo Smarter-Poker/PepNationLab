@@ -3,7 +3,7 @@
 import { useState, useMemo, Fragment, useEffect } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import BulkImportModal from "./BulkImportModal";
 
 export interface RawProduct {
@@ -114,6 +114,7 @@ export default function ProductCatalogClient({
   overrides?: Record<string, number>;
 }) {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const filterParam = searchParams.get("filter");
 
   const [search, setSearch] = useState("");
@@ -283,7 +284,7 @@ export default function ProductCatalogClient({
       setBulkValue("");
       setBulkEffectiveAt("");
       if (applied > 0) {
-        window.location.reload();
+        router.refresh();
       }
     } catch {
       toast.error("Network Error");
@@ -292,11 +293,17 @@ export default function ProductCatalogClient({
     }
   };
 
-  const handleCostSave = async (ids: string[]) => {
+  const handleCostSave = async (ids: string[], originalCost?: number) => {
     if (costSaving) return;
     const val = parseFloat(editCostText);
     if (!Number.isFinite(val) || val < 0) {
       toast.error("Invalid Cost");
+      return;
+    }
+    // Don't save or reload if the value hasn't actually changed
+    if (originalCost !== undefined && Math.abs(val - originalCost) < 0.001) {
+      setEditingCostGroupId(null);
+      setEditingCostVariantId(null);
       return;
     }
     setCostSaving(true);
@@ -319,7 +326,7 @@ export default function ProductCatalogClient({
       toast.success("Base Cost Updated");
       setEditingCostGroupId(null);
       setEditingCostVariantId(null);
-      window.location.reload();
+      router.refresh();
     } catch (err: any) {
       toast.error(err.message || "Network Error");
     } finally {
@@ -664,9 +671,9 @@ export default function ProductCatalogClient({
                                   }
                                   setEditCostText(clean);
                                 }}
-                                onBlur={() => handleCostSave(p.variantIds)}
+                                onBlur={() => handleCostSave(p.variantIds, p.baseCost)}
                                 onKeyDown={e => {
-                                  if (e.key === 'Enter') handleCostSave(p.variantIds);
+                                  if (e.key === 'Enter') handleCostSave(p.variantIds, p.baseCost);
                                   if (e.key === 'Escape') setEditingCostGroupId(null);
                                 }}
                               />
@@ -869,9 +876,9 @@ export default function ProductCatalogClient({
                                         }
                                         setEditCostText(clean);
                                       }}
-                                      onBlur={() => handleCostSave([v.id])}
+                                      onBlur={() => handleCostSave([v.id], vCost)}
                                       onKeyDown={e => {
-                                        if (e.key === 'Enter') handleCostSave([v.id]);
+                                        if (e.key === 'Enter') handleCostSave([v.id], vCost);
                                         if (e.key === 'Escape') setEditingCostVariantId(null);
                                       }}
                                     />

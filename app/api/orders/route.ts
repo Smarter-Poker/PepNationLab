@@ -552,7 +552,7 @@ export async function POST(request: NextRequest) {
       const rawPrice = a.is_on_sale && a.sale_price != null
         ? Number(a.sale_price)
         : Number(a.retail_price);
-      agentCustomRetail[a.product_id] = rawPrice / 10;
+      agentCustomRetail[a.product_id] = rawPrice;
     });
 
     // 4a. Legitimate stack/bundle membership. The 10% bundle discount is applied
