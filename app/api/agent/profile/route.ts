@@ -98,7 +98,8 @@ export async function PATCH(req: NextRequest) {
     .maybeSingle();
 
   if (error) {
-    return NextResponse.json({ error: 'profile_update_failed' }, { status: 500 });
+    console.error("Profile update error:", error);
+    return NextResponse.json({ error: 'profile_update_failed: ' + error.message, details: error }, { status: 500 });
   }
 
   await supabase
