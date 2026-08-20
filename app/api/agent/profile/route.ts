@@ -98,8 +98,35 @@ export async function PATCH(req: NextRequest) {
     .maybeSingle();
 
   if (error) {
-    console.error("Profile update error:", error);
-    return NextResponse.json({ error: 'profile_update_failed: ' + error.message, details: error }, { status: 500 });
+    // Log full details server-side for debugging — never expose raw DB errors to users.
+    console.error('[PATCH /api/agent/profile] DB error:', {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      userId: user.id,
+      changedKeys,
+    });
+
+    // Map known error codes / messages to friendly, actionable UI copy.
+    const msg = error.message ?? '';
+    let userMessage = 'Could not save your profile. Please try again.';
+
+    if (msg.includes('already exists for this email') || error.code === '23505') {
+      userMessage = 'That email address is already linked to another account. Please use a different email.';
+    } else if (msg.includes('does not point to a valid agent profile')) {
+      // Should never appear after the SECURITY DEFINER fix, but guard anyway.
+      userMessage = 'Your account setup is incomplete. Please contact support.';
+    } else if (msg.includes('must have referring_agent_id')) {
+      userMessage = 'Your account is missing an agent assignment. Please contact your agent.';
+    } else if (error.code === '23514') {
+      // CHECK constraint violation (e.g. invalid phone format, enum value)
+      userMessage = 'One of the values you entered is not valid. Please check your information and try again.';
+    } else if (error.code === '42501') {
+      userMessage = 'You do not have permission to update this profile.';
+    }
+
+    return NextResponse.json({ error: userMessage }, { status: 500 });
   }
 
   await supabase
