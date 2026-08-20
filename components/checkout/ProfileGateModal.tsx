@@ -199,7 +199,7 @@ export default function ProfileGateModal({ missingFields, initialValues, onCompl
                     maxLength={60}
                     placeholder="Jane"
                     value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
+                    onChange={(e) => { setSaveError(null); setFirstName(e.target.value); }}
                     disabled={saving}
                   />
                 </div>
@@ -218,7 +218,7 @@ export default function ProfileGateModal({ missingFields, initialValues, onCompl
                     maxLength={60}
                     placeholder="Doe"
                     value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
+                    onChange={(e) => { setSaveError(null); setLastName(e.target.value); }}
                     disabled={saving}
                   />
                 </div>
@@ -238,7 +238,7 @@ export default function ProfileGateModal({ missingFields, initialValues, onCompl
                     maxLength={12}
                     placeholder="555-867-5309"
                     value={phone}
-                    onChange={(e) => setPhone(formatPhone(e.target.value))}
+                    onChange={(e) => { setSaveError(null); setPhone(formatPhone(e.target.value)); }}
                     disabled={saving}
                   />
                   {phone.replace(/\D/g, '').length > 0 && phone.replace(/\D/g, '').length < 10 && (

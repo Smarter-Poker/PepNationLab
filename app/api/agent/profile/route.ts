@@ -112,21 +112,24 @@ export async function PATCH(req: NextRequest) {
     const msg = error.message ?? '';
     let userMessage = 'Could not save your profile. Please try again.';
 
+    let statusCode = 500;
     if (msg.includes('already exists for this email') || error.code === '23505') {
       userMessage = 'That email address is already linked to another account. Please use a different email.';
-    } else if (msg.includes('does not point to a valid agent profile')) {
-      // Should never appear after the SECURITY DEFINER fix, but guard anyway.
+      statusCode = 409;
+    } else if (msg.includes('does not point to a valid agent profile') || msg.includes('must have referring_agent_id') || error.code === '23503') {
+      // 23503 is FK violation
       userMessage = 'Your account setup is incomplete. Please contact support.';
-    } else if (msg.includes('must have referring_agent_id')) {
-      userMessage = 'Your account is missing an agent assignment. Please contact your agent.';
+      statusCode = 409;
     } else if (error.code === '23514') {
       // CHECK constraint violation (e.g. invalid phone format, enum value)
       userMessage = 'One of the values you entered is not valid. Please check your information and try again.';
+      statusCode = 422;
     } else if (error.code === '42501') {
       userMessage = 'You do not have permission to update this profile.';
+      statusCode = 403;
     }
 
-    return NextResponse.json({ error: userMessage }, { status: 500 });
+    return NextResponse.json({ error: userMessage }, { status: statusCode });
   }
 
   await supabase
