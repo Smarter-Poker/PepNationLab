@@ -271,17 +271,21 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
     };
     const key = keyMap[t.id] || t.id;
     try {
-      await fetch('/api/agent/profile', { 
+      const res = await fetch('/api/agent/profile', { 
         method: 'PATCH', 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [key]: inputValue }) 
       });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed To Save. Please Try Again.');
+      
       if (profile) onProfileChange({ ...profile, [key]: inputValue } as AccountProfile);
+      setExpandedTask(null);
     } catch(err) {
       toast.error(err instanceof Error ? err.message : 'Failed To Save. Please Try Again.');
+    } finally {
+      setSavingTask(false);
     }
-    setSavingTask(false);
-    setExpandedTask(null);
   };
 
   const handleSave = useCallback(async () => {
@@ -306,6 +310,7 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
       }
       if (Object.keys(body).length === 0) {
         toast.info('No Changes To Save.');
+        setSaving(false);
         return;
       }
 
