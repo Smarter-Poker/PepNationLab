@@ -302,6 +302,10 @@ function useCatalogRefresh(agentSlug: string) {
             // Evict stale cache and immediately fetch fresh data
             evictCatalogCache(agentSlug);
             doRefresh(true);
+            // CRITICAL: Force Next.js to re-fetch the Server Component payload
+            // so the authoritative 'products' prop updates in the UI!
+            // Without this, the SPA session is permanently stuck with stale state.
+            window.location.reload();
           }
         )
         .subscribe();
