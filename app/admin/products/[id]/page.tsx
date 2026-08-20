@@ -158,6 +158,7 @@ export default function EditProductPage() {
         description: form.description || null,
         image_url: finalImageUrl || null,
         house_cost: parseFloat(form.house_cost),
+        base_cost: parseFloat(form.house_cost),
         unit_size: form.unit_size || null,
         unit_measure: form.unit_measure,
         inventory_count: parseInt(form.inventory_count, 10) || 0,
@@ -271,12 +272,14 @@ export default function EditProductPage() {
                   <input id="base_cost" type="number" step="0.01" min="0" required className="form-input" placeholder="0.00" value={form.house_cost} onChange={e => set('house_cost', e.target.value)} style={{ paddingLeft: 28 }} />
                 </div>
               </div>
-              {form.base_cost && (
+              {form.house_cost && !isNaN(parseFloat(form.house_cost)) && (
                 <div style={{ flex: '1 1 180px', marginBottom: 0 }}>
-                  <label className="form-label">Agent Price Basis <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)', fontWeight: 400 }}>(Locked)</span></label>
-                  <div className="form-input" style={{ opacity: 0.7, display: 'flex', alignItems: 'center' }}>${form.base_cost}</div>
+                  <label className="form-label">Agent Price Basis <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)', fontWeight: 400 }}>(Auto-synced)</span></label>
+                  <div className="form-input" style={{ opacity: 0.7, display: 'flex', alignItems: 'center' }}>${parseFloat(form.house_cost).toFixed(2)}</div>
+                  <p style={{ fontSize: '0.7rem', color: 'var(--grey-400)', marginTop: 4 }}>Updates automatically when you save.</p>
                 </div>
               )}
+
               <div className="form-group" style={{ flex: '0 1 100px', marginBottom: 0 }}>
                 <label className="form-label" htmlFor="unit_size">Unit Size</label>
                 <input id="unit_size" type="text" className="form-input" placeholder="E.g. 5" value={form.unit_size} onChange={e => set('unit_size', e.target.value)} />
