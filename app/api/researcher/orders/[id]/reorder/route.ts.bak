@@ -128,6 +128,7 @@ export async function POST(
   let manufacturerCommissionPct = 0;
   let agentCosts = new Map<string, number>();
   let superAgentCosts = new Map<string, number>();
+  let topOfChainCosts = new Map<string, number>();
   let superAgentHasParent = false;
 
   if (source.agent_id) {
@@ -151,6 +152,7 @@ export async function POST(
 
         const agentTier: AgentTier = (agentRow.tier as AgentTier | null) ?? 'tier_3';
         agentCosts = await computeAgentCostsForAgent(service, agentRow.id, agentTier, productListForPricing);
+        topOfChainCosts = await computeAgentTopOfChainCostsForAgent(service, agentRow.id, agentTier, productListForPricing);
 
         // Non-sub-agent with an upline: also resolve the direct parent's
         // chain cost for unit_super_agent_cost, same as checkout.

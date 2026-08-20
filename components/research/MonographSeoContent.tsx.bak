@@ -111,6 +111,7 @@ export default function MonographSeoContent({ compound }: { compound: Compound }
     ]
   };
 
+  const aliases = (compound.aliases ?? []).filter(Boolean);
   const defClass = compound.compound_class ? firstClause(compound.compound_class) : 'research compound';
   const defTarget = compound.molecular_target ? ` targeting ${firstClause(compound.molecular_target)}` : '';
   const defArea = compound.category ? `${compound.category} research` : 'laboratory research';
