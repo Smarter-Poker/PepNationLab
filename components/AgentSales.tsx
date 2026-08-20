@@ -81,7 +81,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
   const [wallet, setWallet] = useState<WalletSummary | null>(null);
   const [commission, setCommission] = useState<{ lifetime: number; thisMonth: number; has: boolean } | null>(null);
   
-  const [timeFilter, setTimeFilter] = useState('7d');
+  const [timeFilter, setTimeFilter] = useState('all');
   
   const filteredOrders = useMemo(() => {
     if (timeFilter === 'all') return orders;
@@ -859,7 +859,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
         <button onClick={exportOrdersCsv} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.18)', color: 'var(--white)', borderRadius: 10, padding: '9px 16px', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}>Export Orders CSV</button>
       </div>
       <div style={{ minWidth: 0 }}>
-        <AgentOrders orders={orders} setOrders={setOrders} />
+        <AgentOrders orders={orders} setOrders={setOrders} timeFilterOverride={timeFilter} hideDropdown={true} />
       </div>
 
       {/* ACCOUNTING */}

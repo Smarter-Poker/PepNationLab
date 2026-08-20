@@ -73,8 +73,9 @@ interface OrderItem {
 interface AgentOrdersProps {
   orders: Order[];
   setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
-  /** When set (from ?order= URL param), auto-open the detail for this short ID */
   initialOpenShortId?: string | null;
+  timeFilterOverride?: string;
+  hideDropdown?: boolean;
 }
 
 /** Rate option returned by GET /api/agent/shipping/rates (EasyPost Forge). */
@@ -112,7 +113,7 @@ function formatAddress(address: ShippingAddress | null): string {
   return parts.length > 0 ? parts.join(', ') : 'No Shipping Address Provided';
 }
 
-export default function AgentOrders({ orders, setOrders, initialOpenShortId }: AgentOrdersProps) {
+export default function AgentOrders({ orders, setOrders, initialOpenShortId, timeFilterOverride, hideDropdown }: AgentOrdersProps) {
   const [loadingOrderId, setLoadingOrderId] = useState<string | null>(null);
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
   // Stores the typed cancellation reason per order before submitting.
@@ -127,7 +128,8 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const [showManualOrder, setShowManualOrder] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [timeFilter, setTimeFilter] = useState('7d');
+  const [internalTimeFilter, setTimeFilter] = useState('all');
+  const timeFilter = timeFilterOverride || internalTimeFilter;
   
   const filteredOrders = React.useMemo(() => {
     if (timeFilter === 'all') return orders;
@@ -799,7 +801,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
 
   return (
     <>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--space-4)' }}>
+      {!hideDropdown && (<div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--space-4)' }}>
         <select 
           className="sa-month-select" 
           style={{ padding: '8px 16px', borderRadius: '8px', background: 'var(--grey-900)', border: '1px solid rgba(255,255,255,0.2)', color: 'var(--white)', fontSize: '0.95rem', fontWeight: 800 }}
@@ -812,7 +814,7 @@ export default function AgentOrders({ orders, setOrders, initialOpenShortId }: A
           <option value="90d">Last 90 Days</option>
           <option value="1y">Last Year</option>
         </select>
-      </div>
+      </div>)}
     <div className="glass-panel" style={{ marginBottom: 'var(--space-6)' }}>
       {labelModalUrl && (
         <IframeModal url={labelModalUrl} title="Shipping Label" onClose={() => setLabelModalUrl(null)} />
