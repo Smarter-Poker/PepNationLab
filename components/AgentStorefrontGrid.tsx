@@ -236,8 +236,9 @@ function pickDefaultVariant(variants: ProductItem[]): string {
  * Does NOT update live React state - the SSR-hydrated props are always
  * authoritative for the current render. The cache only benefits future visits.
  */
-function useCatalogRefresh(agentSlug: string) {
+function useCatalogRefresh(agentSlug: string, agentId?: string | null) {
   const refreshIntervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+  const router = useRouter();
 
   const doRefresh = React.useCallback(async (force = false) => {
     try {
@@ -282,36 +283,37 @@ function useCatalogRefresh(agentSlug: string) {
     );
 
     // ── Realtime: evict + re-fetch the moment any product is updated ────────
-    // Listens for INSERT/UPDATE/DELETE on agent_products (any agent) - the
-    // server-side catalog API is what's actually scoped per agent_id. This
-    // client-side listener just triggers a forced refresh when anything changes,
-    // which is cheap (the API response is served from Vercel edge cache).
     let supabase: ReturnType<typeof createClient> | null = null;
     let realtimeChannel: ReturnType<ReturnType<typeof createClient>['channel']> | null = null;
-    try {
-      supabase = createClient();
-      realtimeChannel = supabase
-        .channel(`catalog-invalidate-${agentSlug}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*', // INSERT, UPDATE, DELETE
-            schema: 'public',
-            table: 'agent_products',
-          },
-          () => {
-            // Evict stale cache and immediately fetch fresh data
-            evictCatalogCache(agentSlug);
-            doRefresh(true);
-            // CRITICAL: Force Next.js to re-fetch the Server Component payload
-            // so the authoritative 'products' prop updates in the UI!
-            // Without this, the SPA session is permanently stuck with stale state.
-            window.location.reload();
-          }
-        )
-        .subscribe();
-    } catch {
-      // Realtime unavailable - gracefully degrade to interval-only refresh
+    
+    // Only subscribe to realtime if we know the agentId
+    if (agentId) {
+      try {
+        supabase = createClient();
+        realtimeChannel = supabase
+          .channel(`catalog-invalidate-${agentSlug}`)
+          .on(
+            'postgres_changes',
+            {
+              event: '*', // INSERT, UPDATE, DELETE
+              schema: 'public',
+              table: 'agent_products',
+              filter: `agent_id=eq.${agentId}`,
+            },
+            () => {
+              // Evict stale cache and immediately fetch fresh data
+              evictCatalogCache(agentSlug);
+              doRefresh(true);
+              // CRITICAL: Force Next.js to re-fetch the Server Component payload
+              // so the authoritative 'products' prop updates in the UI!
+              // Use soft-reload via router to avoid jarring full page reloads.
+              router.refresh();
+            }
+          )
+          .subscribe();
+      } catch {
+        // Realtime unavailable - gracefully degrade to interval-only refresh
+      }
     }
 
     return () => {
@@ -320,7 +322,7 @@ function useCatalogRefresh(agentSlug: string) {
         supabase.removeChannel(realtimeChannel);
       }
     };
-  }, [doRefresh, agentSlug]);
+  }, [doRefresh, agentSlug, agentId, router]);
 }
 
 export default function AgentStorefrontGrid({
@@ -378,7 +380,7 @@ export default function AgentStorefrontGrid({
 
   // Keep the localStorage catalog cache warm - fires on mount and every 5 min.
   // Benefits: next navigation to this storefront renders instantly from cache.
-  useCatalogRefresh(agentSlug);
+  useCatalogRefresh(agentSlug, agentId);
 
   const openGrid = useCallback(() => {
     if (typeof window !== 'undefined') {
