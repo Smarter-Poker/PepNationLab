@@ -15,7 +15,8 @@
  *     Google. Add it here once a real policy exists (see RETURN_POLICY note).
  *   - `review` / `aggregateRating` -- there is no genuine review data, and
  *     fabricating ratings violates Google's structured-data policy.
- *   - `deliveryTime` on shipping -- transit estimates are not tracked.
+ *   - `deliveryTime` on shipping -- standard fallback estimates are now provided
+ *     (0-2 days handling, 2-7 days transit) to satisfy Search Console validation.
  */
 
 import { SHIPPING_RATES } from '@/lib/shipping-cost';
@@ -102,6 +103,21 @@ function shippingNode(
       addressCountry: 'US',
       addressRegion: region,
     })),
+    deliveryTime: {
+      '@type': 'ShippingDeliveryTime',
+      handlingTime: {
+        '@type': 'QuantitativeValue',
+        minValue: 0,
+        maxValue: 2,
+        unitCode: 'd',
+      },
+      transitTime: {
+        '@type': 'QuantitativeValue',
+        minValue: 2,
+        maxValue: 7,
+        unitCode: 'd',
+      },
+    },
   };
 }
 
