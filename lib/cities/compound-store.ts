@@ -8,7 +8,7 @@
  * Top 10 grid.
  *
  * The display math is identical to lib/cities/top10-server.ts (per-vial price
- * = retail_price / 10, sale-aware), so a price shown here always matches what
+ * = retail_price, sale-aware), so a price shown here always matches what
  * the shopper sees after the ?product= deep link. Prices track admin changes
  * on the next ISR revalidation (compound pages export `revalidate`).
  *
@@ -32,7 +32,7 @@ export interface CompoundStoreCard {
   subtitle: string | null;
   /** e.g. "10mg Vials" - same format as the store card. */
   sizeLabel: string;
-  /** Per-vial display price (retail / 10, sale-aware), same math as the store card. */
+  /** Per-vial display price (retail_price, sale-aware), same math as the store card. */
   price: number;
   /** Pre-sale per-vial price when the default variant is on sale, else null. */
   originalPrice: number | null;
@@ -136,7 +136,10 @@ async function fetchCompoundStoreCards(): Promise<Record<string, CompoundStoreCa
       const measure = v.products?.unit_measure || 'mg';
       const perVialBase = v.retail_price;
       const onSale = Boolean(v.is_on_sale && v.sale_price);
-      const perVialDisplay = onSale ? (v.sale_price as number) / 10 : perVialBase;
+      // Both retail_price and sale_price are stored PER VIAL. The /10 that
+      // used to be on the sale branch only (retail was already undivided right
+      // above) made every on-sale price render at a tenth of its real value.
+      const perVialDisplay = onSale ? (v.sale_price as number) : perVialBase;
 
       const base = rawName.replace(/\s*\(.*\)\s*$/, '').trim();
       const parenMatch = rawName.match(/\(([^()]*)\)\s*$/);

@@ -77,8 +77,8 @@ export interface SubtreeBillingResult {
  *     checkout as the seller's direct parent's cost).
  *   - Seller is deeper in the subtree: the mid-chain cost is not
  *     snapshotted per item, so recompute it live from the chain-aware
- *     pricing engine (per-10-vial-pack, divided by 10 to per-vial - the
- *     same convention checkout uses). Also used as the fallback for a
+ *     pricing engine, which returns per-vial dollars - the same convention
+ *     checkout uses. Also used as the fallback for a
  *     direct-child row missing unit_super_agent_cost.
  *   - Last-resort fallbacks (pricing recompute unavailable): the stored
  *     unit_super_agent_cost, then unit_cost_price - both at or above the
@@ -184,8 +184,12 @@ export async function computeSuperDownlineSubtreeBilling(
       if (isDirect && Number.isFinite(usc) && usc > 0) {
         perVial = usc;
       } else if (item.product_id && recomputedCosts.has(item.product_id)) {
-        // Pricing engine returns per-10-vial-pack; items are per-vial.
-        perVial = (recomputedCosts.get(item.product_id) as number) / 10;
+        // The pricing engine returns a PER-VIAL cost (base_cost is per-vial and
+        // computeAgentCostsForAgent never multiplies by pack size), and qty
+        // counts individual vials. There is no 10-pack anywhere in the
+        // platform, so no divisor belongs here. The /10 that used to sit here
+        // under-billed this fallback path by 10x.
+        perVial = recomputedCosts.get(item.product_id) as number;
       }
 
       if (perVial == null) {
@@ -420,15 +424,17 @@ export async function computeDownlineInvoice(
         if (Number.isFinite(stored) && stored >= 0) {
           totalCogs += stored * qty;
         } else if (item.product_id && downline.parent_agent_id) {
-          // computeSubAgentBaselineCost returns a per-10-vial-pack cost while
-          // the stored path above is per-vial and qty counts individual vials.
-          // Divide by 10 so the fallback matches (was a 10x over-bill).
+          // computeSubAgentBaselineCost returns a PER-VIAL cost --
+          // super_agent_pricing.baseline_cost is per-vial, and its fallback
+          // computeAgentCostForAgent is base_cost x markup with base_cost
+          // per-vial. qty counts individual vials. Nothing is sold or billed
+          // in 10-packs, so no divisor applies.
           const recomputed = await computeSubAgentBaselineCost(
             supabase,
             item.product_id,
             downline.parent_agent_id
           );
-          totalCogs += (recomputed / 10) * qty;
+          totalCogs += recomputed * qty;
         }
       }
     }

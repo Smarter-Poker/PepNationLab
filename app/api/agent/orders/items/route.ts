@@ -74,10 +74,13 @@ export async function GET(req: NextRequest) {
       if (product) {
         item.unit_size = product.unit_size;
         item.unit_measure = product.unit_measure;
-        // base_cost is stored as integer "dimes" (e.g. 92 = $9.20). Divide by 10 = dollar value.
-        // This is Pep Nation's raw supplier COGS per unit — for display transparency only.
-        // The authoritative "SB owes PN" figure is unit_super_agent_cost (already on order_items in dollars).
-        item.unit_base_cost = product.base_cost != null ? Number(product.base_cost) / 10 : null;
+        // base_cost is stored in DOLLARS PER VIAL (e.g. 7.02 = $7.02/vial), not
+        // in "dimes" and not per 10-pack — the old comment here was stale and
+        // the /10 it justified showed this figure at a tenth of its real value.
+        // This is Pep Nation's raw supplier COGS per vial, for display
+        // transparency only. The authoritative "SB owes PN" figure is
+        // unit_super_agent_cost (already on order_items, in dollars per vial).
+        item.unit_base_cost = product.base_cost != null ? Number(product.base_cost) : null;
       }
 
       if (product?.compound_slug) {

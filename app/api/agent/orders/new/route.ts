@@ -98,11 +98,16 @@ export async function POST(req: NextRequest) {
       const ap = (raw.agent_product_id && byId.get(raw.agent_product_id)) || (raw.product_id && byProductId.get(raw.product_id)) || null;
       if (!ap) return NextResponse.json({ error: 'One Or More Items Are Not In Your Catalog.' }, { status: 400 });
 
-      const unitRetail = (Number(ap.retail_price) || 0) / 10;
+      // Everything on the platform is priced and billed PER VIAL: retail_price,
+      // base_cost, super_agent_pricing.baseline_cost and qty are all per-vial.
+      // There is no 10-pack. The /10 that used to be on all three of these
+      // under-charged manually created orders by 10x on both the retail the
+      // researcher owes and the cost the agent is billed.
+      const unitRetail = Number(ap.retail_price) || 0;
       computedSubtotal += unitRetail * qty;
-      const unitCost = (await computeAgentCostForAgent(supabase, ap.product_id, agentId, tier)) / 10;
+      const unitCost = await computeAgentCostForAgent(supabase, ap.product_id, agentId, tier);
       const unitSuperAgentCost = parentAgentId
-        ? (await computeSubAgentBaselineCost(supabase, ap.product_id, parentAgentId)) / 10
+        ? await computeSubAgentBaselineCost(supabase, ap.product_id, parentAgentId)
         : null;
       orderItems.push({ product_id: ap.product_id, product_name: ap.product_name, agent_product_id: ap.id, quantity: qty, unit_retail_price: unitRetail, unit_cost_price: unitCost, unit_super_agent_cost: unitSuperAgentCost });
     }

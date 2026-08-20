@@ -49,8 +49,10 @@ export async function GET(req: NextRequest) {
       const usc = Number(item.unit_super_agent_cost || 0);
       const uhc = Number(item.unit_house_cost || 0);
       const houseCollect = uhc > 0 ? uhc : (usc > 0 ? usc : ucp);
-      const baseCostPer10 = Number((item.products as any)?.house_cost || (item.products as any)?.base_cost || 0);
-      const baseCostPerVial = baseCostPer10 / 10;
+      // house_cost / base_cost are stored in DOLLARS PER VIAL. Nothing is sold
+      // or billed in 10-packs, so there is no pack-to-vial divisor. The /10 that
+      // used to be here understated COGS 10x.
+      const baseCostPerVial = Number((item.products as any)?.house_cost || (item.products as any)?.base_cost || 0);
       
       const isAgentOrder = !!(item.orders as any)?.agent_id;
       const houseProfit = isAgentOrder 

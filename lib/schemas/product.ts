@@ -8,9 +8,10 @@
  *     agent_products.retail_price / sale_price / margin_percent, read
  *     directly by checkout pricing.
  *
- * IMPORTANT UNIT NOTE: agent_products.retail_price and sale_price are stored
- * in per-10-vial-pack units ("tenths"); the UI shows per-vial dollars
- * (value / 10). These schemas validate the RAW stored unit.
+ * IMPORTANT UNIT NOTE: every money column on this platform is stored in
+ * DOLLARS PER VIAL -- products.base_cost/house_cost, agent_products.retail_price
+ * and sale_price, and super_agent_pricing.baseline_cost. Nothing is sold or
+ * billed in 10-packs, so there is no pack-to-vial conversion anywhere.
  */
 import { z } from 'zod';
 import { uuidString, moneyAmount } from '@/lib/schemas/common';
@@ -60,9 +61,9 @@ export type AdminProductPatchInput = z.infer<typeof AdminProductPatchSchema>;
 
 /**
  * PATCH /api/agent/products -- agent storefront pricing update.
- * sale_price / retail_price are the RAW per-10-pack values. NaN, Infinity,
- * strings, and negatives are rejected at the boundary so the MAP/cost-floor
- * guards downstream always compare real numbers.
+ * sale_price / retail_price are per-vial dollars. NaN, Infinity, strings,
+ * and negatives are rejected at the boundary so the MAP/cost-floor guards
+ * downstream always compare real numbers.
  */
 export const AgentProductPatchSchema = z.object({
   id: uuidString,
@@ -74,14 +75,14 @@ export const AgentProductPatchSchema = z.object({
   is_visible: z.boolean().optional(),
   is_on_sale: z.boolean().optional(),
   sale_price: moneyAmount.nullable().optional(),
-  /** Manufacturer accounts only: their private production cost per 10-pack. */
+  /** Manufacturer accounts only: their private production cost per vial. */
   manufacturer_cost: moneyAmount.nullable().optional(),
 });
 export type AgentProductPatchInput = z.infer<typeof AgentProductPatchSchema>;
 
 /**
  * POST /api/agent/super-agent/pricing -- super-agent -> sub-agent billing
- * baselines (RAW per-10-pack units). NaN previously passed the route's
+ * baselines (per-vial dollars). NaN previously passed the route's
  * `typeof x === 'number'` checks (typeof NaN is 'number') and every floor
  * comparison; schema-typing with finite() closes that.
  */
