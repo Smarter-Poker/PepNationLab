@@ -155,7 +155,7 @@ export async function POST(
     const retailPerVial = apMatch ? apMatch.price / 10 : baseCost / 10;
     // Agent self-buys use cost pricing (base_cost / 10), not the storefront retail
     // price. This mirrors the server-side pricing in POST /api/orders.
-    const costPerVial = baseCost / 10;
+    const costPerVial = baseCost;
     const perVial = isAgentSelfBuy ? costPerVial : retailPerVial;
     const sizeLabel = product.unit_size ? ` (${product.unit_size}${product.unit_measure || ''})` : '';
 

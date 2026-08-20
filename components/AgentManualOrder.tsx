@@ -79,7 +79,7 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
         // the raw value, so every line/subtotal/total read 10x the amount actually
         // charged. Divide here so the displayed figures match the server's charge.
         // (price is display-only; the server recomputes from the catalog on submit.)
-        price: (Number(product.retail_price) || 0) / 10,
+        price: (Number(product.retail_price) || 0),
         name: displayName + sizeStr
       }];
     });
