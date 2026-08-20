@@ -285,6 +285,7 @@ function useCatalogRefresh(agentSlug: string, agentId?: string | null) {
     // ── Realtime: evict + re-fetch the moment any product is updated ────────
     let supabase: ReturnType<typeof createClient> | null = null;
     let realtimeChannel: ReturnType<ReturnType<typeof createClient>['channel']> | null = null;
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
     
     // Only subscribe to realtime if we know the agentId
     if (agentId) {
@@ -301,13 +302,16 @@ function useCatalogRefresh(agentSlug: string, agentId?: string | null) {
               filter: `agent_id=eq.${agentId}`,
             },
             () => {
-              // Evict stale cache and immediately fetch fresh data
-              evictCatalogCache(agentSlug);
-              doRefresh(true);
-              // CRITICAL: Force Next.js to re-fetch the Server Component payload
-              // so the authoritative 'products' prop updates in the UI!
-              // Use soft-reload via router to avoid jarring full page reloads.
-              router.refresh();
+              if (refreshTimer) clearTimeout(refreshTimer);
+              refreshTimer = setTimeout(() => {
+                // Evict stale cache and immediately fetch fresh data
+                evictCatalogCache(agentSlug);
+                doRefresh(true);
+                // CRITICAL: Force Next.js to re-fetch the Server Component payload
+                // so the authoritative 'products' prop updates in the UI!
+                // Use soft-reload via router to avoid jarring full page reloads.
+                router.refresh();
+              }, 1000);
             }
           )
           .subscribe();
@@ -317,12 +321,15 @@ function useCatalogRefresh(agentSlug: string, agentId?: string | null) {
     }
 
     return () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
       if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);
       if (supabase && realtimeChannel) {
         supabase.removeChannel(realtimeChannel);
       }
     };
-  }, [doRefresh, agentSlug, agentId, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doRefresh, agentSlug, agentId]);
+
 }
 
 export default function AgentStorefrontGrid({
