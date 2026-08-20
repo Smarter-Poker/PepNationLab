@@ -28,7 +28,8 @@ export default function EditProductPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [multipliers, setMultipliers] = useState<Record<string, number>>({});
+
+
 
   const [form, setForm] = useState({
     name: '',
@@ -53,19 +54,6 @@ export default function EditProductPage() {
 
   useEffect(() => {
     if (!id) return;
-
-    fetch('/api/admin/pricing-tiers')
-      .then(r => r.json())
-      .then(data => {
-        if (data && Array.isArray(data)) {
-          const m: Record<string, number> = {};
-          data.forEach((t: { tier_name: string; multiplier: number }) => {
-            m[t.tier_name] = t.multiplier;
-          });
-          setMultipliers(m);
-        }
-      })
-      .catch(() => {});
 
     fetch(`/api/admin/products?id=${id}`)
       .then(async r => {
@@ -300,16 +288,8 @@ export default function EditProductPage() {
               </div>
               <p style={{ fontSize: '0.72rem', color: 'var(--grey-400)', marginTop: 'var(--space-2)', marginBottom: 0 }}>If Set, Agents Purchasing At Or Above The Threshold Quantity Will Receive This Flat Unit Cost Regardless Of Their Tier.</p>
             </div>
-            {validCost && multipliers.tier_1 != null && (
-              <div style={{ marginTop: 'var(--space-4)', padding: 'var(--space-4)', background: 'var(--surface-2)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(192,184,168,0.15)' }}>
-                <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', marginBottom: 'var(--space-2)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Agent Sell Prices Per Unit (From DB Multipliers)</div>
-                <div style={{ display: 'flex', gap: 'var(--space-6)' }}>
-                  <div><div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 1 ({multipliers.tier_1}x)</div><div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>${(baseCost * multipliers.tier_1).toFixed(2)}</div></div>
-                  <div><div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 2 ({multipliers.tier_2}x)</div><div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--silver)', fontFamily: 'var(--font-brand)' }}>${(baseCost * multipliers.tier_2).toFixed(2)}</div></div>
-                  <div><div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 3 ({multipliers.tier_3}x)</div><div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--grey-400)', fontFamily: 'var(--font-brand)' }}>${(baseCost * multipliers.tier_3).toFixed(2)}</div></div>
-                </div>
-              </div>
-            )}
+
+
           </div>
         </div>
 
