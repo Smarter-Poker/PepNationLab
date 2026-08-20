@@ -272,13 +272,6 @@ export default function EditProductPage() {
                   <input id="base_cost" type="number" step="0.01" min="0" required className="form-input" placeholder="0.00" value={form.house_cost} onChange={e => set('house_cost', e.target.value)} style={{ paddingLeft: 28 }} />
                 </div>
               </div>
-              {form.house_cost && !isNaN(parseFloat(form.house_cost)) && (
-                <div style={{ flex: '1 1 180px', marginBottom: 0 }}>
-                  <label className="form-label">Agent Price Basis <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)', fontWeight: 400 }}>(Auto-synced)</span></label>
-                  <div className="form-input" style={{ opacity: 0.7, display: 'flex', alignItems: 'center' }}>${parseFloat(form.house_cost).toFixed(2)}</div>
-                  <p style={{ fontSize: '0.7rem', color: 'var(--grey-400)', marginTop: 4 }}>Updates automatically when you save.</p>
-                </div>
-              )}
 
               <div className="form-group" style={{ flex: '0 1 100px', marginBottom: 0 }}>
                 <label className="form-label" htmlFor="unit_size">Unit Size</label>
