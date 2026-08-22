@@ -16,6 +16,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { reportClientError } from '@/lib/report-client-error';
 import { getProductImage } from '@/lib/categoryImage';
+import { getBrandNetworkIsSavage } from '@/lib/brand-network-client';
 import { useModalA11y } from '@/lib/useModalA11y';
 import {
   sanitizeStoredCart,
@@ -694,9 +695,9 @@ function BacWaterCalculator({
             alignItems: 'center',
           }}
         >
-          <span>{totalPeptideVials} Vials x 2 mL/Vial</span>
+          <span>~{totalMlNeeded} mL Total (By Strength)</span>
           <span style={{ color: 'rgba(255,255,255,0.2)' }}>/</span>
-          <span>10 mL/Bottle</span>
+          <span>{bacWaterProduct?.unit_size || '10'} mL/Bottle</span>
           <span style={{ color: 'rgba(255,255,255,0.2)' }}>=</span>
           <span style={{ color: 'var(--teal)', fontWeight: 700 }}>
             {stillNeeded} Bottle{stillNeeded !== 1 ? 's' : ''} Needed (Rounded Up)
@@ -762,11 +763,14 @@ function BacWaterCalculator({
 function SmartRecommendationStrip({
   cart,
   onQuickAdd,
+  agentSlug,
 }: {
   cart: CartItem[];
   onQuickAdd: (rec: SmartRec) => void;
+  agentSlug?: string;
 }) {
   const [recs, setRecs] = useState<SmartRec[]>([]);
+  const [apiSavageNetwork, setApiSavageNetwork] = useState(false);
   const [loading, setLoading] = useState(true);
   const abortRef = useRef<AbortController | null>(null);
   const prevKeyRef = useRef<string>('');
@@ -794,12 +798,15 @@ function SmartRecommendationStrip({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       signal: ctrl.signal,
-      body: JSON.stringify({ productIds: cart.map(i => i.id) }),
+      // agentSlug lets the API resolve store-scoped prices, agent custom
+      // imagery, and the Savage-network verdict for this cart's storefront.
+      body: JSON.stringify({ productIds: cart.map(i => i.id), ...(agentSlug ? { agentSlug } : {}) }),
     })
       .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
-      .then((data: { recommendations?: SmartRec[] }) => {
+      .then((data: { recommendations?: SmartRec[]; brand_network_savage?: boolean }) => {
         const filtered = (data.recommendations ?? []).filter(r => !cartIdSet.has(r.id));
         setRecs(filtered.slice(0, 6));
+        setApiSavageNetwork(data.brand_network_savage === true);
         setLoading(false);
       })
       .catch(() => {
@@ -845,7 +852,7 @@ function SmartRecommendationStrip({
       <div
         style={{
           display: 'flex', gap: 8, overflowX: 'auto',
-          overscrollBehaviorX: 'none', touchAction: 'pan-x',
+          overscrollBehaviorX: 'none', touchAction: 'pan-x pan-y',
           WebkitOverflowScrolling: 'touch' as React.CSSProperties['WebkitOverflowScrolling'],
           paddingBottom: 6,
           scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'],
@@ -867,7 +874,7 @@ function SmartRecommendationStrip({
               />
             ))
           : recs.map(rec => (
-              <SmartRecCard key={rec.id} rec={rec} onQuickAdd={onQuickAdd} />
+              <SmartRecCard key={rec.id} rec={rec} onQuickAdd={onQuickAdd} agentSlug={agentSlug} brandNetworkIsSavage={apiSavageNetwork} />
             ))}
       </div>
     </div>
@@ -877,12 +884,20 @@ function SmartRecommendationStrip({
 function SmartRecCard({
   rec,
   onQuickAdd,
+  agentSlug,
+  brandNetworkIsSavage = false,
 }: {
   rec: SmartRec;
   onQuickAdd: (rec: SmartRec) => void;
+  agentSlug?: string;
+  brandNetworkIsSavage?: boolean;
 }) {
   const [added, setAdded] = useState(false);
-  const imgSrc = getProductImage(rec.image_url, rec.category || 'Other', rec.name);
+  // Persisted server verdict first (covers Savage downlines like /eddierazz
+  // whose rec images come straight from the shared products table), then
+  // the slug/path heuristics.
+  const isSavageBrandsNetwork = brandNetworkIsSavage || getBrandNetworkIsSavage(agentSlug) || agentSlug === 'savagebrands' || (rec.image_url || '').includes('/images/savage-brands/');
+  const imgSrc = getProductImage(rec.image_url, rec.category || 'Other', rec.name, false, agentSlug, isSavageBrandsNetwork);
   const displayName = rec.unit_size
     ? `${rec.name} ${rec.unit_size}${rec.unit_measure || ''}`
     : rec.name;
@@ -935,7 +950,7 @@ function SmartRecCard({
             unoptimized
             onError={(e) => {
               const t = e.target as HTMLImageElement;
-              const fallback = getProductImage(null, rec.category || 'Other', rec.name);
+              const fallback = getProductImage(null, rec.category || 'Other', rec.name, false, agentSlug, isSavageBrandsNetwork);
               if (t.src !== fallback) t.src = fallback;
             }}
           />
@@ -983,6 +998,14 @@ function SmartRecCard({
 
 function CartDrawer() {
   const router = useRouter();
+  // Derive the current agent slug from localStorage so image calls use the correct brand vials.
+  const agentSlug = (() => {
+    if (typeof window === 'undefined') return undefined;
+    try {
+      const key = Object.keys(localStorage).find(k => k.startsWith('pnl_storefront_cart_'));
+      return key ? key.replace('pnl_storefront_cart_', '') : undefined;
+    } catch { return undefined; }
+  })();
   const {
     cart,
     removeFromCart,
@@ -1263,6 +1286,7 @@ function CartDrawer() {
 
               <SmartRecommendationStrip
                 cart={cart}
+                agentSlug={agentSlug}
                 onQuickAdd={(rec) => {
                   if (cartIds.has(rec.id)) return;
                   handleQuickAdd(rec);
@@ -1309,7 +1333,7 @@ function CartDrawer() {
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '14px 20px', paddingBottom: 'calc(18px + env(safe-area-inset-bottom, 0px))', flexShrink: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, padding: '10px 14px', background: 'rgba(0,229,255,0.04)', borderRadius: 8, border: '1px solid rgba(0,229,255,0.1)' }}>
               <span style={{ fontSize: '0.86rem', color: 'var(--grey-400)', fontWeight: 600 }}>Subtotal</span>
-              <strong style={{ color: 'var(--teal)', fontFamily: 'var(--font-brand)', fontSize: '1.15rem', fontWeight: 800, letterSpacing: '0.02em' }}>
+              <strong style={{ color: 'var(--teal)', fontFamily: 'var(--font-brand)', fontSize: '1.15rem', fontWeight: 800, letterSpacing: '0.02em', whiteSpace: 'nowrap', flexShrink: 0 }}>
                 ${cartSubtotal.toFixed(2)}
               </strong>
             </div>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { computeSubAgentBaselineCost } from '@/lib/pricing';
+import { computeSuperDownlineSubtreeBilling } from '@/lib/statements';
 import { assertSameOrigin } from '@/lib/csrf';
 import { notifyInvoiceGenerated } from '@/lib/notify';
 import { chicagoMidnightIso } from '@/lib/time-cst';
@@ -87,7 +88,7 @@ export async function POST(req: NextRequest) {
     // Check if the Sub-Agent actually belongs to this Super Agent.
     const { data: subAgent } = await supabase
       .from('profiles')
-      .select('id')
+      .select('id, is_super_agent')
       .eq('id', sub_agent_id)
       .eq('parent_agent_id', superAgentId)
       .maybeSingle();
@@ -161,21 +162,36 @@ export async function POST(req: NextRequest) {
         if (Number.isFinite(stored) && stored >= 0) {
           totalCogs += stored * qty;
         } else if (item.product_id) {
-          // computeSubAgentBaselineCost returns a per-10-vial-pack cost, but the
-          // stored unit_cost_price path above is per-vial and qty is in individual
-          // vials. Divide by 10 so the fallback matches (was a 10x over-bill).
+          // computeSubAgentBaselineCost returns a PER-VIAL cost, matching the
+          // stored unit_cost_price path above, and qty counts individual
+          // vials. Nothing is sold or billed in 10-packs, so no divisor
+          // applies. The /10 that used to sit here under-billed 10x.
           const recomputed = await computeSubAgentBaselineCost(
             supabase,
             item.product_id,
             superAgentId
           );
-          totalCogs += (recomputed / 10) * qty;
+          totalCogs += recomputed * qty;
         }
       }
     }
 
-    // Sub-agents collected shipping at retail from customers. Since the Admin 
-    // bills the Super Agent for this shipping cost on their weekly statement, 
+    // If the billed downline is a NESTED Super Agent, their invoice also
+    // covers their entire subtree's orders at the nested Super's own cost
+    // basis - the hop-by-hop weekly trickle-down. (The subtree helper keys
+    // on agent_approved_at with a created_at fallback, matching the cron;
+    // it also excludes not-yet-approved statuses.)
+    if (subAgent.is_super_agent) {
+      const subtree = await computeSuperDownlineSubtreeBilling(supabase, sub_agent_id, {
+        rangeStart,
+        rangeEndExclusive,
+      });
+      totalCogs += subtree.cogs;
+      totalShipping += subtree.shipping;
+    }
+
+    // Sub-agents collected shipping at retail from customers. Since the Admin
+    // bills the Super Agent for this shipping cost on their weekly statement,
     // the Super Agent MUST re-bill shipping to the Sub-Agent here, otherwise
     // the Super Agent loses money paying for the Sub-Agent's shipping.
     const cogsRound = Math.round(totalCogs * 100) / 100;

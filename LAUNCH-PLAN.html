@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PepNationLab — Launch Command Center</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2330; --border:#2d3748;
+    --text:#e6edf3; --muted:#8b98a9; --accent:#4fd1c5; --accent2:#f6ad55;
+    --green:#68d391; --red:#fc8181; --blue:#63b3ed; --purple:#b794f4;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; line-height:1.55;}
+  .wrap{max-width:1080px; margin:0 auto; padding:24px 20px 80px;}
+  header{padding:28px 0 18px; border-bottom:1px solid var(--border); margin-bottom:8px;}
+  header h1{font-size:26px; letter-spacing:.3px;}
+  header h1 span{color:var(--accent);}
+  header p{color:var(--muted); margin-top:6px; font-size:14px;}
+  nav{display:flex; flex-wrap:wrap; gap:8px; position:sticky; top:0; background:var(--bg); padding:14px 0; z-index:10; border-bottom:1px solid var(--border);}
+  nav a{background:var(--panel); color:var(--muted); border:1px solid var(--border); border-radius:20px; padding:7px 14px; font-size:13px; cursor:pointer; font-weight:600; text-decoration:none;}
+  nav a:hover{background:var(--accent); color:#06251f; border-color:var(--accent);}
+  section{display:block; padding:30px 0 10px; border-bottom:2px solid var(--border); scroll-margin-top:76px;}
+  h2{font-size:21px; margin-bottom:4px;}
+  h2 .tag{font-size:11px; vertical-align:middle; background:var(--panel2); border:1px solid var(--border); color:var(--accent2); border-radius:10px; padding:2px 9px; margin-left:8px; font-weight:700; letter-spacing:.5px;}
+  .sub{color:var(--muted); font-size:14px; margin-bottom:18px;}
+  .card{background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:18px 20px; margin-bottom:14px;}
+  .card h3{font-size:15px; margin-bottom:8px; color:var(--accent);}
+  .card h3.warn{color:var(--red);}
+  .card h3.gold{color:var(--accent2);}
+  .card p{font-size:14px; color:#c9d4e0; margin-bottom:8px;}
+  .card p:last-child{margin-bottom:0;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr;}}
+  ul.clean{list-style:none;}
+  ul.clean li{padding:7px 0 7px 2px; font-size:14px; color:#c9d4e0; border-bottom:1px dashed #232c3b; display:flex; gap:10px; align-items:flex-start;}
+  ul.clean li:last-child{border-bottom:none;}
+  ul.clean li input[type=checkbox]{margin-top:3px; accent-color:var(--accent); width:15px; height:15px; flex-shrink:0; cursor:pointer;}
+  ul.clean li.done label{color:#5a6a7d; text-decoration:line-through;}
+  ul.clean li label{cursor:pointer;}
+  .pill{display:inline-block; font-size:11px; font-weight:700; border-radius:9px; padding:1px 8px; margin-right:6px; letter-spacing:.4px;}
+  .pill.p0{background:#4a1d1d; color:var(--red);}
+  .pill.p1{background:#3d2f14; color:var(--accent2);}
+  .pill.p2{background:#14323d; color:var(--blue);}
+  .bar-row{display:flex; align-items:center; gap:12px; margin-bottom:10px; font-size:13px;}
+  .bar-label{width:290px; flex-shrink:0; color:#c9d4e0;}
+  .bar-track{flex:1; background:var(--panel2); border-radius:6px; height:22px; overflow:hidden;}
+  .bar-fill{height:100%; border-radius:6px; display:flex; align-items:center; padding-left:8px; font-size:11px; font-weight:700; color:#06251f; min-width:52px;}
+  .tmpl{background:#0a0e14; border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:8px; padding:14px 16px; font-size:13.5px; color:#d7e0ea; white-space:pre-wrap; margin:10px 0 4px; font-family:inherit;}
+  .copybtn{background:var(--panel2); border:1px solid var(--border); color:var(--accent); font-size:12px; border-radius:6px; padding:4px 10px; cursor:pointer; margin-bottom:12px;}
+  .copybtn:active{background:var(--accent); color:#06251f;}
+  table{width:100%; border-collapse:collapse; font-size:13.5px; margin:8px 0;}
+  th{text-align:left; color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.6px; padding:8px 10px; border-bottom:1px solid var(--border);}
+  td{padding:9px 10px; border-bottom:1px solid #232c3b; color:#c9d4e0; vertical-align:top;}
+  tr:last-child td{border-bottom:none;}
+  .big{font-size:24px; font-weight:800; color:var(--accent);}
+  .statrow{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px;}
+  @media(max-width:760px){.statrow{grid-template-columns:repeat(2,1fr);}}
+  .stat{background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:14px 16px;}
+  .stat .n{font-size:22px; font-weight:800; color:var(--accent);}
+  .stat .l{font-size:12px; color:var(--muted); margin-top:2px;}
+  .day{border-left:3px solid var(--accent); padding-left:16px; margin:0 0 18px 4px;}
+  .day.today{border-left-color:var(--accent2);}
+  .day h4{font-size:15px; margin-bottom:6px;}
+  .day h4 em{color:var(--accent2); font-style:normal; font-size:12px; margin-left:8px;}
+  .footer-note{color:var(--muted); font-size:12px; margin-top:30px; text-align:center;}
+  code{background:var(--panel2); padding:1px 6px; border-radius:5px; font-size:13px; color:var(--accent2);}
+  .progress-note{font-size:12px; color:var(--muted); margin-bottom:10px;}
+
+  .dayselect{display:flex; flex-wrap:wrap; gap:6px;}
+  .dayselect .dsel{width:44px; height:36px; border-radius:8px; border:1px solid var(--border); background:var(--panel2); color:var(--muted); font-weight:700; cursor:pointer; font-size:13px;}
+  .dayselect .dsel.cur{background:var(--accent); color:#06251f; border-color:var(--accent);}
+  .dayselect .dsel.done{background:#123528; color:var(--green); border-color:#1f5c40;}
+  .dayselect .dsel.lockd{opacity:.35; cursor:not-allowed;}
+  .dayprog{background:var(--panel2); border-radius:6px; height:10px; margin:6px 0 12px; overflow:hidden;}
+  .dayprog-fill{height:100%; width:0%; background:var(--accent); border-radius:6px; transition:width .2s;}
+  .daydone{display:none; margin-top:12px; background:#123528; border:1px solid #1f5c40; color:var(--green); border-radius:8px; padding:10px 14px; font-weight:700; font-size:14px;}
+  .daydone.show{display:block;}
+  .js-on .daypage{display:none;}
+  .js-on .daypage.current{display:block;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>🚀 PepNationLab <span>Launch Command Center</span></h1>
+  <p>v4 FINAL — Launch day: Tuesday, July 14, 2026 · Budget: $5,000 · Goals: direct customers + agent storefronts · Operator: Dan (daily hands-on)</p>
+</header>
+
+<nav id="nav">
+  <a href="#rules">⚠️ Rules First</a>
+  <a href="#tonight">✅ Tonight</a>
+  <a href="#day1">🎯 Launch Day</a>
+  <a href="#daily">✅ Daily Tasks</a>
+  <a href="#contacts">📱 Contacts</a>
+  <a href="#agents">🤝 Agents</a>
+  <a href="#poach">🧲 Recruit Sellers</a>
+  <a href="#guerrilla">🦍 Guerrilla IL</a>
+  <a href="#reddit">👽 Reddit</a>
+  <a href="#paidsocial">🎪 Paid Social Test</a>
+  <a href="#days30">📅 Strategy Weeks</a>
+  <a href="#channels">📡 Channels</a>
+  <a href="#budget">💰 Budget</a>
+  <a href="#levelups">💎 Level-Ups</a>
+  <a href="#metrics">📊 Scoreboard</a>
+</nav>
+
+<!-- ============ RULES ============ -->
+<section id="rules" class="active">
+  <h2>Rules of the Road <span class="tag">READ FIRST</span></h2>
+  <p class="sub">Research peptides are a restricted advertising category. These rules protect the whole business — one violation can cost you an ad account, an email domain, or worse. Everything else in this plan is built around them.</p>
+
+  <div class="card">
+    <h3 class="warn">❌ Never do these</h3>
+    <ul class="clean">
+      <li>🚫 <span><strong>No peptide ads from accounts or domains you care about.</strong> Google/Meta/TikTok ban the category — automated systems crawl your landing page and kill accounts within hours, and bans hit domains and Business Managers, not just ad accounts. The one exception is the contained, firewalled experiment in the Paid Social Test tab: rented account, separate domain, zero connection to pepnationlab.com or your personal profiles.</span></li>
+      <li>🚫 <span><strong>No health, dosing, or results claims from the brand.</strong> Never say a peptide treats, heals, builds, burns, or cures anything. FDA/FTC actively pursue consumer-facing therapeutic claims on research compounds.</span></li>
+      <li>🚫 <span><strong>No mass SMS blasts.</strong> Carrier filtering + TCPA fines make bulk texting a landmine. Personal 1:1 texts from your own phone to people who know you = fine. Software-blasted lists = not fine.</span></li>
+      <li>🚫 <span><strong>No Klaviyo / Mailchimp.</strong> Mainstream email platforms prohibit research chemicals in their acceptable-use policies and will terminate you mid-campaign. Use a permissive/self-hosted setup (see Channels tab).</span></li>
+      <li>🚫 <span><strong>No spam-dropping your link in Reddit peptide subs.</strong> Most ban vendor self-promo and the community is ruthless about it. There's a right way (see Channels tab) — this isn't it.</span></li>
+      <li>🚫 <span><strong>No before/after photos or testimonials implying human use</strong> on brand channels. That's the single fastest way to attract regulator attention.</span></li>
+      <li>🚫 <span><strong>No branded-drug equivalence claims</strong> — never "same as Ozempic/Mounjaro." Eli Lilly won an ITC exclusion order against tirzepatide sellers on trademark grounds; drugmakers are a second enforcement vector alongside the FDA. Named cases and details in the Level-Ups tab.</span></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>✅ Always do these</h3>
+    <ul class="clean">
+      <li>🧪 <span><strong>"For laboratory research use only"</strong> framing on every post, email, and page. Your site already has the disclaimer stack (signup, add-to-cart, checkout) — marketing copy must match it.</span></li>
+      <li>📚 <span><strong>Educate, don't prescribe.</strong> "What the published research says about BPC-157" is compliant content. "How I recovered using BPC-157" from the brand account is not.</span></li>
+      <li>🤝 <span><strong>Let people, not the brand, carry the word-of-mouth.</strong> Your agent-storefront model is perfect for this — individuals talking to their own circles is both the most effective and lowest-risk channel in this category.</span></li>
+      <li>🔍 <span><strong>Own your channels.</strong> SEO, your email list, your community. Rented audiences (social platforms) can throttle peptide content anytime — always be converting followers into email subscribers and account signups.</span></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3 class="gold">The strategy in one paragraph</h3>
+    <p>Because paid ads are closed to you, this launch wins on <strong>three engines: your personal network (free), an agent army (your platform's superpower — every coach/trainer/poker buddy who opens a storefront brings their own audience at zero ad cost), and owned media (SEO + email) that compounds</strong>. The $5k goes to the things money can actually buy in this category: micro-influencer seeding, free-product-for-content, agent signing incentives, and SEO fuel.</p>
+  </div>
+</section>
+
+<!-- ============ TONIGHT ============ -->
+<section id="tonight">
+  <h2>Tonight — Pre-Flight Checklist <span class="tag">MON JUL 13</span></h2>
+  <p class="sub">Do these before you tell a single person. First impressions don't get a second chance, and launch-day traffic will find every crack.</p>
+  <p class="progress-note">Checkboxes are for this sitting — they reset if you reload the page.</p>
+
+  <div class="card">
+    <h3>Site readiness (60–90 min)</h3>
+    <ul class="clean">
+      <li><input type="checkbox" id="c1"><label for="c1"><span class="pill p0">P0</span>Place a real test order end-to-end on your phone as a brand-new guest: landing → browse → signup → add to cart → checkout → payment → confirmation email. Fix anything that stumbles.</label></li>
+      <li><input type="checkbox" id="c2"><label for="c2"><span class="pill p0">P0</span>Test the Google sign-in flow fresh (incognito) — it's the lowest-friction door for launch traffic.</label></li>
+      <li><input type="checkbox" id="c3"><label for="c3"><span class="pill p0">P0</span>Create launch promo code <code>LAUNCH15</code> (or similar, ~15% off, expires in 7 days). Urgency is the whole point — a code that never expires converts nobody.</label></li>
+      <li><input type="checkbox" id="c4"><label for="c4"><span class="pill p1">P1</span>Check top-10 products for stock, photos, and correct tier pricing. Launch traffic concentrates on bestsellers.</label></li>
+      <li><input type="checkbox" id="c5"><label for="c5"><span class="pill p1">P1</span>Confirm analytics are recording (GA4 or equivalent) and Google Search Console has your sitemap submitted — SEO compounding starts the day Google can crawl you.</label></li>
+      <li><input type="checkbox" id="c6"><label for="c6"><span class="pill p1">P1</span>Load-test mentally: landing page on slow mobile data. Most of your launch clicks will be from phones via text message.</label></li>
+      <li><input type="checkbox" id="c7"><label for="c7"><span class="pill p2">P2</span>Set up a support inbox habit: support@ checked 3x daily this week. Launch-week response speed builds the reputation Reddit-era buyers check for.</label></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Marketing prep (60 min)</h3>
+    <ul class="clean">
+      <li><input type="checkbox" id="c8"><label for="c8"><span class="pill p0">P0</span>Build your contact tiers (see Contacts tab): Tier 1 = 20–30 people who'd help you move a couch. Tier 2 = 50–150 friendly acquaintances. Tier 3 = everyone else. Write the actual names down tonight.</label></li>
+      <li><input type="checkbox" id="c9"><label for="c9"><span class="pill p0">P0</span>List your first 10 agent candidates — trainers, coaches, gym owners, poker friends with a following, anyone whose circle asks them "what do you take?" (See Agents tab for the pitch.)</label></li>
+      <li><input type="checkbox" id="c10"><label for="c10"><span class="pill p1">P1</span>Secure matching social handles (@pepnationlab) on Instagram, X, TikTok, YouTube, Facebook — even ones you won't use yet. Post nothing tonight; just claim them.</label></li>
+      <li><input type="checkbox" id="c11"><label for="c11"><span class="pill p1">P1</span>Draft tomorrow's announcement post + record one 30–60s launch video on your phone (you, talking, why you built this). Personal beats polished in this category.</label></li>
+      <li><input type="checkbox" id="c13"><label for="c13"><span class="pill p2">P2</span>Skim the Guerrilla IL tab so tomorrow night's print-design brief (flyer card + banners) is a 5-minute task, not a research project.</label></li>
+      <li><input type="checkbox" id="c12"><label for="c12"><span class="pill p2">P2</span>Get a good night's sleep. Tomorrow is a marathon disguised as a sprint.</label></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ DAY 1 ============ -->
+<section id="day1">
+  <h2>Launch Day Playbook <span class="tag">TUE JUL 14</span></h2>
+  <p class="sub">The order matters: warm audience first (they create the early activity + feedback), broadcast second, follow-up always. Target for the day: every Tier-1 person contacted personally, 5 agent conversations started, announcement live everywhere.</p>
+
+  <div class="day today">
+    <h4>☀️ 8–10 AM — Final check + go live<em>quiet phase</em></h4>
+    <ul class="clean">
+      <li><input type="checkbox" id="d1"><label for="d1">One last end-to-end order test. Verify <code>LAUNCH15</code> applies at checkout.</label></li>
+      <li><input type="checkbox" id="d2"><label for="d2">Post the announcement on ALL personal social accounts (feed + story): your launch video, the story of why you built it, link, and code. Pin it.</label></li>
+      <li><input type="checkbox" id="d3"><label for="d3">Update every bio/link-in-bio to pepnationlab.com.</label></li>
+    </ul>
+  </div>
+
+  <div class="day today">
+    <h4>📱 10 AM–1 PM — Tier 1 personal wave<em>highest-value hours of the launch</em></h4>
+    <ul class="clean">
+      <li><input type="checkbox" id="d4"><label for="d4">Text your 20–30 Tier-1 people INDIVIDUALLY (template in Contacts tab — no group texts, no copy-paste feel). Ask for one specific thing each: an order, a share, or an intro.</label></li>
+      <li><input type="checkbox" id="d5"><label for="d5">CALL your top 5 agent candidates. A phone call converts 10x better than a text for a business proposition. Pitch in Agents tab.</label></li>
+      <li><input type="checkbox" id="d6"><label for="d6">Reply to every single comment/DM within minutes. Early engagement velocity is what algorithms and humans both reward.</label></li>
+    </ul>
+  </div>
+
+  <div class="day today">
+    <h4>🌆 1–6 PM — Broadcast wave</h4>
+    <ul class="clean">
+      <li><input type="checkbox" id="d7"><label for="d7">Message your poker network — clubs, Discord/Telegram groups, the smarter.poker community. Use the community template; frame it as your news, not an ad.</label></li>
+      <li><input type="checkbox" id="d8"><label for="d8">Send Tier-2 texts/DMs (50–150 people, lighter-touch template).</label></li>
+      <li><input type="checkbox" id="d9"><label for="d9">Post a second story: behind-the-scenes of launch day (screenshots of first orders — numbers blurred, reactions, energy). Momentum is content.</label></li>
+    </ul>
+  </div>
+
+  <div class="day today">
+    <h4>🌙 6–10 PM — Follow-up + log</h4>
+    <ul class="clean">
+      <li><input type="checkbox" id="d10"><label for="d10">Personally thank every first-day customer (text or DM). Ask each: "Know one person who'd want this? Forward them my number." That sentence is your referral program v1.</label></li>
+      <li><input type="checkbox" id="d11"><label for="d11">Follow up with anyone who opened the convo but didn't act — a question, not a push: "Any questions I can answer?"</label></li>
+      <li><input type="checkbox" id="d12"><label for="d12">Log the day: orders, signups, agent conversations, best-reacting message. Tomorrow doubles down on what worked.</label></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ DAILY PLAN ============ -->
+<section id="daily">
+  <h2>Daily Tasks — 30 Gated Day Pages <span class="tag">CHECK OFF EVERY BOX TO UNLOCK THE NEXT DAY</span></h2>
+  <p class="sub">Every day is a complete standalone checklist — content, outreach, Reddit, the day's missions, and the evening log, all spelled out with the exact platforms and sites. A day must be 100% checked before the next one unlocks. If an item truly doesn't apply (event cancelled, prints delayed), check it and move on — the streak matters more than perfection. Progress saves in this browser automatically.</p>
+  <div id="dailyTasksWrap">
+    <div class="card" id="dayNav">
+      <h3>Jump To Day <span id="overallProg" style="float:right;color:var(--accent2);font-size:13px"></span></h3>
+      <div class="dayselect"><button class="dsel" data-ds="1">1</button><button class="dsel" data-ds="2">2</button><button class="dsel" data-ds="3">3</button><button class="dsel" data-ds="4">4</button><button class="dsel" data-ds="5">5</button><button class="dsel" data-ds="6">6</button><button class="dsel" data-ds="7">7</button><button class="dsel" data-ds="8">8</button><button class="dsel" data-ds="9">9</button><button class="dsel" data-ds="10">10</button><button class="dsel" data-ds="11">11</button><button class="dsel" data-ds="12">12</button><button class="dsel" data-ds="13">13</button><button class="dsel" data-ds="14">14</button><button class="dsel" data-ds="15">15</button><button class="dsel" data-ds="16">16</button><button class="dsel" data-ds="17">17</button><button class="dsel" data-ds="18">18</button><button class="dsel" data-ds="19">19</button><button class="dsel" data-ds="20">20</button><button class="dsel" data-ds="21">21</button><button class="dsel" data-ds="22">22</button><button class="dsel" data-ds="23">23</button><button class="dsel" data-ds="24">24</button><button class="dsel" data-ds="25">25</button><button class="dsel" data-ds="26">26</button><button class="dsel" data-ds="27">27</button><button class="dsel" data-ds="28">28</button><button class="dsel" data-ds="29">29</button><button class="dsel" data-ds="30">30</button></div>
+      <p id="lockMsg" style="color:var(--red);font-size:13px;margin-top:8px;display:none"></p>
+    </div>
+    <div id="dtDays"><div class="daypage" data-day="1" id="daypage1"><div class="day today"><h4>Day 1 — Tue Jul 14: LAUNCH DAY<em>13 tasks</em></h4><div class="dayprog"><div class="dayprog-fill" data-dpf="1"></div></div><ul class="clean"><li><input type="checkbox" id="dt1_0"><label for="dt1_0">🎥 <span>CONTENT: film + post today's piece — your launch video — you, on camera, why you built PepNationLab (pin it everywhere). Post to TikTok + Instagram Reels + X; add the Story version to Instagram AND Snapchat.</span></label></li><li><input type="checkbox" id="dt1_1"><label for="dt1_1">💬 <span>ENGAGE: reply to every overnight comment/DM on TikTok, Instagram, X, and Facebook — minimum 10 real conversations before noon.</span></label></li><li><input type="checkbox" id="dt1_2"><label for="dt1_2">🧲 <span>SELLER OUTREACH: send 4 DMs — prospects #1-4 on your hit-list. Today's hunting ground: TikTok (search compound names + 'pep' terms, check bios for sellers).</span></label></li><li><input type="checkbox" id="dt1_3"><label for="dt1_3">🤝 <span>FOLLOW-UPS: touch every open seller/agent thread from yesterday — get a yes, a no, or a next step on each.</span></label></li><li><input type="checkbox" id="dt1_4"><label for="dt1_4">👽 <span>REDDIT (20-30 min in r/Peptides): answer 3 questions with real knowledge. Phase 1 — ZERO links, build karma and post history.</span></label></li><li><input type="checkbox" id="dt1_5"><label for="dt1_5">🎯 <span>Post the launch announcement (feed + Story) on Instagram, TikTok, X, and Facebook by 10 AM — pin it, update every bio link to pepnationlab.com</span></label></li><li><input type="checkbox" id="dt1_6"><label for="dt1_6">🎯 <span>Text all 20-30 Tier-1 contacts INDIVIDUALLY by 1 PM (template in Contacts — personalize line one for each person)</span></label></li><li><input type="checkbox" id="dt1_7"><label for="dt1_7">🎯 <span>CALL your top 5 agent candidates (script in Agents) — calls, not texts</span></label></li><li><input type="checkbox" id="dt1_8"><label for="dt1_8">🎯 <span>Post the community message in your poker clubs / Discord / Telegram groups (template in Contacts)</span></label></li><li><input type="checkbox" id="dt1_9"><label for="dt1_9">🎯 <span>Verify LAUNCH15 applies at checkout — incognito test order on your phone</span></label></li><li><input type="checkbox" id="dt1_10"><label for="dt1_10">🎯 <span>Evening: brief Claude to design the flyer card, banner, and packaging-insert artwork</span></label></li><li><input type="checkbox" id="dt1_11"><label for="dt1_11">📊 <span>LOG THE DAY: GA4 visitors, orders + revenue (admin), new signups, new agents, code uses (LAUNCH15/GYM15), and every 'where'd you hear about us' answer.</span></label></li><li><input type="checkbox" id="dt1_12"><label for="dt1_12">🙏 <span>GRATITUDE ROUND: personally thank every new customer today (text or DM) and ask each for one referral.</span></label></li></ul><div class="daydone" data-dd="1">🎉 Day 1 Complete — Day 2 Is Unlocked</div></div></div><div class="daypage" data-day="2" id="daypage2"><div class="day"><h4>Day 2 — Wed Jul 15: Print Order + Trust Engine<em>14 tasks</em></h4><div class="dayprog"><div class="dayprog-fill" data-dpf="2"></div></div><ul class="clean"><li><input type="checkbox" id="dt2_0"><label for="dt2_0">🎥 <span>CONTENT: film + post today's piece — behind-the-scenes: launch-day numbers and reactions (screenshot energy, blur amounts). Post to TikTok + Instagram Reels + X; add the Story version to Instagram AND Snapchat.</span></label></li><li><input type="checkbox" id="dt2_1"><label for="dt2_1">💬 <span>ENGAGE: reply to every overnight comment/DM on TikTok, Instagram, X, and Facebook — minimum 10 real conversations before noon.</span></label></li><li><input type="checkbox" id="dt2_2"><label for="dt2_2">🧲 <span>SELLER OUTREACH: send 4 DMs — prospects #5-8 on your hit-list. Today's hunting ground: Facebook (peptide / GLP-1 / group-buy groups — the active answerers).</span></label></li><li><input type="checkbox" id="dt2_3"><label for="dt2_3">🤝 <span>FOLLOW-UPS: touch every open seller/agent thread from yesterday — get a yes, a no, or a next step on each.</span></label></li><li><input type="checkbox" id="dt2_4"><label for="dt2_4">👽 <span>REDDIT (20-30 min in r/Biohackers): answer 3 questions with real knowledge. Phase 1 — ZERO links, build karma and post history.</span></label></li><li><input type="checkbox" id="dt2_5"><label for="dt2_5">🎯 <span>Order prints online: 5,000 4x6 cards + packaging inserts at flyerstudios.com or vistaprint.com (~$150 total) and 4 vinyl 3'x10' banners at signs.com (~$300)</span></label></li><li><input type="checkbox" id="dt2_6"><label for="dt2_6">🎯 <span>Order a RUSH batch of 250 cards at your local FedEx Office (survives week 1 while bulk ships)</span></label></li><li><input type="checkbox" id="dt2_7"><label for="dt2_7">🎯 <span>TRUST ENGINE: place a testing order at janoshik.com and ship samples of your top 5-8 SKUs (fund as product QA)</span></label></li><li><input type="checkbox" id="dt2_8"><label for="dt2_8">🎯 <span>Email setup: create mail.pepnationlab.com subdomain, set SPF/DKIM/DMARC, install Listmonk (or pick permissive ESP) — send warmup email #1 to your 5 most engaged contacts</span></label></li><li><input type="checkbox" id="dt2_9"><label for="dt2_9">🎯 <span>Build the 40-seller hit-list in Google Sheets: handle, platform, followers, what they sell</span></label></li><li><input type="checkbox" id="dt2_10"><label for="dt2_10">🎯 <span>Create the GYM15 code (15% off, no expiry) in the admin panel</span></label></li><li><input type="checkbox" id="dt2_11"><label for="dt2_11">🎯 <span>Call agent candidates #4 and #5</span></label></li><li><input type="checkbox" id="dt2_12"><label for="dt2_12">📊 <span>LOG THE DAY: GA4 visitors, orders + revenue (admin), new signups, new agents, code uses (LAUNCH15/GYM15), and every 'where'd you hear about us' answer.</span></label></li><li><input type="checkbox" id="dt2_13"><label for="dt2_13">🙏 <span>GRATITUDE ROUND: personally thank every new customer today (text or DM) and ask each for one referral.</span></label></li></ul><div class="daydone" data-dd="2">🎉 Day 2 Complete — Day 3 Is Unlocked</div></div></div><div class="daypage" data-day="3" id="daypage3"><div class="day"><h4>Day 3 — Thu Jul 16: Boots On The Ground<em>11 tasks</em></h4><div class="dayprog"><div class="dayprog-fill" data-dpf="3"></div></div><ul class="clean"><li><input type="checkbox" id="dt3_0"><label for="dt3_0">🎥 <span>CONTENT: film + post today's piece — explainer: what a COA is and why serious researchers demand one. Post to TikTok + Instagram Reels + X; add the Story version to Instagram AND Snapchat.</span></label></li><li><input type="checkbox" id="dt3_1"><label for="dt3_1">💬 <span>ENGAGE: reply to every overnight comment/DM on TikTok, Instagram, X, and Facebook — minimum 10 real conversations before noon.</span></label></li><li><input type="checkbox" id="dt3_2"><label for="dt3_2">🧲 <span>SELLER OUTREACH: send 4 DMs — prospects #9-12 on your hit-list. Today's hunting ground: Telegram (peptide channels — resellers with their own lists).</span></label></li><li><input type="checkbox" id="dt3_3"><label for="dt3_3">🤝 <span>FOLLOW-UPS: touch every open seller/agent thread from yesterday — get a yes, a no, or a next step on each.</span></label></li><li><input type="checkbox" id="dt3_4"><label for="dt3_4">👽 <span>REDDIT (20-30 min in r/Nootropics): answer 3 questions with real knowledge. Phase 1 — ZERO links, build karma and post history.</span></label></li><li><input type="checkbox" id="dt3_5"><label for="dt3_5">🎯 <span>Pick up the rush cards at FedEx Office</span></label></li><li><input type="checkbox" id="dt3_6"><label for="dt3_6">🎯 <span>Visit 3 gyms IN PERSON: ask the manager for card-stack/bulletin permission + pitch them the agent deal (their own storefront + per-gym code)</span></label></li><li><input type="checkbox" id="dt3_7"><label for="dt3_7">🎯 <span>Drive-scout 5 banner locations on busy arterials / private fences; talk to at least 2 property owners</span></label></li><li><input type="checkbox" id="dt3_8"><label for="dt3_8">🎯 <span>Re-text every Tier-1 contact who went quiet (one friendly follow-up, question form)</span></label></li><li><input type="checkbox" id="dt3_9"><label for="dt3_9">📊 <span>LOG THE DAY: GA4 visitors, orders + revenue (admin), new signups, new agents, code uses (LAUNCH15/GYM15), and every 'where'd you hear about us' answer.</span></label></li><li><input type="checkbox" id="dt3_10"><label for="dt3_10">🙏 <span>GRATITUDE ROUND: personally thank every new customer today (text or DM) and ask each for one referral.</span></label></li></ul><div class="daydone" data-dd="3">🎉 Day 3 Complete — Day 4 Is Unlocked</div></div></div><div class="daypage" data-day="4" id="daypage4"><div class="day"><h4>Day 4 — Fri Jul 17: CHICAGO PRO — Day 1<em>11 tasks</em></h4><div class="dayprog"><div class="dayprog-fill" data-dpf="4"></div></div><ul class="clean"><li><input type="checkbox" id="dt4_0"><label for="dt4_0">🎥 <span>CONTENT: film + post today's piece — founder vlog: printing day — cards, banners, the grind (film at the print shop). Post to TikTok + Instagram Reels + X; add the Story version to Instagram AND Snapchat.</span></label></li><li><input type="checkbox" id="dt4_1"><label for="dt4_1">💬 <span>ENGAGE: reply to every overnight comment/DM on TikTok, Instagram, X, and Facebook — minimum 10 real conversations before noon.</span></label></li><li><input type="checkbox" id="dt4_2"><label for="dt4_2">🧲 <span>SELLER OUTREACH: send 4 DMs — prospects #13-16 on your hit-list. Today's hunting ground: Instagram + Snapchat (cross-links in TikTok seller bios).</span></label></li><li><input type="checkbox" id="dt4_3"><label for="dt4_3">🤝 <span>FOLLOW-UPS: touch every open seller/agent thread from yesterday — get a yes, a no, or a next step on each.</span></label></li><li><input type="checkbox" id="dt4_4"><label for="dt4_4">👽 <span>REDDIT (20-30 min in a GLP-1 community sub): answer 3 questions with real knowledge. Phase 1 — ZERO links, build karma and post history.</span></label></li><li><input type="checkbox" id="dt4_5"><label for="dt4_5">🎯 <span>CHICAGO PRO day 1 — Westin O'Hare, Rosemont: work the venue with recruit cards, person-to-person only; collect the IG handle or number of EVERY interested coach/competitor</span></label></li><li><input type="checkbox" id="dt4_6"><label for="dt4_6">🎯 <span>Close 2 banner-location deals by text (screenshot the permission)</span></label></li><li><input type="checkbox" id="dt4_7"><label for="dt4_7">🎯 <span>Post a 'first 100 visitors' milestone Story on Instagram + TikTok with real numbers</span></label></li><li><input type="checkbox" id="dt4_8"><label for="dt4_8">🎯 <span>Send Tier-2 texts to anyone you missed this week</span></label></li><li><input type="checkbox" id="dt4_9"><label for="dt4_9">📊 <span>LOG THE DAY: GA4 visitors, orders + revenue (admin), new signups, new agents, code uses (LAUNCH15/GYM15), and every 'where'd you hear about us' answer.</span></label></li><li><input type="checkbox" id="dt4_10"><label for="dt4_10">🙏 <span>GRATITUDE ROUND: personally thank every new customer today (text or DM) and ask each for one referral.</span></label></li></ul><div class="daydone" data-dd="4">🎉 Day 4 Complete — Day 5 Is Unlocked</div></div></div><div class="daypage" data-day="5" id="daypage5"><div class="day"><h4>Day 5 — Sat Jul 18: CHICAGO PRO Finals + GYM RUN #1<em>11 tasks</em></h4><div class="dayprog"><div class="dayprog-fill" data-dpf="5"></div></div><ul class="clean"><li><input type="checkbox" id="dt5_0"><label for="dt5_0">🎥 <span>CONTENT: film + post today's piece — checklist video: 5 ways to spot a peptide vendor scam (from the community's own red flags). Post to TikTok + Instagram Reels + X; add the Story version to Instagram AND Snapchat.</span></label></li><li><input type="checkbox" id="dt5_1"><label for="dt5_1">💬 <span>ENGAGE: reply to every overnight comment/DM on TikTok, Instagram, X, and Facebook — minimum 10 real conversations before noon.</span></label></li><li><input type="checkbox" id="dt5_2"><label for="dt5_2">🧲 <span>SELLER OUTREACH: send 4 DMs — prospects #17-20 on your hit-list. Today's hunting ground: TikTok (search compound names + 'pep' terms, check bios for sellers).</span></label></li><li><input type="checkbox" id="dt5_3"><label for="dt5_3">🤝 <span>FOLLOW-UPS: touch every open seller/agent thread from yesterday — get a yes, a no, or a next step on each.</span></label></li><li><input type="checkbox" id="dt5_4"><label for="dt5_4">👽 <span>REDDIT (20-30 min in r/Peptides): answer 3 questions with real knowledge. Phase 1 — ZERO links, build karma and post history.</span></label></li><li><input type="checkbox" id="dt5_5"><label for="dt5_5">🎯 <span>Morning GYM RUN #1: 5 gyms — cards on boards/counters where permitted, hand to humans, agent-pitch every manager</span></label></li><li><input type="checkbox" id="dt5_6"><label for="dt5_6">🎯 <span>Afternoon: CHICAGO PRO finals — second recruit-card pass; DM everyone you met yesterday while you're fresh in their memory</span></label></li><li><input type="checkbox" id="dt5_7"><label for="dt5_7">🎯 <span>Hit 3 community bulletin boards en route (library, coffee shop, laundromat)</span></label></li><li><input type="checkbox" id="dt5_8"><label for="dt5_8">🎯 <span>Order a car magnet + 2 logo shirts at vistaprint.com (~$70)</span></label></li><li><input type="checkbox" id="dt5_9"><label for="dt5_9">📊 <span>LOG THE DAY: GA4 visitors, orders + revenue (admin), new signups, new agents, code uses (LAUNCH15/GYM15), and every 'where'd you hear about us' answer.</span></label></li><li><input type="checkbox" id="dt5_10"><label for="dt5_10">🙏 <span>GRATITUDE ROUND: personally thank every new customer today (text or DM) and ask each for one referral.</span></label></li></ul><div class="daydone" data-dd="5">🎉 Day 5 Complete — Day 6 Is Unlocked</div></div></div><div class="daypage" data-day="6" id="daypage6"><div class="day"><h4>Day 6 — Sun Jul 19: WEEKLY REVIEW #1 + Code Deadline<em>12 tasks</em></h4><div class="dayprog"><div class="dayprog-fill" data-dpf="6"></div></div><ul class="clean"><li><input type="checkbox" id="dt6_0"><label for="dt6_0">🎥 <span>CONTENT: film + post today's piece — week-1 recap with REAL numbers: orders, visitors, lessons. Post to TikTok + Instagram Reels + X; add the Story version to Instagram AND Snapchat.</span></label></li><li><input type="checkbox" id="dt6_1"><label for="dt6_1">💬 <span>ENGAGE: reply to every overnight comment/DM on TikTok, Instagram, X, and Facebook — minimum 10 real conversations before noon.</span></label></li><li><input type="checkbox" id="dt6_2"><label for="dt6_2">🧲 <span>SELLER OUTREACH: send 4 DMs — prospects #21-24 on your hit-list. Today's hunting ground: Facebook (peptide / GLP-1 / group-buy groups — the active answerers).</span></label></li><li><input type="checkbox" id="dt6_3"><label for="dt6_3">🤝 <span>FOLLOW-UPS: touch every open seller/agent thread from yesterday — get a yes, a no, or a next step on each.</span></label></li><li><input type="checkbox" id="dt6_4"><label for="dt6_4">👽 <span>REDDIT (20-30 min in r/Biohackers): answer 3 questions with real knowledge. Phase 1 — ZERO links, build karma and post history.</span></label></li><li><input type="checkbox" id="dt6_5"><label for="dt6_5">🎯 <span>LAUNCH15 EXPIRES TONIGHT: last-call Story on every platform + individual texts to every warm non-buyer</span></label></li><li><input type="checkbox" id="dt6_6"><label for="dt6_6">🎯 <span>WEEKLY REVIEW #1 (20 min, Scoreboard questions): which channel produced the most orders per hour of effort?</span></label></li><li><input type="checkbox" id="dt6_7"><label for="dt6_7">🎯 <span>Brief Claude to build the paid-test bridge site + the 5-email nurture sequence this week</span></label></li><li><input type="checkbox" id="dt6_8"><label for="dt6_8">🎯 <span>Finalize the seeding list: 10-15 micro-creators (2k-50k followers) in fitness/biohacking from TikTok + Instagram</span></label></li><li><input type="checkbox" id="dt6_9"><label for="dt6_9">🎯 <span>Send warmup email #2-3 (stay on the ramp: ~5/day this week)</span></label></li><li><input type="checkbox" id="dt6_10"><label for="dt6_10">📊 <span>LOG THE DAY: GA4 visitors, orders + revenue (admin), new signups, new agents, code uses (LAUNCH15/GYM15), and every 'where'd you hear about us' answer.</span></label></li><li><input type="checkbox" id="dt6_11"><label for="dt6_11">🙏 <span>GRATITUDE ROUND: personally thank every new customer today (text or DM) and ask each for one referral.</span></label></li></ul><div class="daydone" data-dd="6">🎉 Day 6 Complete — Day 7 Is Unlocked</div></div></div><div class="daypage" data-day="7" id="daypage7"><div class="day"><h4>Day 7 — Mon Jul 20: Founding Agents Go Live<em>11 tasks</em></h4><div class="dayprog"><div class="dayprog-fill" data-dpf="7"></div></div><ul class="clean"><li><input type="checkbox" id="dt7_0"><label for="dt7_0">🎥 <span>CONTENT: film + post today's piece — explainer: what Research Use Only actually means (build trust through honesty). Post to TikTok + Instagram Reels + X; add the Story version to Instagram AND Snapchat.</span></label></li><li><input type="checkbox" id="dt7_1"><label for="dt7_1">💬 <span>ENGAGE: reply to every overnight comment/DM on TikTok, Instagram, X, and Facebook — minimum 10 real conversations before noon.</span></label></li><li><input type="checkbox" id="dt7_2"><label for="dt7_2">🧲 <span>SELLER OUTREACH: send 4 DMs — prospects #25-28 on your hit-list. Today's hunting ground: Telegram (peptide channels — resellers with their own lists).</span></label></li><li><input type="checkbox" id="dt7_3"><label for="dt7_3">🤝 <span>FOLLOW-UPS: touch every open seller/agent thread from yesterday — get a yes, a no, or a next step on each.</span></label></li><li><input type="checkbox" id="dt7_4"><label for="dt7_4">👽 <span>REDDIT (20-30 min in r/Nootropics): answer 3 questions with real knowledge. Phase 1 — ZERO links, build karma and post history.</span></label></li><li><input type="checkbox" id="dt7_5"><label for="dt7_5">🎯 <span>Onboard EVERY agent yes: build their stores FOR them while they watch (target 3-5 live by tonight)</span></label></li><li><input type="checkbox" id="dt7_6"><label for="dt7_6">🎯 <span>Hand each new agent 3 ready-to-send messages + their QR code + their storefront link</span></label></li><li><input type="checkbox" id="dt7_7"><label for="dt7_7">🎯 <span>Ship the seeding packages at USPS with personal handwritten-style notes (no ask attached)</span></label></li><li><input type="checkbox" id="dt7_8"><label for="dt7_8">🎯 <span>Rent the agency ad account (Paid Social Test tab firewall rules — never your own Business Manager)</span></label></li><li><input type="checkbox" id="dt7_9"><label for="dt7_9">📊 <span>LOG THE DAY: GA4 visitors, orders + revenue (admin), new signups, new agents, code uses (LAUNCH15/GYM15), and every 'where'd you hear about us' answer.</span></label></li><li><input type="checkbox" id="dt7_10"><label for="dt7_10">🙏 <span>GRATITUDE ROUND: personally thank every new customer today (text or DM) and ask each for one referral.</span></label></li></ul><div class="daydone" data-dd="7">🎉 Day 7 Complete — Day 8 Is Unlocked</div></div></div><div class="daypage" data-day="8" id="daypage8"><div class="day"><h4>Day 8 — Tue Jul 21: Community + Paid-Test Assembly<em>11 tasks</em></h4><div class="dayprog"><div class="dayprog-fill" data-dpf="8"></div></div><ul class="clean"><li><input type="checkbox" id="dt8_0"><label for="dt8_0">🎥 <span>CONTENT: film + post today's piece — announcement: the PepNation research community is open (Discord invite everywhere). Post to TikTok + Instagram Reels + X; add the Story version to Instagram AND Snapchat.</span></label></li><li><input type="checkbox" id="dt8_1"><label for="dt8_1">💬 <span>ENGAGE: reply to every overnight comment/DM on TikTok, Instagram, X, and Facebook — minimum 10 real conversations before noon.</span></label></li><li><input type="checkbox" id="dt8_2"><label for="dt8_2">🧲 <span>SELLER OUTREACH: send 4 DMs — prospects #29-32 on your hit-list. Today's hunting ground: Instagram + Snapchat (cross-links in TikTok seller bios).</span></label></li><li><input type="checkbox" id="dt8_3"><label for="dt8_3">🤝 <span>FOLLOW-UPS: touch every open seller/agent thread from yesterday — get a yes, a no, or a next step on each.</span></label></li><li><input type="checkbox" id="dt8_4"><label for="dt8_4">👽 <span>REDDIT (20-30 min in a GLP-1 community sub): answer 3 questions with real knowledge. Phase 1 — ZERO links, build karma and post history.</span></label></li><li><input type="checkbox" id="dt8_5"><label for="dt8_5">🎯 <span>Review the bridge site Claude built; tweak copy; connect email capture to the nurture sequence</span></label></li><li><input type="checkbox" id="dt8_6"><label for="dt8_6">🎯 <span>LAUNCH THE DISCORD: channels = #coa-library, #research-talk, #new-batches, #agent-lounge; invite every customer, agent, and Chicago Pro contact</span></label></li><li><input type="checkbox" id="dt8_7"><label for="dt8_7">🎯 <span>Hang banners #1 and #2 (or grab the $50 IDOT permit for an interstate spot) — film it for tomorrow's content</span></label></li><li><input type="checkbox" id="dt8_8"><label for="dt8_8">🎯 <span>Prioritize Chicago Pro contacts in today's seller DMs — they met you in person, they're warm</span></label></li><li><input type="checkbox" id="dt8_9"><label for="dt8_9">📊 <span>LOG THE DAY: GA4 visitors, orders + revenue (admin), new signups, new agents, code uses (LAUNCH15/GYM15), and every 'where'd you hear about us' answer.</span></label></li><li><input type="checkbox" id="dt8_10"><label for="dt8_10">🙏 <span>GRATITUDE ROUND: personally thank every new customer today (text or DM) and ask each for one referral.</span></label></li></ul><div class="daydone" data-dd="8">🎉 Day 8 Complete — Day 9 Is Unlocked</div></div></div><div class="daypage" data-day="9" id="daypage9"><div class="day"><h4>Day 9 — Wed Jul 22: First Ad + Review-Site Pitches<em>12 tasks</em></h4><div class="dayprog"><div class="dayprog-fill" data-dpf="9"></div></div><ul class="clean"><li><input type="checkbox" id="dt9_0"><label for="dt9_0">🎥 <span>CONTENT: film + post today's piece — explainer: how third-party testing works — walk through a Janoshik verification. Post to TikTok + Instagram Reels + X; add the Story version to Instagram AND Snapchat.</span></label></li><li><input type="checkbox" id="dt9_1"><label for="dt9_1">💬 <span>ENGAGE: reply to every overnight comment/DM on TikTok, Instagram, X, and Facebook — minimum 10 real conversations before noon.</span></label></li><li><input type="checkbox" id="dt9_2"><label for="dt9_2">🧲 <span>SELLER OUTREACH: send 4 DMs — prospects #33-36 on your hit-list. Today's hunting ground: TikTok (search compound names + 'pep' terms, check bios for sellers).</span></label></li><li><input type="checkbox" id="dt9_3"><label for="dt9_3">🤝 <span>FOLLOW-UPS: touch every open seller/agent thread from yesterday — get a yes, a no, or a next step on each.</span></label></li><li><input type="checkbox" id="dt9_4"><label for="dt9_4">👽 <span>REDDIT (20-30 min in r/Peptides): answer 3 questions with real knowledge. Phase 1 — ZERO links, build karma and post history.</span></label></li><li><input type="checkbox" id="dt9_5"><label for="dt9_5">🎯 <span>Submit ONE ad on the rented account, pause it, confirm approval, then submit the next (the 80/20 rule)</span></label></li><li><input type="checkbox" id="dt9_6"><label for="dt9_6">🎯 <span>Google 'best peptide companies' — pitch the top 5 review/ranking sites: listing + unique 15%-off code + 15% affiliate commission</span></label></li><li><input type="checkbox" id="dt9_7"><label for="dt9_7">🎯 <span>Publish SEO article #1 (Claude drafts, you approve and post)</span></label></li><li><input type="checkbox" id="dt9_8"><label for="dt9_8">🎯 <span>Run demo calls with interested sellers — build their stores live on the call</span></label></li><li><input type="checkbox" id="dt9_9"><label for="dt9_9">🎯 <span>Swing by the day-5 gyms: restock cards, note which stacks moved</span></label></li><li><input type="checkbox" id="dt9_10"><label for="dt9_10">📊 <span>LOG THE DAY: GA4 visitors, orders + revenue (admin), new signups, new agents, code uses (LAUNCH15/GYM15), and every 'where'd you hear about us' answer.</span></label></li><li><input type="checkbox" id="dt9_11"><label for="dt9_11">🙏 <span>GRATITUDE ROUND: personally thank every new customer today (text or DM) and ask each for one referral.</span></label></li></ul><div class="daydone" data-dd="9">🎉 Day 9 Complete — Day 10 Is Unlocked</div></div></div><div class="daypage" data-day="10" id="daypage10"><div class="day"><h4>Day 10 — Thu Jul 23: Scale Approvals + Gym Permissions<em>11 tasks</em></h4><div class="dayprog"><div class="dayprog-fill" data-dpf="10"></div></div><ul class="clean"><li><input type="checkbox" id="dt10_0"><label for="dt10_0">🎥 <span>CONTENT: film + post today's piece — agent spotlight #1: first storefront owner's story (with their permission, tag them). Post to TikTok + Instagram Reels + X; add the Story version to Instagram AND Snapchat.</span></label></li><li><input type="checkbox" id="dt10_1"><label for="dt10_1">💬 <span>ENGAGE: reply to every overnight comment/DM on TikTok, Instagram, X, and Facebook — minimum 10 real conversations before noon.</span></label></li><li><input type="checkbox" id="dt10_2"><label for="dt10_2">🧲 <span>SELLER OUTREACH: send 4 DMs — prospects #37-40 on your hit-list. Today's hunting ground: Facebook (peptide / GLP-1 / group-buy groups — the active answerers).</span></label></li><li><input type="checkbox" id="dt10_3"><label for="dt10_3">🤝 <span>FOLLOW-UPS: touch every open seller/agent thread from yesterday — get a yes, a no, or a next step on each.</span></label></li><li><input type="checkbox" id="dt10_4"><label for="dt10_4">👽 <span>REDDIT (20-30 min in r/Biohackers): answer 3 questions with real knowledge. Phase 1 — ZERO links, build karma and post history.</span></label></li><li><input type="checkbox" id="dt10_5"><label for="dt10_5">🎯 <span>Paid test: approved ads go live at $20-30/day; rejected ones get softened creative and ONE resubmission</span></label></li><li><input type="checkbox" id="dt10_6"><label for="dt10_6">🎯 <span>Visit 5 NEW gyms for Saturday-run permissions + agent pitches</span></label></li><li><input type="checkbox" id="dt10_7"><label for="dt10_7">🎯 <span>Post the banner time-lapse on TikTok + Instagram</span></label></li><li><input type="checkbox" id="dt10_8"><label for="dt10_8">🎯 <span>DM every Chicago Pro contact who hasn't replied yet (one follow-up each)</span></label></li><li><input type="checkbox" id="dt10_9"><label for="dt10_9">📊 <span>LOG THE DAY: GA4 visitors, orders + revenue (admin), new signups, new agents, code uses (LAUNCH15/GYM15), and every 'where'd you hear about us' answer.</span></label></li><li><input type="checkbox" id="dt10_10"><label for="dt10_10">🙏 <span>GRATITUDE ROUND: personally thank every new customer today (text or DM) and ask each for one referral.</span></label></li></ul><div class="daydone" data-dd="10">🎉 Day 10 Complete — Day 11 Is Unlocked</div></div></div><div class="daypage" data-day="11" id="daypage11"><div class="day"><h4>Day 11 — Fri Jul 24: Creator Follow-Ups + Banners 3-4<em>11 tasks</em></h4><div class="dayprog"><div class="dayprog-fill" data-dpf="11"></div></div><ul class="clean"><li><input type="checkbox" id="dt11_0"><label for="dt11_0">🎥 <span>CONTENT: film + post today's piece — the gray-market problem: why a platform beats buying from a random DM seller. Post to TikTok + Instagram Reels + X; add the Story version to Instagram AND Snapchat.</span></label></li><li><input type="checkbox" id="dt11_1"><label for="dt11_1">💬 <span>ENGAGE: reply to every overnight comment/DM on TikTok, Instagram, X, and Facebook — minimum 10 real conversations before noon.</span></label></li><li><input type="checkbox" id="dt11_2"><label for="dt11_2">🧲 <span>SELLER OUTREACH: send 4 DMs — prospects #41-44 on your hit-list. Today's hunting ground: Telegram (peptide channels — resellers with their own lists).</span></label></li><li><input type="checkbox" id="dt11_3"><label for="dt11_3">🤝 <span>FOLLOW-UPS: touch every open seller/agent thread from yesterday — get a yes, a no, or a next step on each.</span></label></li><li><input type="checkbox" id="dt11_4"><label for="dt11_4">👽 <span>REDDIT (20-30 min in r/Nootropics): answer 3 questions with real knowledge. Phase 1 — ZERO links, build karma and post history.</span></label></li><li><input type="checkbox" id="dt11_5"><label for="dt11_5">🎯 <span>Check in with every seeding recipient: 'package land okay?' — NO ask yet</span></label></li><li><input type="checkbox" id="dt11_6"><label for="dt11_6">🎯 <span>Offer storefronts to the 2-3 warmest creator/seller responders</span></label></li><li><input type="checkbox" id="dt11_7"><label for="dt11_7">🎯 <span>Close banner spots #3-4 (hang or schedule)</span></label></li><li><input type="checkbox" id="dt11_8"><label for="dt11_8">🎯 <span>Film 3 videos in one batch session for the weekend</span></label></li><li><input type="checkbox" id="dt11_9"><label for="dt11_9">📊 <span>LOG THE DAY: GA4 visitors, orders + revenue (admin), new signups, new agents, code uses (LAUNCH15/GYM15), and every 'where'd you hear about us' answer.</span></label></li><li><input type="checkbox" id="dt11_10"><label for="dt11_10">🙏 <span>GRATITUDE ROUND: personally thank every new customer today (text or DM) and ask each for one referral.</span></label></li></ul><div class="daydone" data-dd="11">🎉 Day 11 Complete — Day 12 Is Unlocked</div></div></div><div class="daypage" data-day="12" id="daypage12"><div class="day"><h4>Day 12 — Sat Jul 25: GYM RUN #2 + Powerlifting Meet<em>11 tasks</em></h4><div class="dayprog"><div class="dayprog-fill" data-dpf="12"></div></div><ul class="clean"><li><input type="checkbox" id="dt12_0"><label for="dt12_0">🎥 <span>CONTENT: film + post today's piece — founder vlog: the first banner goes up (time-lapse it). Post to TikTok + Instagram Reels + X; add the Story version to Instagram AND Snapchat.</span></label></li><li><input type="checkbox" id="dt12_1"><label for="dt12_1">💬 <span>ENGAGE: reply to every overnight comment/DM on TikTok, Instagram, X, and Facebook — minimum 10 real conversations before noon.</span></label></li><li><input type="checkbox" id="dt12_2"><label for="dt12_2">🧲 <span>SELLER OUTREACH: send 4 DMs — prospects #45-48 on your hit-list. Today's hunting ground: Instagram + Snapchat (cross-links in TikTok seller bios).</span></label></li><li><input type="checkbox" id="dt12_3"><label for="dt12_3">🤝 <span>FOLLOW-UPS: touch every open seller/agent thread from yesterday — get a yes, a no, or a next step on each.</span></label></li><li><input type="checkbox" id="dt12_4"><label for="dt12_4">👽 <span>REDDIT (20-30 min in a GLP-1 community sub): answer 3 questions with real knowledge. Phase 1 — ZERO links, build karma and post history.</span></label></li><li><input type="checkbox" id="dt12_5"><label for="dt12_5">🎯 <span>GYM RUN #2: 5 NEW gyms + restock the winners from run #1</span></label></li><li><input type="checkbox" id="dt12_6"><label for="dt12_6">🎯 <span>Afternoon: USPA 'Mad Max Lifts' meet in Lindenhurst — recruit cards person-to-person</span></label></li><li><input type="checkbox" id="dt12_7"><label for="dt12_7">🎯 <span>Pull the first print data: GYM15 uses + per-banner QR scans (Bitly dashboard)</span></label></li><li><input type="checkbox" id="dt12_8"><label for="dt12_8">🎯 <span>If Janoshik results landed: publish COAs to the certificate pages + announce 'verify it yourself' in Discord, Stories, and product pages</span></label></li><li><input type="checkbox" id="dt12_9"><label for="dt12_9">📊 <span>LOG THE DAY: GA4 visitors, orders + revenue (admin), new signups, new agents, code uses (LAUNCH15/GYM15), and every 'where'd you hear about us' answer.</span></label></li><li><input type="checkbox" id="dt12_10"><label for="dt12_10">🙏 <span>GRATITUDE ROUND: personally thank every new customer today (text or DM) and ask each for one referral.</span></label></li></ul><div class="daydone" data-dd="12">🎉 Day 12 Complete — Day 13 Is Unlocked</div></div></div><div class="daypage" data-day="13" id="daypage13"><div class="day"><h4>Day 13 — Sun Jul 26: WEEKLY REVIEW #2<em>11 tasks</em></h4><div class="dayprog"><div class="dayprog-fill" data-dpf="13"></div></div><ul class="clean"><li><input type="checkbox" id="dt13_0"><label for="dt13_0">🎥 <span>CONTENT: film + post today's piece — Sunday recap: week-2 numbers, what worked, what flopped. Post to TikTok + Instagram Reels + X; add the Story version to Instagram AND Snapchat.</span></label></li><li><input type="checkbox" id="dt13_1"><label for="dt13_1">💬 <span>ENGAGE: reply to every overnight comment/DM on TikTok, Instagram, X, and Facebook — minimum 10 real conversations before noon.</span></label></li><li><input type="checkbox" id="dt13_2"><label for="dt13_2">🧲 <span>SELLER OUTREACH: send 4 DMs — prospects #49-52 on your hit-list. Today's hunting ground: TikTok (search compound names + 'pep' terms, check bios for sellers).</span></label></li><li><input type="checkbox" id="dt13_3"><label for="dt13_3">🤝 <span>FOLLOW-UPS: touch every open seller/agent thread from yesterday — get a yes, a no, or a next step on each.</span></label></li><li><input type="checkbox" id="dt13_4"><label for="dt13_4">👽 <span>REDDIT (20-30 min in r/Peptides): answer 3 questions with real knowledge. Phase 1 — ZERO links, build karma and post history.</span></label></li><li><input type="checkbox" id="dt13_5"><label for="dt13_5">🎯 <span>WEEKLY REVIEW #2: paid-test cost per email signup vs the $5 kill line — decide continue/adjust</span></label></li><li><input type="checkbox" id="dt13_6"><label for="dt13_6">🎯 <span>Count vs Scoreboard: agents live, sellers in pipeline, gyms carrying cards, email list size</span></label></li><li><input type="checkbox" id="dt13_7"><label for="dt13_7">🎯 <span>Queue newsletter #1 content with Claude (research roundup + new products + agent spotlight)</span></label></li><li><input type="checkbox" id="dt13_8"><label for="dt13_8">🎯 <span>HALF-SPEED DAY otherwise — week 3 needs you sharp</span></label></li><li><input type="checkbox" id="dt13_9"><label for="dt13_9">📊 <span>LOG THE DAY: GA4 visitors, orders + revenue (admin), new signups, new agents, code uses (LAUNCH15/GYM15), and every 'where'd you hear about us' answer.</span></label></li><li><input type="checkbox" id="dt13_10"><label for="dt13_10">🙏 <span>GRATITUDE ROUND: personally thank every new customer today (text or DM) and ask each for one referral.</span></label></li></ul><div class="daydone" data-dd="13">🎉 Day 13 Complete — Day 14 Is Unlocked</div></div></div><div class="daypage" data-day="14" id="daypage14"><div class="day"><h4>Day 14 — Mon Jul 27: Reddit Phase 2 Begins<em>11 tasks</em></h4><div class="dayprog"><div class="dayprog-fill" data-dpf="14"></div></div><ul class="clean"><li><input type="checkbox" id="dt14_0"><label for="dt14_0">🎥 <span>CONTENT: film + post today's piece — research education: what published studies say about your best-selling compound (facts only, zero claims). Post to TikTok + Instagram Reels + X; add the Story version to Instagram AND Snapchat.</span></label></li><li><input type="checkbox" id="dt14_1"><label for="dt14_1">💬 <span>ENGAGE: reply to every overnight comment/DM on TikTok, Instagram, X, and Facebook — minimum 10 real conversations before noon.</span></label></li><li><input type="checkbox" id="dt14_2"><label for="dt14_2">🧲 <span>SELLER OUTREACH: send 4 DMs — prospects #53-56 on your hit-list. Today's hunting ground: Facebook (peptide / GLP-1 / group-buy groups — the active answerers).</span></label></li><li><input type="checkbox" id="dt14_3"><label for="dt14_3">🤝 <span>FOLLOW-UPS: touch every open seller/agent thread from yesterday — get a yes, a no, or a next step on each.</span></label></li><li><input type="checkbox" id="dt14_4"><label for="dt14_4">👽 <span>REDDIT (20-30 min in r/Biohackers): answer 3 questions with real knowledge. Phase 2 — links only where mods explicitly allow.</span></label></li><li><input type="checkbox" id="dt14_5"><label for="dt14_5">🎯 <span>Reddit Phase 2 begins: message the mods of r/Peptides + 2 other subs about vendor threads/lists — transparent founder intro, ask permission</span></label></li><li><input type="checkbox" id="dt14_6"><label for="dt14_6">🎯 <span>Publish SEO article #2</span></label></li><li><input type="checkbox" id="dt14_7"><label for="dt14_7">🎯 <span>Post the first agent leaderboard on Instagram + Discord (status drives recruiting)</span></label></li><li><input type="checkbox" id="dt14_8"><label for="dt14_8">🎯 <span>Email list check: warmup ramp should be at 10-15/day now</span></label></li><li><input type="checkbox" id="dt14_9"><label for="dt14_9">📊 <span>LOG THE DAY: GA4 visitors, orders + revenue (admin), new signups, new agents, code uses (LAUNCH15/GYM15), and every 'where'd you hear about us' answer.</span></label></li><li><input type="checkbox" id="dt14_10"><label for="dt14_10">🙏 <span>GRATITUDE ROUND: personally thank every new customer today (text or DM) and ask each for one referral.</span></label></li></ul><div class="daydone" data-dd="14">🎉 Day 14 Complete — Day 15 Is Unlocked</div></div></div><div class="daypage" data-day="15" id="daypage15"><div class="day"><h4>Day 15 — Tue Jul 28: Newsletter #1 + First Shoutout<em>11 tasks</em></h4><div class="dayprog"><div class="dayprog-fill" data-dpf="15"></div></div><ul class="clean"><li><input type="checkbox" id="dt15_0"><label for="dt15_0">🎥 <span>CONTENT: film + post today's piece — explainer: how agent storefronts work — the 2-minute pitch video. Post to TikTok + Instagram Reels + X; add the Story version to Instagram AND Snapchat.</span></label></li><li><input type="checkbox" id="dt15_1"><label for="dt15_1">💬 <span>ENGAGE: reply to every overnight comment/DM on TikTok, Instagram, X, and Facebook — minimum 10 real conversations before noon.</span></label></li><li><input type="checkbox" id="dt15_2"><label for="dt15_2">🧲 <span>SELLER OUTREACH: send 4 DMs — prospects #57-60 on your hit-list. Today's hunting ground: Telegram (peptide channels — resellers with their own lists).</span></label></li><li><input type="checkbox" id="dt15_3"><label for="dt15_3">🤝 <span>FOLLOW-UPS: touch every open seller/agent thread from yesterday — get a yes, a no, or a next step on each.</span></label></li><li><input type="checkbox" id="dt15_4"><label for="dt15_4">👽 <span>REDDIT (20-30 min in r/Nootropics): answer 3 questions with real knowledge. Phase 2 — links only where mods explicitly allow.</span></label></li><li><input type="checkbox" id="dt15_5"><label for="dt15_5">🎯 <span>Send NEWSLETTER #1 via Listmonk to all signups + the paid-test list</span></label></li><li><input type="checkbox" id="dt15_6"><label for="dt15_6">🎯 <span>Buy shoutout #1 in a niche biohacking newsletter or Telegram community (~$100-150 — demand audience-size proof first)</span></label></li><li><input type="checkbox" id="dt15_7"><label for="dt15_7">🎯 <span>Push your 2 warmest seller conversations to a signed yes today</span></label></li><li><input type="checkbox" id="dt15_8"><label for="dt15_8">🎯 <span>Restock counter-stack spots: supplement shop, smoke shop, barbershop</span></label></li><li><input type="checkbox" id="dt15_9"><label for="dt15_9">📊 <span>LOG THE DAY: GA4 visitors, orders + revenue (admin), new signups, new agents, code uses (LAUNCH15/GYM15), and every 'where'd you hear about us' answer.</span></label></li><li><input type="checkbox" id="dt15_10"><label for="dt15_10">🙏 <span>GRATITUDE ROUND: personally thank every new customer today (text or DM) and ask each for one referral.</span></label></li></ul><div class="daydone" data-dd="15">🎉 Day 15 Complete — Day 16 Is Unlocked</div></div></div><div class="daypage" data-day="16" id="daypage16"><div class="day"><h4>Day 16 — Wed Jul 29: AMA Prep + Creative Cuts<em>11 tasks</em></h4><div class="dayprog"><div class="dayprog-fill" data-dpf="16"></div></div><ul class="clean"><li><input type="checkbox" id="dt16_0"><label for="dt16_0">🎥 <span>CONTENT: film + post today's piece — tour: the Peptide 101 course and free certificate (drive signups). Post to TikTok + Instagram Reels + X; add the Story version to Instagram AND Snapchat.</span></label></li><li><input type="checkbox" id="dt16_1"><label for="dt16_1">💬 <span>ENGAGE: reply to every overnight comment/DM on TikTok, Instagram, X, and Facebook — minimum 10 real conversations before noon.</span></label></li><li><input type="checkbox" id="dt16_2"><label for="dt16_2">🧲 <span>SELLER OUTREACH: send 4 DMs — prospects #61-64 on your hit-list. Today's hunting ground: Instagram + Snapchat (cross-links in TikTok seller bios).</span></label></li><li><input type="checkbox" id="dt16_3"><label for="dt16_3">🤝 <span>FOLLOW-UPS: touch every open seller/agent thread from yesterday — get a yes, a no, or a next step on each.</span></label></li><li><input type="checkbox" id="dt16_4"><label for="dt16_4">👽 <span>REDDIT (20-30 min in a GLP-1 community sub): answer 3 questions with real knowledge. Phase 2 — links only where mods explicitly allow.</span></label></li><li><input type="checkbox" id="dt16_5"><label for="dt16_5">🎯 <span>Schedule the founder AMA with whichever subreddit said yes ('I built a peptide platform from scratch — AMA about the business side')</span></label></li><li><input type="checkbox" id="dt16_6"><label for="dt16_6">🎯 <span>Publish SEO article #3</span></label></li><li><input type="checkbox" id="dt16_7"><label for="dt16_7">🎯 <span>Paid test: kill losing creatives, clone winners, keep spend at $20-30/day</span></label></li><li><input type="checkbox" id="dt16_8"><label for="dt16_8">🎯 <span>Line up 5 gyms for Saturday's run #3</span></label></li><li><input type="checkbox" id="dt16_9"><label for="dt16_9">📊 <span>LOG THE DAY: GA4 visitors, orders + revenue (admin), new signups, new agents, code uses (LAUNCH15/GYM15), and every 'where'd you hear about us' answer.</span></label></li><li><input type="checkbox" id="dt16_10"><label for="dt16_10">🙏 <span>GRATITUDE ROUND: personally thank every new customer today (text or DM) and ask each for one referral.</span></label></li></ul><div class="daydone" data-dd="16">🎉 Day 16 Complete — Day 17 Is Unlocked</div></div></div><div class="daypage" data-day="17" id="daypage17"><div class="day"><h4>Day 17 — Thu Jul 30: PAID-TEST KILL/SCALE CHECKPOINT<em>11 tasks</em></h4><div class="dayprog"><div class="dayprog-fill" data-dpf="17"></div></div><ul class="clean"><li><input type="checkbox" id="dt17_0"><label for="dt17_0">🎥 <span>CONTENT: film + post today's piece — lab-practices video: proper storage and handling of research peptides. Post to TikTok + Instagram Reels + X; add the Story version to Instagram AND Snapchat.</span></label></li><li><input type="checkbox" id="dt17_1"><label for="dt17_1">💬 <span>ENGAGE: reply to every overnight comment/DM on TikTok, Instagram, X, and Facebook — minimum 10 real conversations before noon.</span></label></li><li><input type="checkbox" id="dt17_2"><label for="dt17_2">🧲 <span>SELLER OUTREACH: send 4 DMs — prospects #65-68 on your hit-list. Today's hunting ground: TikTok (search compound names + 'pep' terms, check bios for sellers).</span></label></li><li><input type="checkbox" id="dt17_3"><label for="dt17_3">🤝 <span>FOLLOW-UPS: touch every open seller/agent thread from yesterday — get a yes, a no, or a next step on each.</span></label></li><li><input type="checkbox" id="dt17_4"><label for="dt17_4">👽 <span>REDDIT (20-30 min in r/Peptides): answer 3 questions with real knowledge. Phase 2 — links only where mods explicitly allow.</span></label></li><li><input type="checkbox" id="dt17_5"><label for="dt17_5">🎯 <span>HARD CHECKPOINT: paid test under $5/signup and account healthy? Continue. Two bans or over $5 after $300 spent? KILL it — budget flows to sellers/seeding</span></label></li><li><input type="checkbox" id="dt17_6"><label for="dt17_6">🎯 <span>Personally ask your 3 best customers for a Trustpilot or Google review — today, by text</span></label></li><li><input type="checkbox" id="dt17_7"><label for="dt17_7">🎯 <span>Banner QR check on Bitly: any dead placement? Note it for relocation</span></label></li><li><input type="checkbox" id="dt17_8"><label for="dt17_8">🎯 <span>Prep AMA answers: your story, compliance stance, COA proof links</span></label></li><li><input type="checkbox" id="dt17_9"><label for="dt17_9">📊 <span>LOG THE DAY: GA4 visitors, orders + revenue (admin), new signups, new agents, code uses (LAUNCH15/GYM15), and every 'where'd you hear about us' answer.</span></label></li><li><input type="checkbox" id="dt17_10"><label for="dt17_10">🙏 <span>GRATITUDE ROUND: personally thank every new customer today (text or DM) and ask each for one referral.</span></label></li></ul><div class="daydone" data-dd="17">🎉 Day 17 Complete — Day 18 Is Unlocked</div></div></div><div class="daypage" data-day="18" id="daypage18"><div class="day"><h4>Day 18 — Fri Jul 31: Run The AMA<em>11 tasks</em></h4><div class="dayprog"><div class="dayprog-fill" data-dpf="18"></div></div><ul class="clean"><li><input type="checkbox" id="dt18_0"><label for="dt18_0">🎥 <span>CONTENT: film + post today's piece — AMA highlights: the best questions from Reddit, answered on camera. Post to TikTok + Instagram Reels + X; add the Story version to Instagram AND Snapchat.</span></label></li><li><input type="checkbox" id="dt18_1"><label for="dt18_1">💬 <span>ENGAGE: reply to every overnight comment/DM on TikTok, Instagram, X, and Facebook — minimum 10 real conversations before noon.</span></label></li><li><input type="checkbox" id="dt18_2"><label for="dt18_2">🧲 <span>SELLER OUTREACH: send 4 DMs — prospects #69-72 on your hit-list. Today's hunting ground: Facebook (peptide / GLP-1 / group-buy groups — the active answerers).</span></label></li><li><input type="checkbox" id="dt18_3"><label for="dt18_3">🤝 <span>FOLLOW-UPS: touch every open seller/agent thread from yesterday — get a yes, a no, or a next step on each.</span></label></li><li><input type="checkbox" id="dt18_4"><label for="dt18_4">👽 <span>REDDIT (20-30 min in r/Biohackers): answer 3 questions with real knowledge. Phase 2 — links only where mods explicitly allow.</span></label></li><li><input type="checkbox" id="dt18_5"><label for="dt18_5">🎯 <span>RUN THE AMA — block 2 full hours, answer literally everything, link COA verification when asked about quality</span></label></li><li><input type="checkbox" id="dt18_6"><label for="dt18_6">🎯 <span>Buy/schedule shoutout #2</span></label></li><li><input type="checkbox" id="dt18_7"><label for="dt18_7">🎯 <span>Film 3 weekend videos in one batch</span></label></li><li><input type="checkbox" id="dt18_8"><label for="dt18_8">🎯 <span>Invite every warm seller to Sunday's group partner call (Zoom/Discord stage)</span></label></li><li><input type="checkbox" id="dt18_9"><label for="dt18_9">📊 <span>LOG THE DAY: GA4 visitors, orders + revenue (admin), new signups, new agents, code uses (LAUNCH15/GYM15), and every 'where'd you hear about us' answer.</span></label></li><li><input type="checkbox" id="dt18_10"><label for="dt18_10">🙏 <span>GRATITUDE ROUND: personally thank every new customer today (text or DM) and ask each for one referral.</span></label></li></ul><div class="daydone" data-dd="18">🎉 Day 18 Complete — Day 19 Is Unlocked</div></div></div><div class="daypage" data-day="19" id="daypage19"><div class="day"><h4>Day 19 — Sat Aug 1: GYM RUN #3 + APF Summer Bash<em>11 tasks</em></h4><div class="dayprog"><div class="dayprog-fill" data-dpf="19"></div></div><ul class="clean"><li><input type="checkbox" id="dt19_0"><label for="dt19_0">🎥 <span>CONTENT: film + post today's piece — founder vlog: event day at the powerlifting meet. Post to TikTok + Instagram Reels + X; add the Story version to Instagram AND Snapchat.</span></label></li><li><input type="checkbox" id="dt19_1"><label for="dt19_1">💬 <span>ENGAGE: reply to every overnight comment/DM on TikTok, Instagram, X, and Facebook — minimum 10 real conversations before noon.</span></label></li><li><input type="checkbox" id="dt19_2"><label for="dt19_2">🧲 <span>SELLER OUTREACH: send 4 DMs — prospects #73-76 on your hit-list. Today's hunting ground: Telegram (peptide channels — resellers with their own lists).</span></label></li><li><input type="checkbox" id="dt19_3"><label for="dt19_3">🤝 <span>FOLLOW-UPS: touch every open seller/agent thread from yesterday — get a yes, a no, or a next step on each.</span></label></li><li><input type="checkbox" id="dt19_4"><label for="dt19_4">👽 <span>REDDIT (20-30 min in r/Nootropics): answer 3 questions with real knowledge. Phase 2 — links only where mods explicitly allow.</span></label></li><li><input type="checkbox" id="dt19_5"><label for="dt19_5">🎯 <span>GYM RUN #3: 5 new gyms + restock — you should hit ~15 gyms carrying cards today</span></label></li><li><input type="checkbox" id="dt19_6"><label for="dt19_6">🎯 <span>APF/AAPF Summer Bash powerlifting meet — recruit-card pass</span></label></li><li><input type="checkbox" id="dt19_7"><label for="dt19_7">🎯 <span>Wear the logo shirt at your own workout; open 5 squat-rack conversations</span></label></li><li><input type="checkbox" id="dt19_8"><label for="dt19_8">🎯 <span>Refresh community bulletin boards en route</span></label></li><li><input type="checkbox" id="dt19_9"><label for="dt19_9">📊 <span>LOG THE DAY: GA4 visitors, orders + revenue (admin), new signups, new agents, code uses (LAUNCH15/GYM15), and every 'where'd you hear about us' answer.</span></label></li><li><input type="checkbox" id="dt19_10"><label for="dt19_10">🙏 <span>GRATITUDE ROUND: personally thank every new customer today (text or DM) and ask each for one referral.</span></label></li></ul><div class="daydone" data-dd="19">🎉 Day 19 Complete — Day 20 Is Unlocked</div></div></div><div class="daypage" data-day="20" id="daypage20"><div class="day"><h4>Day 20 — Sun Aug 2: WEEKLY REVIEW #3 + Partner Call<em>11 tasks</em></h4><div class="dayprog"><div class="dayprog-fill" data-dpf="20"></div></div><ul class="clean"><li><input type="checkbox" id="dt20_0"><label for="dt20_0">🎥 <span>CONTENT: film + post today's piece — week-3 recap numbers + the double-down decision explained. Post to TikTok + Instagram Reels + X; add the Story version to Instagram AND Snapchat.</span></label></li><li><input type="checkbox" id="dt20_1"><label for="dt20_1">💬 <span>ENGAGE: reply to every overnight comment/DM on TikTok, Instagram, X, and Facebook — minimum 10 real conversations before noon.</span></label></li><li><input type="checkbox" id="dt20_2"><label for="dt20_2">🧲 <span>SELLER OUTREACH: send 4 DMs — prospects #77-80 on your hit-list. Today's hunting ground: Instagram + Snapchat (cross-links in TikTok seller bios).</span></label></li><li><input type="checkbox" id="dt20_3"><label for="dt20_3">🤝 <span>FOLLOW-UPS: touch every open seller/agent thread from yesterday — get a yes, a no, or a next step on each.</span></label></li><li><input type="checkbox" id="dt20_4"><label for="dt20_4">👽 <span>REDDIT (20-30 min in a GLP-1 community sub): answer 3 questions with real knowledge. Phase 2 — links only where mods explicitly allow.</span></label></li><li><input type="checkbox" id="dt20_5"><label for="dt20_5">🎯 <span>Host the GROUP PARTNER CALL: demo the platform to every warm seller at once; build 1-2 stores live on the call</span></label></li><li><input type="checkbox" id="dt20_6"><label for="dt20_6">🎯 <span>WEEKLY REVIEW #3: rank EVERY channel by orders-per-hour and orders-per-dollar</span></label></li><li><input type="checkbox" id="dt20_7"><label for="dt20_7">🎯 <span>Draft the week-4 double-down with Claude: where do reserve + any killed budget go?</span></label></li><li><input type="checkbox" id="dt20_8"><label for="dt20_8">🎯 <span>Queue newsletter #2</span></label></li><li><input type="checkbox" id="dt20_9"><label for="dt20_9">📊 <span>LOG THE DAY: GA4 visitors, orders + revenue (admin), new signups, new agents, code uses (LAUNCH15/GYM15), and every 'where'd you hear about us' answer.</span></label></li><li><input type="checkbox" id="dt20_10"><label for="dt20_10">🙏 <span>GRATITUDE ROUND: personally thank every new customer today (text or DM) and ask each for one referral.</span></label></li></ul><div class="daydone" data-dd="20">🎉 Day 20 Complete — Day 21 Is Unlocked</div></div></div><div class="daypage" data-day="21" id="daypage21"><div class="day"><h4>Day 21 — Mon Aug 3: Referral Engine Launch<em>11 tasks</em></h4><div class="dayprog"><div class="dayprog-fill" data-dpf="21"></div></div><ul class="clean"><li><input type="checkbox" id="dt21_0"><label for="dt21_0">🎥 <span>CONTENT: film + post today's piece — explainer: the give-$10-get-$10 referral program (launch announcement). Post to TikTok + Instagram Reels + X; add the Story version to Instagram AND Snapchat.</span></label></li><li><input type="checkbox" id="dt21_1"><label for="dt21_1">💬 <span>ENGAGE: reply to every overnight comment/DM on TikTok, Instagram, X, and Facebook — minimum 10 real conversations before noon.</span></label></li><li><input type="checkbox" id="dt21_2"><label for="dt21_2">🧲 <span>SELLER OUTREACH: send 4 DMs — prospects #81-84 on your hit-list. Today's hunting ground: TikTok (search compound names + 'pep' terms, check bios for sellers).</span></label></li><li><input type="checkbox" id="dt21_3"><label for="dt21_3">🤝 <span>FOLLOW-UPS: touch every open seller/agent thread from yesterday — get a yes, a no, or a next step on each.</span></label></li><li><input type="checkbox" id="dt21_4"><label for="dt21_4">👽 <span>REDDIT (20-30 min in r/Peptides): answer 3 questions with real knowledge. Phase 2/3 — vendor threads where permitted + reputation defense.</span></label></li><li><input type="checkbox" id="dt21_5"><label for="dt21_5">🎯 <span>LAUNCH the give-$10 / get-$10 referral program (verify the referral exploit fixes are live first — ask Claude)</span></label></li><li><input type="checkbox" id="dt21_6"><label for="dt21_6">🎯 <span>Text EVERY customer their personal referral code with a thank-you</span></label></li><li><input type="checkbox" id="dt21_7"><label for="dt21_7">🎯 <span>Publish SEO article #4</span></label></li><li><input type="checkbox" id="dt21_8"><label for="dt21_8">🎯 <span>Today's DMs target month-2 pipeline: fresh prospects, not retreads</span></label></li><li><input type="checkbox" id="dt21_9"><label for="dt21_9">📊 <span>LOG THE DAY: GA4 visitors, orders + revenue (admin), new signups, new agents, code uses (LAUNCH15/GYM15), and every 'where'd you hear about us' answer.</span></label></li><li><input type="checkbox" id="dt21_10"><label for="dt21_10">🙏 <span>GRATITUDE ROUND: personally thank every new customer today (text or DM) and ask each for one referral.</span></label></li></ul><div class="daydone" data-dd="21">🎉 Day 21 Complete — Day 22 Is Unlocked</div></div></div><div class="daypage" data-day="22" id="daypage22"><div class="day"><h4>Day 22 — Tue Aug 4: Newsletter #2 + Double-Down<em>11 tasks</em></h4><div class="dayprog"><div class="dayprog-fill" data-dpf="22"></div></div><ul class="clean"><li><input type="checkbox" id="dt22_0"><label for="dt22_0">🎥 <span>CONTENT: film + post today's piece — agent spotlight #2: a poached seller's before/after workflow story. Post to TikTok + Instagram Reels + X; add the Story version to Instagram AND Snapchat.</span></label></li><li><input type="checkbox" id="dt22_1"><label for="dt22_1">💬 <span>ENGAGE: reply to every overnight comment/DM on TikTok, Instagram, X, and Facebook — minimum 10 real conversations before noon.</span></label></li><li><input type="checkbox" id="dt22_2"><label for="dt22_2">🧲 <span>SELLER OUTREACH: send 4 DMs — prospects #85-88 on your hit-list. Today's hunting ground: Facebook (peptide / GLP-1 / group-buy groups — the active answerers).</span></label></li><li><input type="checkbox" id="dt22_3"><label for="dt22_3">🤝 <span>FOLLOW-UPS: touch every open seller/agent thread from yesterday — get a yes, a no, or a next step on each.</span></label></li><li><input type="checkbox" id="dt22_4"><label for="dt22_4">👽 <span>REDDIT (20-30 min in r/Biohackers): answer 3 questions with real knowledge. Phase 2/3 — vendor threads where permitted + reputation defense.</span></label></li><li><input type="checkbox" id="dt22_5"><label for="dt22_5">🎯 <span>Send NEWSLETTER #2 (referral program announcement + research roundup)</span></label></li><li><input type="checkbox" id="dt22_6"><label for="dt22_6">🎯 <span>EXECUTE the double-down: move reserve (+ paid-test refund if killed) into the #1 channel by the data</span></label></li><li><input type="checkbox" id="dt22_7"><label for="dt22_7">🎯 <span>Post the agent leaderboard update — tag the leaders on Instagram</span></label></li><li><input type="checkbox" id="dt22_8"><label for="dt22_8">🎯 <span>Drop the bottom-3 dead gym spots; reallocate cards to winners</span></label></li><li><input type="checkbox" id="dt22_9"><label for="dt22_9">📊 <span>LOG THE DAY: GA4 visitors, orders + revenue (admin), new signups, new agents, code uses (LAUNCH15/GYM15), and every 'where'd you hear about us' answer.</span></label></li><li><input type="checkbox" id="dt22_10"><label for="dt22_10">🙏 <span>GRATITUDE ROUND: personally thank every new customer today (text or DM) and ask each for one referral.</span></label></li></ul><div class="daydone" data-dd="22">🎉 Day 22 Complete — Day 23 Is Unlocked</div></div></div><div class="daypage" data-day="23" id="daypage23"><div class="day"><h4>Day 23 — Wed Aug 5: Content Flywheel<em>11 tasks</em></h4><div class="dayprog"><div class="dayprog-fill" data-dpf="23"></div></div><ul class="clean"><li><input type="checkbox" id="dt23_0"><label for="dt23_0">🎥 <span>CONTENT: film + post today's piece — behind-the-scenes: how orders ship — packaging, speed, tracking. Post to TikTok + Instagram Reels + X; add the Story version to Instagram AND Snapchat.</span></label></li><li><input type="checkbox" id="dt23_1"><label for="dt23_1">💬 <span>ENGAGE: reply to every overnight comment/DM on TikTok, Instagram, X, and Facebook — minimum 10 real conversations before noon.</span></label></li><li><input type="checkbox" id="dt23_2"><label for="dt23_2">🧲 <span>SELLER OUTREACH: send 4 DMs — prospects #89-92 on your hit-list. Today's hunting ground: Telegram (peptide channels — resellers with their own lists).</span></label></li><li><input type="checkbox" id="dt23_3"><label for="dt23_3">🤝 <span>FOLLOW-UPS: touch every open seller/agent thread from yesterday — get a yes, a no, or a next step on each.</span></label></li><li><input type="checkbox" id="dt23_4"><label for="dt23_4">👽 <span>REDDIT (20-30 min in r/Nootropics): answer 3 questions with real knowledge. Phase 2/3 — vendor threads where permitted + reputation defense.</span></label></li><li><input type="checkbox" id="dt23_5"><label for="dt23_5">🎯 <span>Publish SEO article #5</span></label></li><li><input type="checkbox" id="dt23_6"><label for="dt23_6">🎯 <span>Repurpose your best-performing video of the month: repost natively on every platform (TikTok, IG, X, YouTube Shorts, Facebook)</span></label></li><li><input type="checkbox" id="dt23_7"><label for="dt23_7">🎯 <span>Pipeline hygiene: clean yes/no/next-step on every open seller thread</span></label></li><li><input type="checkbox" id="dt23_8"><label for="dt23_8">🎯 <span>Nudge every agent within reach of the $500/30-day bonus mark</span></label></li><li><input type="checkbox" id="dt23_9"><label for="dt23_9">📊 <span>LOG THE DAY: GA4 visitors, orders + revenue (admin), new signups, new agents, code uses (LAUNCH15/GYM15), and every 'where'd you hear about us' answer.</span></label></li><li><input type="checkbox" id="dt23_10"><label for="dt23_10">🙏 <span>GRATITUDE ROUND: personally thank every new customer today (text or DM) and ask each for one referral.</span></label></li></ul><div class="daydone" data-dd="23">🎉 Day 23 Complete — Day 24 Is Unlocked</div></div></div><div class="daypage" data-day="24" id="daypage24"><div class="day"><h4>Day 24 — Thu Aug 6: Review Harvest<em>11 tasks</em></h4><div class="dayprog"><div class="dayprog-fill" data-dpf="24"></div></div><ul class="clean"><li><input type="checkbox" id="dt24_0"><label for="dt24_0">🎥 <span>CONTENT: film + post today's piece — education: how to read an HPLC chromatogram (screen-record + voiceover). Post to TikTok + Instagram Reels + X; add the Story version to Instagram AND Snapchat.</span></label></li><li><input type="checkbox" id="dt24_1"><label for="dt24_1">💬 <span>ENGAGE: reply to every overnight comment/DM on TikTok, Instagram, X, and Facebook — minimum 10 real conversations before noon.</span></label></li><li><input type="checkbox" id="dt24_2"><label for="dt24_2">🧲 <span>SELLER OUTREACH: send 4 DMs — prospects #93-96 on your hit-list. Today's hunting ground: Instagram + Snapchat (cross-links in TikTok seller bios).</span></label></li><li><input type="checkbox" id="dt24_3"><label for="dt24_3">🤝 <span>FOLLOW-UPS: touch every open seller/agent thread from yesterday — get a yes, a no, or a next step on each.</span></label></li><li><input type="checkbox" id="dt24_4"><label for="dt24_4">👽 <span>REDDIT (20-30 min in a GLP-1 community sub): answer 3 questions with real knowledge. Phase 2/3 — vendor threads where permitted + reputation defense.</span></label></li><li><input type="checkbox" id="dt24_5"><label for="dt24_5">🎯 <span>Review harvest: every 2+ order customer gets a personal review ask (Trustpilot/Google)</span></label></li><li><input type="checkbox" id="dt24_6"><label for="dt24_6">🎯 <span>Reddit: answer sourcing threads where allowed — point to your review pages and COA lookups, not the store</span></label></li><li><input type="checkbox" id="dt24_7"><label for="dt24_7">🎯 <span>Banner decisions: renew winning spots with owners, pull the duds</span></label></li><li><input type="checkbox" id="dt24_8"><label for="dt24_8">🎯 <span>Check Discord health: seed 2 discussion threads yourself</span></label></li><li><input type="checkbox" id="dt24_9"><label for="dt24_9">📊 <span>LOG THE DAY: GA4 visitors, orders + revenue (admin), new signups, new agents, code uses (LAUNCH15/GYM15), and every 'where'd you hear about us' answer.</span></label></li><li><input type="checkbox" id="dt24_10"><label for="dt24_10">🙏 <span>GRATITUDE ROUND: personally thank every new customer today (text or DM) and ask each for one referral.</span></label></li></ul><div class="daydone" data-dd="24">🎉 Day 24 Complete — Day 25 Is Unlocked</div></div></div><div class="daypage" data-day="25" id="daypage25"><div class="day"><h4>Day 25 — Fri Aug 7: Month-2 Prep + Recap Filming<em>11 tasks</em></h4><div class="dayprog"><div class="dayprog-fill" data-dpf="25"></div></div><ul class="clean"><li><input type="checkbox" id="dt25_0"><label for="dt25_0">🎥 <span>CONTENT: film + post today's piece — trust video: why every vial carries a batch number you can verify. Post to TikTok + Instagram Reels + X; add the Story version to Instagram AND Snapchat.</span></label></li><li><input type="checkbox" id="dt25_1"><label for="dt25_1">💬 <span>ENGAGE: reply to every overnight comment/DM on TikTok, Instagram, X, and Facebook — minimum 10 real conversations before noon.</span></label></li><li><input type="checkbox" id="dt25_2"><label for="dt25_2">🧲 <span>SELLER OUTREACH: send 4 DMs — prospects #97-100 on your hit-list. Today's hunting ground: TikTok (search compound names + 'pep' terms, check bios for sellers).</span></label></li><li><input type="checkbox" id="dt25_3"><label for="dt25_3">🤝 <span>FOLLOW-UPS: touch every open seller/agent thread from yesterday — get a yes, a no, or a next step on each.</span></label></li><li><input type="checkbox" id="dt25_4"><label for="dt25_4">👽 <span>REDDIT (20-30 min in r/Peptides): answer 3 questions with real knowledge. Phase 2/3 — vendor threads where permitted + reputation defense.</span></label></li><li><input type="checkbox" id="dt25_5"><label for="dt25_5">🎯 <span>Pull the full month's data with Claude: channel ranking table, CAC per channel, agent stats</span></label></li><li><input type="checkbox" id="dt25_6"><label for="dt25_6">🎯 <span>Film the '30 days of building in public' recap video — save it for day 30</span></label></li><li><input type="checkbox" id="dt25_7"><label for="dt25_7">🎯 <span>PAY every earned Founding Agent bonus — celebrate each one publicly in Discord + Stories</span></label></li><li><input type="checkbox" id="dt25_8"><label for="dt25_8">🎯 <span>Line up the final 5 gyms for tomorrow</span></label></li><li><input type="checkbox" id="dt25_9"><label for="dt25_9">📊 <span>LOG THE DAY: GA4 visitors, orders + revenue (admin), new signups, new agents, code uses (LAUNCH15/GYM15), and every 'where'd you hear about us' answer.</span></label></li><li><input type="checkbox" id="dt25_10"><label for="dt25_10">🙏 <span>GRATITUDE ROUND: personally thank every new customer today (text or DM) and ask each for one referral.</span></label></li></ul><div class="daydone" data-dd="25">🎉 Day 25 Complete — Day 26 Is Unlocked</div></div></div><div class="daypage" data-day="26" id="daypage26"><div class="day"><h4>Day 26 — Sat Aug 8: GYM RUN #4 — 20 Gyms<em>11 tasks</em></h4><div class="dayprog"><div class="dayprog-fill" data-dpf="26"></div></div><ul class="clean"><li><input type="checkbox" id="dt26_0"><label for="dt26_0">🎥 <span>CONTENT: film + post today's piece — founder vlog: gym run #4 — the 20-gym milestone. Post to TikTok + Instagram Reels + X; add the Story version to Instagram AND Snapchat.</span></label></li><li><input type="checkbox" id="dt26_1"><label for="dt26_1">💬 <span>ENGAGE: reply to every overnight comment/DM on TikTok, Instagram, X, and Facebook — minimum 10 real conversations before noon.</span></label></li><li><input type="checkbox" id="dt26_2"><label for="dt26_2">🧲 <span>SELLER OUTREACH: send 4 DMs — prospects #101-104 on your hit-list. Today's hunting ground: Facebook (peptide / GLP-1 / group-buy groups — the active answerers).</span></label></li><li><input type="checkbox" id="dt26_3"><label for="dt26_3">🤝 <span>FOLLOW-UPS: touch every open seller/agent thread from yesterday — get a yes, a no, or a next step on each.</span></label></li><li><input type="checkbox" id="dt26_4"><label for="dt26_4">👽 <span>REDDIT (20-30 min in r/Biohackers): answer 3 questions with real knowledge. Phase 2/3 — vendor threads where permitted + reputation defense.</span></label></li><li><input type="checkbox" id="dt26_5"><label for="dt26_5">🎯 <span>GYM RUN #4: final 5 gyms — 20 gyms carrying cards = target hit</span></label></li><li><input type="checkbox" id="dt26_6"><label for="dt26_6">🎯 <span>Deliver a thank-you card stack + public shoutout to your best-performing gym</span></label></li><li><input type="checkbox" id="dt26_7"><label for="dt26_7">🎯 <span>Check Eventbrite + KettleBoards + liftvault.com for August IL events; lock in the next one</span></label></li><li><input type="checkbox" id="dt26_8"><label for="dt26_8">🎯 <span>AFTERNOON OFF. Non-negotiable.</span></label></li><li><input type="checkbox" id="dt26_9"><label for="dt26_9">📊 <span>LOG THE DAY: GA4 visitors, orders + revenue (admin), new signups, new agents, code uses (LAUNCH15/GYM15), and every 'where'd you hear about us' answer.</span></label></li><li><input type="checkbox" id="dt26_10"><label for="dt26_10">🙏 <span>GRATITUDE ROUND: personally thank every new customer today (text or DM) and ask each for one referral.</span></label></li></ul><div class="daydone" data-dd="26">🎉 Day 26 Complete — Day 27 Is Unlocked</div></div></div><div class="daypage" data-day="27" id="daypage27"><div class="day"><h4>Day 27 — Sun Aug 9: WEEKLY REVIEW #4 — The Big One<em>11 tasks</em></h4><div class="dayprog"><div class="dayprog-fill" data-dpf="27"></div></div><ul class="clean"><li><input type="checkbox" id="dt27_0"><label for="dt27_0">🎥 <span>CONTENT: film + post today's piece — teaser: 30-day recap is coming — guess the numbers (engagement bait). Post to TikTok + Instagram Reels + X; add the Story version to Instagram AND Snapchat.</span></label></li><li><input type="checkbox" id="dt27_1"><label for="dt27_1">💬 <span>ENGAGE: reply to every overnight comment/DM on TikTok, Instagram, X, and Facebook — minimum 10 real conversations before noon.</span></label></li><li><input type="checkbox" id="dt27_2"><label for="dt27_2">🧲 <span>SELLER OUTREACH: send 4 DMs — prospects #105-108 on your hit-list. Today's hunting ground: Telegram (peptide channels — resellers with their own lists).</span></label></li><li><input type="checkbox" id="dt27_3"><label for="dt27_3">🤝 <span>FOLLOW-UPS: touch every open seller/agent thread from yesterday — get a yes, a no, or a next step on each.</span></label></li><li><input type="checkbox" id="dt27_4"><label for="dt27_4">👽 <span>REDDIT (20-30 min in r/Nootropics): answer 3 questions with real knowledge. Phase 2/3 — vendor threads where permitted + reputation defense.</span></label></li><li><input type="checkbox" id="dt27_5"><label for="dt27_5">🎯 <span>WEEKLY REVIEW #4 — the big one: every channel scored, every Scoreboard target vs actual</span></label></li><li><input type="checkbox" id="dt27_6"><label for="dt27_6">🎯 <span>Write month 2's plan with Claude: keep / kill / scale each channel, new targets</span></label></li><li><input type="checkbox" id="dt27_7"><label for="dt27_7">🎯 <span>Agent state-of-the-union: who's active, who needs help, who's ready for super-agent</span></label></li><li><input type="checkbox" id="dt27_8"><label for="dt27_8">🎯 <span>Queue newsletter #3</span></label></li><li><input type="checkbox" id="dt27_9"><label for="dt27_9">📊 <span>LOG THE DAY: GA4 visitors, orders + revenue (admin), new signups, new agents, code uses (LAUNCH15/GYM15), and every 'where'd you hear about us' answer.</span></label></li><li><input type="checkbox" id="dt27_10"><label for="dt27_10">🙏 <span>GRATITUDE ROUND: personally thank every new customer today (text or DM) and ask each for one referral.</span></label></li></ul><div class="daydone" data-dd="27">🎉 Day 27 Complete — Day 28 Is Unlocked</div></div></div><div class="daypage" data-day="28" id="daypage28"><div class="day"><h4>Day 28 — Mon Aug 10: Month-2 Setup<em>11 tasks</em></h4><div class="dayprog"><div class="dayprog-fill" data-dpf="28"></div></div><ul class="clean"><li><input type="checkbox" id="dt28_0"><label for="dt28_0">🎥 <span>CONTENT: film + post today's piece — tour: the research library and Find-A-Peptide tool. Post to TikTok + Instagram Reels + X; add the Story version to Instagram AND Snapchat.</span></label></li><li><input type="checkbox" id="dt28_1"><label for="dt28_1">💬 <span>ENGAGE: reply to every overnight comment/DM on TikTok, Instagram, X, and Facebook — minimum 10 real conversations before noon.</span></label></li><li><input type="checkbox" id="dt28_2"><label for="dt28_2">🧲 <span>SELLER OUTREACH: send 4 DMs — prospects #109-112 on your hit-list. Today's hunting ground: Instagram + Snapchat (cross-links in TikTok seller bios).</span></label></li><li><input type="checkbox" id="dt28_3"><label for="dt28_3">🤝 <span>FOLLOW-UPS: touch every open seller/agent thread from yesterday — get a yes, a no, or a next step on each.</span></label></li><li><input type="checkbox" id="dt28_4"><label for="dt28_4">👽 <span>REDDIT (20-30 min in a GLP-1 community sub): answer 3 questions with real knowledge. Phase 2/3 — vendor threads where permitted + reputation defense.</span></label></li><li><input type="checkbox" id="dt28_5"><label for="dt28_5">🎯 <span>Publish SEO article #6</span></label></li><li><input type="checkbox" id="dt28_6"><label for="dt28_6">🎯 <span>Implement the month-2 plan changes: budgets moved, calendar set</span></label></li><li><input type="checkbox" id="dt28_7"><label for="dt28_7">🎯 <span>Build the fresh 40-name seller hit-list for month 2</span></label></li><li><input type="checkbox" id="dt28_8"><label for="dt28_8">🎯 <span>Send NEWSLETTER #3</span></label></li><li><input type="checkbox" id="dt28_9"><label for="dt28_9">📊 <span>LOG THE DAY: GA4 visitors, orders + revenue (admin), new signups, new agents, code uses (LAUNCH15/GYM15), and every 'where'd you hear about us' answer.</span></label></li><li><input type="checkbox" id="dt28_10"><label for="dt28_10">🙏 <span>GRATITUDE ROUND: personally thank every new customer today (text or DM) and ask each for one referral.</span></label></li></ul><div class="daydone" data-dd="28">🎉 Day 28 Complete — Day 29 Is Unlocked</div></div></div><div class="daypage" data-day="29" id="daypage29"><div class="day"><h4>Day 29 — Tue Aug 11: Close Every Loop<em>11 tasks</em></h4><div class="dayprog"><div class="dayprog-fill" data-dpf="29"></div></div><ul class="clean"><li><input type="checkbox" id="dt29_0"><label for="dt29_0">🎥 <span>CONTENT: film + post today's piece — customer Q&amp;A: the 5 most-asked questions this month, answered. Post to TikTok + Instagram Reels + X; add the Story version to Instagram AND Snapchat.</span></label></li><li><input type="checkbox" id="dt29_1"><label for="dt29_1">💬 <span>ENGAGE: reply to every overnight comment/DM on TikTok, Instagram, X, and Facebook — minimum 10 real conversations before noon.</span></label></li><li><input type="checkbox" id="dt29_2"><label for="dt29_2">🧲 <span>SELLER OUTREACH: send 4 DMs — prospects #113-116 on your hit-list. Today's hunting ground: TikTok (search compound names + 'pep' terms, check bios for sellers).</span></label></li><li><input type="checkbox" id="dt29_3"><label for="dt29_3">🤝 <span>FOLLOW-UPS: touch every open seller/agent thread from yesterday — get a yes, a no, or a next step on each.</span></label></li><li><input type="checkbox" id="dt29_4"><label for="dt29_4">👽 <span>REDDIT (20-30 min in r/Peptides): answer 3 questions with real knowledge. Phase 2/3 — vendor threads where permitted + reputation defense.</span></label></li><li><input type="checkbox" id="dt29_5"><label for="dt29_5">🎯 <span>Close EVERY open loop: unanswered DMs, un-onboarded agents, unpaid bonuses, unposted reviews</span></label></li><li><input type="checkbox" id="dt29_6"><label for="dt29_6">🎯 <span>Ask your 5 best customers: 'what almost stopped you from ordering?' — gold for month 2</span></label></li><li><input type="checkbox" id="dt29_7"><label for="dt29_7">🎯 <span>Prep the day-30 recap: final numbers, lessons, thank-you list</span></label></li><li><input type="checkbox" id="dt29_8"><label for="dt29_8">🎯 <span>Final attribution pull: GYM15, banner QRs, referral codes, 'where'd you hear about us' tallies</span></label></li><li><input type="checkbox" id="dt29_9"><label for="dt29_9">📊 <span>LOG THE DAY: GA4 visitors, orders + revenue (admin), new signups, new agents, code uses (LAUNCH15/GYM15), and every 'where'd you hear about us' answer.</span></label></li><li><input type="checkbox" id="dt29_10"><label for="dt29_10">🙏 <span>GRATITUDE ROUND: personally thank every new customer today (text or DM) and ask each for one referral.</span></label></li></ul><div class="daydone" data-dd="29">🎉 Day 29 Complete — Day 30 Is Unlocked</div></div></div><div class="daypage" data-day="30" id="daypage30"><div class="day"><h4>Day 30 — Wed Aug 12: DAY 30 — Recap + Relaunch<em>11 tasks</em></h4><div class="dayprog"><div class="dayprog-fill" data-dpf="30"></div></div><ul class="clean"><li><input type="checkbox" id="dt30_0"><label for="dt30_0">🎥 <span>CONTENT: film + post today's piece — THE 30-DAY RECAP: real numbers, real lessons, thank-yous — your best post of the month. Post to TikTok + Instagram Reels + X; add the Story version to Instagram AND Snapchat.</span></label></li><li><input type="checkbox" id="dt30_1"><label for="dt30_1">💬 <span>ENGAGE: reply to every overnight comment/DM on TikTok, Instagram, X, and Facebook — minimum 10 real conversations before noon.</span></label></li><li><input type="checkbox" id="dt30_2"><label for="dt30_2">🧲 <span>SELLER OUTREACH: send 4 DMs — prospects #117-120 on your hit-list. Today's hunting ground: Facebook (peptide / GLP-1 / group-buy groups — the active answerers).</span></label></li><li><input type="checkbox" id="dt30_3"><label for="dt30_3">🤝 <span>FOLLOW-UPS: touch every open seller/agent thread from yesterday — get a yes, a no, or a next step on each.</span></label></li><li><input type="checkbox" id="dt30_4"><label for="dt30_4">👽 <span>REDDIT (20-30 min in r/Biohackers): answer 3 questions with real knowledge. Phase 2/3 — vendor threads where permitted + reputation defense.</span></label></li><li><input type="checkbox" id="dt30_5"><label for="dt30_5">🎯 <span>Post the 30-DAY RECAP on every platform: real numbers, real lessons, public thank-yous — this post recruits agents better than any pitch</span></label></li><li><input type="checkbox" id="dt30_6"><label for="dt30_6">🎯 <span>Personal thank-you message to every agent and top customer</span></label></li><li><input type="checkbox" id="dt30_7"><label for="dt30_7">🎯 <span>Month 2 starts tomorrow: new plan, same daily discipline</span></label></li><li><input type="checkbox" id="dt30_8"><label for="dt30_8">🎯 <span>CELEBRATE. You built and launched a company in 30 days.</span></label></li><li><input type="checkbox" id="dt30_9"><label for="dt30_9">📊 <span>LOG THE DAY: GA4 visitors, orders + revenue (admin), new signups, new agents, code uses (LAUNCH15/GYM15), and every 'where'd you hear about us' answer.</span></label></li><li><input type="checkbox" id="dt30_10"><label for="dt30_10">🙏 <span>GRATITUDE ROUND: personally thank every new customer today (text or DM) and ask each for one referral.</span></label></li></ul><div class="daydone" data-dd="30">🎉 Day 30 Complete — Day 30 Is Unlocked</div></div></div></div>
+  </div>
+</section>
+
+<!-- ============ CONTACTS ============ -->
+<section id="contacts">
+  <h2>Personal Contacts Playbook <span class="tag">YOUR #1 FREE CHANNEL</span></h2>
+  <p class="sub">Tier your list, personalize the first line of every message, and always ask for exactly one thing. Copy buttons below grab each template — swap the [brackets].</p>
+
+  <div class="card">
+    <h3>Tier 1 — closest 20–30 (individual texts, launch morning)</h3>
+    <div class="tmpl" id="t1">[Name]! Big day — I'm officially launching my company today. It's called Pep Nation Lab (pepnationlab.com) — a research peptide platform I've been building for months. You're one of the first people I'm telling. Two things would mean a lot: check it out, and if you know anyone into fitness/biohacking/research stuff, send them my way. Code LAUNCH15 gets 15% off this week. 🚀</div>
+    <button class="copybtn" data-c="t1">📋 Copy</button>
+    <p><strong>Then personalize line one for each person.</strong> "Dude, remember when I told you about that project at the poker game?" beats any template.</p>
+  </div>
+
+  <div class="card">
+    <h3>Tier 2 — friendly acquaintances, 50–150 (afternoon)</h3>
+    <div class="tmpl" id="t2">Hey [Name] — quick share: I just launched pepnationlab.com today, a research peptide company I built from scratch. If that's your world (or someone you know), take a look — LAUNCH15 gets 15% off through Sunday. Either way, hope you're doing great!</div>
+    <button class="copybtn" data-c="t2">📋 Copy</button>
+  </div>
+
+  <div class="card">
+    <h3>Poker network / community groups</h3>
+    <div class="tmpl" id="t3">Hey everyone — some personal news. After months of building, I launched my company today: Pep Nation Lab (pepnationlab.com), a research peptide platform. Proud of this one — built the whole thing myself. If peptide research is your thing, code LAUNCH15 is live this week. And if anyone here has an audience in fitness/health — I have a partner program where you get your own storefront. DM me. 🚀</div>
+    <button class="copybtn" data-c="t3">📋 Copy</button>
+    <p>Post where you have standing, and check each group's self-promo norms first — one goodwill-rich post beats five spammy ones.</p>
+  </div>
+
+  <div class="card">
+    <h3>Launch-day social post (feed)</h3>
+    <div class="tmpl" id="t4">Today's the day. 🚀
+
+For the last several months I've been building something from nothing — and today PEP NATION LAB is officially live.
+
+pepnationlab.com — research peptides with full transparency: real quality info, honest pricing, and a platform I engineered end to end.
+
+All products are for laboratory research use only.
+
+Launch week: code LAUNCH15 = 15% off.
+
+To everyone who heard me talk about "the project" for months — this is it. Go see what I made. 🧪</div>
+    <button class="copybtn" data-c="t4">📋 Copy</button>
+  </div>
+
+  <div class="card">
+    <h3 class="gold">Follow-up rhythm (the money is here)</h3>
+    <p><strong>Day 3:</strong> everyone who responded but didn't buy → "Any questions I can answer about the site?" · <strong>Day 6:</strong> "LAUNCH15 expires Sunday — didn't want you to miss it." · <strong>Day 10+:</strong> non-responders get one value-touch (interesting article, new product) — never a third pitch. 80% of yeses come from follow-up two or three, not message one.</p>
+  </div>
+</section>
+
+<!-- ============ AGENTS ============ -->
+<section id="agents">
+  <h2>Agent Recruiting Playbook <span class="tag">YOUR MULTIPLIER</span></h2>
+  <p class="sub">Every agent who opens a storefront brings an audience you don't have to buy. Ten active agents ≈ a full-time marketing team that costs you margin, not budget. This is where PepNationLab's architecture beats every competitor spending $50k/month on ads they keep getting banned for.</p>
+
+  <div class="card">
+    <h3>Who to recruit (in order of value)</h3>
+    <table>
+      <tr><th>Profile</th><th>Why they win</th><th>Where you find them</th></tr>
+      <tr><td><strong>Personal trainers & gym coaches</strong></td><td>Clients literally ask them what to buy; trusted-advisor position</td><td>Your gym, friends' gyms, IG fitness locals</td></tr>
+      <tr><td><strong>Fitness micro-influencers (2k–50k)</strong></td><td>Engaged niche audiences; too small for brand deals so a storefront is real money to them</td><td>IG/TikTok/X biohacking + gym niches</td></tr>
+      <tr><td><strong>Poker network connectors</strong></td><td>High-trust social hubs; many run group chats and communities already</td><td>Your existing world</td></tr>
+      <tr><td><strong>Gym owners / supplement shop staff</strong></td><td>Physical foot traffic + standing product conversations</td><td>Local outreach, one coffee at a time</td></tr>
+      <tr><td><strong>Podcast hosts / newsletter writers (niche)</strong></td><td>Owned audiences immune to platform bans</td><td>Small biohacking/fitness pods & Substacks</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>The pitch (call script — lead with THEIR money)</h3>
+    <div class="tmpl" id="t5">"[Name], I built something and you're one of the first people I thought of. You know how people are always asking you about supplements and peptides? I launched a platform where you get your OWN branded storefront — your name, your link, your prices. I handle everything: inventory, shipping, payments, compliance. You share your link, and you earn margin on every order, every month. Zero cost to start, and I'll set your store up FOR you in 10 minutes. Want me to show you?"</div>
+    <button class="copybtn" data-c="t5">📋 Copy</button>
+    <p><strong>Objection killers:</strong> "Is this legal?" → research-use-only products, full compliance stack built into the platform, every buyer signs acknowledgments. "What's the catch?" → none; you're the distribution, I'm the infrastructure. "How much can I make?" → show real math from your margin tiers on a $100 order.</p>
+  </div>
+
+  <div class="card">
+    <h3 class="gold">Founding Agent offer (spend from budget: $750)</h3>
+    <p>Scarcity + status + cash: <strong>"First 10 Founding Agents"</strong> get (1) a locked-in better margin tier for life, (2) a $50 bonus when their store hits $500 in sales in 30 days, (3) their name on a founding-partners page. Announce the count publicly as it fills ("3 of 10 founding spots left") — nothing recruits agents like watching other agents get picked.</p>
+  </div>
+
+  <div class="card">
+    <h3>Onboarding SLA — you, not them</h3>
+    <p>The moment someone says "maybe": you build their store while they watch (10 min), hand them 3 ready-to-send messages for their audience, and check in at 48 hours and 7 days. Agents who make their first sale in week one stay for years; agents left to "set it up later" never start.</p>
+  </div>
+</section>
+
+<!-- ============ RECRUIT EXISTING SELLERS ============ -->
+<section id="poach">
+  <h2>Recruit Existing Peptide Sellers <span class="tag">HIGHEST-LEVERAGE PLAY</span></h2>
+  <p class="sub">TikTok, Facebook, Snapchat, and Telegram are full of people ALREADY selling peptides through DMs, Venmo, and group chats. They have the two things money can't easily buy — an audience and proven demand — and they're doing it with terrible infrastructure. You're not competing with them. You're their upgrade.</p>
+
+  <div class="card">
+    <h3 class="gold">Why they'll say yes (their pain = your pitch)</h3>
+    <table>
+      <tr><th>Their life today</th><th>Life on PepNationLab</th></tr>
+      <tr><td>Taking orders in DMs, tracking in Notes app</td><td>Real storefront with their name, cart, and order management</td></tr>
+      <tr><td>Sourcing inventory, fronting cash, shipping from their kitchen</td><td>You handle inventory, fulfillment, and shipping</td></tr>
+      <tr><td>Venmo/CashApp chaos, chargebacks, payment screenshots</td><td>Platform handles payment flow and records</td></tr>
+      <tr><td>One account ban away from losing their whole business</td><td>Their storefront link lives on YOUR domain — platform-ban-proof</td></tr>
+      <tr><td>Zero compliance cover, personally exposed</td><td>Research-use-only disclaimer stack on every order, built in</td></tr>
+      <tr><td>Income stops when they stop DMing</td><td>Store sells 24/7; QR code + link do the work</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>How to find them (30–45 min/day of hunting)</h3>
+    <ul class="clean">
+      <li>📱 <span><strong>TikTok:</strong> search peptide compound names, "pep tok", "research chemicals", GLP-1 slang. Sellers reveal themselves with "link in bio", "DM me", or "check my Telegram" comments. Follow 10, watch who the algorithm serves next.</span></li>
+      <li>📘 <span><strong>Facebook:</strong> join peptide, GLP-1, group-buy, and biohacking groups. The most active answerers and the "I can get you..." posters are your targets. Group ADMINS are the crown jewels — one admin = a whole group.</span></li>
+      <li>👻 <span><strong>Snapchat:</strong> sellers push followers from TikTok/IG to Snap for the actual selling (disappearing messages). Find them via the cross-links in TikTok/IG bios — the Snap handle is usually right there.</span></li>
+      <li>✈️ <span><strong>Telegram:</strong> peptide group-buy and vendor channels. Watch for resellers with their own subscriber lists — they already run one-person distribution businesses.</span></li>
+      <li>👽 <span><strong>Reddit:</strong> active, knowledgeable posters in peptide subs who mention sourcing — approach as fellow enthusiast first (see Reddit tab rules).</span></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Outreach scripts</h3>
+    <p><strong>Opener (never pitch in message one):</strong></p>
+    <div class="tmpl" id="t6">Hey — been following your content, you clearly know your stuff on [specific compound/topic they post about]. Quick question: are you handling all your orders manually through DMs? Asking because I built something you might want to see.</div>
+    <button class="copybtn" data-c="t6">📋 Copy</button>
+    <p><strong>The pitch (after they reply):</strong></p>
+    <div class="tmpl" id="t7">So here's what I built: pepnationlab.com — a platform where people like you get their OWN branded storefront. Your name, your link, your margins. I carry the inventory, handle fulfillment, shipping, and the compliance stack (research-use-only, full disclaimer system). You keep doing what you're doing — posting content and talking to your people — except now you send one link instead of juggling 40 DM conversations, and you never touch a package or front cash for inventory again. Takes me 10 minutes to set your store up. Want a link to a live one so you can see it?</div>
+    <button class="copybtn" data-c="t7">📋 Copy</button>
+    <p><strong>Follow-up (3 days, once):</strong></p>
+    <div class="tmpl" id="t8">No pressure either way — but I'm giving the first 10 partners a locked-in founding margin tier and I'd rather give one of those spots to someone who actually knows the space. Worth a 10-minute call?</div>
+    <button class="copybtn" data-c="t8">📋 Copy</button>
+  </div>
+
+  <div class="card">
+    <h3 class="warn">Vet before you onboard — you inherit their reputation</h3>
+    <ul class="clean">
+      <li>🔍 <span><strong>Check their claims history.</strong> Someone posting "this cured my..." content brings regulator heat to YOUR platform. Onboarding includes a 5-minute compliance briefing: research-use-only framing, no dosing/results claims, or their store gets paused. Put it in writing.</span></li>
+      <li>⭐ <span><strong>Check their rep.</strong> Search their handle + "scam" on Reddit/Google. A seller with burned customers poisons your brand the day their link goes live.</span></li>
+      <li>📊 <span><strong>Check real engagement.</strong> 50k followers with 12 likes per post is a bought audience. A 2k-follower account with 80 comments of real questions is worth 10x more.</span></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Weekly targets</h3>
+    <p><strong>20 outreach messages/week → expect 5–8 replies → 2–3 demos → 1–2 signed agents.</strong> Every converted seller brings their entire existing customer base with them. Ten poached sellers with 30 active buyers each = 300 customers acquired for the cost of DMs and margin share. This is the single highest-ROI activity in this entire plan — protect the daily time for it.</p>
+  </div>
+</section>
+
+<!-- ============ GUERRILLA ILLINOIS ============ -->
+<section id="guerrilla">
+  <h2>Guerrilla Marketing — Illinois <span class="tag">$600 · BOOTS ON THE GROUND</span></h2>
+  <p class="sub">Physical presence where your buyers physically are: gyms, gym parking lots, supplement shops, and high-traffic roads. Done right this is dirt-cheap brand awareness nobody can algorithm-ban. Done wrong it's fines and torn-down signs — so read the legal box first.</p>
+
+  <div class="card">
+    <h3 class="warn">The legal reality — verified against the actual ordinances</h3>
+    <ul class="clean">
+      <li>🚫 <span><strong>Windshield flyers are flatly illegal in Chicago</strong> (Municipal Code §10-8-310: no handbills on windshields, under wipers, or handed to people in cars — $200–$1,000 fine PER OFFENSE, meaning per flyer in theory). Door hangers are illegal too (§10-8-271). What IS legal in the city: handing cards to humans on public sidewalks. Suburbs each have their own codes — check before any drop.</span></li>
+      <li>📇 <span><strong>Chicago requires your business license number printed on every handbill</strong> (§10-8-325). Add it to the card design — it doubles as a legitimacy signal.</span></li>
+      <li>🚫 <span><strong>Public right-of-way signs are illegal statewide</strong> — medians, parkways, utility poles, interchange grass. IDOT and towns remove them summarily. Money thrown away.</span></li>
+      <li>⚠️ <span><strong>The 660-foot rule for highway banners:</strong> an off-premise ad (your banner on someone else's property) within 660 ft of an interstate or federal-aid primary highway and visible from it needs an IDOT permit (~$50, Highway Advertising Control Act). Two clean paths: (a) get the $50 permit for a great interstate spot, or (b) target busy LOCAL arterials and intersections instead — outside the regulated corridor, private land + owner permission is all you need. On-premise signs (a partner gym advertising its own PepNationLab storefront on its own building) are exempt entirely — which makes agent-gym banners the best banner play of all.</span></li>
+      <li>✅ <span><strong>Private land with written owner permission is the legal lane</strong> — a text thread counts. Offer $25–75/month or a flat $50 for the season.</span></li>
+      <li>🧪 <span><strong>Every printed piece carries "For Laboratory Research Use Only,"</strong> zero health claims, and brand + curiosity + QR only. At fitness events hand out AGENT-RECRUITING cards, not product promo — "RUO label + marketing to athletes" is the exact fact pattern in FDA warning letters (see Level-Ups tab).</span></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3 class="gold">Named Illinois events in your 30-day window (verified)</h3>
+    <table>
+      <tr><th>Event</th><th>Date</th><th>Where</th><th>Play</th></tr>
+      <tr><td><strong>Chicago Pro / NPC Celsius Extravaganza</strong> — biggest IFBB/NPC show in the state</td><td>Fri–Sat Jul 17–18 (days 4–5!)</td><td>Westin O'Hare, Rosemont</td><td>Attend both days; hand agent-recruit cards person-to-person; every competitor/coach is a storefront candidate</td></tr>
+      <tr><td>USPA "Mad Max Lifts" powerlifting meet</td><td>Sat Jul 25 (day 12)</td><td>Lindenhurst, IL</td><td>Morning gym run, afternoon meet</td></tr>
+      <tr><td>Powerlifting America meets ×2 + NASA Tri-State Summer</td><td>Jul 24–25 (days 11–12)</td><td>Various IL</td><td>Pick the closest; recruit cards only</td></tr>
+      <tr><td>APF/AAPF Summer Bash</td><td>Sat Aug 1 (day 19)</td><td>IL</td><td>Combine with gym run #3</td></tr>
+      <tr><td>CrossFit comps + local expos</td><td>rolling</td><td>Eventbrite/KettleBoards calendars</td><td>Check ~4 weeks out, monthly</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Weapon 1 — Banners on private land facing traffic (4 × ~$75)</h3>
+    <p><strong>Creative (keep it stupid-simple — 3 seconds at 60 mph):</strong> black background, teal logo, "PEPNATIONLAB.COM" huge, "Research Peptides · Wholesale + Storefronts" small, giant QR corner. That's it.</p>
+    <p><strong>Locations to hunt (drive-and-ask, 2 afternoons):</strong> farm fences and barns visible from I-55 / I-80 / I-90 / I-57 frontage, businesses on busy arterials near your target gyms (car washes, tire shops, batting cages — owners love easy money), and fence lines by high-traffic intersections with long red lights (people literally sit and stare).</p>
+    <p><strong>Tracking:</strong> each banner gets its own QR/short-link (pepnationlab.com/?ref=banner-i55 style) so week-4 data tells you which spots earn a month two.</p>
+  </div>
+
+  <div class="card">
+    <h3>Weapon 2 — Flyer cards at gyms (5,000 × 4"×6" ≈ $180)</h3>
+    <p><strong>Creative:</strong> front = bold hook ("The Research Peptide Platform Built In Illinois") + QR + site; back = what the platform is, LAUNCH15-style code unique to print (<code>GYM15</code> — separate code = perfect attribution), research-use-only line.</p>
+    <p><strong>The gym circuit, in priority order:</strong> hardcore/powerlifting gyms → CrossFit boxes → MMA/boxing gyms → Big-box gyms (hardest to get permission, biggest volume). For each: walk in, ask for the manager, one sentence — "I run an Illinois research peptide platform, can I leave a stack of cards / pin one on your board?" Sweeten it: offer the MANAGER a storefront (Recruit Sellers pitch — gym managers are prime agent material; the flyer visit is literally a seller-poach visit in disguise).</p>
+    <p><strong>Also stack cards at:</strong> supplement shops, smoke/vape shops, barbershops, tanning salons, chiropractors and sports-recovery studios, MMA events, and NPC bodybuilding shows (check the Illinois NPC schedule — a summer show parking lot is the densest peptide-curious foot traffic in the state).</p>
+    <p><strong>Cadence:</strong> one Saturday-morning run per week (peak gym traffic), 5 new gyms per run + restock the winners. 20 gyms carrying cards by day 30.</p>
+    <p><strong>The upgraded gym pitch (from partnership research):</strong> gym owners expect ~45–50% margin on supplements they stock — so don't ask for free counter space, offer them the agent deal: their own storefront + per-gym code, they earn on every member order, zero inventory risk. That's a better offer than any supplement rep walking in the door, and it converts a card-stack ask into a recurring-revenue partnership.</p>
+    <p><strong>Print smart:</strong> order the 5,000 cards from an online bulk printer (~$95–150 for 5k) — FedEx Office same-day runs 5–10× the per-piece cost; use it only for a small rush batch of 250 to survive week 1 while the bulk order ships. Banners run ~$76–113 online for 3×10 vinyl.</p>
+  </div>
+
+  <div class="card">
+    <h3>Weapon 3 — Free extras that punch up</h3>
+    <ul class="clean">
+      <li>🚗 <span><strong>Vehicle magnet or rear-window decal</strong> on your own car (~$40 from the misc budget) — you park at gyms daily anyway; your car becomes a rolling banner in the exact right parking lots.</span></li>
+      <li>📌 <span><strong>Community bulletin boards</strong> — libraries, coffee shops, laundromats, colleges (summer session) — free, legal, 2 minutes each while you're driving your gym circuit.</span></li>
+      <li>🏋️ <span><strong>Wear the brand</strong> — get 2–3 shirts/hoodies printed with the logo + QR. Every workout is a billboard, and "what's PepNationLab?" at the squat rack is the warmest lead there is.</span></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3 class="gold">Measure it or it didn't happen</h3>
+    <p>Print dies without tracking. Three separate signals: the <code>GYM15</code> code (card conversions), per-banner QR ref links (banner scans), and simply asking new signups "where'd you hear about us?" (add it mentally to every convo). Week-4 review kills the dead spots and doubles the live ones — same rule as every other channel.</p>
+  </div>
+</section>
+
+<!-- ============ REDDIT ============ -->
+<section id="reddit">
+  <h2>Reddit Playbook <span class="tag">WHERE PEPTIDE BUYERS DECIDE</span></h2>
+  <p class="sub">Reddit is where peptide buyers research vendors before spending a dollar — sourcing threads, vendor reviews, "is this legit?" posts. It's also the easiest place to destroy a new brand: the community detects and destroys self-promo instantly. The play is patience-first, and it's mostly free.</p>
+
+  <div class="card">
+    <h3>Where to be</h3>
+    <p>Peptide-specific subs (r/Peptides and its sourcing/review satellites), GLP-1 communities, r/Biohackers, fitness-PED-adjacent subs, and r/Nootropics for the cognitive compounds. Spend the first week just reading: learn each sub's rules (many ban vendor self-promo outright; some run approved-vendor threads or lists — those threads are the actual prize), learn the tone, and note which questions repeat. The repeated questions become your SEO article topics too — double duty.</p>
+  </div>
+
+  <div class="card">
+    <h3>The three phases</h3>
+    <ul class="clean">
+      <li>🌱 <span><strong>Phase 1 — Earn the flair (weeks 1–2):</strong> personal account (not u/PepNationLab), genuine participation, zero links, zero brand mentions. Answer questions with real knowledge — your /research and Peptide 101 material makes you legitimately one of the more informed people in any thread. Build karma and post history. This is the ante; skipping it gets you flagged as a shill later.</span></li>
+      <li>🌿 <span><strong>Phase 2 — Presence (weeks 3–4):</strong> get PepNationLab into approved-vendor threads/lists where subs have them (message mods directly, be transparent that you're the founder — mods respect honesty and torch sneaks). Answer "where do you buy" questions ONLY where rules allow vendor mentions. Consider a founder AMA in a sub that welcomes them: "I built a peptide platform from scratch — AMA about the business side" performs well and is self-promo the community actually enjoys.</span></li>
+      <li>🌳 <span><strong>Phase 3 — Reputation defense (ongoing):</strong> set up alerts for "pepnationlab" mentions (free: Reddit search + Google Alerts). Respond to every review or complaint within hours, publicly and generously — one well-handled complaint thread is worth more than ten ads. Nudge happy customers to share honest experiences when sourcing threads come up. NEVER fake reviews or use alt accounts to praise yourself — Reddit unmasks astroturfing constantly and it is the one mistake this market never forgives.</span></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3 class="warn">Reddit rules of engagement</h3>
+    <p>No link-dropping in comments. No DM-spamming users (bannable + hated). No Reddit ads — the category is restricted there too. No arguing with critics; thank them and fix the issue. And the compliance rules from the Rules tab apply double here: FDA/FTC monitor these exact subs.</p>
+  </div>
+
+  <div class="card">
+    <h3 class="gold">Time budget</h3>
+    <p>20–30 min/day inside the daily "10 real conversations" habit. Cost: $0. Expected payoff timeline: trickle by week 4, meaningful by month 2–3 — and unlike a banned ad account, Reddit reputation compounds forever.</p>
+  </div>
+</section>
+
+<!-- ============ PAID SOCIAL TEST ============ -->
+<section id="paidsocial">
+  <h2>Paid Social Test <span class="tag">$1,200 · FIREWALLED EXPERIMENT</span></h2>
+  <p class="sub">Yes — peptide ads run on Meta and TikTok every day. They're policy-violating and survive through engineered funnels: rented ad accounts, softened creative, and bridge pages that keep bans away from the real business. We'll run the same play, sized to your budget, with your brand fully firewalled. Treat this as an experiment with a kill switch, not a pillar.</p>
+
+  <div class="card">
+    <h3 class="warn">The firewall — non-negotiable</h3>
+    <ul class="clean">
+      <li>🧱 <span><strong>Rented agency ad account only.</strong> Never your personal Facebook, never a Business Manager connected to you or pepnationlab.com. Agency accounts (from ad-account rental providers) absorb the ban risk — that's what you're paying for.</span></li>
+      <li>🌐 <span><strong>Separate educational domain.</strong> Ads land on a standalone "research education" site (quiz or free guide) that sells nothing and never links footer-to-footer with pepnationlab.com. Meta crawls landing pages AND the domains they link to.</span></li>
+      <li>📧 <span><strong>The product is the email address.</strong> The funnel converts ad click → quiz/guide → email signup. Selling happens later, from YOUR email list, where no platform can touch you.</span></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>The funnel</h3>
+    <table>
+      <tr><th>Step</th><th>What</th><th>Cost</th></tr>
+      <tr><td>1. Bridge site</td><td>One-page "Peptide Research Guide" or interactive quiz ("Which compounds match your research goals?") on a fresh domain, email-gated. I can build this for you in a day.</td><td>~$50 (domain + hosting)</td></tr>
+      <tr><td>2. Agency ad account</td><td>Rent from an established provider; 1 month to start</td><td>~$300–400</td></tr>
+      <tr><td>3. Creative</td><td>3–5 curiosity/education angles. NO vials, NO needles, NO "buy", NO compound names in the ad itself. Think "the science of recovery research everyone's talking about" energy.</td><td>DIY (your phone)</td></tr>
+      <tr><td>4. Ad spend</td><td>Start $20–30/day on Meta. Submit ONE ad at a time, pause, confirm approval, then scale — if 20%+ of ads get rejected the account itself gets flagged (the 80/20 rule the survivors use).</td><td>~$700</td></tr>
+      <tr><td>5. Email nurture</td><td>5-email sequence: value, value, story, soft intro to the store, offer. Runs on your permissive ESP.</td><td>covered in email budget</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Kill criteria & success bar (decide BEFORE spending)</h3>
+    <p><strong>Kill it if:</strong> the rented account gets banned twice, or cost-per-email-signup stays above ~$5 after $300 of spend, or the bridge domain gets flagged. Remaining budget flows back to seller recruiting and seeding — no sunk-cost chasing.<br><strong>Scale it if:</strong> signups come in under ~$3 and the nurture sequence converts even 3–5% of the list to a first order — then week 4's reserve goes here.</p>
+  </div>
+
+  <div class="card">
+    <h3 class="gold">Timing</h3>
+    <p>This starts WEEK 2, not launch day. Week 1 is free-channel week (network + sellers + content). The test needs the bridge site and email sequence built first, and your launch-week attention is worth more than any ad.</p>
+  </div>
+</section>
+
+<!-- ============ 30-DAY ENGINE ============ -->
+<section id="days30">
+  <h2>The 30-Day Engine <span class="tag">JUL 14 – AUG 12</span></h2>
+  <p class="sub">You said daily effort — this is the schedule that makes daily effort compound instead of scatter. ~2–3 focused hours a day.</p>
+
+  <div class="card">
+    <h3>Daily non-negotiables (every day, 30 days)</h3>
+    <ul class="clean">
+      <li>🎥 <span><strong>1 piece of content</strong> — 30–60s phone video or carousel. Rotate 3 pillars: (A) research education ("What published studies say about ___"), (B) founder journey ("day 6 of running my own company — here's what broke today"), (C) platform/agent spotlights.</span></li>
+      <li>💬 <span><strong>10 real conversations</strong> — DM replies, comment replies, texts. Distribution at your stage is manual.</span></li>
+      <li>🤝 <span><strong>3–4 seller/agent outreaches</strong> — DM existing peptide sellers (Recruit Sellers tab) or check in on your agents. 20/week minimum; this is the highest-ROI daily block.</span></li>
+      <li>👽 <span><strong>20–30 min on Reddit</strong> — genuine answers, zero links (phase rules in the Reddit tab).</span></li>
+      <li>📊 <span><strong>5-minute log</strong> — visitors, orders, signups, agents. What you measure, you fix.</span></li>
+    </ul>
+  </div>
+
+  <div class="day"><h4>Week 1 (Jul 14–20) — Detonate the network + start the hunt</h4>
+    <ul class="clean">
+      <li>📱 <span>All contact tiers messaged; every warm lead followed up twice. LAUNCH15 expires Sunday — announce the deadline twice.</span></li>
+      <li>🤝 <span>10 agent conversations from your own circle → target 3–5 founding agents live with stores.</span></li>
+      <li>🧲 <span>Build your first seller hit-list: 40 existing peptide sellers found on TikTok/FB/Snap/Telegram (Recruit Sellers tab). Send the first 20 openers.</span></li>
+      <li>👽 <span>Reddit Phase 1 begins: join the subs, read the rules, start answering — zero links.</span></li>
+      <li>⭐ <span>Ask every happy customer for a Trustpilot/Google review — reviews are the currency of this market (buyers check Reddit + review sites before trusting any new vendor).</span></li>
+    </ul>
+  </div>
+
+  <div class="day"><h4>Week 2 (Jul 21–27) — Seed influencers + light the paid test</h4>
+    <ul class="clean">
+      <li>📦 <span>Send free product (~$500 of seeding budget) to 10–15 micro-creators in fitness/biohacking with a personal note — no strings attached. No-strings seeding outperforms paid posts AND keeps creators compliant on their own channels.</span></li>
+      <li>💰 <span>Offer the best responders (and every seller who replied last week) a storefront — recurring margin recruits harder than one-time cash. Target: 2 poached sellers live.</span></li>
+      <li>🎪 <span>Paid Social Test goes live: bridge site built, agency account rented, first ads submitted one at a time (Paid Social Test tab).</span></li>
+      <li>✍️ <span>Publish first 2 SEO articles (see Channels tab for targets).</span></li>
+    </ul>
+  </div>
+
+  <div class="day"><h4>Week 3 (Jul 28–Aug 3) — Communities + email</h4>
+    <ul class="clean">
+      <li>👽 <span>Reddit Phase 2: message mods about vendor threads/lists, answer sourcing questions where allowed, line up a founder AMA.</span></li>
+      <li>🧲 <span>Second seller wave: 20 more outreaches + follow-ups on week-1 non-responders. Target: 4–5 total poached sellers live.</span></li>
+      <li>📧 <span>First email newsletter to all signups + the paid-test list: research roundup, new products, agent spotlight. Weekly from here on.</span></li>
+      <li>📣 <span>Buy 2–3 shoutouts in niche newsletters/Telegram communities where peptide audiences actually live (~$300).</span></li>
+      <li>🎪 <span>Paid test checkpoint: cost-per-signup vs. kill criteria. Scale, adjust, or kill — no emotion.</span></li>
+    </ul>
+  </div>
+
+  <div class="day"><h4>Week 4 (Aug 4–12) — Double down + systematize</h4>
+    <ul class="clean">
+      <li>📈 <span>Review the log: kill the weakest channel, double the strongest with the reserve fund ($250) — plus the paid-test budget if it got killed.</span></li>
+      <li>🏆 <span>Referral program v2: give-$10-get-$10 codes for customers; leaderboard bonus for agents.</span></li>
+      <li>🔁 <span>Turn week 1–3 learnings into repeatable weekly rhythm; get to 10 total agents (own circle + poached sellers combined).</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ CHANNELS ============ -->
+<section id="channels">
+  <h2>Channel Playbook <span class="tag">WHERE TO FIGHT</span></h2>
+  <p class="sub">Ranked by expected ROI for a peptide brand in 2026 with your assets.</p>
+
+  <div class="card"><h3>1. Personal network + word of mouth — FREE</h3>
+    <p>Highest-trust channel on earth and the only one with zero platform risk. Everything in the Contacts tab. Expected to produce your first 50–200 customers.</p></div>
+
+  <div class="card"><h3>2. Poaching existing sellers — margin, not budget</h3>
+    <p>Your structural advantage, aimed at people who already have peptide audiences and customers. Each converted TikTok/FB/Snap/Telegram seller is a distribution node with built-in trust AND an existing buyer list. 10 agents × 30 customers each in 90 days is a realistic path to 300 customers at $0 CAC. Full playbook in the Recruit Sellers tab.</p></div>
+
+  <div class="card"><h3>3. Reddit + communities — mostly time</h3>
+    <p>Where peptide buyers actually vet vendors before buying. Peer recommendation drives this category. Three-phase playbook in the Reddit tab; Telegram/Discord/forums follow the same trust-first rules. Longer-term: start your own research community — you own it, nobody can ban it.</p></div>
+
+  <div class="card"><h3>4. Guerrilla Illinois — banners + gym flyers (~$600)</h3>
+    <p>Physical presence in the exact rooms your buyers train in: 20 gyms carrying cards, 4 banners on permission-secured private land facing traffic, counter stacks at supplement/smoke shops, event flyering at NPC and MMA shows. Legal guardrails and full playbook in the Guerrilla IL tab. Bonus: every gym-manager permission ask doubles as a seller-poach pitch.</p></div>
+
+  <div class="card"><h3>5. SEO — the compounding channel (~$600)</h3>
+    <p>The consensus #1 paid-for channel for peptide brands, precisely because ads are banned: organic rankings have no gatekeeper and peptide buyers search with high intent. Priorities: (1) product pages titled to transactional queries ("Buy [peptide] — Research Grade | Pep Nation Lab"), (2) 2 articles/week targeting long-tail comparison and "what does the research say" queries, (3) a handful of niche directory/blog backlinks. Your /research and /peptide-101 sections are already SEO assets — interlink them to product pages. Expect results in months 2–4, then it snowballs.</p></div>
+
+  <div class="card"><h3>6. Micro-influencer & product seeding (~$900)</h3>
+    <p>2k–50k follower creators in fitness/biohacking. Free product + personal note first; storefront (agent) offers to the best responders; small paid collabs ($50–150) only for proven engagers. One authentic mention from a trusted micro beats a banned $2k ad campaign.</p></div>
+
+  <div class="card"><h3>7. Paid Social Test — firewalled experiment (~$1,200)</h3>
+    <p>Rented agency ad account + separate educational bridge domain + email capture. Never touches your brand assets. Full funnel, kill criteria, and timing in the Paid Social Test tab. If it works, week 4 reserve scales it; if not, budget flows back to sellers and seeding.</p></div>
+
+  <div class="card"><h3>8. Email list — the asset (~$300 infra)</h3>
+    <p>Mainstream ESPs (Klaviyo, Mailchimp) prohibit this category — use a permissive or self-hosted setup (e.g., self-hosted Listmonk/Mautic on your own SMTP, or an ESP that accepts the category) so you're never terminated mid-campaign. Weekly newsletter: research roundups, new products, agent spotlights. Every visitor should be offered an email capture (10% first order for subscribing). The list is the only audience that can't be taken from you.</p></div>
+
+  <div class="card"><h3 class="warn">Channels to skip (for now)</h3>
+    <p><strong>Peptide ads from your own accounts/domain</strong> (banned category — the firewalled test is the only sanctioned path), <strong>mass SMS</strong> (carrier/TCPA risk), <strong>Reddit ads</strong> (category restricted there too), <strong>PR wire services</strong> (nobody's writing about a peptide launch; save the money), <strong>trade shows</strong> (wrong stage, wrong budget).</p></div>
+</section>
+
+<!-- ============ BUDGET ============ -->
+<section id="budget">
+  <h2>Budget Allocation <span class="tag">$5,000</span></h2>
+  <p class="sub">Zero dollars to banned ad platforms. Every dollar goes where money actually works in this category. Nothing is spent all-at-once — week 4's review moves money toward whatever's winning.</p>
+
+  <div class="card">
+    <div class="bar-row"><div class="bar-label">Paid Social Test (firewalled)</div><div class="bar-track"><div class="bar-fill" style="width:24%;background:var(--red)">$1,200</div></div></div>
+    <div class="bar-row"><div class="bar-label">Micro-influencer collabs + product seeding</div><div class="bar-track"><div class="bar-fill" style="width:18%;background:var(--accent)">$900</div></div></div>
+    <div class="bar-row"><div class="bar-label">Guerrilla IL — banners, flyers, gear</div><div class="bar-track"><div class="bar-fill" style="width:12%;background:#f687b3">$600</div></div></div>
+    <div class="bar-row"><div class="bar-label">SEO content + backlinks + tools</div><div class="bar-track"><div class="bar-fill" style="width:12%;background:var(--blue)">$600</div></div></div>
+    <div class="bar-row"><div class="bar-label">Launch promos + review/referral incentives</div><div class="bar-track"><div class="bar-fill" style="width:12%;background:var(--accent2)">$600</div></div></div>
+    <div class="bar-row"><div class="bar-label">Founding Agent + seller-poach incentives</div><div class="bar-track"><div class="bar-fill" style="width:13%;background:var(--purple)">$650</div></div></div>
+    <div class="bar-row"><div class="bar-label">Email infra + content tools</div><div class="bar-track"><div class="bar-fill" style="width:6%;background:var(--green)">$300</div></div></div>
+    <div class="bar-row"><div class="bar-label">Reserve — double down on winners (wk 4)</div><div class="bar-track"><div class="bar-fill" style="width:3%;background:#a0aec0">$150</div></div></div>
+  </div>
+
+  <div class="card">
+    <h3>Line-item detail</h3>
+    <table>
+      <tr><th>Item</th><th>Amount</th><th>Notes</th></tr>
+      <tr><td>Agency ad account rental (1 month)</td><td>$350</td><td>Paid Social Test — never your own BM</td></tr>
+      <tr><td>Bridge domain + hosting</td><td>$50</td><td>Standalone educational site, email-gated</td></tr>
+      <tr><td>Meta/TikTok test ad spend</td><td>$800</td><td>$20–30/day, one-ad-at-a-time approval; hard kill criteria</td></tr>
+      <tr><td>Free product seeding (10–15 creators + seller demos)</td><td>$450</td><td>Cost basis, not retail — stretch it</td></tr>
+      <tr><td>Paid micro-collabs (3–4 × $50–150)</td><td>$300</td><td>Only creators who engaged with seeding</td></tr>
+      <tr><td>Niche newsletter/Telegram shoutouts (2)</td><td>$150</td><td>Week 3; ask for exact audience size first</td></tr>
+      <tr><td>Flyer cards — 5,000 × 4"×6"</td><td>$180</td><td>GYM15 code for attribution; research-use-only line</td></tr>
+      <tr><td>Vinyl banners — 4 × 3'×10'</td><td>$300</td><td>Private-land placements with owner permission only</td></tr>
+      <tr><td>Car magnet + logo shirts + zip ties/tape</td><td>$120</td><td>Rolling billboard + squat-rack conversations</td></tr>
+      <tr><td>SEO writer or your time + tools</td><td>$400</td><td>6 articles; keyword tool subscription</td></tr>
+      <tr><td>Backlink placements (niche blogs/directories)</td><td>$200</td><td>Quality over quantity; no link farms</td></tr>
+      <tr><td>LAUNCH15 + GYM15 margin cost + giveaway</td><td>$400</td><td>Discounts are marketing spend — count them</td></tr>
+      <tr><td>Review incentives + give/get referral codes</td><td>$200</td><td></td></tr>
+      <tr><td>Founding Agent + poached-seller bonuses ($50 × 10 + extras)</td><td>$650</td><td>Paid on performance ($500 in 30-day sales), not signup</td></tr>
+      <tr><td>Email platform + Canva Pro + misc tools</td><td>$300</td><td></td></tr>
+      <tr><td>Reserve</td><td>$150</td><td>Week-4 winner gets it (+ paid-test refund if killed)</td></tr>
+      <tr><td><strong>Total</strong></td><td><strong class="big">$5,000</strong></td><td></td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ============ LEVEL-UPS ============ -->
+<section id="levelups">
+  <h2>Level-Ups — The Deep-Dive Findings <span class="tag">FINAL RESEARCH PASS</span></h2>
+  <p class="sub">Everything the final research sweep surfaced that the base plan didn't cover, ranked by impact. #1 is not optional — it's the difference between "trusted vendor" and "probable scam" in this market.</p>
+
+  <div class="card">
+    <h3 class="gold">1. The Trust Engine — verifiable third-party COAs (do this WEEK 1)</h3>
+    <p>Reddit and the forums vet every new vendor against one checklist, and it's brutal: named third-party lab with its own public database (<strong>Janoshik Analytical is the gold standard</strong> — buyers self-verify any COA by entering its Task Number + Unique Key at public.janoshik.com; MZ Biolabs and US-based ACS Lab also carry weight), <strong>batch number on the COA matching the number printed on the vial</strong>, a full HPLC chromatogram (a purity % alone is dismissed as unverifiable), and mass-spec identity data. "Third-party tested" as words with nothing verifiable behind it is treated as a scam signal.</p>
+    <p><strong>Your move:</strong> send your top 5–8 SKUs to Janoshik this week (fund it as product QA, not from the marketing $5k), publish results on your existing per-lot COA certificate pages with the public lookup keys displayed, and print batch numbers on vials. Then say so everywhere — "Every Batch Third-Party Tested — Verify It Yourself" is the strongest headline this market has.</p>
+    <p><strong>Bonus trust moves (all free):</strong> the community's 8 scam red-flags, inverted — show batch numbers, name your labs, show a real business address, never run fake-urgency "sale ends tonight" pressure, and display purity + replacement guarantees and a "ships in 2–4 business days" promise in the hero. One more: card-less payment (Zelle/Venmo) reads as chargeback-proof to skeptics — verifiable COAs are how you compensate.</p>
+  </div>
+
+  <div class="card">
+    <h3>2. Get listed on the review/ranking sites — the niche's real "paid search"</h3>
+    <p>Sites like PeptidePick-style "best peptide companies" rankings run this market's discovery layer, and they're all affiliate funnels: each listing carries a trackable 15%-off code. The industry-standard affiliate deal is <strong>15–20% commission with coupon-code tracking</strong> (99 Purity pays 15%; Apollo runs Refersion). Pitch every ranking/review site a listing + unique code + 15% commission — a $0-upfront, pay-on-sale traffic channel. Recruit YouTube reviewers and Reddit contributors into the same code system.</p>
+  </div>
+
+  <div class="card">
+    <h3>3. Launch your own community (Discord or Telegram) — week 2</h3>
+    <p>Group buys and vendor vetting live in Telegram/Discord communities (the invite-only "Peppys" community is the model: organized channels for research classes, vendor vetting, testing, and a full document library). Stand up a PepNation research community with your COA library, research-library links, new-batch announcements, and an agent lounge. It's free, it's ban-proof, it's where reorders live — and your Peptide 101 course + research library give you better seed content than any competitor community has.</p>
+  </div>
+
+  <div class="card">
+    <h3>4. Weaponize what you already built (this is free — it's activation, not construction)</h3>
+    <ul class="clean">
+      <li>🧪 <span><strong>COA certificate pages</strong> — public per-lot pages already exist on the site; load them with the real Janoshik data from Level-Up #1 and link them from every product page.</span></li>
+      <li>🛒 <span><strong>Abandoned-cart recovery cron</strong> — already built; verify email is firing on it. Recovered carts are the cheapest orders you'll ever get.</span></li>
+      <li>🔁 <span><strong>Auto-replenish + refill-reminder crons</strong> — subscription mechanics are nearly absent in this niche; you already have them. Promote "never run out" on product pages — research cycles are predictable, and subscription LTV is the moat.</span></li>
+      <li>📦 <span><strong>Bundles config</strong> — pre-configured stacks are a proven conversion hook in this market (research-theme names only, zero dosing/effect claims). Build 3 flagship bundles at a visible bundle discount.</span></li>
+      <li>🗺️ <span><strong>50-state city SEO pages</strong> — already being built out; your organic moat is months ahead of a normal day-one brand. Keep feeding it.</span></li>
+      <li>🎟️ <span><strong>Per-agent coupons + QR codes</strong> — every gym partnership gets its own agent-style code so the gym owner earns like an agent (owners expect ~45–50% margin economics on supplements they stock — a storefront/code beats asking for free counter space).</span></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>5. Email done precisely (the warmup schedule that keeps you out of spam)</h3>
+    <p><strong>Stack:</strong> self-hosted Listmonk (free) or Sendy ($69 one-time) + an SMTP relay, sending from a subdomain (mail.pepnationlab.com) so the root domain's reputation is insulated. Keep transactional email where it is; this is the marketing lane. SPF + DKIM + DMARC before the first send — mandatory for Gmail/Yahoo inboxing now.</p>
+    <p><strong>Warmup ramp (start day 2, not day 15):</strong> days 1–5 send ~5/day to your most engaged people, days 6–14 ramp to 10–15/day, days 15–25 to 50+/day, then scale. Full campaigns are safe after 2–4 weeks — which lands newsletter #1 exactly on the day-15 slot already in your Daily Plan. Keep complaints under 0.1%, and keep content educational/COA-focused (relays like SES can still content-review you).</p>
+  </div>
+
+  <div class="card">
+    <h3>6. Packaging inserts — the highest-ROI paper you'll print</h3>
+    <p>Every outgoing order gets a card: QR to the referral program (give $10 / get $10 — <strong>dual-sided rewards lift participation ~29%</strong>, referred customers spend ~25% more on first orders and retain ~37% better; average referral-program ROI benchmarks around 3,000%) + "verify this batch's COA" lookup instructions on the back. Pennies per unit, reaches 100% of buyers, entirely owned media. Add it to the flyer print order tomorrow.</p>
+  </div>
+
+  <div class="card">
+    <h3>7. Attribution discipline — dynamic QR + UTMs everywhere</h3>
+    <p>Use dynamic (editable-destination) QR codes, never static, so a dead gym placement can be re-pointed without reprinting. One unique code per surface (per gym, per banner, per insert), each tagged source=qr / medium=offline / campaign=location. Backstops: unique coupon per surface + a "how did you hear about us?" question at signup. Your per-agent QR system already does the core of this — the gap is per-SURFACE variants and UTM tagging, one afternoon of work I can do.</p>
+  </div>
+
+  <div class="card">
+    <h3 class="warn">8. The enforcement red lines, now with names on them</h3>
+    <p>The final research pass pulled the actual 2024–2026 FDA/FTC/ITC actions, and every single one traces to the same trigger: <strong>marketing that contradicts the Research Use Only label</strong>. FDA sent 50+ warning letters to GLP-1 sellers (Dec 2024 wave named Prime Peptides, Xcel Peptides, SwissChems, Summit Research; more through 2025–2026); BPC-157 is on FDA's do-not-compound list; and Eli Lilly won an ITC exclusion order against tirzepatide sellers on TRADEMARK grounds — a second, private-company attack vector.</p>
+    <p><strong>Hard rules this adds:</strong> never imply human use anywhere — including agent and influencer scripts (the FTC treats their claims as YOURS, which is why the agent compliance briefing is mandatory, in writing); never market equivalence to branded drugs (no "same as Ozempic/Mounjaro" — that's the Lilly playbook); and at fitness events, hand out AGENT-RECRUITING cards, not product promo — "RUO label + marketing to athletes" is the exact fact pattern the warning letters cite.</p>
+  </div>
+</section>
+
+<!-- ============ METRICS ============ -->
+<section id="metrics">
+  <h2>Scoreboard <span class="tag">WHAT WINNING LOOKS LIKE</span></h2>
+  <p class="sub">Log these daily (5 minutes). Review weekly. Realistic-but-ambitious targets for a network-driven launch:</p>
+
+  <div class="statrow">
+    <div class="stat"><div class="n">25+</div><div class="l">Orders — week 1</div></div>
+    <div class="stat"><div class="n">100+</div><div class="l">Orders — 30 days</div></div>
+    <div class="stat"><div class="n">5</div><div class="l">Active agents — week 2</div></div>
+    <div class="stat"><div class="n">10</div><div class="l">Active agents — 30 days</div></div>
+  </div>
+  <div class="statrow">
+    <div class="stat"><div class="n">300+</div><div class="l">Email subscribers — 30 days</div></div>
+    <div class="stat"><div class="n">10+</div><div class="l">Public reviews — 30 days</div></div>
+    <div class="stat"><div class="n">30%+</div><div class="l">Repeat-order rate — 60 days</div></div>
+    <div class="stat"><div class="n">2×/wk</div><div class="l">SEO articles published</div></div>
+  </div>
+  <div class="statrow">
+    <div class="stat"><div class="n">20/wk</div><div class="l">Seller outreach DMs sent</div></div>
+    <div class="stat"><div class="n">4–5</div><div class="l">Poached sellers live — 30 days</div></div>
+    <div class="stat"><div class="n">&lt;$3</div><div class="l">Paid test: cost per email signup</div></div>
+    <div class="stat"><div class="n">2wk</div><div class="l">Reddit: no-link streak before promo</div></div>
+  </div>
+  <div class="statrow">
+    <div class="stat"><div class="n">20</div><div class="l">Gyms carrying cards — 30 days</div></div>
+    <div class="stat"><div class="n">4</div><div class="l">Banners live on permission land</div></div>
+    <div class="stat"><div class="n">GYM15</div><div class="l">Print attribution code — track uses</div></div>
+    <div class="stat"><div class="n">4</div><div class="l">Saturday gym runs completed</div></div>
+  </div>
+
+  <div class="card">
+    <h3>The weekly review (Sundays, 20 min)</h3>
+    <p>Three questions: <strong>(1)</strong> Which channel produced the most orders per hour-of-effort this week? <strong>(2)</strong> What did agents/customers ask for that I don't have? <strong>(3)</strong> What am I doing that produced nothing twice in a row? Do more of 1, build 2, kill 3.</p>
+  </div>
+
+  <div class="card">
+    <h3 class="gold">The one metric that matters most in month 1</h3>
+    <p><strong>Repeat orders.</strong> Peptide research customers reorder on cycles — a customer who comes back once is worth 5–10 first-timers. Nail fulfillment speed, packaging, and a personal thank-you on every early order, and month 2 funds itself.</p>
+  </div>
+</section>
+
+<div class="footer-note">Pep Nation Lab · Launch Command Center · Built July 13, 2026 · All products referenced are for laboratory research use only.</div>
+</div>
+
+<script>
+(function(){
+  function store(){ try{ var t='__t'; window.localStorage.setItem(t,'1'); window.localStorage.removeItem(t); return window.localStorage; }catch(e){ return null; } }
+  var LS = store(), KEY = 'pnl_launch_daily_v5', mem = {};
+  function load(){ if(LS){ try{ return JSON.parse(LS.getItem(KEY)||'{}'); }catch(e){} } return mem; }
+  function save(state){ mem = state; if(LS){ try{ LS.setItem(KEY, JSON.stringify(state)); }catch(e){} } }
+
+  var state = load();
+  document.querySelectorAll('input[type=checkbox]').forEach(function(cb){
+    if(state[cb.id]){ cb.checked = true; cb.closest('li').classList.add('done'); }
+    cb.addEventListener('change', function(){
+      cb.closest('li').classList.toggle('done', cb.checked);
+      var s = load(); if(cb.checked){ s[cb.id]=1; } else { delete s[cb.id]; } save(s);
+      refresh();
+    });
+  });
+
+  document.querySelectorAll('.copybtn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var el = document.getElementById(btn.dataset.c); if(!el) return;
+      var ta = document.createElement('textarea'); ta.value = el.innerText; document.body.appendChild(ta);
+      ta.select(); try{ document.execCommand('copy'); }catch(e){}
+      document.body.removeChild(ta);
+      btn.textContent = '✅ Copied'; setTimeout(function(){ btn.textContent = '📋 Copy'; }, 1500);
+    });
+  });
+
+  var wrap = document.getElementById('dailyTasksWrap');
+  if(!wrap) return;
+  wrap.classList.add('js-on');
+  var pages = [].slice.call(document.querySelectorAll('.daypage'));
+  var sels = [].slice.call(document.querySelectorAll('.dsel'));
+  var lockMsg = document.getElementById('lockMsg');
+  var overall = document.getElementById('overallProg');
+  var current = 1;
+
+  function boxes(d){ return [].slice.call(document.querySelectorAll('#daypage'+d+' input[type=checkbox]')); }
+  function isComplete(d){ var b = boxes(d); return b.length>0 && b.every(function(x){return x.checked;}); }
+  function firstIncomplete(){ for(var d=1; d<=30; d++){ if(!isComplete(d)) return d; } return 30; }
+  function isUnlocked(d){ return d===1 || isComplete(d-1); }
+
+  function refresh(){
+    var doneCount = 0;
+    sels.forEach(function(b){
+      var d = +b.dataset.ds, comp = isComplete(d);
+      if(comp) doneCount++;
+      b.classList.toggle('done', comp);
+      b.classList.toggle('cur', d===current);
+      b.classList.toggle('lockd', !isUnlocked(d));
+    });
+    if(overall) overall.textContent = doneCount + ' / 30 Days Complete';
+    pages.forEach(function(p){
+      var d = +p.dataset.day, b = boxes(d);
+      var done = b.filter(function(x){return x.checked;}).length;
+      var fill = p.querySelector('.dayprog-fill');
+      if(fill) fill.style.width = Math.round(100*done/Math.max(b.length,1)) + '%';
+      var banner = p.querySelector('.daydone');
+      if(banner) banner.classList.toggle('show', b.length>0 && done===b.length);
+    });
+  }
+
+  function show(d){
+    current = d;
+    pages.forEach(function(p){ p.classList.toggle('current', +p.dataset.day===d); });
+    refresh();
+  }
+
+  sels.forEach(function(b){
+    b.addEventListener('click', function(){
+      var d = +b.dataset.ds;
+      if(!isUnlocked(d)){
+        if(lockMsg){ lockMsg.style.display='block'; lockMsg.textContent = '🔒 Day '+d+' Is Locked — Finish Every Box On Day '+(d-1)+' First.'; setTimeout(function(){lockMsg.style.display='none';},3500); }
+        return;
+      }
+      if(lockMsg) lockMsg.style.display='none';
+      show(d);
+      var nav = document.getElementById('dayNav');
+      try{ if(nav && nav.scrollIntoView) nav.scrollIntoView({block:'start'}); }catch(e){}
+    });
+  });
+
+  show(Math.min(firstIncomplete(), 30));
+})();
+</script>
+</body>
+</html>

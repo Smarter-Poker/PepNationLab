@@ -36,7 +36,11 @@ export const metadata: Metadata = {
   },
 };
 
-const LAST_REVIEWED = new Date().toISOString().slice(0, 10);
+// Real content-review date for the methodology page. Bump this by hand when the
+// editorial standards actually change. Using `new Date()` here stamped a fresh
+// lastReviewed/dateModified on every ISR revalidation, fabricating a freshness
+// signal Google and AI answer engines would (rightly) learn to distrust.
+const LAST_REVIEWED = '2026-07-18';
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -52,8 +56,8 @@ const jsonLd = {
       publisher: { '@id': 'https://pepnationlab.com/#organization' },
       lastReviewed: LAST_REVIEWED,
       dateModified: LAST_REVIEWED,
-      reviewedBy: { '@id': 'https://pepnationlab.com/#organization' },
-      maintainer: { '@id': 'https://pepnationlab.com/#organization' },
+      reviewedBy: { '@id': 'https://pepnationlab.com/#research-team' },
+      maintainer: { '@id': 'https://pepnationlab.com/#research-team' },
     },
     {
       '@type': 'BreadcrumbList',

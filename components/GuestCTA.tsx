@@ -86,6 +86,21 @@ export default function GuestCTA() {
     };
   }, []);
 
+  // While the banner is on screen, flag it on <body> so fixed bottom-right
+  // widgets (the storefront's floating cart, zIndex 9999) can lift themselves
+  // above it. Without this, the 160px cart hitbox sat ON TOP of the banner's
+  // dismiss X (zIndex 9000), so tapping the X opened the cart instead of
+  // closing the banner. See globals.css: body.guest-cta-visible.
+  const bannerVisible = isGuest === true && !dismissed;
+  useEffect(() => {
+    if (bannerVisible) {
+      document.body.classList.add('guest-cta-visible');
+    } else {
+      document.body.classList.remove('guest-cta-visible');
+    }
+    return () => document.body.classList.remove('guest-cta-visible');
+  }, [bannerVisible]);
+
   // Don't render until we know auth state (avoids hydration flash)
   if (isGuest === null || isGuest === false || dismissed) return null;
 
@@ -155,17 +170,20 @@ export default function GuestCTA() {
           aria-label="Dismiss"
           style={{
             position: 'absolute',
-            top: 12,
-            right: 16,
-            background: 'none',
-            border: 'none',
-            color: 'rgba(168,180,192,0.5)',
+            top: 8,
+            right: 10,
+            background: 'rgba(255,255,255,0.06)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            color: 'rgba(168,180,192,0.8)',
             cursor: 'pointer',
-            fontSize: '1.1rem',
+            fontSize: '1.2rem',
             lineHeight: 1,
-            padding: '4px 6px',
-            borderRadius: 4,
+            // Generous hit target: this X lives in the same corner as other
+            // floating widgets and a 4px-padded glyph was nearly untappable.
+            padding: '10px 14px',
+            borderRadius: 8,
             transition: 'color 0.15s',
+            zIndex: 2,
           }}
           onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(168,180,192,1)'; }}
           onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(168,180,192,0.5)'; }}

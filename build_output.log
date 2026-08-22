@@ -2,52 +2,706 @@
 > pepnationlab@0.1.0 build
 > next build
 
-Warning: total number of custom routes exceeds 1000, this can reduce performance. Route counts:
-headers: 1
-rewrites: 2
-redirects: 1595
-See more info: https://nextjs.org/docs/messages/max-custom-routes-reached
-▲ Next.js 16.2.6 (Turbopack)
+[city-redirects] 4 vanity redirect(s) withheld because a storefront or app route owns the URL: justin, melissa, tyler, victor
+▲ Next.js 16.2.12 (Turbopack)
 - Environments: .env.production.local, .env.local, .env.production, .env
 - Experiments (use with caution):
   · clientTraceMetadata
   · optimizePackageImports
 
+[city-redirects] 4 vanity redirect(s) withheld because a storefront or app route owns the URL: justin, melissa, tyler, victor
   Creating an optimized production build ...
+✓ Compiled successfully in 13.8s
+  Running next.config.js provided runAfterProductionCompile ...
+✓ Completed runAfterProductionCompile in 9.9s
+  Skipping validation of types
+  Finished TypeScript config validation in 3ms ...
+  Collecting page data using 27 workers ...
+  Generating static pages using 27 workers (0/325) ...
+  Generating static pages using 27 workers (81/325) 
+  Generating static pages using 27 workers (162/325) 
+  Generating static pages using 27 workers (243/325) 
+✓ Generating static pages using 27 workers (325/325) in 779ms
+  Finalizing page optimization ...
 
-> Build error occurred
-Error: Turbopack build failed with 2 errors:
-./app/layout.tsx:29:1
-Module not found: Can't resolve '@vercel/analytics/next'
-  [90m27 |[0m [90m// the matching tabs are enabled on the Vercel project dashboard.[0m
-  [90m28 |[0m [36mimport[0m { [33mSpeedInsights[0m } [36mfrom[0m [32m"@vercel/speed-insights/next"[0m;
-[31m[1m>[0m [90m29 |[0m [36mimport[0m { [33mAnalytics[0m } [36mfrom[0m [32m"@vercel/analytics/next"[0m;
-  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
-  [90m30 |[0m
-  [90m31 |[0m [36mimport[0m { [33mInter[0m } [36mfrom[0m [32m"next/font/google"[0m;
-  [90m32 |[0m
+Route (app)                                                 Revalidate  Expire
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /[agentSlug]
+├ ƒ /[agentSlug]/shared/[protocolId]
+├ ○ /about
+├ ƒ /accept-disclaimer
+├ ƒ /account
+├ ƒ /account/addresses
+├ ○ /account/change-password
+├ ƒ /account/compliance
+├ ƒ /account/help
+├ ƒ /account/notification-preferences
+├ ƒ /account/notifications
+├ ƒ /account/payment-method
+├ ƒ /account/profile
+├ ƒ /account/referrals
+├ ƒ /account/refills
+├ ƒ /account/security
+├ ƒ /account/settings
+├ ƒ /admin
+├ ƒ /admin/abandoned-carts
+├ ƒ /admin/admin-store
+├ ƒ /admin/advertising
+├ ƒ /admin/agent-funding
+├ ƒ /admin/agent-notes
+├ ƒ /admin/agents
+├ ƒ /admin/api-keys
+├ ƒ /admin/attention
+├ ƒ /admin/audit
+├ ƒ /admin/availability
+├ ƒ /admin/cart-recovery
+├ ƒ /admin/catalog-risk
+├ ƒ /admin/coa
+├ ƒ /admin/coa/[productId]
+├ ƒ /admin/coupons
+├ ƒ /admin/credit-increases
+├ ƒ /admin/disputes
+├ ƒ /admin/ecommerce/flash-sales
+├ ƒ /admin/email-center
+├ ƒ /admin/errors
+├ ƒ /admin/flash-sales
+├ ƒ /admin/messenger
+├ ƒ /admin/moderation
+├ ƒ /admin/network
+├ ƒ /admin/orders
+├ ƒ /admin/payments
+├ ƒ /admin/pricing
+├ ƒ /admin/pricing/audit
+├ ƒ /admin/product-manager
+├ ƒ /admin/products
+├ ƒ /admin/products/[id]
+├ ƒ /admin/products/new
+├ ƒ /admin/provisioned-accounts
+├ ƒ /admin/referral-promotions
+├ ƒ /admin/referrals
+├ ƒ /admin/research/analytics
+├ ƒ /admin/research/intranasal
+├ ƒ /admin/research/quality
+├ ƒ /admin/researchers
+├ ƒ /admin/sales
+├ ƒ /admin/savage-labels
+├ ƒ /admin/search
+├ ƒ /admin/settings
+├ ƒ /admin/settings/cron-health
+├ ƒ /admin/settings/shipping
+├ ƒ /admin/signup-promos
+├ ƒ /admin/sms
+├ ƒ /admin/social
+├ ƒ /admin/statements
+├ ƒ /admin/store-preview
+├ ƒ /admin/traffic
+├ ƒ /admin/transactions
+├ ƒ /advertising
+├ ƒ /api/account/addresses
+├ ƒ /api/account/addresses/[id]
+├ ƒ /api/account/addresses/[id]/default
+├ ƒ /api/account/avatar
+├ ƒ /api/account/deactivate
+├ ƒ /api/account/export
+├ ƒ /api/account/export-worker
+├ ƒ /api/account/notifications
+├ ƒ /api/account/notifications/feed
+├ ƒ /api/account/notifications/mark-read
+├ ƒ /api/account/notifications/push-types
+├ ƒ /api/account/orders/[id]/receipt
+├ ƒ /api/account/payment-method
+├ ƒ /api/account/support
+├ ƒ /api/admin/admin-store
+├ ƒ /api/admin/agent-funding
+├ ƒ /api/admin/agent-products/bulk-price
+├ ƒ /api/admin/agents
+├ ƒ /api/admin/agents/downline
+├ ƒ /api/admin/agents/reparent
+├ ƒ /api/admin/agents/researchers
+├ ƒ /api/admin/agents/reveal-password
+├ ƒ /api/admin/agents/super-upgrade
+├ ƒ /api/admin/agents/tier-override
+├ ƒ /api/admin/agents/update-agent
+├ ƒ /api/admin/agents/update-contact
+├ ƒ /api/admin/agents/update-password
+├ ƒ /api/admin/agents/update-tier
+├ ƒ /api/admin/agents/warehouse-origins
+├ ƒ /api/admin/audit
+├ ƒ /api/admin/availability
+├ ƒ /api/admin/cart-recovery-variants
+├ ƒ /api/admin/cart-reminders
+├ ƒ /api/admin/catalog-risk
+├ ƒ /api/admin/client-errors
+├ ƒ /api/admin/coupons
+├ ƒ /api/admin/credit-increases
+├ ƒ /api/admin/disputes
+├ ƒ /api/admin/email-blast
+├ ƒ /api/admin/email-templates
+├ ƒ /api/admin/flash-sales
+├ ƒ /api/admin/flash-sales/[id]
+├ ƒ /api/admin/global-search
+├ ƒ /api/admin/impersonate
+├ ƒ /api/admin/impersonate/active
+├ ƒ /api/admin/messenger/delete-message
+├ ƒ /api/admin/messenger/list-admin-mentions
+├ ƒ /api/admin/messenger/list-reports
+├ ƒ /api/admin/messenger/resolve-mention
+├ ƒ /api/admin/messenger/resolve-report
+├ ƒ /api/admin/operational-nudges
+├ ƒ /api/admin/orders
+├ ƒ /api/admin/orders/[id]/cancel
+├ ƒ /api/admin/orders/bulk
+├ ƒ /api/admin/orders/items
+├ ƒ /api/admin/payments
+├ ƒ /api/admin/pricing-tiers
+├ ƒ /api/admin/pricing-tiers/overrides
+├ ƒ /api/admin/pricing/audit
+├ ƒ /api/admin/products
+├ ƒ /api/admin/products/[id]/lots
+├ ƒ /api/admin/products/[id]/lots/[lotId]
+├ ƒ /api/admin/products/[id]/lots/[lotId]/coa
+├ ƒ /api/admin/products/[id]/lots/[lotId]/results
+├ ƒ /api/admin/products/bulk-images
+├ ƒ /api/admin/products/bulk-import
+├ ƒ /api/admin/products/bulk-price
+├ ƒ /api/admin/quick-replies
+├ ƒ /api/admin/quick-replies/[id]
+├ ƒ /api/admin/referral-promotions
+├ ƒ /api/admin/research/intranasal
+├ ƒ /api/admin/researchers
+├ ƒ /api/admin/sales
+├ ƒ /api/admin/sales/downline-invoices
+├ ƒ /api/admin/sales/kpis
+├ ƒ /api/admin/sales/tier-breakdown
+├ ƒ /api/admin/sales/timeseries
+├ ƒ /api/admin/sales/top-products
+├ ƒ /api/admin/search-log
+├ ƒ /api/admin/shadow-notes
+├ ƒ /api/admin/shadow-notes/[id]
+├ ƒ /api/admin/shipping-origins
+├ ƒ /api/admin/shipping-origins/[id]
+├ ƒ /api/admin/shipping-origins/[id]/assign-agent
+├ ƒ /api/admin/shipping-provider/connect
+├ ƒ /api/admin/shipping-provider/disconnect
+├ ƒ /api/admin/shipping-provider/forge
+├ ƒ /api/admin/shipping-provider/refund-label
+├ ƒ /api/admin/shipping-provider/reprint-label
+├ ƒ /api/admin/shipping-provider/rotate
+├ ƒ /api/admin/shipping-provider/status
+├ ƒ /api/admin/shipping-provider/test
+├ ƒ /api/admin/shipping-provider/webhook-events
+├ ƒ /api/admin/signup-promos
+├ ƒ /api/admin/social/enqueue
+├ ƒ /api/admin/social/generate-content
+├ ƒ /api/admin/social/queue
+├ ƒ /api/admin/social/retry
+├ ƒ /api/admin/social/status
+├ ƒ /api/admin/statements
+├ ƒ /api/admin/temp-savage-update
+├ ƒ /api/admin/traffic
+├ ƒ /api/admin/traffic/drilldown
+├ ƒ /api/admin/transactions
+├ ƒ /api/agent-invitations/redeem
+├ ƒ /api/agent/activity
+├ ƒ /api/agent/agents
+├ ƒ /api/agent/agents/[id]
+├ ƒ /api/agent/agents/[id]/credit
+├ ƒ /api/agent/available-promos
+├ ƒ /api/agent/broadcasts
+├ ƒ /api/agent/bundles
+├ ƒ /api/agent/bundles/effective
+├ ƒ /api/agent/bundles/upload-image
+├ ƒ /api/agent/commission
+├ ƒ /api/agent/coupons
+├ ƒ /api/agent/coupons/[id]
+├ ƒ /api/agent/coupons/[id]/notify-downline
+├ ƒ /api/agent/coupons/[id]/qr
+├ ƒ /api/agent/coupons/[id]/redemptions
+├ ƒ /api/agent/coupons/bulk
+├ ƒ /api/agent/coupons/performance
+├ ƒ /api/agent/create-researcher
+├ ƒ /api/agent/delete-account
+├ ƒ /api/agent/downline
+├ ƒ /api/agent/downline-balances
+├ ƒ /api/agent/freeze
+├ ƒ /api/agent/inventory
+├ ƒ /api/agent/inventory/reorder
+├ ƒ /api/agent/invitations
+├ ƒ /api/agent/invitations/[id]
+├ ƒ /api/agent/me
+├ ƒ /api/agent/mfa
+├ ƒ /api/agent/mfa/enroll
+├ ƒ /api/agent/mfa/verify
+├ ƒ /api/agent/my-qr
+├ ƒ /api/agent/onboarding
+├ ƒ /api/agent/orders/approve
+├ ƒ /api/agent/orders/cancel
+├ ƒ /api/agent/orders/confirm-downline-payment
+├ ƒ /api/agent/orders/items
+├ ƒ /api/agent/orders/mark-paid
+├ ƒ /api/agent/orders/new
+├ ƒ /api/agent/orders/ship
+├ ƒ /api/agent/products
+├ ƒ /api/agent/products/reorder
+├ ƒ /api/agent/profile
+├ ƒ /api/agent/profile/username
+├ ƒ /api/agent/promote-subagent
+├ ƒ /api/agent/referral-qr
+├ ƒ /api/agent/referral-reward
+├ ƒ /api/agent/referrals
+├ ƒ /api/agent/researchers
+├ ƒ /api/agent/researchers/contact
+├ ƒ /api/agent/researchers/crm
+├ ƒ /api/agent/researchers/export
+├ ƒ /api/agent/researchers/goals
+├ ƒ /api/agent/researchers/insights
+├ ƒ /api/agent/researchers/notes
+├ ƒ /api/agent/researchers/pins
+├ ƒ /api/agent/researchers/reminders
+├ ƒ /api/agent/researchers/tags
+├ ƒ /api/agent/researchers/v2
+├ ƒ /api/agent/revoke-subagent
+├ ƒ /api/agent/sales
+├ ƒ /api/agent/sales/ai-summary
+├ ƒ /api/agent/sales/export/tax
+├ ƒ /api/agent/sales/goal
+├ ƒ /api/agent/sales/heatmap
+├ ƒ /api/agent/sales/insights
+├ ƒ /api/agent/sales/insights-v2
+├ ƒ /api/agent/sales/kpis-v2
+├ ƒ /api/agent/sales/retention
+├ ƒ /api/agent/sales/sub-agent-rollup
+├ ƒ /api/agent/sales/timeseries-v2
+├ ƒ /api/agent/sessions
+├ ƒ /api/agent/sessions/[id]
+├ ƒ /api/agent/shipping/account
+├ ƒ /api/agent/shipping/account/card
+├ ƒ /api/agent/shipping/account/stripe-key
+├ ƒ /api/agent/shipping/buy-label
+├ ƒ /api/agent/shipping/export
+├ ƒ /api/agent/shipping/import-tracking
+├ ƒ /api/agent/shipping/purchase
+├ ƒ /api/agent/shipping/rates
+├ ƒ /api/agent/shipping/refund-label
+├ ƒ /api/agent/signup-promos
+├ ƒ /api/agent/statements
+├ ƒ /api/agent/storefront-name
+├ ƒ /api/agent/storefront-slug
+├ ƒ /api/agent/storefront-slug/check
+├ ƒ /api/agent/storefront/domains
+├ ƒ /api/agent/storefront/domains/[id]
+├ ƒ /api/agent/storefront/logo-upload
+├ ƒ /api/agent/storefront/theme
+├ ƒ /api/agent/sub-agents
+├ ƒ /api/agent/sub-agents/[id]/commission-rate
+├ ƒ /api/agent/sub-agents/[id]/credit-cap
+├ ƒ /api/agent/sub-agents/contact
+├ ƒ /api/agent/sub-agents/dismiss-name
+├ ƒ /api/agent/sub-agents/network
+├ ƒ /api/agent/super-agent/commission-plan
+├ ƒ /api/agent/super-agent/invoices
+├ ƒ /api/agent/super-agent/invoices/[id]
+├ ƒ /api/agent/super-agent/invoices/pay
+├ ƒ /api/agent/super-agent/pricing
+├ ƒ /api/agent/team/org-chart
+├ ƒ /api/agent/tier
+├ ƒ /api/agent/traffic
+├ ƒ /api/agent/traffic/drilldown
+├ ƒ /api/agent/trust
+├ ƒ /api/agent/update-password
+├ ƒ /api/agent/wallet/1099
+├ ƒ /api/agent/wallet/auto-pay
+├ ƒ /api/agent/wallet/commissions
+├ ƒ /api/agent/wallet/credit-increase
+├ ƒ /api/agent/wallet/pay
+├ ƒ /api/agent/wallet/receipts
+├ ƒ /api/agent/wallet/receipts/[id]
+├ ƒ /api/agent/wallet/statements/[id]
+├ ƒ /api/agent/wallet/statements/[id]/dispute
+├ ƒ /api/agent/wallet/summary
+├ ƒ /api/analytics/faq-click
+├ ƒ /api/analytics/missed-search
+├ ƒ /api/ask-ai
+├ ƒ /api/attribution
+├ ƒ /api/auth/change-password
+├ ƒ /api/auth/events
+├ ƒ /api/auth/register
+├ ƒ /api/auth/request-code
+├ ƒ /api/auth/reset-password
+├ ƒ /api/auth/reset-password/confirm
+├ ƒ /api/auth/resolve
+├ ƒ /api/auth/signout
+├ ƒ /api/auth/verify-agent-access
+├ ƒ /api/auth/verify-email
+├ ƒ /api/availability
+├ ƒ /api/availability/suggest
+├ ƒ /api/cart/bac-water
+├ ƒ /api/cart/recommendations
+├ ƒ /api/cart/refresh
+├ ƒ /api/cart/resolve-name
+├ ƒ /api/cart/sync
+├ ƒ /api/coupons/validate
+├ ƒ /api/credits/send
+├ ƒ /api/cron/abandoned-cart-recovery
+├ ƒ /api/cron/admin-digest
+├ ƒ /api/cron/analytics-retention
+├ ƒ /api/cron/auth-canary
+├ ƒ /api/cron/auto-pay
+├ ƒ /api/cron/balance-alerts
+├ ƒ /api/cron/biorxiv-watch
+├ ƒ /api/cron/broken-link-crawler
+├ ƒ /api/cron/cancel-stale-pending
+├ ƒ /api/cron/chembl-sync
+├ ƒ /api/cron/coa-audit
+├ ƒ /api/cron/companion-papers-compute
+├ ƒ /api/cron/coupons-expire
+├ ƒ /api/cron/dailymed-sync
+├ ƒ /api/cron/europepmc-sync
+├ ƒ /api/cron/fda-drugs-sync
+├ ƒ /api/cron/generate-embeddings
+├ ƒ /api/cron/idempotency-sweep
+├ ƒ /api/cron/integrity-audit
+├ ƒ /api/cron/inventory-alerts
+├ ƒ /api/cron/invoices
+├ ƒ /api/cron/label-jobs
+├ ƒ /api/cron/late-fees
+├ ƒ /api/cron/lifecycle-nudges
+├ ƒ /api/cron/patents-sync
+├ ƒ /api/cron/product-alerts
+├ ƒ /api/cron/proof-review-reminders
+├ ƒ /api/cron/pubmed-sync
+├ ƒ /api/cron/push-dispatch
+├ ƒ /api/cron/push-health
+├ ƒ /api/cron/recommendations-refresh
+├ ƒ /api/cron/referrals-fulfil
+├ ƒ /api/cron/refill-reminders
+├ ƒ /api/cron/reminders
+├ ƒ /api/cron/retraction-watch
+├ ƒ /api/cron/rotate-coas
+├ ƒ /api/cron/rxnorm-sync
+├ ƒ /api/cron/search-refresh
+├ ƒ /api/cron/settlement-reminders
+├ ƒ /api/cron/shipping-reconcile
+├ ƒ /api/cron/shipping-webhook-retry
+├ ƒ /api/cron/sms-dispatch
+├ ƒ /api/cron/social-autopost
+├ ƒ /api/cron/social-content-gen
+├ ƒ /api/cron/sub-agent-settle
+├ ƒ /api/cron/tier-recompute
+├ ƒ /api/cron/trials-sync
+├ ƒ /api/cron/uniprot-sync
+├ ƒ /api/cron/wada-archive-sync
+├ ƒ /api/cron/webhooks-dispatch
+├ ƒ /api/debug/researcher-access
+├ ƒ /api/debug/test-notification
+├ ƒ /api/diag/account-creation
+├ ƒ /api/diag/auth-flow
+├ ƒ /api/diag/researcher-flow
+├ ƒ /api/disclaimer-log
+├ ƒ /api/disclaimer/accept
+├ ƒ /api/health
+├ ƒ /api/health/crons
+├ ƒ /api/invoices
+├ ƒ /api/invoices/remind
+├ ƒ /api/llm/compound/[slug]
+├ ƒ /api/manufacturer/agents
+├ ƒ /api/manufacturer/agents/[id]
+├ ƒ /api/manufacturer/agents/[id]/super-upgrade
+├ ƒ /api/manufacturer/agents/[id]/toggle-active
+├ ƒ /api/manufacturer/broadcasts
+├ ƒ /api/manufacturer/locale
+├ ƒ /api/manufacturer/network-orders
+├ ƒ /api/manufacturer/overview
+├ ƒ /api/messages
+├ ƒ /api/messages/analytics
+├ ƒ /api/messages/archive
+├ ƒ /api/messages/broadcast
+├ ƒ /api/messages/edit
+├ ƒ /api/messages/export
+├ ƒ /api/messages/reactions
+├ ƒ /api/messages/search
+├ ƒ /api/messages/templates
+├ ƒ /api/messenger/add-participant
+├ ƒ /api/messenger/archive-conversation
+├ ƒ /api/messenger/block-user
+├ ƒ /api/messenger/bookmark-message
+├ ƒ /api/messenger/call-signal
+├ ƒ /api/messenger/call-signal-unload-broadcast
+├ ƒ /api/messenger/cancel-reminder
+├ ƒ /api/messenger/cron/cleanup-presence
+├ ƒ /api/messenger/cron/expire-messages
+├ ƒ /api/messenger/cron/fire-reminders
+├ ƒ /api/messenger/cron/mark-missed-calls
+├ ƒ /api/messenger/cron/process-scheduled
+├ ƒ /api/messenger/delete-message
+├ ƒ /api/messenger/edit-message
+├ ƒ /api/messenger/get-conversations
+├ ƒ /api/messenger/get-messages
+├ ƒ /api/messenger/get-theme
+├ ƒ /api/messenger/gif-search
+├ ƒ /api/messenger/global-search
+├ ƒ /api/messenger/label-message
+├ ƒ /api/messenger/leave-conversation
+├ ƒ /api/messenger/link-preview
+├ ƒ /api/messenger/list-active-calls
+├ ƒ /api/messenger/list-blocks
+├ ƒ /api/messenger/list-bookmarks
+├ ƒ /api/messenger/list-contacts
+├ ƒ /api/messenger/list-labels
+├ ƒ /api/messenger/list-participants
+├ ƒ /api/messenger/list-pins
+├ ƒ /api/messenger/list-reminders
+├ ƒ /api/messenger/list-scheduled
+├ ƒ /api/messenger/list-templates
+├ ƒ /api/messenger/list-thread-replies
+├ ƒ /api/messenger/livekit-token
+├ ƒ /api/messenger/mark-read
+├ ƒ /api/messenger/me
+├ ƒ /api/messenger/mute-conversation
+├ ƒ /api/messenger/notification-prefs
+├ ƒ /api/messenger/pin-message
+├ ƒ /api/messenger/presence-ping
+├ ƒ /api/messenger/react-message
+├ ƒ /api/messenger/reminder
+├ ƒ /api/messenger/remove-participant
+├ ƒ /api/messenger/report-message
+├ ƒ /api/messenger/schedule-message
+├ ƒ /api/messenger/search-messages
+├ ƒ /api/messenger/send-message
+├ ƒ /api/messenger/set-participant-role
+├ ƒ /api/messenger/set-theme
+├ ƒ /api/messenger/start-conversation
+├ ƒ /api/messenger/support/[id]/context
+├ ƒ /api/messenger/support/[id]/notes
+├ ƒ /api/messenger/support/[id]/snooze
+├ ƒ /api/messenger/support/[id]/status
+├ ƒ /api/messenger/support/inbox
+├ ƒ /api/messenger/support/open
+├ ƒ /api/messenger/template
+├ ƒ /api/messenger/thread-reply
+├ ƒ /api/messenger/update-presence
+├ ƒ /api/messenger/upload-media
+├ ƒ /api/observability/client-error
+├ ƒ /api/orders
+├ ƒ /api/preferences/notifications
+├ ƒ /api/proxy
+├ ƒ /api/push/receipt
+├ ƒ /api/push/subscribe
+├ ƒ /api/push/test
+├ ƒ /api/push/vapid-public-key
+├ ƒ /api/research/ai-match
+├ ƒ /api/research/ai-summary
+├ ƒ /api/research/ask
+├ ƒ /api/research/cart-warnings
+├ ƒ /api/research/click
+├ ƒ /api/research/compounds-list
+├ ƒ /api/research/events
+├ ƒ /api/research/instant-answer
+├ ƒ /api/research/match
+├ ƒ /api/research/products
+├ ƒ /api/research/public/v1/compounds
+├ ƒ /api/research/public/v1/compounds/[slug]
+├ ƒ /api/research/public/v1/match
+├ ƒ /api/research/public/v1/search
+├ ƒ /api/research/reading-queue
+├ ƒ /api/research/saved
+├ ƒ /api/research/search
+├ ƒ /api/research/search-index
+├ ƒ /api/research/share
+├ ƒ /api/research/shelf-life
+├ ƒ /api/research/subscriptions
+├ ƒ /api/research/suggest
+├ ƒ /api/research/widget/[slug]
+├ ƒ /api/researcher/addresses
+├ ƒ /api/researcher/ai-protocol
+├ ƒ /api/researcher/ai-stack-analysis
+├ ƒ /api/researcher/biometrics
+├ ƒ /api/researcher/comparisons
+├ ƒ /api/researcher/doses
+├ ƒ /api/researcher/favorites
+├ ƒ /api/researcher/goals
+├ ƒ /api/researcher/helpful-data
+├ ƒ /api/researcher/intelligence
+├ ƒ /api/researcher/inventory
+├ ƒ /api/researcher/notes
+├ ƒ /api/researcher/orders
+├ ƒ /api/researcher/orders/[id]/reorder
+├ ƒ /api/researcher/orders/[id]/reorder-cart
+├ ƒ /api/researcher/orders/update-payment
+├ ƒ /api/researcher/payment-proof
+├ ƒ /api/researcher/product-alerts
+├ ƒ /api/researcher/progress-photos
+├ ƒ /api/researcher/protocols
+├ ƒ /api/researcher/recently-viewed
+├ ƒ /api/researcher/referrals/apply
+├ ƒ /api/researcher/symptoms
+├ ƒ /api/researcher/wishlist
+├ ƒ /api/seo/indexnow
+├ ƒ /api/shipping-preview
+├ ƒ /api/shipping/address-autocomplete
+├ ƒ /api/shipping/orders
+├ ƒ /api/shipping/quote
+├ ƒ /api/shipping/validate-address
+├ ƒ /api/social/ingest
+├ ƒ /api/social/oauth/[provider]/callback
+├ ƒ /api/social/oauth/[provider]/start
+├ ƒ /api/stats/member-count
+├ ƒ /api/status
+├ ƒ /api/storefront/catalog/[agentSlug]
+├ ƒ /api/storefront/events
+├ ƒ /api/storefront/recommendations
+├ ƒ /api/storefront/register
+├ ƒ /api/storefront/search
+├ ƒ /api/storefront/semantic
+├ ƒ /api/sub-agent/overview
+├ ƒ /api/unsubscribe
+├ ƒ /api/user/activity
+├ ƒ /api/vitals
+├ ƒ /api/wallet
+├ ƒ /api/wallet/search-recipients
+├ ƒ /api/webhooks/easypost
+├ ƒ /auth/callback
+├ ○ /become-agent
+├ ○ /c4d9b1e7a2f83506b9e2c1d7f4a80b36.txt
+├ ƒ /checkout
+├ ƒ /coa
+├ ƒ /coa/[lot]/certificate
+├ ○ /compliance
+├ ○ /contact
+├ ƒ /dashboard
+├ ƒ /dashboard/agent
+├ ƒ /dashboard/agent/abandoned-carts
+├ ƒ /dashboard/agent/activity
+├ ƒ /dashboard/agent/analytics
+├ ƒ /dashboard/agent/broadcasts
+├ ƒ /dashboard/agent/downline
+├ ƒ /dashboard/agent/help
+├ ƒ /dashboard/agent/invitations
+├ ƒ /dashboard/agent/invoices
+├ ƒ /dashboard/agent/promos
+├ ƒ /dashboard/agent/referrals
+├ ƒ /dashboard/agent/sales
+├ ƒ /dashboard/agent/sales-v2
+├ ƒ /dashboard/agent/sub-agents
+├ ƒ /dashboard/agent/sub-agents/promote
+├ ƒ /dashboard/agent/traffic
+├ ƒ /dashboard/labels
+├ ƒ /dashboard/manufacturer
+├ ƒ /dashboard/network
+├ ƒ /dashboard/provisioned-accounts
+├ ƒ /dashboard/sub-agent
+├ ○ /disclaimer
+├ ƒ /feed.xml
+├ ○ /find-a-peptide                                                 1h      1y
+├ ○ /forgot-password
+├ ○ /help                                                           1d      1y
+├ ○ /help/messenger-call-permissions
+├ ƒ /invite/[token]
+├ ƒ /lab-journal
+├ ○ /lab-tools
+├ ○ /llms-full.txt                                                  1h      1y
+├ ○ /llms.txt                                                       1h      1y
+├ ○ /login
+├ ○ /manifest.webmanifest
+├ ○ /messages
+├ ƒ /messenger
+├ ○ /onboarding
+├ ƒ /orders
+├ ƒ /orders/[id]
+├ ○ /peptide-101
+├ ƒ /peptide-101/course
+├ ○ /peptides                                                       1h      1y
+├ ● /peptides/[stateSlug]                                           1h      1y
+│ ├ /peptides/alabama                                               1h      1y
+│ ├ /peptides/alaska                                                1h      1y
+│ ├ /peptides/arizona                                               1h      1y
+│ └ [+47 more paths]
+├ ● /peptides/[stateSlug]/[citySlug]                                5m      1y
+│ ├ /peptides/new-york/new-york-city                                5m      1y
+│ ├ /peptides/california/los-angeles                                5m      1y
+│ ├ /peptides/illinois/chicago                                      5m      1y
+│ └ [+21 more paths]
+├ ƒ /peptides/[stateSlug]/[citySlug]/[compoundSlug]
+├ ƒ /peptides/-/-/opengraph-image
+├ ƒ /peptides/-/opengraph-image
+├ ○ /privacy
+├ ○ /products
+├ ƒ /register
+├ ○ /research                                                       1h      1y
+├ ● /research/[slug]
+├ ƒ /research/-/opengraph-image
+├ ƒ /research/[slug]/references
+├ ƒ /research/[slug]/regulatory
+├ ƒ /research/[slug]/spec
+├ ƒ /research/[slug]/structure
+├ ○ /research/a-z                                                   1h      1y
+├ ○ /research/about-areas
+├ ○ /research/api-docs
+├ ○ /research/approved-drugs                                        1h      1y
+├ ƒ /research/area/[area]
+├ ○ /research/areas
+├ ○ /research/by-class                                              1h      1y
+├ ○ /research/by-half-life                                          1h      1y
+├ ○ /research/by-mechanism                                          1h      1y
+├ ○ /research/by-mw                                                 1h      1y
+├ ○ /research/by-route                                              1h      1y
+├ ○ /research/by-target                                             1h      1y
+├ ƒ /research/by-target/[target]
+├ ○ /research/calculators
+├ ƒ /research/catalog
+├ ƒ /research/compare
+├ ● /research/compare/[matchup]                                     1h      1y
+│ ├ /research/compare/bpc-157-vs-tb-500                             1h      1y
+│ ├ /research/compare/semaglutide-vs-tirzepatide                    1h      1y
+│ ├ /research/compare/tirzepatide-vs-retatrutide                    1h      1y
+│ └ [+48 more paths]
+├ ○ /research/correlated                                            1h      1y
+├ ○ /research/data                                                  1h      1y
+├ ○ /research/discontinued                                          1h      1y
+├ ○ /research/evidence                                              1h      1y
+├ ○ /research/faq
+├ ○ /research/glossary
+├ ○ /research/guides
+├ ● /research/guides/[slug]
+│ ├ /research/guides/what-research-use-only-means
+│ ├ /research/guides/how-to-read-a-certificate-of-analysis
+│ ├ /research/guides/peptide-storage-and-reconstitution
+│ └ [+36 more paths]
+├ ○ /research/in-pipeline                                           1h      1y
+├ ○ /research/intranasal-peptides                                   1h      1y
+├ ○ /research/learn
+├ ○ /research/match
+├ ○ /research/methodology
+├ ○ /research/most-cited                                            1h      1y
+├ ○ /research/most-studied-2026                                     1h      1y
+├ ○ /research/new-additions                                         1h      1y
+├ ○ /research/opengraph-image
+├ ○ /research/orphan-drugs                                          1h      1y
+├ ƒ /research/reading-queue
+├ ○ /research/references                                            1h      1y
+├ ƒ /research/saved
+├ ƒ /research/search
+├ ƒ /research/search-index
+├ ○ /research/stacks                                                1h      1y
+├ ƒ /research/subscriptions
+├ ○ /research/timeline                                              1h      1y
+├ ○ /reset-password
+├ ○ /robots.txt
+├ ○ /shelf-life
+├ ○ /shipping
+├ ○ /signup
+├ ○ /sitemap.xml                                                    1h      1y
+├ ƒ /status
+├ ○ /terms
+├ ○ /test-card
+├ ƒ /wallet
+└ ƒ /wallet/print
 
 
+ƒ Proxy (Middleware)
 
-https://nextjs.org/docs/messages/module-not-found
+○  (Static)   prerendered as static content
+●  (SSG)      prerendered as static HTML (uses generateStaticParams)
+ƒ  (Dynamic)  server-rendered on demand
 
-
-./app/layout.tsx:28:1
-Module not found: Can't resolve '@vercel/speed-insights/next'
-  [90m26 |[0m [90m// inject a lightweight script after hydration; they no-op harmlessly until[0m
-  [90m27 |[0m [90m// the matching tabs are enabled on the Vercel project dashboard.[0m
-[31m[1m>[0m [90m28 |[0m [36mimport[0m { [33mSpeedInsights[0m } [36mfrom[0m [32m"@vercel/speed-insights/next"[0m;
-  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
-  [90m29 |[0m [36mimport[0m { [33mAnalytics[0m } [36mfrom[0m [32m"@vercel/analytics/next"[0m;
-  [90m30 |[0m
-  [90m31 |[0m [36mimport[0m { [33mInter[0m } [36mfrom[0m [32m"next/font/google"[0m;
-
-
-
-https://nextjs.org/docs/messages/module-not-found
-
-
-    at <unknown> (./app/layout.tsx:29:1)
-    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
-    at <unknown> (./app/layout.tsx:28:1)
-    at <unknown> (https://nextjs.org/docs/messages/module-not-found)

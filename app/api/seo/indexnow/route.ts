@@ -20,6 +20,7 @@ import { getAllCompounds } from '@/lib/compounds-server';
 import { COMPARISON_PAIRS, matchupSlug } from '@/lib/research/comparisons';
 import { CITIES, getStatesSlugs } from '@/lib/cities/cities-data';
 import { GUIDES } from '@/lib/research/guides';
+import { getPilotCompoundCityUrls } from '@/lib/cities/tier3-pilot';
 
 const BASE = 'https://pepnationlab.com';
 
@@ -56,9 +57,23 @@ async function importantUrls(): Promise<string[]> {
   for (const stateSlug of getStatesSlugs()) urls.add(`${BASE}/peptides/${stateSlug}`);
   for (const city of CITIES) urls.add(`${BASE}/peptides/${city.stateSlug}/${city.slug}`);
   for (const guide of GUIDES) urls.add(`${BASE}/research/guides/${guide.slug}`);
+  for (const url of getPilotCompoundCityUrls()) urls.add(url);
   try {
     const all = await getAllCompounds();
-    for (const c of all) urls.add(`${BASE}/research/${c.slug}`);
+    const targets = new Set<string>();
+    for (const c of all) {
+      urls.add(`${BASE}/research/${c.slug}`);
+      // Per-compound sub-pages that are now indexable + in the sitemap but were
+      // never submitted to IndexNow, so Bing/Yandex (and ChatGPT Search, which
+      // reads Bing) only discovered them on slow organic recrawl.
+      urls.add(`${BASE}/research/${c.slug}/references`);
+      urls.add(`${BASE}/research/${c.slug}/regulatory`);
+      const receptors = (c as { receptors?: string[] | null }).receptors;
+      if (Array.isArray(receptors)) for (const r of receptors) if (r) targets.add(r);
+    }
+    // Molecular-target hub pages (/research/by-target/[target]) - indexable and
+    // sitemapped, previously absent from the IndexNow set.
+    for (const t of targets) urls.add(`${BASE}/research/by-target/${encodeURIComponent(t)}`);
   } catch {
     /* fail-soft: still submit the static + comparison set */
   }

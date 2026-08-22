@@ -27,11 +27,16 @@ const StaleBrowserBanner = dynamic(() => import('@/components/StaleBrowserBanner
 const OAuthErrorRedirect = dynamic(() => import('@/components/OAuthErrorRedirect'), { ssr: false });
 const ImpersonationBanner = dynamic(() => import('@/components/ImpersonationBanner'), { ssr: false });
 const PwaInstallPrompt = dynamic(() => import('@/components/PwaInstallPrompt'), { ssr: false });
-const PWAEnforcer = dynamic(() => import('@/components/PWAEnforcer'), { ssr: false });
 const GlobalCallListener = dynamic(() => import('@/components/messenger/GlobalCallListener'), { ssr: false });
 const FirstRunNotificationPrompt = dynamic(() => import('@/components/FirstRunNotificationPrompt'), { ssr: false });
 const SessionKeepalive = dynamic(() => import('@/components/messenger/SessionKeepalive'), { ssr: false });
 const WebVitalsReporter = dynamic(() => import('@/components/WebVitalsReporter'), { ssr: false });
+const ScrollLockWatchdog = dynamic(() => import('@/components/ScrollLockWatchdog'), { ssr: false });
+// Silent push-enrollment self-heal (2026-08-04 incident): repairs rotated /
+// reinstalled / reassigned push subscriptions on app open and PWA resume.
+// Without it, a device whose subscription rots NEVER re-enrolls, because
+// enrollment only ever ran from one-time user-facing prompts.
+const PushSubscriptionSync = dynamic(() => import('@/components/PushSubscriptionSync'), { ssr: false });
 
 export default function DeferredGlobals() {
   return (
@@ -40,11 +45,12 @@ export default function DeferredGlobals() {
       <OAuthErrorRedirect />
       <ImpersonationBanner />
       <PwaInstallPrompt />
-      <PWAEnforcer />
       <GlobalCallListener />
       <FirstRunNotificationPrompt />
       <SessionKeepalive />
       <WebVitalsReporter />
+      <ScrollLockWatchdog />
+      <PushSubscriptionSync />
     </>
   );
 }

@@ -218,11 +218,28 @@ export default function MyQRCodeModal({
 
   async function copyUrl(e: React.MouseEvent) {
     e.stopPropagation();
-    if (!data?.url) return;
+    const url = data?.url;
+    if (!url) return;
+    let copied = false;
     try {
-      await navigator.clipboard.writeText(data.url);
-      toast.success('Link Copied');
+      await navigator.clipboard.writeText(url);
+      copied = true;
     } catch {
+      // Fallback for restrictive browser contexts (e.g. some iOS WebViews)
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = url;
+        ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        copied = document.execCommand('copy');
+        document.body.removeChild(ta);
+      } catch { /* ignore */ }
+    }
+    if (copied) {
+      toast.success('Link Copied');
+    } else {
       toast.error('Could Not Copy');
     }
   }

@@ -81,6 +81,51 @@ function inMemoryRateLimit(
   };
 }
 
+// ─── Credential resolution ─────────────────────────────────────────────────
+/**
+ * Upstash reaches this app under more than one set of variable names, and
+ * which one you get depends on how the database was attached:
+ *
+ *   - Adding the variables by hand (or via the Upstash console) gives you
+ *     UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN.
+ *   - Attaching the database through the Vercel Marketplace integration
+ *     injects the KV_-prefixed set instead - KV_REST_API_URL /
+ *     KV_REST_API_TOKEN - alongside KV_URL and REDIS_URL.
+ *
+ * This module used to read only the UPSTASH_-prefixed pair. A correctly
+ * provisioned and correctly connected Marketplace database therefore looked
+ * exactly like no database at all: the limiter stayed on the in-memory
+ * fallback and kept logging "UPSTASH_REDIS_REST_URL/TOKEN are not set",
+ * which reads like a provisioning failure and sends you back to the
+ * dashboard to re-do work that was already done. Accept both spellings.
+ *
+ * Only REST endpoints are usable here - this talks HTTP, not the Redis wire
+ * protocol - so a `redis://` or `rediss://` value (KV_URL / REDIS_URL) is
+ * rejected rather than handed to fetch(). Passing one through would make
+ * every fetch throw, and since a failed Upstash call falls through to
+ * "allow", that would silently cost ~1.5s of timeout on the critical path of
+ * every rate-limited request while providing no limiting whatsoever.
+ */
+function resolveUpstash(): { url: string; token: string } | null {
+  const url = (
+    process.env.UPSTASH_REDIS_REST_URL ||
+    process.env.KV_REST_API_URL ||
+    ''
+  ).trim();
+  const token = (
+    process.env.UPSTASH_REDIS_REST_TOKEN ||
+    process.env.KV_REST_API_TOKEN ||
+    ''
+  ).trim();
+
+  if (!url || !token) return null;
+  if (!/^https?:\/\//i.test(url)) {
+    warnBadUpstashUrl(url);
+    return null;
+  }
+  return { url, token };
+}
+
 // ─── Upstash path ──────────────────────────────────────────────────────────
 async function upstashRateLimit(
   bucketKey: string,
@@ -157,12 +202,32 @@ function warnIfUnprotectedInProd(): void {
   if (process.env.NODE_ENV === 'production') {
     // eslint-disable-next-line no-console
     console.warn(
-      '[rate-limit] UPSTASH_REDIS_REST_URL/TOKEN are not set in production. ' +
-      'Rate limiting is running on the per-instance in-memory fallback, which ' +
-      'is largely ineffective on serverless. Configure Upstash to enforce ' +
-      'cluster-wide limits on auth, register, orders, and the proxy.'
+      '[rate-limit] No Upstash REST credentials in production. Checked ' +
+      'UPSTASH_REDIS_REST_URL/UPSTASH_REDIS_REST_TOKEN and ' +
+      'KV_REST_API_URL/KV_REST_API_TOKEN. Rate limiting is running on the ' +
+      'per-instance in-memory fallback, which is largely ineffective on ' +
+      'serverless. Attach an Upstash database (Vercel Marketplace, or set ' +
+      'the variables by hand) to enforce cluster-wide limits on auth, ' +
+      'register, orders, and the proxy.'
     );
   }
+}
+
+// Separate one-shot warning: credentials ARE present but the URL is not a REST
+// endpoint. That is a distinct failure from "not configured" and needs a
+// distinct message, otherwise it reads as an unprovisioned database.
+let __warnedBadUrl = false;
+function warnBadUpstashUrl(url: string): void {
+  if (__warnedBadUrl) return;
+  __warnedBadUrl = true;
+  // eslint-disable-next-line no-console
+  console.warn(
+    '[rate-limit] Upstash URL is not an HTTP REST endpoint, ignoring it and ' +
+    'using the in-memory fallback. This helper speaks the Upstash REST API, ' +
+    'not the Redis wire protocol - use the REST URL (KV_REST_API_URL / ' +
+    'UPSTASH_REDIS_REST_URL), not KV_URL or REDIS_URL. Got scheme: ' +
+    (url.split(':')[0] || 'unknown')
+  );
 }
 
 export async function rateLimit(input: RateLimitInput): Promise<RateLimitResult> {
@@ -172,11 +237,10 @@ export async function rateLimit(input: RateLimitInput): Promise<RateLimitResult>
   }
   const bucketKey = identifier ? `${key}:${identifier}` : key;
 
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  const creds = resolveUpstash();
 
-  if (url && token) {
-    const remote = await upstashRateLimit(bucketKey, limit, windowSeconds, url, token);
+  if (creds) {
+    const remote = await upstashRateLimit(bucketKey, limit, windowSeconds, creds.url, creds.token);
     if (remote) return remote;
     // Upstash unavailable - degrade to in-memory rather than hard-fail.
   } else {

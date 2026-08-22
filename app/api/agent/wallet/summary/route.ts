@@ -3,9 +3,18 @@
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { resolveEffectiveUserId } from '@/lib/impersonation';
+import { computeForecast } from '@/lib/statements';
+import { safeError } from '@/lib/api-error';
+import { chicagoMidnightIso, currentWeekStartCst } from '@/lib/time-cst';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+
+function addDaysStr(dateStr: string, days: number): string {
+  const d = new Date(`${dateStr}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
 
 export async function GET() {
   const supabase = await createClient();
@@ -25,39 +34,71 @@ export async function GET() {
     .maybeSingle();
   if (!profile) return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
 
-  const ALLOWED_ROLES = ['agent', 'super_agent', 'admin'];
+  // Researchers are allowed too: /wallet is linked for every role from the
+  // navbar badge, and blocking researchers here made the whole wallet page
+  // throw "Could Not Load Your Wallet" for them despite /api/wallet working.
+  // A researcher simply gets a prepaid-shaped summary with no statements.
+  const ALLOWED_ROLES = ['agent', 'super_agent', 'admin', 'researcher'];
   if (!ALLOWED_ROLES.includes(profile.role)) {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   }
 
-  // Owed this week - sum of open / pending statements
-  const { data: openStmts } = await svc
-    .from('weekly_statements')
-    .select('id, total_owed, status, week_start, week_end, due_date')
-    .eq('agent_id', effectiveUserId)
-    .in('status', ['open', 'pending_payment'])
-    .order('week_start', { ascending: false });
+  // Owed this week - open / pending statements PLUS open super-agent invoices
+  // billed to this agent. Nested agents are billed via agent_invoices, not
+  // weekly_statements; omitting them showed "$0 Owed This Week" to agents
+  // whose Open Invoices list right below was non-empty.
+  const [{ data: openStmts, error: stmtsError }, { data: openInvoices, error: invoicesError }] = await Promise.all([
+    svc
+      .from('weekly_statements')
+      .select('id, total_owed, status, week_start, week_end, due_date')
+      .eq('agent_id', effectiveUserId)
+      .in('status', ['open', 'pending_payment'])
+      .order('week_start', { ascending: false }),
+    svc
+      .from('agent_invoices')
+      .select('id, total_owed, status')
+      .eq('agent_id', effectiveUserId)
+      .eq('status', 'open'),
+  ]);
 
-  const owedThisWeek = (openStmts ?? []).reduce(
-    (sum: number, s: any) => sum + Number(s.total_owed || 0),
-    0
-  );
-  const hasOpenStatement = (openStmts ?? []).some((s: any) => Number(s.total_owed || 0) > 0);
+  // A failed read here rendered "$0 Owed This Week" and hasOpenStatement:false,
+  // which is the flag that decides whether Pay Now appears at all. An agent
+  // with an outstanding bill would be told they owe nothing. The comment above
+  // records that this exact symptom was already a fielded bug once.
+  if (stmtsError || invoicesError) {
+    return safeError('wallet.summary.owed', stmtsError ?? invoicesError, 500, 'Could Not Load Your Wallet. Please Try Again.');
+  }
 
-  // Next statement date - Sunday 23:59 UTC of current week
+  const owedThisWeek =
+    (openStmts ?? []).reduce((sum: number, s: any) => sum + Number(s.total_owed || 0), 0)
+    + (openInvoices ?? []).reduce((sum: number, i: any) => sum + Number(i.total_owed || 0), 0);
+  const hasOpenStatement =
+    (openStmts ?? []).some((s: any) => Number(s.total_owed || 0) > 0)
+    || (openInvoices ?? []).some((i: any) => Number(i.total_owed || 0) > 0);
+
+  // The billing week closes at Chicago midnight, not UTC midnight. Deriving
+  // this date in UTC put the boundary 5-6 hours late, so an order placed
+  // Sunday evening CT was shown as belonging to next week while the biller
+  // counted it in the week that just closed.
   const now = new Date();
-  const dow = now.getUTCDay();
-  const daysUntilSunday = dow === 0 ? 7 : (7 - dow) % 7;
-  const nextStatementDate = new Date(now);
-  nextStatementDate.setUTCDate(now.getUTCDate() + daysUntilSunday);
-  nextStatementDate.setUTCHours(23, 59, 0, 0);
+  const weekStart = currentWeekStartCst(now);
+  // End of the open week = next Monday 00:00 CT, i.e. the instant the cron
+  // will bill it. Present it as the last second of Sunday for the UI.
+  const nextStatementDate = new Date(
+    new Date(chicagoMidnightIso(addDaysStr(weekStart, 7))).getTime() - 1000
+  );
 
-  // Forecast WIP this week
+  // Forecast for the week in progress. This runs the SAME code the Monday
+  // biller runs (computeStatement for top-level agents, computeDownlineInvoice
+  // for parented ones) rather than a second hand-written query. The old
+  // forecast_next_statement RPC summed RETAIL subtotals over a UTC week and
+  // was wrong in eight separate ways at once - see lib/statements.ts.
   let forecastNext = 0;
-  // R24 hotfix: forecast RPC requires auth.uid(); call via user-authed client.
-  const { data: forecast, error: forecastError } = await supabase.rpc('forecast_next_statement', { p_agent_id: effectiveUserId });
-  if (forecastError) console.error('[wallet/summary] forecast RPC error:', forecastError.message);
-  if (typeof forecast === 'number') forecastNext = forecast;
+  try {
+    forecastNext = await computeForecast(svc, effectiveUserId, weekStart);
+  } catch (err) {
+    console.error('[wallet/summary] forecast failed:', err instanceof Error ? err.message : String(err));
+  }
 
   // Admins (and anyone without a positive credit line) are prepaid - their
   // wallet is funded by prepaid_balance, not by a credit line. account_type

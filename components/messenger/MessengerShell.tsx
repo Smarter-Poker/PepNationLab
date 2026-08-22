@@ -5,6 +5,7 @@ import ConversationList from './ConversationList';
 import MessagePane from './MessagePane';
 import SearchBar from './SearchBar';
 import NewConversationDialog from './NewConversationDialog';
+import EnablePushBanner from './EnablePushBanner';
 import { SquarePen } from 'lucide-react';
 import { useMessengerStore } from '@/stores/messengerStore';
 import {
@@ -197,10 +198,31 @@ export default function MessengerShell({ userId }: Props) {
     const allowConvIds = selfRole === 'admin'
       ? undefined
       : new Set<string>(conversations.map((c) => c.conversation_id));
+    // A message for a conversation NOT in the list = a conversation this
+    // client has never seen (new group, new DM). Refetch the list so it
+    // appears live instead of waiting for a full page reload. Debounced:
+    // several messages can land in a fresh group within a second.
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleListRefresh = () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => {
+        try { window.dispatchEvent(new CustomEvent('messenger:conversations-refresh')); } catch { /* SSR-safe */ }
+      }, 800);
+    };
+
+    // Known-conversation set for the refresh check below. Admins pass
+    // `undefined` as the subscription allow-list (they accept every
+    // broadcast), which means the onUnknownConversation callback never fires
+    // for them - so the "new conversation = refetch the list" signal has to
+    // be checked here too, or an admin added to a brand-new group would never
+    // see it appear without a reload.
+    const knownConvIds = new Set<string>(conversations.map((c) => c.conversation_id));
+
     const ch = subscribeMyIncomingMessages(
       userId,
       (m: IncomingMessageNotification & { sender_id?: string }) => {
         if (m.sender_id === userId) return;
+        if (!knownConvIds.has(m.conversation_id)) scheduleListRefresh();
         if (activeIdRef.current === m.conversation_id) return;
         if (mutedConvIdsRef.current.has(m.conversation_id)) return;
         try { vibrateLight(); } catch {}
@@ -216,9 +238,16 @@ export default function MessengerShell({ userId }: Props) {
         }
       },
       allowConvIds,
+      (m: IncomingMessageNotification & { sender_id?: string }) => {
+        if (m.sender_id === userId) return;
+        scheduleListRefresh();
+      },
     );
 
-    return () => { unsubscribe(ch); };
+    return () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      unsubscribe(ch);
+    };
   }, [userId, conversations, selfRole]);
 
   useEffect(() => {
@@ -350,6 +379,7 @@ export default function MessengerShell({ userId }: Props) {
             <SquarePen size={20} aria-hidden="true" />
           </button>
         </header>
+        <EnablePushBanner />
         <ConversationList selfId={userId} />
       </aside>
       <section

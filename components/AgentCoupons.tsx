@@ -655,7 +655,7 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
                         {c.min_order_amount ? ` On Orders Over $${c.min_order_amount}` : ''}
                       </span>
                       {c.expires_at && (
-                        <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Expires: {new Date(c.expires_at).toLocaleDateString()}</span>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Expires: {new Date(`${c.expires_at}T00:00:00Z`).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' })}</span>
                       )}
                     </div>
 

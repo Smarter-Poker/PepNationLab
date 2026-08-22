@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { requireAdmin } from '@/lib/admin-auth';
+import { requireSession } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
 import { writeAuditLog } from '@/lib/admin-audit';
@@ -10,8 +10,23 @@ export async function POST(req: NextRequest) {
   if (csrf) return csrf;
 
   try {
-    const gate = await requireAdmin();
+    const gate = await requireSession();
     if (!gate.ok) return gate.response;
+
+    const supabase = createAdminClient();
+
+    // Admins can promote/demote anyone. Super-agents can only manage their own downline.
+    const { data: callerProfile } = await supabase
+      .from('profiles')
+      .select('role, is_super_agent')
+      .eq('id', gate.user.id)
+      .maybeSingle();
+
+    const isAdmin = callerProfile?.role === 'admin';
+    const isSuperAgent = callerProfile?.is_super_agent === true || callerProfile?.role === 'super_agent';
+    if (!isAdmin && !isSuperAgent) {
+      return NextResponse.json({ error: 'Forbidden. Only Admins And Super Agents Can Change Agent Roles.' }, { status: 403 });
+    }
 
     const body = await req.json();
     const { agentId, is_super_agent } = body;
@@ -21,22 +36,26 @@ export async function POST(req: NextRequest) {
     }
 
     return withIdempotency({
-      userId: gate.userId,
+      userId: gate.user.id,
       route: '/api/admin/agents/super-upgrade',
       key: readIdempotencyKey(req),
       request: { agentId, is_super_agent },
       handler: async () => {
-    const supabase = createAdminClient();
 
-    // Prevent making a sub-agent a super-agent
+    // Fetch the target agent
     const { data: agentProfile } = await supabase
       .from('profiles')
-      .select('parent_agent_id, role')
+      .select('parent_agent_id, role, is_sub_agent')
       .eq('id', agentId)
       .maybeSingle();
 
     if (!agentProfile) {
       return NextResponse.json({ error: 'Agent Not Found' }, { status: 404 });
+    }
+
+    // Super-agents can only manage agents in their own downline
+    if (!isAdmin && agentProfile.parent_agent_id !== gate.user.id) {
+      return NextResponse.json({ error: 'You Can Only Manage Agents In Your Own Downline.' }, { status: 403 });
     }
     // Agents and super-agents both store role='agent'; never flip the flag on a
     // researcher or admin row. Also accept legacy role='super_agent'.
@@ -86,7 +105,7 @@ export async function POST(req: NextRequest) {
     }
 
     await writeAuditLog(supabase, {
-      actorId: gate.userId,
+      actorId: gate.user.id,
       action: 'agent_super_status_changed',
       entityType: 'profile',
       entityId: agentId,

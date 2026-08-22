@@ -18,6 +18,7 @@ export async function GET() {
       .from('profiles')
       .select('id, full_name, username, email, phone, is_active, role, created_at, last_sign_in_at, parent_agent_id, referring_agent_id, provisioned_password, account_type, prepaid_balance, credit_limit, tier')
       .eq('role', 'researcher')
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(2000);
 

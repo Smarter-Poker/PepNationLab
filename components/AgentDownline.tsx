@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import AgentAccountDetail from '@/components/AgentAccountDetail';
-import { freshDefaultLadder, GAMIFICATION_MAX_PCT } from '@/lib/gamification';
+import { MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH, PASSWORD_RULE_TEXT } from '@/lib/password-policy';
 
 export default function AgentDownline({ agentId }: { agentId?: string }) {
   const [agents, setAgents] = useState<any[]>([]);
@@ -21,19 +21,18 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
   const [caPassword, setCaPassword] = useState('');
   const [caDisplayName, setCaDisplayName] = useState('');
   const [caSlug, setCaSlug] = useState('');
+  // Whether the new downline account should itself be a Super Agent, able to
+  // build and manage its own downline of Agents underneath it (a nested Super
+  // Agent still sits under the caller in the billing chain).
+  const [caIsSuperAgent, setCaIsSuperAgent] = useState(false);
   const [caAccountType, setCaAccountType] = useState<'credit' | 'prepaid'>('prepaid');
   const [caCreditLimit, setCaCreditLimit] = useState('');
   const [caPrepaidBalance, setCaPrepaidBalance] = useState('');
-  // Commission structure: 'fixed' = flat rate; 'gamified' = base climbs with
-  // volume up to a max cap via the house milestone ladder.
-  const [caCommissionMode, setCaCommissionMode] = useState<'fixed' | 'gamified'>('fixed');
-  const [caCommissionPct, setCaCommissionPct] = useState('');
-  // 'default' = read-only house ladder (20% -> 40%); 'custom' = fully adjustable.
-  const [caScaleType, setCaScaleType] = useState<'default' | 'custom'>('default');
-  const [caCustomSteps, setCaCustomSteps] = useState(freshDefaultLadder());
-  const [showGamificationInfo, setShowGamificationInfo] = useState(false);
+  const [caCommissionPct, setCaCommissionPct] = useState('50');
   const [caLoading, setCaLoading] = useState(false);
   const [caError, setCaError] = useState('');
+  // Default UI language for the new agent (English / Simplified / Traditional).
+  const [caLocale, setCaLocale] = useState('en');
 
   // Reset Password State
   const [resetPwUser, setResetPwUser] = useState<{ id: string; name: string; username: string } | null>(null);
@@ -65,12 +64,6 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
     e.preventDefault();
     setCaError('');
 
-    // Platform rule: no gamification level may exceed 40%.
-    if (caCommissionMode === 'gamified' && caCustomSteps.some(s => Number(s.bonus_pct) > GAMIFICATION_MAX_PCT)) {
-      setCaError('Gamification Levels Cannot Exceed 40%.');
-      return;
-    }
-
     setCaLoading(true);
 
     try {
@@ -86,20 +79,16 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
           account_type: caAccountType,
           credit_limit: caAccountType === 'credit' ? caCreditLimit : undefined,
           prepaid_balance: caAccountType === 'prepaid' ? caPrepaidBalance : undefined,
-          // Commission structure. Fixed -> flat rate (cap == base). Gamified
-          // (Default or Custom) -> persist the concrete 3-level ladder so the
-          // order-time engine and the UI always agree. base = Rookie (entry)
-          // level, cap = Premium (top) level; stored as bonus-over-base.
-          commission_pct: caCommissionMode === 'fixed'
-            ? (caCommissionPct === '' ? undefined : caCommissionPct)
-            : (Number(caCustomSteps[0].bonus_pct) || 0),
-          commission_max_pct: caCommissionMode === 'fixed'
-            ? (caCommissionPct === '' ? undefined : caCommissionPct)
-            : Number(caCustomSteps[caCustomSteps.length - 1].bonus_pct),
-          velocity_cap: undefined,
-          custom_commission_scale: caCommissionMode === 'gamified'
-            ? caCustomSteps.map(s => ({ min_volume: Number(s.min_volume) || 0, bonus_pct: Math.max(0, Number(s.bonus_pct) - Number(caCustomSteps[0].bonus_pct)) }))
-            : undefined,
+          locale: caLocale,
+          // Whether this new downline account is itself a Super Agent (can
+          // build and manage its own downline of Agents under you) or a
+          // Standard Agent (storefront-only, no downline of its own).
+          is_super_agent: caIsSuperAgent,
+          // Markup this Super Agent earns on every order this new downline
+          // Agent sells or restocks. Sent as an explicit number (including 0)
+          // so the API can tell "no markup" apart from "use the platform
+          // default"; leaving the field at its 50 prefill sends 50.
+          commission_pct: caCommissionPct !== '' ? Number(caCommissionPct) : undefined,
         })
       });
       const data = await res.json();
@@ -113,12 +102,11 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
       setCaPassword('');
       setCaDisplayName('');
       setCaSlug('');
+      setCaIsSuperAgent(false);
       setCaCreditLimit('');
       setCaPrepaidBalance('');
-      setCaCommissionMode('fixed');
-      setCaCommissionPct('');
-      setCaScaleType('default');
-      setCaCustomSteps(freshDefaultLadder());
+      setCaCommissionPct('50');
+      setCaLocale('en');
       fetchData();
     } catch (err: any) {
       setCaError(err.message);
@@ -155,12 +143,10 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                   setCaUsername('');
                   setCaPassword('');
                   setCaAccountType('prepaid');
+                  setCaIsSuperAgent(false);
                   setCaCreditLimit('');
                   setCaPrepaidBalance('');
-                  setCaCommissionMode('fixed');
-                  setCaCommissionPct('');
-                  setCaScaleType('default');
-                  setCaCustomSteps(freshDefaultLadder());
+                  setCaCommissionPct('50');
                   setCaDisplayName('');
                   setCaSlug('');
                   setCaError('');
@@ -179,7 +165,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
               agents.map(agent => {
                 const ap = Array.isArray(agent.agent_profiles) ? agent.agent_profiles[0] : (agent.agent_profiles || null);
                 return (
-                  <div 
+                  <div
                     key={agent.id}
                     className="glass-panel"
                     style={{
@@ -200,6 +186,9 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                       >
                         {agent.full_name || 'Anonymous'}
                       </button>
+                      {agent.is_super_agent && (
+                        <span style={{ fontSize: '0.7rem', color: '#00E5FF', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Super Agent</span>
+                      )}
                       {ap?.display_name && (
                         <span style={{ fontSize: '0.8rem', color: 'var(--silver)' }}>Store: {ap.display_name}</span>
                       )}
@@ -331,19 +320,55 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                     type="password"
                     name="new_agent_password_no_autofill"
                     required
-                    minLength={8}
+                    minLength={MIN_PASSWORD_LENGTH}
+                    maxLength={MAX_PASSWORD_LENGTH}
                     autoComplete="new-password"
                     data-lpignore="true"
                     style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                     value={caPassword}
                     onChange={e => setCaPassword(e.target.value)}
-                    placeholder="Minimum 8 characters"
+                    placeholder={PASSWORD_RULE_TEXT}
                   />
                 </div>
-                
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Account Language</label>
+                  <select
+                    style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
+                    value={caLocale}
+                    onChange={e => setCaLocale(e.target.value)}
+                  >
+                    <option value="en">English</option>
+                    <option value="zh-CN">简体中文 (Simplified Chinese)</option>
+                    <option value="zh-TW">繁體中文 (Traditional Chinese)</option>
+                  </select>
+                  <p style={{ marginTop: '6px', color: 'var(--grey-400)', fontSize: '0.75rem' }}>Sets The Language This Account Sees When They Log In.</p>
+                </div>
+
                 <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)', margin: 'var(--space-2) 0' }} />
 
-
+                <div>
+                  <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Agent Type</label>
+                  <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+                    <label style={{ flex: 1, padding: '10px', background: 'var(--bg-metal-dark)', border: `1px solid ${!caIsSuperAgent ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input type="radio" checked={!caIsSuperAgent} onChange={() => setCaIsSuperAgent(false)} />
+                        Standard Agent
+                      </span>
+                    </label>
+                    <label style={{ flex: 1, padding: '10px', background: 'var(--bg-metal-dark)', border: `1px solid ${caIsSuperAgent ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input type="radio" checked={caIsSuperAgent} onChange={() => setCaIsSuperAgent(true)} />
+                        Super Agent
+                      </span>
+                    </label>
+                  </div>
+                  <p style={{ marginTop: '6px', color: 'var(--grey-400)', fontSize: '0.75rem' }}>
+                    {caIsSuperAgent
+                      ? 'Can Build And Manage Their Own Downline Of Agents Under You.'
+                      : 'Gets Their Own Storefront And Sets Their Own Retail Prices. No Downline Of Their Own.'}
+                  </p>
+                </div>
 
                 <div>
                   <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Payment Model</label>
@@ -390,57 +415,19 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                   </div>
                 )}
 
-                <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)', margin: 'var(--space-2) 0' }} />
-
                 <div>
-                  <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Markup Structure</label>
-                  <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
-                    <label style={{ flex: 1, padding: '10px', background: 'var(--bg-metal-dark)', border: `1px solid ${caCommissionMode === 'fixed' ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <input type="radio" checked={caCommissionMode === 'fixed'} onChange={() => setCaCommissionMode('fixed')} />
-                      Fixed Markup
-                    </label>
-                    <label style={{ flex: 1, padding: '10px', background: 'var(--bg-metal-dark)', border: `1px solid ${caCommissionMode === 'gamified' ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <input type="radio" checked={caCommissionMode === 'gamified'} onChange={() => setCaCommissionMode('gamified')} />
-                      Gamification Scale
-                    </label>
-                  </div>
-
-                  {caCommissionMode === 'fixed' ? (
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Markup Rate (%)</label>
-                      <input type="number" min="0" max="100" step="0.1" style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={caCommissionPct} onChange={e => setCaCommissionPct(e.target.value)} placeholder="e.g. 20" />
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
-                      <button
-                        type="button"
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCaScaleType('default'); setCaCustomSteps(freshDefaultLadder()); setShowGamificationInfo(true); }}
-                        style={{
-                          flex: 1, minWidth: 200, padding: '12px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: '0.82rem',
-                          background: caScaleType === 'default' ? 'var(--teal)' : 'rgba(255,255,255,0.05)',
-                          color: caScaleType === 'default' ? 'var(--black)' : 'var(--white)',
-                          border: `1px solid ${caScaleType === 'default' ? 'var(--teal)' : 'rgba(255,255,255,0.15)'}`,
-                        }}
-                      >
-                        See Default Gamification Levels
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCaScaleType('custom'); setShowGamificationInfo(true); }}
-                        style={{
-                          flex: 1, minWidth: 200, padding: '12px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: '0.82rem',
-                          background: caScaleType === 'custom' ? 'var(--teal)' : 'rgba(255,255,255,0.05)',
-                          color: caScaleType === 'custom' ? 'var(--black)' : 'var(--white)',
-                          border: `1px solid ${caScaleType === 'custom' ? 'var(--teal)' : 'rgba(255,255,255,0.15)'}`,
-                        }}
-                      >
-                        Customize Gamification Levels
-                      </button>
-                    </div>
-                  )}
-                  <p style={{ fontSize: '0.72rem', color: 'var(--grey-500)', margin: '6px 0 0', lineHeight: 1.4 }}>
-                    Fixed Markup Pays A Flat Rate. The Default Gamification Scale Starts At 20% And Rises To A 40% Maximum As Monthly Sales Grow. Customize To Set Your Own 3 Levels.
-                  </p>
+                  <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Your Markup On This Agent (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="200"
+                    step="1"
+                    style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
+                    value={caCommissionPct}
+                    onChange={e => setCaCommissionPct(e.target.value)}
+                    placeholder="50"
+                  />
+                  <p style={{ marginTop: '6px', color: 'var(--grey-400)', fontSize: '0.75rem' }}>You Earn This Percent On Top Of Your Cost On Every Order This Agent Sells Or Restocks. Leave At 50 For The Platform Default.</p>
                 </div>
 
                 <button type="submit" className="btn-neon-cyan" disabled={caLoading} style={{ marginTop: 'var(--space-2)' }}>
@@ -496,15 +483,16 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                     style={{ width: '100%', padding: '10px 14px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                     value={resetPwValue}
                     onChange={e => setResetPwValue(e.target.value)}
-                    placeholder="Minimum 8 Characters"
+                    placeholder={PASSWORD_RULE_TEXT}
                     required
-                    minLength={8}
+                    minLength={MIN_PASSWORD_LENGTH}
+                    maxLength={MAX_PASSWORD_LENGTH}
                     autoComplete="new-password"
                   />
                 </div>
                 <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
                   <button type="button" className="btn-silver" onClick={() => { setResetPwUser(null); setResetPwValue(''); }} disabled={resetPwSaving}>Cancel</button>
-                  <button type="submit" className="btn-neon-cyan" disabled={resetPwSaving || resetPwValue.length < 8}>
+                  <button type="submit" className="btn-neon-cyan" disabled={resetPwSaving || resetPwValue.length < MIN_PASSWORD_LENGTH}>
                     {resetPwSaving ? 'Saving...' : 'Update Password'}
                   </button>
                 </div>
@@ -524,125 +512,6 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
         />
       )}
 
-      {/* Gamification Scale Info Modal */}
-      {showGamificationInfo && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.85)', zIndex: 1200,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-4)'
-        }}>
-          <div className="glass-panel" style={{ width: '100%', maxWidth: 700, maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
-            <div className="" style={{ padding: 'var(--space-6)', overflowY: 'auto' }}>
-              <h2 className="metal-text" style={{ marginTop: 0, marginBottom: 'var(--space-2)', fontSize: '1.4rem' }}>
-                Gamification Scale
-              </h2>
-              <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem', marginBottom: 'var(--space-4)' }}>
-                {caScaleType === 'custom' ? 'Customize The 3 Levels Of Gamification For This Agent.' : 'The Default House Scale - Starts At 20% And Rises To A 40% Maximum. Read Only.'}
-              </p>
-              
-              <div style={{ border: '1px solid rgba(0,196,188,0.35)', borderRadius: 10, overflow: 'hidden', marginBottom: 'var(--space-4)' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.6fr 0.8fr 1fr', background: 'rgba(0,196,188,0.12)', padding: '12px', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--teal)' }}>
-                  <span>Level</span>
-                  <span>Monthly Sales</span>
-                  <span style={{ textAlign: 'center' }}>Bonus</span>
-                  <span style={{ textAlign: 'right' }}>Commission</span>
-                </div>
-                
-                {caCustomSteps.map((step, idx) => {
-                  const isEditable = caScaleType === 'custom';
-                  const min = step.min_volume;
-                  const max = idx < 2 ? caCustomSteps[idx+1].min_volume - 0.01 : null;
-                  
-                  // For the bonus column
-                  const baseRate = caCustomSteps[0].bonus_pct;
-                  const delta = step.bonus_pct - baseRate;
-                  const bonusText = idx === 0 ? 'Base' : `+${delta.toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:2})}%`;
-                  
-                  return (
-                    <div
-                      key={idx}
-                      style={{
-                        display: 'grid', gridTemplateColumns: '1.2fr 1.6fr 0.8fr 1fr', alignItems: 'center',
-                        padding: '12px', fontSize: '0.85rem',
-                        borderTop: '1px solid rgba(255,255,255,0.06)',
-                        background: idx % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent',
-                      }}
-                    >
-                      <span style={{ color: 'var(--white)', fontWeight: 600 }}>
-                        {step.level}. {step.name}
-                      </span>
-                      
-                      <span style={{ color: 'var(--silver)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        {isEditable && idx > 0 ? (
-                          <>
-                            <span style={{ color: 'var(--grey-500)' }}>$</span>
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={step.min_volume}
-                              onChange={e => {
-                                const val = Number(e.target.value);
-                                const newSteps = [...caCustomSteps];
-                                newSteps[idx].min_volume = val;
-                                setCaCustomSteps(newSteps);
-                              }}
-                              style={{ width: '80px', padding: '4px 6px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '4px', fontSize: '0.8rem' }}
-                            />
-                            {max != null ? <span style={{ color: 'var(--grey-500)' }}> - ${max.toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0})}</span> : <span style={{ color: 'var(--grey-500)' }}>+</span>}
-                          </>
-                        ) : (
-                          <span>
-                            ${min.toLocaleString('en-US')} {max != null ? ` - $${max.toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0})}` : '+'}
-                          </span>
-                        )}
-                      </span>
-                      
-                      <span style={{ textAlign: 'center', color: idx === 0 ? 'var(--grey-500)' : '#00FF9D', fontWeight: 700 }}>
-                        {bonusText}
-                      </span>
-                      
-                      <span style={{ textAlign: 'right', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-                        {isEditable ? (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <input
-                              type="number"
-                              min="0"
-                              max="40"
-                              step="0.1"
-                              value={step.bonus_pct}
-                              onChange={e => {
-                                const val = Number(e.target.value);
-                                const newSteps = [...caCustomSteps];
-                                newSteps[idx].bonus_pct = val;
-                                setCaCustomSteps(newSteps);
-                              }}
-                              style={{ width: '60px', padding: '4px 6px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '4px', fontSize: '0.8rem', textAlign: 'right' }}
-                            />
-                            <span style={{ color: 'var(--grey-500)' }}>%</span>
-                          </div>
-                        ) : (
-                          <span style={{ color: 'var(--white)', fontWeight: 800 }}>{step.bonus_pct}%</span>
-                        )}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button
-                  type="button"
-                  className="btn-neon-cyan"
-                  onClick={() => setShowGamificationInfo(false)}
-                >
-                  {caScaleType === 'custom' ? 'Save Levels' : 'Close'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
     </div>
   );

@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { isEffectiveAdmin, isPlatformAdminId } from '@/lib/platform-admins';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { getImpersonationContext } from '@/lib/impersonation';
 
@@ -37,11 +38,11 @@ export async function requireAdmin(): Promise<
   const service = await createServiceClient();
   const { data: profile } = await service
     .from('profiles')
-    .select('role')
+    .select('role, is_admin_account')
     .eq('id', user.id)
     .maybeSingle();
 
-  if (profile?.role !== 'admin') {
+  if (!isEffectiveAdmin(user.id, profile?.role) && profile?.is_admin_account !== true) {
     return {
       ok: false,
       response: NextResponse.json(
@@ -58,7 +59,7 @@ export async function requireAdmin(): Promise<
  * Guards API routes that can be accessed by both Admins AND the Shipping role.
  */
 export async function requireOrdersAccess(): Promise<
-  | { ok: true; userId: string; role: string }
+  | { ok: true; userId: string; role: string; isAdmin: boolean }
   | { ok: false; response: NextResponse }
 > {
   const supabase = await createClient();
@@ -74,18 +75,20 @@ export async function requireOrdersAccess(): Promise<
   const service = await createServiceClient();
   const { data: profile } = await service
     .from('profiles')
-    .select('role')
+    .select('role, is_admin_account')
     .eq('id', user.id)
     .maybeSingle();
 
-  if (profile?.role !== 'admin' && profile?.role !== 'shipping') {
+  const isAdmin = isEffectiveAdmin(user.id, profile?.role) || profile?.is_admin_account === true;
+
+  if (!isAdmin && profile?.role !== 'shipping') {
     return {
       ok: false,
       response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }),
     };
   }
 
-  return { ok: true, userId: user.id, role: profile.role };
+  return { ok: true, userId: user.id, role: profile?.role || 'user', isAdmin };
 }
 
 /**
@@ -115,9 +118,11 @@ export async function requireAgent(): Promise<
     .maybeSingle();
 
   // Admin "View As" (product decision: FULLY act as the agent -- reads AND
-  // writes, including money). An admin never passes as an agent on their own,
-  // but WITH a validated active impersonation session on an agent/super_agent
-  // target, act as that target for the whole request.
+  // writes, including money). Only a TRUE admin (role='admin') who has no
+  // storefront of their own should be transparently proxied via impersonation
+  // in agent-scoped routes. Platform admins (e.g. Savage Brands) keep
+  // role='super_agent' and ARE real agents — their own agent-route calls MUST
+  // resolve to their own user ID, never the ViewAs target.
   if (profile?.role === 'admin') {
     const imp = await getImpersonationContext();
     if (imp && imp.impersonatorId === user.id &&
@@ -128,6 +133,8 @@ export async function requireAgent(): Promise<
 
   // BUG 7 fix: removed 'admin' from the allowed set. Admins are not agents and
   // must not pass agent-scoped ownership checks with a mismatched callerId.
+  // Platform admins (isPlatformAdminId) keep role='super_agent' so they pass
+  // the check below naturally as themselves.
   if (profile?.role !== 'agent' && profile?.role !== 'super_agent') {
     return {
       ok: false,
@@ -181,15 +188,68 @@ export async function requireAgentOrAdmin(): Promise<
 
   // Admin "View As": act as the impersonated agent (isAdmin=false, id=target) so
   // house-store-vs-agent logic follows the viewed agent, not the admin.
-  if (role === 'admin') {
+  // Also applies for platform admins (isPlatformAdminId) who have role='super_agent'
+  // — they must be proxied through impersonation too.
+  if (role === 'admin' || isPlatformAdminId(user.id)) {
     const imp = await getImpersonationContext();
-    if (imp && imp.impersonatorId === user.id &&
-        (imp.targetRole === 'agent' || imp.targetRole === 'super_agent')) {
-      return { ok: true, user: { id: imp.targetUserId }, isAdmin: false, impersonating: true };
+    if (imp && imp.impersonatorId === user.id) {
+      if (imp.targetRole === 'agent' || imp.targetRole === 'super_agent') {
+        return { ok: true, user: { id: imp.targetUserId }, isAdmin: false, impersonating: true };
+      }
+      // FAIL CLOSED. An active View As session whose target this guard will not
+      // proxy (a researcher, say) used to fall straight through to the admin's
+      // OWN id - so /api/agent/wallet/commissions, called from inside the
+      // researcher's wallet, returned the ADMIN's commission ledger. One
+      // screen, two identities, no indication which was which. Never silently
+      // substitute the admin's identity inside an impersonation session.
+      return {
+        ok: false,
+        response: NextResponse.json(
+          { error: 'Not Available While Viewing As This Account.' },
+          { status: 403 },
+        ),
+      };
     }
   }
 
   return { ok: true, user: { id: user.id }, isAdmin: role === 'admin', impersonating: false };
+}
+
+/**
+ * Guards manufacturer-only API routes (/api/manufacturer/*). A manufacturer
+ * is an agent-type profile with is_manufacturer = true: the factory's own
+ * store. Every manufacturer route scopes its queries to the caller's id, so
+ * nothing here may pass an admin or ordinary agent through.
+ */
+export async function requireManufacturer(): Promise<
+  | { ok: true; user: { id: string } }
+  | { ok: false; response: NextResponse }
+> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+    };
+  }
+
+  const service = await createServiceClient();
+  const { data: profile } = await service
+    .from('profiles')
+    .select('role, is_manufacturer, is_admin_account, is_active')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (!profile || (!profile.is_manufacturer && !profile.is_admin_account) || profile.is_active === false) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: 'Forbidden. Manufacturer Access Required.' }, { status: 403 }),
+    };
+  }
+
+  return { ok: true, user: { id: user.id } };
 }
 
 /**

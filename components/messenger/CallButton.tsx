@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { preflightMedia } from '@/lib/messenger/mediaPreflight';
 import type { CallSignalRow } from '@/lib/messenger/realtime';
 import { useMessengerStore } from '@/stores/messengerStore';
 import { createClient } from '@/lib/supabase/client';
@@ -67,6 +68,21 @@ export default function CallButton({ conversationId, onCallStarted }: Props) {
     if (busy) return;
     setBusy(true);
     triggerStartHaptics();
+
+    // Pre-acquire mic/cam INSIDE the user-gesture context so Safari caches the
+    // grant. preflightMedia degrades instead of failing: a machine with a
+    // microphone but no webcam — every desktop tower, every Mac Studio — used
+    // to be refused the call outright, because the old all-or-nothing
+    // getUserMedia({audio, video}) rejects with NotFoundError and that was
+    // read as "permission denied". Only a real refusal stops the call now.
+    const media = await preflightMedia(callType === 'video');
+    if (!media.canJoin) {
+      toast.error(media.message);
+      setBusy(false);
+      return;
+    }
+    if (media.message) toast.info(media.message);
+
     try {
       const res = await fetch('/api/messenger/call-signal', {
         method: 'POST',
@@ -126,17 +142,17 @@ export default function CallButton({ conversationId, onCallStarted }: Props) {
   };
 
   return (
-    <div style={{ display: 'inline-flex', gap: 6 }}>
+    <div className="call-btn-group" style={{ display: 'inline-flex', gap: 6, overflow: 'visible', flexShrink: 0 }}>
       <button
         type="button"
         onClick={() => void startCall('audio')}
         disabled={busy}
         aria-label="Start Voice Call"
         title="Start Voice Call"
-        className="hover-lift"
-        style={iconBtn}
+        className="hover-lift call-icon-btn"
+        style={{ ...iconBtn, minWidth: 48, minHeight: 48, overflow: 'visible' }}
       >
-        <Image src="/messenger-icons/phone-icon.png" alt="Voice Call" width={48} height={48} unoptimized style={{ width: 48, height: 48, objectFit: 'contain', transform: 'scale(1.6)' }} />
+        <Image src="/messenger-icons/phone-icon.png" alt="Voice Call" width={48} height={48} unoptimized style={{ width: 48, height: 48, objectFit: 'contain', transform: 'scale(1.4)' }} />
       </button>
       <button
         type="button"
@@ -144,10 +160,10 @@ export default function CallButton({ conversationId, onCallStarted }: Props) {
         disabled={busy}
         aria-label="Start Video Call"
         title="Start Video Call"
-        className="hover-lift"
-        style={iconBtn}
+        className="hover-lift call-icon-btn"
+        style={{ ...iconBtn, minWidth: 48, minHeight: 48, overflow: 'visible' }}
       >
-        <Image src="/messenger-icons/video-icon.png" alt="Video Call" width={48} height={48} unoptimized style={{ width: 48, height: 48, objectFit: 'contain', transform: 'scale(1.6)' }} />
+        <Image src="/messenger-icons/video-icon.png" alt="Video Call" width={48} height={48} unoptimized style={{ width: 48, height: 48, objectFit: 'contain', transform: 'scale(1.4)' }} />
       </button>
     </div>
   );

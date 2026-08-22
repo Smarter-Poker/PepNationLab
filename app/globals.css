@@ -378,8 +378,8 @@ a:hover { color: var(--teal-dark); }
   padding: 0 var(--space-6);
 }
 
-.container-sm { max-width: 900px; }
-.container-xs { max-width: 640px; }
+.container-sm { width: 100%; max-width: 900px; margin: 0 auto; padding: 0 var(--space-6); }
+.container-xs { width: 100%; max-width: 640px; margin: 0 auto; padding: 0 var(--space-6); }
 
 .section {
   padding: var(--space-16) 0;
@@ -1303,6 +1303,14 @@ nav button.drawer-close { text-transform: capitalize; }
 .message-card-hover:hover .store-image-hover {
   transform: scale(1.05);
 }
+/* Savage Brands keeps the zoomed-in vial presentation */
+.store-image-hover-zoomed {
+  transform: scale(1.1);
+  transition: transform 0.4s ease;
+}
+.message-card-hover:hover .store-image-hover-zoomed {
+  transform: scale(1.15);
+}
 
 /*
    MOBILE-FIRST RESPONSIVE (Facebook-Style)
@@ -1673,7 +1681,6 @@ img, video, svg, iframe {
 @media (max-width: 768px) {
   main, [role="main"], .admin-layout > main, .dashboard-main {
     -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain;
   }
 
   /* Any page that uses inline `maxHeight: 90vh` for a modal card
@@ -2611,7 +2618,6 @@ select option {
 @media (max-width: 768px) {
   main, [role="main"], .admin-layout > main, .dashboard-main {
     -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain;
   }
   [role="dialog"] .card,
   [role="dialog"] .card-metal,
@@ -3315,6 +3321,25 @@ body > * {
    ROUND 14 — KILL HORIZONTAL OVERFLOW ON MOBILE
    ============================================================ */
 
+/* Protect call/action icon groups in the messenger header — these must
+   never be clipped by overflow:hidden or capped by max-width:100vw.
+   The .call-btn-group wrapper and .call-icon-btn buttons are explicitly
+   exempted from the blast rules below. */
+.call-btn-group,
+.call-btn-group * {
+  overflow: visible !important;
+  max-width: none !important;
+}
+.call-icon-btn {
+  flex-shrink: 0 !important;
+}
+/* Ensure the messenger header button row doesn't clip its children */
+.messenger-main header > div:last-child,
+.messenger-main > div > header > div:last-child {
+  overflow: visible !important;
+  flex-shrink: 0 !important;
+}
+
 @media (max-width: 768px) {
   .messenger-shell,
   .messenger-shell *,
@@ -3459,17 +3484,16 @@ body > * {
   .messenger-main .msg-composer button[aria-label="Schedule Send"] {
     display: none !important;
   }
-  .messenger-shell {
-    margin-top: calc(0px - var(--safe-top, 0px)) !important;
-  }
+  /* ROUND 15 NOTE: the negative margin-top and the spacer height:60px
+     override have been removed. They stripped env(safe-area-inset-top)
+     on notched iPhones, causing the top of the messenger (conversation
+     list header, phone/video call buttons) to be hidden behind the iOS
+     status bar / Dynamic Island. The layout spacer must use the full
+     --nav-offset (60px + safe-top) so content starts below the notch. */
   .messenger-main header,
   .messenger-main > div > header {
     margin-top: 0 !important;
     padding-top: 4px !important;
-  }
-  .messenger-layout-root > div[style*="height: var(--nav-offset"],
-  .messenger-layout-root > div[style*="height:var(--nav-offset"] {
-    height: 60px !important;
   }
   .pnl-navbar a img.dashboard-icon {
     width: 110px !important;
@@ -3817,6 +3841,74 @@ body > div.pnl-page:not(.pnl-page-with-navbar) {
   button[style*="font-size:11px"], button[style*="font-size: 11px"],
   button[style*="font-size:12px"], button[style*="font-size: 12px"],
   button[style*="font-size:13px"], button[style*="font-size: 13px"] {
+    font-size: 0.82rem !important;
+  }
+
+  /* Tag-coverage gap in the two px floor blocks above. Those lists only named
+     div/span/p/li/td/th/a/small/label/button, so inline px sizes landing on
+     other text-bearing tags fell through the floor entirely. Confirmed live
+     offenders: code (11px, 12px) in the admin email center, h3 (13px) in the
+     research calculator suite, strong (12px, 13px) in the stack builder, and
+     table (13px) in the instant-answer card, SAR panel, and COA certificate.
+     Still deliberately excluded: input/textarea/select (already pinned to 16px
+     to stop iOS zoom) and SVG text (recharts axis ticks). Both serializations
+     are listed, per the server-vs-client inline-style rule at the top of the
+     floor section. */
+  code[style*="font-size:9px"], code[style*="font-size: 9px"],
+  code[style*="font-size:10px"], code[style*="font-size: 10px"],
+  code[style*="font-size:11px"], code[style*="font-size: 11px"],
+  code[style*="font-size:12px"], code[style*="font-size: 12px"],
+  code[style*="font-size:13px"], code[style*="font-size: 13px"],
+  strong[style*="font-size:9px"], strong[style*="font-size: 9px"],
+  strong[style*="font-size:10px"], strong[style*="font-size: 10px"],
+  strong[style*="font-size:11px"], strong[style*="font-size: 11px"],
+  strong[style*="font-size:12px"], strong[style*="font-size: 12px"],
+  strong[style*="font-size:13px"], strong[style*="font-size: 13px"],
+  b[style*="font-size:11px"], b[style*="font-size: 11px"],
+  b[style*="font-size:12px"], b[style*="font-size: 12px"],
+  b[style*="font-size:13px"], b[style*="font-size: 13px"],
+  em[style*="font-size:11px"], em[style*="font-size: 11px"],
+  em[style*="font-size:12px"], em[style*="font-size: 12px"],
+  em[style*="font-size:13px"], em[style*="font-size: 13px"],
+  i[style*="font-size:11px"], i[style*="font-size: 11px"],
+  i[style*="font-size:12px"], i[style*="font-size: 12px"],
+  i[style*="font-size:13px"], i[style*="font-size: 13px"],
+  h1[style*="font-size:11px"], h1[style*="font-size: 11px"],
+  h1[style*="font-size:12px"], h1[style*="font-size: 12px"],
+  h1[style*="font-size:13px"], h1[style*="font-size: 13px"],
+  h2[style*="font-size:11px"], h2[style*="font-size: 11px"],
+  h2[style*="font-size:12px"], h2[style*="font-size: 12px"],
+  h2[style*="font-size:13px"], h2[style*="font-size: 13px"],
+  h3[style*="font-size:11px"], h3[style*="font-size: 11px"],
+  h3[style*="font-size:12px"], h3[style*="font-size: 12px"],
+  h3[style*="font-size:13px"], h3[style*="font-size: 13px"],
+  h4[style*="font-size:11px"], h4[style*="font-size: 11px"],
+  h4[style*="font-size:12px"], h4[style*="font-size: 12px"],
+  h4[style*="font-size:13px"], h4[style*="font-size: 13px"],
+  h5[style*="font-size:11px"], h5[style*="font-size: 11px"],
+  h5[style*="font-size:12px"], h5[style*="font-size: 12px"],
+  h5[style*="font-size:13px"], h5[style*="font-size: 13px"],
+  h6[style*="font-size:11px"], h6[style*="font-size: 11px"],
+  h6[style*="font-size:12px"], h6[style*="font-size: 12px"],
+  h6[style*="font-size:13px"], h6[style*="font-size: 13px"],
+  dt[style*="font-size:11px"], dt[style*="font-size: 11px"],
+  dt[style*="font-size:12px"], dt[style*="font-size: 12px"],
+  dt[style*="font-size:13px"], dt[style*="font-size: 13px"],
+  dd[style*="font-size:11px"], dd[style*="font-size: 11px"],
+  dd[style*="font-size:12px"], dd[style*="font-size: 12px"],
+  dd[style*="font-size:13px"], dd[style*="font-size: 13px"],
+  summary[style*="font-size:11px"], summary[style*="font-size: 11px"],
+  summary[style*="font-size:12px"], summary[style*="font-size: 12px"],
+  summary[style*="font-size:13px"], summary[style*="font-size: 13px"],
+  figcaption[style*="font-size:11px"], figcaption[style*="font-size: 11px"],
+  figcaption[style*="font-size:12px"], figcaption[style*="font-size: 12px"],
+  figcaption[style*="font-size:13px"], figcaption[style*="font-size: 13px"],
+  blockquote[style*="font-size:11px"], blockquote[style*="font-size: 11px"],
+  blockquote[style*="font-size:12px"], blockquote[style*="font-size: 12px"],
+  blockquote[style*="font-size:13px"], blockquote[style*="font-size: 13px"],
+  table[style*="font-size:11px"], table[style*="font-size: 11px"],
+  table[style*="font-size:12px"], table[style*="font-size: 12px"],
+  table[style*="font-size:13px"], table[style*="font-size: 13px"] {
     font-size: 0.82rem !important;
   }
 
@@ -4414,8 +4506,8 @@ html {
      meant to scroll - e.g. research filter chip bars). Paired with the
      min-width:0 above, rows that already fit are visually unchanged; only
      rows that would otherwise clip wrap to a second line. */
-  [style*="display:flex"]:not([style*="column"]):not([style*="overflow-x:auto"]):not([style*="overflow-x: auto"]):not([style*="overflow-x:scroll"]):not([style*="overflow-x: scroll"]):not([style*="overflow:auto"]),
-  [style*="display: flex"]:not([style*="column"]):not([style*="overflow-x:auto"]):not([style*="overflow-x: auto"]):not([style*="overflow-x:scroll"]):not([style*="overflow-x: scroll"]):not([style*="overflow:auto"]) {
+  [style*="display:flex"]:not([style*="column"]):not([style*="overflow-x:auto"]):not([style*="overflow-x: auto"]):not([style*="overflow-x:scroll"]):not([style*="overflow-x: scroll"]):not([style*="overflow:auto"]):not([style*="overflow: auto"]),
+  [style*="display: flex"]:not([style*="column"]):not([style*="overflow-x:auto"]):not([style*="overflow-x: auto"]):not([style*="overflow-x:scroll"]):not([style*="overflow-x: scroll"]):not([style*="overflow:auto"]):not([style*="overflow: auto"]) {
     flex-wrap: wrap;
   }
 
@@ -4566,4 +4658,29 @@ li a:not(.btn):not([class*="btn"]) {
   .badge {
     forced-color-adjust: auto;
   }
+}
+
+
+/* While the guest conversion banner is on screen (GuestCTA sets this class
+   on <body>), lift the storefront's floating cart above it. Without this the
+   160px cart hitbox (z-index 9999) covered the banner's dismiss X (z-index
+   9000), so tapping the X opened the cart instead of closing the banner. */
+body.guest-cta-visible .floating-cart-wrapper {
+  bottom: 125px;
+}
+@media (max-width: 768px) {
+  body.guest-cta-visible .floating-cart-wrapper {
+    bottom: 90px;
+  }
+}
+
+/* The wallet page sets text-transform: capitalize on its root for label copy.
+   That inherits into form controls, so anything the user TYPES was re-cased on
+   screen while the stored value stayed as entered. Exempt the controls and the
+   places that render user-supplied text verbatim. */
+.wallet-capitalize input,
+.wallet-capitalize textarea,
+.wallet-capitalize select,
+.wallet-capitalize [data-user-text] {
+  text-transform: none !important;
 }

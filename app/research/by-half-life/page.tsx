@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     creator: '@PepNationLab',
     title: 'Browse Peptides By Half-Life | Short vs Long Acting | Pep Nation Lab',
     description: 'Compare research peptides by pharmacokinetic half-life. Filter from short-acting compounds (minutes) to long-acting variants (days). Research use only.',
-    images: ['https://pepnationlab.com/images/og-card.jpg'],
+    images: ['https://pepnationlab.com/og-card.png'],
   },
 };
 

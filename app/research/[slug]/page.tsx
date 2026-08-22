@@ -15,7 +15,7 @@
 
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getCompound, getAllCompounds, getCompoundBindings } from '@/lib/compounds-server';
+import { getCompound, getAllCompounds, getCompoundBindings, getCOAUrlByCompoundSlug } from '@/lib/compounds-server';
 import { relatedCompounds } from '@/lib/compounds';
 import { COMPARISON_PAIRS, matchupSlug } from '@/lib/research/comparisons';
 import MonographTabs from '@/components/research/MonographTabs';
@@ -32,6 +32,7 @@ import PinToCompareButton from '@/components/research/PinToCompareButton';
 import ResearchCartButton from '@/components/research/ResearchCartButton';
 import MonographSeoContent from '@/components/research/MonographSeoContent';
 import MonographCitations from '@/components/research/MonographCitations';
+import DoseFrequencyPanel from '@/components/research/DoseFrequencyPanel';
 
 // ISR: monographs are static reference content that changes rarely. Pre-render
 // every compound at build and revalidate hourly. This ships full, instant HTML
@@ -99,8 +100,9 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   const related = relatedCompounds(compound, all);
 
   // Server-fetch the Wave 2 enriched data (bindings + structures); fail-soft.
-  const [bindingsRes] = await Promise.all([
+  const [bindingsRes, coaUrl] = await Promise.all([
     getCompoundBindings(slug),
+    getCOAUrlByCompoundSlug(slug),
   ]);
   const bindings = bindingsRes as Array<{
     target_name: string;
@@ -254,8 +256,11 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         // entity; lastReviewed communicates content freshness to Google and
         // AI answer engines.
         publisher: { '@id': 'https://pepnationlab.com/#organization' },
-        reviewedBy: { '@id': 'https://pepnationlab.com/#organization' },
-        maintainer: { '@id': 'https://pepnationlab.com/#organization' },
+        // reviewedBy/maintainer point at the distinct research-team entity (not
+        // the publisher org) so author != publisher - the E-E-A-T signal
+        // Google's YMYL systems and AI answer engines actually reward.
+        reviewedBy: { '@id': 'https://pepnationlab.com/#research-team' },
+        maintainer: { '@id': 'https://pepnationlab.com/#research-team' },
         ...(reviewedDate ? { lastReviewed: reviewedDate, dateModified: reviewedDate } : {}),
         ...(publishedDate ? { datePublished: publishedDate } : {}),
         audience: {
@@ -308,7 +313,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
           HTML. Clicks are intercepted into IframeModal (never navigate away). */}
       <MonographCitations sources={compound.sources ?? []} compoundName={compound.display_name} />
 
-      <MonographTabs compound={compound} related={related} />
+      <MonographTabs compound={compound} related={related} coaUrl={coaUrl} />
 
       {/* Personalization rail - server emits markup; the buttons handle auth themselves. */}
       <div
@@ -335,6 +340,9 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
           productName={compound.display_name}
         />
       </div>
+
+      {/* Dose & Frequency — branded collapsible panel, research reference only */}
+      <DoseFrequencyPanel slug={compound.slug} compoundName={compound.display_name} />
 
       {/* Visualization rail - each component fails gracefully when its data is missing. */}
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 var(--space-4, 16px) var(--space-6, 32px)', display: 'grid', gap: 'var(--space-4, 16px)' }}>

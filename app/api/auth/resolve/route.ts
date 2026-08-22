@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
       .select('id, username')
       .eq('username', username)
       .eq('is_active', true)
+      .is('deleted_at', null)
       .maybeSingle();
 
     if (!data) {

@@ -4,10 +4,11 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
-import { Package, Search, Upload, Pencil, Trash2, Eye, EyeOff, Plus, X, DollarSign, Tag, TrendingUp } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Package, Search, Upload, Pencil, Trash2, Eye, EyeOff, Plus, X, DollarSign, Tag, TrendingUp, ChevronUp, ChevronDown } from 'lucide-react';
 
 const MIN_PRODUCTS = 2;
-const MAX_PRODUCTS = 5;
+const MAX_PRODUCTS = 6;
 const MAX_DISCOUNT = 90;
 
 type BundleScope = 'self' | 'downline' | 'global';
@@ -15,9 +16,10 @@ type BundleScope = 'self' | 'downline' | 'global';
 interface Bundle {
   id: string;
   name: string;
-  tagline: string;
-  description: string;
+  tagline: string | null;
+  description: string | null;
   image_url: string | null;
+  vial_image_url: string | null;
   product_ids: string[];
   discount_percent: number;
   custom_price: number | null;
@@ -31,6 +33,8 @@ interface Bundle {
 interface CatalogEntry {
   productId: string;
   name: string;
+  baseCost: number;
+  retailPrice: number;
 }
 
 interface Props {
@@ -55,6 +59,7 @@ function fmt(n: number | null | undefined): string {
  * and custom price fields.
  */
 export default function BundleManager({ agentId }: Props) {
+  const router = useRouter();
   const [catalog, setCatalog] = useState<CatalogEntry[]>([]);
   const [bundles, setBundles] = useState<Bundle[]>([]);
   const [perms, setPerms] = useState<{ canDownline: boolean; canGlobal: boolean }>({ canDownline: false, canGlobal: false });
@@ -66,6 +71,7 @@ export default function BundleManager({ agentId }: Props) {
   const [tagline, setTagline] = useState('');
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [vialImageUrl, setVialImageUrl] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [discount, setDiscount] = useState(0);
   const [customPrice, setCustomPrice] = useState('');
@@ -73,6 +79,7 @@ export default function BundleManager({ agentId }: Props) {
   const [query, setQuery] = useState('');
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [vialUploading, setVialUploading] = useState(false);
   const formRef = useRef<HTMLDivElement | null>(null);
 
   const catalogName = useCallback(
@@ -96,23 +103,35 @@ export default function BundleManager({ agentId }: Props) {
   useEffect(() => {
     let active = true;
     (async () => {
-      const supabase = createClient();
       const [catRes] = await Promise.all([
-        supabase
-          .from('agent_products')
-          .select('product_id, custom_name, is_visible, products ( name )')
-          .eq('agent_id', agentId)
-          .eq('is_visible', true),
+        fetch('/api/agent/products').then(res => res.ok ? res.json() : { data: [] }).catch(() => ({ data: [] })),
         loadBundles(),
       ]);
       if (!active) return;
-      if (!catRes.error && catRes.data) {
+      if (catRes && catRes.data) {
         const seen = new Set<string>();
         const entries: CatalogEntry[] = [];
-        for (const row of catRes.data as Array<Record<string, any>>) {
-          if (!row.product_id || seen.has(row.product_id)) continue;
+        for (const row of catRes.data) {
+          if (!row.product_id || seen.has(row.product_id) || !row.is_visible) continue;
           seen.add(row.product_id);
-          entries.push({ productId: row.product_id, name: row.custom_name || row.products?.name || 'Unnamed Product' });
+          
+          const baseName = row.custom_name || row.products?.name || 'Unnamed Product';
+          const sizeStr = row.products?.unit_size && row.products?.unit_measure ? `${row.products.unit_size}${row.products.unit_measure}` : '';
+          const productName = sizeStr ? `${sizeStr} ${baseName}` : baseName;
+          
+          const isBacWater = /bac\.?\s*water/i.test(row.products?.name || '');
+          const divFactor = isBacWater ? 1 : 10;
+          
+          const baseCost = row.agent_cost != null && row.agent_cost > 0 ? row.agent_cost / divFactor : 0;
+          const retailPriceRaw = row.is_on_sale && row.sale_price ? row.sale_price : (row.retail_price || 0);
+          const retailPrice = retailPriceRaw > 0 ? retailPriceRaw / divFactor : 0;
+
+          entries.push({ 
+            productId: row.product_id, 
+            name: productName,
+            baseCost,
+            retailPrice
+          });
         }
         entries.sort((a, b) => a.name.localeCompare(b.name));
         setCatalog(entries);
@@ -128,6 +147,7 @@ export default function BundleManager({ agentId }: Props) {
     setTagline('');
     setDescription('');
     setImageUrl('');
+    setVialImageUrl('');
     setSelectedIds([]);
     setDiscount(0);
     setCustomPrice('');
@@ -147,6 +167,7 @@ export default function BundleManager({ agentId }: Props) {
     setTagline(b.tagline || '');
     setDescription(b.description || '');
     setImageUrl(b.image_url || '');
+    setVialImageUrl(b.vial_image_url || '');
     setSelectedIds([...b.product_ids]);
     setDiscount(b.discount_percent || 0);
     setCustomPrice(b.custom_price != null ? String(b.custom_price) : '');
@@ -167,24 +188,35 @@ export default function BundleManager({ agentId }: Props) {
     });
   };
 
-  const handleUpload = async (file: File) => {
-    setUploading(true);
+  const handleUpload = async (file: File, isVial: boolean = false) => {
+    if (isVial) setVialUploading(true);
+    else setUploading(true);
     try {
-      const supabase = createClient();
-      const ext = file.name.split('.').pop() || 'png';
-      const path = `bundle-images/${agentId}-${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from('public-assets').upload(path, file, { upsert: true });
-      if (error) {
-        toast.error('Failed To Upload Image: ' + error.message);
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const res = await fetch('/api/agent/bundles/upload-image', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      const json = await res.json().catch(() => ({}));
+      
+      if (!res.ok) {
+        toast.error('Failed To Upload Image: ' + (json.error || res.statusText));
         return;
       }
-      const { data: pub } = supabase.storage.from('public-assets').getPublicUrl(path);
-      if (pub?.publicUrl) {
-        setImageUrl(pub.publicUrl);
+      
+      if (json.url) {
+        if (isVial) setVialImageUrl(json.url);
+        else setImageUrl(json.url);
         toast.success('Image Uploaded');
       }
+    } catch (err: any) {
+      toast.error('Upload Error: ' + err.message);
     } finally {
-      setUploading(false);
+      if (isVial) setVialUploading(false);
+      else setUploading(false);
     }
   };
 
@@ -212,6 +244,7 @@ export default function BundleManager({ agentId }: Props) {
         tagline: tagline.trim(),
         description: description.trim(),
         image_url: imageUrl.trim() || null,
+        vial_image_url: vialImageUrl.trim() || null,
         product_ids: selectedIds,
         discount_percent: Math.min(Math.max(Math.round(Number(discount) || 0), 0), MAX_DISCOUNT),
         custom_price: cpNum,
@@ -229,6 +262,7 @@ export default function BundleManager({ agentId }: Props) {
       }
       toast.success(editingId ? 'Bundle Updated' : 'Bundle Created');
       await loadBundles();
+      router.refresh();
       resetForm();
       setShowForm(false);
     } finally {
@@ -244,8 +278,32 @@ export default function BundleManager({ agentId }: Props) {
     });
     if (res.ok) {
       setBundles((prev) => prev.map((x) => (x.id === b.id ? { ...x, is_active: !x.is_active } : x)));
+      router.refresh();
     } else {
       toast.error('Failed To Update Bundle');
+    }
+  };
+
+  const moveBundle = async (index: number, direction: 'up' | 'down') => {
+    if (direction === 'up' && index === 0) return;
+    if (direction === 'down' && index === bundles.length - 1) return;
+    
+    const newBundles = [...bundles];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    [newBundles[index], newBundles[targetIndex]] = [newBundles[targetIndex], newBundles[index]];
+    
+    setBundles(newBundles);
+    
+    const res = await fetch('/api/agent/bundles', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'reorder', ids: newBundles.map((b) => b.id) }),
+    });
+    if (!res.ok) {
+      toast.error('Failed To Reorder Bundles');
+      loadBundles();
+    } else {
+      router.refresh();
     }
   };
 
@@ -258,6 +316,7 @@ export default function BundleManager({ agentId }: Props) {
     if (res.ok) {
       setBundles((prev) => prev.filter((x) => x.id !== b.id));
       toast.success('Bundle Removed');
+      router.refresh();
       if (editingId === b.id) {
         resetForm();
         setShowForm(false);
@@ -307,20 +366,30 @@ export default function BundleManager({ agentId }: Props) {
       {/* Existing bundles */}
       {bundles.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-          {bundles.map((b) => (
+          {bundles.map((b, idx) => (
             <div
               key={b.id}
               style={{
                 display: 'flex', gap: 'var(--space-3)', padding: '12px 14px',
                 borderRadius: 'var(--radius-md)', background: 'var(--surface-2)',
                 border: '1px solid rgba(255,255,255,0.06)', opacity: b.is_active ? 1 : 0.55,
-                alignItems: 'flex-start',
+                alignItems: 'center',
               }}
             >
+              {/* Reorder Arrows */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginRight: -6 }}>
+                <button type="button" onClick={() => moveBundle(idx, 'up')} disabled={idx === 0} className="btn-ghost" style={{ padding: 2, color: idx === 0 ? 'var(--surface-3)' : 'var(--silver)' }}>
+                  <ChevronUp size={16} />
+                </button>
+                <button type="button" onClick={() => moveBundle(idx, 'down')} disabled={idx === bundles.length - 1} className="btn-ghost" style={{ padding: 2, color: idx === bundles.length - 1 ? 'var(--surface-3)' : 'var(--silver)' }}>
+                  <ChevronDown size={16} />
+                </button>
+              </div>
+
               {/* Thumbnail */}
-              <div style={{ width: 50, height: 50, borderRadius: 8, overflow: 'hidden', flexShrink: 0, background: 'var(--surface-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
+              <div style={{ width: 50, height: 50, borderRadius: 8, overflow: 'hidden', flexShrink: 0, background: 'var(--surface-3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {b.image_url ? (
-                  <Image src={b.image_url} alt={b.name} width={100} height={100} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <Image src={b.image_url} alt={b.name} width={100} height={100} unoptimized style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                 ) : (
                   <Package size={18} style={{ color: 'var(--grey-500)' }} aria-hidden="true" />
                 )}
@@ -363,12 +432,16 @@ export default function BundleManager({ agentId }: Props) {
                 {/* Pricing row */}
                 <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span style={{ fontSize: '0.68rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Your Cost</span>
-                    <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--silver-light)' }}>{fmt(b.base_cost_total)}</span>
+                    <span style={{ fontSize: '0.68rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Base Cost</span>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--silver-light)' }}>
+                      {fmt(b.product_ids.reduce((sum, pid) => sum + (catalog.find(c => c.productId === pid)?.baseCost || 0), 0))}
+                    </span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span style={{ fontSize: '0.68rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>If Bought Separately</span>
-                    <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--silver-light)', textDecoration: 'line-through', opacity: 0.8 }}>{fmt(b.retail_value_total)}</span>
+                    <span style={{ fontSize: '0.68rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Listed Price</span>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--silver-light)', textDecoration: 'line-through', opacity: 0.8 }}>
+                      {fmt(b.product_ids.reduce((sum, pid) => sum + (catalog.find(c => c.productId === pid)?.retailPrice || 0), 0))}
+                    </span>
                   </div>
                   {b.custom_price != null && b.custom_price > 0 && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -407,25 +480,51 @@ export default function BundleManager({ agentId }: Props) {
           </div>
 
           {/* Image upload */}
-          <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
-            <div style={{ width: 84, height: 84, borderRadius: 10, overflow: 'hidden', flexShrink: 0, background: 'var(--surface-3)', border: '1px dashed rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-              {imageUrl ? (
-                <Image src={imageUrl} alt="Bundle" width={168} height={168} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                <Package size={24} style={{ color: 'var(--grey-500)' }} aria-hidden="true" />
-              )}
+          <div style={{ display: 'flex', gap: 'var(--space-6)', flexWrap: 'wrap' }}>
+            {/* Flyer Image */}
+            <div style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'center' }}>
+              <div style={{ width: 84, height: 84, borderRadius: 10, overflow: 'hidden', flexShrink: 0, background: 'var(--surface-3)', border: '1px dashed rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                {imageUrl ? (
+                  <Image src={imageUrl} alt="Flyer Image" width={168} height={168} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <Package size={24} style={{ color: 'var(--grey-500)' }} aria-hidden="true" />
+                )}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, justifyContent: 'center' }}>
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 34, padding: '0 14px', borderRadius: 'var(--radius-md)', background: 'var(--teal)', color: 'var(--background)', fontWeight: 600, fontSize: '0.8rem', cursor: uploading ? 'wait' : 'pointer' }}>
+                  <Upload size={13} aria-hidden="true" />
+                  {uploading ? 'Uploading...' : 'Upload Flyer Image'}
+                  <input type="file" accept="image/*" style={{ display: 'none' }} disabled={uploading} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f, false); }} />
+                </label>
+                {imageUrl && (
+                  <button type="button" onClick={() => setImageUrl('')} style={{ fontSize: '0.72rem', color: 'var(--red)', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0 }}>
+                    Remove Flyer
+                  </button>
+                )}
+              </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, justifyContent: 'center' }}>
-              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 34, padding: '0 14px', borderRadius: 'var(--radius-md)', background: 'var(--teal)', color: 'var(--background)', fontWeight: 600, fontSize: '0.8rem', cursor: uploading ? 'wait' : 'pointer' }}>
-                <Upload size={13} aria-hidden="true" />
-                {uploading ? 'Uploading...' : imageUrl ? 'Replace Image' : 'Upload Image'}
-                <input type="file" accept="image/*" style={{ display: 'none' }} disabled={uploading} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); }} />
-              </label>
-              {imageUrl && (
-                <button type="button" onClick={() => setImageUrl('')} style={{ fontSize: '0.72rem', color: 'var(--red)', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0 }}>
-                  Remove Image
-                </button>
-              )}
+
+            {/* Vial Image */}
+            <div style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'center' }}>
+              <div style={{ width: 84, height: 84, borderRadius: 10, overflow: 'hidden', flexShrink: 0, background: 'var(--surface-3)', border: '1px dashed rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                {vialImageUrl ? (
+                  <Image src={vialImageUrl} alt="Vial Image" width={168} height={168} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <Package size={24} style={{ color: 'var(--grey-500)' }} aria-hidden="true" />
+                )}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, justifyContent: 'center' }}>
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 34, padding: '0 14px', borderRadius: 'var(--radius-md)', background: 'var(--teal)', color: 'var(--background)', fontWeight: 600, fontSize: '0.8rem', cursor: vialUploading ? 'wait' : 'pointer' }}>
+                  <Upload size={13} aria-hidden="true" />
+                  {vialUploading ? 'Uploading...' : 'Upload Vial Image'}
+                  <input type="file" accept="image/*" style={{ display: 'none' }} disabled={vialUploading} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f, true); }} />
+                </label>
+                {vialImageUrl && (
+                  <button type="button" onClick={() => setVialImageUrl('')} style={{ fontSize: '0.72rem', color: 'var(--red)', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0 }}>
+                    Remove Vials
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -455,7 +554,7 @@ export default function BundleManager({ agentId }: Props) {
           {/* Description */}
           <div className="form-group" style={{ margin: 0 }}>
             <label className="form-label" htmlFor="bundle-desc" style={{ color: 'var(--grey-400)' }}>Description (Optional)</label>
-            <textarea id="bundle-desc" className="form-input" value={description} maxLength={500} onChange={(e) => setDescription(e.target.value)} placeholder="What This Bundle Is For" rows={2} style={{ resize: 'vertical' }} />
+            <textarea id="bundle-desc" className="form-input" value={description} maxLength={5000} onChange={(e) => setDescription(e.target.value)} placeholder="What This Bundle Is For" rows={2} style={{ resize: 'vertical' }} />
           </div>
 
           {/* Product selection */}
@@ -487,6 +586,40 @@ export default function BundleManager({ agentId }: Props) {
               )}
             </div>
           </div>
+
+          {/* Bundle Pricing Summary */}
+          {(() => {
+            const selectedProducts = selectedIds.map(id => catalog.find(c => c.productId === id)).filter(Boolean);
+            if (selectedProducts.length > 0) {
+              const totalBase = selectedProducts.reduce((sum, p) => sum + (p?.baseCost || 0), 0);
+              const totalRetail = selectedProducts.reduce((sum, p) => sum + (p?.retailPrice || 0), 0);
+              return (
+                <div style={{ 
+                  backgroundColor: 'var(--surface-3)', 
+                  padding: '12px 16px', 
+                  borderRadius: 'var(--radius-md)', 
+                  border: '1px solid rgba(255,255,255,0.06)', 
+                  marginBottom: '16px',
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center' 
+                }}>
+                  <div style={{ fontSize: '0.82rem', color: 'var(--silver)', fontWeight: 500 }}>
+                    Selected Products Value
+                  </div>
+                  <div style={{ textAlign: 'right', display: 'flex', gap: '20px' }}>
+                    <div style={{ fontSize: '0.82rem', color: 'var(--silver-light)' }}>
+                      Base Cost: <span style={{ fontWeight: 600, color: 'var(--white)' }}>${totalBase.toFixed(2)}</span>
+                    </div>
+                    <div style={{ fontSize: '0.82rem', color: 'var(--teal)' }}>
+                      Listed Price: <span style={{ fontWeight: 700 }}>${totalRetail.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })()}
 
           {/* Pricing row */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>

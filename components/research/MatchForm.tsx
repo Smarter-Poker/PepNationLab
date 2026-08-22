@@ -1,10 +1,10 @@
 'use client';
 
-import { useMemo, useState, useEffect, Suspense } from 'react';
+import React, { useMemo, useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { Sparkles, ChevronRight, ShieldCheck, Printer, X, Info, Scale, Trash2, ArrowRight, ArrowLeft, Save, Search, Eye, Clock, Atom, Snowflake, AlertTriangle, Check, RotateCcw } from 'lucide-react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { Sparkles, ChevronRight, ShieldCheck, Printer, X, Info, Scale, Trash2, ArrowRight, ArrowLeft, Save, Search, Eye, Clock, Atom, Snowflake, AlertTriangle, Check, RotateCcw, FlaskConical, Microscope, Globe, Shield, Infinity, Zap, Link2, ShoppingCart } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { RESEARCH_AREAS } from '@/lib/compounds';
 import type {
   EvidenceComfort,
@@ -15,24 +15,26 @@ import CompoundDrawer from './CompoundDrawer';
 import { saveMatchAction } from '@/app/research/actions';
 import { toast } from 'sonner';
 import { useModalA11y } from '@/lib/useModalA11y';
+import { SharedCompareModal, mapToCompareItem } from './SharedCompareModal';
 
 interface ApiResponse {
   results?: MatchResult[];
   error?: string;
   note?: string;
+  relaxed?: boolean;
 }
 
-const EVIDENCE_OPTIONS: { value: EvidenceComfort; label: string; help: string }[] = [
-  { value: 'strict_human_only', label: 'Approved Drugs Only', help: 'FDA / EMA approved compounds with human trial data.' },
-  { value: 'investigational_ok', label: 'Investigational Or Better', help: 'In active human clinical trials, or approved.' },
-  { value: 'preclinical_ok', label: 'Preclinical Or Better', help: 'Animal or in-vitro evidence acceptable.' },
-  { value: 'any', label: 'Any Evidence Level', help: 'Include research-only and exploratory compounds.' },
+const EVIDENCE_OPTIONS: { value: EvidenceComfort; label: string; help: string; icon: React.ReactNode; color: string }[] = [
+  { value: 'strict_human_only', label: 'Approved Drugs Only', help: 'FDA / EMA approved compounds with human trial data.', icon: <ShieldCheck size={22} />, color: '#68D391' },
+  { value: 'investigational_ok', label: 'Investigational Or Better', help: 'In active human clinical trials, or approved.', icon: <FlaskConical size={22} />, color: '#00E5FF' },
+  { value: 'preclinical_ok', label: 'Preclinical Or Better', help: 'Animal or in-vitro evidence acceptable.', icon: <Microscope size={22} />, color: '#F6AD55' },
+  { value: 'any', label: 'Any Evidence Level', help: 'Include research-only and exploratory compounds.', icon: <Globe size={22} />, color: '#A8B4C0' },
 ];
 
-const RISK_OPTIONS: { value: RiskTolerance; label: string; help: string }[] = [
-  { value: 'low_only', label: 'Low Risk Only', help: 'Exclude compounds with moderate, high, or critical research risk.' },
-  { value: 'moderate_ok', label: 'Low Or Moderate Risk', help: 'Exclude high and critical risk compounds.' },
-  { value: 'any', label: 'Any Risk Level', help: 'Include all risk classifications.' },
+const RISK_OPTIONS: { value: RiskTolerance; label: string; help: string; icon: React.ReactNode; color: string }[] = [
+  { value: 'low_only', label: 'Low Risk Only', help: 'Exclude compounds with moderate, high, or critical research risk.', icon: <Shield size={22} />, color: '#68D391' },
+  { value: 'moderate_ok', label: 'Low Or Moderate Risk', help: 'Exclude high and critical risk compounds.', icon: <Zap size={22} />, color: '#F6AD55' },
+  { value: 'any', label: 'Any Risk Level', help: 'Include all risk classifications.', icon: <Infinity size={22} />, color: '#FC8181' },
 ];
 
 function tierLabel(tier: string): string {
@@ -82,23 +84,26 @@ const BREAKDOWN_FACTORS: { key: 'base' | 'keyword' | 'evidenceBonus' | 'classBon
 
 function CircularScore({ score }: { score: number }) {
   const reduce = useReducedMotion();
-  const size = 60;
-  const stroke = 5;
+  // Reduced from 60→52px and stroke 5→4 to prevent edge clipping on narrow mobile cards
+  const size = 52;
+  const stroke = 4;
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
   const pct = Math.max(0, Math.min(100, Math.round(score)));
   const strokeDashoffset = circumference - (pct / 100) * circumference;
   // Calibrated to the engine's real score distribution. A strong match
   // (research-area tag + keyword + solid evidence tier + research interest)
-  // lands in the high 70s-90s; a keyword-only match lands in the 40s. The old
-  // 80/50 cutoffs were tuned for the pre-gradient engine, where nearly every
-  // relevant compound scored ~90, and made strong results render amber.
+  // lands in the high 70s-90s; a keyword-only match lands in the 40s.
   const color = pct >= 75 ? '#3DD9A4' : pct >= 45 ? '#F6AD55' : '#FC8181';
 
   return (
     <div
       title={`Match score: ${pct} out of 100`}
-      style={{ position: 'relative', width: size, height: size, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      style={{
+        position: 'relative', width: size, height: size,
+        flexShrink: 0, flex: '0 0 auto',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}
     >
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)', display: 'block' }}>
         <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={stroke} />
@@ -112,8 +117,8 @@ function CircularScore({ score }: { score: number }) {
         />
       </svg>
       <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 }}>
-        <span style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--white)' }}>{pct}</span>
-        <span style={{ fontSize: '0.48rem', fontWeight: 700, letterSpacing: '0.1em', color: color, marginTop: 3 }}>MATCH</span>
+        <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--white)' }}>{pct}</span>
+        <span style={{ fontSize: '0.42rem', fontWeight: 700, letterSpacing: '0.1em', color: color, marginTop: 2 }}>MATCH</span>
       </div>
     </div>
   );
@@ -151,14 +156,16 @@ function MatchFormInner() {
   const [results, setResults] = useState<MatchResult[] | null>(null);
   const [excludedCompounds, setExcludedCompounds] = useState<{slug: string; displayName: string; reason: string}[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [showCompare, setShowCompare] = useState(false);
-  const [compareSelection, setCompareSelection] = useState<string[]>([]);
+  const initialCompare = useMemo(() => searchParams.get('compare') ? searchParams.get('compare')!.split(',').filter(Boolean) : [], [searchParams]);
+  const [showCompare, setShowCompare] = useState(initialCompare.length >= 2);
+  const [compareSelection, setCompareSelection] = useState<string[]>(initialCompare);
+  const [relaxed, setRelaxed] = useState(false);
   const reduceMotion = useReducedMotion();
 
   function toggleCompare(slug: string) {
     setCompareSelection(prev => {
       if (prev.includes(slug)) return prev.filter(s => s !== slug);
-      if (prev.length >= 2) return [prev[1], slug]; // keep the most recent two
+      if (prev.length >= 3) return [prev[1], prev[2], slug]; // keep the most recent three
       return [...prev, slug];
     });
   }
@@ -172,7 +179,23 @@ function MatchFormInner() {
   const [selectedDrawerCompound, setSelectedDrawerCompound] = useState<MatchResult | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // Sync state to URL
+  // Delayed auto-advance for step cards (gives selected state time to render)
+  function advanceAfterDelay(nextStep: number, delay = 340) {
+    setTimeout(() => setStep(nextStep), delay);
+  }
+
+  // Copy sharable link with ?run=true
+  function handleCopyLink() {
+    const url = new URL(window.location.href);
+    url.searchParams.set('run', 'true');
+    navigator.clipboard.writeText(url.toString()).then(() => {
+      toast.success('Link Copied To Clipboard!');
+    }).catch(() => {
+      toast.error('Could Not Copy Link.');
+    });
+  }
+
+  // Sync state to URL — include run=true when on results step so refreshing auto-reruns
   useEffect(() => {
     const params = new URLSearchParams();
     if (goal) params.set('goal', goal);
@@ -182,9 +205,11 @@ function MatchFormInner() {
     if (requireLongHalfLife) params.set('long_half_life', 'true');
     if (preference && preference !== 'either') params.set('preference', preference);
     if (budget && budget !== 'standard') params.set('budget', budget);
+    if (step === 5) params.set('run', 'true');
+    if (compareSelection.length > 0) params.set('compare', compareSelection.join(','));
     excludeSlugs.forEach(s => params.append('exclude', s));
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [goal, evidenceComfort, riskTolerance, excludeInjectables, requireLongHalfLife, preference, budget, excludeSlugs, pathname, router]);
+  }, [goal, evidenceComfort, riskTolerance, excludeInjectables, requireLongHalfLife, preference, budget, excludeSlugs, step, compareSelection, pathname, router]);
 
   async function onSubmit(e?: React.FormEvent, overrides?: Record<string, unknown>) {
     if (e) e.preventDefault();
@@ -203,6 +228,7 @@ function MatchFormInner() {
         return;
       }
       setResults(data.results ?? []);
+      setRelaxed(!!data.relaxed);
       setExcludedCompounds((data as Record<string, unknown>).excluded as {slug: string; displayName: string; reason: string}[] ?? []);
     } catch {
       setErrorMsg('Network Error. Please Try Again.');
@@ -313,10 +339,10 @@ function MatchFormInner() {
 
   const stackPartners = results?.filter(r => r.isStackPartner) || [];
 
-  // The two compounds shown in the compare modal: the user's picks if they
-  // selected exactly two, otherwise the top two results.
-  const comparePair: MatchResult[] = results
-    ? (compareSelection.length === 2
+  // The compounds shown in the compare modal: the user's picks if they
+  // selected two or three, otherwise the top two results.
+  const compareItems: MatchResult[] = results
+    ? (compareSelection.length >= 2
         ? compareSelection.map(s => results.find(r => r.slug === s)).filter((r): r is MatchResult => Boolean(r))
         : results.slice(0, 2))
     : [];
@@ -338,30 +364,164 @@ function MatchFormInner() {
 
       <style>{`
         @media print {
-          body { background: white !important; color: black !important; }
+          @page { margin: 0.5in; }
+          body { 
+            background: white !important; 
+            color: #1a202c !important; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+          }
           .no-print { display: none !important; }
           .print-only { display: block !important; }
-          .glass-panel { border: 1px solid #ccc !important; background: white !important; box-shadow: none !important; color: black !important; margin-bottom: 20px; page-break-inside: avoid; }
-          * { text-shadow: none !important; color: black !important; }
+          .glass-panel { 
+            border: 1px solid #e2e8f0 !important; 
+            background: white !important; 
+            box-shadow: none !important; 
+            color: #2d3748 !important; 
+            margin-bottom: 24px !important; 
+            page-break-inside: avoid; 
+            border-radius: 8px !important;
+          }
+          * { text-shadow: none !important; color: #1a202c !important; }
+          
+          .match-result-card { border: 2px solid #cbd5e0 !important; }
+          .match-name { color: #2b6cb0 !important; text-decoration: none !important; }
+          .match-chips { border-top: 1px dashed #e2e8f0 !important; margin-top: 12px !important; padding-top: 12px !important; }
+          .match-chip { border-color: #cbd5e0 !important; color: #4a5568 !important; }
+          .match-rank { background: #edf2f7 !important; color: #2d3748 !important; border: 1px solid #cbd5e0 !important; }
+          .factor-row span { color: #4a5568 !important; }
+          
           .match-container { padding: 0 !important; }
+          h3 { color: #2d3748 !important; }
         }
         .print-only { display: none; }
         .step-card {
-          background: #0F1923;
-          border: 1px solid rgba(168,180,192,0.2);
-          border-radius: 12px;
-          padding: 16px;
+          background: rgba(15,25,35,0.8);
+          border: 1px solid rgba(168,180,192,0.15);
+          border-radius: 16px;
+          padding: 20px 20px 20px 20px;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+          position: relative;
+          overflow: hidden;
+        }
+        .step-card::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          opacity: 0;
+          background: radial-gradient(ellipse at 30% 50%, rgba(0,196,188,0.12) 0%, transparent 70%);
+          transition: opacity 0.25s;
         }
         .step-card:hover {
-          border-color: var(--teal);
+          border-color: rgba(0,196,188,0.5);
           background: rgba(0,196,188,0.05);
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(0,196,188,0.2);
         }
+        .step-card:hover::before { opacity: 1; }
         .step-card.selected {
           border-color: var(--teal);
-          background: rgba(0,196,188,0.1);
+          background: rgba(0,196,188,0.08);
+          box-shadow: 0 0 0 1px var(--teal), 0 8px 32px rgba(0,196,188,0.2);
+          transform: translateY(-2px);
         }
+        .step-card.selected::before { opacity: 1; }
+        .step-card-icon {
+          width: 44px; height: 44px; border-radius: 12px;
+          display: flex; align-items: center; justify-content: center;
+          margin-bottom: 14px; flex-shrink: 0;
+          background: rgba(255,255,255,0.05);
+          border: 1px solid rgba(255,255,255,0.08);
+          transition: background 0.25s, border-color 0.25s;
+        }
+        .step-card.selected .step-card-icon {
+          background: rgba(0,196,188,0.15);
+          border-color: rgba(0,196,188,0.4);
+        }
+        .step-card-check {
+          position: absolute; top: 12px; right: 12px;
+          background: var(--teal); border-radius: 50%; padding: 3px;
+          display: flex; align-items: center; justify-content: center;
+          opacity: 0; transform: scale(0.5);
+          transition: opacity 0.2s, transform 0.2s;
+        }
+        .step-card.selected .step-card-check {
+          opacity: 1; transform: scale(1);
+        }
+        .wizard-next-btn {
+          display: flex; align-items: center; gap: 10px;
+          background: linear-gradient(135deg, #00C4BC, #00a89f);
+          color: #0F1923; border: none; border-radius: 12px;
+          padding: 13px 28px; font-size: 1rem; font-weight: 800;
+          cursor: pointer; letter-spacing: 0.02em;
+          transition: all 0.2s; box-shadow: 0 4px 18px rgba(0,196,188,0.35);
+        }
+        .wizard-next-btn:hover {
+          background: linear-gradient(135deg, #00d9d0, #00C4BC);
+          box-shadow: 0 6px 24px rgba(0,196,188,0.5);
+          transform: translateX(2px);
+        }
+        .wizard-next-btn:hover svg { transform: translateX(3px); }
+        .wizard-next-btn svg { transition: transform 0.2s; }
+        .wizard-back-btn {
+          display: flex; align-items: center; gap: 8px;
+          background: none; border: 1px solid rgba(255,255,255,0.12); border-radius: 12px;
+          color: #A8B4C0; padding: 13px 20px; font-size: 0.95rem; font-weight: 600;
+          cursor: pointer; transition: all 0.2s;
+        }
+        .wizard-back-btn:hover {
+          border-color: rgba(255,255,255,0.25); color: white;
+          transform: translateX(-2px);
+        }
+        .toggle-group {
+          display: flex; flex-wrap: wrap; gap: 10px;
+        }
+        .toggle-opt {
+          padding: 10px 18px; border-radius: 10px; cursor: pointer;
+          border: 1px solid rgba(168,180,192,0.2);
+          background: rgba(15,25,35,0.8); color: #A8B4C0;
+          font-size: 0.92rem; font-weight: 600; transition: all 0.2s;
+        }
+        .toggle-opt:hover {
+          border-color: rgba(0,196,188,0.4); color: white;
+          background: rgba(0,196,188,0.05);
+        }
+        .toggle-opt.active {
+          border-color: var(--teal); background: rgba(0,196,188,0.12);
+          color: var(--teal); box-shadow: 0 0 12px rgba(0,196,188,0.2);
+        }
+        .pill-toggle {
+          display: flex; align-items: center; gap: 14px;
+          cursor: pointer; padding: 14px 18px;
+          border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);
+          background: rgba(15,25,35,0.6); transition: all 0.2s;
+          user-select: none;
+        }
+        .pill-toggle:hover { border-color: rgba(0,196,188,0.3); background: rgba(0,196,188,0.04); }
+        .pill-switch {
+          width: 44px; height: 24px; border-radius: 999px;
+          background: rgba(255,255,255,0.1); position: relative;
+          flex-shrink: 0; transition: background 0.2s;
+          border: 1px solid rgba(255,255,255,0.12);
+        }
+        .pill-switch.on { background: var(--teal); border-color: var(--teal); }
+        .pill-switch::after {
+          content: ''; position: absolute; top: 2px; left: 2px;
+          width: 18px; height: 18px; border-radius: 50%;
+          background: white; transition: transform 0.2s cubic-bezier(0.4,0,0.2,1);
+          box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+        }
+        .pill-switch.on::after { transform: translateX(20px); }
+        .save-btn {
+          display: flex; align-items: center; gap: 8px;
+          background: linear-gradient(135deg, #3DD9A4, #00C4BC);
+          color: #0a1a14; border: none; border-radius: 10px;
+          padding: 10px 20px; font-size: 0.9rem; font-weight: 800;
+          cursor: pointer; transition: all 0.2s;
+          box-shadow: 0 4px 14px rgba(61,217,164,0.3);
+        }
+        .save-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+        .save-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
         .image-card {
           border-radius: 12px;
           cursor: pointer;
@@ -410,12 +570,89 @@ function MatchFormInner() {
           background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
           border-radius: 999px; padding: 4px 11px;
         }
-        .match-actions { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
-        .match-actions button { white-space: nowrap; justify-content: center; min-width: 118px; }
+        /* ── Action button column ─────────────────────────────── */
+        .match-actions {
+          display: flex; flex-direction: column; gap: 7px;
+          flex-shrink: 0;
+        }
+        .match-actions a, .match-actions button {
+          white-space: nowrap; justify-content: center;
+          min-width: 126px; transition: all 0.18s ease;
+        }
+        /* Primary CTA — View & Order */
+        .btn-view-order {
+          display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+          background: linear-gradient(135deg, #3DD9A4, #00C4BC);
+          color: #051a14; font-weight: 800; font-size: 0.84rem;
+          padding: 9px 14px; border-radius: 10px;
+          text-decoration: none; border: none; cursor: pointer;
+          box-shadow: 0 4px 14px rgba(0,196,188,0.28);
+          letter-spacing: 0.01em;
+        }
+        .btn-view-order:hover {
+          filter: brightness(1.08);
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(0,196,188,0.42);
+        }
+        .btn-view-order:active { transform: translateY(0); }
+        /* Secondary — Quick View */
+        .btn-quick-view {
+          display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.16);
+          color: #C0C5CE; font-weight: 700; font-size: 0.84rem;
+          padding: 9px 14px; border-radius: 10px; cursor: pointer;
+          backdrop-filter: blur(8px);
+        }
+        .btn-quick-view:hover {
+          background: rgba(255,255,255,0.12);
+          border-color: rgba(255,255,255,0.35);
+          color: #fff;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        }
+        /* Compare toggle */
+        .cmp-toggle {
+          display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.12); border-radius: 10px;
+          color: #A8B4C0; padding: 9px 14px; cursor: pointer; font-size: 0.84rem;
+          font-weight: 700; transition: all 0.18s ease;
+        }
+        .cmp-toggle:hover {
+          background: rgba(0,196,188,0.06);
+          border-color: rgba(0,196,188,0.3);
+          color: var(--teal, #00C4BC);
+          transform: translateY(-1px);
+        }
+        .cmp-toggle.on {
+          border-color: var(--teal, #00C4BC);
+          color: var(--teal, #00C4BC);
+          background: rgba(0,196,188,0.12);
+          box-shadow: 0 0 0 1px rgba(0,196,188,0.25), 0 4px 14px rgba(0,196,188,0.18);
+        }
+        /* Exclude — danger glass */
+        .btn-exclude {
+          display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+          background: rgba(229,62,62,0.05);
+          border: 1px solid rgba(229,62,62,0.18); border-radius: 10px;
+          color: #F08A8A; padding: 9px 14px; cursor: pointer;
+          font-size: 0.84rem; font-weight: 700;
+          transition: all 0.18s ease;
+        }
+        .btn-exclude:hover {
+          background: rgba(229,62,62,0.12);
+          border-color: rgba(229,62,62,0.45);
+          color: #FC8181;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 14px rgba(229,62,62,0.2);
+        }
         @media (max-width: 640px) {
           .match-head { flex-wrap: wrap; }
-          .match-actions { flex-direction: row; width: 100%; }
-          .match-actions button { flex: 1; }
+          .match-actions {
+            flex-direction: row; flex-wrap: wrap; width: 100%;
+          }
+          .match-actions a, .match-actions button { flex: 1; min-width: 0; }
         }
         .criteria-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 20px; }
         .criteria-chip {
@@ -423,12 +660,6 @@ function MatchFormInner() {
           background: rgba(0,196,188,0.08); border: 1px solid rgba(0,196,188,0.25);
           border-radius: 999px; padding: 4px 11px;
         }
-        .cmp-toggle {
-          display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-          background: none; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
-          color: #A8B4C0; padding: 8px 12px; cursor: pointer; font-size: 0.85rem;
-        }
-        .cmp-toggle.on { border-color: var(--teal, #00C4BC); color: var(--teal, #00C4BC); background: rgba(0,196,188,0.08); }
         .factor-row { display: grid; grid-template-columns: 130px 1fr 46px; align-items: center; gap: 10px; margin-bottom: 8px; }
         .factor-track { height: 7px; border-radius: 999px; background: rgba(255,255,255,0.06); overflow: hidden; }
         .factor-fill { height: 100%; border-radius: 999px; }
@@ -445,25 +676,68 @@ function MatchFormInner() {
         <hr />
       </div>
 
-      <div className="no-print" style={{ display: 'flex', gap: '8px', marginBottom: '24px', justifyContent: 'center' }}>
-        {[1, 2, 3, 4, 5].map(s => (
-          <div key={s} style={{ height: '4px', flex: 1, maxWidth: '60px', background: s <= step ? 'var(--teal)' : 'rgba(255,255,255,0.1)', borderRadius: '2px', transition: 'background 0.3s' }} />
+      {/* Labeled step progress */}
+      <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '28px', justifyContent: 'center', flexWrap: 'wrap' }}>
+        {[
+          { s: 1, label: 'Goal' },
+          { s: 2, label: 'Evidence' },
+          { s: 3, label: 'Risk' },
+          { s: 4, label: 'Filters' },
+          { s: 5, label: 'Results' },
+        ].map(({ s, label }, i) => (
+          <React.Fragment key={s}>
+            {i > 0 && <div style={{ width: '20px', height: '2px', background: s <= step ? 'var(--teal)' : 'rgba(255,255,255,0.12)', borderRadius: '2px', transition: 'background 0.3s', flexShrink: 0 }} />}
+            <button
+              onClick={() => s < step ? setStep(s) : undefined}
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
+                background: 'none', border: 'none', cursor: s < step ? 'pointer' : 'default', padding: '0 4px',
+              }}
+              aria-label={s < step ? `Go back to ${label}` : label}
+              title={s < step ? `Go back to ${label}` : label}
+            >
+              <div className={s === 5 && step === 5 && !loading ? 'animate-pulse' : ''} style={{
+                width: '28px', height: '28px', borderRadius: '50%',
+                background: s < step ? 'var(--teal)' : s === step ? 'rgba(0,196,188,0.15)' : 'rgba(255,255,255,0.06)',
+                border: s === step ? '2px solid var(--teal)' : s < step ? '2px solid var(--teal)' : '2px solid rgba(255,255,255,0.1)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'all 0.3s',
+                boxShadow: s === step ? '0 0 12px rgba(0,196,188,0.4)' : 'none',
+              }}>
+                {s < step
+                  ? <Check size={13} color="#0F1923" />
+                  : <span style={{ fontSize: '0.7rem', fontWeight: 800, color: s === step ? 'var(--teal)' : 'rgba(255,255,255,0.3)' }}>{s}</span>
+                }
+              </div>
+              <span style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.04em', color: s === step ? 'var(--teal)' : s < step ? 'rgba(0,196,188,0.7)' : 'rgba(255,255,255,0.25)', textTransform: 'uppercase', transition: 'color 0.3s' }}>{label}</span>
+            </button>
+          </React.Fragment>
         ))}
       </div>
 
-      <AnimatePresence mode="wait">
+      {/* Plain conditional rendering: AnimatePresence mode="wait" was leaving
+          the exiting step mounted (its exit animation never completed), so the
+          next step never rendered and the wizard appeared frozen on step 1 even
+          though `step` state advanced. Each motion.div keeps its enter animation. */}
+      <>
         {step === 1 && (
           <motion.div key="step1" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.3 }} className="glass-panel no-print" style={{ padding: '32px' }}>
+            <div style={{ marginBottom: '8px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.8 }}>Step 1 of 4</div>
             <h2 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '8px' }}>What Is Your Primary Research Goal?</h2>
-            <p style={{ color: 'var(--silver)', marginBottom: '32px' }}>Select The Main Focus Of Your Protocol To Calibrate The Engine.</p>
-            
-            <div style={{ marginBottom: '40px', padding: '16px', background: 'rgba(0,0,0,0.2)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <p style={{ color: 'var(--silver)', marginBottom: '32px' }}>Tap Any Goal Below To Continue &mdash; The Engine Calibrates Instantly.</p>
+
+            {/* AI Configure — visually distinct with teal left-border treatment */}
+            <div style={{ marginBottom: '40px', padding: '16px 16px 16px 20px', background: 'rgba(0,0,0,0.2)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', borderLeft: '3px solid var(--teal)', boxShadow: 'inset 4px 0 16px rgba(0,196,188,0.06)' }}>
               <p style={{ color: 'var(--silver)', fontSize: '0.9rem', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Sparkles size={16} color="var(--teal)" /> Or Use AI To Configure Parameters:
+                <Sparkles size={16} color="var(--teal)" style={{ flexShrink: 0 }} />
+                <span><strong style={{ color: 'var(--teal)' }}>AI Configure</strong> — Describe Your Research Scenario In Plain Language:
+                </span>
               </p>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <input type="text" value={aiPrompt} onChange={e => setAiPrompt(e.target.value)} placeholder="Describe Your Scenario..." style={{ flex: 1, padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid #1D2D3E', background: '#0F1923', color: 'white', fontSize: '1rem' }} onKeyDown={e => e.key === 'Enter' && onAiSubmit()} />
-                <button onClick={onAiSubmit} disabled={aiLoading} className="btn-secondary" style={{ padding: '0 1.5rem', fontWeight: 600 }}>{aiLoading ? 'Thinking...' : 'AI Configure'}</button>
+                <input type="text" value={aiPrompt} onChange={e => setAiPrompt(e.target.value)} placeholder="e.g. I want to research weight loss compounds with low risk..." style={{ flex: 1, padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid rgba(0,196,188,0.25)', background: 'rgba(0,196,188,0.04)', color: 'white', fontSize: '1rem', outline: 'none' }} onKeyDown={e => e.key === 'Enter' && onAiSubmit()} />
+                <button onClick={onAiSubmit} disabled={aiLoading} className="wizard-next-btn" style={{ padding: '0 1.4rem', fontSize: '0.9rem', whiteSpace: 'nowrap' }}>
+                  {aiLoading ? <><Sparkles size={15} className="animate-pulse" /> Thinking...</> : <><Sparkles size={15} /> Configure</>}
+                </button>
               </div>
             </div>
 
@@ -471,14 +745,14 @@ function MatchFormInner() {
               {goalOptions.map(g => (
                 <div
                   key={g.value}
-                  onClick={() => setGoal(g.value)}
+                  onClick={() => { setGoal(g.value); setStep(2); }}
                   role="button"
                   tabIndex={0}
                   aria-pressed={goal === g.value}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       if (e.key === ' ') e.preventDefault();
-                      setGoal(g.value);
+                      setGoal(g.value); setStep(2);
                     }
                   }}
                   className={`image-card ${goal === g.value ? 'selected' : ''}`}
@@ -513,103 +787,106 @@ function MatchFormInner() {
                 </div>
               ))}
             </div>
-            
-            <div style={{ marginTop: '40px', display: 'flex', justifyContent: 'center' }}>
-              <button 
-                onClick={() => setStep(2)} 
-                className="btn-primary" 
-                style={{ 
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', 
-                  width: '100%', maxWidth: '400px', padding: '16px', fontSize: '1.2rem', 
-                  fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px',
-                  boxShadow: '0 0 20px rgba(0,196,188,0.4)'
-                }}
-              >
-                Next Step <ArrowRight size={24} />
-              </button>
-            </div>
+            {/* No redundant Continue button — clicking a card is the action */}
           </motion.div>
         )}
 
         {step === 2 && (
           <motion.div key="step2" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.3 }} className="glass-panel no-print" style={{ padding: '32px' }}>
+            <div style={{ marginBottom: '8px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.8 }}>Step 2 of 4</div>
             <h2 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '8px' }}>Evidence Tier Comfort</h2>
             <p style={{ color: 'var(--silver)', marginBottom: '24px' }}>How Much Clinical Evidence Do You Require For These Compounds?</p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '16px' }}>
               {EVIDENCE_OPTIONS.map(o => (
-                <div key={o.value} onClick={() => setEvidenceComfort(o.value)} role="button" tabIndex={0} aria-pressed={evidenceComfort === o.value} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { if (e.key === ' ') e.preventDefault(); setEvidenceComfort(o.value); } }} className={`step-card ${evidenceComfort === o.value ? 'selected' : ''}`}>
-                  <h3 style={{ color: 'white', fontSize: '1.1rem', margin: '0 0 4px 0' }}>{o.label}</h3>
-                  <p style={{ color: 'var(--silver)', fontSize: '0.85rem', margin: 0 }}>{o.help}</p>
+                <div key={o.value} onClick={() => { setEvidenceComfort(o.value); advanceAfterDelay(3); }} role="button" tabIndex={0} aria-pressed={evidenceComfort === o.value} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { if (e.key === ' ') e.preventDefault(); setEvidenceComfort(o.value); advanceAfterDelay(3); } }} className={`step-card ${evidenceComfort === o.value ? 'selected' : ''}`}>
+                  <div className="step-card-check"><Check size={12} color="#0F1923" /></div>
+                  <div className="step-card-icon" style={{ color: o.color }}>{o.icon}</div>
+                  <h3 style={{ color: 'white', fontSize: '1.1rem', margin: '0 0 6px 0', fontWeight: 700 }}>{o.label}</h3>
+                  <p style={{ color: 'var(--silver)', fontSize: '0.85rem', margin: 0, lineHeight: 1.5 }}>{o.help}</p>
                 </div>
               ))}
             </div>
-            <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'space-between' }}>
-              <button onClick={() => setStep(1)} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><ArrowLeft size={18} /> Back</button>
-              <button onClick={() => setStep(3)} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>Next Step <ArrowRight size={18} /></button>
+            <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <button onClick={() => setStep(1)} className="wizard-back-btn"><ArrowLeft size={17} /> Back</button>
+              <button onClick={() => setStep(3)} className="wizard-next-btn">Next Step <ArrowRight size={18} /></button>
             </div>
           </motion.div>
         )}
 
         {step === 3 && (
           <motion.div key="step3" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.3 }} className="glass-panel no-print" style={{ padding: '32px' }}>
+            <div style={{ marginBottom: '8px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.8 }}>Step 3 of 4</div>
             <h2 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '8px' }}>Risk Tolerance</h2>
             <p style={{ color: 'var(--silver)', marginBottom: '24px' }}>Set Your Safety Constraints.</p>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '16px' }}>
               {RISK_OPTIONS.map(o => (
-                <div key={o.value} onClick={() => setRiskTolerance(o.value)} role="button" tabIndex={0} aria-pressed={riskTolerance === o.value} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { if (e.key === ' ') e.preventDefault(); setRiskTolerance(o.value); } }} className={`step-card ${riskTolerance === o.value ? 'selected' : ''}`}>
-                  <h3 style={{ color: 'white', fontSize: '1.1rem', margin: '0 0 4px 0' }}>{o.label}</h3>
-                  <p style={{ color: 'var(--silver)', fontSize: '0.85rem', margin: 0 }}>{o.help}</p>
+                <div key={o.value} onClick={() => { setRiskTolerance(o.value); advanceAfterDelay(4); }} role="button" tabIndex={0} aria-pressed={riskTolerance === o.value} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { if (e.key === ' ') e.preventDefault(); setRiskTolerance(o.value); advanceAfterDelay(4); } }} className={`step-card ${riskTolerance === o.value ? 'selected' : ''}`}>
+                  <div className="step-card-check"><Check size={12} color="#0F1923" /></div>
+                  <div className="step-card-icon" style={{ color: o.color }}>{o.icon}</div>
+                  <h3 style={{ color: 'white', fontSize: '1.1rem', margin: '0 0 6px 0', fontWeight: 700 }}>{o.label}</h3>
+                  <p style={{ color: 'var(--silver)', fontSize: '0.85rem', margin: 0, lineHeight: 1.5 }}>{o.help}</p>
                 </div>
               ))}
             </div>
 
-            <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'space-between' }}>
-              <button onClick={() => setStep(2)} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><ArrowLeft size={18} /> Back</button>
-              <button onClick={() => setStep(4)} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>Next Step <ArrowRight size={18} /></button>
+            <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <button onClick={() => setStep(2)} className="wizard-back-btn"><ArrowLeft size={17} /> Back</button>
+              <button onClick={() => setStep(4)} className="wizard-next-btn">Next Step <ArrowRight size={18} /></button>
             </div>
           </motion.div>
         )}
 
         {step === 4 && (
           <motion.div key="step4" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.3 }} className="glass-panel no-print" style={{ padding: '32px' }}>
+            <div style={{ marginBottom: '8px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.8 }}>Step 4 of 4</div>
             <h2 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '8px' }}>Advanced Preferences</h2>
             <p style={{ color: 'var(--silver)', marginBottom: '24px' }}>Fine-Tune Format And Handling Requirements.</p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
               <div>
-                <label className="block text-sm font-bold text-white mb-2">Format Preference</label>
-                <select value={preference} onChange={(e) => setPreference(e.target.value as 'single' | 'stack' | 'either')} className="w-full max-w-md p-3 rounded-md border border-[#1D2D3E] bg-[#0F1923] text-white">
-                  <option value="either">Any Format</option>
-                  <option value="single">Single Compounds Only</option>
-                  <option value="stack">Pre-Blended Stacks Only</option>
-                </select>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--silver)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '12px' }}>Format Preference</label>
+                <div className="toggle-group">
+                  {[{ value: 'either', label: 'Any Format' }, { value: 'single', label: 'Single Compounds' }, { value: 'stack', label: 'Pre-Blended Stacks' }].map(opt => (
+                    <button key={opt.value} onClick={() => setPreference(opt.value as 'single' | 'stack' | 'either')} className={`toggle-opt${preference === opt.value ? ' active' : ''}`}>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-white mb-2">Budget Sensitivity</label>
-                <select value={budget} onChange={(e) => setBudget(e.target.value as 'conservative' | 'standard' | 'unlimited')} className="w-full max-w-md p-3 rounded-md border border-[#1D2D3E] bg-[#0F1923] text-white">
-                  <option value="standard">Standard Budget</option>
-                  <option value="conservative">Conservative (Cost-Sensitive)</option>
-                  <option value="unlimited">Unlimited (Ignore Cost)</option>
-                </select>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--silver)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '12px' }}>Budget Sensitivity</label>
+                <div className="toggle-group">
+                  {[{ value: 'standard', label: 'Standard' }, { value: 'conservative', label: 'Cost-Sensitive' }, { value: 'unlimited', label: 'Ignore Cost' }].map(opt => (
+                    <button key={opt.value} onClick={() => setBudget(opt.value as 'conservative' | 'standard' | 'unlimited')} className={`toggle-opt${budget === opt.value ? ' active' : ''}`}>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'white', fontSize: '1.05rem', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={excludeInjectables} onChange={e => setExcludeInjectables(e.target.checked)} style={{ width: 20, height: 20 }} />
-                  Exclude Injectables (Oral/Topical/Nasal Only)
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'white', fontSize: '1.05rem', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={requireLongHalfLife} onChange={e => setRequireLongHalfLife(e.target.checked)} style={{ width: 20, height: 20 }} />
-                  Require Long Half-Life (Less Frequent Dosing)
-                </label>
+                <div className="pill-toggle" onClick={() => setExcludeInjectables(!excludeInjectables)}>
+                  <div className={`pill-switch${excludeInjectables ? ' on' : ''}`} />
+                  <div>
+                    <div style={{ color: 'white', fontSize: '1rem', fontWeight: 600 }}>Exclude Injectables</div>
+                    <div style={{ color: 'var(--silver)', fontSize: '0.82rem', marginTop: '2px' }}>Oral / Topical / Nasal Only</div>
+                  </div>
+                </div>
+                <div className="pill-toggle" onClick={() => setRequireLongHalfLife(!requireLongHalfLife)}>
+                  <div className={`pill-switch${requireLongHalfLife ? ' on' : ''}`} />
+                  <div>
+                    <div style={{ color: 'white', fontSize: '1rem', fontWeight: 600 }}>Require Long Half-Life</div>
+                    <div style={{ color: 'var(--silver)', fontSize: '0.82rem', marginTop: '2px' }}>Less Frequent Dosing</div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'space-between' }}>
-              <button onClick={() => setStep(3)} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><ArrowLeft size={18} /> Back</button>
-              <button onClick={() => { setStep(5); onSubmit(); }} className="btn-primary" disabled={loading} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ marginTop: '36px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <button onClick={() => setStep(3)} className="wizard-back-btn"><ArrowLeft size={17} /> Back</button>
+              <button onClick={() => { setStep(5); onSubmit(); }} className="wizard-next-btn" disabled={loading} style={{ gap: '10px' }}>
                 <Sparkles size={18} /> {loading ? 'Matching...' : 'Generate Matches'}
               </button>
             </div>
@@ -619,23 +896,26 @@ function MatchFormInner() {
         {step === 5 && (
           <motion.div key="step5" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduceMotion ? 0 : 0.5 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '24px' }} className="no-print">
-              <button onClick={() => setStep(1)} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><ArrowLeft size={18} /> Edit Criteria</button>
-              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              <button onClick={() => setStep(1)} className="wizard-back-btn" style={{ fontSize: '0.9rem', padding: '10px 16px' }}><ArrowLeft size={16} /> Edit Criteria</button>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                 {results && results.length > 0 && (
                   <>
-                    <button onClick={handleSaveMatch} disabled={saving} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Save size={18} /> {saving ? 'Saving...' : 'Save Stack'}
+                    <button onClick={handleSaveMatch} disabled={saving} className="save-btn">
+                      <Save size={16} /> {saving ? 'Saving...' : 'Save Stack'}
                     </button>
-                    <button onClick={() => window.print()} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Printer size={18} /> Export PDF
+                    <button onClick={() => window.print()} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', fontSize: '0.9rem' }}>
+                      <Printer size={16} /> Export PDF
                     </button>
                   </>
                 )}
                 {results && results.length >= 2 && (
-                  <button onClick={() => setShowCompare(true)} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Scale size={18} /> {compareSelection.length === 2 ? 'Compare Selected' : 'Compare Top 2'}
+                  <button onClick={() => setShowCompare(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', fontSize: '0.9rem', background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.35)', borderRadius: '10px', color: 'var(--teal)', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}>
+                    <Scale size={16} /> {compareSelection.length === 2 ? 'Compare Selected' : 'Compare Top 2'}
                   </button>
                 )}
+                <button onClick={handleCopyLink} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', fontSize: '0.9rem', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', color: '#A8B4C0', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }} title="Copy shareable link">
+                  <Link2 size={15} /> Share
+                </button>
               </div>
             </div>
 
@@ -674,22 +954,31 @@ function MatchFormInner() {
                 <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '0 0 8px 0', color: 'var(--teal, #00C4BC)' }}>
                   <Info size={18} /> Synergistic Stack Detected
                 </h4>
-                <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--silver)' }}>
+                <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--silver)', lineHeight: 1.5, wordWrap: 'break-word' }}>
                   The engine detected that <strong>{stackPartners[0].displayName}</strong> and <strong>{stackPartners[1].displayName}</strong> are highly synergistic and frequently researched together as a stack for this protocol.
-                  <Link href={`/research/compare?add=${stackPartners[0].slug},${stackPartners[1].slug}`} style={{ color: 'var(--white)', fontWeight: 700, marginLeft: '8px', textDecoration: 'underline' }}>
-                    Compare Them Side-By-Side <ChevronRight size={14} style={{ display: 'inline', verticalAlign: 'middle' }} />
-                  </Link>
+                  <button 
+                    onClick={() => {
+                      setCompareSelection([stackPartners[0].slug, stackPartners[1].slug]);
+                      setShowCompare(true);
+                    }}
+                    style={{ background: 'none', border: 'none', padding: 0, color: 'var(--white)', fontWeight: 700, marginLeft: '8px', textDecoration: 'underline', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}
+                  >
+                    Compare Them Side-By-Side <ChevronRight size={14} />
+                  </button>
                 </p>
               </div>
             )}
 
             {!loading && results && results.length === 0 && (
-              <div className="glass-panel" style={{ textAlign: 'center', padding: '48px' }}>
-                <p style={{ color: 'var(--silver)', fontSize: '1.2rem', marginBottom: '24px' }}>No Matching Compounds Survived Your Constraints.</p>
-                <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-                  <button onClick={() => setStep(2)} className="btn-primary">Loosen Constraints</button>
+              <div className="glass-panel" style={{ textAlign: 'center', padding: '56px 48px' }}>
+                <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🔬</div>
+                <h3 style={{ color: 'white', fontSize: '1.3rem', marginBottom: '8px' }}>No Compounds Passed Your Filters</h3>
+                <p style={{ color: 'var(--silver)', fontSize: '1rem', marginBottom: '28px', maxWidth: '420px', margin: '0 auto 28px', lineHeight: 1.6 }}>The engine scanned the full catalog and nothing matched all your constraints. Try relaxing one parameter to open up results.</p>
+                <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <button onClick={() => setStep(2)} className="wizard-next-btn" style={{ padding: '12px 24px' }}>Loosen Evidence Filter <ArrowRight size={16} /></button>
+                  <button onClick={() => setStep(3)} className="wizard-back-btn">Adjust Risk Tolerance</button>
                   {excludeSlugs.length > 0 && (
-                    <button onClick={() => setExcludeSlugs([])} className="btn-secondary">Clear Exclusions</button>
+                    <button onClick={() => setExcludeSlugs([])} className="wizard-back-btn">Clear Exclusions ({excludeSlugs.length})</button>
                   )}
                 </div>
               </div>
@@ -697,10 +986,35 @@ function MatchFormInner() {
 
             {results && results.length > 0 && (
               <div style={{ opacity: loading ? 0.5 : 1, transition: 'opacity 0.2s', pointerEvents: loading ? 'none' : 'auto' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4, 16px)' }}>
-                  <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--white, #FFFFFF)', margin: 0 }}>
-                    Top {results.length} {results.length === 1 ? 'Match' : 'Matches'} {loading && <Sparkles size={16} className="animate-pulse inline" />}
-                  </h3>
+                {/* Auto-Relaxation Banner */}
+                {!loading && relaxed && (
+                  <div className="no-print" style={{
+                    background: 'rgba(237, 137, 54, 0.1)',
+                    border: '1px solid rgba(237, 137, 54, 0.3)',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    marginBottom: '24px',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '12px'
+                  }}>
+                    <AlertTriangle size={20} color="#ED8936" style={{ flexShrink: 0, marginTop: '2px' }} />
+                    <div>
+                      <h4 style={{ color: '#ED8936', margin: '0 0 6px 0', fontSize: '0.95rem', fontWeight: 700 }}>Filters Broadened</h4>
+                      <p style={{ color: '#E2E8F0', margin: 0, fontSize: '0.85rem', lineHeight: 1.5 }}>
+                        No Compounds Met Every Filter You Chose, So We Broadened Your Search To Show The Closest Matches For This Goal.
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {/* Trust-building result summary */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-4, 16px)', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <h3 style={{ color: 'white', fontSize: '1.4rem', margin: 0 }}>Top Matches</h3>
+                    <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ margin: 0, color: 'var(--silver)', fontSize: '0.9rem', lineHeight: 1.5 }}>
+                      Engine scanned the catalog · <strong style={{ color: 'var(--teal)' }}>{results.length} compound{results.length !== 1 ? 's' : ''}</strong> matched your criteria · Ranked by score out of 100
+                    </motion.p>
+                  </div>
                   {excludeSlugs.length > 0 && (
                     <button onClick={() => setExcludeSlugs([])} className="no-print" style={{ background: 'rgba(229,62,62,0.1)', color: '#F08A8A', border: '1px solid rgba(229,62,62,0.3)', borderRadius: '8px', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}>
                       Clear Exclusions ({excludeSlugs.length})
@@ -748,9 +1062,19 @@ function MatchFormInner() {
                           </div>
                         </div>
                         <div className="match-actions no-print">
-                          <button onClick={() => { setSelectedDrawerCompound(r); setIsDrawerOpen(true); }} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: '8px 12px' }}>
-                            <Eye size={16} /> Quick View
+                          {/* PRIMARY: View In Store */}
+                          <a href={`/pepnation?search=${r.slug}`} className="btn-view-order">
+                            <ShoppingCart size={14} /> View In Store
+                          </a>
+                          {/* SECONDARY: Quick View */}
+                          <button
+                            onClick={() => { setSelectedDrawerCompound(r); setIsDrawerOpen(true); }}
+                            className="btn-quick-view"
+                            aria-label={`Quick View: ${r.displayName}`}
+                          >
+                            <Eye size={15} /> Quick View
                           </button>
+                          {/* COMPARE TOGGLE */}
                           <button
                             onClick={() => toggleCompare(r.slug)}
                             aria-pressed={compareSelection.includes(r.slug)}
@@ -758,16 +1082,24 @@ function MatchFormInner() {
                           >
                             {compareSelection.includes(r.slug) ? <Check size={14} /> : <Scale size={14} />} Compare
                           </button>
-                          <button onClick={() => setExcludeSlugs(prev => [...prev, r.slug])} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#A8B4C0', padding: '8px 12px', cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <Trash2 size={14} /> Exclude
+                          {/* EXCLUDE — danger glass */}
+                          <button
+                            onClick={() => setExcludeSlugs(prev => [...prev, r.slug])}
+                            className="btn-exclude"
+                            style={{ background: 'rgba(229,62,62,0.05)', color: '#F08A8A', border: '1px solid rgba(229,62,62,0.2)' }}
+                            aria-label={`Exclude ${r.displayName} from results`}
+                          >
+                            <Trash2 size={13} /> Exclude
                           </button>
                         </div>
                       </div>
                       
                       <div className="no-print" style={{ marginTop: '16px', background: 'rgba(0,0,0,0.2)', padding: '14px', borderRadius: '8px' }}>
-                        <details style={{ fontSize: '0.9rem', color: '#A8B4C0' }}>
+                        {/* Auto-expand the #1 result's score breakdown to showcase the engine */}
+                        <details open={idx === 0} style={{ fontSize: '0.9rem', color: '#A8B4C0' }}>
                           <summary style={{ cursor: 'pointer', outline: 'none', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <Search size={16} /> How This Score Was Calculated
+                            {idx === 0 && <span style={{ fontSize: '0.7rem', background: 'rgba(0,196,188,0.15)', color: 'var(--teal)', borderRadius: '4px', padding: '2px 6px', fontWeight: 700, letterSpacing: '0.05em' }}>TOP MATCH</span>}
                           </summary>
                           <div style={{ marginTop: '14px' }}>
                             {BREAKDOWN_FACTORS.filter(f => (r.scoreBreakdown[f.key] ?? 0) !== 0).map(f => {
@@ -777,7 +1109,15 @@ function MatchFormInner() {
                               return (
                                 <div key={f.key} className="factor-row">
                                   <span style={{ fontSize: '0.8rem', color: 'var(--silver, #A8B4C0)' }}>{f.label}</span>
-                                  <span className="factor-track"><span className="factor-fill" style={{ width, background: neg ? '#FC8181' : f.color }} /></span>
+                                  <span className="factor-track">
+                                    <motion.span 
+                                      className="factor-fill" 
+                                      initial={{ width: 0 }} 
+                                      animate={{ width }} 
+                                      transition={{ duration: 0.8, delay: 0.1 + (idx * 0.1) }}
+                                      style={{ background: neg ? '#FC8181' : f.color }} 
+                                    />
+                                  </span>
                                   <span style={{ fontSize: '0.85rem', fontWeight: 800, textAlign: 'right', color: neg ? '#FC8181' : 'var(--white, #FFFFFF)' }}>{val > 0 ? `+${val}` : val}</span>
                                 </div>
                               );
@@ -813,79 +1153,13 @@ function MatchFormInner() {
             )}
           </motion.div>
         )}
-      </AnimatePresence>
+      </>
 
-      {showCompare && comparePair.length >= 2 && (
-        <div
-          className="no-print"
-          onClick={() => setShowCompare(false)}
-          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
-        >
-          <div
-            ref={compareDialogRef}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Head-to-head compound comparison"
-            onClick={(e) => e.stopPropagation()}
-            className="glass-panel"
-            style={{ width: '100%', maxWidth: '760px', maxHeight: '90vh', overflowY: 'auto', background: '#0F1923' }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ margin: 0, color: 'white' }}>Head-To-Head Comparison</h3>
-              <button onClick={() => setShowCompare(false)} aria-label="Close comparison" style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}><X size={24} /></button>
-            </div>
-            {(() => {
-              const [a, b] = comparePair;
-              const higher = (x: number, y: number) => (x === y ? 0 : x > y ? -1 : 1); // -1 => a wins
-              const win = higher(a.score, b.score);
-              const winStyle = { color: 'var(--teal, #00C4BC)', fontWeight: 800 };
-              const rows: { label: string; a: React.ReactNode; b: React.ReactNode }[] = [
-                {
-                  label: 'Match Score',
-                  a: <span style={win === -1 ? winStyle : { fontWeight: 700 }}>{a.score} / 100</span>,
-                  b: <span style={win === 1 ? winStyle : { fontWeight: 700 }}>{b.score} / 100</span>,
-                },
-                {
-                  label: 'Evidence Tier',
-                  a: <span style={{ color: tierColor(a.evidenceTier), fontWeight: 700 }}>{tierLabel(a.evidenceTier)}</span>,
-                  b: <span style={{ color: tierColor(b.evidenceTier), fontWeight: 700 }}>{tierLabel(b.evidenceTier)}</span>,
-                },
-                {
-                  label: 'Risk Level',
-                  a: <span style={{ color: riskMeta(a.riskLevel).color, fontWeight: 700 }}>{riskMeta(a.riskLevel).label}</span>,
-                  b: <span style={{ color: riskMeta(b.riskLevel).color, fontWeight: 700 }}>{riskMeta(b.riskLevel).label}</span>,
-                },
-                { label: 'Half-Life', a: a.halfLife || 'Unknown', b: b.halfLife || 'Unknown' },
-                { label: 'Molecular Weight', a: a.molecularWeight ? `${a.molecularWeight} Da` : 'Unknown', b: b.molecularWeight ? `${b.molecularWeight} Da` : 'Unknown' },
-                { label: 'Storage', a: a.isTempSensitive ? 'Cold Storage' : 'Room Temp', b: b.isTempSensitive ? 'Cold Storage' : 'Room Temp' },
-              ];
-              return (
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', color: 'white' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid #1D2D3E' }}>
-                      <th style={{ padding: '12px', color: '#A8B4C0', fontWeight: 600 }}>Feature</th>
-                      <th style={{ padding: '12px', fontSize: '1.05rem', color: 'var(--teal)' }}>
-                        <Link href={`/research/${a.slug}`} style={{ color: 'var(--teal)', textDecoration: 'none' }}>{a.displayName}</Link>
-                      </th>
-                      <th style={{ padding: '12px', fontSize: '1.05rem', color: 'var(--teal)' }}>
-                        <Link href={`/research/${b.slug}`} style={{ color: 'var(--teal)', textDecoration: 'none' }}>{b.displayName}</Link>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((row, i) => (
-                      <tr key={row.label} style={{ borderBottom: i < rows.length - 1 ? '1px solid #1D2D3E' : 'none' }}>
-                        <td style={{ padding: '12px', color: '#A8B4C0' }}>{row.label}</td>
-                        <td style={{ padding: '12px' }}>{row.a}</td>
-                        <td style={{ padding: '12px' }}>{row.b}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              );
-            })()}
-          </div>
-        </div>
+      {showCompare && compareItems.length >= 2 && (
+        <SharedCompareModal 
+          items={compareItems.map(mapToCompareItem)}
+          onClose={() => setShowCompare(false)} 
+        />
       )}
 
       <footer className="no-print" style={{ marginTop: 'var(--space-6, 24px)', padding: 'var(--space-4, 16px)', borderRadius: 'var(--radius-md, 8px)', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)', color: 'var(--silver, #A8B4C0)', fontSize: '0.82rem', display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3, 12px)' }}>

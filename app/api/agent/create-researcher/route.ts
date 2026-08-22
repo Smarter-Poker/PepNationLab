@@ -4,6 +4,7 @@ import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { sanitizeUsername } from '@/lib/usernames';
 import { assertSameOrigin } from '@/lib/csrf';
 import { notifyNewResearcher } from '@/lib/notify';
+import { validatePassword } from '@/lib/password-policy';
 
 /**
  * POST /api/agent/create-researcher
@@ -90,8 +91,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Username, Password, First Name, And Last Name Are Required.' }, { status: 400 });
   }
 
-  if (password.length < 8) {
-    return NextResponse.json({ error: 'Password Must Be At Least 8 Characters' }, { status: 400 });
+  const pwError = validatePassword(password);
+  if (pwError) {
+    return NextResponse.json({ error: pwError }, { status: 400 });
   }
 
   const usernameClean = sanitizeUsername(username);
@@ -108,6 +110,19 @@ export async function POST(req: NextRequest) {
 
   if (existingUser) {
     return NextResponse.json({ error: 'That Username Is Already Taken' }, { status: 400 });
+  }
+
+  // One email = one account: reject if this email already belongs to another
+  // account (authoritatively enforced by the DB trigger; checked here for a
+  // clear message before creating an auth user).
+  if (contactEmail && String(contactEmail).trim()) {
+    const { data: emailTaken } = await admin.rpc('account_email_exists', { p_email: String(contactEmail).trim() });
+    if (emailTaken === true) {
+      return NextResponse.json(
+        { error: 'An Account Already Exists For This Email.' },
+        { status: 409 }
+      );
+    }
   }
 
   const internalEmail = `${usernameClean}@internal.auth`;

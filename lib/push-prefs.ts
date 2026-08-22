@@ -19,6 +19,8 @@ export type PushTypeKey =
   | 'order_shipped'
   | 'order_delivered'
   | 'order_cancelled'
+  | 'payment_confirmed'
+  | 'order_attention'
   | 'commission_earned'
   | 'new_researcher'
   | 'invoice'
@@ -54,6 +56,8 @@ export const PUSH_TYPES: PushTypeDef[] = [
   { key: 'order_shipped',     group: 'Orders',                label: 'Order Shipped',       desc: 'An Order Ships With Tracking' },
   { key: 'order_delivered',   group: 'Orders',                label: 'Order Delivered',     desc: 'An Order Is Delivered' },
   { key: 'order_cancelled',   group: 'Orders',                label: 'Order Cancelled',     desc: 'An Order Is Cancelled' },
+  { key: 'payment_confirmed', group: 'Orders',                label: 'Payment Confirmed',   desc: 'Your Payment Is Verified By Your Seller' },
+  { key: 'order_attention',   group: 'Orders',                label: 'Order Attention Alerts', desc: 'An Order Is Waiting On Someone And Needs A Look' },
 
   { key: 'commission_earned', group: 'Earnings & Team',       label: 'Commission Earned',   desc: 'You Earn Or Are Paid A Commission' },
   { key: 'new_researcher',    group: 'Earnings & Team',       label: 'New Researcher',      desc: 'A Researcher Joins Your Team' },
@@ -95,6 +99,15 @@ export function eventToTypeKey(event: string): PushTypeKey | null {
     case 'order_delivered': return 'order_delivered';
     case 'order_cancelled': return 'order_cancelled';
     case 'payment_reminder':return 'payment_reminder';
-    default:                return null;
+    // Agent-side "a researcher ordered on your store" push uses the
+    // order_new event string; gate it under the same Orders > New Order
+    // preference toggle as the order_placed notification type.
+    case 'order_new':       return 'order_placed';
+    default:
+      // Identity-map any event string that IS a canonical push type key
+      // (commission_earned, invoice, system, ...) so per-type preference
+      // toggles apply consistently no matter which emission path fired.
+      // Unknown events (test pushes, marketing) stay ungated (null).
+      return PUSH_TYPE_KEYS.has(event) ? (event as PushTypeKey) : null;
   }
 }

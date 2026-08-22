@@ -61,6 +61,10 @@ const eslintConfig = defineConfig([
       "react/no-unescaped-entities": "warn",
       "react-hooks/immutability": "warn",
       "react-hooks/refs": "warn",
+      "react-hooks/exhaustive-deps": "warn",
+      "react/no-danger": "warn",
+      "no-console": "warn",
+      "@next/next/no-img-element": "warn",
 
     },
   },

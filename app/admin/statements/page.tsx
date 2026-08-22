@@ -30,6 +30,19 @@ interface Statement {
   profiles: { full_name: string | null; email: string } | null;
 }
 
+interface Adjustment {
+  id: string;
+  statement_id: string;
+  order_id: string | null;
+  agent_id: string;
+  agent_name: string;
+  amount: number;
+  kind: string;
+  status: string;
+  reason: string | null;
+  created_at: string;
+}
+
 const STATUS_LABELS: Record<string, string> = { open: "Open", pending_payment: "Pending Payment", paid: "Paid" };
 const STATUS_COLORS: Record<string, string> = { open: "var(--grey-400)", pending_payment: "#00E5FF", paid: "#68D391" };
 
@@ -43,6 +56,11 @@ export default function AdminStatementsPage() {
   const [genWeekStart, setGenWeekStart] = useState("");
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState("");
+  // Credits owed back for orders cancelled out of an already-paid statement.
+  // These were being recorded and then never shown to anyone.
+  const [adjustments, setAdjustments] = useState<Adjustment[]>([]);
+  const [adjPendingTotal, setAdjPendingTotal] = useState(0);
+  const [resolvingAdj, setResolvingAdj] = useState<string | null>(null);
   const [payingStatement, setPayingStatement] = useState<Statement | null>(null);
   const [payMethod, setPayMethod] = useState("zelle");
   const [payReference, setPayReference] = useState("");
@@ -53,9 +71,18 @@ export default function AdminStatementsPage() {
   async function fetchData() {
     setLoading(true); setError("");
     try {
-      const [stRes, agRes] = await Promise.all([fetch("/api/admin/statements"), fetch("/api/admin/researchers")]);
+      const [stRes, agRes, adjRes] = await Promise.all([
+        fetch("/api/admin/statements"),
+        fetch("/api/admin/researchers"),
+        fetch("/api/admin/statement-adjustments?status=pending"),
+      ]);
       const stJson = await stRes.json();
       const agJson = await agRes.json();
+      if (adjRes.ok) {
+        const adjJson = await adjRes.json();
+        setAdjustments(adjJson.adjustments || []);
+        setAdjPendingTotal(Number(adjJson.pendingTotal) || 0);
+      }
       if (stRes.ok) { setStatements(stJson.data || []); setPage(1); } else { setError(stJson.error || "Failed To Load Statements"); }
       if (agRes.ok) {
         const all: AgentOption[] = agJson.data || [];
@@ -99,6 +126,33 @@ export default function AdminStatementsPage() {
     document.body.appendChild(link); link.click(); document.body.removeChild(link);
   };
 
+  async function resolveAdjustment(id: string, status: "refunded" | "applied" | "void") {
+    setResolvingAdj(id);
+    try {
+      const res = await fetch("/api/admin/statement-adjustments", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status }),
+      });
+      const json = await res.json();
+      if (!res.ok) { toast.error(json.error || "Could Not Resolve That Credit."); return; }
+      setAdjustments((prev) => prev.filter((a) => a.id !== id));
+      setAdjPendingTotal((prev) => {
+        const gone = adjustments.find((a) => a.id === id);
+        return Math.max(0, Math.round((prev - Number(gone?.amount || 0)) * 100) / 100);
+      });
+      toast.success(
+        status === "refunded" ? "Marked Refunded"
+        : status === "applied" ? "Marked Applied To Next Bill"
+        : "Marked Not Owed"
+      );
+    } catch {
+      toast.error("Could Not Resolve That Credit.");
+    } finally {
+      setResolvingAdj(null);
+    }
+  }
+
   const outstanding = statements.filter((s) => s.status === "pending_payment").reduce((acc, s) => acc + Number(s.total_owed), 0);
   const totalPages = Math.max(1, Math.ceil(statements.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -113,6 +167,65 @@ export default function AdminStatementsPage() {
         </div>
         {statements.length > 0 && <button onClick={handleDownloadCSV} className="btn-silver">Download CSV Export</button>}
       </div>
+
+      {adjustments.length > 0 && (
+        <div className="glass-panel" style={{ marginBottom: "var(--space-6)", borderColor: "#F6AD5540" }}>
+          <div style={{ padding: "var(--space-5)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "var(--space-3)", marginBottom: "var(--space-4)" }}>
+              <div>
+                <h2 style={{ fontSize: "1rem", fontWeight: 700, color: "#F6AD55", margin: 0 }}>Credits Owed Back</h2>
+                <p style={{ fontSize: "0.8rem", color: "var(--grey-400)", margin: "4px 0 0" }}>
+                  Orders Cancelled After Their Statement Was Already Paid. The Statement Cannot Be Rewritten, So These Are Owed To The Agent.
+                </p>
+              </div>
+              <span style={{ fontSize: "1.1rem", fontWeight: 800, color: "#F6AD55" }}>${adjPendingTotal.toFixed(2)}</span>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+              {adjustments.map((a) => (
+                <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "var(--space-3)", padding: "var(--space-3)", background: "rgba(255,255,255,0.03)", borderRadius: "var(--radius-md)" }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "var(--silver)" }}>
+                      {a.agent_name} &middot; ${Number(a.amount).toFixed(2)}
+                    </div>
+                    <div style={{ fontSize: "0.75rem", color: "var(--grey-400)", marginTop: 2 }}>
+                      {a.order_id ? `Order ${a.order_id.slice(0, 8)}` : "Order Removed"} &middot; Recorded {new Date(a.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      disabled={resolvingAdj === a.id}
+                      onClick={() => resolveAdjustment(a.id, "refunded")}
+                      className="btn-silver"
+                      style={{ minHeight: 44, fontSize: "0.78rem", padding: "0 var(--space-4)" }}
+                    >
+                      Refunded
+                    </button>
+                    <button
+                      type="button"
+                      disabled={resolvingAdj === a.id}
+                      onClick={() => resolveAdjustment(a.id, "applied")}
+                      className="btn-silver"
+                      style={{ minHeight: 44, fontSize: "0.78rem", padding: "0 var(--space-4)" }}
+                    >
+                      Applied To Next Bill
+                    </button>
+                    <button
+                      type="button"
+                      disabled={resolvingAdj === a.id}
+                      onClick={() => resolveAdjustment(a.id, "void")}
+                      style={{ minHeight: 44, fontSize: "0.78rem", padding: "0 var(--space-4)", background: "transparent", border: "1px solid var(--grey-600)", borderRadius: "var(--radius-md)", color: "var(--grey-400)", cursor: "pointer" }}
+                    >
+                      Not Owed
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: "var(--space-6)", alignItems: "start" }}>
         <div>

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { getAllCompounds } from '@/lib/compounds-server';
 import { getAreaProducts } from '@/lib/area-products-server';
 import StacksClient from '@/components/research/StacksClient';
+import StacksSeoContent from '@/components/research/StacksSeoContent';
 
 export const metadata: Metadata = {
   title: 'Research Stacks & Combinations | Pep Nation Lab',
@@ -21,7 +22,7 @@ export const metadata: Metadata = {
     creator: '@PepNationLab',
     title: 'Research Stacks & Combinations | Pep Nation Lab',
     description: 'Explore curated peptide research stacks and multi-compound combinations. Study synergistic compound protocols organized by research goal. Research use only.',
-    images: ['https://pepnationlab.com/images/og-card.jpg'],
+    images: ['https://pepnationlab.com/og-card.png'],
   },
 };
 
@@ -64,6 +65,9 @@ export default async function StacksPage() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      {/* Server-rendered crawlable stack content (GPTBot/Claude/Perplexity see
+          the real stacks, not just the hero heading). */}
+      <StacksSeoContent stacks={stacks} compounds={compounds} />
       <div style={{ position: 'relative', minHeight: '100dvh', overflowX: 'hidden', background: 'var(--black, #050A0F)' }}>
       <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
         <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '50vw', height: '50vw', background: 'radial-gradient(circle, rgba(0, 196, 188, 0.15) 0%, transparent 70%)', filter: 'blur(80px)' }} />

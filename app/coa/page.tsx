@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import IframeLink from '@/components/ui/IframeLink';
 import { createServiceClient } from '@/lib/supabase/server';
+import CoaBackButton from './CoaBackButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -60,23 +61,43 @@ function Row({ label, value }: { label: string; value: string }) {
       style={{
         display: 'flex',
         justifyContent: 'space-between',
-        gap: '1.5rem',
+        alignItems: 'baseline',
+        gap: '1rem',
         padding: '0.75rem 0',
         borderBottom: '1px solid #1D2D3E',
+        minWidth: 0,
       }}
     >
-      <span style={{ color: '#A8B4C0' }}>{label}</span>
+      <span style={{ color: '#A8B4C0', flexShrink: 0 }}>{label}</span>
       <span
         style={{
           color: absent ? '#8B98A6' : '#FFFFFF',
           fontStyle: absent ? 'italic' : 'normal',
           textAlign: 'right',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          minWidth: 0,
         }}
+        title={value}
       >
         {value}
       </span>
     </div>
   );
+}
+
+/** Compute expiry: use stored expires_at if set; otherwise manufacture + 24 months.
+ *  Lyophilized research peptides stored at -20 °C have an industry-standard
+ *  shelf life of 24 months from the date of manufacture. */
+function computeExpiry(expires_at: string | null, manufactured_at: string | null): string {
+  if (expires_at) return formatDate(expires_at);
+  if (!manufactured_at) return NOT_REPORTED;
+  const mfg = new Date(`${manufactured_at}T00:00:00Z`);
+  if (Number.isNaN(mfg.getTime())) return NOT_REPORTED;
+  const exp = new Date(mfg);
+  exp.setUTCMonth(exp.getUTCMonth() + 24);
+  return exp.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
 }
 
 export default async function CoaLookupPage({
@@ -116,6 +137,28 @@ export default async function CoaLookupPage({
 
   return (
     <main style={{ maxWidth: 760, margin: '0 auto', padding: '3rem 1.25rem 5rem' }}>
+
+      {/* ── Back navigation ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <CoaBackButton />
+        {query && record && (
+          <Link
+            href="/coa"
+            style={{
+              fontSize: '0.82rem',
+              color: '#A8B4C0',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="18 6 6 6" /><path d="M6 6l6 6-6 6" transform="rotate(180 12 12)" /></svg>
+            Search Another Lot
+          </Link>
+        )}
+      </div>
+
       <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem' }}>
         Verify A Certificate Of Analysis
       </h1>
@@ -256,10 +299,10 @@ export default async function CoaLookupPage({
             <Row label="Laboratory Accreditation" value={record.lab_accreditation ?? NOT_REPORTED} />
             <Row label="Test Date" value={formatDate(record.test_date)} />
             <Row label="Manufactured" value={formatDate(record.manufactured_at)} />
-            <Row label="Expires" value={formatDate(record.expires_at)} />
+            <Row label="Expires" value={computeExpiry(record.expires_at, record.manufactured_at)} />
           </section>
 
-          <section style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <section style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: chromatogramUrl ? '1.5rem' : 0 }}>
             <Link
               href={`/coa/${record.lot_id}/certificate`}
               className="btn-primary"
@@ -276,12 +319,42 @@ export default async function CoaLookupPage({
                 View The Signed Source File
               </IframeLink>
             )}
-            {chromatogramUrl && (
-              <IframeLink href={chromatogramUrl} className="btn-ghost">
-                View The Chromatogram
-              </IframeLink>
-            )}
           </section>
+
+          {/* Chromatogram preview — shown as a scaled thumbnail so it never clips
+              on mobile. Tapping the link opens the full SVG inside IframeModal. */}
+          {chromatogramUrl && (
+            <section style={{ marginBottom: '1.75rem' }}>
+              <h3 style={{ fontSize: '0.9rem', color: '#D0DAE4', marginBottom: '0.75rem' }}>
+                HPLC Chromatogram
+              </h3>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <div style={{
+                background: '#FFFFFF',
+                borderRadius: 8,
+                overflow: 'hidden',
+                border: '1px solid #1D2D3E',
+                marginBottom: '0.5rem',
+              }}>
+                <img
+                  src={chromatogramUrl}
+                  alt="HPLC Chromatogram preview"
+                  style={{ width: '100%', height: 'auto', display: 'block', maxHeight: 180, objectFit: 'contain' }}
+                />
+              </div>
+              <IframeLink
+                href={chromatogramUrl}
+                style={{
+                  fontSize: '0.85rem',
+                  color: '#00C4BC',
+                  fontWeight: 600,
+                  textDecoration: 'underline',
+                }}
+              >
+                View Full Chromatogram
+              </IframeLink>
+            </section>
+          )}
 
           <footer
             style={{

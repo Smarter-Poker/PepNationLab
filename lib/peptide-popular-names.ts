@@ -76,21 +76,9 @@ const NICKNAME_MAP: Record<string, string> = {
   'cagrilintide': 'The Appetite Off Switch',
   'mots-c': 'The Exercise Mimetic',
   'retatrutide': 'The Triple Threat',
-  'semaglutide': 'Ozempic',
   'survodutide': 'The Dual Agonist',
-  'tirzepatide': 'Mounjaro',
 };
 
 export function getPopularName(productName: string): string | null {
-  if (!productName) return null;
-  const normalized = productName
-    .toLowerCase()
-    .trim()
-    .replace(/\s+acetate\s*$/i, '')
-    .replace(/\s+hydrochloride\s*$/i, '')
-    .replace(/\s+hcl\s*$/i, '')
-    .replace(/\s+research\s+grade\s*$/i, '')
-    .replace(/\s*\([^)]+\)\s*$/, '')
-    .trim();
-  return NICKNAME_MAP[normalized] ?? NICKNAME_MAP[productName.toLowerCase().trim()] ?? null;
+  return null;
 }

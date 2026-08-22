@@ -2,7 +2,8 @@ import React from 'react';
 import Image from 'next/image';
 
 export type StockState =
-  | { kind: 'in_stock' }
+  | { kind: 'in_stock_local' }
+  | { kind: 'in_stock_shipping' }
   | { kind: 'low_stock'; count: number }
   | { kind: 'backorder'; days: number }
   | { kind: 'out_of_stock' };
@@ -13,20 +14,42 @@ export function computeStockState(
   threshold: number,
   backorderDays: number
 ): StockState {
-  if (agentCount > threshold) return { kind: 'in_stock' };
+  if (agentCount > threshold) return { kind: 'in_stock_local' };
   if (agentCount > 0) return { kind: 'low_stock', count: agentCount };
-  if (masterInventory > 0) return { kind: 'in_stock' };
+  if (masterInventory > 0) return { kind: 'in_stock_shipping' };
   if (backorderDays > 0) return { kind: 'backorder', days: backorderDays };
   return { kind: 'out_of_stock' };
 }
 
 export function StockBadge({ state }: { state: StockState }) {
+  if (state.kind === 'in_stock_local') {
+    return (
+      <div style={{ display: 'flex', width: '100%', margin: '0' }}>
+        <Image 
+          src="/images/ui/instock-banner.png" 
+          alt="In Stock (Same-Day Pickup)" 
+          width={400} 
+          height={60} 
+          style={{ width: '100%', height: 'auto', objectFit: 'contain', display: 'block' }} 
+          unoptimized 
+        />
+      </div>
+    );
+  }
+
   let bg = 'rgba(192,184,168,0.15)';
   let fg = '#C0B8A8';
   let border = 'rgba(192,184,168,0.40)';
   let label = 'In Stock';
   let badgeSrc = '/images/badges/badge_in_stock.png';
-  if (state.kind === 'low_stock') {
+  
+  if (state.kind === 'in_stock_shipping') {
+    bg = 'rgba(102,126,234,0.15)';
+    fg = '#667EEA';
+    border = 'rgba(102,126,234,0.40)';
+    label = 'In Stock (Needs Shipping)';
+    badgeSrc = '/images/badges/badge_in_stock.png';
+  } else if (state.kind === 'low_stock') {
     bg = 'rgba(246,173,85,0.15)';
     fg = '#00E5FF';
     border = 'rgba(246,173,85,0.40)';
@@ -36,7 +59,7 @@ export function StockBadge({ state }: { state: StockState }) {
     bg = 'rgba(168,180,192,0.15)';
     fg = '#A8B4C0';
     border = 'rgba(168,180,192,0.40)';
-    label = `Backordered: Ships In ${state.days} Days`;
+    label = 'Not Available for Same-Day';
     badgeSrc = '/images/badges/badge_out_of_stock.png';
   } else if (state.kind === 'out_of_stock') {
     bg = 'rgba(229,62,62,0.15)';
