@@ -701,7 +701,7 @@ export default function AgentAccountDetail({
                       <div style={{ marginBottom: 10 }}>
                         <div style={{ fontWeight: 700, color: 'var(--white)' }}>Delete Agent</div>
                         <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)' }}>
-                          Removes This Account From All Lists And Blocks Login Immediately. Their Username, Email And Referral Code Are Released For Re-Use. Order And Payment History Is Kept. Accounts With An Active Downline Must Be Cleared First.
+                          Removes This Account From All Lists And Blocks Login Immediately. Their Username, Email And Referral Code Are Released For Re-Use. Order And Payment History Is Kept. Any Agents Or Researchers In Their Downline Are Automatically Moved To The Main Admin Account.
                         </div>
                       </div>
                       <AccountDeleteButton

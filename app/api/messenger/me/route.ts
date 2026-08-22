@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { requireSession } from '@/lib/messenger/server';
+import { isPlatformAdminId } from '@/lib/platform-admins';
+
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -25,13 +27,23 @@ export async function POST(req: NextRequest) {
   const svc = await createServiceClient();
   const { data } = await svc
     .from('profiles')
-    .select('id, role, is_super_agent, is_sub_agent')
+    .select('id, role, is_super_agent, is_sub_agent, is_admin_account')
     .eq('id', user.id)
     .maybeSingle();
 
+  // Platform-admin-allowlisted users (e.g. Savage Brands, role='super_agent'
+  // with admin-panel access via PLATFORM_ADMIN_IDS) and DB-flagged admin
+  // accounts must behave like regular agents in the messenger.
+  // Never return 'admin' as the effective role for these users — that would
+  // skip the realtime allow-list and break their notification filtering.
+  const isAdminAccount = (data as { is_admin_account?: boolean } | null)?.is_admin_account === true;
+  const isPlatformAdmin = isPlatformAdminId(user.id);
+  const rawRole = data?.role ?? null;
+  const effectiveRole = (isAdminAccount || isPlatformAdmin) && rawRole === 'admin' ? 'super_agent' : rawRole;
+
   const res = NextResponse.json({
     id: user.id,
-    role: (data?.role ?? null) as string | null,
+    role: effectiveRole as string | null,
     is_super_agent: (data as { is_super_agent?: boolean } | null)?.is_super_agent === true,
     is_sub_agent: (data as { is_sub_agent?: boolean } | null)?.is_sub_agent === true,
   });

@@ -80,7 +80,7 @@ export async function GET(req: Request) {
           type: 'order_attention',
           title: `Payment Proof Awaiting Review: Order #${shortId}`,
           body: `A Payment Screenshot For Order #${shortId} Has Been Waiting ${waitedHrs} Hours For Your Review. Open The Chat Or Your Orders Tab And Mark It Paid Once Verified.`,
-          url: '/dashboard/agent?tab=Orders',
+          url: `/dashboard/agent?tab=Orders&order=${shortId}`,
         });
         agentReminders++;
       }
@@ -106,7 +106,7 @@ export async function GET(req: Request) {
               type: 'order_attention',
               title: `Downline Payment Proof Unreviewed: Order #${shortId}`,
               body: `${agentProf.full_name || 'Your Sub-Agent'} Has Not Reviewed A Payment Screenshot On Order #${shortId} For ${waitedHrs} Hours. Please Follow Up.`,
-              url: '/dashboard/agent?tab=Orders',
+              url: `/dashboard/agent?tab=Orders&order=${shortId}`,
             });
             uplineAlerts++;
           }

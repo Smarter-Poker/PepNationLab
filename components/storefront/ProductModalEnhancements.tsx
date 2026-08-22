@@ -45,10 +45,11 @@
  * component - no fs, no fetch.
  */
 
-import Image from 'next/image';
+
 import { useMemo, useState, useEffect } from 'react';
 import { ArrowRight, Plus, Beaker, ChevronDown, ChevronUp, BookmarkPlus, AlertCircle, CheckCircle2, Shield, AlertTriangle, BookOpen, Trophy, Clock, Sparkles, Thermometer } from 'lucide-react';
 import PinToCompareButton from '../research/PinToCompareButton';
+import { optimizedImageSrc, makeImageErrorHandler } from '@/lib/imageOptimize';
 import DynamicDetailButton from './DynamicDetailButton';
 import ImageAddToCartButton from './ImageAddToCartButton';
 import { scoreCompound } from '../research/CompareTool';
@@ -181,14 +182,19 @@ function SupplyMiniCard({
       }}
     >
       {supply.imageUrl ? (
+        // MOBILE BLANK-VIAL FIX: 48px thumb, so request a 96px AVIF instead of
+        // the 1024px original. See lib/imageOptimize.ts.
         // eslint-disable-next-line @next/next/no-img-element
-        <Image
-          src={supply.imageUrl}
+        <img
+          src={optimizedImageSrc(supply.imageUrl, 48)}
           alt={supply.name}
           width={48}
           height={48}
-          style={{ width: 48, height: 48, borderRadius: 10, objectFit: 'cover', flexShrink: 0, background: '#0F1923' }}
-         unoptimized />
+          loading="lazy"
+          decoding="async"
+          onError={makeImageErrorHandler(supply.imageUrl)}
+          style={{ width: 48, height: 48, borderRadius: 10, objectFit: 'contain', flexShrink: 0, background: '#0F1923' }}
+        />
       ) : (
         <div
           style={{ width: 48, height: 48, borderRadius: 10, background: `${primaryColor}20`, flexShrink: 0 }}
@@ -207,7 +213,7 @@ function SupplyMiniCard({
       >
         {supply.name}
         <div style={{ fontSize: '0.74rem', color: 'var(--grey-400)', fontWeight: 500 }}>
-          ${formatMoney(supply.lowestPrice / 10)} Per Vial
+          ${formatMoney(supply.lowestPrice)} Per Vial
         </div>
       </button>
       <button
@@ -490,11 +496,12 @@ function IsThisRightForMe({
         onMouseOver={e => e.currentTarget.style.transform = 'scale(1.01)'}
         onMouseOut={e => e.currentTarget.style.transform = 'none'}
       >
-        <Image
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           src="/images/right-for-my-research-btn.png"
           alt="Is This Right For My Research?"
           style={{ width: '100%', height: 'auto', display: 'block' }}
-         width={200} height={200} unoptimized />
+        />
       </button>
       {open && (
         <div style={{
@@ -644,11 +651,12 @@ function ReconstitutionCalc({
         onMouseOver={e => e.currentTarget.style.transform = 'scale(1.01)'}
         onMouseOut={e => e.currentTarget.style.transform = 'none'}
       >
-        <Image
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           src="/images/reconstitution-calculator-btn.png"
           alt="Reconstitution Calculator"
           style={{ width: '100%', height: 'auto', display: 'block' }}
-         width={200} height={200} unoptimized />
+        />
       </button>
       {open && (
         <div style={{
@@ -1081,7 +1089,7 @@ export default function ProductModalEnhancements({
               {stackComponents.map((sc) => {
                 const groupName = sc.group?.name || sc.displayLabel;
                 const imageUrl = sc.group?.imageUrl;
-                const pricePerVial = sc.group?.lowestPrice ? sc.group.lowestPrice / 10 : null;
+                const pricePerVial = sc.group?.lowestPrice ? sc.group.lowestPrice : null;
                 return (
                   <button
                     key={sc.token}
@@ -1106,12 +1114,19 @@ export default function ProductModalEnhancements({
                     }}
                   >
                     {imageUrl ? (
+                      // MOBILE BLANK-VIAL FIX: 80px thumb -> 256px AVIF, not the
+                      // 1024px original. See lib/imageOptimize.ts.
                       // eslint-disable-next-line @next/next/no-img-element
-                      <Image
-                        src={imageUrl}
+                      <img
+                        src={optimizedImageSrc(imageUrl, 80)}
                         alt={groupName}
-                        style={{ width: 80, height: 80, borderRadius: 10, objectFit: 'cover', background: '#0F1923', marginBottom: 4 }}
-                       width={200} height={200} unoptimized />
+                        width={80}
+                        height={80}
+                        loading="lazy"
+                        decoding="async"
+                        onError={makeImageErrorHandler(imageUrl)}
+                        style={{ width: 80, height: 80, borderRadius: 10, objectFit: 'contain', background: '#0F1923', marginBottom: 4 }}
+                      />
                     ) : (
                       <div style={{ width: 80, height: 80, borderRadius: 10, background: `${primaryColor}20`, marginBottom: 4 }} aria-hidden="true" />
                     )}
@@ -1156,14 +1171,14 @@ export default function ProductModalEnhancements({
               gap: 10, color: 'var(--white)',
             }}>
               <span style={{ fontSize: '1.4rem', fontWeight: 800, fontFamily: 'var(--font-brand)' }}>
-                Save ${formatMoney(saveVsSeparately.savings / 10)}
+                Save ${formatMoney(saveVsSeparately.savings)}
               </span>
               <span style={{ fontSize: '0.86rem', color: 'var(--grey-300)' }}>
                 ({saveVsSeparately.pct.toFixed(0)}% Off Separate Vials)
               </span>
             </div>
             <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginTop: 6 }}>
-              Separate Vials Add Up To ${formatMoney(saveVsSeparately.separateTotal / 10)}. The Stack Is ${formatMoney(saveVsSeparately.bundle / 10)}.
+              Separate Vials Add Up To ${formatMoney(saveVsSeparately.separateTotal)}. The Stack Is ${formatMoney(saveVsSeparately.bundle)}.
             </div>
           </section>
         </>
@@ -1221,7 +1236,7 @@ export default function ProductModalEnhancements({
             productName={currentProductName}
             imageUrl={currentImageUrl ?? null}
             pricePerVialDollars={
-              currentBundlePriceDollars != null ? Number(currentBundlePriceDollars) / 10 : null
+              currentBundlePriceDollars != null ? Number(currentBundlePriceDollars) : null
             }
             evidenceTierKey={currentCompound?.evidence_tier ?? undefined}
             category={currentCompound?.category ?? null}
@@ -1253,7 +1268,7 @@ export default function ProductModalEnhancements({
             }}>
             {similarProducts.map(({ ref, group }) => {
               if (!group) return null;
-              const pricePerVial = group.lowestPrice ? group.lowestPrice / 10 : null;
+              const pricePerVial = group.lowestPrice ? group.lowestPrice : null;
               // Show up to 2 research area labels
               const areaLabels = (ref.research_areas || []).slice(0, 2).map(researchAreaLabel);
               return (
@@ -1287,14 +1302,19 @@ export default function ProductModalEnhancements({
                     </div>
                   )}
                   {group.imageUrl ? (
+                    // MOBILE BLANK-VIAL FIX: 80px thumb -> 256px AVIF, not the
+                    // 1024px original. See lib/imageOptimize.ts.
                     // eslint-disable-next-line @next/next/no-img-element
-                    <Image
-                      src={group.imageUrl}
+                    <img
+                      src={optimizedImageSrc(group.imageUrl, 80)}
                       alt={group.name}
                       width={80}
                       height={80}
-                      style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover', background: '#0F1923' }}
-                     unoptimized />
+                      loading="lazy"
+                      decoding="async"
+                      onError={makeImageErrorHandler(group.imageUrl)}
+                      style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'contain', background: '#0F1923' }}
+                    />
                   ) : (
                     <div style={{ width: 80, height: 80, borderRadius: 8, background: `${primaryColor}20` }} aria-hidden="true" />
                   )}

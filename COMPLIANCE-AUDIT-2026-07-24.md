@@ -33,14 +33,14 @@ These are not "edit a line" items. Each one is, in substance, a human-use tool o
 
 **Fix:** Delete the page, its client, the backing API routes (`app/api/researcher/{doses,biometrics,protocols,progress-photos,symptoms,ai-protocol,ai-stack-analysis}`), and the DB tables/columns (`researcher_doses` incl. `injection_site`, `researcher_scheduled_protocols`, `researcher_biometrics`, `researcher_symptoms`, `researcher_progress_photos`). This feature flatly contradicts your own DisclaimerGate promise that the platform "never sells needles/syringes" and forbids human use — the two cannot coexist.
 
-### A2. Product "popular name" nickname map — drug & disease equivalence on public cards  **[CRITICAL — delete file]**
+### A2. Product "popular name" nickname map — drug & disease equivalence on public cards  **[RESOLVED]**
 `lib/peptide-popular-names.ts`, rendered on public storefront cards (`AgentStorefrontGrid.tsx:2489,3946`), order pages, and the store editor. These are treatment/brand-equivalence claims sitting right next to Add-to-Cart:
 - Approved-drug equivalence: `semaglutide → 'Ozempic'`, `tirzepatide → 'Mounjaro'`.
 - Controlled-substance comparisons: `semax → 'Adderall In A Bottle'`, `selank → 'The Russian Xanax'`.
 - Disease/cure nicknames: `tesamorelin → 'The Belly Fat Killer'`, `aod9604 → 'The Anti-Obesity Fragment'`, `5-amino-1mq → 'The Fat Cell Killer'`, `tb500 → 'The Injury Eraser'`, `ara290 → 'The Nerve Healer'`, `vip → 'The Mold Illness Peptide'`, `kpv → 'The Gut Soother'`.
 - Cosmetic/lifestyle: `ghk-cu → "Nature's Botox"`, `snap-8 → 'The Botox Alternative'`, `pt-141 → 'The Libido Peptide'`, `epithalon → 'The Immortality Peptide'`, `bpc-157 → "God's Peptide"`.
 
-**Fix:** Delete the map and all four render sites, or replace values with neutral chemical-class descriptors only (e.g. "GLP-1 receptor agonist").
+**Fix applied:** Mappings and rendering logic deleted/neutralized.
 
 ### A3. Local-SEO drug "doorway" pages — `/peptides/{state}/{city}/{compound}`  **[CRITICAL — remove the compound-city layer]**
 `app/peptides/[stateSlug]/[citySlug]/[compoundSlug]/page.tsx` + `lib/cities/*`. These are consumer "buy the drug near me" landing pages built around FDA-regulated weight-loss drugs:

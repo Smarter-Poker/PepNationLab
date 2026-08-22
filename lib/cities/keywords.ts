@@ -37,7 +37,7 @@ export const FEATURED_PEPTIDES: FeaturedPeptide[] = [
   },
   {
     name: 'Semaglutide',
-    popularName: 'Ozempic / Wegovy',
+    popularName: 'GLP-1 Research Analog',
     slug: 'semaglutide',
     category: 'Metabolic Health',
     description: 'GLP-1 receptor agonist widely studied for metabolic regulation and weight management research.',
@@ -57,7 +57,7 @@ export const FEATURED_PEPTIDES: FeaturedPeptide[] = [
   },
   {
     name: 'Tirzepatide',
-    popularName: 'Mounjaro / Zepbound',
+    popularName: 'GIP/GLP-1 Research Analog',
     slug: 'tirzepatide',
     category: 'Metabolic Health',
     description: 'Dual GIP/GLP-1 receptor agonist. Cutting-edge metabolic and weight regulation research compound.',

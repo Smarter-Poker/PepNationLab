@@ -1,4 +1,4 @@
-// v12: PUSH RELIABILITY (2026-08-04). Root-cause work for "no pushes on my
+// v13: PUSH RELIABILITY (2026-08-04). Root-cause work for "no pushes on my
 //      phone in days": subscriptions rot silently (browser rotates the
 //      endpoint, PWA reinstall, endpoint reassigned to another account) and
 //      nothing ever repaired or even detected it. This version adds:
@@ -34,11 +34,16 @@
 // v10: Cache-version bump to deliver Module 1 + 2 quiz gate enforcement,
 //      data-v14 protection for #s2, route.ts no-store header, and markdown
 //      rendering fix for the Ask AI assistant modal.
-const CACHE_VERSION = 'pnl-sw-v12';
-const STATIC_CACHE_NAME = 'pnl-static-cache-v12';
-const DYNAMIC_CACHE_NAME = 'pnl-dynamic-cache-v12';
-const CATALOG_CACHE_NAME = 'pnl-catalog-cache-v12';
-const IMAGE_CACHE_NAME = 'pnl-image-cache-v12';
+// v15: Cache-version bump for the mobile blank-vial fix. The storefront product
+//      detail view now requests right-sized /_next/image thumbnails instead of
+//      the 1024px vial originals, so every previously cached full-resolution
+//      /images/products/ and /images/savage-brands/ entry is dead weight and is
+//      evicted here. See lib/imageOptimize.ts.
+const CACHE_VERSION = 'pnl-sw-v15';
+const STATIC_CACHE_NAME = 'pnl-static-cache-v15';
+const DYNAMIC_CACHE_NAME = 'pnl-dynamic-cache-v15';
+const CATALOG_CACHE_NAME = 'pnl-catalog-cache-v15';
+const IMAGE_CACHE_NAME = 'pnl-image-cache-v15';
 
 // Catalog cache TTL in the service worker (5 min = 300,000 ms)
 // Matches the s-maxage set on the API route's Cache-Control header.
@@ -134,7 +139,7 @@ self.addEventListener('push', (event) => {
 // ---------------------------------------------------------------------
 // SUBSCRIPTION SELF-HEAL
 // Browsers rotate push subscriptions (endpoint + keys) whenever they like.
-// Before v12 this event was unhandled, so a rotation orphaned the device:
+// Before v13 this event was unhandled, so a rotation orphaned the device:
 // the server kept sending to the OLD endpoint (often still accepted with a
 // 2xx by the push service) while the device listened on a new one it never
 // told the server about. Re-subscribe and re-register immediately.
@@ -534,9 +539,34 @@ self.addEventListener('fetch', (event) => {
   const isResearchPage = url.pathname.startsWith('/research');
 
   if (event.request.method === 'GET' && (isStaticAsset || isResearchPage)) {
+    // Brand vial images must ALWAYS be network-first — never serve a stale or
+    // error-cached response for these, as that causes the blank-vial bug on iOS.
+    const isBrandImage = url.pathname.startsWith('/images/savage-brands/');
+
+    if (isBrandImage) {
+      event.respondWith(
+        fetch(event.request).then((networkResponse) => {
+          if (networkResponse.ok) {
+            caches.open(STATIC_CACHE_NAME).then((cache) => {
+              cache.put(event.request, networkResponse.clone());
+            });
+          }
+          return networkResponse;
+        }).catch(() => {
+          // Network failed — serve cache as last resort (but only if ok)
+          return caches.match(event.request).then((cached) => {
+            if (cached && cached.ok) return cached;
+            return new Response('', { status: 503 });
+          });
+        })
+      );
+      return;
+    }
+
     event.respondWith(
       caches.match(event.request).then((cachedResponse) => {
-        if (cachedResponse) {
+        // Never serve a cached error response — go to network instead.
+        if (cachedResponse && cachedResponse.ok) {
           // Update cache in the background
           event.waitUntil(
             fetch(event.request).then((networkResponse) => {
@@ -550,7 +580,7 @@ self.addEventListener('fetch', (event) => {
           return cachedResponse;
         }
 
-        // No cache — wait for network
+        // No cache (or cached error) — wait for network
         return fetch(event.request).then((networkResponse) => {
           if (networkResponse.ok) {
             caches.open(STATIC_CACHE_NAME).then((cache) => {

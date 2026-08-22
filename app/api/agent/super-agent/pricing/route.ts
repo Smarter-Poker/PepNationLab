@@ -125,21 +125,26 @@ export async function POST(req: NextRequest) {
 
     // Server-side baseline_cost floor
     // A super-agent cannot price sub-agents below their own wholesale cost
-    // (which would mean selling at a loss). computeAgentCost returns the
-    // per-10-vial-pack cost; baseline_cost is also per-10-vial-pack.
-    const ownCostPer10 = await computeAgentCostForAgent(supabase as any, product_id, superAgentId, (superAgentProfile.tier as 'tier_1' | 'tier_2' | 'tier_3') ?? 'tier_3');
+    // (which would mean selling at a loss). Both sides are PER VIAL:
+    // computeAgentCostForAgent returns base_cost x markup with base_cost
+    // per-vial, and super_agent_pricing.baseline_cost is per-vial. Nothing is
+    // sold or billed in 10-packs.
+    const ownCostPerVial = await computeAgentCostForAgent(supabase as any, product_id, superAgentId, (superAgentProfile.tier as 'tier_1' | 'tier_2' | 'tier_3') ?? 'tier_3');
     // Allow zero-cost items as explicitly requested.
-    // Ensure that if ownCostPer10 is exactly 0, they can set baseline_cost >= 0.
-    if (ownCostPer10 === undefined || ownCostPer10 === null) {
+    // Ensure that if ownCostPerVial is exactly 0, they can set baseline_cost >= 0.
+    if (ownCostPerVial === undefined || ownCostPerVial === null) {
       return NextResponse.json(
         { error: 'Product wholesale cost could not be determined. Contact admin.' },
         { status: 422 }
       );
     }
-    if (baseline_cost < ownCostPer10) {
+    if (baseline_cost < ownCostPerVial) {
+      // The comparison was already per-vial on both sides, but the message
+      // divided both figures by 10 and still labelled them "/vial", so the
+      // error quoted a tenth of the real numbers.
       return NextResponse.json(
         {
-          error: `Baseline cost ($${(baseline_cost / 10).toFixed(2)}/vial) cannot be below your own wholesale cost ($${(ownCostPer10 / 10).toFixed(2)}/vial).`,
+          error: `Baseline cost ($${baseline_cost.toFixed(2)}/vial) cannot be below your own wholesale cost ($${ownCostPerVial.toFixed(2)}/vial).`,
         },
         { status: 422 }
       );
@@ -150,10 +155,12 @@ export async function POST(req: NextRequest) {
       if (bulk_baseline_cost < 0) {
         return NextResponse.json({ error: 'bulk_baseline_cost must be greater than or equal to zero.' }, { status: 400 });
       }
-      if (bulk_baseline_cost < ownCostPer10) {
+      if (bulk_baseline_cost < ownCostPerVial) {
+        // Same as the non-bulk floor above: both sides are already per-vial,
+        // but the message divided both by 10 while labelling them "/vial".
         return NextResponse.json(
           {
-            error: `Bulk baseline cost ($${(bulk_baseline_cost / 10).toFixed(2)}/vial) cannot be below your own wholesale cost ($${(ownCostPer10 / 10).toFixed(2)}/vial).`,
+            error: `Bulk baseline cost ($${bulk_baseline_cost.toFixed(2)}/vial) cannot be below your own wholesale cost ($${ownCostPerVial.toFixed(2)}/vial).`,
           },
           { status: 422 }
         );

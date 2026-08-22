@@ -113,3 +113,12 @@ _tsc_*.json
 
 # FUSE mount artifacts (created when editing files on the mounted workspace)
 .fuse_hidden*
+
+# Staging artifacts used to move code between the container and this machine.
+# A 700MB tarball and a pile of `split` chunks are not source; batch2.tgz was
+# committed by accident once already.
+scratch/*.tgz
+scratch/parts/
+scratch/old/
+scratch/p[0-9]_*
+scratch/part_*

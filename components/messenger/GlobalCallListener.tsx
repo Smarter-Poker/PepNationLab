@@ -130,6 +130,10 @@ function mergeCallRows(existing: CallSignalRow, incoming: CallSignalRow): CallSi
     ...incoming,
     caller_name: incoming.caller_name ?? existing.caller_name,
     caller_username: incoming.caller_username ?? existing.caller_username,
+    // Group fields arrive only on the enriched broadcast/API rows, never on
+    // postgres_changes — preserve them across whichever source lands second.
+    conversation_type: incoming.conversation_type ?? existing.conversation_type,
+    conversation_title: incoming.conversation_title ?? existing.conversation_title,
   };
 }
 
@@ -196,48 +200,94 @@ export default function GlobalCallListener() {
     };
   }, []);
 
-  useEffect(() => {
+  const resumeInFlightCalls = useCallback(async (signal?: { cancelled: boolean }) => {
     if (!user?.id) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch('/api/messenger/list-active-calls', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: '{}',
-        });
-        if (cancelled || !res.ok) return;
-        const json = (await res.json()) as { calls?: CallSignalRow[] };
-        const calls = json.calls ?? [];
+    try {
+      const res = await fetch('/api/messenger/list-active-calls', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: '{}',
+      });
+      if (signal?.cancelled || !res.ok) return;
+      const json = (await res.json()) as { calls?: CallSignalRow[] };
+      const calls = json.calls ?? [];
 
-        const myRinging = calls.find(
-          (c) => c.initiator_id === user.id && c.status === 'ringing',
-        );
-        if (myRinging && !activeCallRef.current) {
-          setActiveCall(myRinging);
-        }
+      const myRinging = calls.find(
+        (c) => c.initiator_id === user.id && c.status === 'ringing',
+      );
+      if (myRinging && !activeCallRef.current) {
+        setActiveCall(myRinging);
+      }
 
-        for (const c of calls) {
-          if (c.status !== 'ringing') continue;
-          if (c.initiator_id === user.id) continue;
+      for (const c of calls) {
+        // An ACTIVE call is JOINABLE — for direct calls too, not only groups.
+        // Restricting this to groups meant that if your connection died on a
+        // 1:1 call, the call was simply gone: nothing rang, nothing was
+        // listed, and the only way back was to guess that pressing the call
+        // button again would rejoin the still-open room. The server already
+        // mints a token for any participant of an active call, so there was
+        // never a reason to hide it.
+        const joinable = c.status === 'active';
+        if (c.status !== 'ringing' && !joinable) continue;
+        // Do not interrupt yourself while you are already on this call.
+        if (activeCallRef.current?.id === c.id) continue;
+        if (c.status === 'ringing' && c.initiator_id === user.id) continue;
+
+        // A call the user explicitly declined or dismissed must STAY
+        // dismissed (owner report 2026-08-19: "making random calls all by
+        // itself"). Without this marker, every focus/visibility/online event
+        // re-surfaced the full-screen card for a group call the user had
+        // already waved away - decline leaves a group call ringing for the
+        // OTHERS by design, so the row was always found again.
+        const dismissedHere = (() => {
+          try { return Boolean(sessionStorage.getItem(`dismissed_call_${c.id}`)); } catch { return false; }
+        })();
+        if (dismissedHere) continue;
+
+        // The `answered_call_*` marker exists to stop a ring re-appearing
+        // after you have picked up. It must NOT hide a rejoin offer: the
+        // people who answered are precisely the people who get dropped, and
+        // for them this card is the way back in.
+        if (c.status === 'ringing') {
           const alreadyAnswered = (() => {
             try { return Boolean(sessionStorage.getItem(`answered_call_${c.id}`)); } catch { return false; }
           })();
           if (alreadyAnswered) continue;
-          setIncomingCalls((cur) => {
-            const idx = cur.findIndex((x) => x.id === c.id);
-            if (idx === -1) return [...cur, c];
-            return cur.map((x, i) => (i === idx ? mergeCallRows(x, c) : x));
-          });
         }
-      } catch (err) {
-        console.warn('[GLOBAL CALL] Failed to resume in-flight calls:', err);
+
+        setIncomingCalls((cur) => {
+          const idx = cur.findIndex((x) => x.id === c.id);
+          if (idx === -1) return [...cur, c];
+          return cur.map((x, i) => (i === idx ? mergeCallRows(x, c) : x));
+        });
       }
-    })();
-    return () => {
-      cancelled = true;
+    } catch (err) {
+      console.warn('[GLOBAL CALL] Failed to resume in-flight calls:', err);
+    }
+  }, [user?.id, setActiveCall]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const signal = { cancelled: false };
+    void resumeInFlightCalls(signal);
+
+    // Re-check whenever the user could plausibly have missed something: this
+    // used to run once at login, so a call that started — or that you dropped
+    // out of — mid-session never surfaced at all.
+    const recheck = () => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+      void resumeInFlightCalls(signal);
     };
-  }, [user?.id]);
+    document.addEventListener('visibilitychange', recheck);
+    window.addEventListener('online', recheck);
+    window.addEventListener('focus', recheck);
+    return () => {
+      signal.cancelled = true;
+      document.removeEventListener('visibilitychange', recheck);
+      window.removeEventListener('online', recheck);
+      window.removeEventListener('focus', recheck);
+    };
+  }, [user?.id, resumeInFlightCalls]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -259,15 +309,31 @@ export default function GlobalCallListener() {
         });
       },
       onUpdate: (c) => {
-        if (c.status !== 'ringing') {
+        const terminal = c.status === 'ended' || c.status === 'declined' || c.status === 'missed';
+        if (terminal) {
           setIncomingCalls((cur) => cur.filter((x) => x.id !== c.id));
         } else {
-          // Still ringing - merge into existing entry so caller_name from
-          // a delayed broadcast is preserved.
+          // ringing OR active — merge so caller/group fields from a delayed
+          // broadcast are preserved. When the first person accepts a GROUP
+          // call (status -> active) the others must NOT lose their ring
+          // screen: it flips into a joinable "call in progress" screen
+          // instead. For DIRECT calls an accept anywhere dismisses the ring
+          // exactly as before. The type comes from the merged entry, since
+          // postgres_changes rows never carry it.
           setIncomingCalls((cur) => {
             const idx = cur.findIndex((x) => x.id === c.id);
             if (idx === -1) return cur;
-            return cur.map((x, i) => (i === idx ? mergeCallRows(x, c) : x));
+            const merged = mergeCallRows(cur[idx], c);
+            if (c.status === 'active' && merged.conversation_type !== 'group') {
+              return cur.filter((x) => x.id !== c.id);
+            }
+            const answeredHere = (() => {
+              try { return Boolean(sessionStorage.getItem(`answered_call_${c.id}`)); } catch { return false; }
+            })();
+            if (c.status === 'active' && answeredHere) {
+              return cur.filter((x) => x.id !== c.id);
+            }
+            return cur.map((x, i) => (i === idx ? merged : x));
           });
         }
         setActiveCall((cur) => {
@@ -312,6 +378,9 @@ export default function GlobalCallListener() {
   }, []);
 
   const handleDecline = useCallback((call: CallSignalRow) => {
+    // Remember the dismissal for this browser session so the resume sweep
+    // never re-surfaces a call the user already said no to.
+    try { sessionStorage.setItem(`dismissed_call_${call.id}`, 'true'); } catch { /* best-effort */ }
     setIncomingCalls((cur) => cur.filter((x) => x.id !== call.id));
 
     import('@/lib/messenger/realtime').then(({ broadcastCallSignal }) => {

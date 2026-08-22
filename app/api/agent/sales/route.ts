@@ -52,8 +52,12 @@ export async function GET(req: NextRequest) {
       for (let depth = 1; depth <= MAX_DOWNLINE_DEPTH && frontier.length > 0; depth++) {
         const { data: children, error: childErr } = await supabase
           .from('profiles')
-          .select('id, full_name, parent_agent_id')
-          .in('parent_agent_id', frontier);
+          .select('id, full_name, parent_agent_id, role')
+          .in('parent_agent_id', frontier)
+          // Never include admin accounts in any agent's downline tree.
+          // Admins (e.g. Daniel Bekavac) place Pep Nation direct orders that
+          // only the platform owner should see.
+          .neq('role', 'admin');
         if (childErr) {
           return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
         }
@@ -61,6 +65,8 @@ export async function GET(req: NextRequest) {
         for (const c of children ?? []) {
           const id = c.id as string;
           if (seen.has(id)) continue; // cycle guard
+          // Belt-and-suspenders: skip admins even if the .neq above somehow missed one.
+          if ((c as { role?: string }).role === 'admin') continue;
           seen.add(id);
           downlineNames.set(id, (c as { full_name?: string | null }).full_name ?? null);
           parentOf.set(id, (c as { parent_agent_id?: string | null }).parent_agent_id as string);
@@ -118,14 +124,17 @@ export async function GET(req: NextRequest) {
         'profiles!orders_buyer_id_fkey(full_name, email)'
       )
       .in('agent_id', agentIds)
-      // Exclude wholesale restock orders from the sales view.
-      // Restocks were appearing as zero-profit 'sales' in the agent dashboard.
       .eq('is_wholesale_restock', false)
-      // Exclude cancelled orders so voided sales don't distort profit/discount totals
-      // (matches coupon-performance, redemptions, and sub-agent-rollup readers).
       .neq('status', 'cancelled')
+      // Admin-account orders stay hidden from OTHER agents' feeds (security
+      // rule from 1c93aa46), but the admin's OWN sales must show on their own
+      // Sales & Accounting page - excluding the caller zeroed every stat.
+      .not('agent_id', 'in', `(${[
+        'b8bd12e6-8196-401e-b37b-f742caf1596c', // Daniel Bekavac (admin)
+        'a253044b-2250-4187-9af5-78cbca2d4e67', // unnamed admin account
+      ].filter((id) => id !== agentId).join(',') || '00000000-0000-0000-0000-000000000000'})`)
       .order('created_at', { ascending: false })
-      .limit(2500);
+      .limit(2500) as any;
 
     if (ordersError) {
       return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
@@ -175,8 +184,9 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Batch-resolve the needed chain costs (per-10-vial-pack; /10 to per-vial,
-    // checkout's convention). Best-effort: a failed recompute just leaves the
+    // Batch-resolve the needed chain costs. These come back PER VIAL, which is
+    // already checkout's convention -- base_cost is per-vial and nothing is
+    // sold in 10-packs. Best-effort: a failed recompute just leaves the
     // conservative stored-value fallbacks below in charge.
     const recomputedCost = new Map<string, number>(); // `${agentId}:${productId}` -> per-vial
     if (recomputeNeeds.size > 0) {
@@ -196,8 +206,8 @@ export async function GET(req: NextRequest) {
             'tier_3',
             prodList.filter((p) => pids.has(p.id))
           );
-          for (const [pid, packCost] of costs) {
-            recomputedCost.set(`${aid}:${pid}`, packCost / 10);
+          for (const [pid, vialCost] of costs) {
+            recomputedCost.set(`${aid}:${pid}`, vialCost);
           }
         } catch (err) {
           console.error('[agent-sales] chain-cost recompute failed for', aid, err);

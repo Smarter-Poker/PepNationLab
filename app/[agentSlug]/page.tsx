@@ -11,6 +11,7 @@ import { getCompoundsBySlugs } from '@/lib/compounds-server';
 import { computeAgentCostsForAgent, type AgentTier } from '@/lib/pricing';
 import { getEffectiveBundlesForStore } from '@/lib/bundles';
 import { isSavageNetworkAgent, SAVAGE_BRANDS_SLUG } from '@/lib/brand-network';
+import { buildOffer, getShippingDetailNodes } from '@/lib/structured-data/merchant';
 import CouponLinkCapture from '@/components/CouponLinkCapture';
 import StorefrontRenameBanner from '@/components/StorefrontRenameBanner';
 import Navbar from '@/components/Navbar';
@@ -299,27 +300,65 @@ async function AgentStorefrontDataLoader({
           : `https://pepnationlab.com${rawImage}`;
       }
       const price = Number(pp.is_on_sale ? pp.sale_price : pp.retail_price);
-      if (!Number.isFinite(price) || !(price > 0)) return null;
-      node.offers = {
-        '@type': 'Offer',
-        price: price.toFixed(2),
-        priceCurrency: 'USD',
-        availability:
-          (inventoryMap.get(pp.product_id) ?? 0) > 0
-            ? 'https://schema.org/InStock'
-            : 'https://schema.org/OutOfStock',
-        url: `https://pepnationlab.com/${agentSlug}`,
-        priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-        itemCondition: 'https://schema.org/NewCondition',
-        seller: { '@id': 'https://pepnationlab.com/#organization' },
-      };
+      // Every Offer is built by lib/structured-data/merchant so validFrom,
+      // priceValidUntil and shippingDetails cannot go missing on one page and
+      // not another. Returns null for a non-positive price, which drops the
+      // whole Product node rather than publishing a bogus offer.
+      const offer = buildOffer({
+        price,
+        // Deep-link to THIS product. Every offer previously pointed at the bare
+        // storefront URL, so Google saw N distinct products sharing one page
+        // and could not attribute a price to any of them.
+        url: `https://pepnationlab.com/${agentSlug}?product=${encodeURIComponent(String(pp.product_id))}`,
+        inStock: (inventoryMap.get(pp.product_id) ?? 0) > 0,
+        sku: pp.product_id ? String(pp.product_id) : null,
+      });
+      if (!offer) return null;
+      node.offers = offer;
       return node;
     })
     .filter((n): n is Record<string, unknown> => n !== null);
 
   const jsonLd = {
     '@context': 'https://schema.org',
-    '@graph': productJsonLds,
+    // The OfferShippingDetails nodes are emitted once and referenced by @id
+    // from every offer above -- inlining them per product would repeat the
+    // same block up to 250 times on a full catalog page. Omitted entirely when
+    // there are no products, so the graph is never just dangling shipping.
+    '@graph': productJsonLds.length > 0
+      ? [...productJsonLds, ...getShippingDetailNodes()]
+      : [],
+  };
+
+  const agentFaqJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: [
+      {
+        '@type': 'Question',
+        name: `Are the peptides sold by ${agent.display_name} 3rd-party tested?`,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: `Yes, all research products available through ${agent.display_name} include verified 3rd-party Certificates of Analysis (CoAs) for purity and identity.`
+        }
+      },
+      {
+        '@type': 'Question',
+        name: `How quickly does ${agent.display_name} ship orders?`,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: `Orders placed through ${agent.display_name} are typically fulfilled within 0-2 business days and arrive within 2-7 days via standard shipping.`
+        }
+      },
+      {
+        '@type': 'Question',
+        name: `What is the refund policy for ${agent.display_name}?`,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: `All research products are sold strictly for in vitro laboratory use. Please refer to our full terms of service and disclaimer regarding sales policies.`
+        }
+      }
+    ]
   };
 
   return (
@@ -327,6 +366,10 @@ async function AgentStorefrontDataLoader({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(agentFaqJsonLd).replace(/</g, '\\u003c') }}
       />
       <AgentStorefrontGrid
         products={productsWithCost as any}

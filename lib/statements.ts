@@ -1,7 +1,7 @@
 
 import { createServiceClient } from '@/lib/supabase/server';
 import { chicagoMidnightIso } from '@/lib/time-cst';
-import { computeAgentCostsForAgent } from '@/lib/pricing';
+import { computeAgentCostsForAgent, computeSubAgentBaselineCost } from '@/lib/pricing';
 
 function addDays(dateStr: string, days: number): string {
   const d = new Date(`${dateStr}T00:00:00Z`);
@@ -77,8 +77,8 @@ export interface SubtreeBillingResult {
  *     checkout as the seller's direct parent's cost).
  *   - Seller is deeper in the subtree: the mid-chain cost is not
  *     snapshotted per item, so recompute it live from the chain-aware
- *     pricing engine (per-10-vial-pack, divided by 10 to per-vial - the
- *     same convention checkout uses). Also used as the fallback for a
+ *     pricing engine, which returns per-vial dollars - the same convention
+ *     checkout uses. Also used as the fallback for a
  *     direct-child row missing unit_super_agent_cost.
  *   - Last-resort fallbacks (pricing recompute unavailable): the stored
  *     unit_super_agent_cost, then unit_cost_price - both at or above the
@@ -184,8 +184,12 @@ export async function computeSuperDownlineSubtreeBilling(
       if (isDirect && Number.isFinite(usc) && usc > 0) {
         perVial = usc;
       } else if (item.product_id && recomputedCosts.has(item.product_id)) {
-        // Pricing engine returns per-10-vial-pack; items are per-vial.
-        perVial = (recomputedCosts.get(item.product_id) as number) / 10;
+        // The pricing engine returns a PER-VIAL cost (base_cost is per-vial and
+        // computeAgentCostsForAgent never multiplies by pack size), and qty
+        // counts individual vials. There is no 10-pack anywhere in the
+        // platform, so no divisor belongs here. The /10 that used to sit here
+        // under-billed this fallback path by 10x.
+        perVial = recomputedCosts.get(item.product_id) as number;
       }
 
       if (perVial == null) {
@@ -348,6 +352,184 @@ export async function computeStatement(
   };
 }
 
+export interface DownlineInvoiceProfile {
+  id: string;
+  parent_agent_id: string | null;
+  account_type: string | null;
+  is_super_agent: boolean | null;
+}
+
+export interface DownlineInvoiceResult {
+  totalCogs: number;
+  totalShipping: number;
+  totalOwed: number;
+}
+
+/**
+ * What a PARENTED (downline) agent owes their direct upline for one billing
+ * week - the hop-by-hop invoice half of the weekly trickle-down.
+ *
+ * Extracted verbatim from the weekly invoice cron so there is exactly ONE
+ * copy of this formula. The wallet's forecast previously reimplemented its
+ * own (retail-based) version and drifted badly; anything that needs to know
+ * what a downline will be invoiced must call this.
+ *
+ *   (a) The downline's OWN orders at their own snapshotted chain cost.
+ *       Skipped for prepaid downlines - those are settled per-order at
+ *       approval time, so invoicing them again would double-bill.
+ *   (b) For a NESTED Super Agent, their entire subtree at their own cost
+ *       basis. Without this a nested Super is never billed for their
+ *       downlines' sales.
+ */
+export async function computeDownlineInvoice(
+  supabase: ServiceClient,
+  downline: DownlineInvoiceProfile,
+  window: { rangeStart: string; rangeEndExclusive: string }
+): Promise<DownlineInvoiceResult> {
+  const isPrepaid = downline.account_type === 'prepaid';
+  let totalCogs = 0;
+  let totalShipping = 0;
+
+  // (a) The downline's own orders.
+  if (!isPrepaid) {
+    const { data: orders } = await supabase
+      .from('orders')
+      .select('id, shipping_cost, order_items(product_id, quantity, unit_super_agent_cost, unit_cost_price)')
+      .eq('agent_id', downline.id)
+      .neq('status', 'cancelled')
+      .neq('status', 'pending_customer_payment')
+      .neq('status', 'agent_approval_pending')
+      .neq('is_wholesale_restock', true)
+      .or(
+        `and(agent_approved_at.gte.${window.rangeStart},agent_approved_at.lt.${window.rangeEndExclusive}),` +
+        `and(agent_approved_at.is.null,created_at.gte.${window.rangeStart},created_at.lt.${window.rangeEndExclusive})`
+      );
+
+    for (const order of orders ?? []) {
+      totalShipping += Number(order.shipping_cost) || 0;
+      const items = (order.order_items as unknown) as Array<{
+        product_id: string | null;
+        quantity: number;
+        unit_super_agent_cost: number | null;
+        unit_cost_price: number | null;
+      }>;
+
+      for (const item of items ?? []) {
+        const qty = Number(item.quantity) || 0;
+        if (qty <= 0) continue;
+
+        // The downline owes their upline the unit_cost_price (their own
+        // chain cost, snapshotted at checkout).
+        const stored = Number(item.unit_cost_price);
+        if (Number.isFinite(stored) && stored >= 0) {
+          totalCogs += stored * qty;
+        } else if (item.product_id && downline.parent_agent_id) {
+          // computeSubAgentBaselineCost returns a PER-VIAL cost --
+          // super_agent_pricing.baseline_cost is per-vial, and its fallback
+          // computeAgentCostForAgent is base_cost x markup with base_cost
+          // per-vial. qty counts individual vials. Nothing is sold or billed
+          // in 10-packs, so no divisor applies.
+          const recomputed = await computeSubAgentBaselineCost(
+            supabase,
+            item.product_id,
+            downline.parent_agent_id
+          );
+          totalCogs += recomputed * qty;
+        }
+      }
+    }
+  }
+
+  // (b) Nested Super Agent: their whole subtree at their own cost basis.
+  if (downline.is_super_agent) {
+    const subtree = await computeSuperDownlineSubtreeBilling(supabase, downline.id, window);
+    totalCogs += subtree.cogs;
+    totalShipping += subtree.shipping;
+  }
+
+  const round = (n: number) => Math.round(n * 100) / 100;
+  return {
+    totalCogs: round(totalCogs),
+    totalShipping: round(totalShipping),
+    totalOwed: round(totalCogs + totalShipping),
+  };
+}
+
+/**
+ * Dry-run projection of what `agentId` will be billed for `weekStart` - the
+ * number behind the wallet's "Forecast Next" tile.
+ *
+ * This deliberately runs the SAME code the biller runs. The old
+ * forecast_next_statement RPC was a separate hand-written query that summed
+ * RETAIL subtotals over a UTC week and it was wrong in eight distinct ways
+ * (retail instead of COGS, phantom shipping subtraction, no status gating, a
+ * 5-6h timezone skew, keyed on created_at instead of agent_approved_at, no
+ * downline subtree roll-up for Super Agents, no eligibility gating, and it
+ * hid self-buys that ARE billed). Agents were shown a figure that could be
+ * several times too high or, for a Super Agent with a downline, far too low.
+ *
+ * Nothing is persisted here - computeStatement / computeDownlineInvoice are
+ * pure reads, so this is inherently a dry run.
+ *
+ * Returns 0 for anyone who will not receive a bill for the week (prepaid and
+ * manufacturer accounts settle elsewhere), rather than a phantom number for
+ * a statement that will never exist.
+ */
+export async function computeForecast(
+  supabase: ServiceClient,
+  agentId: string,
+  weekStart: string
+): Promise<number> {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id, role, parent_agent_id, account_type, is_super_agent, is_manufacturer')
+    .eq('id', agentId)
+    .maybeSingle();
+
+  if (!profile) return 0;
+
+  // Manufacturers settle through the commission ledger, never a COGS bill.
+  if ((profile as { is_manufacturer?: boolean | null }).is_manufacturer === true) return 0;
+
+  // Admins are never billed - the invoice cron only walks role IN
+  // ('agent','super_agent'). But the house storefront is an admin-owned agent
+  // profile, so every public-signup order carries the house account as its
+  // agent_id; running computeStatement over that returned the platform's
+  // entire weekly COGS as the admin's personal "Forecast Next". A large,
+  // confident, fabricated number for a bill that will never arrive.
+  if ((profile as { role?: string | null }).role === 'admin') return 0;
+
+  const isPrepaid = profile.account_type === 'prepaid';
+
+  // Parented accounts are invoiced by their upline, not by admin. A prepaid
+  // nested Super still owes for their SUBTREE (their own orders settle at
+  // checkout), which computeDownlineInvoice already accounts for - so we only
+  // short-circuit a prepaid downline that is NOT a super agent.
+  if (profile.parent_agent_id) {
+    if (isPrepaid && profile.is_super_agent !== true) return 0;
+    const result = await computeDownlineInvoice(
+      supabase,
+      {
+        id: profile.id as string,
+        parent_agent_id: profile.parent_agent_id as string,
+        account_type: profile.account_type as string | null,
+        is_super_agent: profile.is_super_agent as boolean | null,
+      },
+      {
+        rangeStart: chicagoMidnightIso(weekStart),
+        rangeEndExclusive: chicagoMidnightIso(addDays(weekStart, 7)),
+      }
+    );
+    return result.totalOwed;
+  }
+
+  // Top-level prepaid agents are debited at order approval - no weekly bill.
+  if (isPrepaid) return 0;
+
+  const computed = await computeStatement(supabase, agentId, weekStart);
+  return computed.ok ? computed.data.totalOwed : 0;
+}
+
 export interface PersistOptions {
   force?: boolean;
 }
@@ -366,52 +548,53 @@ export async function persistStatement(
   // Refuse to overwrite a paid statement - even when force=true. A paid
   // statement is settled history; regenerating it would silently roll back
   // the agent's balance and corrupt the ledger.
-  const { data: existing } = await supabase
-    .from('weekly_statements')
-    .select('id, status')
-    .eq('agent_id', agentId)
-    .eq('week_start', weekStart)
-    .maybeSingle();
+  //
+  // The read-then-upsert this used to do was a TOCTOU: computeStatement makes
+  // several round trips between the two, and pay_invoice can commit in that
+  // window - locking the row, marking it paid, releasing the payer's credit
+  // and crediting the payee. The upsert would then flip it back to
+  // pending_payment at a lower total with paid_at still populated, and the
+  // nightly auto-pay cron would collect it a SECOND time. That window barely
+  // mattered when only the Monday cron wrote statements; it matters now that
+  // every order cancellation and a nightly reconciler do too.
+  //
+  // upsert_weekly_statement_atomic carries the "never touch a paid row" rule
+  // into the same statement as the write (WHERE status <> 'paid'), which is
+  // exactly what upsert_agent_invoice_atomic has always done for invoices.
+  const isZeroBalance = computed.totalOwed <= 0;
+  const status = isZeroBalance ? 'paid' : 'pending_payment';
 
-  if (existing?.status === 'paid') {
+  const { data: upsertRows, error: upsertError } = await supabase.rpc('upsert_weekly_statement_atomic', {
+    p_agent_id: agentId,
+    p_week_start: weekStart,
+    p_week_end: computed.weekEnd,
+    p_total_cogs: computed.totalCogs,
+    p_total_shipping: computed.totalShipping,
+    p_total_owed: computed.totalOwed,
+    p_status: status,
+    // A $0 statement has nothing to collect - close it immediately so it never
+    // shows as outstanding in the admin panel, the wallet, or a balance query.
+    p_paid_at: isZeroBalance ? new Date().toISOString() : null,
+    p_payment_reference: isZeroBalance ? 'Auto-closed: no balance due' : null,
+  });
+
+  const row = Array.isArray(upsertRows) ? upsertRows[0] : (upsertRows as unknown as { statement_id?: string; was_skipped?: boolean } | null);
+
+  if (upsertError || !row?.statement_id) {
+    return { ok: false, error: upsertError?.message ?? 'Failed To Save Statement.' };
+  }
+
+  const statement = { id: row.statement_id as string };
+
+  if (row.was_skipped === true) {
+    // The row was already settled. Leave its order links alone too - rewriting
+    // them would change what a paid bill claims to be for.
     return {
       ok: true,
-      statementId: existing.id as string,
+      statementId: statement.id,
       skipped: true,
       reason: 'paid',
     };
-  }
-
-  // If we found a non-paid row, always let the upsert proceed so totals
-  // are refreshed for the same week (regardless of force flag).
-
-  // A $0 statement has nothing to collect -- close it immediately so it never
-  // appears as "outstanding" in the admin panel, wallet, or any balance query.
-  const isZeroBalance = computed.totalOwed <= 0;
-  const upsertPayload: Record<string, unknown> = {
-    agent_id: agentId,
-    week_start: weekStart,
-    week_end: computed.weekEnd,
-    total_cogs: computed.totalCogs,
-    total_shipping: computed.totalShipping,
-    total_owed: computed.totalOwed,
-    status: isZeroBalance ? 'paid' : 'pending_payment',
-  };
-  if (isZeroBalance) {
-    upsertPayload.paid_at = new Date().toISOString();
-    upsertPayload.payment_method = null;
-    upsertPayload.payment_reference = 'Auto-closed: no balance due';
-  }
-
-  const { data: statement, error: upsertError } = await supabase
-    .from('weekly_statements')
-    //  Database schema mismatch from generated types
-    .upsert(upsertPayload, { onConflict: 'agent_id,week_start' })
-    .select('id')
-    .maybeSingle();
-
-  if (upsertError || !statement) {
-    return { ok: false, error: upsertError?.message ?? 'Failed To Save Statement.' };
   }
 
   const { error: deleteError } = await supabase.from('statement_orders').delete().eq('statement_id', statement.id);

@@ -39,9 +39,18 @@ export async function createE2EESetup(_livekitRoom: string): Promise<E2EESetup |
 }
 
 /**
- * Always returns undefined so <LiveKitRoom options={...}> falls back to
- * SDK defaults.
+ * Room options for every call.
+ *
+ * disconnectOnPageLeave defaults to TRUE in livekit-client, which tears the
+ * media session down on `pagehide`. On a phone that event means "the screen
+ * locked" or "you opened another app" at least as often as it means "the tab
+ * closed" — and an iPhone locks itself after 30 seconds — so the default was
+ * quietly dropping people out of live calls a minute or two in. We already
+ * handle real teardown ourselves (the pagehide handler in CallOverlay, which
+ * ignores bfcache restores, plus the server-side stale sweep), so the SDK
+ * hanging up on our behalf is pure downside: it cannot tell the difference,
+ * and it fires first.
  */
 export function asRoomOptions(_setup: E2EESetup | null): RoomOptions | undefined {
-  return undefined;
+  return { disconnectOnPageLeave: false };
 }

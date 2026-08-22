@@ -80,7 +80,19 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
   const [insights, setInsights] = useState<any | null>(null);
   const [wallet, setWallet] = useState<WalletSummary | null>(null);
   const [commission, setCommission] = useState<{ lifetime: number; thisMonth: number; has: boolean } | null>(null);
-  const [view, setView] = useState<string>('30'); // '7' | '30' | '90' | 'm0' | 'm1' | ...
+  
+  const [timeFilter, setTimeFilter] = useState('all');
+  
+  const filteredOrders = useMemo(() => {
+    if (timeFilter === 'all') return orders;
+    const now = Date.now();
+    let cutoff = 0;
+    if (timeFilter === '7d') cutoff = now - 7 * 24 * 60 * 60 * 1000;
+    else if (timeFilter === '30d') cutoff = now - 30 * 24 * 60 * 60 * 1000;
+    else if (timeFilter === '90d') cutoff = now - 90 * 24 * 60 * 60 * 1000;
+    else if (timeFilter === '1y') cutoff = now - 365 * 24 * 60 * 60 * 1000;
+    return orders.filter((o: any) => new Date(o.created_at).getTime() >= cutoff);
+  }, [orders, timeFilter]); // '7' | '30' | '90' | 'm0' | 'm1' | ...
   const [goal, setGoal] = useState<number>(0);
   const [goalLoaded, setGoalLoaded] = useState(false);
   const [editingGoal, setEditingGoal] = useState(false);
@@ -221,8 +233,12 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
 
   // -- All analytics derived from the orders array --
   const a = useMemo(() => {
-    const all = (orders || []) as any[];
-    const collected = all.filter((o) => COLLECTED.has(o.status));
+    const all = (filteredOrders || []) as any[];
+    const absoluteAll = (orders || []) as any[];
+    const absoluteCollected = absoluteAll;
+    const _sum = (arr: any[], k: string) => arr.reduce((s, o) => s + (Number(o[k]) || 0), 0);
+    const absoluteLifetimeRevenue = _sum(absoluteCollected, 'total');
+    const collected = all;
     const pending = all.filter((o) => PENDING.has(o.status));
 
     const sum = (arr: any[], k: string) => arr.reduce((s, o) => s + (Number(o[k]) || 0), 0);
@@ -356,7 +372,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
     }
     const pnl = Array.from(pnlMap.values()).sort((x, y) => y.ts - x.ts).slice(0, 12);
 
-    return {
+    return { absoluteLifetimeRevenue,
       hasCollected: collected.length > 0,
       lifetimeRevenue, lifetimeProfit, lifetimeOrders, aov, margin, pipeline,
       ownProfit, downlineProfit, downlineSalesTotal, downlineOrderCount,
@@ -367,26 +383,17 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
       productMix, topProductSlices, payMix, pnl,
       dailyMap: daily, series7: series(7), series30: series(30), series90: series(90),
     };
-  }, [orders]);
+  }, [orders, filteredOrders]);
 
   // Build chart data from the current view (trailing window or a calendar month).
   const chartData = useMemo(() => {
-    if (view === '7') return a.series7;
-    if (view === '30') return a.series30;
-    if (view === '90') return a.series90;
-    const k = Number(view.slice(1)) || 0;
-    const base = new Date();
-    const y = base.getFullYear(); const m = base.getMonth() - k;
-    const first = new Date(y, m, 1);
-    const days = new Date(y, m + 1, 0).getDate();
-    const out: { date: string; revenue: number; profit: number }[] = [];
-    for (let i = 1; i <= days; i++) {
-      const d = new Date(first.getFullYear(), first.getMonth(), i);
-      const rec = a.dailyMap.get(dayKey(d));
-      out.push({ date: `${d.getMonth() + 1}/${d.getDate()}`, revenue: rec?.revenue || 0, profit: rec?.profit || 0 });
-    }
-    return out;
-  }, [view, a]);
+    if (timeFilter === '7d') return a.series7;
+    if (timeFilter === '30d') return a.series30;
+    if (timeFilter === '90d') return a.series90;
+    if (timeFilter === '1y') return a.series90; // Fallback or could add series365
+    if (timeFilter === 'all') return a.series90; 
+    return a.series30;
+  }, [timeFilter, a]);
 
   const monthOptions = useMemo(() => {
     const out: { value: string; label: string }[] = [];
@@ -405,8 +412,8 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
   const paceGap = Math.abs(a.monthRevenue - expectedByNow);
 
   // Milestones
-  const nextMilestone = MILESTONES.find((m) => a.lifetimeRevenue < m.amount) || null;
-  const achievedMilestones = MILESTONES.filter((m) => a.lifetimeRevenue >= m.amount);
+  const nextMilestone = MILESTONES.find((m) => a.absoluteLifetimeRevenue < m.amount) || null;
+  const achievedMilestones = MILESTONES.filter((m) => a.absoluteLifetimeRevenue >= m.amount);
 
   // -- Celebration: fire once when a new milestone or the monthly goal is crossed.
   //    Seeds silently on first load so we never burst on initial mount. --
@@ -484,6 +491,20 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '-16px' }}>
+        <select 
+          className="sa-month-select" 
+          style={{ padding: '8px 16px', borderRadius: '8px', background: 'var(--grey-900)', border: '1px solid rgba(255,255,255,0.2)', color: 'var(--white)', fontSize: '0.95rem', fontWeight: 800, cursor: 'pointer' }}
+          value={timeFilter} 
+          onChange={(e) => setTimeFilter(e.target.value)}
+        >
+          <option value="all">All Time</option>
+          <option value="7d">Last 7 Days</option>
+          <option value="30d">Last 30 Days</option>
+          <option value="90d">Last 90 Days</option>
+          <option value="1y">Last Year</option>
+        </select>
+      </div>
       <style dangerouslySetInnerHTML={{ __html: `
         .sa-label { font-size: 0.72rem; color: var(--grey-400); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
         .sa-stat { font-size: 1.9rem; font-weight: 800; font-family: var(--font-brand); color: var(--white); line-height: 1.1; }
@@ -668,7 +689,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 14 }}>
             {MILESTONES.map((m) => {
-              const hit = a.lifetimeRevenue >= m.amount;
+              const hit = a.absoluteLifetimeRevenue >= m.amount;
               return (
                 <span key={m.amount} className="sa-badge" style={{
                   background: hit ? 'rgba(0,255,157,0.12)' : 'rgba(255,255,255,0.04)',
@@ -682,10 +703,10 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
             <div style={{ marginTop: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 6 }}>
                 <span>Next: {nextMilestone.label}</span>
-                <span>{fmt(a.lifetimeRevenue)} / {fmt(nextMilestone.amount)}</span>
+                <span>{fmt(a.absoluteLifetimeRevenue)} / {fmt(nextMilestone.amount)}</span>
               </div>
               <div style={{ height: 8, borderRadius: 999, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
-                <div style={{ width: `${Math.min(100, (a.lifetimeRevenue / nextMilestone.amount) * 100)}%`, height: '100%', background: 'linear-gradient(90deg, #00E5FF, #00FF9D)', borderRadius: 999, transition: 'width 0.6s ease' }} />
+                <div style={{ width: `${Math.min(100, (a.absoluteLifetimeRevenue / nextMilestone.amount) * 100)}%`, height: '100%', background: 'linear-gradient(90deg, #00E5FF, #00FF9D)', borderRadius: 999, transition: 'width 0.6s ease' }} />
               </div>
             </div>
           )}
@@ -695,7 +716,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
       {/* KPI SNAPSHOT */}
       <div className="sa-capitalize-all" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 'var(--space-4)' }}>
         <KpiCard
-          label="Collected Revenue"
+          label={timeFilter === 'all' ? "Lifetime Revenue" : "Revenue"}
           value={fmt(a.lifetimeRevenue)}
           delta={a.revDelta30}
           deltaLabel="Vs Prior 30d"
@@ -721,15 +742,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
         <div className="" style={{ padding: 'var(--space-6)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 'var(--space-4)' }}>
             <h2 className="metal-text" style={{ fontSize: '1.15rem', fontFamily: 'var(--font-brand)', margin: 0 }}>Revenue And Profit</h2>
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-              {['7', '30', '90'].map((r) => (
-                <button key={r} className={`sa-range-btn ${view === r ? 'active' : ''}`} onClick={() => setView(r)}>{r}D</button>
-              ))}
-              <select className="sa-month-select" value={view.startsWith('m') ? view : ''} onChange={(e) => e.target.value && setView(e.target.value)}>
-                <option value="">By Month...</option>
-                {monthOptions.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
-              </select>
-            </div>
+            
           </div>
           <div style={{ width: '100%', height: 320 }} role="img" aria-label="Area Chart Of Revenue And Profit Over The Selected Date Range">
             {a.hasCollected ? (
@@ -860,7 +873,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
         <button onClick={exportOrdersCsv} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.18)', color: 'var(--white)', borderRadius: 10, padding: '9px 16px', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}>Export Orders CSV</button>
       </div>
       <div style={{ minWidth: 0 }}>
-        <AgentOrders orders={orders} setOrders={setOrders} />
+        <AgentOrders orders={orders} setOrders={setOrders} timeFilterOverride={timeFilter} hideDropdown={true} />
       </div>
 
       {/* ACCOUNTING */}

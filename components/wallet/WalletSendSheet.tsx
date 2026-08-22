@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { toast } from 'sonner';
+import { walletErrorMessage } from './error-messages';
 
 /**
  * Send Funds sheet. Posts to /api/credits/send, which atomically debits the
@@ -166,7 +167,7 @@ export default function WalletSendSheet({
       onSent();
       onClose();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed To Send Funds.');
+      toast.error(walletErrorMessage(err, 'Could Not Send Funds. Please Try Again.'));
     } finally {
       setBusy(false);
     }
@@ -318,7 +319,7 @@ export default function WalletSendSheet({
                       background: 'rgba(255,255,255,0.04)',
                       border: '1px solid rgba(192,184,168,0.30)',
                       color: 'var(--white)',
-                      fontSize: '0.95rem',
+                      fontSize: '16px' /* iOS Safari zooms the page on focus below 16px */,
                       outline: 'none',
                       minHeight: 44,
                       boxSizing: 'border-box',
@@ -435,7 +436,7 @@ export default function WalletSendSheet({
                     width: '100%', padding: '12px 12px', borderRadius: 10,
                     background: 'rgba(255,255,255,0.04)',
                     border: '1px solid rgba(192,184,168,0.30)',
-                    color: 'var(--white)', fontSize: '0.95rem', outline: 'none',
+                    color: 'var(--white)', fontSize: '16px' /* iOS Safari zooms the page on focus below 16px */, outline: 'none',
                     minHeight: 44, boxSizing: 'border-box',
                   }}
                 />
@@ -454,7 +455,7 @@ export default function WalletSendSheet({
                     width: '100%', padding: '12px 12px', borderRadius: 10,
                     background: 'rgba(255,255,255,0.04)',
                     border: '1px solid rgba(192,184,168,0.30)',
-                    color: 'var(--white)', fontSize: '0.95rem', outline: 'none',
+                    color: 'var(--white)', fontSize: '16px' /* iOS Safari zooms the page on focus below 16px */, outline: 'none',
                     minHeight: 44, boxSizing: 'border-box',
                   }}
                 />

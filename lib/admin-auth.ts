@@ -192,9 +192,23 @@ export async function requireAgentOrAdmin(): Promise<
   // — they must be proxied through impersonation too.
   if (role === 'admin' || isPlatformAdminId(user.id)) {
     const imp = await getImpersonationContext();
-    if (imp && imp.impersonatorId === user.id &&
-        (imp.targetRole === 'agent' || imp.targetRole === 'super_agent')) {
-      return { ok: true, user: { id: imp.targetUserId }, isAdmin: false, impersonating: true };
+    if (imp && imp.impersonatorId === user.id) {
+      if (imp.targetRole === 'agent' || imp.targetRole === 'super_agent') {
+        return { ok: true, user: { id: imp.targetUserId }, isAdmin: false, impersonating: true };
+      }
+      // FAIL CLOSED. An active View As session whose target this guard will not
+      // proxy (a researcher, say) used to fall straight through to the admin's
+      // OWN id - so /api/agent/wallet/commissions, called from inside the
+      // researcher's wallet, returned the ADMIN's commission ledger. One
+      // screen, two identities, no indication which was which. Never silently
+      // substitute the admin's identity inside an impersonation session.
+      return {
+        ok: false,
+        response: NextResponse.json(
+          { error: 'Not Available While Viewing As This Account.' },
+          { status: 403 },
+        ),
+      };
     }
   }
 

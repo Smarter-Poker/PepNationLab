@@ -10,6 +10,7 @@ import { assertSameOrigin } from '@/lib/csrf';
 import { seedStorefrontFromHousePrices } from '@/lib/seed-storefront';
 import { validateStoreSlug } from '@/lib/store-slug';
 import { validatePassword } from '@/lib/password-policy';
+import { notifyWelcome } from '@/lib/notify';
 
 // GET: List all agents with their profiles and storefront data
 export async function GET() {
@@ -282,7 +283,9 @@ export async function POST(req: NextRequest) {
       disclaimer_v1_accepted: true,
       disclaimer_accepted_at: new Date().toISOString(),
       is_active: true,
-      must_change_password: true,
+      // Only researchers receive a temp password and must change it.
+      // Agent/super_agent accounts land directly on their dashboard.
+      must_change_password: isResearcher,
       created_by_agent_id: gate.userId,
       created_by_role: 'admin',
       updated_at: new Date().toISOString(),
@@ -379,6 +382,16 @@ export async function POST(req: NextRequest) {
     }
 
     const roleLabel = isResearcher ? 'Researcher' : isManufacturer ? 'Manufacturer' : isAdminAccount ? 'Admin Account' : account_role === 'super_agent' ? 'Super Agent' : 'Agent';
+
+    // Send a welcome notification to agent-type accounts so they see a
+    // friendly "Let's Complete Your Profile" prompt on first login.
+    if (!isResearcher) {
+      const welcomeRole = (account_role === 'super_agent' || account_role === 'admin_account' || account_role === 'manufacturer')
+        ? 'super_agent'
+        : 'agent';
+      notifyWelcome(supabase, userId, welcomeRole).catch(() => {/* non-fatal */});
+    }
+
     return NextResponse.json({ success: true, userId, username: usernameClean, role: roleLabel });
   } catch (err) {
     console.error('[admin/agents] POST error:', err);

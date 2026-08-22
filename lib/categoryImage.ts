@@ -26,8 +26,6 @@ const PRODUCT_IMAGE_MAP: Record<string, string> = {
   // ── Weight Loss & Metabolism - RED cap ──────────────────────────────────────
   'tirzepatide':                              '/images/products/tirzepatide.png',
   'semaglutide':                              '/images/products/semaglutide.png',
-  'ozempic':                                  '/images/products/semaglutide.png',
-  'wegovy':                                   '/images/products/semaglutide.png',
   'retatrutide':                              '/images/products/retatrutide.png',
   'lemon bottle':                             '/images/products/lemon-bottle.png',
   'l-carnitine blend':                        '/images/products/l-carnitine-blend.png',
@@ -318,7 +316,10 @@ export function getProductImage(
   // we MUST NEVER leak PepNation vials (products table or category fallbacks).
   if (agentSlug === 'savagebrands' || isSavageBrandsNetwork) {
     if (imageUrl && imageUrl.trim() !== '' && imageUrl.includes('/images/savage-brands/')) {
-      return imageUrl;
+      // BUST iOS SAFARI AND VERCEL EDGE CACHES: If a 404 was previously cached,
+      // appending a query parameter forces a completely fresh fetch.
+      const hasQuery = imageUrl.includes('?');
+      return `${imageUrl}${hasQuery ? '&' : '?'}v=2`;
     }
     // If no specific 3D vial is assigned yet, fallback to the generic clear vial.
     // This absolutely guarantees that PepNation black vials never appear here.

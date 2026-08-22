@@ -9,6 +9,7 @@ import { logOrderEvent } from '@/lib/order-events';
 import { notify, notifyOrderCancelled } from '@/lib/notify';
 import { emailConfigured, sendOrderCancelledEmail } from '@/lib/email';
 import { shortOrderId } from '@/lib/push-enqueue';
+import { recomputeBillingForCancelledOrder } from '@/lib/statement-recompute';
 
 // All sales are final - no refunds or exchanges. Cancellation simply voids
 // the order and commission rows. No refund_type parameter is accepted.
@@ -76,6 +77,11 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
         return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 422 });
       }
 
+      // Re-settle any weekly bill this order was already rolled into. Without
+      // this the agent stays charged for a cancelled order forever - the
+      // statement total is a snapshot and nothing else ever revisits it.
+      await recomputeBillingForCancelledOrder(service, id, gate.userId).catch(() => { /* best-effort */ });
+
       // The order is already committed-cancelled by the RPC above. If the audit
       // insert throws, it must NOT bubble out of the handler: withIdempotency
       // would delete the key and rethrow a 500, misleading the client into
@@ -132,7 +138,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
             type: 'system',
             title: `Order #${short} Cancelled By Admin`,
             body: `Order #${short} On Your Store Was Cancelled By An Administrator.${reason ? ` Reason: ${reason}` : ''}`,
-            url: '/dashboard?tab=Orders',
+            url: `/dashboard/agent?tab=Orders&order=${short}`,
           });
         }
 

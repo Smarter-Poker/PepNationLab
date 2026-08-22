@@ -7,6 +7,7 @@ import { logOrderEvent } from '@/lib/order-events';
 import { notifyOrderCancelled, notify } from '@/lib/notify';
 import { emailConfigured, sendOrderCancelledEmail } from '@/lib/email';
 import { shortOrderId } from '@/lib/push-enqueue';
+import { recomputeBillingForCancelledOrder } from '@/lib/statement-recompute';
 
 const CancelSchema = z.object({
   orderId: z.string().uuid(),
@@ -34,10 +35,11 @@ export async function POST(req: NextRequest) {
 
   const service = createAdminClient();
 
-  // Fetch the order to verify permissions and check status.
+  // Fetch the order — include the order-agent's parent_agent_id so we can
+  // check super-agent hierarchy (a super_agent may cancel their downline's orders).
   const { data: order, error: readErr } = await service
     .from('orders')
-    .select('id, status, agent_id, buyer_id')
+    .select('id, status, agent_id, buyer_id, agent:profiles!agent_id(parent_agent_id)')
     .eq('id', orderId)
     .maybeSingle();
 
@@ -45,8 +47,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Order Not Found.' }, { status: 404 });
   }
 
-  // Non-admins must own the order (be the agent on record).
-  if (!isAdmin && order.agent_id !== callerId) {
+  const agentParentId = (order.agent as { parent_agent_id?: string | null } | null)?.parent_agent_id ?? null;
+  const isDirectAgent = order.agent_id === callerId;
+  const isSuperAgentParent = agentParentId === callerId;
+
+  // Non-admins must either own the order or be the parent super-agent.
+  if (!isAdmin && !isDirectAgent && !isSuperAgentParent) {
     return NextResponse.json({ error: 'You Are Not Authorized To Cancel This Order.' }, { status: 403 });
   }
 
@@ -68,6 +74,9 @@ export async function POST(req: NextRequest) {
   if (rpcError) {
     return NextResponse.json({ error: 'Failed to cancel order. Please try again.' }, { status: 422 });
   }
+
+  // Re-settle any weekly bill this order was already rolled into.
+  await recomputeBillingForCancelledOrder(service, orderId, callerId).catch(() => { /* best-effort */ });
 
   // Fan-out: notifications + audit log. Best-effort — cancel is already committed.
   try {
@@ -101,7 +110,18 @@ export async function POST(req: NextRequest) {
         type: 'system',
         title: `Order #${short} Cancelled By Admin`,
         body: `Order #${short} On Your Store Was Cancelled By An Administrator.${reason ? ` Reason: ${reason}` : ''}`,
-        url: '/dashboard?tab=Orders',
+        url: `/dashboard/agent?tab=Orders&order=${short}`,
+      });
+    }
+
+    // Notify the sub-agent when their upline super-agent cancels their order
+    if (!isAdmin && isSuperAgentParent && order.agent_id) {
+      await notify(service, {
+        userId: order.agent_id,
+        type: 'system',
+        title: `Order #${short} Cancelled By Your Upline`,
+        body: `Order #${short} Was Cancelled By Your Upline Manager.${reason ? ` Reason: ${reason}` : ''}`,
+        url: `/orders/${orderId}`,
       });
     }
 
@@ -111,7 +131,7 @@ export async function POST(req: NextRequest) {
         userId: order.buyer_id,
         type: 'system',
         title: `Order #${short} Cancelled`,
-        body: `Your order has been cancelled by your agent.${reason ? ` Reason: ${reason}` : ''}`,
+        body: `Your order has been cancelled.${reason ? ` Reason: ${reason}` : ''}`,
         url: `/orders/${orderId}`,
       });
     }
@@ -120,10 +140,11 @@ export async function POST(req: NextRequest) {
       orderId,
       event: 'cancelled',
       actorId: callerId,
-      actorRole: isAdmin ? 'admin' : 'agent',
-      payload: { reason, via: isAdmin ? 'admin_agent_cancel_endpoint' : 'agent_cancel_endpoint' },
+      actorRole: isAdmin ? 'admin' : isSuperAgentParent ? 'super_agent' : 'agent',
+      payload: { reason, via: isAdmin ? 'admin_agent_cancel_endpoint' : isSuperAgentParent ? 'super_agent_cancel_endpoint' : 'agent_cancel_endpoint' },
     });
   } catch { /* fan-out must not mask committed cancel */ }
 
   return NextResponse.json({ success: true, cancelled: true });
 }
+

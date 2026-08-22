@@ -8,7 +8,13 @@ interface Props {
   vialSizeBadge?: string;
   msrp?: number;
   savings?: number;
+  /** Label shown next to the savings amount. Defaults to "YOU SAVE".
+   *  Pass "YOUR PROFIT" when rendering in owner cost-view mode. */
+  savingsLabel?: string;
   wholesalePrice?: number;
+  /** When true, overlays "AGENT PRICE" over the baked-in "WHOLESALE PRICE"
+   *  text in the card images. Only true when the owner cost-view toggle is ON. */
+  isOwnerCostMode?: boolean;
   inStockText?: string;
   pickupText?: string;
   buttonText?: string;
@@ -32,7 +38,9 @@ export default function PremiumPeptideCard({
   vialSizeBadge = "10mg Vials",
   msrp = 55.00,
   savings = 25.00,
+  savingsLabel = "YOU SAVE",
   wholesalePrice = 29.97,
+  isOwnerCostMode = false,
   inStockText = "IN STOCK",
   pickupText = "AVAILABLE FOR SAME DAY PICKUP",
   buttonText = "Add To Cart",
@@ -298,13 +306,48 @@ export default function PremiumPeptideCard({
                   textTransform: 'uppercase',
                   zIndex: 30, pointerEvents: 'none'
                 }}>
-                  YOU SAVE ${savings.toFixed(0)}
+                  {savingsLabel} ${savings.toFixed(0)}
                 </div>
               )}
             </>
           )}
 
-          {/* Centered Wholesale Price Digits */}
+          {/* Price label — "WHOLESALE PRICE" is baked into the card image PNG.
+              In owner cost-view mode we cover it with a solid patch then
+              render "AGENT PRICE" in its place. Normal view = nothing rendered
+              here so the baked PNG text shows through untouched. */}
+          {isOwnerCostMode && (
+            <>
+              {/* Solid cover that paints over the baked "WHOLESALE PRICE" text
+                  AND the cyan separator line baked into the card image above it.
+                  The line lives at ~y=610 in the 683×1024 canvas so we start
+                  the cover at px(598) to be safely above it. */}
+              <div style={{
+                position: 'absolute',
+                left: px(375), width: px(290), top: px(598), height: px(110),
+                background: '#000000',
+                zIndex: 28, pointerEvents: 'none',
+              }} />
+              {/* "AGENT PRICE" label rendered in place of the covered text */}
+              <div style={{
+                position: 'absolute',
+                left: px(380), width: px(280), top: px(662),
+                display: 'flex', justifyContent: 'center',
+                fontFamily: 'var(--font-roboto-condensed, sans-serif)',
+                fontWeight: 700,
+                fontSize: px(21),
+                color: '#9BA3AB',
+                textTransform: 'uppercase',
+                letterSpacing: px(1),
+                textDecoration: 'none',
+                zIndex: 29, pointerEvents: 'none',
+              }}>
+                AGENT PRICE
+              </div>
+            </>
+          )}
+
+          {/* Centered Agent Price Digits */}
           <div style={{
             position: 'absolute',
             left: px(380), width: px(280), top: px(710),

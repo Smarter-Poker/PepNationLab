@@ -77,13 +77,22 @@ export default async function AgentDashboardPage() {
     last_sign_in_at: (r as { last_sign_in_at?: string | null }).last_sign_in_at ?? null,
   }));
 
-  // 5.5. Fetch Sub-Agents (if this user is a Super Agent)
+  // 5.5. Fetch Sub-Agents (if this user is a Super Agent). account_type and
+  // full_name feed the per-order upline payment-confirmation button: prepaid
+  // downlines settle per order, so their upline confirms receipt right on
+  // the order card / detail modal.
   const { data: subAgents } = await supabase
     .from('profiles')
-    .select('id')
+    .select('id, account_type, full_name')
     .eq('parent_agent_id', user.id);
   const agentIds = [user.id, ...(subAgents || []).map((a: any) => a.id)];
   const activeAgentsCount = (subAgents || []).length;
+  const prepaidDownlineIds = new Set(
+    (subAgents || []).filter((a: any) => a.account_type === 'prepaid').map((a: any) => a.id)
+  );
+  const downlineNameById = new Map(
+    (subAgents || []).map((a: any) => [a.id, a.full_name as string | null])
+  );
 
   // 6. Fetch referred/assigned orders
   const { data: ordersData } = await supabase
@@ -98,13 +107,26 @@ export default async function AgentDashboardPage() {
       shipping_cost,
       subtotal,
       total,
+      discount_amount,
+      coupon_code,
       created_at,
       tracking_number,
       label_url,
+      payment_confirmed_at,
+      buyer_payment_sent_at,
+      upline_payment_confirmed_at,
       profiles!buyer_id(full_name, email),
       agent_id
     `)
     .in('agent_id', agentIds)
+    // Admin-account orders stay hidden from OTHER agents' feeds (security
+    // rule from 1c93aa46), but an admin viewing their OWN agent dashboard
+    // must still see their own store's orders - excluding the caller made
+    // the admin's Orders tab permanently empty.
+    .not('agent_id', 'in', `(${[
+      'b8bd12e6-8196-401e-b37b-f742caf1596c', // Daniel Bekavac (admin)
+      'a253044b-2250-4187-9af5-78cbca2d4e67', // unnamed admin account
+    ].filter((id) => id !== user.id).join(',') || '00000000-0000-0000-0000-000000000000'})`)
     .order('created_at', { ascending: false });
 
   const orders = (ordersData || []).map((order: any) => {
@@ -126,13 +148,23 @@ export default async function AgentDashboardPage() {
       shipping_cost: Number(order.shipping_cost || 0),
       subtotal: Number(order.subtotal || 0),
       total: Number(order.total || 0),
+      discount_amount: order.discount_amount ? Number(order.discount_amount) : null,
+      coupon_code: order.coupon_code || null,
       created_at: order.created_at,
       buyer_name: buyer_name || 'Anonymous Researcher',
       buyer_email: buyer_email || '',
       tracking_number: order.tracking_number,
       label_url: order.label_url,
       agent_id: order.agent_id,
-      is_sub_agent_order: order.agent_id !== user.id
+      payment_confirmed_at: order.payment_confirmed_at ?? null,
+      buyer_payment_sent_at: order.buyer_payment_sent_at ?? null,
+      upline_payment_confirmed_at: order.upline_payment_confirmed_at ?? null,
+      is_sub_agent_order: order.agent_id !== user.id,
+      // Prepaid downlines settle per order; the upline confirms receipt
+      // directly on the order (confirm-downline-payment). Credit downlines
+      // settle via weekly invoices, so no per-order button for them.
+      downline_prepaid: order.agent_id !== user.id && prepaidDownlineIds.has(order.agent_id),
+      downline_agent_name: order.agent_id !== user.id ? (downlineNameById.get(order.agent_id) ?? null) : null
     };
   });
 

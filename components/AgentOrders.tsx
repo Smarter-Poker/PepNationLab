@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { ClipboardCopy, Download, Ship, Upload, Zap, Undo2 } from 'lucide-react';
 import AgentManualOrder from './AgentManualOrder';
@@ -10,6 +11,8 @@ import { paymentMethodLabel } from '@/lib/payment-method-labels';
 import IframeLink from '@/components/ui/IframeLink';
 import IframeModal from '@/components/ui/IframeModal';
 import OrderStageTimeline from '@/components/OrderStageTimeline';
+import { computeOwnOrderLedger, computeUplineLedger } from '@/lib/agent-ledger';
+import LedgerBreakdown from '@/components/LedgerBreakdown';
 
 export interface ShippingAddress {
   line1?: string;
@@ -39,11 +42,16 @@ interface Order {
   tracking_number?: string | null;
   label_url?: string | null;
   agent_id?: string;
+  payment_confirmed_at?: string | null;
+  buyer_payment_sent_at?: string | null;
+  upline_payment_confirmed_at?: string | null;
+  downline_prepaid?: boolean;
   is_sub_agent_order?: boolean;
   profit?: number;
   is_downline_order?: boolean;
   downline_agent_id?: string | null;
   downline_agent_name?: string | null;
+  super_agent_name?: string | null;
 }
 
 interface OrderItem {
@@ -51,7 +59,9 @@ interface OrderItem {
   product_name: string;
   quantity: number;
   unit_retail_price: number;
-  unit_cost_price: number | null;
+  unit_cost_price: number | null;       // what agent owes Savage Brands (COG + markup)
+  unit_base_cost?: number | null;       // Pep Nation's raw COG (what Savage Brands owes Pep Nation)
+  unit_super_agent_cost?: number | null;
   unit_size?: number | null;
   unit_measure?: string | null;
   stackData?: {
@@ -63,6 +73,9 @@ interface OrderItem {
 interface AgentOrdersProps {
   orders: Order[];
   setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
+  initialOpenShortId?: string | null;
+  timeFilterOverride?: string;
+  hideDropdown?: boolean;
 }
 
 /** Rate option returned by GET /api/agent/shipping/rates (EasyPost Forge). */
@@ -100,9 +113,12 @@ function formatAddress(address: ShippingAddress | null): string {
   return parts.length > 0 ? parts.join(', ') : 'No Shipping Address Provided';
 }
 
-export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
+export default function AgentOrders({ orders, setOrders, initialOpenShortId, timeFilterOverride, hideDropdown }: AgentOrdersProps) {
   const [loadingOrderId, setLoadingOrderId] = useState<string | null>(null);
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
+  // Stores the typed cancellation reason per order before submitting.
+  const [cancelReasonMap, setCancelReasonMap] = useState<Record<string, string>>({});
+
   // labelModalUrl is still used to view historical label PDFs on old orders.
   const [labelModalUrl, setLabelModalUrl] = useState<string | null>(null);
   const [trackingNumbers, setTrackingNumbers] = useState<Record<string, string>>({});
@@ -112,18 +128,87 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const [showManualOrder, setShowManualOrder] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [internalTimeFilter, setTimeFilter] = useState('all');
+  const timeFilter = timeFilterOverride || internalTimeFilter;
+  
+  const filteredOrders = React.useMemo(() => {
+    if (timeFilter === 'all') return orders;
+    const now = Date.now();
+    let cutoff = 0;
+    if (timeFilter === '7d') cutoff = now - 7 * 24 * 60 * 60 * 1000;
+    else if (timeFilter === '30d') cutoff = now - 30 * 24 * 60 * 60 * 1000;
+    else if (timeFilter === '90d') cutoff = now - 90 * 24 * 60 * 60 * 1000;
+    else if (timeFilter === '1y') cutoff = now - 365 * 24 * 60 * 60 * 1000;
+    return orders.filter(o => new Date(o.created_at).getTime() >= cutoff);
+  }, [orders, timeFilter]);
 
   // Pagination Logic
   const PAGE_SIZE = 25;
-  const totalPages = Math.ceil(orders.length / PAGE_SIZE);
+  const totalPages = Math.ceil(filteredOrders.length / PAGE_SIZE);
   const safeCurrentPage = Math.max(1, Math.min(currentPage, totalPages || 1));
-  const paginatedOrders = orders.slice((safeCurrentPage - 1) * PAGE_SIZE, safeCurrentPage * PAGE_SIZE);
+  const paginatedOrders = filteredOrders.slice((safeCurrentPage - 1) * PAGE_SIZE, safeCurrentPage * PAGE_SIZE);
 
   // Detail modal state
   const [detailOrder, setDetailOrder] = useState<Order | null>(null);
   const [detailItems, setDetailItems] = useState<OrderItem[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState('');
+
+  // Auto-open the detail modal when initialOpenShortId is provided (deep-link from notification).
+  // We wait until orders are available and match by the short_id substring that
+  // appears in the notification title (the last 8-char hex segment of the UUID).
+  // Track WHICH short id was consumed, not merely THAT one was. A plain
+  // boolean latched on the first deep link and never reset, so tapping a
+  // second notification (or the same one again after closing the modal)
+  // changed the URL but opened nothing - the notification looked broken.
+  // Held in refs so consuming the URL param cannot re-trigger the deep-link
+  // effect (router/searchParams identities change on every navigation).
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const routerRef = useRef(router);
+  routerRef.current = router;
+  const searchParamsRef = useRef(searchParams);
+  searchParamsRef.current = searchParams;
+
+  const deepLinkConsumedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!initialOpenShortId || orders.length === 0) return;
+    if (deepLinkConsumedRef.current === initialOpenShortId) return;
+    const upper = initialOpenShortId.toUpperCase();
+    const match = orders.find(
+      (o) => o.id.replace(/-/g, '').toUpperCase().includes(upper)
+        || o.id.toUpperCase().includes(upper)
+    );
+    if (match) {
+      deepLinkConsumedRef.current = initialOpenShortId;
+      setDetailOrder(match);
+      // Scroll to top so the modal is fully visible on mobile
+      try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {}
+      // CONSUME the ?order= param now that the modal is open.
+      //
+      // Without this the URL stays pinned at ?order=<id>, so tapping the SAME
+      // notification again pushes a URL identical to the current one: Next
+      // does not change searchParams, this effect never re-runs, and the tap
+      // appears to do nothing. Stripping the param puts the URL back to a
+      // plain ?tab=Orders, so the next tap is a real navigation that opens
+      // the order again. It also stops a refresh from silently reopening a
+      // modal the user already dismissed.
+      try {
+        const params = new URLSearchParams(searchParamsRef.current?.toString() ?? '');
+        if (params.has('order')) {
+          params.delete('order');
+          const qs = params.toString();
+          routerRef.current?.replace(qs ? `?${qs}` : '?tab=Orders', { scroll: false });
+        }
+      } catch { /* URL cleanup is best-effort - never block the modal */ }
+    }
+  }, [initialOpenShortId, orders]);
+
+  // Closing the modal releases the deep link, so tapping the SAME notification
+  // again reopens the order instead of doing nothing.
+  useEffect(() => {
+    if (detailOrder === null) deepLinkConsumedRef.current = null;
+  }, [detailOrder]);
 
   // Keep detailOrder synchronized with the parent orders array so the modal updates optimistically
   // or when WebSockets push new status changes (e.g. customer pays while modal is open).
@@ -170,8 +255,9 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
     let cancelReason = '';
     if (newStatus === 'cancelled') {
-      cancelReason = window.prompt('Please provide a reason for cancellation (Required):') || '';
-      if (!cancelReason.trim()) {
+      // Reason is collected via inline textarea (cancelReasonMap), not window.prompt().
+      cancelReason = (cancelReasonMap[orderId] || '').trim();
+      if (!cancelReason) {
         toast.error('Cancellation Reason Is Required.');
         return;
       }
@@ -183,11 +269,13 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
         const res = await fetch('/api/agent/orders/cancel', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderId, reason: cancelReason.trim() }),
+          body: JSON.stringify({ orderId, reason: cancelReason }),
         });
         const data = await res.json().catch(() => ({} as { error?: string }));
         if (!res.ok) throw new Error(data.error || 'Failed To Cancel Order.');
         
+        // Clear the drafted reason and update local state.
+        setCancelReasonMap((prev) => { const next = { ...prev }; delete next[orderId]; return next; });
         setOrders((prev) =>
           prev.map((o) =>
             o.id === orderId ? { ...o, status: 'cancelled' } : o
@@ -198,6 +286,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
       }
 
       const tracking = trackingNumbers[orderId] || null;
+
       const idemKey = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
       const res = await fetch('/api/agent/orders/approve', {
         method: 'POST',
@@ -333,6 +422,36 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
     }
   };
 
+  // Upline settlement acknowledgment for PREPAID downline orders: "Did You
+  // Receive Payment From <downline>?" Confirming stamps
+  // orders.upline_payment_confirmed_at via confirm-downline-payment and stops
+  // the upline's 12-hour reminders. Distinct from handleMarkPaid, which is the
+  // DIRECT agent confirming the buyer's payment.
+  const handleConfirmDownlinePayment = async (orderId: string) => {
+    setLoadingOrderId(orderId);
+    try {
+      const res = await fetch('/api/agent/orders/confirm-downline-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed To Confirm The Downline Payment.');
+      }
+      const nowIso = new Date().toISOString();
+      setOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, upline_payment_confirmed_at: nowIso } : o))
+      );
+      setDetailOrder((prev) => (prev && prev.id === orderId ? { ...prev, upline_payment_confirmed_at: nowIso } : prev));
+      toast.success('Downline Payment Confirmed!');
+    } catch (err: any) {
+      toast.error(err.message ?? 'An Error Occurred Confirming The Payment.');
+    } finally {
+      setLoadingOrderId(null);
+    }
+  };
+
   const handleMarkPaid = async (orderId: string) => {
     setLoadingOrderId(orderId);
     try {
@@ -350,11 +469,16 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
       setOrders((prev) =>
         prev.map((o) =>
           o.id === orderId
-            ? { ...o, status: data.newStatus }
+            ? { ...o, status: data.newStatus, payment_confirmed_at: new Date().toISOString() }
             : o
         )
       );
-      toast.success('Order Marked As Paid!');
+      setDetailOrder((prev) =>
+        prev && prev.id === orderId
+          ? { ...prev, status: data.newStatus, payment_confirmed_at: new Date().toISOString() }
+          : prev
+      );
+      toast.success('Payment Receipt Confirmed!');
     } catch (err: any) {
       toast.error(err.message ?? 'An Error Occurred Marking Order As Paid.');
     } finally {
@@ -497,12 +621,12 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
     // collapsed secondary fallback when the agent has one-click labels.
     const pasteBackSection = (
       <>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'flex-start' }}>
           <button
             type="button"
             className="btn btn-secondary"
             onClick={() => handleCopyAddress(order)}
-            style={{ padding: '8px 14px', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}
+            style={{ padding: '8px 14px', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'flex-start', gap: '6px' }}
           >
             <ClipboardCopy size={14} />
             Copy Address
@@ -520,14 +644,14 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
               color: 'var(--teal)',
               borderRadius: '8px',
               display: 'inline-flex',
-              alignItems: 'center',
+              alignItems: 'flex-start',
               gap: '6px',
             }}
           >
             Open Pirate Ship
           </IframeLink>
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'flex-start' }}>
           <input
             type="text"
             placeholder="Paste Tracking Number"
@@ -557,7 +681,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
             className="btn btn-primary"
             onClick={() => handleMarkShipped(order.id)}
             disabled={shippingOrderId === order.id || !(trackingNumbers[order.id] || '').trim()}
-            style={{ padding: '10px 20px', fontSize: '0.9rem', fontWeight: 700, borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}
+            style={{ padding: '10px 20px', fontSize: '0.9rem', fontWeight: 700, borderRadius: '8px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}
           >
             {shippingOrderId === order.id ? 'Marking Shipped...' : 'Mark Shipped'}
           </button>
@@ -582,7 +706,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
           gap: '12px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--teal)', fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', color: 'var(--teal)', fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
           <Ship size={16} />
           Ship It
         </div>
@@ -599,7 +723,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                 className="btn btn-primary"
                 onClick={() => handleGetRates(order.id)}
                 disabled={ratesLoadingId === order.id}
-                style={{ alignSelf: 'flex-start', padding: '10px 20px', fontSize: '0.9rem', fontWeight: 700, borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}
+                style={{ alignSelf: 'flex-start', padding: '10px 20px', fontSize: '0.9rem', fontWeight: 700, borderRadius: '8px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}
               >
                 <Zap size={15} />
                 {ratesLoadingId === order.id ? 'Fetching Rates...' : 'Buy Label'}
@@ -618,7 +742,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                       style={{
                         display: 'flex',
                         flexWrap: 'wrap',
-                        alignItems: 'center',
+                        alignItems: 'flex-start',
                         gap: '10px',
                         padding: '10px 14px',
                         borderRadius: '10px',
@@ -676,21 +800,31 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
   };
 
   return (
+    <>
+      {!hideDropdown && (<div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--space-4)' }}>
+        <select 
+          className="sa-month-select" 
+          style={{ padding: '8px 16px', borderRadius: '8px', background: 'var(--grey-900)', border: '1px solid rgba(255,255,255,0.2)', color: 'var(--white)', fontSize: '0.95rem', fontWeight: 800 }}
+          value={timeFilter} 
+          onChange={(e) => { setTimeFilter(e.target.value); setCurrentPage(1); }}
+        >
+          <option value="all">All Time</option>
+          <option value="7d">Last 7 Days</option>
+          <option value="30d">Last 30 Days</option>
+          <option value="90d">Last 90 Days</option>
+          <option value="1y">Last Year</option>
+        </select>
+      </div>)}
     <div className="glass-panel" style={{ marginBottom: 'var(--space-6)' }}>
       {labelModalUrl && (
         <IframeModal url={labelModalUrl} title="Shipping Label" onClose={() => setLabelModalUrl(null)} />
       )}
       <div className="">
-      <h3
-        className="metal-text"
-        style={{
-          fontSize: '1.25rem',
-          marginBottom: 'var(--space-6)',
-          fontFamily: 'var(--font-brand)',
-        }}
-      >
-        Completed Sales & Profit
-      </h3>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)', flexWrap: 'wrap', gap: '16px' }}>
+        <h3 className="metal-text" style={{ fontSize: '1.25rem', fontFamily: 'var(--font-brand)', margin: 0 }}>
+          All Sales
+        </h3>
+      </div>
       <div
         style={{
           display: 'flex',
@@ -708,7 +842,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
           <a
             href="/api/agent/shipping/export"
             className="btn btn-secondary btn-sm"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}
+            style={{ display: 'inline-flex', alignItems: 'flex-start', gap: '6px', textDecoration: 'none' }}
           >
             <Download size={14} />
             Export To Pirate Ship
@@ -717,7 +851,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
             className="btn btn-secondary btn-sm"
             onClick={() => importInputRef.current?.click()}
             disabled={importingCsv}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            style={{ display: 'inline-flex', alignItems: 'flex-start', gap: '6px' }}
           >
             <Upload size={14} />
             {importingCsv ? 'Importing...' : 'Import Tracking CSV'}
@@ -751,12 +885,14 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
             }
           }}
         />
-      ) : orders.length > 0 ? (
+      ) : filteredOrders.length > 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
           {paginatedOrders.map((order) => {
             const isPendingPayment = order.status === 'pending_customer_payment';
             const isPendingApproval = order.status === 'agent_approval_pending';
-            
+            const isTerminal = ['shipped', 'delivered', 'cancelled'].includes(order.status);
+
+            // canApprove: approve/payment-confirmation buttons
             let canApprove = false;
             let approveText = 'Approve Order';
 
@@ -770,6 +906,21 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                 canApprove = true;
               }
             }
+
+            // canCancel: any non-terminal order visible to this agent/super-agent
+            // (super-agents see downline orders via is_sub_agent_order, which the API
+            // now accepts because it checks the parent_agent_id chain)
+            const canCancel = !isTerminal;
+
+            // Upline settlement acknowledgment: PREPAID downline orders settle
+            // per order, so the upline answers "Did You Receive Payment From
+            // <downline>?" right here. Only once the order is approved (that
+            // is when the settlement actually happens) and until confirmed.
+            const canConfirmDownline = !!order.is_sub_agent_order
+              && !!order.downline_prepaid
+              && !order.upline_payment_confirmed_at
+              && ['approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered'].includes(order.status);
+
 
             return (
               <div
@@ -800,7 +951,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                 {/* Header row: Order ID, Date, and Status */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', flexWrap: 'wrap' }}>
                       <span style={{ 
                         fontSize: '1.2rem', 
                         fontWeight: 800,
@@ -824,7 +975,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                         })}
                       </span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
                       <span style={{ 
                         fontSize: '0.8rem', 
                         color: 'var(--teal)', 
@@ -896,7 +1047,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                     <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px', fontWeight: 600 }}>Details</div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                       <span style={{ fontSize: '0.9rem', color: 'var(--silver)' }}>Method</span>
-                      <span style={{ fontSize: '0.9rem', color: 'var(--white)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '0.9rem', color: 'var(--white)', fontWeight: 600, display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
                         {order.fulfillment_method === 'agent_pickup' ? (
                           <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> Agent Pickup</>
                         ) : (
@@ -906,7 +1057,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                       <span style={{ fontSize: '0.9rem', color: 'var(--silver)' }}>Payment</span>
-                      <span style={{ fontSize: '0.9rem', color: 'var(--white)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '0.9rem', color: 'var(--white)', fontWeight: 600, display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
                         {paymentMethodLabel(order.payment_method)}
                       </span>
@@ -920,7 +1071,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                     {typeof order.profit === 'number' && (
                       <div style={{ marginTop: '8px', fontSize: '0.8rem', color: 'var(--grey-400)', fontWeight: 600 }}>
                         {order.is_downline_order ? 'Your Profit On This Sale' : 'Your Profit'}:{' '}
-                        <span style={{ color: '#48BB78', fontWeight: 700 }}>
+                        <span style={{ color: '#22C55E', fontWeight: 700 }}>
                           ${order.profit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
                       </div>
@@ -962,7 +1113,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                 </div>
 
                 {/* Actions row */}
-                {canApprove && (
+                {(canApprove || canCancel || canConfirmDownline) && (
                   <div
                     onClick={(e) => e.stopPropagation()}
                     style={{
@@ -972,11 +1123,11 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                       display: 'flex',
                       flexWrap: 'wrap',
                       gap: '12px',
-                      alignItems: 'center',
+                      alignItems: 'flex-start',
                       justifyContent: 'flex-end',
                     }}
                   >
-                    {order.fulfillment_method === 'ship' && isPendingApproval && (
+                    {canApprove && order.fulfillment_method === 'ship' && isPendingApproval && (
                       <input
                         type="text"
                         placeholder="Tracking Number (USPS/UPS)"
@@ -992,80 +1143,153 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                       />
                     )}
                     
-                      {confirmCancelId === order.id ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '0.85rem', color: '#FFAAAA', fontWeight: 600 }}>Confirm Cancel?</span>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleUpdateOrderStatus(order.id, 'cancelled'); setConfirmCancelId(null); }}
-                            className="btn btn-secondary"
+                    {/* Cancel section — available for all non-terminal orders */}
+                    {canCancel && (
+                      confirmCancelId === order.id ? (
+                        <div style={{
+                          display: 'flex', flexDirection: 'column', gap: '10px',
+                          background: 'rgba(92,30,30,0.25)', border: '1px solid rgba(252,129,129,0.25)',
+                          borderRadius: '12px', padding: '14px 16px', width: '100%',
+                        }}>
+                          <span style={{ fontSize: '0.85rem', color: '#FFAAAA', fontWeight: 700 }}>
+                            {order.is_sub_agent_order ? '⚠️ Cancel Downline Order — Enter Reason' : '⚠️ Confirm Cancellation — Enter Reason'}
+                          </span>
+                          <textarea
+                            placeholder="Required: Why are you cancelling this order?"
+                            value={cancelReasonMap[order.id] || ''}
+                            onChange={(e) => setCancelReasonMap((prev) => ({ ...prev, [order.id]: e.target.value }))}
+                            rows={2}
                             style={{
-                              border: 'none',
-                              color: '#FFAAAA',
-                              background: 'linear-gradient(180deg, #5C1E1E 0%, #3B1111 100%)',
-                              fontSize: '0.85rem',
-                              padding: '8px 16px',
-                              fontWeight: 700,
-                              borderRadius: '8px',
+                              width: '100%', resize: 'vertical',
+                              background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(252,129,129,0.35)',
+                              borderRadius: '8px', color: '#fff', fontSize: '0.9rem', padding: '10px 12px',
+                              outline: 'none',
                             }}
-                            disabled={loadingOrderId === order.id}
-                          >
-                            Yes, Cancel
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setConfirmCancelId(null); }}
-                            className="btn btn-ghost"
-                            style={{ fontSize: '0.85rem', padding: '8px 14px', borderRadius: '8px' }}
-                          >
-                            Keep
-                          </button>
+                          />
+                          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleUpdateOrderStatus(order.id, 'cancelled');
+                                setConfirmCancelId(null);
+                              }}
+                              className="btn btn-secondary"
+                              style={{
+                                border: 'none', color: '#FFAAAA',
+                                background: 'linear-gradient(180deg, #5C1E1E 0%, #3B1111 100%)',
+                                fontSize: '0.85rem', padding: '8px 18px', fontWeight: 700, borderRadius: '8px',
+                              }}
+                              disabled={loadingOrderId === order.id || !(cancelReasonMap[order.id] || '').trim()}
+                            >
+                              {loadingOrderId === order.id ? 'Cancelling…' : 'Yes, Cancel'}
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setConfirmCancelId(null);
+                                setCancelReasonMap((prev) => { const next = { ...prev }; delete next[order.id]; return next; });
+                              }}
+                              className="btn btn-ghost"
+                              style={{ fontSize: '0.85rem', padding: '8px 14px', borderRadius: '8px' }}
+                            >
+                              Keep Order
+                            </button>
+                          </div>
                         </div>
                       ) : (
                         <button
-                        onClick={(e) => { e.stopPropagation(); setConfirmCancelId(order.id); }}
-                        className="btn btn-secondary"
-                        style={{
-                          border: 'none',
-                          color: '#FFAAAA',
-                          background: 'linear-gradient(180deg, #5C1E1E 0%, #3B1111 100%)',
-                          fontSize: '0.9rem',
-                          padding: '10px 20px',
-                          fontWeight: 700,
-                          borderRadius: '10px',
-                          boxShadow: '0 4px 15px rgba(252, 129, 129, 0.2), inset 0 1px 0 rgba(255,160,160,0.2), inset 0 -2px 0 rgba(0,0,0,0.4)',
-                          textShadow: '0 1px 2px rgba(0,0,0,0.6)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px'
-                        }}
-                        disabled={loadingOrderId === order.id}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                        Cancel
-                      </button>
-                      )}
+                          onClick={(e) => { e.stopPropagation(); setConfirmCancelId(order.id); }}
+                          className="btn btn-secondary"
+                          style={{
+                            border: 'none', color: '#FFAAAA',
+                            background: 'linear-gradient(180deg, #5C1E1E 0%, #3B1111 100%)',
+                            fontSize: '0.9rem', padding: '10px 20px', fontWeight: 700, borderRadius: '10px',
+                            boxShadow: '0 4px 15px rgba(252,129,129,0.2), inset 0 1px 0 rgba(255,160,160,0.2), inset 0 -2px 0 rgba(0,0,0,0.4)',
+                            textShadow: '0 1px 2px rgba(0,0,0,0.6)',
+                            display: 'flex', alignItems: 'center', gap: '8px',
+                          }}
+                          disabled={loadingOrderId === order.id}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                          {order.is_sub_agent_order ? 'Cancel Downline Order' : 'Cancel'}
+                        </button>
+                      )
+                    )}
                     
-                    {isPendingPayment && !order.is_sub_agent_order && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleMarkPaid(order.id); }}
-                        className="btn btn-primary pulse-primary"
-                        style={{ 
-                          fontSize: '0.9rem', 
-                          padding: '10px 24px', 
-                          fontWeight: 700,
-                          background: 'linear-gradient(180deg, #DCD3C3 0%, #B3A992 100%)',
-                          color: '#0A1018',
-                          border: 'none',
-                          borderRadius: '10px',
-                          textShadow: '0 1px 2px rgba(0,0,0,0.3)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px'
-                        }}
-                        disabled={loadingOrderId === order.id}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                        {loadingOrderId === order.id ? 'Processing...' : 'Mark As Paid'}
-                      </button>
+
+                    {/* Payment-receipt confirmation: shown until the agent
+                        answers it, at every active pre-delivery stage (many
+                        storefront orders skip pending_customer_payment
+                        entirely). Ship orders cannot be approved until this
+                        is confirmed. */}
+                    {!order.payment_confirmed_at
+                      && !order.is_sub_agent_order
+                      && ['pending_customer_payment', 'agent_approval_pending', 'admin_approval_pending', 'approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered'].includes(order.status) && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        {order.buyer_payment_sent_at && (
+                          <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#2DD4BF', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            Buyer Confirmed Payment Sent
+                          </span>
+                        )}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleMarkPaid(order.id); }}
+                          className="btn btn-primary pulse-primary"
+                          style={{
+                            fontSize: '0.9rem',
+                            padding: '10px 24px',
+                            fontWeight: 700,
+                            background: 'linear-gradient(180deg, #DCD3C3 0%, #B3A992 100%)',
+                            color: '#0A1018',
+                            border: 'none',
+                            borderRadius: '10px',
+                            textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '8px'
+                          }}
+                          disabled={loadingOrderId === order.id}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                          {loadingOrderId === order.id ? 'Confirming...' : 'Did You Receive Payment? Confirm'}
+                        </button>
+                      </div>
+                    )}
+                    {order.payment_confirmed_at && !order.is_sub_agent_order && (
+                      <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#2DD4BF', textTransform: 'uppercase', letterSpacing: '0.04em', alignSelf: 'center' }}>
+                        Payment Received ✓
+                      </span>
+                    )}
+
+                    {/* Upline: prepaid downline settlement Yes / No */}
+                    {canConfirmDownline && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, background: 'rgba(0,196,188,0.05)', border: '1px solid rgba(0,196,188,0.3)', borderRadius: 10, padding: '10px 14px' }}>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--white)' }}>
+                          Did You Receive Payment From {order.downline_agent_name || 'Your Downline Agent'}?
+                        </span>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleConfirmDownlinePayment(order.id); }}
+                            className="btn btn-primary"
+                            style={{ fontSize: '0.84rem', padding: '9px 18px', fontWeight: 700, background: 'linear-gradient(180deg, #2DD4BF 0%, #14B8A6 100%)', color: '#04211D', border: 'none', borderRadius: '8px' }}
+                            disabled={loadingOrderId === order.id}
+                          >
+                            {loadingOrderId === order.id ? 'Confirming...' : 'Yes, Payment Received'}
+                          </button>
+                          <button
+                            onClick={(e) => e.stopPropagation()}
+                            className="btn btn-secondary"
+                            style={{ fontSize: '0.84rem', padding: '9px 18px', fontWeight: 600, background: 'transparent', border: '1px solid rgba(255,255,255,0.18)', color: 'var(--silver)', borderRadius: '8px' }}
+                            title="You Will Be Reminded Again In 12 Hours"
+                          >
+                            Not Yet
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {order.is_sub_agent_order && order.upline_payment_confirmed_at && (
+                      <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#2DD4BF', textTransform: 'uppercase', letterSpacing: '0.04em', alignSelf: 'center' }}>
+                        Downline Payment Received ✓
+                      </span>
                     )}
                     
                     {canApprove && (
@@ -1085,7 +1309,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                           borderRadius: '10px',
                           textShadow: '0 1px 2px rgba(0,0,0,0.3)',
                           display: 'flex',
-                          alignItems: 'center',
+                          alignItems: 'flex-start',
                           gap: '8px'
                         }}
                         disabled={loadingOrderId === order.id}
@@ -1114,7 +1338,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center',
+              alignItems: 'flex-start',
               marginTop: 'var(--space-4)',
               padding: '12px 24px',
               borderRadius: '16px',
@@ -1128,7 +1352,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                 width: '100%',
                 display: 'flex',
                 justifyContent: 'space-between',
-                alignItems: 'center',
+                alignItems: 'flex-start',
                 boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.6)'
               }}>
                 <button
@@ -1210,7 +1434,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
             inset: 0,
             background: 'rgba(0,0,0,0.85)',
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'flex-start',
             justifyContent: 'center',
             zIndex: 1000,
             padding: 'max(var(--space-6), env(safe-area-inset-top, 0px)) var(--space-6) max(var(--space-6), env(safe-area-inset-bottom, 0px))',
@@ -1547,7 +1771,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                           fontSize: '1rem',
                           wordBreak: 'break-all',
                           display: 'flex',
-                          alignItems: 'center',
+                          alignItems: 'flex-start',
                           gap: 'var(--space-3)',
                           flexWrap: 'wrap',
                         }}
@@ -1616,7 +1840,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                     style={{
                       marginTop: 'var(--space-3)',
                       display: 'inline-flex',
-                      alignItems: 'center',
+                      alignItems: 'flex-start',
                       gap: '6px',
                       fontSize: '0.85rem',
                       padding: '8px 16px',
@@ -1712,12 +1936,39 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                     </span>
                   </div>
                 )}
-                <div style={{ flex: 1 }} />
+                {detailItems && detailItems.length > 0 && (() => {
+                  const isDownline = !!(detailOrder.is_downline_order || detailOrder.is_sub_agent_order);
+                  const ownLedger = computeOwnOrderLedger(detailOrder, detailItems);
+                  const uplineLedger = computeUplineLedger(detailOrder, detailItems);
+
+                  return (
+                    <>
+                      <div style={{ flex: 1 }} />
+                      <div style={{ marginBottom: 12, padding: '16px 18px', borderRadius: 12, background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.2)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+                        <div style={{ fontSize: '0.72rem', color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 800 }}>
+                          {isDownline ? 'Upline Ledger — Your Settlement' : 'Your Settlement'}
+                        </div>
+
+                        <LedgerBreakdown
+                          ownLedger={ownLedger}
+                          uplineLedger={uplineLedger}
+                          viewerRole={isDownline ? 'super_agent' : 'agent'}
+                          isOwnOrder={!isDownline}
+                          agentName={detailOrder.downline_agent_name || 'Agent'}
+                          uplineName={detailOrder.super_agent_name || 'Upline'}
+                          couponCode={detailOrder.coupon_code}
+                        />
+                      </div>
+                    </>
+                  );
+                })()}
+
                 <div
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
-                    alignItems: 'center',
+                    alignItems: 'flex-start',
                     fontSize: '1.2rem',
                     color: 'var(--white)',
                     fontWeight: 800,
@@ -1736,6 +1987,75 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
             {isShipReady(detailOrder) && (
               <div style={{ marginBottom: 'var(--space-6)' }}>
                 {renderShipPanel(detailOrder)}
+              </div>
+            )}
+
+            {/* Payment-confirmation actions INSIDE the modal: notification
+                deep-links (?order=<shortId>) open this modal directly, so the
+                person the push asked "Did You Receive Payment?" must be able
+                to answer right here without hunting through the list. */}
+            {!detailOrder.is_sub_agent_order
+              && !detailOrder.payment_confirmed_at
+              && ['pending_customer_payment', 'agent_approval_pending', 'admin_approval_pending', 'approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered'].includes(detailOrder.status) && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: 'rgba(0,196,188,0.05)', border: '1px solid rgba(0,196,188,0.3)', borderRadius: 10, padding: '12px 16px', marginTop: 'var(--space-4)' }}>
+                <span style={{ fontSize: '0.86rem', fontWeight: 700, color: 'var(--white)' }}>
+                  Did You Receive Payment For This Order?
+                </span>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => handleMarkPaid(detailOrder.id)}
+                    className="btn btn-primary"
+                    style={{ fontSize: '0.86rem', padding: '10px 20px', fontWeight: 700, background: 'linear-gradient(180deg, #2DD4BF 0%, #14B8A6 100%)', color: '#04211D', border: 'none', borderRadius: '8px' }}
+                    disabled={loadingOrderId === detailOrder.id}
+                  >
+                    {loadingOrderId === detailOrder.id ? 'Confirming...' : 'Yes, Payment Received'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDetailOrder(null)}
+                    className="btn btn-secondary"
+                    style={{ fontSize: '0.86rem', padding: '10px 20px', fontWeight: 600, background: 'transparent', border: '1px solid rgba(255,255,255,0.18)', color: 'var(--silver)', borderRadius: '8px' }}
+                    title="You Will Be Reminded Again In 12 Hours"
+                  >
+                    Not Yet
+                  </button>
+                </div>
+              </div>
+            )}
+            {detailOrder.is_sub_agent_order
+              && detailOrder.downline_prepaid
+              && !detailOrder.upline_payment_confirmed_at
+              && ['approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered'].includes(detailOrder.status) && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: 'rgba(0,196,188,0.05)', border: '1px solid rgba(0,196,188,0.3)', borderRadius: 10, padding: '12px 16px', marginTop: 'var(--space-4)' }}>
+                <span style={{ fontSize: '0.86rem', fontWeight: 700, color: 'var(--white)' }}>
+                  Did You Receive Payment From {detailOrder.downline_agent_name || 'Your Downline Agent'}?
+                </span>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => handleConfirmDownlinePayment(detailOrder.id)}
+                    className="btn btn-primary"
+                    style={{ fontSize: '0.86rem', padding: '10px 20px', fontWeight: 700, background: 'linear-gradient(180deg, #2DD4BF 0%, #14B8A6 100%)', color: '#04211D', border: 'none', borderRadius: '8px' }}
+                    disabled={loadingOrderId === detailOrder.id}
+                  >
+                    {loadingOrderId === detailOrder.id ? 'Confirming...' : 'Yes, Payment Received'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDetailOrder(null)}
+                    className="btn btn-secondary"
+                    style={{ fontSize: '0.86rem', padding: '10px 20px', fontWeight: 600, background: 'transparent', border: '1px solid rgba(255,255,255,0.18)', color: 'var(--silver)', borderRadius: '8px' }}
+                    title="You Will Be Reminded Again In 12 Hours"
+                  >
+                    Not Yet
+                  </button>
+                </div>
+              </div>
+            )}
+            {((detailOrder.payment_confirmed_at && !detailOrder.is_sub_agent_order) || (detailOrder.is_sub_agent_order && detailOrder.upline_payment_confirmed_at)) && (
+              <div style={{ marginTop: 'var(--space-4)', color: '#2DD4BF', fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Payment Received ✓
               </div>
             )}
 
@@ -1800,5 +2120,6 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
       )}
       </div>
     </div>
+    </>
   );
 }

@@ -28,7 +28,8 @@ export default function EditProductPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [multipliers, setMultipliers] = useState<Record<string, number>>({});
+
+
 
   const [form, setForm] = useState({
     name: '',
@@ -53,19 +54,6 @@ export default function EditProductPage() {
 
   useEffect(() => {
     if (!id) return;
-
-    fetch('/api/admin/pricing-tiers')
-      .then(r => r.json())
-      .then(data => {
-        if (data && Array.isArray(data)) {
-          const m: Record<string, number> = {};
-          data.forEach((t: { tier_name: string; multiplier: number }) => {
-            m[t.tier_name] = t.multiplier;
-          });
-          setMultipliers(m);
-        }
-      })
-      .catch(() => {});
 
     fetch(`/api/admin/products?id=${id}`)
       .then(async r => {
@@ -158,6 +146,7 @@ export default function EditProductPage() {
         description: form.description || null,
         image_url: finalImageUrl || null,
         house_cost: parseFloat(form.house_cost),
+        base_cost: parseFloat(form.house_cost),
         unit_size: form.unit_size || null,
         unit_measure: form.unit_measure,
         inventory_count: parseInt(form.inventory_count, 10) || 0,
@@ -198,9 +187,8 @@ export default function EditProductPage() {
     );
   }
 
-  const baseCost = parseFloat(form.base_cost);
-  const validCost = form.base_cost && !isNaN(baseCost);
   const invCount = parseInt(form.inventory_count, 10) || 0;
+
 
   return (
     <div style={{ padding: 'var(--space-8)', maxWidth: 760 }}>
@@ -271,12 +259,7 @@ export default function EditProductPage() {
                   <input id="base_cost" type="number" step="0.01" min="0" required className="form-input" placeholder="0.00" value={form.house_cost} onChange={e => set('house_cost', e.target.value)} style={{ paddingLeft: 28 }} />
                 </div>
               </div>
-              {form.base_cost && (
-                <div style={{ flex: '1 1 180px', marginBottom: 0 }}>
-                  <label className="form-label">Agent Price Basis <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)', fontWeight: 400 }}>(Locked)</span></label>
-                  <div className="form-input" style={{ opacity: 0.7, display: 'flex', alignItems: 'center' }}>${form.base_cost}</div>
-                </div>
-              )}
+
               <div className="form-group" style={{ flex: '0 1 100px', marginBottom: 0 }}>
                 <label className="form-label" htmlFor="unit_size">Unit Size</label>
                 <input id="unit_size" type="text" className="form-input" placeholder="E.g. 5" value={form.unit_size} onChange={e => set('unit_size', e.target.value)} />
@@ -305,16 +288,8 @@ export default function EditProductPage() {
               </div>
               <p style={{ fontSize: '0.72rem', color: 'var(--grey-400)', marginTop: 'var(--space-2)', marginBottom: 0 }}>If Set, Agents Purchasing At Or Above The Threshold Quantity Will Receive This Flat Unit Cost Regardless Of Their Tier.</p>
             </div>
-            {validCost && multipliers.tier_1 != null && (
-              <div style={{ marginTop: 'var(--space-4)', padding: 'var(--space-4)', background: 'var(--surface-2)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(192,184,168,0.15)' }}>
-                <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', marginBottom: 'var(--space-2)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Agent Sell Prices Per Unit (From DB Multipliers)</div>
-                <div style={{ display: 'flex', gap: 'var(--space-6)' }}>
-                  <div><div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 1 ({multipliers.tier_1}x)</div><div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>${(baseCost * multipliers.tier_1).toFixed(2)}</div></div>
-                  <div><div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 2 ({multipliers.tier_2}x)</div><div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--silver)', fontFamily: 'var(--font-brand)' }}>${(baseCost * multipliers.tier_2).toFixed(2)}</div></div>
-                  <div><div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Tier 3 ({multipliers.tier_3}x)</div><div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--grey-400)', fontFamily: 'var(--font-brand)' }}>${(baseCost * multipliers.tier_3).toFixed(2)}</div></div>
-                </div>
-              </div>
-            )}
+
+
           </div>
         </div>
 

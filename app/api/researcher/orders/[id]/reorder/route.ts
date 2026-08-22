@@ -5,6 +5,8 @@ import { getEffectiveUser } from '@/lib/impersonation';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit } from '@/lib/rate-limit';
 import { computeAgentCostsForAgent, computeAgentTopOfChainCostsForAgent, type AgentTier } from '@/lib/pricing';
+import { calculateShippingCost } from '@/lib/shipping-cost';
+import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 
 /**
  * Researcher Reorder.
@@ -82,7 +84,7 @@ export async function POST(
   const productIds = Array.from(new Set(sourceItems.map((it) => it.product_id).filter(Boolean)));
   const { data: products } = await service
     .from('products')
-    .select('id, name, base_cost, is_active, is_banned, inventory_count')
+    .select('id, name, base_cost, house_cost, is_active, is_banned, inventory_count')
     .in('id', productIds);
   const productById = new Map((products ?? []).map((p) => [p.id, p]));
 
@@ -111,7 +113,7 @@ export async function POST(
 
   // Resolve the storefront agent's chain-aware cost basis (mirrors checkout's
   // manufacturer / super-agent / plain-agent branches in app/api/orders/route.ts).
-  // Previously this route priced every line off raw products.base_cost / 10,
+  // Previously this route priced every line off raw products.base_cost,
   // recording it as unit_cost_price with no unit_super_agent_cost at all -
   // bypassing every markup hop in the chain.
   let agentRow: {
@@ -126,7 +128,6 @@ export async function POST(
   let manufacturerCommissionPct = 0;
   let agentCosts = new Map<string, number>();
   let superAgentCosts = new Map<string, number>();
-  let topOfChainCosts = new Map<string, number>();
   let superAgentHasParent = false;
 
   if (source.agent_id) {
@@ -135,7 +136,7 @@ export async function POST(
       .select('id, tier, parent_agent_id, is_sub_agent, is_manufacturer, manufacturer_commission_pct')
       .eq('id', source.agent_id)
       .maybeSingle();
-    agentRow = ap as typeof agentRow;
+    agentRow = ap as any;
 
     if (agentRow) {
       isManufacturerStore = agentRow.is_manufacturer === true;
@@ -150,7 +151,6 @@ export async function POST(
 
         const agentTier: AgentTier = (agentRow.tier as AgentTier | null) ?? 'tier_3';
         agentCosts = await computeAgentCostsForAgent(service, agentRow.id, agentTier, productListForPricing);
-        topOfChainCosts = await computeAgentTopOfChainCostsForAgent(service, agentRow.id, agentTier, productListForPricing);
 
         // Non-sub-agent with an upline: also resolve the direct parent's
         // chain cost for unit_super_agent_cost, same as checkout.
@@ -210,7 +210,7 @@ export async function POST(
 
     // NOTE: retail_price / base_cost in DB are per-10-vial-pack, but order
     // quantity is number of individual vials. Divide by 10 → per-vial unit.
-    let retailPrice = apMatch ? apMatch.price / 10 : Number(product.base_cost) / 10;
+    let retailPrice = apMatch ? apMatch.price : Number(product.base_cost);
 
     let costPrice: number;
     let superAgentCost: number | null = null;
@@ -229,23 +229,19 @@ export async function POST(
       costPrice = Math.round(retailPrice * (manufacturerCommissionPct / 100) * 100) / 100;
     } else {
       const raw = agentCosts.get(it.product_id);
-      costPrice = raw !== undefined && raw !== null ? raw / 10 : Number(product.base_cost) / 10;
+      costPrice = raw !== undefined && raw !== null ? raw : Number(product.base_cost);
       costPrice = isFinite(costPrice) ? Math.round(costPrice * 100) / 100 : 0;
 
       if (superAgentHasParent) {
         const superRaw = superAgentCosts.get(it.product_id);
         superAgentCost = superRaw !== undefined && superRaw !== null
-          ? Math.round((superRaw / 10) * 100) / 100
+          ? Math.round((superRaw) * 100) / 100
           : null;
-
-        const topRaw = topOfChainCosts.get(it.product_id);
-        houseCost = topRaw !== undefined && topRaw !== null
-          ? Math.round((topRaw / 10) * 100) / 100
-          : null;
-      } else {
-        // Top-of-chain (or unparented) agent: their own cost IS the house edge.
-        houseCost = costPrice;
       }
+
+      // The true house cost (what Pep Nation pays the manufacturer)
+      houseCost = product.house_cost != null ? Number(product.house_cost) : Number(product.base_cost);
+      houseCost = isFinite(houseCost) ? Math.round(houseCost * 100) / 100 : null;
 
       // Platform rule: researcher-facing lines floored at cost x 1.10 - same
       // fail-safe checkout applies as the authoritative last step.
@@ -278,6 +274,29 @@ export async function POST(
 
   const subtotal = computed.reduce((acc, it) => acc + it.unit_retail_price * it.quantity, 0);
 
+  // Shipping. Reorders previously hardcoded shipping_cost: 0, so a buyer could
+  // place one order and then reorder indefinitely with free delivery. Pep
+  // Nation ships every order, so a reorder is charged the same flat regional
+  // rate as a fresh checkout -- including the house-store $100+ waiver, so the
+  // two paths cannot disagree for the same cart.
+  const reorderState =
+    (source.shipping_address as { state?: string | null } | null)?.state ?? null;
+  let shippingCost = calculateShippingCost(
+    source.fulfillment_method === 'agent_pickup' ? 'agent_pickup' : 'standard',
+    reorderState,
+  );
+  if (shippingCost > 0 && subtotal >= 100) {
+    const { data: sourceStore } = await service
+      .from('agent_profiles')
+      .select('slug')
+      .eq('id', source.agent_id)
+      .maybeSingle();
+    if ((sourceStore as { slug?: string | null } | null)?.slug === DEFAULT_STORE_SLUG) {
+      shippingCost = 0;
+    }
+  }
+  const reorderTotal = Math.round((subtotal + shippingCost) * 100) / 100;
+
   const idempotencyKey = crypto.randomUUID();
 
   // Denormalized buyer fields for the new order, same as checkout populates
@@ -306,11 +325,11 @@ export async function POST(
         fulfillment_method: source.fulfillment_method,
         payment_method: source.payment_method,
         shipping_address: source.shipping_address,
-        shipping_cost: 0,
+        shipping_cost: shippingCost,
         subtotal,
         discount_amount: 0,
         coupon_code: null,
-        total: subtotal,
+        total: reorderTotal,
         idempotency_key: idempotencyKey,
       },
       p_items: computed.map((c) => ({

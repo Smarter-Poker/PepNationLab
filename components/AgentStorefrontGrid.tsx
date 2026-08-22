@@ -19,6 +19,7 @@ import DynamicCartButton from './storefront/DynamicCartButton';
 import DynamicDetailButton from './storefront/DynamicDetailButton';
 import { evidenceTier, EVIDENCE_TIER, RISK_META, intranasalDisplay, type Compound } from '@/lib/compounds';
 import { getProductImage, toTitleCase } from '@/lib/categoryImage';
+import { optimizedImageSrc, makeImageErrorHandler } from '@/lib/imageOptimize';
 import { setBrandNetworkFlag } from '@/lib/brand-network-client';
 import PeptideVialCard from '@/components/PeptideVialCard';
 import PremiumPeptideCard from '@/components/storefront/PremiumPeptideCard';
@@ -235,8 +236,9 @@ function pickDefaultVariant(variants: ProductItem[]): string {
  * Does NOT update live React state - the SSR-hydrated props are always
  * authoritative for the current render. The cache only benefits future visits.
  */
-function useCatalogRefresh(agentSlug: string) {
+function useCatalogRefresh(agentSlug: string, agentId?: string | null) {
   const refreshIntervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+  const router = useRouter();
 
   const doRefresh = React.useCallback(async (force = false) => {
     try {
@@ -281,41 +283,53 @@ function useCatalogRefresh(agentSlug: string) {
     );
 
     // ── Realtime: evict + re-fetch the moment any product is updated ────────
-    // Listens for INSERT/UPDATE/DELETE on agent_products (any agent) - the
-    // server-side catalog API is what's actually scoped per agent_id. This
-    // client-side listener just triggers a forced refresh when anything changes,
-    // which is cheap (the API response is served from Vercel edge cache).
     let supabase: ReturnType<typeof createClient> | null = null;
     let realtimeChannel: ReturnType<ReturnType<typeof createClient>['channel']> | null = null;
-    try {
-      supabase = createClient();
-      realtimeChannel = supabase
-        .channel(`catalog-invalidate-${agentSlug}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*', // INSERT, UPDATE, DELETE
-            schema: 'public',
-            table: 'agent_products',
-          },
-          () => {
-            // Evict stale cache and immediately fetch fresh data
-            evictCatalogCache(agentSlug);
-            doRefresh(true);
-          }
-        )
-        .subscribe();
-    } catch {
-      // Realtime unavailable - gracefully degrade to interval-only refresh
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+    
+    // Only subscribe to realtime if we know the agentId
+    if (agentId) {
+      try {
+        supabase = createClient();
+        realtimeChannel = supabase
+          .channel(`catalog-invalidate-${agentSlug}`)
+          .on(
+            'postgres_changes',
+            {
+              event: '*', // INSERT, UPDATE, DELETE
+              schema: 'public',
+              table: 'agent_products',
+              filter: `agent_id=eq.${agentId}`,
+            },
+            () => {
+              if (refreshTimer) clearTimeout(refreshTimer);
+              refreshTimer = setTimeout(() => {
+                // Evict stale cache and immediately fetch fresh data
+                evictCatalogCache(agentSlug);
+                doRefresh(true);
+                // CRITICAL: Force Next.js to re-fetch the Server Component payload
+                // so the authoritative 'products' prop updates in the UI!
+                // Use soft-reload via router to avoid jarring full page reloads.
+                router.refresh();
+              }, 1000);
+            }
+          )
+          .subscribe();
+      } catch {
+        // Realtime unavailable - gracefully degrade to interval-only refresh
+      }
     }
 
     return () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
       if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);
       if (supabase && realtimeChannel) {
         supabase.removeChannel(realtimeChannel);
       }
     };
-  }, [doRefresh, agentSlug]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doRefresh, agentSlug, agentId]);
+
 }
 
 export default function AgentStorefrontGrid({
@@ -341,13 +355,38 @@ export default function AgentStorefrontGrid({
   const isSavageBrandsNetwork = useMemo(() => {
     // Server-resolved flag first (parent_agent_id chain — covers downlines like
     // /eddierazz whose catalog rows may not carry savage-brands image paths),
-    // then the client-side heuristics as a safety net.
-    return brandNetworkIsSavage || agentSlug === 'savagebrands' || (products ?? []).some(p => p.custom_image_url?.includes('/images/savage-brands/'));
+    // then a client-side heuristic as a safety net for when the server walk
+    // fails closed.
+    if (brandNetworkIsSavage || agentSlug === 'savagebrands') return true;
+
+    // The heuristic used to be `.some(...)` — ONE row carrying a savage path
+    // flipped the whole store to Savage mode. That is not hypothetical: a
+    // KLOW STACK backfill on 2026-08-19 wrote
+    // /images/savage-brands/klow-stack-80mg.jpg onto the KLOW row of ~40
+    // PEP NATION stores. Each of those stores then had exactly 1 savage row
+    // out of ~114, tripped `.some()`, and every OTHER product — whose image
+    // resolves to /images/products/*.png — fell into the savage branch of
+    // getProductImage() and came back as the blank clear vial. The catalog
+    // grid hid the damage because it paints a pre-composited card JPEG and
+    // never renders the vial layer; the detail view and its thumbnails render
+    // it everywhere, which is exactly where the blank vials showed up.
+    //
+    // Require a MAJORITY instead. A real Savage store is ~109/111 savage
+    // rows; a contaminated Pep Nation store is 1/114. One stray row can no
+    // longer misbrand a storefront.
+    const list = products ?? [];
+    if (list.length === 0) return false;
+    const savageRows = list.filter(p => p.custom_image_url?.includes('/images/savage-brands/')).length;
+    return savageRows * 2 > list.length;
   }, [brandNetworkIsSavage, agentSlug, products]);
 
   const [mounted, setMounted] = useState(false);
   const [showStoreGrid, setShowStoreGrid] = useState(true);
   const [visibleCount, setVisibleCount] = useState(24);
+  // Owner-only toggle: when true, all product cards display the owner's cost
+  // price (cost_price) instead of the retail price, with retail shown as
+  // strikethrough MSRP and the margin shown where "YOU SAVE" normally lives.
+  const [showCostView, setShowCostView] = useState(false);
   // When a logged-out visitor tries a member-only action (e.g. saving to their
   // wishlist), the API returns 401. Instead of silently failing, we surface the
   // sign-in / create-account modal so that guest interest converts to a signup.
@@ -369,7 +408,7 @@ export default function AgentStorefrontGrid({
 
   // Keep the localStorage catalog cache warm - fires on mount and every 5 min.
   // Benefits: next navigation to this storefront renders instantly from cache.
-  useCatalogRefresh(agentSlug);
+  useCatalogRefresh(agentSlug, agentId);
 
   const openGrid = useCallback(() => {
     if (typeof window !== 'undefined') {
@@ -570,7 +609,7 @@ export default function AgentStorefrontGrid({
 
   const pin = useCallback((group: GroupedProduct, activeVariant: ProductItem) => {
     if (typeof window === 'undefined') return;
-    const pricePerVialDollars = activeVariant ? Number(activeVariant.retail_price) / 10 : null;
+    const pricePerVialDollars = activeVariant ? Number(activeVariant.retail_price) : null;
     const detail = {
       productName: group.name,
       imageUrl: group.imageUrl,
@@ -980,9 +1019,9 @@ export default function AgentStorefrontGrid({
         .map(([vId, qty]) => {
           const item = products.find(p => p.id === vId);
           if (!item) return null;
-          const perVial = item.retail_price / 10;
+          const perVial = item.retail_price;
           const costPerVial = isStorefrontOwner && (item as any).cost_price != null
-            ? Number((item as any).cost_price) / 10
+            ? Number((item as any).cost_price)
             : perVial;
           const sizeLabel = item.products?.unit_size
             ? `(${item.products.unit_size}${item.products.unit_measure || ''})`
@@ -1120,7 +1159,7 @@ export default function AgentStorefrontGrid({
       group.defaultVariantId = pickDefaultVariant(group.variants);
     }
     return Array.from(map.values());
-  }, [products]);
+  }, [products, isSavageBrandsNetwork, agentSlug]);
 
   const categories = useMemo(() => {
     const cats = new Set<string>();
@@ -1253,7 +1292,7 @@ export default function AgentStorefrontGrid({
       // Eyes / Vision
       ['eyes', 'vision', 'sight', 'macular', 'retina', 'blindness', 'amd', 'optic', 'ocular'],
       // GLP-1 Specific
-      ['glp1', 'glp-1', 'incretin', 'tirzepatide', 'semaglutide', 'retatrutide', 'ozempic', 'wegovy', 'mounjaro', 'appetite', 'craving', 'satiety', 'weightloss-drug', 'injection-diet', 'dual-agonist', 'triple-agonist'],
+      ['glp1', 'glp-1', 'incretin', 'tirzepatide', 'semaglutide', 'retatrutide', 'appetite', 'craving', 'satiety', 'dual-agonist', 'triple-agonist'],
       // BPC-157 / Repair
       ['bpc157', 'bpc-157', 'wolverine', 'repair', 'gut', 'gastrointestinal'],
       // TB-500 / Healing
@@ -2050,7 +2089,7 @@ export default function AgentStorefrontGrid({
       members.push(item);
     }
     if (members.length < 2) return null;
-    const fullPrice = members.reduce((sum, m) => sum + (Number(m.retail_price) || 0) / 10, 0);
+    const fullPrice = members.reduce((sum, m) => sum + (Number(m.retail_price) || 0), 0);
     const discountPct = Math.min(Math.max(Math.round(Number(bundle.discount_percent) || 0), 0), 90);
     // A stored custom_price is a FIXED price the store owner set. It must never
     // drift with member product prices, so when present it overrides the summed
@@ -2084,9 +2123,9 @@ export default function AgentStorefrontGrid({
       // cart + checkout subtotal always equals the price shown on the card.
       const bundleFactor = resolved.fullPrice > 0 ? resolved.finalPrice / resolved.fullPrice : 1;
       const lines: StorefrontCartLine[] = resolved.members.map((m) => {
-        const perVial = (Number(m.retail_price) || 0) / 10;
+        const perVial = (Number(m.retail_price) || 0);
         const costPerVial = isStorefrontOwner && (m as any).cost_price != null
-          ? Number((m as any).cost_price) / 10
+          ? Number((m as any).cost_price)
           : perVial;
         const sizeLabel = m.products?.unit_size ? `(${m.products.unit_size}${m.products.unit_measure || ''})` : '';
         return {
@@ -2244,7 +2283,7 @@ export default function AgentStorefrontGrid({
               {/* Wholesale Price */}
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: 1.1 }}>
                 <div style={{ fontFamily: 'var(--font-roboto-condensed, sans-serif)', fontWeight: 700, fontSize: px(20), color: '#8B8F93', textTransform: 'uppercase', marginBottom: px(4) }}>
-                  WHOLESALE PRICE
+                  AGENT PRICE
                 </div>
                 <div style={{ fontFamily: 'var(--font-roboto-condensed, sans-serif)', fontWeight: 700, fontSize: px(56), color: '#00D5F2', textShadow: `0 2px 4px rgba(0,0,0,0.5)` }}>
                   ${resolved.finalPrice.toFixed(2)}
@@ -2395,16 +2434,33 @@ export default function AgentStorefrontGrid({
     const isBW = packOf10(group.name, defaultV.products?.compound_slug);
     const displaySizeText = isBW ? `10x ${size}${measure} Vials` : `${size}${measure} Vials`;
 
-    const perVialBase = defaultV.retail_price / 10;
+    const perVialBase = defaultV.retail_price;
     const isOnSale = (defaultV as any).is_on_sale && (defaultV as any).sale_price;
-    const perVialDisplay = isOnSale ? (defaultV as any).sale_price / 10 : perVialBase;
+    const perVialDisplay = isOnSale ? (defaultV as any).sale_price : perVialBase;
     const displayPrice = isBW ? perVialDisplay * 10 : perVialDisplay;
     const _marketAvgVial = Number((defaultV as any).products?.market_avg_price) || 0;
     const _marketAvgDisplay = isBW ? _marketAvgVial * 10 : _marketAvgVial;
-    const _showMarketAvg = (agentSlug === 'researchstore' || agentSlug === 'savagebrands') && _marketAvgDisplay > displayPrice;
+    const _showMarketAvg = _marketAvgDisplay > displayPrice;
     const _comparePrice = _showMarketAvg ? _marketAvgDisplay : (isOnSale ? (isBW ? perVialBase * 10 : perVialBase) : 0);
     const _hasCompare = _comparePrice > displayPrice;
     const _youSave = _hasCompare ? _comparePrice - displayPrice : 0;
+
+    // ── Owner cost-view mode ─────────────────────────────────────────────
+    // When showCostView is true and cost_price is available, swap the card's
+    // main price to the owner's buy cost and use the retail price as the
+    // strikethrough MSRP so the margin is immediately visible.
+    const rawCostPrice = (defaultV as any).cost_price;
+    const hasCostData = isStorefrontOwner && showCostView && rawCostPrice != null;
+    const costPerVialDisplay = hasCostData
+      ? (isBW ? Number(rawCostPrice) : Number(rawCostPrice))
+      : null;
+    const finalDisplayPrice = hasCostData ? (costPerVialDisplay ?? displayPrice) : displayPrice;
+    const finalMsrp = hasCostData ? displayPrice : (_hasCompare ? _comparePrice : undefined);
+    const finalSavings = hasCostData
+      ? Math.max(0, Math.floor(displayPrice - (costPerVialDisplay ?? displayPrice)))
+      : (_hasCompare ? Math.floor(_youSave) : undefined);
+    const finalSavingsLabel = hasCostData ? 'YOUR PROFIT' : 'YOU SAVE';
+    const finalHasCompare = hasCostData ? true : _hasCompare;
 
     return (
       <motion.div
@@ -2414,13 +2470,15 @@ export default function AgentStorefrontGrid({
         <PremiumPeptideCard
           productName={main}
           vialSizeBadge={displaySizeText}
-          msrp={_hasCompare ? _comparePrice : undefined}
-          savings={_hasCompare ? Math.floor(_youSave) : undefined}
-          wholesalePrice={displayPrice}
+          msrp={finalHasCompare ? finalMsrp : undefined}
+          savings={finalHasCompare ? finalSavings : undefined}
+          savingsLabel={finalSavingsLabel}
+          wholesalePrice={finalDisplayPrice}
           inStockText={stockState.kind === 'out_of_stock' ? "OUT OF STOCK" : "IN STOCK"}
           pickupText="AVAILABLE FOR SAME DAY PICKUP"
           buttonText="Add To Cart"
           imageSrc={group.imageUrl || '/images/peptide_clear.png'}
+          imageObjectFit={group.imageUrl?.includes('stack') || group.name.toLowerCase().includes('stack') ? 'cover' : 'contain'}
           cardBg={(() => {
             const slug = group.compoundSlug ?? '';
             if (!slug) return undefined;
@@ -2434,6 +2492,7 @@ export default function AgentStorefrontGrid({
           })()}
           isPinned={pinnedNames.has(group.name)}
           isWishlisted={wishlist.has(activeVariant.product_id)}
+          isOwnerCostMode={hasCostData}
           onCompareToggle={(e) => {
             if (e.target.checked) {
               if (pinnedNames.size >= 4) { toast.error('You can compare up to 4 compounds at a time.'); return; }
@@ -2940,6 +2999,154 @@ export default function AgentStorefrontGrid({
       {/* Grid section - hidden when product detail is shown */}
       <div style={{ display: detailProduct ? 'none' : undefined }}>
 
+      {/* ── Owner Cost View Banner ─────────────────────────────────────────
+          Visible ONLY to the store owner (isStorefrontOwner). Customers and
+          guests never see this. Provides a toggle to switch all product card
+          prices from retail to the owner's buy cost so they can audit margins
+          at a glance without leaving the storefront. */}
+      {isStorefrontOwner && (
+        <>
+          {/* Mobile-responsive styles for the owner banner */}
+          <style>{`
+            .owner-banner { flex-wrap: nowrap !important; }
+            .owner-banner-desc { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; min-width: 0; }
+            .owner-banner-divider { flex-shrink: 0; }
+            .owner-banner-btn-text { white-space: nowrap; }
+            @media (max-width: 540px) {
+              .owner-banner-desc { display: none !important; }
+              .owner-banner-divider { display: none !important; }
+            }
+            @media (max-width: 360px) {
+              .owner-banner-btn-text { display: none !important; }
+            }
+          `}</style>
+          <div className="owner-banner" style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            marginBottom: 20,
+            padding: '11px 14px',
+            borderRadius: 14,
+            border: '3px solid transparent',
+            background: showCostView
+              ? `rgba(0, 196, 188, 0.07) padding-box,
+                 linear-gradient(135deg, #b0b5bc 0%, #5c626b 20%, #e2e6eb 50%, #5c626b 80%, #b0b5bc 100%) border-box`
+              : `rgba(10, 18, 28, 0.90) padding-box,
+                 linear-gradient(135deg, #b0b5bc 0%, #5c626b 20%, #e2e6eb 50%, #5c626b 80%, #b0b5bc 100%) border-box`,
+            backdropFilter: 'blur(12px)',
+            boxShadow: showCostView
+              ? 'inset 0 1px 0 rgba(0,196,188,0.10), 0 6px 24px rgba(0,0,0,0.55)'
+              : 'inset 0 1px 0 rgba(255,255,255,0.05), 0 6px 24px rgba(0,0,0,0.55)',
+            transition: 'all 0.25s ease',
+          }}>
+            {/* Icon + label */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={showCostView ? '#00C4BC' : '#A8B4C0'} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ transition: 'stroke 0.2s', flexShrink: 0 }}>
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <path d="M3 9h18M9 21V9"/>
+              </svg>
+              <span style={{
+                fontSize: '0.68rem',
+                fontWeight: 800,
+                color: showCostView ? '#00C4BC' : '#A8B4C0',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                whiteSpace: 'nowrap',
+                transition: 'color 0.2s',
+              }}>
+                Owner View
+              </span>
+            </div>
+
+            {/* Divider — hidden on mobile */}
+            <div className="owner-banner-divider" style={{
+              width: 1, height: 18,
+              background: showCostView ? 'rgba(0,196,188,0.3)' : 'rgba(192,197,206,0.2)',
+              transition: 'background 0.2s',
+            }} />
+
+            {/* Status text — hidden on small screens, truncates with ellipsis */}
+            <span className="owner-banner-desc" style={{
+              fontSize: '0.88rem',
+              color: showCostView ? '#A8B4C0' : 'rgba(168,180,192,0.70)',
+              fontWeight: 500,
+              transition: 'color 0.2s',
+              flex: 1,
+            }}>
+              {showCostView
+                ? 'Cost Mode Active — Prices shown are your agent buy cost'
+                : 'View your cost of goods for each product'}
+            </span>
+
+            {/* Spacer pushes button to the right when desc is hidden */}
+            <div style={{ flex: 1, minWidth: 0 }} className="owner-banner-spacer" />
+
+            {/* Toggle button */}
+            <button
+              type="button"
+              id="owner-cost-view-toggle"
+              aria-pressed={showCostView}
+              onClick={() => setShowCostView(v => !v)}
+              style={{
+                flexShrink: 0,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 7,
+                padding: '8px 16px',
+                borderRadius: 20,
+                border: '1.5px solid #9BA3AB',
+                cursor: 'pointer',
+                fontWeight: 700,
+                fontSize: '0.75rem',
+                letterSpacing: '0.05em',
+                textTransform: 'uppercase',
+                transition: 'all 0.2s ease',
+                whiteSpace: 'nowrap',
+                background: showCostView
+                  ? 'linear-gradient(180deg, #00C4BC 0%, #009B94 100%)'
+                  : 'linear-gradient(180deg, #1e2a35 0%, #131d26 100%)',
+                color: showCostView ? '#000d0c' : '#C8CDD4',
+                boxShadow: showCostView
+                  ? 'inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 14px rgba(0,196,188,0.3)'
+                  : 'inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 12px rgba(0,0,0,0.5)',
+              }}
+              onMouseEnter={e => {
+                if (!showCostView) {
+                  e.currentTarget.style.color = '#FFFFFF';
+                  e.currentTarget.style.borderColor = '#C8CDD4';
+                  e.currentTarget.style.background = 'linear-gradient(180deg, #243242 0%, #1a2635 100%)';
+                }
+              }}
+              onMouseLeave={e => {
+                if (!showCostView) {
+                  e.currentTarget.style.color = '#C8CDD4';
+                  e.currentTarget.style.borderColor = '#9BA3AB';
+                  e.currentTarget.style.background = 'linear-gradient(180deg, #1e2a35 0%, #131d26 100%)';
+                }
+              }}
+            >
+              {/* Eye icon */}
+              <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0 }}>
+                {showCostView ? (
+                  <>
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                  </>
+                ) : (
+                  <>
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </>
+                )}
+              </svg>
+              <span className="owner-banner-btn-text">
+                {showCostView ? 'Hide My Cost' : 'Show My Cost'}
+              </span>
+            </button>
+          </div>
+        </>
+      )}
+
       {/* Did You Mean Banner */}
       {didYouMeanSuggestion && (
         <div style={{
@@ -3302,7 +3509,7 @@ export default function AgentStorefrontGrid({
                     agentSlug,
                     isSavageBrandsNetwork
                   );
-                  const perVial = item.retail_price / 10;
+                  const perVial = item.retail_price;
                   // Bac. water sells in fixed 10-packs; show it as packs (10x), not loose vials.
                   const isBWReal = isBacWaterItem(item.products?.name, item.products?.compound_slug);
                   const isBW = packOf10(item.products?.name, item.products?.compound_slug);
@@ -3320,7 +3527,7 @@ export default function AgentStorefrontGrid({
                         alt={name}
                         width={64}
                         height={64}
-                        style={{ width: 64, height: 64, borderRadius: 10, objectFit: 'cover', flexShrink: 0, background: '#0F1923' }}
+                        style={{ width: 64, height: 64, borderRadius: 10, objectFit: 'contain', flexShrink: 0, background: '#0F1923' }}
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
                           const fallback = getProductImage(null, item.products?.category || 'Other', name, false, agentSlug, isSavageBrandsNetwork);
@@ -3470,7 +3677,7 @@ export default function AgentStorefrontGrid({
                         agentSlug,
                         isSavageBrandsNetwork
                       );
-                      const perVial = item.retail_price / 10;
+                      const perVial = item.retail_price;
                       return (
                         <div key={variantId} style={{
                           display: 'flex', alignItems: 'center', gap: 12, padding: 10,
@@ -3481,7 +3688,7 @@ export default function AgentStorefrontGrid({
                             alt={name}
                             width={56}
                             height={56}
-                            style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'cover', flexShrink: 0, background: '#0F1923', opacity: 0.9 }}
+                            style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'contain', flexShrink: 0, background: '#0F1923', opacity: 0.9 }}
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
                               const fallback = getProductImage(null, item.products?.category || 'Other', name, false, agentSlug, isSavageBrandsNetwork);
@@ -3576,7 +3783,7 @@ export default function AgentStorefrontGrid({
                   for (const [vId, qty] of Object.entries(cartItems)) {
                     const item = products.find(p => p.id === vId);
                     if (!item) continue;
-                    const per = item.retail_price / 10;
+                    const per = item.retail_price;
                     flatTotal += per * qty;
                     const eligible = volumePricingEnabled !== false
                       && !isStorefrontOwner
@@ -3618,7 +3825,7 @@ export default function AgentStorefrontGrid({
                   const cartSubtotal = Object.entries(cartItems).reduce((sum, [vId, qty]) => {
                     const item = products.find(p => p.id === vId);
                     if (!item) return sum;
-                    return sum + (item.retail_price / 10) * qty;
+                    return sum + (item.retail_price) * qty;
                   }, 0);
                   const remaining = 100 - cartSubtotal;
                   return (
@@ -3647,9 +3854,9 @@ export default function AgentStorefrontGrid({
                       .map(([vId, qty]) => {
                         const item = products.find(p => p.id === vId);
                         if (!item) return null;
-                        const perVial = item.retail_price / 10;
+                        const perVial = item.retail_price;
                         const costPerVial = isStorefrontOwner && (item as any).cost_price != null
-                          ? Number((item as any).cost_price) / 10
+                          ? Number((item as any).cost_price)
                           : perVial;
                         const sizeLabel = item.products?.unit_size
                           ? `(${item.products.unit_size}${item.products.unit_measure || ''})`
@@ -3746,7 +3953,7 @@ export default function AgentStorefrontGrid({
               const stickyRaw = (stickyV as any).is_on_sale && (stickyV as any).sale_price
                 ? (stickyV as any).sale_price
                 : stickyV.retail_price;
-              const stickyPer = stickyRaw / 10;
+              const stickyPer = stickyRaw;
               const stickyQty = Math.max(1, pendingQty);
               return (
                 <div className="sf-modal-sticky-header" style={{
@@ -3809,26 +4016,24 @@ export default function AgentStorefrontGrid({
                 className="sf-modal-img"
                 style={{ background: `radial-gradient(circle at 50% 50%, ${primaryColor}20 0%, var(--black) 100%)` }}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <Image
-                  src={detailProduct.imageUrl || '/images/peptide_clear.png'}
-                  alt={detailProduct.name}
-                  fill
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  style={{ objectFit: 'contain', objectPosition: 'center', transition: 'transform 0.4s ease' }}
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    const fallback = getProductImage(null, detailProduct.category || 'Other', detailProduct.name, false, agentSlug, isSavageBrandsNetwork);
-                    if (target.src !== fallback && !target.src.includes(fallback)) {
-                      target.srcset = '';
-                      target.src = fallback;
-                    } else {
-                      target.srcset = '';
-                      target.src = '/images/peptide_clear.png';
-                      target.style.opacity = '0.9';
-                    }
-                  }}
-                />
+                {(() => {
+                  // MOBILE BLANK-VIAL FIX: the hero vial is painted into a box
+                  // that is at most ~600px wide, but the source art is 1024px+.
+                  // Route it through the Next optimizer so mobile decodes a
+                  // right-sized AVIF instead of the full-resolution original.
+                  // See lib/imageOptimize.ts for the full explanation.
+                  const rawSrc = getProductImage(detailProduct.imageUrl, detailProduct.category || 'Other', detailProduct.name, true, agentSlug, isSavageBrandsNetwork);
+                  return (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={optimizedImageSrc(rawSrc, 320)}
+                      alt={detailProduct.name}
+                      decoding="async"
+                      style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', transition: 'transform 0.4s ease' }}
+                      onError={makeImageErrorHandler(rawSrc)}
+                    />
+                  );
+                })()}
                 <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, background: 'linear-gradient(transparent, var(--surface-2))' }} />
               </div>
 
@@ -3982,9 +4187,9 @@ export default function AgentStorefrontGrid({
                   const rawPrice = (activeV as any).is_on_sale && (activeV as any).sale_price
                     ? (activeV as any).sale_price
                     : activeV.retail_price;
-                  const basePrice = rawPrice / 10;
+                  const basePrice = rawPrice;
 
-                  const agentCostPerVial = (activeV as any).cost_price != null ? Number((activeV as any).cost_price) / 10 : basePrice;
+                  const agentCostPerVial = (activeV as any).cost_price != null ? Number((activeV as any).cost_price) : basePrice;
 
                   // Quantity Discounts: Buying More Of The SAME Peptide Saves
                   // 10/15/20%. Diluents (BAC Water) And Owner Restocks Stay Flat.
@@ -4220,7 +4425,7 @@ export default function AgentStorefrontGrid({
                           const selVId2 = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
                           const activeV2 = detailProduct.variants.find(v => v.id === selVId2) || detailProduct.variants[0];
                           const rawP = (activeV2 as any).is_on_sale && (activeV2 as any).sale_price ? (activeV2 as any).sale_price : activeV2.retail_price;
-                          const bp = rawP / 10;
+                          const bp = rawP;
                           return [{ min: 100, pct: 5 }, { min: 300, pct: 10 }, { min: 500, pct: 15 }].map((tier, i) => {
                             const dp = parseFloat((bp * (1 - tier.pct / 100)).toFixed(2));
                             return (
@@ -4624,13 +4829,12 @@ export default function AgentStorefrontGrid({
                   style={{ width: '100%', background: 'var(--surface-3)', cursor: 'pointer', position: 'relative', height: 'auto' }}
                   onClick={() => setFullScreenImage(selectedBundle.vial_image_url || selectedBundle.image_url || null)}
                 >
-                  <Image
-                    src={selectedBundle.vial_image_url || selectedBundle.image_url || ''}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={optimizedImageSrc(selectedBundle.vial_image_url || selectedBundle.image_url || '', 320)}
                     alt={selectedBundle.name}
-                    width={800}
-                    height={1200}
-                    unoptimized
-                    sizes="100vw"
+                    decoding="async"
+                    onError={makeImageErrorHandler(selectedBundle.vial_image_url || selectedBundle.image_url || '')}
                     style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'contain' }}
                   />
                   <div style={{
@@ -4661,13 +4865,13 @@ export default function AgentStorefrontGrid({
                   }}
                   onClick={() => setFullScreenImage(selectedBundle.vial_image_url || selectedBundle.image_url || null)}
                 >
-                  <Image
-                    src={selectedBundle.vial_image_url || selectedBundle.image_url || ''}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={optimizedImageSrc(selectedBundle.vial_image_url || selectedBundle.image_url || '', 320)}
                     alt={selectedBundle.name}
-                    fill
-                    unoptimized
-                    sizes="560px"
-                    style={{ objectFit: 'contain' }}
+                    decoding="async"
+                    onError={makeImageErrorHandler(selectedBundle.vial_image_url || selectedBundle.image_url || '')}
+                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }}
                   />
                   <div style={{
                     position: 'absolute',
@@ -4729,7 +4933,7 @@ export default function AgentStorefrontGrid({
                       const size = m.products?.unit_size ? `${m.products.unit_size}${m.products.unit_measure || ''}` : '';
                       const baseName = m.custom_name || m.products?.name || 'Product';
                       const name = size ? `${size} ${baseName}` : baseName;
-                      const perVial = (Number(m.retail_price) || 0) / 10;
+                      const perVial = (Number(m.retail_price) || 0);
                       return (
                         <div
                           key={m.id}
@@ -4745,14 +4949,19 @@ export default function AgentStorefrontGrid({
                             cursor: 'pointer',
                           }}
                         >
-                          <Image
-                            src={img}
+                          {/* MOBILE BLANK-VIAL FIX: was `unoptimized`, which
+                              shipped the full 1024px original for a 48px thumb.
+                              See lib/imageOptimize.ts. */}
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={optimizedImageSrc(img, 48)}
                             alt={name}
                             width={48}
                             height={48}
-                            unoptimized
-                            style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }}
-                            onError={(e) => { const t = e.target as HTMLImageElement; if (!t.src.includes('/images/peptide_clear.png')) { t.srcset = ''; t.src = '/images/peptide_clear.png'; } }}
+                            loading="lazy"
+                            decoding="async"
+                            style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'contain', flexShrink: 0 }}
+                            onError={makeImageErrorHandler(img)}
                           />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--white)', marginBottom: 2 }}>{name}</div>

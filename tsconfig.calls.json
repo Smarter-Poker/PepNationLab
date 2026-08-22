@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "app/api/messenger/**/*.ts",
+    "app/device-check/**/*.tsx",
+    "components/DeferredGlobals.tsx",
+    "components/messenger/**/*.tsx",
+    "components/messenger/CallButton.tsx",
+    "components/messenger/CallGridView.tsx",
+    "components/messenger/CallOverlay.tsx",
+    "components/messenger/GlobalCallListener.tsx",
+    "components/messenger/IncomingCallScreen.tsx",
+    "components/messenger/MessagePane.tsx",
+    "lib/messenger/**/*.ts",
+    "next-env.d.ts"
+  ]
+}

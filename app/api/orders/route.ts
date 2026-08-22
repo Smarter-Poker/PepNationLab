@@ -8,7 +8,6 @@ import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { calculateShippingCost, getCarrierName } from '@/lib/shipping-cost';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 import { getEffectiveBundlesForStore } from '@/lib/bundles';
-import { quoteCheapestForCheckout, normalizeShippingAddress } from '@/lib/shipping';
 import { resolveCartIdsToProductIds } from '@/lib/cart-ids';
 import { computeLineSplit, type ItemFulfillmentSplit } from '@/lib/order-line-splits';
 import { quantityDiscountPct, isVolumeDiscountExcluded } from '@/lib/quantity-discount';
@@ -69,7 +68,10 @@ export async function POST(request: NextRequest) {
     const validation = CheckoutSchema.safeParse(rawBody);
 
     if (!validation.success) {
-      return NextResponse.json({ error: 'Invalid Checkout Data.', details: validation.error.issues }, { status: 400 });
+      const firstIssue = validation.error.issues[0];
+      const fieldPath = firstIssue?.path.join('.');
+      const errorMsg = firstIssue ? `Invalid Checkout Data: ${firstIssue.message}${fieldPath ? ` at ${fieldPath}` : ''}` : 'Invalid Checkout Data.';
+      return NextResponse.json({ error: errorMsg, details: validation.error.issues }, { status: 400 });
     }
 
     const {
@@ -120,7 +122,7 @@ export async function POST(request: NextRequest) {
     // Get researcher profile (full_name added for buyer_name on order insert)
     const { data: profile, error: profileError } = await serviceSupabase
       .from('profiles')
-      .select('id, full_name, contact_email, email_verified, referring_agent_id, role, tier, parent_agent_id, account_type, prepaid_balance, credit_limit, max_auto_approve_limit, auto_approve_orders, is_sub_agent, referring_sub_agent_id, is_manufacturer, manufacturer_commission_pct')
+      .select('id, full_name, contact_email, email_verified, referring_agent_id, role, tier, parent_agent_id, account_type, prepaid_balance, credit_limit, max_auto_approve_limit, auto_approve_orders, is_sub_agent, referring_sub_agent_id, is_manufacturer, manufacturer_commission_pct, is_transactions_frozen')
       .eq('id', user.id)
       .maybeSingle();
 
@@ -158,6 +160,64 @@ export async function POST(request: NextRequest) {
         { error: 'Sub-Agent Account Configuration Error. Please Contact Your Parent Agent.' },
         { status: 403 }
       );
+    }
+
+    // FREEZE GATE. Until now the frozen-chain check lived ONLY in the agent
+    // approval route, so a frozen account could still take orders all day:
+    // checkout succeeded, the researcher got a confirmation, inventory was
+    // held, and the order sat in the queue until a human noticed and declined
+    // it. Freezing is also how a DELETED account is tombstoned, so a deleted
+    // agent's storefront kept accepting orders that could never be fulfilled.
+    //
+    // Refuse at the door instead. The walk starts at the AGENT OF RECORD
+    // because walk_billing_chain climbs parent_agent_id - a researcher is
+    // attached to their store by referring_agent_id, so walking from the
+    // buyer would stop at their own row and miss the store owner entirely.
+    // The buyer's own flag is checked separately for the same reason.
+    {
+      const buyerFrozen = (profile as { is_transactions_frozen?: boolean | null }).is_transactions_frozen === true;
+      if (buyerFrozen) {
+        return NextResponse.json(
+          { error: 'This Account Is Frozen And Cannot Place Orders. Please Contact Support.' },
+          { status: 423 }
+        );
+      }
+
+      const freezeRoot = agentProfile?.id ?? null;
+      if (freezeRoot) {
+        // Only the FREEZE half is wanted here - the credit half is handled by
+        // checkSuperAgentCredit further down, which prices the real cart.
+        // Calling assertChainCanTransact ran both, and its credit result was
+        // provably discarded: a recursive CTE plus two aggregate scans per
+        // chain level on every single checkout, for nothing.
+        const { data: frozenRows, error: frozenErr } = await serviceSupabase.rpc('is_chain_frozen', {
+          p_agent_id: freezeRoot,
+        });
+
+        if (frozenErr) {
+          // FAIL CLOSED. Falling through on an RPC error let a frozen - or
+          // deleted - agent's storefront transact freely for as long as the
+          // check was unavailable, which defeats the entire gate.
+          logError('orders.POST.freeze_check_failed', { agentId: freezeRoot }, frozenErr);
+          captureError(frozenErr, { context: 'orders.POST.freeze_check_failed', severity: 'critical', agentId: freezeRoot });
+          return NextResponse.json(
+            { error: 'We Could Not Verify This Store Right Now. Please Try Again In A Moment.' },
+            { status: 503 }
+          );
+        }
+
+        const frozen = Array.isArray(frozenRows) ? frozenRows[0] : (frozenRows as { frozen?: boolean } | null);
+        if (frozen?.frozen === true) {
+          // The person reading this is a RESEARCHER checking out, not the
+          // agent. The billing-chain copy ("Contact Your Upline To Resolve
+          // Before Placing Orders") is meaningless to them - they have no
+          // upline and no idea what one is.
+          return NextResponse.json(
+            { error: 'This Store Is Not Accepting Orders Right Now. Please Contact The Store Owner Or Try Another Store.' },
+            { status: 423 }
+          );
+        }
+      }
     }
 
     // MANUFACTURER STORES (2026-07-15): the agent of record is the factory
@@ -226,7 +286,7 @@ export async function POST(request: NextRequest) {
     // Retrieve active product definitions matching requested cart item IDs
     const { data: dbProducts, error: dbProductsError } = await serviceSupabase
       .from('products')
-      .select('id, name, base_cost, weight_oz, is_active, is_banned, sku, inventory_count, admin_bulk_price, admin_bulk_threshold')
+      .select('id, name, base_cost, house_cost, weight_oz, is_active, is_banned, sku, inventory_count, admin_bulk_price, admin_bulk_threshold')
       .in('id', items.map(i => i.id));
 
     if (dbProductsError || !dbProducts || dbProducts.length === 0) {
@@ -346,14 +406,27 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      const totalRequestedQty = items.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
+      // Order minimums count PEPTIDES only. Reconstitution supplies (BAC
+      // water, acetic acid) are add-ons the checkout itself recommends;
+      // letting them satisfy the minimum meant 2 peptides + 1 BAC water vial
+      // passed a 3-item minimum. They are excluded from the overall count AND
+      // from the per-item minimum (a single recommended BAC vial must not be
+      // rejected by a per-peptide minimum of 3).
+      const isReconstitutionSupply = (name: string | null | undefined): boolean =>
+        /bacteriostatic|bac\s*water|acetic\s*acid/i.test(String(name ?? ''));
+      const peptideRequestedQty = items.reduce((acc, item) => {
+        const dbName = productById.get(item.id)?.name;
+        if (isReconstitutionSupply(dbName)) return acc;
+        return acc + (Number(item.quantity) || 0);
+      }, 0);
       const minQty = Number(storefrontAgent.min_overall_qty) || 1;
-      if (totalRequestedQty < minQty) {
-        return NextResponse.json({ error: `This Storefront Requires A Minimum Overall Order Of ${minQty} Items.` }, { status: 400 });
+      if (peptideRequestedQty < minQty) {
+        return NextResponse.json({ error: `This Storefront Requires A Minimum Overall Order Of ${minQty} Peptides. Reconstitution Supplies Like BAC Water Do Not Count Toward The Minimum.` }, { status: 400 });
       }
 
       const minPerItem = Number(storefrontAgent.min_order_qty) || 1;
       for (const item of items) {
+        if (isReconstitutionSupply(productById.get(item.id)?.name)) continue;
         if ((Number(item.quantity) || 0) < minPerItem) {
           return NextResponse.json({ error: `This Storefront Requires A Minimum Of ${minPerItem} Per Peptide.` }, { status: 400 });
         }
@@ -446,9 +519,7 @@ export async function POST(request: NextRequest) {
     // cost basis under 3+ level chains -- it's just the next hop up. Resolving
     // agentProfile's own chain to its top ancestor gives the actual house cost,
     // regardless of how many Super Agent hops sit in between.
-    let topOfChainCosts = new Map<string, number>();
     if (superAgentProfile && agentProfile && !isManufacturerStore) {
-      topOfChainCosts = await computeAgentTopOfChainCostsForAgent(serviceSupabase, agentProfile.id, agentTier, productListForPricing);
     }
 
     let flashSaleDiscountPct = 0;
@@ -479,7 +550,7 @@ export async function POST(request: NextRequest) {
       const rawPrice = a.is_on_sale && a.sale_price != null
         ? Number(a.sale_price)
         : Number(a.retail_price);
-      agentCustomRetail[a.product_id] = rawPrice / 10;
+      agentCustomRetail[a.product_id] = rawPrice;
     });
 
     // 4a. Legitimate stack/bundle membership. The 10% bundle discount is applied
@@ -522,7 +593,7 @@ export async function POST(request: NextRequest) {
         }
       }
     }
-    const isValidBundleLine = (bundleName: string | undefined, productId: string): boolean => {
+    const isValidBundleLine = (bundleName: string | null | undefined, productId: string): boolean => {
       if (!bundleName) return false;
       const members = validBundleMembers.get(bundleName.trim().toLowerCase());
       return !!members && members.has(productId);
@@ -531,7 +602,7 @@ export async function POST(request: NextRequest) {
     // the factor is computed per-line by callers using bundleCustomPriceByName.
     // Defaults to the legacy 10% only for a validated bundle line whose bundle
     // somehow carries no percent.
-    const bundleDiscountFactor = (bundleName: string | undefined): number => {
+    const bundleDiscountFactor = (bundleName: string | null | undefined): number => {
       if (!bundleName) return 1;
       // Custom price bundles: handled separately, return 1 here so the caller
       // can apply the per-item custom price proportionally.
@@ -571,7 +642,7 @@ export async function POST(request: NextRequest) {
         unitRetail = agentCustomRetail[dbProduct.id];
       } else {
         const retailMultiplier = tierMultipliers['tier_3'] ?? 10;
-        unitRetail = Number(dbProduct.base_cost) * retailMultiplier / 10;
+        unitRetail = Number(dbProduct.base_cost) * retailMultiplier;
       }
       cartBundleUnitRetailSum.set(key, (cartBundleUnitRetailSum.get(key) || 0) + unitRetail);
     }
@@ -633,7 +704,7 @@ export async function POST(request: NextRequest) {
         if (retailMultiplier === undefined || retailMultiplier === null) {
           return NextResponse.json({ error: 'Pricing Configuration Unavailable. Please Try Again.' }, { status: 500 });
         }
-        retailPrice = baseCost * retailMultiplier / 10;
+        retailPrice = baseCost * retailMultiplier;
       }
 
       const itemQty = Number(cartItem.quantity) || 1;
@@ -666,11 +737,11 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Pricing Configuration Unavailable. Please Try Again.' }, { status: 500 });
           }
           superAgentCost = isWholesalePurchase
-            ? (saCostRaw / 10)
+            ? saCostRaw
             : applyBulkPrice(
-                saCostRaw / 10,
+                saCostRaw,
                 itemQty,
-                dbProduct.admin_bulk_price != null ? dbProduct.admin_bulk_price / 10 : null,
+                dbProduct.admin_bulk_price != null ? dbProduct.admin_bulk_price : null,
                 dbProduct.admin_bulk_threshold
               );
 
@@ -686,14 +757,10 @@ export async function POST(request: NextRequest) {
              baselineApplied = true;
              // Sub-agents do not get the bulk_baseline_cost break; they always
              // pay the baseline tier their parent has set.
-             // baseline_cost / bulk_baseline_cost are stored PER-10-VIAL PACK, so
-             // divide by 10 to get the per-vial cost (matches every other price in
-             // this file and the manual invoice path). Without this the buyer is
-             // billed 10x the intended baseline.
              if (!isWholesalePurchase && saConfig.bulk_baseline_cost !== null && itemQty >= saConfig.bulk_threshold) {
-                 costPrice = saConfig.bulk_baseline_cost / 10;
+                 costPrice = saConfig.bulk_baseline_cost;
              } else {
-                 costPrice = saConfig.baseline_cost / 10;
+                 costPrice = saConfig.baseline_cost;
              }
           } else {
              costPrice = superAgentCost;
@@ -709,7 +776,7 @@ export async function POST(request: NextRequest) {
              if (isTierLadderV2()) {
                const aCostRaw = agentCosts.get(dbProduct.id);
                if (aCostRaw !== undefined && aCostRaw !== null) {
-                 costPrice = aCostRaw / 10;
+                 costPrice = aCostRaw;
                } else {
                  costPrice = (superAgentCost ?? 0) * (1 + (agentEffectiveMarkupPct / 100));
                }
@@ -726,11 +793,11 @@ export async function POST(request: NextRequest) {
           // Agent self-buy at a regular agent's storefront: skip bulk pricing.
           // Researcher buying through the agent: keep bulk pricing.
           costPrice = isWholesalePurchase
-            ? (aCostRaw / 10)
+            ? aCostRaw
             : applyBulkPrice(
-                aCostRaw / 10,
+                aCostRaw,
                 itemQty,
-                dbProduct.admin_bulk_price != null ? dbProduct.admin_bulk_price / 10 : null,
+                dbProduct.admin_bulk_price != null ? dbProduct.admin_bulk_price : null,
                 dbProduct.admin_bulk_threshold
               );
         }
@@ -812,22 +879,9 @@ export async function POST(request: NextRequest) {
         superAgentCost = isFinite(superAgentCost) ? Math.round(superAgentCost * 100) / 100 : null;
       }
 
-      // Fix 3 (2026-07-21): capture the TOP-of-chain house cost per unit at
-      // sale time. Chain sale (agent has a parent) -> the top ancestor's own
-      // ladder cost, ignoring every downstream hop's markup. Top-level agent
-      // sale (no parent) -> the agent's own (already fully adjusted & rounded)
-      // cost IS the house edge. Manufacturer branch and no-agent (direct/house)
-      // orders leave this NULL.
-      if (agentProfile && !isManufacturerStore) {
-        if (superAgentProfile) {
-          const topRaw = topOfChainCosts.get(dbProduct.id);
-          houseCost = topRaw !== undefined && topRaw !== null
-            ? Math.round((topRaw / 10) * 100) / 100
-            : null;
-        } else {
-          houseCost = costPrice;
-        }
-      }
+      // The true house cost (what Pep Nation pays the manufacturer)
+      houseCost = dbProduct.house_cost != null ? Number(dbProduct.house_cost) : Number(dbProduct.base_cost);
+      houseCost = isFinite(houseCost) ? Math.round(houseCost * 100) / 100 : null;
 
       const finalProductName = isBundleLine ? `${dbProduct.name} [Part of: ${cartItem.bundleName}]` : dbProduct.name;
 
@@ -1068,39 +1122,18 @@ export async function POST(request: NextRequest) {
     //     shippingOption='agent_pickup' (or anything non-carrier) with a shipped
     //     order previously collapsed shipping to $0 -- free shipping exploit.
     //     Coerce any non-carrier value to the default paid carrier.
-    const CARRIERS = ['fedex', 'usps'] as const;
-    const actualShippingOption: import('@/lib/shipping-cost').ShippingOption = fulfillmentMethod === 'agent_pickup'
-      ? 'agent_pickup'
-      : (CARRIERS.includes(shippingOption as (typeof CARRIERS)[number]) ? (shippingOption as (typeof CARRIERS)[number]) : 'usps');
-    // Shipping charge: prefer the LIVE cheapest carrier rate (EasyPost) from the
-    // agent's warehouse to the buyer's address, so the buyer pays what the
-    // platform actually pays for the label instead of a decoupled flat estimate.
-    // The flat weight table remains the fallback (EasyPost slow/unavailable, no
-    // rate for the destination, or address incomplete). quoteCheapestForCheckout
-    // is non-throwing and hard-bounded by an internal timeout, so it can never
-    // hang or fail the order; on any miss we keep the flat estimate.
-    let shippingCost = calculateShippingCost(actualShippingOption, totalWeightOz);
-    if (actualShippingOption !== 'agent_pickup' && shippingAddress) {
-      try {
-        const to = normalizeShippingAddress(shippingAddress, {
-          full_name: (profile as { full_name?: string | null })?.full_name ?? null,
-        });
-        if (to) {
-          const totalQty = computedItems.reduce((s: number, i: any) => s + (Number(i.quantity) || 0), 0);
-          const live = await quoteCheapestForCheckout({
-            agentId: agentProfile?.id ?? null,
-            to,
-            weightOz: totalWeightOz,
-            totalQty,
-          });
-          if (live && live.amountCents > 0) {
-            shippingCost = Math.round(live.amountCents) / 100;
-          }
-        }
-      } catch {
-        /* keep the flat estimate computed above */
-      }
-    }
+    // Pep Nation fulfills every shipped order, so there is exactly one paid
+    // option ('standard'). Legacy 'fedex'/'usps' values from an older client
+    // are accepted and priced identically rather than rejected.
+    const actualShippingOption: import('@/lib/shipping-cost').ShippingOption =
+      fulfillmentMethod === 'agent_pickup' ? 'agent_pickup' : 'standard';
+    // Shipping charge is a FLAT rate keyed on the destination state -- $20
+    // midwest/inland, $25 coastal, $40 non-contiguous. Live carrier quoting
+    // (EasyPost) was removed from the pricing path: it overrode these rates and
+    // charged the buyer a decoupled amount. Labels are still purchased through
+    // the provider downstream; that cost is Pep Nation's, not the buyer's.
+    const destinationState = (shippingAddress as { state?: string | null } | null)?.state ?? null;
+    let shippingCost = calculateShippingCost(actualShippingOption, destinationState);
 
     // Round the final money total to exact cents so accumulated FP dust never
     // reaches the stored order total or credit/velocity comparisons.
@@ -1697,7 +1730,7 @@ export async function POST(request: NextRequest) {
               userId: agentProfile.id,
               title: `New Order #${short}`,
               body: `${buyerName} Placed A ${totalFmt} Order. Tap To Review.`,
-              url: '/dashboard?tab=Orders',
+              url: `/dashboard/agent?tab=Orders&order=${short}`,
               event: 'order_new',
               relatedOrderId: order.id,
               tag: `new-order-${order.id}`,
