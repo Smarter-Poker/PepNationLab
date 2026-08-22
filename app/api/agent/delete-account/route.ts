@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { safeError } from '@/lib/api-error';
 import { requireAgentOrAdmin, requireAdmin } from '@/lib/admin-auth';
+import { isPlatformAdminId } from '@/lib/platform-admins';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -33,10 +34,17 @@ const RestoreBody = z.object({
  */
 export async function POST(req: Request) {
   const csrf = assertSameOrigin(req as any);
-  if (csrf) return csrf;
+  if (csrf) {
+    console.error('[delete-account] CSRF check failed');
+    return csrf;
+  }
 
   const gate = await requireAgentOrAdmin();
-  if (!gate.ok) return gate.response;
+  if (!gate.ok) {
+    console.error('[delete-account] Auth gate failed:', gate.response.status);
+    return gate.response;
+  }
+  console.log('[delete-account] Caller:', gate.user.id, 'isAdmin:', gate.isAdmin, 'impersonating:', gate.impersonating);
 
   const supabase = await createClient();
 
@@ -44,8 +52,10 @@ export async function POST(req: Request) {
   try {
     body = DeleteBody.parse(await req.json());
   } catch (e: any) {
+    console.error('[delete-account] Body parse error:', e.errors);
     return NextResponse.json({ error: 'bad_request', details: e.errors }, { status: 400 });
   }
+  console.log('[delete-account] Deleting target_id:', body.target_id);
 
   const { data, error } = await supabase.rpc('soft_delete_account', {
     p_target_id: body.target_id,
@@ -54,6 +64,7 @@ export async function POST(req: Request) {
 
   if (error) {
     const msg = String(error.message || '');
+    console.error('[delete-account] RPC error:', msg, '| code:', (error as any).code);
     if (msg.includes('unauthorized')) {
       return NextResponse.json({ error: 'Your Session Expired. Please Sign In Again.' }, { status: 401 });
     }
@@ -67,6 +78,51 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'You Cannot Delete Your Own Account.' }, { status: 400 });
     }
     if (msg.includes('cannot_delete_admin')) {
+      if (gate.isAdmin || isPlatformAdminId(gate.user.id)) {
+        console.log('[delete-account] Bypassing cannot_delete_admin for super admin');
+        const { createServiceClient } = await import('@/lib/supabase/server');
+        const service = await createServiceClient();
+        
+        // Fetch target profile to save its original state and block platform owner deletion
+        const { data: targetProfile } = await service.from('profiles').select('role, is_admin_account').eq('id', body.target_id).single();
+        
+        if (targetProfile?.role === 'admin') {
+          return NextResponse.json({ error: 'The Super Admin Account Can Never Be Deleted.' }, { status: 403 });
+        }
+
+        // Temporarily downgrade the target so the RPC allows it (must clear is_admin_account too)
+        await service.from('profiles').update({ role: 'agent', is_admin_account: false }).eq('id', body.target_id);
+        
+        // Retry the RPC
+        const retry = await supabase.rpc('soft_delete_account', {
+          p_target_id: body.target_id,
+          p_reason: body.reason ?? '',
+        });
+        
+        if (retry.error) {
+          // Restore the role if it failed for another reason (e.g. downline constraint)
+          await service.from('profiles').update({ 
+            role: targetProfile?.role || 'super_agent', 
+            is_admin_account: targetProfile?.is_admin_account ?? true 
+          }).eq('id', body.target_id);
+          
+          const retryMsg = String(retry.error.message || '');
+          const downline = retryMsg.match(/has_downline:(\d+)/);
+          if (downline) {
+            const n = downline[1];
+            return NextResponse.json({
+              error: `This Account Still Has ${n} Active Account${n === '1' ? '' : 's'} In Its Downline. Move Or Delete Them First.`,
+              downline_count: Number(n) || 0,
+            }, { status: 409 });
+          }
+          return safeError('agent.delete-account', retry.error);
+        }
+        
+        console.log('[delete-account] Success (Admin Bypass). RPC result:', JSON.stringify(retry.data));
+        // Force the profile to be marked as deleted in case the RPC misses it
+        await service.from('profiles').update({ is_active: false, deleted_at: new Date().toISOString() }).eq('id', body.target_id);
+        return NextResponse.json({ ok: true, result: retry.data });
+      }
       return NextResponse.json({ error: 'Admin Accounts Cannot Be Deleted.' }, { status: 400 });
     }
     const downline = msg.match(/has_downline:(\d+)/);
@@ -83,6 +139,12 @@ export async function POST(req: Request) {
     return safeError('agent.delete-account', error);
   }
 
+  // Force the profile to be marked as deleted in case the RPC misses it
+  const { createServiceClient } = await import('@/lib/supabase/server');
+  const service = await createServiceClient();
+  await service.from('profiles').update({ is_active: false, deleted_at: new Date().toISOString() }).eq('id', body.target_id);
+
+  console.log('[delete-account] Success. RPC result:', JSON.stringify(data));
   return NextResponse.json({ ok: true, result: data });
 }
 
@@ -120,6 +182,11 @@ export async function PATCH(req: Request) {
     }
     return safeError('agent.restore-account', error);
   }
+
+  // Force the profile to be marked as active in case the restore RPC misses it
+  const { createServiceClient } = await import('@/lib/supabase/server');
+  const service = await createServiceClient();
+  await service.from('profiles').update({ is_active: true, deleted_at: null }).eq('id', body.target_id);
 
   return NextResponse.json({ ok: true, result: data });
 }

@@ -3,7 +3,7 @@
 import { useState, useMemo, Fragment, useEffect } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import BulkImportModal from "./BulkImportModal";
 
 export interface RawProduct {
@@ -84,7 +84,11 @@ function groupByName(products: RawProduct[]): GroupedProductInternal[] {
     }
   }
 
-  return Array.from(map.values());
+  const arr = Array.from(map.values());
+  for (const g of arr) {
+    g.variants.sort((a, b) => Number(a.unit_size || 0) - Number(b.unit_size || 0));
+  }
+  return arr;
 }
 
 function fuzzyMatch(text: string, query: string): boolean {
@@ -114,6 +118,7 @@ export default function ProductCatalogClient({
   overrides?: Record<string, number>;
 }) {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const filterParam = searchParams.get("filter");
 
   const [search, setSearch] = useState("");
@@ -134,6 +139,16 @@ export default function ProductCatalogClient({
   const [bulkSubmitting, setBulkSubmitting] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [bundles, setBundles] = useState<any[]>([]);
+
+  // Inline cost editing
+  const [editingCostGroupId, setEditingCostGroupId] = useState<string | null>(null);
+  const [editingCostVariantId, setEditingCostVariantId] = useState<string | null>(null);
+  const [editCostText, setEditCostText] = useState("");
+  const [costSaving, setCostSaving] = useState(false);
+  const [editingHouseCostGroupId, setEditingHouseCostGroupId] = useState<string | null>(null);
+  const [editingHouseCostVariantId, setEditingHouseCostVariantId] = useState<string | null>(null);
+  const [editHouseCostText, setEditHouseCostText] = useState("");
+  const [houseCostSaving, setHouseCostSaving] = useState(false);
 
   useEffect(() => {
     fetch('/api/agent/bundles/effective').then(r => r.json()).then(d => {
@@ -195,9 +210,10 @@ export default function ProductCatalogClient({
   const tierPrice = (productId: string, cost: number, tier: string) => {
     const overrideKey = `${productId}:${tier}`;
     const multiplier = overrides[overrideKey] ?? multipliers[tier] ?? 1;
-    // Prices in DB are per-10-vial pack. Show per-unit (/ 10) in the catalog.
-    return `$${((cost * multiplier) / 10).toFixed(2)}`;
+    // base_cost is now per-vial — no /10 needed.
+    return `$${(cost * multiplier).toFixed(2)}`;
   };
+
 
   const toggleGroup = (name: string) => {
     setExpandedGroups((prev) => {
@@ -276,12 +292,91 @@ export default function ProductCatalogClient({
       setBulkValue("");
       setBulkEffectiveAt("");
       if (applied > 0) {
-        window.location.reload();
+        router.refresh();
       }
     } catch {
       toast.error("Network Error");
     } finally {
       setBulkSubmitting(false);
+    }
+  };
+
+  
+  const handleHouseCostSave = async (ids: string[], originalCost?: number) => {
+    if (houseCostSaving) return;
+    const val = parseFloat(editHouseCostText);
+    if (!Number.isFinite(val) || val < 0) {
+      toast.error("Invalid Cost");
+      return;
+    }
+    if (originalCost !== undefined && Math.abs(val - originalCost) < 0.001) {
+      setEditingHouseCostGroupId(null);
+      setEditingHouseCostVariantId(null);
+      return;
+    }
+    setHouseCostSaving(true);
+    try {
+      const res = await fetch("/api/admin/products/update-house-cost", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          product_ids: ids,
+          new_value: val,
+        }),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.error || "Failed to update");
+      }
+      toast.success("Actual Cost Updated");
+      setEditingHouseCostGroupId(null);
+      setEditingHouseCostVariantId(null);
+      router.refresh();
+    } catch (err: any) {
+      toast.error(err.message || "Network Error");
+    } finally {
+      setHouseCostSaving(false);
+    }
+  };
+
+  const handleCostSave = async (ids: string[], originalCost?: number) => {
+    if (costSaving) return;
+    const val = parseFloat(editCostText);
+    if (!Number.isFinite(val) || val < 0) {
+      toast.error("Invalid Cost");
+      return;
+    }
+    // Don't save or reload if the value hasn't actually changed
+    if (originalCost !== undefined && Math.abs(val - originalCost) < 0.001) {
+      setEditingCostGroupId(null);
+      setEditingCostVariantId(null);
+      return;
+    }
+    setCostSaving(true);
+    try {
+      const res = await fetch("/api/admin/products/bulk-price", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          product_ids: ids,
+          scope: "master_base_cost",
+          adjustment_type: "set",
+          new_value: val,
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(json?.error ?? "Failed To Update Cost");
+        return;
+      }
+      toast.success("Base Cost Updated");
+      setEditingCostGroupId(null);
+      setEditingCostVariantId(null);
+      router.refresh();
+    } catch (err: any) {
+      toast.error(err.message || "Network Error");
+    } finally {
+      setCostSaving(false);
     }
   };
 
@@ -456,6 +551,7 @@ export default function ProductCatalogClient({
                   "Product Name",
                   "Variants",
                   "Category",
+                  "Actual Cost",
                   "Base Cost",
                   "T1 Price",
                   "T2 Price",
@@ -586,20 +682,110 @@ export default function ProductCatalogClient({
                           </span>
                         </td>
 
+                        {/* Actual cost per unit */}
+                        <td
+                          title="Click to edit Actual Cost"
+                          style={{
+                            padding: "var(--space-3)",
+                            fontSize: "0.85rem",
+                            fontFamily: "var(--font-brand)",
+                            color: "var(--grey-400)",
+                            cursor: "pointer",
+                            whiteSpace: "nowrap"
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (costSaving || houseCostSaving) return;
+                            setEditingHouseCostGroupId(p.id);
+                            setEditingHouseCostVariantId(null);
+                            setEditHouseCostText(p.houseCost.toFixed(2));
+                          }}
+                        >
+                          {editingHouseCostGroupId === p.id ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} onClick={e => e.stopPropagation()}>
+                              <span style={{ color: '#FFFFFF' }}>$</span>
+                              <input
+                                type="text"
+                                autoFocus
+                                className="form-input"
+                                style={{ width: 60, padding: '2px 4px', height: 24, fontSize: '0.85rem', background: 'var(--bg-metal-dark)', border: '1px solid #FFFFFF', color: '#fff' }}
+                                value={editHouseCostText}
+                                onChange={e => {
+                                  let clean = e.target.value.replace(/[^0-9.]/g, '');
+                                  const dot = clean.indexOf('.');
+                                  if (dot !== -1) {
+                                    clean = clean.slice(0, dot + 1) + clean.slice(dot + 1).replace(/\./g, '');
+                                    clean = clean.slice(0, dot + 3);
+                                  }
+                                  setEditHouseCostText(clean);
+                                }}
+                                onBlur={() => handleHouseCostSave(p.variantIds, p.houseCost)}
+                                onKeyDown={e => {
+                                  if (e.key === 'Enter') handleHouseCostSave(p.variantIds, p.houseCost);
+                                  if (e.key === 'Escape') setEditingHouseCostGroupId(null);
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 8px', background: 'rgba(255,255,255,0.05)', borderRadius: 6, border: '1px dashed rgba(255,255,255,0.3)', transition: 'all 0.2s' }} onMouseOver={e => e.currentTarget.style.background='rgba(255,255,255,0.1)'} onMouseOut={e => e.currentTarget.style.background='rgba(255,255,255,0.05)'}>
+                              <div style={{ color: '#FFFFFF', fontWeight: 600 }}>${p.houseCost.toFixed(2)}</div>
+                              <span style={{ fontSize: '0.65rem', color: '#FFFFFF', textTransform: 'uppercase', fontWeight: 700, marginLeft: 4 }}>Edit</span>
+                            </div>
+                          )}
+                        </td>
+
                         {/* Base cost per unit */}
                         <td
+                          title="Click to edit Base Cost"
                           style={{
                             padding: "var(--space-3)",
                             fontSize: "0.85rem",
                             fontFamily: "var(--font-brand)",
                             color: "var(--grey-400)",
                             whiteSpace: "nowrap",
+                            cursor: "pointer",
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingCostGroupId(p.id);
+                            setEditingCostVariantId(null);
+                            setEditCostText(p.baseCost.toFixed(2));
                           }}
                         >
-                          ${(p.houseCost / 10).toFixed(2)}
-                          <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.18)', marginTop: 2, fontFamily: 'var(--font-brand)' }}>
-                            2x: ${(p.baseCost * 2 / 10).toFixed(2)}
-                          </div>
+                          {editingCostGroupId === p.id ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} onClick={e => e.stopPropagation()}>
+                              <span style={{ color: '#00E5FF' }}>$</span>
+                              <input
+                                type="text"
+                                autoFocus
+                                className="form-input"
+                                style={{ width: 60, padding: '2px 4px', height: 24, fontSize: '0.85rem', background: 'var(--bg-metal-dark)', border: '1px solid #00E5FF', color: '#fff' }}
+                                value={editCostText}
+                                onChange={e => {
+                                  let clean = e.target.value.replace(/[^0-9.]/g, '');
+                                  const dot = clean.indexOf('.');
+                                  if (dot !== -1) {
+                                    clean = clean.slice(0, dot + 1) + clean.slice(dot + 1).replace(/\./g, '');
+                                    clean = clean.slice(0, dot + 3);
+                                  }
+                                  setEditCostText(clean);
+                                }}
+                                onBlur={() => handleCostSave(p.variantIds, p.baseCost)}
+                                onKeyDown={e => {
+                                  if (e.key === 'Enter') handleCostSave(p.variantIds, p.baseCost);
+                                  if (e.key === 'Escape') setEditingCostGroupId(null);
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 8px', background: 'rgba(0,229,255,0.05)', borderRadius: 6, border: '1px dashed rgba(0,229,255,0.3)', transition: 'all 0.2s' }} onMouseOver={e => e.currentTarget.style.background='rgba(0,229,255,0.1)'} onMouseOut={e => e.currentTarget.style.background='rgba(0,229,255,0.05)'}>
+                              <div>
+                                <div style={{ color: '#00E5FF', fontWeight: 600 }}>${p.baseCost.toFixed(2)}</div>
+                                
+                              </div>
+                              <span style={{ fontSize: '0.65rem', color: '#00E5FF', textTransform: 'uppercase', fontWeight: 700, marginLeft: 4 }}>Edit</span>
+                            </div>
+                          )}
                         </td>
 
                         {/* Tier prices per unit */}
@@ -751,20 +937,110 @@ export default function ProductCatalogClient({
                               </td>
                               <td />
                               <td />
+                              {/* Per-unit Actual cost */}
+                              <td
+                                title="Click to edit Actual Cost"
+                                style={{
+                                  padding: "var(--space-2) var(--space-3)",
+                                  fontSize: "0.82rem",
+                                  fontFamily: "var(--font-brand)",
+                                  color: "var(--grey-500)",
+                                  cursor: "pointer",
+                                  whiteSpace: "nowrap"
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (costSaving || houseCostSaving) return;
+                                  setEditingHouseCostVariantId(v.id);
+                                  setEditingHouseCostGroupId(null);
+                                  setEditHouseCostText(vHouse.toFixed(2));
+                                }}
+                              >
+                                {editingHouseCostVariantId === v.id ? (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} onClick={e => e.stopPropagation()}>
+                                    <span style={{ color: '#FFFFFF' }}>$</span>
+                                    <input
+                                      type="text"
+                                      autoFocus
+                                      className="form-input"
+                                      style={{ width: 50, padding: '2px 4px', height: 22, fontSize: '0.80rem', background: 'var(--bg-metal-dark)', border: '1px solid #FFFFFF', color: '#fff' }}
+                                      value={editHouseCostText}
+                                      onChange={e => {
+                                        let clean = e.target.value.replace(/[^0-9.]/g, '');
+                                        const dot = clean.indexOf('.');
+                                        if (dot !== -1) {
+                                          clean = clean.slice(0, dot + 1) + clean.slice(dot + 1).replace(/\./g, '');
+                                          clean = clean.slice(0, dot + 3);
+                                        }
+                                        setEditHouseCostText(clean);
+                                      }}
+                                      onBlur={() => handleHouseCostSave([v.id], vHouse)}
+                                      onKeyDown={e => {
+                                        if (e.key === 'Enter') handleHouseCostSave([v.id], vHouse);
+                                        if (e.key === 'Escape') setEditingHouseCostVariantId(null);
+                                      }}
+                                    />
+                                  </div>
+                                ) : (
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 6px', background: 'rgba(255,255,255,0.03)', borderRadius: 4, border: '1px dashed rgba(255,255,255,0.2)', transition: 'all 0.2s' }} onMouseOver={e => e.currentTarget.style.background='rgba(255,255,255,0.08)'} onMouseOut={e => e.currentTarget.style.background='rgba(255,255,255,0.03)'}>
+                                    <div style={{ color: '#FFFFFF', fontWeight: 600 }}>${vHouse.toFixed(2)}</div>
+                                    <span style={{ fontSize: '0.60rem', color: '#FFFFFF', textTransform: 'uppercase', fontWeight: 700, marginLeft: 2 }}>Edit</span>
+                                  </div>
+                                )}
+                              </td>
+
                               {/* Per-unit base cost */}
                               <td
+                                title="Click to edit Base Cost"
                                 style={{
                                   padding: "var(--space-2) var(--space-3)",
                                   fontSize: "0.82rem",
                                   fontFamily: "var(--font-brand)",
                                   color: "var(--grey-500)",
                                   whiteSpace: "nowrap",
+                                  cursor: "pointer",
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingCostVariantId(v.id);
+                                  setEditingCostGroupId(null);
+                                  setEditCostText(vCost.toFixed(2));
                                 }}
                               >
-                                ${(vHouse / 10).toFixed(2)}
-                                <div style={{ fontSize: '0.60rem', color: 'rgba(255,255,255,0.15)', marginTop: 1, fontFamily: 'var(--font-brand)' }}>
-                                  2x: ${(vCost * 2 / 10).toFixed(2)}
-                                </div>
+                                {editingCostVariantId === v.id ? (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} onClick={e => e.stopPropagation()}>
+                                    <span style={{ color: '#00E5FF' }}>$</span>
+                                    <input
+                                      type="text"
+                                      autoFocus
+                                      className="form-input"
+                                      style={{ width: 60, padding: '2px 4px', height: 24, fontSize: '0.82rem', background: 'var(--bg-metal-dark)', border: '1px solid #00E5FF', color: '#fff' }}
+                                      value={editCostText}
+                                      onChange={e => {
+                                        let clean = e.target.value.replace(/[^0-9.]/g, '');
+                                        const dot = clean.indexOf('.');
+                                        if (dot !== -1) {
+                                          clean = clean.slice(0, dot + 1) + clean.slice(dot + 1).replace(/\./g, '');
+                                          clean = clean.slice(0, dot + 3);
+                                        }
+                                        setEditCostText(clean);
+                                      }}
+                                      onBlur={() => handleCostSave([v.id], vCost)}
+                                      onKeyDown={e => {
+                                        if (e.key === 'Enter') handleCostSave([v.id], vCost);
+                                        if (e.key === 'Escape') setEditingCostVariantId(null);
+                                      }}
+                                    />
+                                  </div>
+                                ) : (
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 6px', background: 'rgba(0,229,255,0.03)', borderRadius: 4, border: '1px dashed rgba(0,229,255,0.2)', transition: 'all 0.2s' }} onMouseOver={e => e.currentTarget.style.background='rgba(0,229,255,0.08)'} onMouseOut={e => e.currentTarget.style.background='rgba(0,229,255,0.03)'}>
+                                    <div>
+                                      <div style={{ color: '#00E5FF', fontWeight: 600 }}>${vCost.toFixed(2)}</div>
+                                      
+                                    </div>
+                                    <span style={{ fontSize: '0.60rem', color: '#00E5FF', textTransform: 'uppercase', fontWeight: 700, marginLeft: 2 }}>Edit</span>
+                                  </div>
+                                )}
                               </td>
                               {/* Per-unit tier prices */}
                               <td
@@ -854,7 +1130,7 @@ export default function ProductCatalogClient({
               ) : (
                 <tr>
                   <td
-                    colSpan={11}
+                    colSpan={12}
                     style={{ padding: "var(--space-12)", textAlign: "center" }}
                   >
                     <p

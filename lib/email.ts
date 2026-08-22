@@ -1159,3 +1159,36 @@ export async function sendPasswordChangedEmail(params: {
     template: 'password_changed',
   });
 }
+
+/**
+ * Payment-action reminder (the 12-hour confirmation loop's email fallback).
+ * Sent by /api/cron/payment-confirmations ONLY to recipients with no active
+ * push subscription - most staff accounts have never enabled push, so
+ * without this the "Did You Send/Receive Payment?" loop was invisible to
+ * them outside the in-app bell.
+ */
+export async function sendPaymentActionReminderEmail(params: {
+  to: string;
+  fullName?: string | null;
+  title: string;
+  bodyText: string;
+  actionUrl: string;
+  actionLabel: string;
+}): Promise<SendEmailResult> {
+  const name = (params.fullName || '').trim() || 'There';
+  const url = params.actionUrl.startsWith('http') ? params.actionUrl : `${SITE}${params.actionUrl}`;
+  const html = layout(`
+    <h1 style="font-size:20px;color:#FFFFFF;margin:0 0 12px;">${escapeHtml(params.title)}</h1>
+    <p style="font-size:14px;line-height:1.7;margin:0 0 24px;">
+      Hi ${escapeHtml(name)}, ${escapeHtml(params.bodyText)}
+    </p>
+    ${button(url, params.actionLabel)}
+  `, { preheader: params.title });
+  return sendEmail({
+    to: params.to,
+    subject: params.title,
+    html,
+    text: `Hi ${name}, ${params.bodyText} ${url}`,
+    template: 'payment_action_reminder',
+  });
+}

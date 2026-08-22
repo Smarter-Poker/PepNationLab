@@ -69,7 +69,12 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
  * subscription must be dropped and re-created.
  */
 function applicationServerKeyMatches(existing: ArrayBuffer | null, want: Uint8Array): boolean {
-  if (!existing) return false;
+  // Safari and some older browsers may return null or omit the options object.
+  // If we cannot verify the key, we MUST assume it matches. If we return false,
+  // we explicitly destroy valid subscriptions, and then fail to re-subscribe in
+  // background sync contexts because iOS blocks subscribe() outside of a user gesture.
+  if (!existing) return true;
+  
   const a = new Uint8Array(existing);
   if (a.length !== want.length) return false;
   for (let i = 0; i < a.length; i++) {

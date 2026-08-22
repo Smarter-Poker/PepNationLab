@@ -220,7 +220,11 @@ export async function GET(req: Request) {
             .select('id, agent_id')
             .in('agent_id', prepaidIds)
             .in('status', ['approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered'])
-            .is('payment_confirmed_at', null)
+            // Upline settlement acknowledgment moved to its own column
+            // (2026-08-18); payment_confirmed_at is the buyer-payment
+            // confirmation and counting it here nudged uplines about orders
+            // they could never actually confirm.
+            .is('upline_payment_confirmed_at', null)
             .gt('created_at', thirtyDaysAgoIso)
             .limit(300);
 
@@ -238,8 +242,9 @@ export async function GET(req: Request) {
                 userId: parentId,
                 type: 'payment_reminder',
                 title: `${count} Downline Payments To Confirm`,
-                body: `You Have ${count} Prepaid Downline Orders Awaiting Your Payment Confirmation.`,
-                url: WALLET_URL,
+                body: `You Have ${count} Prepaid Downline Orders Awaiting Your Payment Confirmation. Open Your Orders To Confirm Each One.`,
+                // The confirm buttons live on the ORDERS tab, not the wallet.
+                url: '/dashboard/agent?tab=Orders',
               });
               prepaidPromptsSent++;
             } catch (err) {

@@ -53,8 +53,8 @@ export async function GET() {
           const pid = row.product_id as string;
           if (!pid) continue;
           // DB prices are per-10-vial pack; bundles show per-vial totals.
-          const agentCost = (costMap.get(pid) ?? 0) / 10;
-          const retail = Number(row.retail_price ?? 0) / 10;
+          const agentCost = (costMap.get(pid) ?? 0);
+          const retail = Number(row.retail_price ?? 0);
           priceMap.set(pid, { agent_cost: agentCost, retail_price: retail });
         }
       }

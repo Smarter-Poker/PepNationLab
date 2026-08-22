@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { requireAgent } from '@/lib/admin-auth';
+// requireAgentOrAdmin: admins operate their own house storefront through
+// these agent routes (every check below is ownership-scoped), and the plain
+// requireAgent gate 403'd the admin's own dashboard buttons.
+import { requireAgentOrAdmin } from '@/lib/admin-auth';
 import { pickOne } from '@/lib/relations';
 import { computeAgentCostForAgent, type AgentTier } from '@/lib/pricing';
 import { enqueueWebhook, fetchOrderForWebhook } from '@/lib/webhook-dispatch';
@@ -13,6 +16,7 @@ import { logError } from '@/lib/log';
 import { notifyOrderApproved, notifyOrderCancelled, notifyOrderAwaitingApproval, notifyAdmins } from '@/lib/notify';
 import { emailConfigured, sendOrderApprovedEmail, sendOrderCancelledEmail } from '@/lib/email';
 import { logOrderEvent } from '@/lib/order-events';
+import { recomputeBillingForCancelledOrder } from '@/lib/statement-recompute';
 
 /**
  * Resolve a buyer's best deliverable email: verified contact email first,
@@ -46,7 +50,7 @@ export async function POST(req: NextRequest) {
   if (csrf) return csrf;
 
   try {
-    const gate = await requireAgent();
+    const gate = await requireAgentOrAdmin();
     if (!gate.ok) return gate.response;
 
     const supabase = createAdminClient();
@@ -86,6 +90,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Order Is No Longer Pending Approval' }, { status: 400 });
     }
 
+    // PAYMENT-BEFORE-SHIPMENT GATE. A ship order whose buyer pays per order
+    // (offline P2P - anything except a credit-line account billed weekly)
+    // must have its payment RECEIPT confirmed by the agent before it can be
+    // approved to ship. Before this gate, "Approve Order" was offered while
+    // the order was still pending payment, so orders shipped with
+    // payment_confirmed_at NULL forever. Pickup orders are exempt: the
+    // hand-off is in person and payment usually changes hands at pickup.
+    if (newStatus === 'approved_ship' && order.buyer_id && !order.payment_confirmed_at) {
+      const { data: buyerProf } = await supabase
+        .from('profiles')
+        .select('account_type')
+        .eq('id', order.buyer_id)
+        .maybeSingle();
+      const buyerPaysPerOrder = buyerProf?.account_type !== 'credit';
+      if (buyerPaysPerOrder) {
+        return NextResponse.json(
+          {
+            error: 'Confirm Payment First. Tap "Did You Receive Payment?" On This Order Before Approving It To Ship.',
+            code: 'payment_confirmation_required',
+          },
+          { status: 409 }
+        );
+      }
+    }
+
     if (newStatus === 'cancelled') {
       const { error: cancelError } = await supabase.rpc('cancel_order', {
         p_order_id: orderId,
@@ -97,6 +126,9 @@ export async function POST(req: NextRequest) {
         console.error('Cancel order RPC failed:', cancelError.message);
         return NextResponse.json({ error: 'Failed To Cancel Order. Please Try Again.' }, { status: 500 });
       }
+
+      // Re-settle any weekly bill this order was already rolled into.
+      await recomputeBillingForCancelledOrder(supabase, orderId, callerId).catch(() => { /* best-effort */ });
       try {
         const orderPayload = await fetchOrderForWebhook(supabase, orderId);
         if (orderPayload) {
@@ -209,6 +241,12 @@ export async function POST(req: NextRequest) {
         .in('status', ['pending_customer_payment', 'agent_approval_pending'])
         .select('id');
       if (manuErr) {
+        if (String(manuErr.message || '').includes('payment_confirmation_required')) {
+          return NextResponse.json(
+            { error: 'Confirm Payment First. Tap "Did You Receive Payment?" On This Order Before Approving It To Ship.', code: 'payment_confirmation_required' },
+            { status: 409 },
+          );
+        }
         logError('agent.orders.approve.manufacturer_claim', { orderId, agentId: order.agent_id }, manuErr);
         captureError(manuErr, { context: 'agent.orders.approve.manufacturer_claim', orderId });
         return NextResponse.json({ error: 'Failed To Update Order Status' }, { status: 500 });
@@ -260,14 +298,18 @@ export async function POST(req: NextRequest) {
     for (const item of items) {
       const qty = Number(item.quantity) || 0;
       if (qty <= 0) continue;
+      // computeAgentCostForAgent returns a PER-VIAL cost (base_cost is
+      // per-vial) and qty counts individual vials. Nothing is sold or billed
+      // in 10-packs, so no divisor applies. The /10 that used to be on these
+      // two fallbacks under-billed them 10x.
       if (isSubAgentOrder) {
         const stored = Number(item.unit_super_agent_cost);
         if (Number.isFinite(stored) && stored >= 0) totalCogs += stored * qty;
-        else if (item.product_id) totalCogs += (await computeAgentCostForAgent(supabase, item.product_id, primaryBilledAgentId, billedAgentTier) / 10) * qty;
+        else if (item.product_id) totalCogs += (await computeAgentCostForAgent(supabase, item.product_id, primaryBilledAgentId, billedAgentTier)) * qty;
       } else {
         const stored = Number(item.unit_cost_price);
         if (Number.isFinite(stored) && stored >= 0) totalCogs += stored * qty;
-        else if (item.product_id) totalCogs += (await computeAgentCostForAgent(supabase, item.product_id, primaryBilledAgentId, billedAgentTier) / 10) * qty;
+        else if (item.product_id) totalCogs += (await computeAgentCostForAgent(supabase, item.product_id, primaryBilledAgentId, billedAgentTier)) * qty;
       }
     }
 
@@ -356,6 +398,13 @@ export async function POST(req: NextRequest) {
       .in('status', ['pending_customer_payment', 'agent_approval_pending'])
       .select('id');
     if (updateError) {
+      // DB ship gate (defense in depth behind the route-level check above).
+      if (String(updateError.message || '').includes('payment_confirmation_required')) {
+        return NextResponse.json(
+          { error: 'Confirm Payment First. Tap "Did You Receive Payment?" On This Order Before Approving It To Ship.', code: 'payment_confirmation_required' },
+          { status: 409 },
+        );
+      }
       logError('agent.orders.approve.claim_update', { orderId, agentId: primaryBilledAgentId }, updateError);
       captureError(updateError, { context: 'agent.orders.approve.claim_update', orderId });
       return NextResponse.json({ error: 'Failed To Update Order Status' }, { status: 500 });
@@ -368,7 +417,19 @@ export async function POST(req: NextRequest) {
     let oldBalance = 0;
     if (primaryProfile.account_type === 'prepaid') {
       oldBalance = Number(primaryProfile.prepaid_balance) || 0;
-      const { data: deductSuccess, error: deductError } = await supabase.rpc('deduct_prepaid_balance', { agent_id: primaryBilledAgentId, amount: totalOwed });
+      // p_order_id is REQUIRED. Omitting it wrote a ledger row with a NULL
+      // reference_id, and admin_charge_order_billing's "already charged?" guard
+      // keys on that reference - so a prepaid order parked at the admin gate
+      // was charged a SECOND time on release. That happened in production
+      // (order 0369167d, charged $56.48 twice). It also made the debit
+      // invisible to every reversal and cancellation path, which all look the
+      // order up by reference_id.
+      const { data: deductSuccess, error: deductError } = await supabase.rpc('deduct_prepaid_balance', {
+        agent_id: primaryBilledAgentId,
+        amount: totalOwed,
+        p_order_id: orderId,
+        p_description: `Order charge (${String(orderId).slice(0, 8)})`,
+      });
       if (deductError || !deductSuccess) {
         // Money did not move -- release the claim so the agent can retry.
         const { error: revertErr } = await supabase

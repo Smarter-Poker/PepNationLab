@@ -35,7 +35,7 @@ export interface StoreTop10Item {
   subtitle: string | null;
   /** e.g. "10mg Vials" - same format as the store card */
   sizeLabel: string;
-  /** Per-vial display price, same math as the store card (retail / 10, sale-aware) */
+  /** Per-vial display price, same math as the store card (retail_price, sale-aware) */
   price: number;
   /** Pre-sale per-vial price when the default variant is on sale, else null */
   originalPrice: number | null;
@@ -262,9 +262,12 @@ async function fetchStoreTop10(): Promise<StoreTop10Item[]> {
       const v = pickDefaultVariant(g.variants);
       const size = v.products?.unit_size || '10';
       const measure = v.products?.unit_measure || 'mg';
-      const perVialBase = v.retail_price / 10;
+      const perVialBase = v.retail_price;
       const onSale = Boolean(v.is_on_sale && v.sale_price);
-      const perVialDisplay = onSale ? (v.sale_price as number) / 10 : perVialBase;
+      // Both retail_price and sale_price are stored PER VIAL. The /10 that
+      // used to be on the sale branch only made on-sale prices render at a
+      // tenth of their real value.
+      const perVialDisplay = onSale ? (v.sale_price as number) : perVialBase;
       const isBW = isBacWaterItem(g.name, v.products?.compound_slug);
 
       const base = g.name.replace(/\s*\(.*\)\s*$/, '').trim();

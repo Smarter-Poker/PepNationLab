@@ -154,7 +154,7 @@ export async function notifyDownlineOrderPlaced(
     type: 'order_placed',
     title: `Downline Sale: Order #${shortId}`,
     body: `A ${totalFormatted} Order Was Just Placed On ${storeLabel} In Your Downline.`,
-    url: `/dashboard/agent?tab=Orders`,
+    url: `/dashboard/agent?tab=Orders&order=${encodeURIComponent(shortId)}`,
   });
 }
 
@@ -171,7 +171,7 @@ export async function notifyOrderAwaitingApproval(
     type: 'order_attention',
     title: `Order #${shortId} Awaits Your Approval`,
     body: `A ${totalFormatted} Order Has Been Forwarded To You For Approval. Please Review It Now.`,
-    url: `/dashboard/agent?tab=Orders`,
+    url: `/dashboard/agent?tab=Orders&order=${encodeURIComponent(shortId)}`,
   });
 }
 
@@ -196,7 +196,9 @@ export async function notifyOrderAttention(
     type: 'order_attention',
     title,
     body,
-    url: opts.url ?? (opts.who === 'admin' ? '/admin/orders' : '/dashboard/agent?tab=Orders'),
+    url: opts.url ?? (opts.who === 'admin'
+      ? `/admin/orders?search=${encodeURIComponent(opts.shortId)}`
+      : `/dashboard/agent?tab=Orders&order=${encodeURIComponent(opts.shortId)}`),
   });
 }
 
@@ -218,7 +220,7 @@ export async function notifyOrderPlaced(
     type: 'order_placed',
     title: `New Order #${shortId}`,
     body: `${researcherName} placed a new order on your storefront.`,
-    url: `/dashboard/agent?tab=orders`,
+    url: `/dashboard/agent?tab=Orders&order=${encodeURIComponent(shortId)}`,
     withPush: false,
   });
 }
@@ -284,7 +286,7 @@ export async function notifyCommissionEarned(
     type: 'commission_earned',
     title: `Commission Earned: ${amountFormatted}`,
     body: 'A commission has been credited to your account.',
-    url: `/dashboard/agent?tab=commissions`,
+    url: `/dashboard/agent?tab=Sales+%26+Accounting`,
   });
 }
 
@@ -299,7 +301,37 @@ export async function notifyNewResearcher(
     type: 'new_researcher',
     title: `New Researcher: ${researcherName}`,
     body: `${researcherName} has joined your team.`,
-    url: `/dashboard/agent?tab=researchers`,
+    url: `/dashboard/agent?tab=Researchers`,
+  });
+}
+
+/**
+ * Welcome notification for newly created agent / super_agent / sub_agent accounts.
+ *
+ * Sent immediately after account creation so the user's Notifications tab has
+ * a friendly "Let's Complete Your Profile" prompt waiting on first login.
+ * Clicking it deep-links to Storefront Config where they can add payment
+ * handles, set a display name, etc — completely at their own pace.
+ */
+export async function notifyWelcome(
+  supabase: SupabaseClient,
+  userId: string,
+  role: 'agent' | 'super_agent' | 'sub_agent',
+) {
+  const isSubAgent = role === 'sub_agent';
+  const dashUrl = isSubAgent
+    ? '/dashboard/agent?tab=Overview'
+    : '/dashboard/agent?tab=Storefront+Config';
+
+  await notify(supabase, {
+    userId,
+    type: 'system',
+    title: `Welcome To Pep Nation Lab 🎉`,
+    body: isSubAgent
+      ? `Your account is ready. Head to your dashboard to get started.`
+      : `Your account is ready! Click here to complete your profile, add your payment handles, set a display name, and configure your storefront whenever you're ready.`,
+    url: dashUrl,
+    withPush: false, // first-login push permission isn't granted yet
   });
 }
 
@@ -332,7 +364,7 @@ export async function notifyCommissionPayout(
     type: 'commission_earned',
     title: `Commission Payout: ${fmt}`,
     body: `Your commission payout of ${fmt} has been processed via ${method}.`,
-    url: `/dashboard/agent?tab=commissions`,
+    url: `/dashboard/agent?tab=Sales+%26+Accounting`,
   });
 }
 
@@ -348,7 +380,7 @@ export async function notifyInvoiceGenerated(
     type: 'invoice',
     title: `Invoice Generated: Week of ${weekStart}`,
     body: `An invoice for $${totalOwed.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} has been generated for the week of ${weekStart}.`,
-    url: `/dashboard/agent?tab=statements`,
+    url: `/dashboard/agent?tab=Sales+%26+Accounting`,
   });
 }
 
@@ -364,7 +396,7 @@ export async function notifyPaymentReminder(
     type: 'payment_reminder',
     title: `Payment Due: ${invoiceSubject}`,
     body: `Reminder: Your invoice for $${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} is overdue. Please make payment promptly.`,
-    url: `/dashboard/agent?tab=statements`,
+    url: `/dashboard/agent?tab=Sales+%26+Accounting`,
   });
 }
 
@@ -413,7 +445,7 @@ export async function notifyTierLevelUp(
     type: 'tier_levelup',
     title: `Level Up: ${newLevelName}`,
     body: `Achievement Unlocked. You reached the ${newLevelName} tier - your Agent Cost just dropped. Keep the momentum going.`,
-    url: '/dashboard/agent?tab=overview',
+    url: '/dashboard/agent?tab=Overview',
   });
 }
 
@@ -459,7 +491,7 @@ export async function notifyBalanceRecharge(
     type: 'system',
     title: `Account Balance Updated: +$${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
     body: description ?? `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} has been added to your account balance.`,
-    url: `/dashboard/agent?tab=balance`,
+    url: `/dashboard/agent?tab=Sales+%26+Accounting`,
   });
 }
 
@@ -491,7 +523,7 @@ export async function notifyPromotionSuccess(
     type: 'new_researcher',
     title: `${promotedName} Promoted to Sub-Agent`,
     body: `${promotedName} is now a Sub-Agent on your team. Storefront: /${agentSlug}.`,
-    url: `/dashboard/agent?tab=team`,
+    url: `/dashboard/agent?tab=My+Sub-Agents`,
   });
 }
 
@@ -639,7 +671,7 @@ export async function notifyMarginWarning(
     type: 'system',
     title: `Low Margin Warning`,
     body: `Your Sub-Agents are currently earning a higher profit than you on some products. While you are still making the minimum 10% profit, you should consider raising your retail prices.`,
-    url: `/dashboard/agent?tab=products`,
+    url: `/dashboard/agent?tab=Store+Products`,
   });
 }
 
@@ -655,6 +687,6 @@ export async function notifyAccountAlert(
     type: 'system',
     title,
     body,
-    url: `/dashboard/agent?tab=balance`,
+    url: `/dashboard/agent?tab=Sales+%26+Accounting`,
   });
 }

@@ -292,6 +292,31 @@ export default function MonographTabs({ compound, related = [], coaUrl = null }:
             </span>
           )}
         </div>
+
+        {/* E-E-A-T Medical Review Badge (Visible UI for Google Quality Raters) */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 'var(--space-4)' }}>
+          <Link 
+            href="/research/methodology" 
+            style={{ 
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              gap: 8, 
+              padding: '6px 14px', 
+              background: 'rgba(255,255,255,0.03)', 
+              border: '1px solid rgba(255,255,255,0.08)', 
+              borderRadius: 9999, 
+              textDecoration: 'none' 
+            }}
+            title="Read our Editorial Standards and Research Methodology"
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, borderRadius: '50%', background: '#00C4BC' }}>
+              <Check size={10} color="#000" strokeWidth={3} />
+            </div>
+            <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--silver)' }}>
+              Medically Reviewed by the <span style={{ color: 'var(--white)' }}>Pep Nation Research Board</span>
+            </span>
+          </Link>
+        </div>
       </header>
 
       {/* Tab bar */}

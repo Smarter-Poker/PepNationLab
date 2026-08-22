@@ -7,6 +7,7 @@ import { getClientIp } from '@/lib/rate-limit';
 import { StartCallSchema } from '@/lib/messenger/schemas';
 import { recordCallTelemetry } from '@/lib/messenger/callTelemetry';
 import { enqueueCallRingPush, sendCallRingPushNow } from '@/lib/messenger/callPush';
+import { livekitRoomIsEmpty, pastOccupancyGrace } from '@/lib/messenger/roomOccupancy';
 import { z } from 'zod';
 import crypto from 'crypto';
 
@@ -42,6 +43,41 @@ function callsConfigured(): boolean {
 
 
 
+/**
+ * Fan a call signal out to EVERY other participant of the conversation.
+ *
+ * Before this, `broadcastCallSignalServer` was called in exactly one place —
+ * the initial `incoming_call` ring. Every later signal (accepted / declined /
+ * ended) was broadcast CLIENT-side to a single `counterpartyId`. In a 1:1
+ * call that is the whole audience, so it worked; in a group call it meant
+ * only one of the other participants was ever told. Concretely: Daniel calls
+ * Savage and Danimal, Savage answers and later the call ends — Danimal's
+ * phone was told nothing and kept ringing a call that no longer existed.
+ *
+ * Best-effort: a broadcast failure must never fail the state transition that
+ * already committed to the database.
+ */
+async function fanOutToParticipants(
+  svc: Awaited<ReturnType<typeof createAdminClient>>,
+  conversationId: string,
+  excludeUserId: string,
+  event: 'call_accepted' | 'call_declined' | 'call_ended',
+  payload: Record<string, unknown>,
+): Promise<void> {
+  try {
+    const { data: parts } = await svc
+      .from('messenger_participants')
+      .select('user_id')
+      .eq('conversation_id', conversationId)
+      .neq('user_id', excludeUserId);
+    for (const p of ((parts ?? []) as Array<{ user_id: string }>)) {
+      try {
+        await broadcastCallSignalServer(p.user_id, event, payload);
+      } catch { /* one dead channel must not stop the rest */ }
+    }
+  } catch { /* fan-out is best-effort */ }
+}
+
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -70,6 +106,19 @@ export async function POST(req: NextRequest) {
     const callerPart = await getParticipant(parsed.data.conversationId, user.id);
     if (!callerPart) return NextResponse.json({ error: 'Not A Participant' }, { status: 403 });
 
+    // Group-call support: the client needs to know whether this call belongs
+    // to a group conversation (join-in-progress semantics, keep ringing after
+    // first accept) or a direct one (classic 1:1). type/title are not columns
+    // on messenger_calls, so they ride along on the broadcast payload and the
+    // API response instead.
+    const { data: convRow } = await svc
+      .from('messenger_conversations')
+      .select('type, title')
+      .eq('id', parsed.data.conversationId)
+      .maybeSingle();
+    const convType = ((convRow as { type?: string } | null)?.type ?? 'direct') as 'direct' | 'group' | 'announcement';
+    const convTitle = (convRow as { title?: string | null } | null)?.title ?? null;
+
     const { data: others } = await svc
       .from('messenger_participants')
       .select('user_id')
@@ -96,8 +145,74 @@ export async function POST(req: NextRequest) {
       .order('started_at', { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (existingCall) {
-      return NextResponse.json({ call: existingCall, alreadyActive: true });
+    // Is that existing row a LIVE call, or wreckage?
+    //
+    // Reusing it unconditionally was a trap. If a call ends badly — everyone's
+    // network drops at once, or the last person's tab is killed while
+    // backgrounded — nobody is left to write status='ended', and the row sits
+    // there 'active'. The stale-call sweep only collects rows four hours old,
+    // so for four hours every single attempt to call in this conversation
+    // short-circuited to THIS branch: no new row, no ring, no push, everyone
+    // dropped silently into a LiveKit room that had been empty for hours. One
+    // bad call bricked the conversation for the rest of the evening — exactly
+    // when you would be trying hardest to get back on.
+    //
+    // A genuinely live call is one that is still ringing, or that was answered
+    // recently enough to plausibly still be going. Anything older with no
+    // participants is wreckage: end it and start fresh.
+    const REJOINABLE_ACTIVE_MS = 90 * 60 * 1000; // 90 minutes
+    const existingRow = existingCall as CallRow | null;
+    const answeredMs = existingRow?.answered_at ? Date.parse(existingRow.answered_at) : NaN;
+    let looksLive =
+      existingRow?.status === 'ringing' ||
+      (existingRow?.status === 'active' &&
+        Number.isFinite(answeredMs) &&
+        Date.now() - answeredMs < REJOINABLE_ACTIVE_MS);
+
+    // Age alone is not proof of life (owner report 2026-08-19). An 'active'
+    // row younger than 90 minutes whose LiveKit room is EMPTY is wreckage:
+    // reusing it would drop the caller alone into a dead room AND ring
+    // nobody. Ask LiveKit; on 'null' (check failed) keep the age-based
+    // answer, never end a call because a status probe errored.
+    if (
+      looksLive &&
+      existingRow?.status === 'active' &&
+      pastOccupancyGrace(existingRow.answered_at, existingRow.started_at)
+    ) {
+      const empty = await livekitRoomIsEmpty(existingRow.livekit_room);
+      if (empty === true) looksLive = false;
+    }
+
+    if (existingRow && looksLive) {
+      // A call really is up in this conversation. Returning the row (enriched)
+      // lets the caller's client join it — for a group this is exactly the
+      // "tap the camera icon to join the ongoing call" path.
+      return NextResponse.json({
+        call: { ...existingRow, conversation_type: convType, conversation_title: convTitle },
+        alreadyActive: true,
+      });
+    }
+
+    if (existingRow) {
+      // Wreckage. Close it (compare-and-swap so a real participant hanging up
+      // at the same moment still wins) and fall through to a fresh call.
+      try {
+        await svc
+          .from('messenger_calls')
+          .update({ status: 'ended', ended_at: new Date().toISOString() })
+          .eq('id', existingRow.id)
+          .in('status', ['ringing', 'active']);
+        await recordCallTelemetry('messenger_call.stale_active_sweep', user.id, {
+          call_id: existingRow.id,
+          conversation_id: existingRow.conversation_id,
+          initiator_id: existingRow.initiator_id,
+          call_type: existingRow.call_type,
+          reason: 'stranded_before_new_call',
+        }, ip, ua);
+      } catch (err) {
+        // Never block a new call on tidying up an old one.
+        console.warn('[call-signal] could not sweep stranded call', existingRow.id, err);
+      }
     }
 
     const livekitRoom = `call-${crypto.randomUUID()}`;
@@ -144,6 +259,8 @@ export async function POST(req: NextRequest) {
         caller_name: callerName,
         caller_username: callerUsername,
         caller_avatar: callerAvatar,
+        conversation_type: convType,
+        conversation_title: convTitle,
       };
 
       for (const p of otherList) {
@@ -174,13 +291,18 @@ export async function POST(req: NextRequest) {
             type: 'incoming_call',
             title: `Incoming ${callTypeLabel} Call`,
             body: `${callerName} Is Calling You`,
-            url: '/messenger',
+            // Deep-link with ?call=<id> so tapping the bell entry while the
+            // call is still ringing auto-accepts it (GlobalCallListener reads
+            // the param) - the same behavior the web-push tap already has.
+            url: `/messenger?call=${(inserted as CallRow).id}`,
           }))
         );
       } catch { /* in-app notification is best-effort */ }
     }
 
-    return NextResponse.json({ call: inserted });
+    return NextResponse.json({
+      call: { ...inserted, conversation_type: convType, conversation_title: convTitle },
+    });
   }
 
   const callId = parsed.data.callId;
@@ -198,8 +320,24 @@ export async function POST(req: NextRequest) {
     if ((call as CallRow).initiator_id === user.id) {
       return NextResponse.json({ error: 'Initiator Cannot Accept Own Call' }, { status: 400 });
     }
+    if ((call as CallRow).status === 'active') {
+      // GROUP CALLS: the first accept flips ringing -> active; every LATER
+      // accept lands here. This used to 400 ("Call Not Ringing"), which is
+      // the single rule that made 3-way calls impossible — the second
+      // accepter was told the call didn't exist and their client treated it
+      // as a decline. An active call is a call you can JOIN: any participant
+      // of the conversation may mint a LiveKit token for it, so acknowledge
+      // and let them in.
+      await recordCallTelemetry('messenger_call.join', user.id, {
+        call_id: (call as CallRow).id,
+        conversation_id: (call as CallRow).conversation_id,
+        initiator_id: (call as CallRow).initiator_id,
+        call_type: (call as CallRow).call_type,
+      }, ip, ua);
+      return NextResponse.json({ call, alreadyAccepted: true });
+    }
     if ((call as CallRow).status !== 'ringing') {
-      return NextResponse.json({ error: 'Call Not Ringing' }, { status: 400 });
+      return NextResponse.json({ error: 'Call Has Ended' }, { status: 400 });
     }
     const { data: updated, error: upErr } = await svc
       .from('messenger_calls')
@@ -228,12 +366,46 @@ export async function POST(req: NextRequest) {
       ring_ms: Math.max(0, answeredAt - startedAt),
     }, ip, ua);
 
+    // Let the rest of the conversation know this participant joined. In a
+    // group call the others keep ringing (they can still join) — but the
+    // initiator's UI needs to leave the "ringing" state, and previously only
+    // a client-side 1:1 broadcast carried that.
+    await fanOutToParticipants(
+      svc,
+      (updated as CallRow).conversation_id,
+      user.id,
+      'call_accepted',
+      updated as unknown as Record<string, unknown>,
+    );
+
     return NextResponse.json({ call: updated });
   }
 
   if (parsed.data.action === 'decline') {
     if ((call as CallRow).status !== 'ringing') {
-      return NextResponse.json({ error: 'Call Not Ringing' }, { status: 400 });
+      // Someone else already accepted (group) or the call resolved — a late
+      // decline is a no-op, not an error worth a red toast.
+      return NextResponse.json({ call, alreadyResolved: true });
+    }
+
+    // GROUP CALLS: one person declining must not tear the call down for the
+    // people still being rung — Bob declining cannot hang up on Carol. Leave
+    // the row ringing; if nobody ever accepts, the mark-missed-calls cron
+    // flips it to missed after 60s exactly as it does today.
+    const { data: declConv } = await svc
+      .from('messenger_conversations')
+      .select('type')
+      .eq('id', (call as CallRow).conversation_id)
+      .maybeSingle();
+    if (((declConv as { type?: string } | null)?.type ?? 'direct') !== 'direct') {
+      await recordCallTelemetry('messenger_call.decline', user.id, {
+        call_id: (call as CallRow).id,
+        conversation_id: (call as CallRow).conversation_id,
+        initiator_id: (call as CallRow).initiator_id,
+        call_type: (call as CallRow).call_type,
+        reason: 'group_decline',
+      }, ip, ua);
+      return NextResponse.json({ call, groupDecline: true });
     }
     const { data: updated, error: upErr } = await svc
       .from('messenger_calls')
@@ -283,13 +455,33 @@ export async function POST(req: NextRequest) {
   if ((call as CallRow).status === 'ended' || (call as CallRow).status === 'declined' || (call as CallRow).status === 'missed') {
     return NextResponse.json({ call });
   }
+  // Compare-and-swap, like accept and decline already do. Two people saying
+  // "bye" and tapping at the same instant — or the last two clients' alone-
+  // timers firing in the same second — both read 'active', both updated, and
+  // both wrote a "Call Ended" system message. The conversation showed the call
+  // ending twice. Narrowing the update to rows that are STILL live means the
+  // loser gets updated === null and writes nothing.
   const { data: updated, error: upErr } = await svc
     .from('messenger_calls')
     .update({ status: 'ended', ended_at: new Date().toISOString() })
     .eq('id', callId)
+    .in('status', ['ringing', 'active'])
     .select('*')
     .maybeSingle();
   if (upErr) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
+
+  if (updated) {
+    // Everyone still on (or still being rung by) this call learns it ended.
+    // The client only ever broadcast this to a single counterparty, which
+    // left the third person in a group call ringing a dead call.
+    await fanOutToParticipants(
+      svc,
+      (updated as CallRow).conversation_id,
+      user.id,
+      'call_ended',
+      updated as unknown as Record<string, unknown>,
+    );
+  }
 
   if (updated) {
     const u = updated as CallRow;

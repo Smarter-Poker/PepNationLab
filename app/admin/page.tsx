@@ -128,7 +128,7 @@ export default async function AdminDashboard() {
       label: 'Awaiting My Approval',
       value: String(metrics.awaitingAdminApproval),
       sub: 'Agent-Approved, Needs Admin Release',
-      href: '/admin/orders?status=approved_ship',
+      href: '/admin/orders?status=admin_approval_pending',
       color: metrics.awaitingAdminApproval > 0 ? 'var(--red)' : 'var(--grey-400)',
       icon: <svg {...ICON_PROPS}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>,
     },
@@ -203,6 +203,14 @@ export default async function AdminDashboard() {
       href: '/admin/sales',
       color: delta.direction === 'up' ? '#68D391' : delta.direction === 'down' ? 'var(--red)' : 'var(--grey-400)',
       icon: <svg {...ICON_PROPS}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>,
+    },
+    {
+      label: 'All Orders',
+      value: String(metrics.totalOrdersLast7d),
+      sub: 'All Orders \u00b7 Past 7 Days',
+      href: `/admin/orders?from=${new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10)}`,
+      color: 'var(--blue)',
+      icon: <svg {...ICON_PROPS}><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>,
     },
     {
       label: 'Site Traffic',

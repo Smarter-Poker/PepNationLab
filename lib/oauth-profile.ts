@@ -534,7 +534,7 @@ export async function ensureOAuthResearcherProfile(
         typeof updates.username === 'string'
       ) {
         updates.username = fallbackUsername(user);
-        result.username = updates.username;
+        result.username = updates.username as string;
         ({ error: updateErr } = await admin
           .from('profiles')
           .update(updates)
@@ -553,6 +553,7 @@ export async function ensureOAuthResearcherProfile(
     }
     return result;
   } catch (err) {
+    console.error('[oauth-profile] Caught exception:', err);
     result.error = err instanceof Error ? err.message : 'unknown_error';
     return result;
   }

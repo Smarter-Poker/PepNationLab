@@ -86,8 +86,8 @@ function MarketIntel({ p, priceOverride }: { p: AgentProduct; priceOverride?: nu
   const mktHigh = p.products?.market_high_price != null ? Number(p.products.market_high_price) * packFactor : null;
 
   const listedPer10 = priceOverride != null ? Number(priceOverride) : Number(p.retail_price);
-  const yourPrice = listedPer10 > 0 ? listedPer10 / (isBacWater ? 1 : 10) : null;
-  const yourCost = p.agent_cost != null && p.agent_cost > 0 ? p.agent_cost / (isBacWater ? 1 : 10) : null;
+  const yourPrice = listedPer10 > 0 ? listedPer10  : null;
+  const yourCost = p.agent_cost != null && p.agent_cost > 0 ? p.agent_cost  : null;
 
   const vsPct = yourPrice != null && mktAvg > 0 ? Math.round((yourPrice / mktAvg - 1) * 100) : null;
   // Live profit at the CURRENT listed price (priceOverride carries the
@@ -263,7 +263,7 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
       sale_price: p.sale_price,
     });
     const isBacInit = /bac\.?\s*water/i.test(p.products?.name || '');
-    setPriceText(p.retail_price > 0 ? (p.retail_price / (isBacInit ? 1 : 10)).toFixed(2) : '');
+    setPriceText(p.retail_price > 0 ? (p.retail_price ).toFixed(2) : '');
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -286,11 +286,11 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
     const maxMarginPercent = currentProduct?.products?.max_margin_percent ?? 300;
 
     if (!(listedPrice >= minRetailPrice)) {
-      toast.error(`Listed Price Cannot Be Below The Minimum Advertised Price ($${(minRetailPrice / (/bac\.?\s*water/i.test(currentProduct?.products?.name || "") ? 1 : 10)).toFixed(2)} / Vial).`);
+      toast.error(`Listed Price Cannot Be Below The Minimum Advertised Price ($${(minRetailPrice ).toFixed(2)} / Vial).`);
       return;
     }
     if (!(listedPrice >= agentCostPer10)) {
-      toast.error(`Listed Price Cannot Be Below ${costLabel} ($${(agentCostPer10 / (/bac\.?\s*water/i.test(currentProduct?.products?.name || "") ? 1 : 10)).toFixed(2)} / Vial).`);
+      toast.error(`Listed Price Cannot Be Below ${costLabel} ($${(agentCostPer10 ).toFixed(2)} / Vial).`);
       return;
     }
 
@@ -678,7 +678,7 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
                         alt={displayName}
                         width={80}
                         height={80}
-                        style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}
+                        style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'contain', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
                           if (!target.src.includes('/images/peptide_clear.png')) {
@@ -703,7 +703,7 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>{costLabel}:</span>
                             {p.agent_cost != null && p.agent_cost > 0 ? (
-                              <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>${(p.agent_cost / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Vials" : "Vial"}</span>
+                              <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>${(p.agent_cost ).toFixed(2)} / Vial</span>
                             ) : (
                               <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>TBD</span>
                             )}
@@ -729,14 +729,14 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
                                   }
                                   setPriceText(clean);
                                   const perVial = parseFloat(clean) || 0;
-                                  const stored = perVial * (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10);
+                                  const stored = perVial ;
                                   const newMargin = p.agent_cost && p.agent_cost > 0 ? Math.round((stored / p.agent_cost - 1) * 100) : editForm.margin_percent ?? 50;
                                   setEditForm({ ...editForm, retail_price: stored, margin_percent: newMargin });
                                 }}
                                 onKeyDown={e => { if (e.key === 'Enter') handleSave(e as any); }}
                               />
                             </div>
-                            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)' }}>/ {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Vials" : "Vial"}</span>
+                            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)' }}>/ Vial</span>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(0,229,255,0.1)', padding: '2px 6px', borderRadius: 4, border: '1px solid rgba(0,229,255,0.3)' }}>
                               <span style={{ fontSize: '0.65rem', color: '#00E5FF', fontWeight: 700 }}>+</span>
                               <input
@@ -749,7 +749,7 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
                                   const pct = Number(e.target.value.replace(/[^0-9-]/g, '')) || 0;
                                   const newPrice = p.agent_cost != null && p.agent_cost > 0 ? p.agent_cost * (1 + pct / 100) : editForm.retail_price;
                                   setEditForm({ ...editForm, margin_percent: pct, retail_price: newPrice });
-                                  setPriceText(Number(newPrice) > 0 ? (Number(newPrice) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2) : '');
+                                  setPriceText(Number(newPrice) > 0 ? (Number(newPrice) ).toFixed(2) : '');
                                 }}
                                 onKeyDown={e => { if (e.key === 'Enter') handleSave(e as any); }}
                               />
@@ -775,7 +775,7 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
                         width={80}
                         height={80}
                         unoptimized
-                        style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}
+                        style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'contain', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}
                         onError={(e) => { (e.target as any).src = '/images/peptide_clear.png'; }}
                       />
                       <div className="agentprod-info" style={{ flex: 1, minWidth: 0 }}>
@@ -793,7 +793,7 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>{costLabel}:</span>
                             {p.agent_cost != null && p.agent_cost > 0 ? (
-                              <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>${(p.agent_cost / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Vials" : "Vial"}</span>
+                              <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>${(p.agent_cost ).toFixed(2)} / Vial</span>
                             ) : (
                               <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>TBD</span>
                             )}
@@ -804,7 +804,7 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
                               Listed Price <Edit2 size={10} color="#00E5FF" />
                             </span>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <span style={{ fontSize: '1.05rem', color: '#00E5FF', fontWeight: 800 }}>${(Number(p.retail_price) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'rgba(255,255,255,0.4)' }}>/ {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Vials" : "Vial"}</span></span>
+                              <span style={{ fontSize: '1.05rem', color: '#00E5FF', fontWeight: 800 }}>${(Number(p.retail_price) ).toFixed(2)} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'rgba(255,255,255,0.4)' }}>/ Vial</span></span>
                               {p.agent_cost != null && p.agent_cost > 0 && p.retail_price > 0 && (
                                 <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', background: 'rgba(0,229,255,0.1)', color: '#00E5FF', border: '1px solid rgba(0,229,255,0.2)' }}>
                                   {p.retail_price >= p.agent_cost ? '+' : ''}{Math.round((p.retail_price / p.agent_cost - 1) * 100)}% Margin
@@ -812,14 +812,14 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
                               )}
                               {p.agent_cost != null && p.agent_cost > 0 && p.retail_price > 0 && (
                                 <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', background: p.retail_price >= p.agent_cost ? 'rgba(104,211,145,0.1)' : 'rgba(229,62,62,0.1)', color: p.retail_price >= p.agent_cost ? '#68D391' : '#FC8181', border: p.retail_price >= p.agent_cost ? '1px solid rgba(104,211,145,0.3)' : '1px solid rgba(229,62,62,0.3)' }}>
-                                  ${((Number(p.retail_price) - Number(p.agent_cost)) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} Profit
+                                  ${((Number(p.retail_price) - Number(p.agent_cost)) ).toFixed(2)} Profit
                                 </span>
                               )}
                             </div>
                           </div>
                           {p.is_on_sale && p.sale_price && (
                             <span style={{ fontSize: '0.7rem', color: '#FC8181', fontWeight: 700, background: 'rgba(229,62,62,0.10)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(229,62,62,0.2)' }}>
-                              On Sale ${(Number(p.sale_price) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Vials" : "Vial"}
+                              On Sale ${(Number(p.sale_price) ).toFixed(2)} / Vial
                             </span>
                           )}
                         </div>
@@ -906,7 +906,7 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
                         width={80}
                         height={80}
                         unoptimized
-                        style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}
+                        style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'contain', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}
                         onError={(e) => { (e.target as any).src = '/images/peptide_clear.png'; }}
                       />
                       <div className="agentprod-info" style={{ flex: 1, minWidth: 0 }}>
@@ -924,7 +924,7 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>{costLabel}:</span>
                             {p.agent_cost != null && p.agent_cost > 0 ? (
-                              <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>${(p.agent_cost / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Vials" : "Vial"}</span>
+                              <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>${(p.agent_cost ).toFixed(2)} / Vial</span>
                             ) : (
                               <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>TBD</span>
                             )}
@@ -950,14 +950,14 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
                                   }
                                   setPriceText(clean);
                                   const perVial = parseFloat(clean) || 0;
-                                  const stored = perVial * (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10);
+                                  const stored = perVial ;
                                   const newMargin = p.agent_cost && p.agent_cost > 0 ? Math.round((stored / p.agent_cost - 1) * 100) : editForm.margin_percent ?? 50;
                                   setEditForm({ ...editForm, retail_price: stored, margin_percent: newMargin });
                                 }}
                                 onKeyDown={e => { if (e.key === 'Enter') handleSave(e as any); }}
                               />
                             </div>
-                            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)' }}>/ {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Vials" : "Vial"}</span>
+                            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)' }}>/ Vial</span>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(0,229,255,0.1)', padding: '2px 6px', borderRadius: 4, border: '1px solid rgba(0,229,255,0.3)' }}>
                               <span style={{ fontSize: '0.65rem', color: '#00E5FF', fontWeight: 700 }}>+</span>
                               <input
@@ -970,7 +970,7 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
                                   const pct = Number(e.target.value.replace(/[^0-9-]/g, '')) || 0;
                                   const newPrice = p.agent_cost != null && p.agent_cost > 0 ? p.agent_cost * (1 + pct / 100) : editForm.retail_price;
                                   setEditForm({ ...editForm, margin_percent: pct, retail_price: newPrice });
-                                  setPriceText(Number(newPrice) > 0 ? (Number(newPrice) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2) : '');
+                                  setPriceText(Number(newPrice) > 0 ? (Number(newPrice) ).toFixed(2) : '');
                                 }}
                                 onKeyDown={e => { if (e.key === 'Enter') handleSave(e as any); }}
                               />
@@ -996,7 +996,7 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
                         width={80}
                         height={80}
                         unoptimized
-                        style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}
+                        style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'contain', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}
                         onError={(e) => { (e.target as any).src = '/images/peptide_clear.png'; }}
                       />
                       <div className="agentprod-info" style={{ flex: 1, minWidth: 0 }}>
@@ -1014,7 +1014,7 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>{costLabel}:</span>
                             {p.agent_cost != null && p.agent_cost > 0 ? (
-                              <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>${(p.agent_cost / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Vials" : "Vial"}</span>
+                              <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>${(p.agent_cost ).toFixed(2)} / Vial</span>
                             ) : (
                               <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>TBD</span>
                             )}
@@ -1025,7 +1025,7 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
                               Listed Price <Edit2 size={10} color="#00E5FF" />
                             </span>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <span style={{ fontSize: '1.05rem', color: '#00E5FF', fontWeight: 800 }}>${(Number(p.retail_price) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'rgba(255,255,255,0.4)' }}>/ {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Vials" : "Vial"}</span></span>
+                              <span style={{ fontSize: '1.05rem', color: '#00E5FF', fontWeight: 800 }}>${(Number(p.retail_price) ).toFixed(2)} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'rgba(255,255,255,0.4)' }}>/ Vial</span></span>
                               {p.agent_cost != null && p.agent_cost > 0 && p.retail_price > 0 && (
                                 <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', background: 'rgba(0,229,255,0.1)', color: '#00E5FF', border: '1px solid rgba(0,229,255,0.2)' }}>
                                   {p.retail_price >= p.agent_cost ? '+' : ''}{Math.round((p.retail_price / p.agent_cost - 1) * 100)}% Margin
@@ -1033,14 +1033,14 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
                               )}
                               {p.agent_cost != null && p.agent_cost > 0 && p.retail_price > 0 && (
                                 <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', background: p.retail_price >= p.agent_cost ? 'rgba(104,211,145,0.1)' : 'rgba(229,62,62,0.1)', color: p.retail_price >= p.agent_cost ? '#68D391' : '#FC8181', border: p.retail_price >= p.agent_cost ? '1px solid rgba(104,211,145,0.3)' : '1px solid rgba(229,62,62,0.3)' }}>
-                                  ${((Number(p.retail_price) - Number(p.agent_cost)) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} Profit
+                                  ${((Number(p.retail_price) - Number(p.agent_cost)) ).toFixed(2)} Profit
                                 </span>
                               )}
                             </div>
                           </div>
                           {p.is_on_sale && p.sale_price && (
                             <span style={{ fontSize: '0.7rem', color: '#FC8181', fontWeight: 700, background: 'rgba(229,62,62,0.10)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(229,62,62,0.2)' }}>
-                              On Sale ${(Number(p.sale_price) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Vials" : "Vial"}
+                              On Sale ${(Number(p.sale_price) ).toFixed(2)} / Vial
                             </span>
                           )}
                         </div>

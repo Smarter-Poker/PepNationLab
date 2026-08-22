@@ -46,16 +46,24 @@ export default function AccountDeleteButton({
         setWorking(false);
         return;
       }
-      toast.success(
-        json?.result?.already_deleted
-          ? `${noun} Was Already Deleted.`
-          : `${noun}${targetName ? ` "${targetName}"` : ''} Deleted.`,
-      );
+
+      const successMsg = json?.result?.already_deleted
+        ? `${noun} Was Already Deleted.`
+        : `✓ ${targetName ? `"${targetName}"` : noun} Successfully Deleted`;
+
+      // Reset component state immediately so it's clean
       setAsking(false);
       setConfirmText('');
       setReason('');
       setWorking(false);
-      onDeleted?.();
+
+      // Fire toast — Toaster is in root layout (z-index 9999999), survives any modal unmount
+      toast.success(successMsg, { duration: 5000 });
+
+      // Give the toast 100ms to commit to Sonner's portal, then trigger the parent close
+      setTimeout(() => {
+        onDeleted?.();
+      }, 100);
     } catch {
       toast.error('Network Error. Please Try Again.');
       setWorking(false);
@@ -82,7 +90,8 @@ export default function AccountDeleteButton({
         <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', lineHeight: 1.5 }}>
           This Removes The Account From All Lists And Blocks Login Immediately. Their Username,
           Email And Referral Code Are Released For Re-Use. Order And Payment History Is Kept For
-          Your Records. An Admin Can Restore The Account If This Was A Mistake.
+          Your Records. Any Agents Or Researchers Beneath Them Are Automatically Moved To The Main
+          Admin Account, So Nothing Is Ever Lost. An Admin Can Restore The Account If This Was A Mistake.
         </div>
         <input
           value={reason}

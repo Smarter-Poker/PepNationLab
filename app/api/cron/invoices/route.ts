@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { computeStatement, persistStatement, computeSuperDownlineSubtreeBilling } from '@/lib/statements';
+import { computeStatement, persistStatement, computeDownlineInvoice } from '@/lib/statements';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
-import { computeSubAgentBaselineCost } from '@/lib/pricing';
 import { notifyInvoiceGenerated } from '@/lib/notify';
 import { chicagoMidnightIso, previousCompletedWeekStartCst } from '@/lib/time-cst';
 
@@ -133,86 +132,28 @@ export async function GET(req: Request) {
 
         if (existingInvoice?.status === 'paid') continue;
 
-        let totalCogs = 0;
-        let totalShipping = 0;
+        // The per-downline math lives in lib/statements.ts so the wallet
+        // forecast can project the exact number this cron will bill. It was
+        // lifted verbatim from here; see computeDownlineInvoice.
+        //
+        //   (a) the downline's OWN orders - skipped for prepaid accounts,
+        //       whose own orders settle per-order at approval time, and
+        //   (b) for a nested Super Agent, their entire subtree at their own
+        //       cost basis, which is what makes money trickle past hop one.
+        const invoiceTotals = await computeDownlineInvoice(
+          supabase,
+          {
+            id: downline.id as string,
+            parent_agent_id: downline.parent_agent_id as string | null,
+            account_type: downline.account_type as string | null,
+            is_super_agent: downline.is_super_agent as boolean | null,
+          },
+          { rangeStart, rangeEndExclusive }
+        );
 
-        // (a) The downline's OWN orders - skipped for prepaid accounts,
-        //     whose own orders were settled per-order at approval time.
-        if (!isPrepaid) {
-          // Fetch the downline's orders for the week. Exclude the not-yet-billable
-          // statuses that lib/statements.ts excludes (pending_customer_payment,
-          // agent_approval_pending) so the cron never bills an order before it is
-          // approved, and exclude wholesale restock self-buys (billed at checkout,
-          // not via weekly invoice) - matching the manual super-agent route.
-          //
-          // Select by agent_approved_at (with a created_at fallback for legacy
-          // orders that have none) so a late-approved order created in a prior
-          // week is still billed in the week it was approved. Keying purely on
-          // created_at let an order created week N but approved week N+1 escape
-          // both invoices - the same leak lib/statements.ts was fixed for.
-          const { data: orders } = await supabase
-            .from('orders')
-            .select('id, shipping_cost, order_items(product_id, quantity, unit_super_agent_cost, unit_cost_price)')
-            .eq('agent_id', downline.id)
-            .neq('status', 'cancelled')
-            .neq('status', 'pending_customer_payment')
-            .neq('status', 'agent_approval_pending')
-            .neq('is_wholesale_restock', true)
-            .or(
-              `and(agent_approved_at.gte.${rangeStart},agent_approved_at.lt.${rangeEndExclusive}),` +
-              `and(agent_approved_at.is.null,created_at.gte.${rangeStart},created_at.lt.${rangeEndExclusive})`
-            );
-
-          for (const order of orders ?? []) {
-            totalShipping += Number(order.shipping_cost) || 0;
-            const items = (order.order_items as unknown) as Array<{
-              product_id: string | null;
-              quantity: number;
-              unit_super_agent_cost: number | null;
-              unit_cost_price: number | null;
-            }>;
-
-            for (const item of items ?? []) {
-              const qty = Number(item.quantity) || 0;
-              if (qty <= 0) continue;
-
-              // The downline owes their upline the unit_cost_price (their own
-              // chain cost, snapshotted at checkout).
-              const stored = Number(item.unit_cost_price);
-              if (Number.isFinite(stored) && stored >= 0) {
-                totalCogs += stored * qty;
-              } else if (item.product_id && downline.parent_agent_id) {
-                // computeSubAgentBaselineCost returns a per-10-vial-pack cost, but the
-                // stored unit_cost_price path above is per-vial and qty is in individual
-                // vials. Divide by 10 so the fallback matches (was a 10x over-bill),
-                // mirroring the manual super-agent invoice route.
-                const recomputed = await computeSubAgentBaselineCost(
-                  supabase,
-                  item.product_id,
-                  downline.parent_agent_id
-                );
-                totalCogs += (recomputed / 10) * qty;
-              }
-            }
-          }
-        }
-
-        // (b) For a nested Super Agent: their entire subtree's orders at the
-        //     nested Super's own cost basis. This is what makes money trickle
-        //     past the first hop - without it, a nested Super is never billed
-        //     for their downlines' sales.
-        if (downline.is_super_agent) {
-          const subtree = await computeSuperDownlineSubtreeBilling(supabase, downline.id, {
-            rangeStart,
-            rangeEndExclusive,
-          });
-          totalCogs += subtree.cogs;
-          totalShipping += subtree.shipping;
-        }
-
-        const cogsRound = Math.round(totalCogs * 100) / 100;
-        const shippingRound = Math.round(totalShipping * 100) / 100;
-        const totalOwed = Math.round((totalCogs + totalShipping) * 100) / 100;
+        const cogsRound = invoiceTotals.totalCogs;
+        const shippingRound = invoiceTotals.totalShipping;
+        const totalOwed = invoiceTotals.totalOwed;
 
         // Skip $0 invoices.
         if (totalOwed <= 0) continue;

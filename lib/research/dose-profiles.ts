@@ -508,14 +508,6 @@ export const DOSE_PROFILES: Record<string, DoseProfile> = {
     notes: 'Lipotropic compound cocktail (typically MIC: methionine, inositol, choline; often with B12 and/or L-carnitine). Weight management and liver health research. Each component supports hepatic fat metabolism. MIC components individually studied; combination synergy researched in weight management context.',
   },
 
-  'ss-31': {
-    typicalDose: '2–4 mg/kg (rodent models); ~0.05–0.25 mg/kg human-equivalent',
-    frequency: 'Once daily subcutaneous; or IV infusion in cardiac research',
-    cycleOn: '4–8 weeks',
-    cycleOff: '4 weeks',
-    routes: ['Subcutaneous', 'Intravenous'],
-    notes: 'See earlier entry — Szeto-Schiller peptide 31 (Elamipretide). Mitochondrial cardiolipin-targeting antioxidant. Phase 2 cardiac trials conducted by Stealth BioTherapeutics. IV infusion used in heart failure research.',
-  },
 
   'bpc-tb': {
     typicalDose: 'BPC-157: 250 mcg + TB-500: 2 mg (pre-mixed or co-administered)',

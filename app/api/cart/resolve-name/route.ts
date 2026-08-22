@@ -139,9 +139,9 @@ export async function POST(req: NextRequest) {
 
     // Agent self-buys use base_cost (wholesale cost price), not retail.
     // This mirrors the server-side pricing enforced in POST /api/orders.
-    const retailPerVial = (Number(pick.retail_price) || 0) / 10;
+    const retailPerVial = (Number(pick.retail_price) || 0);
     const costPerVial = agentSelfBuy && product.base_cost != null
-      ? (Number(product.base_cost) || 0) / 10
+      ? (Number(product.base_cost) || 0)
       : retailPerVial;
 
     const item = {
@@ -151,7 +151,7 @@ export async function POST(req: NextRequest) {
       sku: product.sku || product.id,
       retailPrice: agentSelfBuy ? costPerVial : retailPerVial,
       costPrice: costPerVial,
-      bulkCostPrice: product.admin_bulk_price != null ? Number(product.admin_bulk_price) / 10 : null,
+      bulkCostPrice: product.admin_bulk_price != null ? Number(product.admin_bulk_price) : null,
       bulkThreshold: product.admin_bulk_threshold != null ? Number(product.admin_bulk_threshold) : null,
       weightOz: 0, // Not strictly needed for UI Add to Cart, resolved at checkout
       agentSelfBuy,

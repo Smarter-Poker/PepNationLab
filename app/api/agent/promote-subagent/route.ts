@@ -105,6 +105,7 @@ async function provisionAgentStorefront(
   username: string | null,
   fullName: string | null,
   referralCode: string | null,
+  callerId: string,
 ): Promise<string | null> {
   let slug: string | null = null;
   try {
@@ -488,6 +489,7 @@ export async function POST(req: NextRequest) {
         researcherProfile.username ?? null,
         researcherProfile.full_name ?? null,
         (researcherProfile as { referral_code?: string | null }).referral_code ?? null,
+        callerId
       );
     }
 

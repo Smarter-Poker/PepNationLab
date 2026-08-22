@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { requireAgent } from '@/lib/admin-auth';
+// requireAgentOrAdmin: admins operate their own house storefront through
+// these agent routes (every check below is ownership-scoped), and the plain
+// requireAgent gate 403'd the admin's own dashboard buttons.
+import { requireAgentOrAdmin } from '@/lib/admin-auth';
 import { isAgentAncestorOf } from '@/lib/agent-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { findOrCreateDirectConversation } from '@/lib/messenger/conversations';
@@ -30,7 +33,7 @@ export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
 
-  const gate = await requireAgent();
+  const gate = await requireAgentOrAdmin();
   if (!gate.ok) return gate.response;
 
   const svc = createAdminClient();
@@ -45,7 +48,7 @@ export async function POST(req: NextRequest) {
 
   const { data: order, error: orderErr } = await svc
     .from('orders')
-    .select('id, agent_id, buyer_id, status, fulfillment_method, total, payment_method, created_at')
+    .select('id, agent_id, buyer_id, status, fulfillment_method, total, payment_method, created_at, payment_confirmed_at')
     .eq('id', orderId)
     .maybeSingle();
 
@@ -62,32 +65,63 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden. You Do Not Manage This Order.' }, { status: 403 });
   }
 
-  if (order.status !== 'pending_customer_payment') {
+  // Confirmation is valid at ANY active pre-delivery stage, not just
+  // pending_customer_payment. Many storefront orders are created straight
+  // into agent_approval_pending (they never pass through pending payment),
+  // and the old status gate made "Did You Receive Payment?" impossible to
+  // answer on them - which is exactly why live orders sat at approved_ship
+  // with payment_confirmed_at NULL forever.
+  const CONFIRMABLE_STATUSES = [
+    'pending_customer_payment',
+    'agent_approval_pending',
+    'admin_approval_pending',
+    'approved_ship',
+    'approved_pickup',
+    'in_fulfillment',
+    // Money is still owed after the box leaves: the reminder loop keeps
+    // nudging on shipped/delivered orders, so the answer must stay possible
+    // (previously the nudge deep-linked to a modal with no button and the
+    // API returned 400 - an unanswerable infinite reminder).
+    'shipped',
+    'delivered',
+  ];
+  if (!CONFIRMABLE_STATUSES.includes(order.status)) {
     return NextResponse.json(
-      { error: `Order Is Already At Status "${order.status}". Only Pending Payment Orders Can Be Marked Paid.` },
+      { error: `Order Is At Status "${order.status}" And Can No Longer Be Payment-Confirmed Here.` },
       { status: 400 }
     );
   }
+  if (order.payment_confirmed_at) {
+    return NextResponse.json({ error: 'Payment Was Already Confirmed On This Order.' }, { status: 409 });
+  }
 
   const isAgentPickup = order.fulfillment_method === 'agent_pickup';
-  const nextStatus = 'agent_approval_pending';
+  // Only a pending-payment order changes status on confirmation; at every
+  // later stage this is a pure acknowledgment stamp.
+  const transitions = order.status === 'pending_customer_payment';
+  const nextStatus = transitions ? 'agent_approval_pending' : order.status;
   const nowIso = new Date().toISOString();
 
-  // Compare-and-swap on status so two concurrent mark-paid clicks (agent on
-  // two devices, or agent + upline) cannot both win and double-notify.
+  // Compare-and-swap on status + unconfirmed so two concurrent mark-paid
+  // clicks (agent on two devices, or agent + upline) cannot both win and
+  // double-notify.
+  const updatePayload: Record<string, unknown> = {
+    payment_confirmed_at: nowIso,
+    payment_confirmed_by: callerId,
+    updated_at: nowIso,
+  };
+  if (transitions) {
+    updatePayload.status = nextStatus;
+    // Fresh escalation ladder for the new waiting stage.
+    updatePayload.stale_escalation_level = 0;
+    updatePayload.last_stale_escalation_at = null;
+  }
   const { data: claimed, error: updateErr } = await svc
     .from('orders')
-    .update({
-      status: nextStatus,
-      payment_confirmed_at: nowIso,
-      payment_confirmed_by: callerId,
-      // Fresh escalation ladder for the new waiting stage.
-      stale_escalation_level: 0,
-      last_stale_escalation_at: null,
-      updated_at: nowIso,
-    })
+    .update(updatePayload)
     .eq('id', orderId)
-    .eq('status', 'pending_customer_payment')
+    .eq('status', order.status)
+    .is('payment_confirmed_at', null)
     .select('id');
 
   if (updateErr) {
@@ -123,6 +157,29 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error('[mark-paid] proof verification stamp failed:', err);
   }
+
+  // Clear now-moot confirmation reminders (best-effort): the agent's
+  // "Did You Receive Payment?" rows and the buyer's "Did You Send Payment?"
+  // rows for this order stop cluttering the bell once receipt is confirmed.
+  try {
+    const cleanupUserIds = [...new Set([callerId, order.agent_id].filter((v): v is string => !!v))];
+    await svc
+      .from('notifications')
+      .update({ read_at: nowIso })
+      .in('user_id', cleanupUserIds)
+      .eq('type', 'payment_reminder')
+      .is('read_at', null)
+      .ilike('url', `%order=${short}%`);
+    if (order.buyer_id) {
+      await svc
+        .from('notifications')
+        .update({ read_at: nowIso })
+        .eq('user_id', order.buyer_id)
+        .eq('type', 'payment_reminder')
+        .is('read_at', null)
+        .ilike('url', `%/orders/${orderId}%`);
+    }
+  } catch { /* best-effort */ }
 
   // Order timeline.
   await logOrderEvent(svc, {
@@ -186,7 +243,7 @@ export async function POST(req: NextRequest) {
         body: `${agentName || 'Your Sub-Agent'} Confirmed A ${totalFmt} Payment On Order #${short}. It Now Awaits Approval.`,
         // NOTE: /dashboard?tab=Orders loses the tab through the role redirect
         // (redirect('/dashboard/agent') drops the query) - link directly.
-        url: '/dashboard/agent?tab=Orders',
+        url: `/dashboard/agent?tab=Orders&order=${short}`,
       });
     }
     await notifyAdmins(svc, {
@@ -205,7 +262,9 @@ export async function POST(req: NextRequest) {
     if (order.buyer_id && order.agent_id) {
       const conversationId = await findOrCreateDirectConversation(svc, order.buyer_id, order.agent_id);
       if (conversationId) {
-        const statusMsg = isAgentPickup
+        const statusMsg = !transitions
+          ? `Payment Verified For Order #${short} ($${totalStr}). Thank You - Your Agent Has Confirmed Receiving Your Payment.`
+          : isAgentPickup
           ? `Payment Verified For Order #${short} ($${totalStr}). Your Order Is Now Awaiting Final Approval For Pickup - Your Agent Will Contact You Shortly.`
           : `Payment Verified For Order #${short} ($${totalStr}). Your Order Is Now Awaiting Final Approval - You Will Be Notified As Soon As It Is Approved, And Again When It Ships With Tracking.`;
 

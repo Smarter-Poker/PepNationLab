@@ -389,7 +389,6 @@ function CustomerSupportWidgetInner() {
 
       if (trimmedDesc.length > 0 && conversationId) {
         try {
-          const supabase = createClient();
           const clientMessageId = (typeof crypto !== 'undefined' && 'randomUUID' in crypto)
             ? crypto.randomUUID()
             : undefined;
@@ -403,7 +402,6 @@ function CustomerSupportWidgetInner() {
               ...(clientMessageId ? { clientMessageId } : {}),
             }),
           });
-          void supabase;
         } catch {}
       }
 
@@ -511,6 +509,14 @@ function CustomerSupportWidgetInner() {
     fetchInbox();
   }, [show, fetchInbox]);
 
+  // Track support conversation IDs in a ref so the realtime INSERT
+  // handler can filter out messages from non-support threads without
+  // creating a new subscription every time rows change.
+  const supportConvIdsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    supportConvIdsRef.current = new Set(rows.map((r) => r.conversation_id));
+  }, [rows]);
+
   useEffect(() => {
     if (!show) return;
     const supabase = createClient();
@@ -519,11 +525,21 @@ function CustomerSupportWidgetInner() {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messenger_messages' },
-        () => { fetchInbox(); },
+        (payload) => {
+          // Only re-fetch when the new message belongs to a support thread
+          // this admin is watching. Prevents unnecessary inbox refreshes
+          // from the main messenger (BUG 9).
+          const convId = (payload.new as { conversation_id?: string })?.conversation_id;
+          if (convId && !supportConvIdsRef.current.has(convId)) return;
+          fetchInbox();
+        },
       )
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'messenger_conversations' },
+        // Filter to only fire on support conversations so non-support
+        // conversation updates don't trigger unnecessary inbox re-fetches
+        // and race against the optimistic resolved state.
+        { event: 'UPDATE', schema: 'public', table: 'messenger_conversations', filter: 'is_support=eq.true' },
         () => { fetchInbox(); },
       )
       .subscribe();
@@ -531,7 +547,7 @@ function CustomerSupportWidgetInner() {
 
     // Realtime (above) is the primary freshness mechanism; this interval is a
     // fallback ONLY for silently-dropped realtime connections, so 5 minutes
-    // is plenty (was 60s, which just duplicated the subscription's work).
+    // is plenty.
     pollRef.current = setInterval(fetchInbox, 300_000);
 
     return () => {
@@ -549,7 +565,11 @@ function CustomerSupportWidgetInner() {
         setOpen(false);
         setStatusPopoverFor(null);
         setSnoozePopoverFor(null);
-        setMessengerActive(prevActiveBeforeOpenRef.current);
+        // Only restore the prior active conversation if there was one —
+        // don't null out the messenger store when ESC is hit cold.
+        if (prevActiveBeforeOpenRef.current !== null) {
+          setMessengerActive(prevActiveBeforeOpenRef.current);
+        }
         prevActiveBeforeOpenRef.current = null;
       }
     }
@@ -568,7 +588,11 @@ function CustomerSupportWidgetInner() {
     // researcher who clicked into a thread doesn't lose their context.
   }, [open]);
 
-  const totalUnread = rows.reduce((a, r) => a + (r.unread_count || 0), 0);
+  // Only count unread from non-resolved threads. Resolved threads should
+  // never keep the badge lit — the admin has explicitly closed them.
+  const totalUnread = rows
+    .filter((r) => r.support_status !== 'resolved')
+    .reduce((a, r) => a + (r.unread_count || 0), 0);
 
   // Hard isolation: the set of conversation IDs that live in this inbox.
   // The center MessagePane only renders when the active conversation is in
@@ -661,10 +685,14 @@ function CustomerSupportWidgetInner() {
   // When a support thread is selected, the left column collapses to ONLY
   // show that customer's row + their researcher context. Click "All Threads"
   // in the new header strip to expand the full list back.
+  // Search ALL rows (not just visibleRows) so the focused conversation
+  // stays visible even after its status changes (e.g., just resolved).
+  // This prevents the center pane from blanking out immediately after
+  // marking a thread resolved while the inbox re-fetches.
   const focusedRow = useMemo(() => {
     if (!messengerActiveId) return null;
-    return visibleRows.find((r) => r.conversation_id === messengerActiveId) ?? null;
-  }, [visibleRows, messengerActiveId]);
+    return rows.find((r) => r.conversation_id === messengerActiveId) ?? null;
+  }, [rows, messengerActiveId]);
   const focusedList = focusedRow ? [focusedRow] : visibleRows;
 
   const tabCounts = useMemo(() => {
@@ -1096,20 +1124,18 @@ function CustomerSupportWidgetInner() {
           </span>
         </button>
 
-        <style jsx>{`
-          @media (min-width: 768px) {
-            .cs-widget-bar {
-              right: auto !important;
-              width: 320px !important;
-              border-right: 1px solid ${NICKEL_SOFT} !important;
-            }
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media (min-width: 768px) {
+          .cs-widget-bar {
+            right: auto !important;
+            width: 320px !important;
+            border-right: 1px solid ${NICKEL_SOFT} !important;
           }
-        `}</style>
-        <style jsx global>{`
-          .messenger-sidebar {
-            padding-bottom: calc(60px + env(safe-area-inset-bottom)) !important;
-          }
-        `}</style>
+        }
+        .messenger-sidebar {
+          padding-bottom: calc(60px + env(safe-area-inset-bottom)) !important;
+        }
+      ` }} />
       </>
     );
   }
@@ -1435,7 +1461,7 @@ function CustomerSupportWidgetInner() {
               </div>
             ) : (
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-                {focusedList.map((row) => {
+                {visibleRows.map((row) => {
                   const status: SupportStatus = (row.support_status as SupportStatus) || 'open';
                   const slaSec = row.sla_waiting_seconds || 0;
                   const overdue = slaSec > 1800;
@@ -1941,7 +1967,7 @@ function CustomerSupportWidgetInner() {
                       }}
                     >
                       <span style={{ color: 'var(--silver, #C0B8A8)', fontSize: '0.72rem', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {focusedRow.counterparty_full_name || focusedRow.counterparty_username || 'Support Thread'}
+                        {otherName(focusedRow)}
                         {' — '}
                         <span style={{ textTransform: 'capitalize' }}>{(focusedRow.support_status || 'open').replace(/_/g, ' ')}</span>
                       </span>
@@ -2144,7 +2170,7 @@ function CustomerSupportWidgetInner() {
         </span>
       </button>
 
-      <style jsx>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         .spin { animation: cs-spin 1s linear infinite; }
         @keyframes cs-spin { to { transform: rotate(360deg); } }
         @media (min-width: 768px) {
@@ -2154,8 +2180,6 @@ function CustomerSupportWidgetInner() {
             border-right: 1px solid ${NICKEL_SOFT} !important;
           }
         }
-      `}</style>
-      <style jsx global>{`
         .messenger-sidebar {
           padding-bottom: calc(60px + env(safe-area-inset-bottom)) !important;
         }
@@ -2169,7 +2193,7 @@ function CustomerSupportWidgetInner() {
         .cs-widget-overlay button[aria-label="Schedule Send"] {
           display: none !important;
         }
-      `}</style>
+      ` }} />
     </>
   );
 }

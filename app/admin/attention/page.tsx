@@ -52,6 +52,9 @@ function agentName(row: AttentionRow): string {
 
 export default async function OrderAttentionPage() {
   const service = await createServiceClient();
+  const { requireAdmin } = await import('@/lib/admin-auth');
+  const adminAuth = await requireAdmin();
+  const currentAdminId = adminAuth.ok ? adminAuth.userId : null;
 
   const { data } = await service
     .from('orders')
@@ -60,7 +63,16 @@ export default async function OrderAttentionPage() {
     .order('created_at', { ascending: true })
     .limit(500);
 
-  const rows = (data ?? []) as unknown as AttentionRow[];
+  let rows = (data ?? []) as unknown as AttentionRow[];
+  
+  // Filter out pending downline agent orders so admins don't have to approve them
+  rows = rows.filter(r => {
+    if (r.status === 'pending_customer_payment' || r.status === 'agent_approval_pending') {
+      if (r.agent_id && r.agent_id !== currentAdminId) return false;
+    }
+    return true;
+  });
+
   const now = Date.now();
   const ageHours = (iso: string) => Math.max(0, Math.floor((now - new Date(iso).getTime()) / 3600_000));
   const money = (v: number | string | null) => `$${(Number(v) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;

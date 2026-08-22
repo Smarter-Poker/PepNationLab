@@ -15,10 +15,13 @@ import ReorderOrderButton from './ReorderOrderButton';
 import CancelOrderButton from './CancelOrderButton';
 import ReorderStackButton from './ReorderStackButton';
 import ChangePaymentMethod from '@/components/ChangePaymentMethod';
+import ConfirmPaymentSentButton from './ConfirmPaymentSentButton';
 import { paymentMethodLabel } from '@/lib/payment-method-labels';
 import HelpHint from '@/components/help/HelpHint';
 import { getPopularName } from '@/lib/peptide-popular-names';
 import { carrierInfo } from '@/lib/carrier';
+import { computeOwnOrderLedger, computeUplineLedger } from '@/lib/agent-ledger';
+import LedgerBreakdown from '@/components/LedgerBreakdown';
 
 // R28: map order status → matching FAQ id so the contextual help pill lands
 // the buyer on the exact answer for their state (not the FAQ root). Every id
@@ -73,6 +76,7 @@ interface OrderItem {
   quantity: number;
   unit_retail_price: number | string;
   unit_cost_price: number | string;
+  unit_super_agent_cost: number | string | null;
   lot_number: string | null;
   coa_url: string | null;
 }
@@ -96,6 +100,8 @@ interface Order {
   shipping_address: any;
   agent_id: string | null;
   buyer_id: string;
+  buyer_payment_sent_at: string | null;
+  payment_confirmed_at: string | null;
   order_items: OrderItem[];
   profiles: { full_name: string | null; email: string } | null;
 }
@@ -118,7 +124,7 @@ export default async function OrderDetailPage(
     .eq('id', user.id)
     .maybeSingle();
   const viewerRole = viewerProfile?.role ?? 'researcher';
-  const canCancelOrder = viewerRole === 'admin' || viewerRole === 'agent';
+  const canCancelOrder = viewerRole === 'admin' || viewerRole === 'agent' || viewerRole === 'super_agent';
 
   // RLS enforces buyer_id = auth.uid() for researchers; admins/agents may also pass.
   const { data: orderData, error } = await supabase
@@ -127,7 +133,8 @@ export default async function OrderDetailPage(
       id, status, created_at, payment_method, fulfillment_method,
       subtotal, discount_amount, coupon_code, shipping_cost, total,
       tracking_number, label_url, shipped_at, delivered_at, updated_at, shipping_address, agent_id, buyer_id,
-      order_items (id, agent_product_id, product_id, product_name, quantity, unit_retail_price, unit_cost_price, lot_number, coa_url, products(compound_slug)),
+      buyer_payment_sent_at, payment_confirmed_at,
+      order_items (id, agent_product_id, product_id, product_name, quantity, unit_retail_price, unit_cost_price, unit_super_agent_cost, lot_number, coa_url, products(compound_slug)),
       profiles:buyer_id (full_name, email)
     `)
     .eq('id', id)
@@ -677,7 +684,7 @@ export default async function OrderDetailPage(
                   <span style={{ whiteSpace: 'nowrap' }}>${num(order.subtotal).toFixed(2)}</span>
                 </div>
                 {num(order.discount_amount) > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#68D391' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--red)' }}>
                     <span>Coupon Discount{order.coupon_code ? ` (${order.coupon_code})` : ''}</span>
                     <span style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>-${num(order.discount_amount).toFixed(2)}</span>
                   </div>
@@ -694,7 +701,52 @@ export default async function OrderDetailPage(
             </div>
           </div>
 
-          {/* You May Also Like */}
+          {/* Agent Settlement Ledger — visible to agents/super_agents/admins only.
+              Uses the same math as lib/agent-ledger.ts / components/AgentOrders.tsx.
+              unit_cost_price   = what this agent owes their upline (Savage Brands)
+              unit_super_agent_cost = what upline owes Pep Nation (their COG) */}
+          {(viewerRole === 'agent' || viewerRole === 'super_agent' || viewerRole === 'admin') && order.agent_id && (() => {
+            const ownLedger = computeOwnOrderLedger(order, order.order_items);
+            const uplineLedger = computeUplineLedger(order, order.order_items);
+            
+            const {
+              grossCustomerPmt,
+              netYouCollect,
+              discount,
+              shippingCost,
+              ownProfit,
+              hasSbCost,
+              sbCostTotal,
+              markupSpread
+            } = ownLedger;
+
+            const {
+              dlOwesYou,
+              youOwePepNation,
+              uplProfit
+            } = uplineLedger;
+
+            const isOwnOrder = user?.id === order.agent_id;
+
+            return (
+              <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-5)', animationDelay: '0.25s' }}>
+                <div style={{ padding: '16px 18px', borderRadius: 12, background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.2)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 800 }}>
+                    Settlement Ledger
+                  </div>
+                  <LedgerBreakdown
+                    ownLedger={ownLedger}
+                    uplineLedger={uplineLedger}
+                    viewerRole={viewerRole}
+                    isOwnOrder={!!isOwnOrder}
+                    agentName={'Agent'}
+                    uplineName={'Upline'}
+                    couponCode={order.coupon_code}
+                  />
+                </div>
+              </div>
+            );
+          })()}
           {recommendations.length > 0 && (
             <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-5)', animationDelay: '0.3s' }}>
               <RecommendationStrip
@@ -772,6 +824,23 @@ export default async function OrderDetailPage(
               <p style={{ fontSize: '0.78rem', color: 'var(--grey-500)', marginTop: 'var(--space-3)' }}>
                 Include Order #{order.id.slice(0, 8).toUpperCase()} In The Memo.
               </p>
+            </div>
+          )}
+
+          {/* Buyer payment-sent confirmation: one tap tells the agent the
+              money is on its way and stops the buyer's 12-hour reminders.
+              Shown to the buyer at every active pre-delivery stage. */}
+          {order.buyer_id === user.id
+            && !['cancelled', 'shipped', 'delivered'].includes(order.status) && (
+            <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-5)', marginBottom: 'var(--space-5)', animationDelay: '0.42s' }}>
+              <h2 style={{ fontSize: '0.95rem', color: 'var(--white)', marginBottom: 'var(--space-3)' }}>
+                Payment Confirmation
+              </h2>
+              <ConfirmPaymentSentButton
+                orderId={order.id}
+                buyerPaymentSentAt={order.buyer_payment_sent_at}
+                paymentConfirmedAt={order.payment_confirmed_at}
+              />
             </div>
           )}
 

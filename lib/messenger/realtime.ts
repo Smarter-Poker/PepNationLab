@@ -223,6 +223,12 @@ export interface CallSignalRow {
   caller_name?: string;
   caller_username?: string | null;
   caller_avatar?: string | null;
+  // Group-call support: populated by the server broadcast and the enriched
+  // API responses (start / list-active-calls). ABSENT on raw postgres_changes
+  // rows — these are not messenger_calls columns — so treat undefined as
+  // "unknown", never as "direct".
+  conversation_type?: 'direct' | 'group' | 'announcement' | null;
+  conversation_title?: string | null;
 }
 
 interface CallSignalHandlers {
@@ -457,12 +463,25 @@ export function subscribeMyIncomingMessages(
   userId: string,
   onInsert: (m: IncomingMessageNotification) => void,
   allowConversationIds?: Set<string>,
+  onUnknownConversation?: (m: IncomingMessageNotification) => void,
 ): RealtimeChannel {
   const ch = sb().channel(`user_notify:${userId}`);
   ch.on('broadcast', { event: 'new_message_notify' }, (payload) => {
     const m = payload.payload?.message as IncomingMessageNotification & { sender_id: string };
     if (!m) return;
-    if (allowConversationIds && !allowConversationIds.has(m.conversation_id)) return;
+    if (allowConversationIds && !allowConversationIds.has(m.conversation_id)) {
+      // A message for a conversation the client does not know about is not
+      // noise — it is the ONLY signal that a brand-new conversation (e.g. a
+      // group you were just added to) exists. Silently dropping these meant
+      // new groups never appeared until a full page reload (owner report
+      // 2026-08-19: created a group, neither member ever saw it). Alert and
+      // hand it to the caller so the conversation list can refetch.
+      if (m.sender_id !== userId) {
+        try { playPopSound(); vibrateMedium(); } catch { /* best-effort */ }
+      }
+      onUnknownConversation?.(m);
+      return;
+    }
     // In-app alert: sound + haptic for messages from someone else while the
     // app/tab is open. (The sender already heard the send sound on their end.)
     if (m.sender_id !== userId) {
