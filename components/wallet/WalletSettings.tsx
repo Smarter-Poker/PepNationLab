@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { money, fmtDate, statusLabel } from './format';
+import { paymentMethodLabel } from '@/lib/payment-method-labels';
 
 const HANDLES = ['zelle', 'venmo', 'cashapp', 'apple_pay', 'varo'] as const;
 type Handle = (typeof HANDLES)[number];
@@ -12,6 +13,7 @@ export default function WalletSettings() {
   const [enabled, setEnabled] = useState(false);
   const [handle, setHandle] = useState<Handle>('zelle');
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
   const [requests, setRequests] = useState<any[]>([]);
 
@@ -26,11 +28,20 @@ export default function WalletSettings() {
           const j = await apRes.json();
           setEnabled(!!j.enabled);
           if (j.handle && HANDLES.includes(j.handle)) setHandle(j.handle);
+        } else {
+          // A failed load used to render silently as "Auto-Pay Off" - so a
+          // 403 or an outage looked exactly like the setting being disabled,
+          // and every attempt to flip it reverted with "Could Not Save".
+          setLoadError(true);
         }
         if (ciRes.ok) {
           const j = await ciRes.json();
           setRequests(Array.isArray(j.requests) ? j.requests : []);
+        } else {
+          setLoadError(true);
         }
+      } catch {
+        setLoadError(true);
       } finally {
         setLoading(false);
       }
@@ -72,13 +83,18 @@ export default function WalletSettings() {
       <div>
         <h3 style={{ color: 'var(--white)', marginTop: 0, marginBottom: 4 }}>Auto-Pay</h3>
         <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem', margin: '0 0 12px' }}>
-          When Enabled And Your Prepaid Balance Covers A Statement, It Is Paid Automatically Before The Due Date.
+          When Enabled And Your Prepaid Balance Covers A Bill, It Is Settled Automatically From That Balance.
         </p>
+        {loadError && (
+          <p style={{ color: '#F6AD55', fontSize: '0.82rem', margin: '0 0 12px' }}>
+            Could Not Load Your Settings. The Values Below May Not Reflect Your Account.
+          </p>
+        )}
         <button
           type="button"
           role="switch"
           aria-checked={enabled}
-          disabled={loading || saving}
+          disabled={loading || saving || loadError}
           onClick={() => save({ enabled: !enabled })}
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 10, background: 'none', border: 'none',
@@ -111,9 +127,9 @@ export default function WalletSettings() {
                 background: handle === h ? 'var(--teal)' : 'rgba(255,255,255,0.04)',
                 color: handle === h ? 'var(--black)' : 'var(--white)',
                 border: `1px solid ${handle === h ? 'var(--teal)' : 'rgba(255,255,255,0.1)'}`,
-                cursor: saving ? 'wait' : 'pointer', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.82rem',
+                cursor: saving ? 'wait' : 'pointer', fontWeight: 700, fontSize: '0.82rem',
               }}>
-              {h.replace('_', ' ')}
+              {paymentMethodLabel(h)}
             </button>
           ))}
         </div>
@@ -139,7 +155,7 @@ export default function WalletSettings() {
                     <span style={{ color: 'var(--grey-400)', fontSize: '0.74rem' }}>Note: {r.decision_note}</span>
                   )}
                 </span>
-                <span style={{ color: statusColor(r.status), fontWeight: 700, fontSize: '0.76rem', textTransform: 'uppercase' }}>
+                <span style={{ color: statusColor(r.status), fontWeight: 700, fontSize: '0.76rem',  }}>
                   {statusLabel(r.status)}
                 </span>
               </li>

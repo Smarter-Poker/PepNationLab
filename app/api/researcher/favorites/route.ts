@@ -81,7 +81,7 @@ export async function GET(_req: NextRequest) {
       
     for (const ap of agentProducts ?? []) {
       const rawPrice = ap.is_on_sale && ap.sale_price != null ? Number(ap.sale_price) : Number(ap.retail_price);
-      const price = rawPrice / 10; // convert 10-pack price to per-vial
+      const price = rawPrice; // convert 10-pack price to per-vial
       if (Number.isFinite(price) && price > 0) priceMap.set(ap.product_id, price);
     }
   }

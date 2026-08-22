@@ -1,28 +1,58 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useModalA11y } from '@/lib/useModalA11y';
 
 /**
- * GuestAuthModal - slide-up modal that prompts unauthenticated visitors
- * to sign in or create an account when they click a personalization button
- * (Save, Reading Queue, Subscribe, etc.).
+ * GuestAuthModal - the signup CHECKPOINT surface.
+ *
+ * A logged-out visitor is never asked for an account to LOOK at anything:
+ * browsing a storefront, reading product detail and seeing pricing are all
+ * open by design (see the guest-storefront rule in proxy.ts). The account ask
+ * happens only at a COMMITMENT action -- checking out, saving something to an
+ * account, subscribing to an alert -- and it happens here.
  *
  * Usage:
  *   const [showGuestModal, setShowGuestModal] = useState(false);
- *   <GuestAuthModal open={showGuestModal} onClose={() => setShowGuestModal(false)} featureLabel="Save Compounds" />
+ *   <GuestAuthModal
+ *     open={showGuestModal}
+ *     onClose={() => setShowGuestModal(false)}
+ *     featureLabel="Checkout"
+ *     description="Your cart is saved..."
+ *     redirectTo="/checkout?agent=savagebrands"
+ *     ctaLabel="Create Account & Check Out"
+ *   />
  *
- * The modal passes the current page as ?redirect= so users return after auth.
+ * ATTRIBUTION: the sign-up links here carry ONLY ?redirect=. They must never
+ * carry ?ref= -- proxy.ts reroutes any account-entry GET that carries a ref
+ * code back to the locked storefront, so a ?ref= link here would bounce the
+ * visitor away from the very form they just asked for. Referral credit rides
+ * the httpOnly signed `pnl_ref_lock` cookie and needs no URL parameter.
  */
+
+const AGENT_STORAGE_KEY = 'pnl_referral_agent';
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  /** Short label describing what the guest tried to do, e.g. "Save Compounds" */
+  /** Short label describing what the guest tried to do, e.g. "Checkout" */
   featureLabel?: string;
+  /** Context-specific reassurance copy. Falls back to the generic pitch. */
+  description?: string;
+  /** Where to land after auth. Defaults to the current URL. */
+  redirectTo?: string;
+  /** Primary button label. */
+  ctaLabel?: string;
 }
 
-export default function GuestAuthModal({ open, onClose, featureLabel = 'This Feature' }: Props) {
+export default function GuestAuthModal({
+  open,
+  onClose,
+  featureLabel = 'This Feature',
+  description,
+  redirectTo,
+  ctaLabel,
+}: Props) {
   // Lock body scroll while open
   useEffect(() => {
     if (open) {
@@ -33,6 +63,24 @@ export default function GuestAuthModal({ open, onClose, featureLabel = 'This Fea
     return () => { document.body.style.overflow = ''; };
   }, [open]);
 
+  // Which storefront this visitor is attributed to, purely for reassurance
+  // copy. Read on open (not at module scope) because localStorage does not
+  // exist during SSR and the lock can be minted after first paint.
+  const [agentSlug, setAgentSlug] = useState<string | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    try {
+      const raw = window.localStorage.getItem(AGENT_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { slug?: string };
+      if (parsed && typeof parsed.slug === 'string' && parsed.slug) {
+        setAgentSlug(parsed.slug);
+      }
+    } catch {
+      /* private mode / malformed payload -- reassurance line is optional */
+    }
+  }, [open]);
+
   // A11y: initial focus, Tab trap, Escape-to-close, focus restore
   const dialogRef = useModalA11y<HTMLDivElement>(open, { onClose });
 
@@ -41,9 +89,17 @@ export default function GuestAuthModal({ open, onClose, featureLabel = 'This Fea
   const currentPath = typeof window !== 'undefined'
     ? window.location.pathname + window.location.search
     : '/';
-  const redirectParam = encodeURIComponent(currentPath);
+  // Only ever a same-origin relative path; never an absolute URL.
+  const target = redirectTo && redirectTo.startsWith('/') && !redirectTo.startsWith('//')
+    ? redirectTo
+    : currentPath;
+  const redirectParam = encodeURIComponent(target);
   const loginHref = `/login?redirect=${redirectParam}`;
   const signupHref = `/signup?redirect=${redirectParam}`;
+
+  const body = description
+    || 'Create a free account to save compounds, build reading queues, subscribe '
+     + "to research updates, and browse your agent's storefront with wholesale pricing.";
 
   return (
     <>
@@ -136,15 +192,34 @@ export default function GuestAuthModal({ open, onClose, featureLabel = 'This Fea
         </h2>
 
         <p style={{
-          margin: '0 0 24px',
+          margin: '0 0 16px',
           fontSize: '0.83rem',
           color: 'var(--silver, #A8B4C0)',
           textAlign: 'center',
           lineHeight: 1.6,
         }}>
-          Create a free account to save compounds, build reading queues, subscribe
-          to research updates, and browse your agent&apos;s storefront with wholesale pricing.
+          {body}
         </p>
+
+        {/* Attribution reassurance: the visitor stays with the storefront they
+            came in through. This is the question a scanned guest actually has. */}
+        {agentSlug && (
+          <p style={{
+            margin: '0 0 20px',
+            fontSize: '0.76rem',
+            color: 'rgba(168,180,192,0.72)',
+            textAlign: 'center',
+            lineHeight: 1.55,
+            padding: '9px 12px',
+            borderRadius: 10,
+            background: 'rgba(192,184,168,0.06)',
+            border: '1px solid rgba(192,184,168,0.14)',
+          }}>
+            You&apos;ll stay linked to <strong style={{ color: 'var(--teal, #C0B8A8)' }}>/{agentSlug}</strong> —
+            {' '}your account is credited to them automatically.
+          </p>
+        )}
+        {!agentSlug && <div style={{ height: 8 }} />}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <a
@@ -161,9 +236,10 @@ export default function GuestAuthModal({ open, onClose, featureLabel = 'This Fea
               fontSize: '0.95rem',
               textDecoration: 'none',
               letterSpacing: '0.01em',
+              textAlign: 'center',
             }}
           >
-            Create Free Account
+            {ctaLabel || 'Create Free Account'}
           </a>
           <a
             href={loginHref}
@@ -183,6 +259,23 @@ export default function GuestAuthModal({ open, onClose, featureLabel = 'This Fea
           >
             Already Have An Account? Sign In
           </a>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'rgba(168,180,192,0.55)',
+              fontSize: '0.78rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              padding: '6px 0 0',
+              textDecoration: 'underline',
+              textUnderlineOffset: 2,
+            }}
+          >
+            Keep Browsing As A Guest
+          </button>
         </div>
       </div>
 

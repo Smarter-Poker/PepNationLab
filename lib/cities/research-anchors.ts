@@ -1,0 +1,327 @@
+/**
+ * research-anchors.ts
+ *
+ * Accurate, metro/region-level research institutions (universities, academic
+ * medical centers, research parks, national labs, notable R&D employers).
+ * Surfaced on city pages as a factual "Regional Research Ecosystem" block to
+ * (a) add genuine, verifiable local substance beyond the city blurb, and
+ * (b) reinforce topical/E-E-A-T signals for the local research audience.
+ *
+ * IMPORTANT: every entry names a real institution actually located in (or
+ * immediately serving) the named metro. This is region-level context, not a
+ * claim of affiliation with Pep Nation Lab. Sub-regions of a large metro
+ * (e.g. LA's San Gabriel Valley, the Bay Area's East Bay) inherit the metro's
+ * anchors via ALIAS below, since those institutions serve the whole metro.
+ *
+ * Pure data module - safe to import anywhere.
+ */
+
+export interface ResearchAnchor {
+  name: string;
+  kind: 'University' | 'Medical Center' | 'Research Institute' | 'Research Park' | 'National Lab' | 'R&D Employer';
+}
+
+const ANCHORS: Record<string, ResearchAnchor[]> = {
+  'Chicagoland area': [
+    { name: 'University of Chicago', kind: 'University' },
+    { name: 'Northwestern University', kind: 'University' },
+    { name: 'Rush University Medical Center', kind: 'Medical Center' },
+    { name: 'Argonne National Laboratory', kind: 'National Lab' },
+    { name: 'Fermi National Accelerator Laboratory', kind: 'National Lab' },
+  ],
+  'Greater Dallas': [
+    { name: 'UT Southwestern Medical Center', kind: 'Medical Center' },
+    { name: 'University of Texas at Dallas', kind: 'University' },
+    { name: 'Southern Methodist University', kind: 'University' },
+    { name: 'Baylor University Medical Center', kind: 'Medical Center' },
+  ],
+  'Long Island': [
+    { name: 'Stony Brook University', kind: 'University' },
+    { name: 'Cold Spring Harbor Laboratory', kind: 'Research Institute' },
+    { name: 'Brookhaven National Laboratory', kind: 'National Lab' },
+    { name: 'Northwell Health', kind: 'Medical Center' },
+  ],
+  'Greater Houston': [
+    { name: 'Texas Medical Center', kind: 'Medical Center' },
+    { name: 'Rice University', kind: 'University' },
+    { name: 'Baylor College of Medicine', kind: 'University' },
+    { name: 'MD Anderson Cancer Center', kind: 'Medical Center' },
+    { name: 'University of Houston', kind: 'University' },
+  ],
+  'Metro Atlanta': [
+    { name: 'Emory University', kind: 'University' },
+    { name: 'Georgia Institute of Technology', kind: 'University' },
+    { name: 'Centers for Disease Control and Prevention', kind: 'Research Institute' },
+    { name: 'Morehouse School of Medicine', kind: 'University' },
+  ],
+  'Metro Detroit': [
+    { name: 'University of Michigan', kind: 'University' },
+    { name: 'Wayne State University', kind: 'University' },
+    { name: 'Henry Ford Health', kind: 'Medical Center' },
+  ],
+  'Twin Cities': [
+    { name: 'University of Minnesota', kind: 'University' },
+    { name: 'M Health Fairview', kind: 'Medical Center' },
+    { name: 'Medtronic', kind: 'R&D Employer' },
+  ],
+  'Orange County': [
+    { name: 'UC Irvine', kind: 'University' },
+    { name: 'City of Hope Orange County', kind: 'Medical Center' },
+    { name: "CHOC Children's", kind: 'Medical Center' },
+    { name: 'Chapman University', kind: 'University' },
+  ],
+  'Greater Fort Worth': [
+    { name: 'UNT Health Science Center', kind: 'University' },
+    { name: 'Texas Christian University', kind: 'University' },
+    { name: "Cook Children's Health Care System", kind: 'Medical Center' },
+  ],
+  'Northern Virginia': [
+    { name: 'George Mason University', kind: 'University' },
+    { name: 'Inova Health System', kind: 'Medical Center' },
+    { name: 'Janelia Research Campus (HHMI)', kind: 'Research Institute' },
+  ],
+  'Greater Charlotte': [
+    { name: 'Atrium Health', kind: 'Medical Center' },
+    { name: 'UNC Charlotte', kind: 'University' },
+    { name: 'Wake Forest University School of Medicine', kind: 'University' },
+  ],
+  'Inland Empire': [
+    { name: 'UC Riverside', kind: 'University' },
+    { name: 'Loma Linda University Medical Center', kind: 'Medical Center' },
+    { name: 'Cal State San Bernardino', kind: 'University' },
+  ],
+  'Greater Philadelphia': [
+    { name: 'University of Pennsylvania', kind: 'University' },
+    { name: "Children's Hospital of Philadelphia", kind: 'Medical Center' },
+    { name: 'Thomas Jefferson University', kind: 'University' },
+    { name: 'The Wistar Institute', kind: 'Research Institute' },
+    { name: 'Fox Chase Cancer Center', kind: 'Medical Center' },
+  ],
+  'Greater Austin': [
+    { name: 'University of Texas at Austin', kind: 'University' },
+    { name: 'Dell Medical School', kind: 'University' },
+    { name: "Dell Children's Medical Center", kind: 'Medical Center' },
+  ],
+  'Bay Area': [
+    { name: 'Stanford University', kind: 'University' },
+    { name: 'UC Berkeley', kind: 'University' },
+    { name: 'UC San Francisco', kind: 'University' },
+    { name: 'Lawrence Berkeley National Laboratory', kind: 'National Lab' },
+    { name: 'Gladstone Institutes', kind: 'Research Institute' },
+  ],
+  'Greater Cleveland': [
+    { name: 'Cleveland Clinic', kind: 'Medical Center' },
+    { name: 'Case Western Reserve University', kind: 'University' },
+    { name: 'University Hospitals', kind: 'Medical Center' },
+  ],
+  'Greater Boston': [
+    { name: 'Harvard University', kind: 'University' },
+    { name: 'Massachusetts Institute of Technology', kind: 'University' },
+    { name: 'Mass General Brigham', kind: 'Medical Center' },
+    { name: 'Broad Institute', kind: 'Research Institute' },
+    { name: 'Dana-Farber Cancer Institute', kind: 'Medical Center' },
+  ],
+  'Westchester & Hudson Valley': [
+    { name: 'New York Medical College', kind: 'University' },
+    { name: 'Westchester Medical Center', kind: 'Medical Center' },
+    { name: 'Regeneron Pharmaceuticals', kind: 'R&D Employer' },
+  ],
+  'Silicon Valley': [
+    { name: 'Stanford University', kind: 'University' },
+    { name: 'Stanford Medicine', kind: 'Medical Center' },
+    { name: 'SLAC National Accelerator Laboratory', kind: 'National Lab' },
+  ],
+  'Greater Los Angeles': [
+    { name: 'UCLA', kind: 'University' },
+    { name: 'University of Southern California', kind: 'University' },
+    { name: 'California Institute of Technology', kind: 'University' },
+    { name: 'Cedars-Sinai Medical Center', kind: 'Medical Center' },
+    { name: 'City of Hope', kind: 'Medical Center' },
+  ],
+  'Greater Columbus': [
+    { name: 'The Ohio State University', kind: 'University' },
+    { name: "Nationwide Children's Hospital", kind: 'Medical Center' },
+    { name: 'Battelle Memorial Institute', kind: 'Research Institute' },
+  ],
+  'Tampa Bay': [
+    { name: 'University of South Florida', kind: 'University' },
+    { name: 'Moffitt Cancer Center', kind: 'Medical Center' },
+    { name: 'Tampa General Hospital', kind: 'Medical Center' },
+  ],
+  'Indianapolis Metro': [
+    { name: 'Indiana University School of Medicine', kind: 'University' },
+    { name: 'Eli Lilly and Company', kind: 'R&D Employer' },
+    { name: 'IU Health', kind: 'Medical Center' },
+  ],
+  'Greater San Diego': [
+    { name: 'UC San Diego', kind: 'University' },
+    { name: 'Scripps Research', kind: 'Research Institute' },
+    { name: 'Salk Institute for Biological Studies', kind: 'Research Institute' },
+    { name: 'Sanford Burnham Prebys', kind: 'Research Institute' },
+  ],
+  'Puget Sound': [
+    { name: 'University of Washington', kind: 'University' },
+    { name: 'Fred Hutchinson Cancer Center', kind: 'Medical Center' },
+    { name: 'Allen Institute', kind: 'Research Institute' },
+    { name: "Seattle Children's Research Institute", kind: 'Research Institute' },
+  ],
+  'Greater St. Louis': [
+    { name: 'Washington University in St. Louis', kind: 'University' },
+    { name: 'Saint Louis University', kind: 'University' },
+    { name: 'Donald Danforth Plant Science Center', kind: 'Research Institute' },
+  ],
+  'Greater Miami': [
+    { name: 'University of Miami Miller School of Medicine', kind: 'University' },
+    { name: 'Florida International University', kind: 'University' },
+    { name: 'Jackson Health System', kind: 'Medical Center' },
+  ],
+  'Greater Kansas City': [
+    { name: 'University of Kansas Medical Center', kind: 'Medical Center' },
+    { name: 'Stowers Institute for Medical Research', kind: 'Research Institute' },
+    { name: "Children's Mercy Kansas City", kind: 'Medical Center' },
+  ],
+  'Research Triangle': [
+    { name: 'Duke University', kind: 'University' },
+    { name: 'UNC Chapel Hill', kind: 'University' },
+    { name: 'North Carolina State University', kind: 'University' },
+    { name: 'Research Triangle Park', kind: 'Research Park' },
+  ],
+  'Metro Denver': [
+    { name: 'CU Anschutz Medical Campus', kind: 'Medical Center' },
+    { name: 'National Renewable Energy Laboratory', kind: 'National Lab' },
+    { name: 'National Jewish Health', kind: 'Medical Center' },
+  ],
+  'Greater Pittsburgh': [
+    { name: 'University of Pittsburgh', kind: 'University' },
+    { name: 'UPMC', kind: 'Medical Center' },
+    { name: 'Carnegie Mellon University', kind: 'University' },
+  ],
+  'Greater Phoenix': [
+    { name: 'Mayo Clinic Arizona', kind: 'Medical Center' },
+    { name: 'Arizona State University', kind: 'University' },
+    { name: 'Translational Genomics Research Institute (TGen)', kind: 'Research Institute' },
+    { name: 'Barrow Neurological Institute', kind: 'Medical Center' },
+  ],
+  'Greater Nashville': [
+    { name: 'Vanderbilt University Medical Center', kind: 'Medical Center' },
+    { name: 'Meharry Medical College', kind: 'University' },
+  ],
+  'Greater Fort Lauderdale': [
+    { name: 'Nova Southeastern University', kind: 'University' },
+    { name: 'Cleveland Clinic Florida', kind: 'Medical Center' },
+  ],
+  'Greater Cincinnati': [
+    { name: 'University of Cincinnati', kind: 'University' },
+    { name: "Cincinnati Children's Hospital Medical Center", kind: 'Medical Center' },
+  ],
+  'Greater Orlando': [
+    { name: 'University of Central Florida', kind: 'University' },
+    { name: 'AdventHealth', kind: 'Medical Center' },
+    { name: "Nemours Children's Hospital", kind: 'Medical Center' },
+  ],
+  'Central Texas': [
+    { name: 'University of Texas at Austin', kind: 'University' },
+    { name: 'Baylor University', kind: 'University' },
+    { name: 'Texas A&M University', kind: 'University' },
+  ],
+  'North Bay': [
+    { name: 'Buck Institute for Research on Aging', kind: 'Research Institute' },
+    { name: 'UC San Francisco', kind: 'University' },
+  ],
+  'Hudson Valley': [
+    { name: 'Regeneron Pharmaceuticals', kind: 'R&D Employer' },
+    { name: 'IBM Research', kind: 'R&D Employer' },
+    { name: 'Vassar College', kind: 'University' },
+  ],
+  'Greater San Antonio': [
+    { name: 'UT Health San Antonio', kind: 'University' },
+    { name: 'Southwest Research Institute', kind: 'Research Institute' },
+    { name: 'Texas Biomedical Research Institute', kind: 'Research Institute' },
+  ],
+  'East Bay': [
+    { name: 'UC Berkeley', kind: 'University' },
+    { name: 'Lawrence Berkeley National Laboratory', kind: 'National Lab' },
+    { name: 'Lawrence Livermore National Laboratory', kind: 'National Lab' },
+  ],
+  'Portland Metro': [
+    { name: 'Oregon Health & Science University', kind: 'University' },
+    { name: 'Portland State University', kind: 'University' },
+    { name: 'Intel', kind: 'R&D Employer' },
+  ],
+  'Rio Grande Valley': [
+    { name: 'UT Rio Grande Valley', kind: 'University' },
+    { name: 'UTRGV School of Medicine', kind: 'University' },
+  ],
+  'Piedmont Triad': [
+    { name: 'Wake Forest University School of Medicine', kind: 'University' },
+    { name: 'UNC Greensboro', kind: 'University' },
+    { name: 'North Carolina A&T State University', kind: 'University' },
+  ],
+  'Palm Beaches': [
+    { name: 'Scripps Research (Florida)', kind: 'Research Institute' },
+    { name: 'Max Planck Florida Institute for Neuroscience', kind: 'Research Institute' },
+    { name: 'Florida Atlantic University', kind: 'University' },
+  ],
+  'Oahu': [
+    { name: 'University of Hawaii at Manoa', kind: 'University' },
+    { name: 'John A. Burns School of Medicine', kind: 'University' },
+  ],
+  'Greater Washington DC': [
+    { name: 'National Institutes of Health', kind: 'Research Institute' },
+    { name: 'Johns Hopkins University', kind: 'University' },
+    { name: 'Georgetown University', kind: 'University' },
+    { name: 'Walter Reed National Military Medical Center', kind: 'Medical Center' },
+  ],
+  'Greater Milwaukee': [
+    { name: 'Medical College of Wisconsin', kind: 'University' },
+    { name: 'Marquette University', kind: 'University' },
+    { name: 'UW-Milwaukee', kind: 'University' },
+  ],
+  'Central Valley': [
+    { name: 'UC Merced', kind: 'University' },
+    { name: 'UC Davis', kind: 'University' },
+  ],
+  'Central Illinois': [
+    { name: 'University of Illinois Urbana-Champaign', kind: 'University' },
+    { name: 'Carle Foundation Hospital', kind: 'Medical Center' },
+  ],
+  'Sacramento Metro': [
+    { name: 'UC Davis', kind: 'University' },
+    { name: 'UC Davis Medical Center', kind: 'Medical Center' },
+  ],
+  'Greater Sacramento': [
+    { name: 'UC Davis', kind: 'University' },
+    { name: 'UC Davis Medical Center', kind: 'Medical Center' },
+  ],
+  'Ventura County': [
+    { name: 'CSU Channel Islands', kind: 'University' },
+    { name: 'Amgen', kind: 'R&D Employer' },
+  ],
+  'Central Coast': [
+    { name: 'UC Santa Barbara', kind: 'University' },
+    { name: 'Cal Poly San Luis Obispo', kind: 'University' },
+  ],
+};
+
+// Sub-regions and label variants that inherit a canonical metro's anchors
+// (these institutions serve the whole metropolitan area).
+const ALIAS: Record<string, string> = {
+  'Phoenix Metro': 'Greater Phoenix',
+  'Denver Metro': 'Metro Denver',
+  'San Gabriel Valley': 'Greater Los Angeles',
+  'Gateway Cities': 'Greater Los Angeles',
+  'South Bay': 'Greater Los Angeles',
+  'Westside': 'Greater Los Angeles',
+  'Conejo Valley': 'Greater Los Angeles',
+  'Pomona Valley': 'Greater Los Angeles',
+  'Santa Clarita Valley': 'Greater Los Angeles',
+  'Antelope Valley': 'Greater Los Angeles',
+  'Peninsula': 'Bay Area',
+  'Sacramento Valley': 'Greater Sacramento',
+};
+
+export function getResearchAnchors(region: string | undefined): ResearchAnchor[] | null {
+  if (!region) return null;
+  const key = ALIAS[region] ?? region;
+  return ANCHORS[key] ?? null;
+}

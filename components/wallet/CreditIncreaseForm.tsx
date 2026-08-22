@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { walletErrorMessage } from './error-messages';
 
 export default function CreditIncreaseForm({
   currentLimit, onClose, onSubmitted,
@@ -26,7 +27,7 @@ export default function CreditIncreaseForm({
       if (!res.ok) throw new Error(j.error || 'failed');
       onSubmitted();
     } catch (e: any) {
-      toast.error('Request Failed: ' + (e.message || 'Unknown'));
+      toast.error(walletErrorMessage(e, 'Could Not Send That Request. Please Try Again.'));
     } finally {
       setSubmitting(false);
     }

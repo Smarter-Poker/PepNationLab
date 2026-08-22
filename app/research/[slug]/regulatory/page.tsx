@@ -18,9 +18,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   const compound = await getCompound(slug);
   const name = compound?.display_name ?? 'Compound';
+  const description = `FDA, EMA, DEA, and FAERS regulatory status for ${name} — approval years, scheduling, recall alerts, and cross-agency safety signals. Research Use Only.`;
   return {
     title: `Regulatory Dashboard For ${name} | Research Library | Pep Nation Lab`,
-    robots: { index: false, follow: true },
+    description,
+    robots: { index: true, follow: true },
+    alternates: { canonical: `https://pepnationlab.com/research/${slug}/regulatory` },
   };
 }
 

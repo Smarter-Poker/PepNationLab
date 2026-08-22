@@ -8,12 +8,15 @@ import Pagination from "@/components/Pagination";
 import { exportCSV, downloadCSV } from "@/lib/export";
 import { paymentMethodLabel, type PaymentMethodSlug } from "@/lib/payment-method-labels";
 import IframeModal from "@/components/ui/IframeModal";
+import { computeOwnOrderLedger, computeUplineLedger } from "@/lib/agent-ledger";
+import LedgerBreakdown from "@/components/LedgerBreakdown";
 
 const PAGE_SIZE = 25;
 
 interface BuyerProfile {
   full_name: string | null;
   email: string;
+  contact_email: string | null;
   phone: string | null;
 }
 
@@ -47,6 +50,12 @@ interface Order {
   buyer_name: string | null;
   buyer_email: string | null;
   profiles: BuyerProfile | null;
+  agent?: {
+    full_name?: string | null;
+    parent?: {
+      full_name: string | null;
+    } | null;
+  } | null;
 }
 
 interface OrderItem {
@@ -55,6 +64,11 @@ interface OrderItem {
   quantity: number;
   unit_retail_price: number;
   unit_cost_price: number;
+  unit_super_agent_cost?: number;
+  unit_house_cost?: number | null;
+  true_house_cost?: number | null;
+  unit_size?: string | null;
+  unit_measure?: string | null;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -95,7 +109,13 @@ function AdminOrdersPageInner() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [searchQuery, setSearchQuery] = useState(searchParams.get("q") ?? "");
+  // ?highlight=<order uuid> comes from notification deep links. The search
+  // filter below already matches on order.id, so seeding it from highlight
+  // lands the admin on exactly the order the notification is about instead
+  // of an unfiltered list (the param was previously ignored entirely).
+  const [searchQuery, setSearchQuery] = useState(
+    searchParams.get("q") ?? searchParams.get("highlight") ?? "",
+  );
   const [statusFilter, setStatusFilter] = useState<string>(
     searchParams.get("status") ?? "all",
   );
@@ -120,6 +140,7 @@ function AdminOrdersPageInner() {
   const [bulkRunning, setBulkRunning] = useState(false);
 
   const [userRole, setUserRole] = useState<string>("");
+  const [userEmail, setUserEmail] = useState<string>("");
 
   const [labelModalUrl, setLabelModalUrl] = useState<string | null>(null);
 
@@ -176,6 +197,7 @@ function AdminOrdersPageInner() {
         data: { user },
       } = await supabase.auth.getUser();
       if (user) {
+        setUserEmail(user.email || "");
         const { data } = await supabase
           .from("profiles")
           .select("role")
@@ -231,6 +253,165 @@ function AdminOrdersPageInner() {
     } finally {
       setLoadingItems(false);
     }
+  }
+
+  function printOrderReceipt() {
+    if (!selectedOrder) return;
+    const addr = selectedOrder.shipping_address;
+    const orderDate = new Date(selectedOrder.created_at).toLocaleDateString('en-US', {
+      year: 'numeric', month: 'long', day: 'numeric',
+    });
+    const statusLabel = STATUS_LABELS[selectedOrder.status] ?? selectedOrder.status;
+
+    const itemRows = items.map((item) => {
+      const dosage = item.unit_size ? `${item.unit_size}${item.unit_measure || 'mg'}` : '';
+      const lineTotal = (item.unit_retail_price * item.quantity).toFixed(2);
+      return `
+        <tr>
+          <td style="padding:8px 4px;border-bottom:1px solid #e5e7eb;">
+            <strong>${item.product_name}</strong>${dosage ? `<span style="color:#0891b2;font-weight:700;margin-left:6px;">${dosage}</span>` : ''}
+          </td>
+          <td style="padding:8px 4px;border-bottom:1px solid #e5e7eb;text-align:center;">${item.quantity}</td>
+          <td style="padding:8px 4px;border-bottom:1px solid #e5e7eb;text-align:right;">$${item.unit_retail_price.toFixed(2)}</td>
+          <td style="padding:8px 4px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:600;">$${lineTotal}</td>
+        </tr>`;
+    }).join('');
+
+    const shippingBlock = addr ? `
+      <div style="margin-top:20px;padding:14px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">
+        <div style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;">Ship To</div>
+        ${addr.fullName ? `<div style="font-weight:600;">${addr.fullName}</div>` : ''}
+        <div>${addr.street || ''}</div>
+        ${addr.suite ? `<div>${addr.suite}</div>` : ''}
+        <div>${addr.city || ''}, ${addr.state || ''} ${addr.zip || ''}</div>
+      </div>` : '';
+
+    const discountRow = Number(selectedOrder.discount_amount) > 0 ? `
+      <tr>
+        <td colspan="3" style="padding:4px 0;text-align:right;color:#16a34a;">Coupon Discount${selectedOrder.coupon_code ? ` (${selectedOrder.coupon_code})` : ''}</td>
+        <td style="padding:4px 0;text-align:right;color:#16a34a;">-$${Number(selectedOrder.discount_amount).toFixed(2)}</td>
+      </tr>` : '';
+
+    const trackingRow = selectedOrder.tracking_number ? `
+      <div style="margin-top:16px;padding:12px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;font-size:12px;">
+        <span style="font-weight:700;color:#166534;">Tracking #:</span> ${selectedOrder.tracking_number}
+      </div>` : '';
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>PepNation Lab — Order Receipt #${selectedOrder.id.slice(0, 8).toUpperCase()}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 13px; color: #111827; background: #fff; padding: 32px; }
+    @media print {
+      body { padding: 16px; }
+      .no-print { display: none !important; }
+    }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 2px solid #111827; }
+    .logo { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: #111827; }
+    .logo span { color: #0891b2; }
+    .order-meta { text-align: right; font-size: 11px; color: #6b7280; }
+    .order-meta strong { display: block; font-size: 15px; color: #111827; margin-bottom: 4px; }
+    .section-label { font-size: 11px; font-weight: 700; color: #6b7280; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 8px; margin-top: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    thead th { font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: .06em; padding: 6px 4px; border-bottom: 2px solid #e5e7eb; }
+    thead th:first-child { text-align: left; }
+    thead th:not(:first-child) { text-align: right; }
+    thead th:nth-child(2) { text-align: center; }
+    .totals-table td { padding: 4px 0; }
+    .total-row { font-size: 15px; font-weight: 800; color: #0891b2; border-top: 2px solid #111827; }
+    .total-row td { padding-top: 10px; }
+    .status-badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; background: #cffafe; color: #0891b2; }
+    .footer { margin-top: 36px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #9ca3af; text-align: center; }
+    .print-btn { margin-bottom: 24px; padding: 10px 24px; background: #0891b2; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="no-print" style="margin-bottom:20px;">
+    <button class="print-btn" onclick="window.print()">🖨️ Print / Save PDF</button>
+  </div>
+  <div class="header">
+    <div>
+      <div class="logo">Pep<span>Nation</span>Lab</div>
+      <div style="font-size:11px;color:#6b7280;margin-top:4px;">pepnationlab.com</div>
+    </div>
+    <div class="order-meta">
+      <strong>Order Receipt</strong>
+      Order #${selectedOrder.id.slice(0, 8).toUpperCase()}<br>
+      Date: ${orderDate}<br>
+      <span class="status-badge" style="margin-top:4px;display:inline-block;">${statusLabel}</span>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:32px;">
+    <div style="flex:1;">
+      <div class="section-label">Buyer Information</div>
+      <div style="font-weight:600;">${selectedOrder.buyer_name || selectedOrder.profiles?.full_name || '—'}</div>
+      <div style="color:#6b7280;">${
+        [
+          selectedOrder.buyer_email,
+          (selectedOrder.shipping_address as any)?.email,
+          selectedOrder.profiles?.contact_email,
+          selectedOrder.profiles?.email
+        ].find(e => e && typeof e === 'string' && !e.includes('@internal.auth')) || '—'
+      }</div>
+    </div>
+    <div style="flex:1;">
+      <div class="section-label">Payment</div>
+      <div>${paymentMethodLabel(selectedOrder.payment_method as PaymentMethodSlug)}</div>
+    </div>
+  </div>
+
+  ${shippingBlock}
+
+  <div class="section-label" style="margin-top:24px;">Items Ordered</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Product</th>
+        <th style="text-align:center;">Qty</th>
+        <th style="text-align:right;">Unit Price</th>
+        <th style="text-align:right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${itemRows}
+    </tbody>
+  </table>
+
+  <table class="totals-table" style="margin-top:12px;">
+    <tbody>
+      <tr>
+        <td colspan="3" style="text-align:right;color:#6b7280;">Subtotal</td>
+        <td style="text-align:right;">$${Number(selectedOrder.subtotal).toFixed(2)}</td>
+      </tr>
+      ${discountRow}
+      <tr>
+        <td colspan="3" style="text-align:right;color:#6b7280;">Shipping</td>
+        <td style="text-align:right;">$${Number(selectedOrder.shipping_cost).toFixed(2)}</td>
+      </tr>
+      <tr class="total-row">
+        <td colspan="3" style="text-align:right;">Total</td>
+        <td style="text-align:right;">$${Number(selectedOrder.total).toFixed(2)}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  ${trackingRow}
+
+  <div class="footer">
+    PepNationLab &bull; Internal Fulfillment Receipt &bull; Printed ${new Date().toLocaleString()}
+  </div>
+</body>
+</html>`;
+
+    const win = window.open('', '_blank', 'width=780,height=900,scrollbars=yes');
+    if (!win) { toast.error('Pop-up blocked — please allow pop-ups for this page.'); return; }
+    win.document.write(html);
+    win.document.close();
+    win.focus();
   }
 
   async function handleStatusTransition(nextStatus: string) {
@@ -366,6 +547,21 @@ function AdminOrdersPageInner() {
     }
   }
 
+  // React to ?highlight=<order uuid> arriving AFTER mount. The initial state
+  // above only reads searchParams once, so a notification tapped while the
+  // admin is already ON /admin/orders changed the URL and nothing else - the
+  // list kept whatever filter was there. Watching the param makes every
+  // notification land on its own order, first visit or not. The effect below
+  // then rewrites the URL as ?q=..., which clears highlight and stops this
+  // from re-firing.
+  useEffect(() => {
+    const highlight = searchParams.get("highlight");
+    if (highlight && highlight !== searchQuery) {
+      setSearchQuery(highlight);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   useEffect(() => {
     const params = new URLSearchParams();
     if (searchQuery) params.set("q", searchQuery);
@@ -396,9 +592,12 @@ function AdminOrdersPageInner() {
           ""
         ).toLowerCase();
         const email = (
-          order.profiles?.email ||
-          order.buyer_email ||
-          ""
+          [
+            order.buyer_email,
+            (order.shipping_address as any)?.email,
+            order.profiles?.contact_email,
+            order.profiles?.email
+          ].find(e => e && typeof e === 'string' && !e.includes('@internal.auth')) || ""
         ).toLowerCase();
         const orderId = order.id.toLowerCase();
         const tracking = (order.tracking_number || "").toLowerCase();
@@ -435,6 +634,18 @@ function AdminOrdersPageInner() {
     setWholesaleOnly(false);
   }
 
+  function shiftWeek(direction: 1 | -1) {
+    const fromDate = dateFrom ? new Date(dateFrom) : new Date();
+    const toDate = dateTo ? new Date(dateTo) : new Date(fromDate.getTime() + 6 * 86400000);
+    
+    // Add direction * 7 days
+    fromDate.setDate(fromDate.getDate() + direction * 7);
+    toDate.setDate(toDate.getDate() + direction * 7);
+
+    setDateFrom(fromDate.toISOString().slice(0, 10));
+    setDateTo(toDate.toISOString().slice(0, 10));
+  }
+
   return (
     <div style={{ padding: "var(--space-8)" }}>
       {labelModalUrl && (
@@ -469,7 +680,12 @@ function AdminOrdersPageInner() {
             const rows = filteredOrders.map((o) => ({
               id: o.id,
               created_at: new Date(o.created_at).toISOString(),
-              buyer: o.profiles?.full_name || o.profiles?.email || o.buyer_name || o.buyer_email || "",
+              buyer: o.profiles?.full_name || o.buyer_name || [
+                o.buyer_email,
+                (o.shipping_address as any)?.email,
+                o.profiles?.contact_email,
+                o.profiles?.email
+              ].find(e => e && typeof e === 'string' && !e.includes('@internal.auth')) || "",
               status: STATUS_LABELS[o.status] ?? o.status,
               fulfillment: o.fulfillment_method || "",
               payment_method: o.payment_method || "",
@@ -592,6 +808,25 @@ function AdminOrdersPageInner() {
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
               />
+            </div>
+
+            <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center" }}>
+              <button
+                className="btn btn-outline"
+                style={{ padding: "0.4rem 0.6rem", fontSize: "0.8rem", height: "38px" }}
+                onClick={() => shiftWeek(-1)}
+                title="Previous 7 Days"
+              >
+                &larr; Prev Week
+              </button>
+              <button
+                className="btn btn-outline"
+                style={{ padding: "0.4rem 0.6rem", fontSize: "0.8rem", height: "38px" }}
+                onClick={() => shiftWeek(1)}
+                title="Next 7 Days"
+              >
+                Next Week &rarr;
+              </button>
             </div>
 
             <label
@@ -904,6 +1139,36 @@ function AdminOrdersPageInner() {
                           {paymentMethodLabel(order.payment_method)} &bull; $
                           {Number(order.total).toFixed(2)}
                         </div>
+                        {order.agent_id && (
+                          <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", marginTop: 5 }}>
+                            {order.agent?.full_name && (
+                              <span style={{
+                                fontSize: "0.68rem",
+                                fontWeight: 600,
+                                color: "var(--teal)",
+                                background: "rgba(0,229,255,0.08)",
+                                border: "1px solid rgba(0,229,255,0.2)",
+                                borderRadius: "4px",
+                                padding: "1px 6px",
+                              }}>
+                                Agent: {order.agent.full_name}
+                              </span>
+                            )}
+                            {order.agent?.parent?.full_name && (
+                              <span style={{
+                                fontSize: "0.68rem",
+                                fontWeight: 600,
+                                color: "var(--green)",
+                                background: "rgba(104,211,145,0.08)",
+                                border: "1px solid rgba(104,211,145,0.2)",
+                                borderRadius: "4px",
+                                padding: "1px 6px",
+                              }}>
+                                Upline: {order.agent.parent.full_name}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       <span
@@ -1041,7 +1306,12 @@ function AdminOrdersPageInner() {
                       Name: {selectedOrder.profiles?.full_name || selectedOrder.buyer_name || "Anonymous"}
                     </div>
                     <div>
-                      Email: {selectedOrder.profiles?.email || selectedOrder.buyer_email || "-"}
+                      Email: {[
+                        selectedOrder.buyer_email,
+                        (selectedOrder.shipping_address as any)?.email,
+                        selectedOrder.profiles?.contact_email,
+                        selectedOrder.profiles?.email
+                      ].find(e => e && !e.includes('@internal.auth')) || "-"}
                     </div>
                     {selectedOrder.profiles?.phone && (
                       <div>Phone: {selectedOrder.profiles?.phone}</div>
@@ -1144,32 +1414,74 @@ function AdminOrdersPageInner() {
                         gap: "var(--space-2)",
                       }}
                     >
-                      {items.map((item) => (
-                        <div
-                          key={item.id}
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            fontSize: "0.78rem",
-                            padding: "4px 0",
-                            }}
-                        >
-                          <div style={{ color: "var(--grey-300)" }}>
-                            {item.product_name}{" "}
-                            <span style={{ color: "var(--teal)" }}>
-                              x{item.quantity}
-                            </span>
-                          </div>
+                      {items.map((item) => {
+                        let profitLabel = null;
+                        if (userRole === "admin" || userRole === "super_agent") {
+                          const qty = item.quantity || 0;
+                          const retail = Number(item.unit_retail_price || 0);
+                          if (selectedOrder.agent_id) {
+                            const cost = Number(item.unit_cost_price || 0);
+                            const scost = Number(item.unit_super_agent_cost || 0);
+                            const profit = (cost - scost) * qty;
+                            profitLabel = `PN Margin: $${profit.toFixed(2)}`;
+                          } else {
+                            const scost = Number(item.unit_super_agent_cost || 0);
+                            const profit = (retail - scost) * qty;
+                            profitLabel = `Profit: $${profit.toFixed(2)}`;
+                          }
+                        }
+
+                        return (
                           <div
-                            style={{ color: "var(--silver)", fontWeight: 600 }}
+                            key={item.id}
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              padding: "4px 0",
+                            }}
                           >
-                            $
-                            {(item.unit_retail_price * item.quantity).toFixed(
-                              2,
+                            <div
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                fontSize: "0.78rem",
+                              }}
+                            >
+                              <div style={{ color: "var(--grey-300)" }}>
+                                {item.product_name}
+                                {item.unit_size && (
+                                  <span
+                                    style={{
+                                      color: "var(--teal)",
+                                      fontWeight: 700,
+                                      marginLeft: 4,
+                                      fontSize: "0.75rem",
+                                    }}
+                                  >
+                                    {item.unit_size}{item.unit_measure || "mg"}
+                                  </span>
+                                )}{" "}
+                                <span style={{ color: "var(--silver)", opacity: 0.7 }}>
+                                  x{item.quantity}
+                                </span>
+                              </div>
+                              <div
+                                style={{ color: "var(--silver)", fontWeight: 600 }}
+                              >
+                                $
+                                {(item.unit_retail_price * item.quantity).toFixed(
+                                  2,
+                                )}
+                              </div>
+                            </div>
+                            {profitLabel && (
+                              <div style={{ fontSize: "0.68rem", color: "var(--teal)", textAlign: "right", marginTop: "2px" }}>
+                                {profitLabel}
+                              </div>
                             )}
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                       {/* Totals */}
                       <div
                         style={{
@@ -1240,6 +1552,110 @@ function AdminOrdersPageInner() {
                           <span>Total Cost</span>
                           <span>${Number(selectedOrder.total).toFixed(2)}</span>
                         </div>
+
+                        {(userRole === "admin" || userRole === "super_agent") && items.length > 0 && selectedOrder.agent_id && (() => {
+                          const ownLedger = computeOwnOrderLedger(selectedOrder, items);
+                          const uplineLedger = computeUplineLedger(selectedOrder, items);
+                          
+                          const {
+                            grossCustomerPmt,
+                            netYouCollect,
+                            discount,
+                            shippingCost,
+                            ownProfit,
+                            hasSbCost,
+                            sbCostTotal,
+                            markupSpread
+                          } = ownLedger;
+
+                          const {
+                            dlOwesYou,
+                            youOwePepNation,
+                            uplProfit
+                          } = uplineLedger;
+                          const uplineName = selectedOrder.agent?.parent?.full_name;
+
+                          return (
+                            <div style={{ marginTop: "1rem", paddingTop: "0.5rem", borderTop: "1px dashed var(--border)" }}>
+                              <div style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.2)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                <div style={{ fontSize: '0.68rem', color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 800 }}>
+                                  {uplineName ? `Upline Ledger — ${uplineName}` : 'Settlement Ledger'}
+                                </div>
+                                <LedgerBreakdown
+                                  ownLedger={ownLedger}
+                                  uplineLedger={uplineLedger}
+                                  viewerRole={userRole}
+                                  isOwnOrder={false}
+                                  agentName={selectedOrder.agent?.full_name || 'Agent'}
+                                  uplineName={uplineName || 'Upline'}
+                                  couponCode={selectedOrder.coupon_code}
+                                />
+                              </div>
+
+                              {userEmail === "daniel@bekavactrading.com" && (() => {
+                                let houseCostTotal = 0;
+                                let agentOwesTotal = 0;
+                                let sbCostTotal = 0;
+                                let retailTotal = 0;
+
+                                items.forEach(item => {
+                                  const qty = Number(item.quantity) || 0;
+                                  if (qty <= 0) return;
+                                  const ucp = Number(item.unit_cost_price || 0);
+                                  const usc = Number(item.unit_super_agent_cost || 0);
+                                  const uhc = Number(item.true_house_cost ?? item.unit_house_cost ?? 0);
+                                  const urp = Number(item.unit_retail_price || 0);
+                                  
+                                  agentOwesTotal += ucp * qty;
+                                  if (usc > 0) sbCostTotal += usc * qty;
+                                  houseCostTotal += uhc * qty;
+                                  retailTotal += urp * qty;
+                                });
+
+                                let houseCollects = 0;
+                                let collectSource = "";
+                                if (sbCostTotal > 0) {
+                                  houseCollects = sbCostTotal + shippingCost;
+                                  collectSource = uplineName || "Savage Brands";
+                                } else if (selectedOrder.agent_id) {
+                                  houseCollects = agentOwesTotal + shippingCost;
+                                  collectSource = selectedOrder.agent?.full_name || "Agent";
+                                } else {
+                                  houseCollects = retailTotal + shippingCost - discount;
+                                  collectSource = "Customer (Direct)";
+                                }
+
+                                const houseProfit = houseCollects - (houseCostTotal + shippingCost);
+                                const fmt = (val: number) => `$${val.toFixed(2)}`;
+
+                                return (
+                                  <div style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(252, 129, 129, 0.06)', border: '1px solid rgba(252, 129, 129, 0.2)', display: 'flex', flexDirection: 'column', gap: 8, marginTop: "1rem" }}>
+                                    <div style={{ fontSize: '0.68rem', color: 'var(--red)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 800 }}>
+                                      Admin View Only — True House Ledger
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
+                                        <span style={{ color: 'var(--silver)' }}>Pep Nation Collects From {collectSource}</span>
+                                        <span style={{ color: 'var(--white)' }}>{fmt(houseCollects)}</span>
+                                      </div>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
+                                        <span style={{ color: 'var(--silver)' }}>Pep Nation True COG</span>
+                                        <span style={{ color: 'var(--red)' }}>-{fmt(houseCostTotal + shippingCost)}</span>
+                                      </div>
+                                      
+                                      <div style={{ height: 1, background: 'rgba(252, 129, 129, 0.12)' }} />
+                                      
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 800 }}>
+                                        <span style={{ color: 'var(--white)' }}>Pep Nation True Profit</span>
+                                        <span style={{ color: houseProfit >= 0 ? '#22C55E' : 'var(--red)' }}>{fmt(houseProfit)}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   )}
@@ -1282,6 +1698,30 @@ function AdminOrdersPageInner() {
                         gap: "var(--space-3)",
                       }}
                     >
+                      {/* Print Receipt — always visible */}
+                      <button
+                        onClick={printOrderReceipt}
+                        disabled={loadingItems}
+                        style={{
+                          width: "100%",
+                          justifyContent: "center",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          padding: "10px 16px",
+                          borderRadius: "var(--radius-md)",
+                          border: "1px solid var(--silver)",
+                          background: "transparent",
+                          color: "var(--silver)",
+                          fontSize: "0.82rem",
+                          fontWeight: 600,
+                          cursor: loadingItems ? "not-allowed" : "pointer",
+                          opacity: loadingItems ? 0.5 : 1,
+                          letterSpacing: "0.02em",
+                        }}
+                      >
+                        🖨️ Print Receipt
+                      </button>
                       {selectedOrder.status === "pending_customer_payment" &&
                         userRole !== "shipping" && (
                           <button

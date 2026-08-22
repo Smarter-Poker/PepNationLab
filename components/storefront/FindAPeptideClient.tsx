@@ -112,6 +112,8 @@ export default function FindAPeptideClient({
             item.custom_image_url ?? item.products?.image_url ?? null,
             item.products?.category || 'Other',
             name,
+            !!item.custom_image_url,
+            agentSlug
           ),
           variants: [],
           lowestPrice: item.retail_price || 0,
@@ -150,9 +152,9 @@ export default function FindAPeptideClient({
         .map(([vId, qty]) => {
           const item = products.find(p => p.id === vId);
           if (!item) return null;
-          const perVial = item.retail_price / 10;
+          const perVial = item.retail_price;
           const costPerVial = isStorefrontOwner && (item as any).cost_price != null
-            ? Number((item as any).cost_price) / 10
+            ? Number((item as any).cost_price)
             : perVial;
           const sizeLabel = item.products?.unit_size
             ? `(${item.products.unit_size}${item.products.unit_measure || ''})`

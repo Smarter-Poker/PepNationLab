@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     creator: '@PepNationLab',
     title: 'Browse Peptides By Molecular Weight | Research Library | Pep Nation Lab',
     description: 'Browse research peptides sorted by molecular weight (Daltons). Understand bioavailability and delivery implications of molecular weight differences. Research use only.',
-    images: ['https://pepnationlab.com/images/og-card.jpg'],
+    images: ['https://pepnationlab.com/og-card.png'],
   },
 };
 

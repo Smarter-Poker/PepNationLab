@@ -120,6 +120,7 @@ DECLARE
   v_existing UUID; v_referrer_reward NUMERIC; v_referee_reward NUMERIC;
   v_referral_id UUID; v_kind TEXT; v_credit BOOLEAN := false;
 BEGIN
+  PERFORM set_config('app.allow_researcher_reassign', 'on', true);
   IF v_code IS NULL THEN RETURN jsonb_build_object('applied', false, 'reason', 'empty'); END IF;
   SELECT id, role::text AS role, is_sub_agent, is_super_agent, username,
          referring_agent_id, referral_reward_enabled, referral_reward_amount

@@ -324,14 +324,23 @@ export default function ProductsList({
                             unoptimized
                             style={{ borderRadius: 9999, overflow: 'hidden', objectFit: 'contain' }} 
                           />
+                        ) : product.inventory_count >= 999999 ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '2px 10px', borderRadius: 9999, fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                            Needs Shipping
+                          </span>
                         ) : (
-                          <Image 
-                            src="/images/badges/badge_in_stock.png" 
-                            alt="In Stock" 
-                            width={80} height={20}
-                            unoptimized
-                            style={{ borderRadius: 9999, overflow: 'hidden', objectFit: 'contain' }} 
-                          />
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Image 
+                              src="/images/badges/badge_in_stock.png" 
+                              alt="In Stock" 
+                              width={80} height={20}
+                              unoptimized
+                              style={{ borderRadius: 9999, overflow: 'hidden', objectFit: 'contain' }} 
+                            />
+                            <span style={{ fontSize: '0.65rem', color: '#4ade80', fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase', background: 'rgba(74, 222, 128, 0.1)', padding: '2px 8px', borderRadius: 9999, border: '1px solid rgba(74, 222, 128, 0.2)' }}>
+                              SAME-DAY
+                            </span>
+                          </div>
                         )
                       ) : (
                         <Image 

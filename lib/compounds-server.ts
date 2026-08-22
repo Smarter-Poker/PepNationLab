@@ -145,3 +145,31 @@ export const getCompoundStructures = unstable_cache(
   ['research-compound-structures'],
   { revalidate: COMPOUND_CACHE_SECONDS, tags: ['compounds', 'structures'] }
 );
+
+/**
+ * Fetch the most-recent verified COA lot URL for a compound, keyed by slug.
+ * Returns a /coa?lot= URL (or null if no verified lot exists).
+ */
+export async function getCOAUrlByCompoundSlug(slug: string): Promise<string | null> {
+  if (!supabaseEnvReady() || !slug) return null;
+  const supabase = await createServiceClient();
+  const { data } = await supabase
+    .from('product_lots')
+    .select('lot_number, coa_storage_key, products!inner(compound_slug)')
+    .eq('products.compound_slug', slug)
+    .eq('is_active', true)
+    .not('coa_verified_at', 'is', null)
+    .is('coa_retracted_at', null)
+    .is('superseded_by', null)
+    .order('received_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!data) return null;
+  if (data.coa_storage_key) {
+    const { data: pub } = supabase.storage.from('product-coas').getPublicUrl(data.coa_storage_key);
+    if (pub?.publicUrl) return pub.publicUrl;
+  }
+  if (data.lot_number) return `/coa?lot=${encodeURIComponent(data.lot_number)}`;
+  return null;
+}

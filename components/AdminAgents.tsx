@@ -5,7 +5,14 @@ import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import AgentAccountDetail from '@/components/AgentAccountDetail';
 import DownlineTree from '@/components/DownlineTree';
+import AccountDeleteButton from '@/components/AccountDeleteButton';
 import { freshDefaultLadder, GAMIFICATION_MAX_PCT } from '@/lib/gamification';
+import {
+  MIN_PASSWORD_LENGTH,
+  MAX_PASSWORD_LENGTH,
+  PASSWORD_RULE_TEXT,
+  PASSWORD_TOO_SHORT_ERROR,
+} from '@/lib/password-policy';
 
 const AvailabilityIndicator = ({ status }: { status: 'idle' | 'checking' | 'available' | 'taken' }) => {
   if (status === 'idle') return null;
@@ -19,7 +26,7 @@ const AvailabilityIndicator = ({ status }: { status: 'idle' | 'checking' | 'avai
   if (status === 'available') {
     return (
       <span style={{ fontSize: '0.8rem', color: 'var(--green)', marginTop: 4, display: 'block', fontWeight: 600 }}>
-        That Name Is Available
+        That Name Is available
       </span>
     );
   }
@@ -89,6 +96,11 @@ export default function AdminAgents() {
 
   const [togglingTrust, setTogglingTrust] = useState<string | null>(null);
 
+  // Assign-to-manufacturer inline control
+  const [assigningParentFor, setAssigningParentFor] = useState<string | null>(null);
+  const [assignParentValue, setAssignParentValue] = useState<string>('');
+  const [assignParentSaving, setAssignParentSaving] = useState(false);
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createForm, setCreateForm] = useState({
     firstName: '',
@@ -97,6 +109,10 @@ export default function AdminAgents() {
     username: '',
     password: '',
     tier: 'tier_3',
+    // Pricing mode: 'tier' (locked house tier) or 'markup' (flat cost-plus %).
+    // Mutually exclusive - see the payload builder in handleCreateAgent.
+    pricing_mode: 'tier',
+    markup_pct: '',
     account_type: 'prepaid',
     credit_limit: '',
     max_auto_approve_limit: '',
@@ -105,6 +121,7 @@ export default function AdminAgents() {
     display_name: '',
     account_role: 'agent',
     parent_agent_id: '',
+    locale: 'en',
   });
   const [isCreating, setIsCreating] = useState(false);
 
@@ -217,11 +234,6 @@ export default function AdminAgents() {
 
   const handleCreateAgent = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (createForm.account_role !== 'researcher' && caCommissionMode === 'gamified'
-        && caCustomSteps.some(s => Number(s.bonus_pct) > GAMIFICATION_MAX_PCT)) {
-      toast.error('Gamification Levels Cannot Exceed 40%.');
-      return;
-    }
     setIsCreating(true);
     try {
       const res = await fetch('/api/admin/agents', {
@@ -234,22 +246,16 @@ export default function AdminAgents() {
           username: createForm.username.toLowerCase().replace(/[^a-z0-9_]/g, ''),
           slug: (createForm.slug || createForm.username).toLowerCase().replace(/[^a-z0-9-]/g, ''),
           display_name: createForm.display_name || createForm.username,
-          commission_pct: createForm.account_role === 'researcher' ? undefined : (
-            caCommissionMode === 'fixed'
-              ? (caCommissionPct === '' ? undefined : caCommissionPct)
-              : (Number(caCustomSteps[0].bonus_pct) || 0)
-          ),
-          commission_max_pct: createForm.account_role === 'researcher' ? undefined : (
-            caCommissionMode === 'fixed'
-              ? (caCommissionPct === '' ? undefined : caCommissionPct)
-              : Number(caCustomSteps[caCustomSteps.length - 1].bonus_pct)
-          ),
-          velocity_cap: undefined,
-          custom_commission_scale: createForm.account_role === 'researcher' ? undefined : (
-            caCommissionMode === 'gamified'
-              ? caCustomSteps.map(s => ({ min_volume: Number(s.min_volume) || 0, bonus_pct: Math.max(0, Number(s.bonus_pct) - Number(caCustomSteps[0].bonus_pct)) }))
-              : undefined
-          ),
+          // PRICING MODE (2026-08-07): an assigned house tier and a flat markup
+          // are mutually exclusive. Sending tier:null tells the API - and the DB
+          // invariant trg_sync_tier_lock_on_tier_change - that the flat markup
+          // governs; otherwise the tier governs and any stale flat markup is
+          // cleared. Never send both, or the tier silently wins and the markup
+          // looks like it "did not save".
+          tier: createForm.pricing_mode === 'markup' ? null : createForm.tier,
+          markup_pct: createForm.pricing_mode === 'markup' ? createForm.markup_pct : null,
+          // Store pricing is preset at the admin store price; agents do not
+          // choose a markup at onboarding, so no commission fields are sent.
         }),
       });
       const data = await res.json();
@@ -263,6 +269,8 @@ export default function AdminAgents() {
         username: '',
         password: '',
         tier: 'tier_3',
+        pricing_mode: 'tier',
+        markup_pct: '',
         account_type: 'prepaid',
         credit_limit: '',
         max_auto_approve_limit: '',
@@ -271,6 +279,7 @@ export default function AdminAgents() {
         display_name: '',
         account_role: 'agent',
         parent_agent_id: '',
+        locale: 'en',
       });
       setCaCommissionMode('fixed');
       setCaCommissionPct('');
@@ -403,9 +412,9 @@ export default function AdminAgents() {
           onClick={() => {
             setCreateForm({
               firstName: '', lastName: '', full_name: '',
-              username: '', password: '', tier: 'tier_3',
+              username: '', password: '', tier: 'tier_3', pricing_mode: 'tier', markup_pct: '',
               account_type: 'prepaid', credit_limit: '', max_auto_approve_limit: '', prepaid_balance: '',
-              slug: '', display_name: '', account_role: 'agent', parent_agent_id: ''
+              slug: '', display_name: '', account_role: 'agent', parent_agent_id: '', locale: 'en'
             });
             setShowCreateModal(true);
           }}
@@ -470,8 +479,12 @@ export default function AdminAgents() {
                       ID: {agent.id.split('-')[0]}
                     </span>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                    {agent.is_super_agent ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                    {agent.is_admin_account ? (
+                      <span className="badge" style={{ fontSize: '0.65rem', background: 'rgba(139,92,246,0.15)', color: '#A78BFA', border: '1px solid rgba(139,92,246,0.4)' }}>ADMIN ACCOUNT</span>
+                    ) : agent.is_manufacturer ? (
+                      <span className="badge" style={{ fontSize: '0.65rem', background: 'rgba(251,146,60,0.12)', color: '#FB923C', border: '1px solid rgba(251,146,60,0.35)' }}>MANUFACTURER</span>
+                    ) : agent.is_super_agent ? (
                       <span className="badge badge-teal" style={{ fontSize: '0.65rem' }}>SUPER AGENT</span>
                     ) : agent.parent_agent_id ? (
                       <span className="badge badge-silver" style={{ fontSize: '0.65rem' }}>Sub-Agent</span>
@@ -691,6 +704,102 @@ export default function AdminAgents() {
                   >
                     View Downlines
                   </button>
+
+                  <AccountDeleteButton
+                    targetId={agent.id}
+                    targetName={agent.full_name || agent.username || null}
+                    kind="agent"
+                    compact
+                    onDeleted={() => { fetchAgents(); }}
+                  />
+
+                  {/* Assign to Parent — only shown for super agents */}
+                  {agent.is_super_agent && (() => {
+                    const validParents = agents.filter((a: any) => a.is_manufacturer || a.is_admin_account);
+                    const currentParent = agent.parent_agent_id
+                      ? agents.find((a: any) => a.id === agent.parent_agent_id)
+                      : null;
+                    const isOpen = assigningParentFor === agent.id;
+                    return (
+                      <div style={{ position: 'relative' }}>
+                        <button
+                          className="btn-silver"
+                          style={{ padding: '6px 12px', fontSize: '0.8rem', borderColor: 'rgba(0,196,188,0.4)', color: 'var(--teal)' }}
+                          onClick={() => {
+                            if (isOpen) { setAssigningParentFor(null); return; }
+                            setAssigningParentFor(agent.id);
+                            setAssignParentValue(agent.parent_agent_id ?? '');
+                          }}
+                        >
+                          ↳ {currentParent ? `Under: ${currentParent.full_name || currentParent.username}` : 'Assign Parent'}
+                        </button>
+                        {isOpen && (
+                          <div style={{
+                            position: 'absolute', right: 0, top: '100%', marginTop: 4, zIndex: 999,
+                            background: '#0F1923', border: '1px solid rgba(0,196,188,0.3)', borderRadius: 10,
+                            padding: 12, minWidth: 240, boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+                            display: 'flex', flexDirection: 'column', gap: 8,
+                          }}>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--silver)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Assign Parent Admin</div>
+                            <select
+                              value={assignParentValue}
+                              onChange={e => setAssignParentValue(e.target.value)}
+                              style={{ background: '#1D2D3E', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, color: 'var(--white)', padding: '6px 8px', fontSize: '0.82rem' }}
+                            >
+                              <option value="">— Root Level (No Parent) —</option>
+                              {validParents.map((m: any) => (
+                                <option key={m.id} value={m.id}>
+                                  {m.full_name || m.username}{m.username ? ` (@${m.username})` : ''}
+                                </option>
+                              ))}
+                            </select>
+                            {validParents.length === 0 && (
+                              <div style={{ fontSize: '0.74rem', color: 'var(--grey-400)', fontStyle: 'italic' }}>No eligible parent accounts found in the system.</div>
+                            )}
+                            <div style={{ display: 'flex', gap: 6 }}>
+                              <button
+                                disabled={assignParentSaving}
+                                style={{ flex: 1, padding: '6px 10px', fontSize: '0.78rem', fontWeight: 700, background: 'var(--teal)', color: '#04221F', border: 'none', borderRadius: 6, cursor: 'pointer', opacity: assignParentSaving ? 0.5 : 1 }}
+                                onClick={async () => {
+                                  setAssignParentSaving(true);
+                                  try {
+                                    const res = await fetch('/api/admin/agents/reparent', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({
+                                        agentId: agent.id,
+                                        parentAgentId: assignParentValue || null,
+                                      }),
+                                    });
+                                    const json = await res.json();
+                                    if (!res.ok) {
+                                      toast.error(json.error || 'Failed to assign parent');
+                                    } else {
+                                      toast.success(assignParentValue ? 'Agent assigned to parent network' : 'Agent moved to root level');
+                                      setAssigningParentFor(null);
+                                      fetchAgents();
+                                    }
+                                  } catch {
+                                    toast.error('Network error — please try again');
+                                  } finally {
+                                    setAssignParentSaving(false);
+                                  }
+                                }}
+                              >
+                                {assignParentSaving ? 'Saving...' : 'Confirm'}
+                              </button>
+                              <button
+                                style={{ padding: '6px 10px', fontSize: '0.78rem', background: 'rgba(255,255,255,0.05)', color: 'var(--silver)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, cursor: 'pointer' }}
+                                onClick={() => setAssigningParentFor(null)}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
 
               </div>
@@ -901,7 +1010,7 @@ export default function AdminAgents() {
               </p>
               <form onSubmit={async (e) => {
                 e.preventDefault();
-                if (newPassword.length < 8) { toast.error('Password Must Be At Least 8 Characters'); return; }
+                if (newPassword.length < MIN_PASSWORD_LENGTH) { toast.error(PASSWORD_TOO_SHORT_ERROR); return; }
                 if (!passwordAgent || !newPassword) return;
                 setPasswordSaving(true);
                 try {
@@ -932,13 +1041,15 @@ export default function AdminAgents() {
                     placeholder="Enter New Password"
                     autoComplete="off"
                     autoFocus
+                    minLength={MIN_PASSWORD_LENGTH}
+                    maxLength={MAX_PASSWORD_LENGTH}
                     style={{ width: '100%' }}
                   />
-                  <div style={{ marginTop: 6, fontSize: '0.75rem', color: newPassword.length === 0 ? 'var(--grey-500)' : newPassword.length < 8 ? '#F87171' : '#2DD4BF', fontWeight: 600 }}>
+                  <div style={{ marginTop: 6, fontSize: '0.75rem', color: newPassword.length === 0 ? 'var(--grey-500)' : newPassword.length < MIN_PASSWORD_LENGTH ? '#F87171' : '#2DD4BF', fontWeight: 600 }}>
                     {newPassword.length === 0
-                      ? 'Minimum 8 Characters Required'
-                      : newPassword.length < 8
-                      ? `${newPassword.length}/8 - Need ${8 - newPassword.length} More Character${8 - newPassword.length !== 1 ? 's' : ''}`
+                      ? `Minimum ${MIN_PASSWORD_LENGTH} Characters Required`
+                      : newPassword.length < MIN_PASSWORD_LENGTH
+                      ? `${newPassword.length}/${MIN_PASSWORD_LENGTH} - Need ${MIN_PASSWORD_LENGTH - newPassword.length} More Character${MIN_PASSWORD_LENGTH - newPassword.length !== 1 ? 's' : ''}`
                       : `${newPassword.length} Characters - Good To Go`}
                   </div>
                 </div>
@@ -947,8 +1058,8 @@ export default function AdminAgents() {
                   <button
                     type="submit"
                     className="btn-neon-cyan"
-                    style={{ padding: '4px 12px', fontSize: '0.8rem', opacity: (passwordSaving || newPassword.length < 8) ? 0.4 : 1, cursor: (passwordSaving || newPassword.length < 8) ? 'not-allowed' : 'pointer' }}
-                    disabled={passwordSaving || newPassword.length < 8}
+                    style={{ padding: '4px 12px', fontSize: '0.8rem', opacity: (passwordSaving || newPassword.length < MIN_PASSWORD_LENGTH) ? 0.4 : 1, cursor: (passwordSaving || newPassword.length < MIN_PASSWORD_LENGTH) ? 'not-allowed' : 'pointer' }}
+                    disabled={passwordSaving || newPassword.length < MIN_PASSWORD_LENGTH}
                   >
                     {passwordSaving ? 'Saving...' : 'Update Password'}
                   </button>
@@ -1048,7 +1159,7 @@ export default function AdminAgents() {
               </div>
 
               <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
-                <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Account Type</label>
+                <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Account Role</label>
                 <select
                   className="form-input"
                   value={createForm.account_role}
@@ -1057,8 +1168,20 @@ export default function AdminAgents() {
                 >
                   <option value="agent">Agent</option>
                   <option value="super_agent">Super Agent</option>
+                  <option value="manufacturer">Manufacturer</option>
+                  <option value="admin_account">Admin Account</option>
                   <option value="researcher">Researcher</option>
                 </select>
+                {createForm.account_role === 'admin_account' && (
+                  <p style={{ margin: '6px 0 0', fontSize: '0.74rem', color: 'var(--silver)', lineHeight: 1.5 }}>
+                    ⚡ Admin Account: Can manage Super Agents, view network orders, and recruit agents — but does <strong>not</strong> have platform admin access.
+                  </p>
+                )}
+                {createForm.account_role === 'manufacturer' && (
+                  <p style={{ margin: '6px 0 0', fontSize: '0.74rem', color: 'var(--silver)', lineHeight: 1.5 }}>
+                    🏭 Manufacturer: Gets their own storefront + pricing dashboard. Commissioned at a fixed rate on all sales.
+                  </p>
+                )}
               </div>
 
               {createForm.account_role === 'researcher' && (
@@ -1108,27 +1231,77 @@ export default function AdminAgents() {
                   className="form-input"
                   value={createForm.password}
                   onChange={e => handleCreateFormChange('password', e.target.value)}
-                  placeholder="Minimum 8 Characters"
+                  placeholder={PASSWORD_RULE_TEXT}
                   required
-                  minLength={8}
+                  minLength={MIN_PASSWORD_LENGTH}
+                  maxLength={MAX_PASSWORD_LENGTH}
                   style={{ width: '100%' }}
                 />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
+                <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Account Language</label>
+                <select
+                  className="form-input"
+                  value={createForm.locale}
+                  onChange={e => handleCreateFormChange('locale', e.target.value)}
+                  style={{ width: '100%' }}
+                >
+                  <option value="en">English</option>
+                  <option value="zh-CN">简体中文 (Simplified Chinese)</option>
+                  <option value="zh-TW">繁體中文 (Traditional Chinese)</option>
+                </select>
+                <p style={{ fontSize: '12px', color: 'var(--grey-400)', marginTop: 'var(--space-1)' }}>Sets The Language This Account Sees When They Log In.</p>
               </div>
 
               {createForm.account_role !== 'researcher' && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)', alignItems: 'start' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Tier</label>
+                  <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Pricing</label>
                   <select
                     className="form-input"
-                    value={createForm.tier}
-                    onChange={e => handleCreateFormChange('tier', e.target.value)}
-                    style={{ width: '100%' }}
+                    value={createForm.pricing_mode}
+                    onChange={e => handleCreateFormChange('pricing_mode', e.target.value)}
+                    style={{ width: '100%', marginBottom: 'var(--space-2)' }}
                   >
-                    <option value="tier_1">Tier 1</option>
-                    <option value="tier_2">Tier 2</option>
-                    <option value="tier_3">Tier 3</option>
+                    <option value="tier">House Tier</option>
+                    <option value="markup">Flat Markup %</option>
                   </select>
+                  {createForm.pricing_mode === 'markup' ? (
+                    <>
+                      <input
+                        className="form-input"
+                        type="number"
+                        min="0"
+                        max="500"
+                        step="1"
+                        inputMode="decimal"
+                        placeholder="e.g. 60"
+                        value={createForm.markup_pct}
+                        onChange={e => handleCreateFormChange('markup_pct', e.target.value)}
+                        style={{ width: '100%' }}
+                      />
+                      <div style={{ fontSize: '0.7rem', color: 'var(--silver)', marginTop: 4 }}>
+                        Pays Cost Plus This Percent. Replaces Tier Pricing.
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <select
+                        className="form-input"
+                        value={createForm.tier}
+                        onChange={e => handleCreateFormChange('tier', e.target.value)}
+                        style={{ width: '100%' }}
+                      >
+                        <option value="tier_1">Tier 1</option>
+                        <option value="tier_2">Tier 2</option>
+                        <option value="tier_3">Tier 3</option>
+                      </select>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--silver)', marginTop: 4 }}>
+                        Locked To This Tier. Sales Volume Never Changes It.
+                      </div>
+                    </>
+                  )}
                 </div>
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Billing Mode</label>
@@ -1191,58 +1364,6 @@ export default function AdminAgents() {
               </>
               )}
 
-              {createForm.account_role === 'agent' && (
-                <div style={{ marginTop: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
-                  <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase' }}>Markup Structure</label>
-                  <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
-                    <label style={{ flex: 1, padding: '10px', background: 'var(--bg-metal-dark)', border: `1px solid ${caCommissionMode === 'fixed' ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <input type="radio" checked={caCommissionMode === 'fixed'} onChange={() => setCaCommissionMode('fixed')} />
-                      Fixed Markup
-                    </label>
-                    <label style={{ flex: 1, padding: '10px', background: 'var(--bg-metal-dark)', border: `1px solid ${caCommissionMode === 'gamified' ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <input type="radio" checked={caCommissionMode === 'gamified'} onChange={() => setCaCommissionMode('gamified')} />
-                      Gamification Scale
-                    </label>
-                  </div>
-
-                  {caCommissionMode === 'fixed' ? (
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Markup Rate (%)</label>
-                      <input type="number" min="0" max="100" step="0.1" style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={caCommissionPct} onChange={e => setCaCommissionPct(e.target.value)} placeholder="e.g. 20" />
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
-                      <button
-                        type="button"
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCaScaleType('default'); setCaCustomSteps(freshDefaultLadder()); setShowGamificationInfo(true); }}
-                        style={{
-                          flex: 1, minWidth: 200, padding: '12px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: '0.82rem',
-                          background: caScaleType === 'default' ? 'var(--teal)' : 'rgba(255,255,255,0.05)',
-                          color: caScaleType === 'default' ? 'var(--black)' : 'var(--white)',
-                          border: `1px solid ${caScaleType === 'default' ? 'var(--teal)' : 'rgba(255,255,255,0.15)'}`,
-                        }}
-                      >
-                        See Default Gamification Levels
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCaScaleType('custom'); setShowGamificationInfo(true); }}
-                        style={{
-                          flex: 1, minWidth: 200, padding: '12px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: '0.82rem',
-                          background: caScaleType === 'custom' ? 'var(--teal)' : 'rgba(255,255,255,0.05)',
-                          color: caScaleType === 'custom' ? 'var(--black)' : 'var(--white)',
-                          border: `1px solid ${caScaleType === 'custom' ? 'var(--teal)' : 'rgba(255,255,255,0.15)'}`,
-                        }}
-                      >
-                        Customize Gamification Levels
-                      </button>
-                    </div>
-                  )}
-                  <p style={{ fontSize: '0.72rem', color: 'var(--grey-500)', margin: '6px 0 0', lineHeight: 1.4 }}>
-                    Fixed Markup Pays A Flat Rate. The Default Gamification Scale Starts At 20% And Rises To A 40% Maximum As Monthly Sales Grow. Customize To Set Your Own 5 Levels.
-                  </p>
-                </div>
-              )}
 
               <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
                 <button
@@ -1271,124 +1392,6 @@ export default function AdminAgents() {
         </div>
       )}
 
-      {/* Gamification Scale Info Modal */}
-      {showGamificationInfo && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.85)', zIndex: 1200,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-4)'
-        }}>
-          <div className="glass-panel" style={{ width: '100%', maxWidth: 700, maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
-            <div className="" style={{ padding: 'var(--space-6)', overflowY: 'auto' }}>
-              <h2 className="metal-text" style={{ marginTop: 0, marginBottom: 'var(--space-2)', fontSize: '1.4rem' }}>
-                Gamification Scale
-              </h2>
-              <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem', marginBottom: 'var(--space-4)' }}>
-                {caScaleType === 'custom' ? 'Customize The 5 Levels Of Gamification For This Agent.' : 'The Default House Scale - Starts At 20% And Rises To A 40% Maximum. Read Only.'}
-              </p>
-              
-              <div style={{ border: '1px solid rgba(0,196,188,0.35)', borderRadius: 10, overflow: 'hidden', marginBottom: 'var(--space-4)' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.6fr 0.8fr 1fr', background: 'rgba(0,196,188,0.12)', padding: '12px', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--teal)' }}>
-                  <span>Level</span>
-                  <span>Monthly Sales</span>
-                  <span style={{ textAlign: 'center' }}>Bonus</span>
-                  <span style={{ textAlign: 'right' }}>Commission</span>
-                </div>
-                
-                {caCustomSteps.map((step, idx) => {
-                  const isEditable = caScaleType === 'custom';
-                  const min = step.min_volume;
-                  const max = idx < 4 ? caCustomSteps[idx+1].min_volume - 0.01 : null;
-                  
-                  const baseRate = caCustomSteps[0].bonus_pct;
-                  const delta = step.bonus_pct - baseRate;
-                  const bonusText = idx === 0 ? 'Base' : `+${delta.toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:2})}%`;
-                  
-                  return (
-                    <div
-                      key={idx}
-                      style={{
-                        display: 'grid', gridTemplateColumns: '1.2fr 1.6fr 0.8fr 1fr', alignItems: 'center',
-                        padding: '12px', fontSize: '0.85rem',
-                        borderTop: '1px solid rgba(255,255,255,0.06)',
-                        background: idx % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent',
-                      }}
-                    >
-                      <span style={{ color: 'var(--white)', fontWeight: 600 }}>
-                        {step.level}. {step.name}
-                      </span>
-                      
-                      <span style={{ color: 'var(--silver)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        {isEditable && idx > 0 ? (
-                          <>
-                            <span style={{ color: 'var(--grey-500)' }}>$</span>
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={step.min_volume}
-                              onChange={e => {
-                                const val = Number(e.target.value);
-                                const newSteps = [...caCustomSteps];
-                                newSteps[idx].min_volume = val;
-                                setCaCustomSteps(newSteps);
-                              }}
-                              style={{ width: '80px', padding: '4px 6px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '4px', fontSize: '0.8rem' }}
-                            />
-                            {max != null ? <span style={{ color: 'var(--grey-500)' }}> - ${max.toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0})}</span> : <span style={{ color: 'var(--grey-500)' }}>+</span>}
-                          </>
-                        ) : (
-                          <span>
-                            ${min.toLocaleString('en-US')} {max != null ? ` - $${max.toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0})}` : '+'}
-                          </span>
-                        )}
-                      </span>
-                      
-                      <span style={{ textAlign: 'center', color: idx === 0 ? 'var(--grey-500)' : '#2DD4BF', fontWeight: 700 }}>
-                        {bonusText}
-                      </span>
-                      
-                      <span style={{ textAlign: 'right', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-                        {isEditable ? (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <input
-                              type="number"
-                              min="0"
-                              max="40"
-                              step="0.1"
-                              value={step.bonus_pct}
-                              onChange={e => {
-                                const val = Number(e.target.value);
-                                const newSteps = [...caCustomSteps];
-                                newSteps[idx].bonus_pct = val;
-                                setCaCustomSteps(newSteps);
-                              }}
-                              style={{ width: '60px', padding: '4px 6px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '4px', fontSize: '0.8rem', textAlign: 'right' }}
-                            />
-                            <span style={{ color: 'var(--grey-500)' }}>%</span>
-                          </div>
-                        ) : (
-                          <span style={{ color: 'var(--white)', fontWeight: 800 }}>{step.bonus_pct}%</span>
-                        )}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button
-                  type="button"
-                  className="btn-neon-cyan"
-                  onClick={() => setShowGamificationInfo(false)}
-                >
-                  {caScaleType === 'custom' ? 'Save Levels' : 'Close'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

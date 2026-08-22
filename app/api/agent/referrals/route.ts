@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgentOrAdmin } from '@/lib/admin-auth';
+import { STORE_SLUG_RE, RESERVED_SEGMENTS } from '@/lib/store-slug';
 
 export async function GET() {
   try {
@@ -11,8 +12,10 @@ export async function GET() {
     const supabase = createAdminClient();
     const agentId = gate.user.id;
 
-    // 1. Referral identifier is the agent's username (resolves across all roles
-    //    in apply_signup_referral). The referral link now goes straight to signup.
+    // 1. Referral identifier for this agent. Both columns are fetched because
+    //    either one resolves in proxy.ts; the precedence between them is
+    //    applied below, once the storefront slug is known (the slug is the
+    //    last-resort fallback).
     const { data: selfProfile } = await supabase
       .from('profiles')
       .select('username, referral_code')
@@ -20,15 +23,58 @@ export async function GET() {
       .maybeSingle();
     const { data: agentProfileData } = await supabase
       .from('agent_profiles')
-      .select('slug')
+      .select('slug, is_active')
       .eq('id', agentId)
       .maybeSingle();
 
-    const slug = agentProfileData?.slug ?? null;
-    const referral_code = selfProfile?.username ?? selfProfile?.referral_code ?? null;
+    // GUEST STOREFRONT RULE (2026-07-30)
+    // The referral link must open the agent's storefront so the visitor can
+    // browse products and see pricing as a guest. It must NEVER open
+    // /signup ("Create Researcher Account") - nobody is asked to register
+    // before they have seen the store.
+    //
+    // Only an active, routable slug is used. `is_active === false` means the
+    // storefront is switched off and proxy.ts will not render it; a legacy
+    // slug that fails STORE_SLUG_RE or collides with a reserved app route
+    // predates the agent_profiles_slug_shape CHECK and the
+    // agent_profiles_slug_not_reserved trigger and is likewise unroutable.
+    // In either case fall back to `/?ref=<code>` - the landing page, which
+    // offers "Continue As Guest" - rather than emitting a dead link.
+    // Attribution is preserved on both paths because proxy.ts mints the
+    // signed ref lock from the `?ref=` parameter.
+    const rawSlug = agentProfileData?.slug ?? null;
+    const slug =
+      rawSlug &&
+      agentProfileData?.is_active !== false &&
+      STORE_SLUG_RE.test(rawSlug) &&
+      !RESERVED_SEGMENTS.has(rawSlug)
+        ? rawSlug
+        : null;
+
+    // REFERRAL IDENTIFIER - referral_code first, then username, then the slug.
+    // proxy.ts resolveRefCode() resolves a scanned `?ref=` with
+    // `username.ilike.<code> OR referral_code.ilike.<code>`, so either profile
+    // column works; `referral_code` is the one that exists to be handed out, so
+    // it takes precedence and this link stays identical to what the QR
+    // provisioning routes bake into printed codes for the same agent.
+    //
+    // `||`, deliberately not `??`. The old `??` chain only skipped
+    // null/undefined, so a profile whose `username` had been written as an
+    // empty string rather than NULL won outright - beating a perfectly good
+    // referral_code - and produced `?ref=` with nothing after it, a link that
+    // resolves to nobody and silently loses the credit.
+    //
+    // The slug is the final fallback rather than giving up: with a null code
+    // the whole `referral_url` below collapses to null and the dashboard shows
+    // an agent a blank "your referral link" box with nothing to share. A
+    // `/<slug>` link still mints a lock for that store's owner through
+    // proxy.ts resolveStoreSlug(), so attribution survives.
+    const referral_code = selfProfile?.referral_code || selfProfile?.username || slug || null;
     const base = (process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '')) || 'https://pepnationlab.com';
     const referral_url = referral_code
-      ? `${base}/signup?ref=${encodeURIComponent(referral_code)}`
+      ? slug
+        ? `${base}/${slug}?ref=${encodeURIComponent(referral_code)}`
+        : `${base}/?ref=${encodeURIComponent(referral_code)}`
       : null;
 
     // 2. Fetch all researchers referred via this agent's storefront
@@ -51,6 +97,7 @@ export async function GET() {
       return NextResponse.json({
         referral_url,
         referral_code,
+        storefront_slug: slug,
         total_referred: 0,
         total_orders: 0,
         total_revenue: 0,
@@ -105,6 +152,7 @@ export async function GET() {
     return NextResponse.json({
       referral_url,
       referral_code,
+      storefront_slug: slug,
       total_referred,
       total_orders,
       total_revenue: Number(total_revenue.toFixed(2)),

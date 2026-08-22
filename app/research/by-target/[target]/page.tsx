@@ -17,9 +17,12 @@ type PageProps = { params: Promise<{ target: string }> };
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { target } = await params;
   const decoded = decodeURIComponent(target);
+  const description = `Research compounds that bind the ${decoded} receptor — binding affinities, evidence tiers, and compound profiles. Research Use Only.`;
   return {
     title: `${decoded} | Receptor Target | Research Library | Pep Nation Lab`,
-    robots: { index: false, follow: true },
+    description,
+    robots: { index: true, follow: true },
+    alternates: { canonical: `https://pepnationlab.com/research/by-target/${target}` },
   };
 }
 

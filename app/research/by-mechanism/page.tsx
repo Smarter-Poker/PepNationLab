@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     creator: '@PepNationLab',
     title: 'Browse Peptides By Mechanism Of Action | Research Library | Pep Nation Lab',
     description: 'Browse research-grade peptides organized by their mechanism of action - receptor agonists, antagonists, signal modulators, and more. Research use only.',
-    images: ['https://pepnationlab.com/images/og-card.jpg'],
+    images: ['https://pepnationlab.com/og-card.png'],
   },
 };
 

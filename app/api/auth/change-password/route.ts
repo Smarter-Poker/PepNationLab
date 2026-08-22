@@ -7,6 +7,7 @@ import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { emailConfigured, sendPasswordChangedEmail } from '@/lib/email';
 import { safeError } from '@/lib/api-error';
 import { recordAuthEvent } from '@/lib/auth-events';
+import { validatePassword, PASSWORD_RULE_TEXT } from '@/lib/password-policy';
 
 // POST /api/auth/change-password
 // Used by researchers on first login to change their temp password.
@@ -15,6 +16,11 @@ import { recordAuthEvent } from '@/lib/auth-events';
 // fix-47: rate-limited 10/min/user. The skip path is cheap but a real
 // password change hits Supabase auth + writes profiles - worth gating to
 // deter abuse from a stolen session token.
+//
+// PASSWORD RULE: at least 8 characters, via lib/password-policy. This route
+// once demanded EXACTLY 8 while the page that posts here demanded at least
+// 12 — a contradiction that made a first-login password change impossible.
+// Do not restate a length literal here; import the policy.
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -89,11 +95,9 @@ export async function POST(req: NextRequest) {
   if (!newPassword || typeof newPassword !== 'string') {
     return NextResponse.json({ error: 'New Password Is Required' }, { status: 400 });
   }
-  if (newPassword.length < 8) {
-    return NextResponse.json({ error: 'Password Must Be At Least 8 Characters' }, { status: 400 });
-  }
-  if (newPassword.length > 128) {
-    return NextResponse.json({ error: 'Password Must Be 128 Characters Or Fewer' }, { status: 400 });
+  const policyError = validatePassword(newPassword);
+  if (policyError) {
+    return NextResponse.json({ error: policyError }, { status: 400 });
   }
 
   // Update password via the user client. This generates a new session and triggers setAll()
@@ -104,11 +108,23 @@ export async function POST(req: NextRequest) {
     // everything else (GoTrue internals, rate-limit phrasing, session/AAL
     // details) is replaced with a stable generic message and logged.
     const msg = pwError.message || '';
+    // The generic "choose a stronger password" copy that used to live here was
+    // actively misleading: the overwhelmingly common cause is Supabase's
+    // HaveIBeenPwned check (error_code `weak_password`, reason `pwned`), which
+    // has NOTHING to do with length or complexity -- the password can be long
+    // and mixed-case and still be refused because that exact string appears in
+    // a public breach dump. Telling the user to "make it stronger" sends them
+    // to add another character to a leaked password, which fails again. Name
+    // the real reason so the next attempt can succeed.
+    const isPwned = /pwned|known to be weak|leaked|data breach/i.test(msg)
+      || (pwError as { code?: string }).code === 'weak_password';
     const safeMsg = /different from the old password/i.test(msg)
       ? 'Your New Password Must Be Different From Your Current Password.'
-      : /at least|weak|strength/i.test(msg)
-        ? 'Please Choose A Stronger Password And Try Again.'
-        : null;
+      : isPwned
+        ? `This Password Appears In A Public Data Breach, So It Cannot Be Used. Pick Something Different -- ${PASSWORD_RULE_TEXT} Is All That Is Required.`
+        : /at least|weak|strength/i.test(msg)
+          ? `Password Not Accepted. ${PASSWORD_RULE_TEXT} Is All That Is Required.`
+          : null;
     return safeError('auth.change-password.updateUser', pwError, safeMsg ? 400 : 500, safeMsg ?? 'Failed To Update Password. Please Try Again.');
   }
 

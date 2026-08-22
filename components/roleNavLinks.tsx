@@ -68,9 +68,11 @@ const ICON = {
   book: <svg {...ip}><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>,
   labTools: <svg {...ip}><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>,
   search: <svg {...ip}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>,
+  printer: <svg {...ip}><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" /></svg>,
 };
 
 const ADMIN_LINKS: RoleNavLink[] = [
+  { href: '/dashboard/labels', label: 'Print Labels', icon: ICON.printer },
   { href: '/admin', label: 'Admin Dashboard', icon: ICON.grid },
   { href: '/admin/pricing', label: 'Pricing', icon: <svg {...ip}><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg> },
   { href: '/admin/products', label: 'Products', icon: <svg {...ip}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg> },
@@ -106,6 +108,8 @@ const ADMIN_LINKS: RoleNavLink[] = [
   { href: '/admin/audit', label: 'Audit Log', icon: <svg {...ip}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
   { href: '/admin/referrals', label: 'Referrals', icon: <svg {...ip}><path d="M17 11a4 4 0 1 0-8 0M3 21h18M5 21a7 7 0 0 1 14 0"/></svg> },
   { href: '/admin/signup-promos', label: 'Signup Promos', icon: <svg {...ip}><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> },
+  { href: '/admin/traffic', label: 'Site Traffic', icon: <svg {...ip}><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg> },
+  { href: '/admin/abandoned-carts', label: 'Abandoned Carts', icon: <svg {...ip}><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" /></svg> },
   { href: '/admin/settings', label: 'Account Settings', icon: ICON.gear },
 ];
 
@@ -118,6 +122,7 @@ function agentLinks(isSuper: boolean, storefrontHref: string, pathname?: string)
   const normStoreHref = storefrontHref?.replace(/\/$/, '') || '';
 
   const links: RoleNavLink[] = [
+    { href: '/dashboard/labels', label: 'Print Labels', icon: ICON.printer },
     { href: agentTab('Overview'), label: 'Overview', icon: ICON.grid },
   ];
 
@@ -144,6 +149,11 @@ function agentLinks(isSuper: boolean, storefrontHref: string, pathname?: string)
     { href: '#SHOW_QR', label: 'Referral Codes', icon: ICON.qr },
     { href: '/account', label: 'Account Settings', icon: ICON.gear }
   );
+  // Storefront traffic (visitors, funnel) -- scoped to this agent's storefront.
+  links.splice(links.length - 1, 0, {
+    href: '/dashboard/agent/traffic', label: 'Site Traffic',
+    icon: <svg {...ip}><path d="M3 3v18h18" /><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3" /></svg>,
+  });
   // Super-agents can create signup promo codes; regular agents cannot.
   if (isSuper) {
     links.splice(links.length - 1, 0, {
@@ -201,12 +211,33 @@ function researcherLinks(storefrontHref?: string, storefrontName?: string, pathn
  */
 export function getRoleNavLinks(
   role: string,
-  opts: { isSuperAgent?: boolean; isSubAgent?: boolean; storefrontHref?: string; storefrontName?: string; pathname?: string } = {},
+  opts: { isSuperAgent?: boolean; isSubAgent?: boolean; isPlatformAdmin?: boolean; storefrontHref?: string; storefrontName?: string; pathname?: string } = {},
 ): RoleNavLink[] | null {
-  if (role === 'admin') return ADMIN_LINKS;
+  if (role === 'admin') {
+    if (opts.isPlatformAdmin) {
+      return [
+        { href: '/dashboard/network', label: 'Command Center', icon: <svg {...ip}><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18" /><path d="M9 21V9" /></svg> },
+        { href: '/dashboard/agent', label: 'My Dashboard', icon: <svg {...ip}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> },
+        ...ADMIN_LINKS
+      ];
+    }
+    return ADMIN_LINKS;
+  }
   if (opts.isSubAgent) return SUBAGENT_LINKS;
   if (role === 'super_agent' || role === 'agent' || opts.isSuperAgent) {
-    return agentLinks(!!opts.isSuperAgent || role === 'super_agent', opts.storefrontHref || '/dashboard/agent', opts.pathname);
+    const links = agentLinks(!!opts.isSuperAgent || role === 'super_agent', opts.storefrontHref || '/dashboard/agent', opts.pathname);
+    // Platform admins (e.g. Savage Brands) keep the ENTIRE super-agent menu and
+    // gain one Admin entry pinned to the very top that opens the /admin dashboard.
+    // role stays super_agent, so nothing else about their account changes.
+    if (opts.isPlatformAdmin) {
+      // Admin accounts (e.g. Savage Brands) get two pinned top-level entries:
+      // the network Command Center and the platform-wide Admin Panel.
+      links.unshift(
+        { href: '/dashboard/network', label: 'Command Center', icon: <svg {...ip}><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18" /><path d="M9 21V9" /></svg> },
+        { href: '/admin', label: 'Admin Panel', icon: <svg {...ip}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M9 12l2 2 4-4" /></svg> },
+      );
+    }
+    return links;
   }
   if (role === 'researcher') return researcherLinks(opts.storefrontHref, opts.storefrontName, opts.pathname);
   return null;

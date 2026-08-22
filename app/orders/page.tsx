@@ -306,17 +306,17 @@ export default async function OrdersPage({
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--grey-400)' }}>
                         <span>Subtotal</span>
-                        <span>${Number(order.subtotal).toFixed(2)}</span>
+                        <span style={{ whiteSpace: 'nowrap' }}>${Number(order.subtotal).toFixed(2)}</span>
                       </div>
                       {Number(order.discount_amount) > 0 && (
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#68D391' }}>
                           <span>Coupon Discount{order.coupon_code ? ` (${order.coupon_code})` : ''}</span>
-                          <span>-${Number(order.discount_amount).toFixed(2)}</span>
+                          <span style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>-${Number(order.discount_amount).toFixed(2)}</span>
                         </div>
                       )}
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--grey-400)' }}>
                         <span>Shipping</span>
-                        <span>${Number(order.shipping_cost).toFixed(2)}</span>
+                        <span style={{ whiteSpace: 'nowrap' }}>${Number(order.shipping_cost).toFixed(2)}</span>
                       </div>
                       <div
                         style={{
@@ -330,7 +330,7 @@ export default async function OrdersPage({
                           }}
                       >
                         <span>Total</span>
-                        <span style={{ fontFamily: 'var(--font-brand)' }}>${Number(order.total).toFixed(2)}</span>
+                        <span style={{ fontFamily: 'var(--font-brand)', whiteSpace: 'nowrap' }}>${Number(order.total).toFixed(2)}</span>
                       </div>
                     </div>
 

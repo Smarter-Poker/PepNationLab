@@ -12,16 +12,15 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     const supabase = createAdminClient();
     const callerId = gate.user.id;
 
-    // Caller must be a super_agent or admin.
+    // Roles allowed: the super agent who issued the invoice, the agent who is
+    // BILLED by it, or an admin. The old gate rejected the billed agent
+    // outright, so tapping their own invoice in the wallet always showed
+    // "Could Not Load Detail" (the print route proved the access is intended).
     const { data: callerProfile } = await supabase
       .from('profiles')
       .select('is_super_agent, role')
       .eq('id', callerId)
       .maybeSingle();
-
-    if (!callerProfile?.is_super_agent && callerProfile?.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
 
     const { data: invoice, error } = await supabase
       .from('agent_invoices')
@@ -35,8 +34,11 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       return NextResponse.json({ error: 'Invoice Not Found' }, { status: 404 });
     }
 
-    // Ownership: super_agent must own this invoice, OR admin can read any.
-    if (callerProfile.role !== 'admin' && invoice.super_agent_id !== callerId) {
+    // Ownership: the issuing super agent, the billed agent, or an admin.
+    const isAdmin = callerProfile?.role === 'admin';
+    const isIssuer = invoice.super_agent_id === callerId;
+    const isBilledAgent = invoice.agent_id === callerId;
+    if (!isAdmin && !isIssuer && !isBilledAgent) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

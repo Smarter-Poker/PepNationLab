@@ -35,11 +35,11 @@ async function requireSuperAgent(): Promise<
   const admin = createAdminClient();
   const { data: profile } = await admin
     .from('profiles')
-    .select('role, is_super_agent, is_active')
+    .select('role, is_super_agent, is_active, deleted_at')
     .eq('id', user.id)
     .maybeSingle();
 
-  const isSuper = !!profile && (profile.is_super_agent === true || profile.role === 'super_agent') && profile.is_active !== false;
+  const isSuper = !!profile && (profile.is_super_agent === true || profile.role === 'super_agent') && profile.is_active !== false && (profile as { deleted_at?: string | null }).deleted_at == null;
   if (!isSuper) {
     return { ok: false, response: NextResponse.json({ error: 'Forbidden. Super Agent Access Is Required.' }, { status: 403 }) };
   }
@@ -119,6 +119,7 @@ export async function POST(req: NextRequest) {
       .from('profiles')
       .select('id, role, referring_agent_id')
       .eq('id', researcher_id)
+      .is('deleted_at', null)
       .maybeSingle();
     if (!researcher || researcher.role !== 'researcher') {
       return NextResponse.json({ error: 'Researcher Not Found' }, { status: 404 });
@@ -137,6 +138,7 @@ export async function POST(req: NextRequest) {
       .from('profiles')
       .select('id, role, is_active')
       .eq('id', to_agent_id)
+      .is('deleted_at', null)
       .maybeSingle();
     if (!target || (target.role !== 'agent' && target.role !== 'super_agent')) {
       return NextResponse.json({ error: 'Target Must Be An Agent Or Super Agent' }, { status: 400 });

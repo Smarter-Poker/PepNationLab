@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     creator: '@PepNationLab',
     title: 'Orphan Drug Peptides | Rare Disease Research Compounds | Pep Nation Lab',
     description: 'Research peptides and compounds with orphan drug designation for rare disease research. Full reference data on FDA orphan-designated peptide therapeutics. Research use only.',
-    images: ['https://pepnationlab.com/images/og-card.jpg'],
+    images: ['https://pepnationlab.com/og-card.png'],
   },
 };
 
