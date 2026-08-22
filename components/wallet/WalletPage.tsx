@@ -8,8 +8,11 @@ import CommissionsTab from './CommissionsTab';
 import ReceiptVault from './ReceiptVault';
 import CreditIncreaseForm from './CreditIncreaseForm';
 import WalletSettings from './WalletSettings';
+import PaymentsToConfirm from './PaymentsToConfirm';
 import WalletSendSheet from './WalletSendSheet';
 import IframeLink from '@/components/ui/IframeLink';
+import DownlineBalances from './DownlineBalances';
+import BackButton from '@/components/ui/BackButton';
 
 const money = (n: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(Number(n) || 0);
@@ -19,6 +22,7 @@ const money = (n: number) =>
 const STATUS_LABEL: Record<string, string> = {
   paid: 'Paid',
   pending_payment: 'Pending Payment',
+  pending_verification: 'Awaiting Confirmation',
   open: 'Open',
   disputed: 'Disputed',
   cancelled: 'Cancelled',
@@ -35,6 +39,9 @@ const statusColors = (s: string | null | undefined): { fg: string; bg: string } 
   const k = (s || '').toLowerCase();
   if (k === 'paid')             return { fg: '#2ed573', bg: 'rgba(46,213,115,0.20)' };
   if (k === 'pending_payment')  return { fg: 'var(--teal)', bg: 'rgba(0,196,188,0.18)' };
+  // Submitted by the payer, not yet confirmed received - deliberately amber,
+  // not green: no money has settled and the credit line is still consumed.
+  if (k === 'pending_verification') return { fg: '#F6AD55', bg: 'rgba(246,173,85,0.18)' };
   if (k === 'open')             return { fg: '#ffb800', bg: 'rgba(255,184,0,0.18)' };
   if (k === 'disputed')         return { fg: '#ff6b6b', bg: 'rgba(229,62,62,0.20)' };
   if (k === 'cancelled')        return { fg: 'var(--grey-500)', bg: 'rgba(168,180,192,0.15)' };
@@ -52,6 +59,18 @@ const fmtDate = (s: string | null | undefined): string => {
     : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
+// "Week Closes In Xh" countdown for the Invoices tab's own-account snapshot,
+// derived the same way as DownlineBalances' weekCloseText but reduced to a
+// single hours-remaining figure per the tab's compact card layout.
+const weekClosesInLabel = (weekEndsAtIso: string | null, now: number): string => {
+  if (!weekEndsAtIso) return '';
+  const end = new Date(weekEndsAtIso).getTime();
+  const diff = end - now;
+  if (isNaN(end) || diff <= 0) return 'Week Closed - Invoices Generate Monday Morning';
+  const hours = Math.max(1, Math.ceil(diff / (60 * 60 * 1000)));
+  return `Week Closes In ${hours}h`;
+};
+
 type ActivityTxn = {
   id: string;
   ledger: 'wallet' | 'credit';
@@ -62,7 +81,7 @@ type ActivityTxn = {
   createdAt: string;
 };
 
-type Tab = 'overview' | 'activity' | 'statements' | 'commissions' | 'receipts' | 'settings';
+type Tab = 'overview' | 'activity' | 'invoices' | 'statements' | 'commissions' | 'receipts' | 'settings';
 
 type StatementRow = {
   id: string;
@@ -76,6 +95,24 @@ type StatementRow = {
   paid_at?: string | null;
   target_type: 'statement' | 'agent_invoice';
   bills_from?: 'admin' | 'super_agent';
+  // A dispute stamps only this - statement_status has no 'disputed' value - so
+  // the badge and the "is this payable" filter both key on it.
+  disputed_at?: string | null;
+  dispute_reason?: string | null;
+  payment_submitted_at?: string | null;
+};
+
+// Own-account real-time snapshot returned in the `self` block of
+// GET /api/agent/downline-balances - powers the Invoices tab's running totals.
+type SelfSnapshot = {
+  accountType: 'prepaid' | 'credit' | null;
+  prepaidBalance: number;
+  creditUsed: number;
+  creditLimit: number;
+  currentWeekOrderCount: number;
+  currentWeekOrderTotal: number;
+  openBillsTotal: number;
+  openBillsCount: number;
 };
 
 export default function WalletPage({
@@ -87,13 +124,19 @@ export default function WalletPage({
   const [activity, setActivity] = useState<ActivityTxn[]>([]);
   const [storeCredit, setStoreCredit] = useState<number>(0);
   const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [creditAvailable, setCreditAvailable] = useState<number>(0);
   const [sendOpen, setSendOpen] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
+  const [visibleRows, setVisibleRows] = useState(24);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [detailType, setDetailType] = useState<'statement' | 'agent_invoice'>('statement');
   const [creditOpen, setCreditOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [self, setSelf] = useState<SelfSnapshot | null>(null);
+  const [selfLoading, setSelfLoading] = useState(false);
+  const [weekEndsAtIso, setWeekEndsAtIso] = useState<string | null>(null);
+  const [tick, setTick] = useState<number>(() => Date.now());
 
   async function refresh() {
     setLoading(true);
@@ -116,7 +159,13 @@ export default function WalletPage({
         setStoreCredit(typeof j.storeCredit === 'number' ? j.storeCredit : 0);
         const prepaid = typeof j.prepaidBalance === 'number' ? j.prepaidBalance : 0;
         const availableCredit = typeof j.creditAvailable === 'number' ? j.creditAvailable : 0;
-        setWalletBalance(prepaid + availableCredit);
+        setCreditAvailable(availableCredit);
+        // Spendable cash ONLY. This used to add the credit line, so a $200
+        // agent with a $10k line was told their "Wallet Balance" - labelled
+        // "Real Funds You Can Send Or Spend" - was $10,200. A credit line is
+        // borrowed headroom that lands on next week's bill, not funds. The
+        // line is shown separately below.
+        setWalletBalance(prepaid);
       }
     } catch {
       setError(true);
@@ -128,15 +177,65 @@ export default function WalletPage({
 
   useEffect(() => { refresh(); }, []);
 
+  // Real-time own-account running totals for the Invoices tab - fetched once
+  // per tab visit (not on every wallet-wide refresh) so the numbers stay
+  // current whenever the agent checks the tab.
+  useEffect(() => {
+    if (tab !== 'invoices') return;
+    let cancelled = false;
+    (async () => {
+      setSelfLoading(true);
+      try {
+        const res = await fetch('/api/agent/downline-balances', { cache: 'no-store' });
+        if (!res.ok) return;
+        const j = await res.json();
+        if (cancelled) return;
+        setSelf(j?.self ?? null);
+        setWeekEndsAtIso(typeof j?.weekEndsAtIso === 'string' ? j.weekEndsAtIso : null);
+      } catch {
+        // Network or parse failure - the running totals card falls back to its empty state.
+      } finally {
+        if (!cancelled) setSelfLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [tab]);
+
+  // Ticks the "Week Closes In Xh" countdown forward without re-fetching data.
+  useEffect(() => {
+    const id = setInterval(() => setTick(Date.now()), 60000);
+    return () => clearInterval(id);
+  }, []);
+
   // Open invoices = anything that isn't paid/cancelled AND has an actual balance.
   // $0 statements should never be shown as outstanding - they have nothing to pay.
   const openInvoices = useMemo(
-    () => statements.filter((s) => s.status !== 'paid' && s.status !== 'cancelled' && Number(s.total_owed || 0) > 0),
+    () => statements.filter(
+      (s) =>
+        s.status !== 'paid' &&
+        s.status !== 'cancelled' &&
+        // Already submitted and sitting with the recipient - paying again would
+        // just create a second claim for the same bill.
+        s.status !== 'pending_verification' &&
+        // A bill you are actively disputing should not sit under "Bills To Pay"
+        // with a live Pay Now button. The dispute route only stamps disputed_at
+        // (there is no 'disputed' status), so the badge and this filter both
+        // have to key on the timestamp.
+        !s.disputed_at &&
+        Number(s.total_owed || 0) > 0,
+    ),
     [statements],
   );
   const hasOpenStatement = openInvoices.length > 0;
   const hasCreditLine = (summary?.creditLimit ?? 0) > 0;
-  const canSend = ['agent', 'super_agent', 'admin'].includes(role);
+  // NOT admin. /api/credits/send gates on requireAgent(), which deliberately
+  // excludes role='admin' (see the "BUG 7 fix" note in lib/admin-auth.ts) - so
+  // an admin could search recipients, pick one, enter an amount, hit Send, and
+  // get a raw "Forbidden. Agent Access Required." toast every time. Every step
+  // of the flow worked except the one that mattered.
+  const canSend = ['agent', 'super_agent'].includes(role);
 
   // A statement is overdue when it is still open/pending and its due date has passed.
   const now = Date.now();
@@ -144,19 +243,121 @@ export default function WalletPage({
     (s) => s.due_date && new Date(s.due_date).getTime() < now && s.status !== 'paid',
   );
 
+  // /wallet admits researchers and admins, but the Settings, Commissions and
+  // Receipts endpoints all gate on requireAgent()/requireAgentOrAdmin() and
+  // 403 those roles. Rendering the tabs anyway produced controls that could
+  // never work: the Auto-Pay switch flipped on, reverted, and toasted "Could
+  // Not Save" forever, and Commissions/Receipts showed a confident "$0.00" and
+  // "None" that were really permission errors. Only offer what the viewer can
+  // actually use.
+  const isAgentRole = role === 'agent' || role === 'super_agent';
   const tabs: { id: Tab; label: string }[] = [
     { id: 'overview', label: 'Overview' },
     { id: 'activity', label: 'Activity' },
+    { id: 'invoices', label: 'Invoices' },
     { id: 'statements', label: 'Statements' },
-    { id: 'commissions', label: 'Commissions' },
-    { id: 'receipts', label: 'Receipts' },
-    { id: 'settings', label: 'Settings' },
+    ...(isAgentRole ? [{ id: 'commissions' as Tab, label: 'Commissions' }] : []),
+    ...(isAgentRole ? [{ id: 'receipts' as Tab, label: 'Receipts' }] : []),
+    ...(isAgentRole ? [{ id: 'settings' as Tab, label: 'Settings' }] : []),
   ];
 
+  // The statements/invoices table is shown both as "Invoice History" on the
+  // Statements tab and as "Bills To Pay" on the Invoices tab - one render
+  // helper keeps the row logic in exactly one place.
+  const renderStatementsSection = (heading: string, rows: StatementRow[] = statements) => (
+    <section className="glass-panel" style={{ padding: 16, borderRadius: 12 }}>
+      <h3 style={{ color: 'var(--white)', marginTop: 0 }}>{heading}</h3>
+      {rows.length === 0 ? (
+        <p style={{ color: 'var(--grey-500)' }}>
+          {rows === statements ? 'No Invoices Yet.' : 'Nothing To Pay Right Now.'}
+        </p>
+      ) : (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                <th style={{ textAlign: 'left',  padding: '8px', color: 'var(--silver)' }}>Week</th>
+                <th style={{ textAlign: 'left',  padding: '8px', color: 'var(--silver)' }}>Bills From</th>
+                <th style={{ textAlign: 'right', padding: '8px', color: 'var(--silver)' }}>COGS</th>
+                <th style={{ textAlign: 'right', padding: '8px', color: 'var(--silver)' }}>Shipping</th>
+                <th style={{ textAlign: 'right', padding: '8px', color: 'var(--teal)' }}>Owed</th>
+                <th style={{ textAlign: 'center', padding: '8px', color: 'var(--silver)' }}>Status</th>
+                <th style={{ textAlign: 'center', padding: '8px', color: 'var(--silver)' }}>Print</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(rows || []).slice(0, visibleRows).map((s) => {
+                // disputed_at is the only marker a dispute leaves - there is
+                // no 'disputed' value in statement_status - so the row has to
+                // derive it, otherwise a successfully disputed bill still read
+                // "Pending Payment" with Pay Now enabled.
+                const effectiveStatus = s.disputed_at && s.status !== 'paid' ? 'disputed' : s.status;
+                const colors = statusColors(effectiveStatus);
+                const billsFromLabel = s.target_type === 'agent_invoice' ? 'Super Agent' : 'Admin';
+                return (
+                  <tr key={`${s.target_type}-${s.id}`}
+                    style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <td onClick={() => { setDetailId(s.id); setDetailType(s.target_type); }} style={{ padding: '10px 8px', color: 'var(--white)', cursor: 'pointer' }}>{fmtDate(s.week_start)}</td>
+                    <td style={{ padding: '10px 8px', color: 'var(--grey-400)' }}>{billsFromLabel}</td>
+                    <td style={{ padding: '10px 8px', color: 'var(--white)', textAlign: 'right' }}>{money(Number(s.total_cogs || 0))}</td>
+                    <td style={{ padding: '10px 8px', color: 'var(--white)', textAlign: 'right' }}>{money(Number(s.total_shipping || 0))}</td>
+                    <td style={{ padding: '10px 8px', color: 'var(--teal)', textAlign: 'right', fontWeight: 700 }}>{money(Number(s.total_owed || 0))}</td>
+                    <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                      <span style={{
+                        padding: '4px 10px', borderRadius: 6, fontSize: '0.72rem', fontWeight: 700,
+                        background: colors.bg, color: colors.fg,
+                      }}>{statusLabel(effectiveStatus)}</span>
+                    </td>
+                    <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                      <IframeLink
+                        href={`/wallet/print?type=${s.target_type}&id=${s.id}`}
+                        style={{ color: 'var(--teal)', fontSize: '0.78rem', fontWeight: 700, textDecoration: 'none' }}
+                      >
+                        Print
+                      </IframeLink>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {/* The list used to hard-cap at 24 with no pagination and no hint it
+              had been cut, so an agent with 30 weeks of history simply could
+              not see or print anything older. */}
+          {rows.length > visibleRows && (
+            <div style={{ textAlign: 'center', paddingTop: 12 }}>
+              <button
+                type="button"
+                onClick={() => setVisibleRows((n) => n + 24)}
+                style={{
+                  minHeight: 44, padding: '0 18px', borderRadius: 8, cursor: 'pointer',
+                  background: 'transparent', border: '1px solid rgba(255,255,255,0.18)',
+                  color: 'var(--silver)', fontSize: '0.82rem', fontWeight: 700,
+                }}
+              >
+                Show More ({rows.length - visibleRows} More)
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </section>
+  );
+
   return (
-    <div style={{ textTransform: 'capitalize', paddingTop: 'calc(var(--nav-offset, 60px) + var(--space-6))', paddingRight: 'var(--space-4)', paddingBottom: 'var(--space-8)', paddingLeft: 'var(--space-4)', minHeight: '100dvh' }}>
+    // `text-transform` is inherited, and every modal on this page is a
+    // descendant - so `capitalize` was also applied to the <input> and
+    // <textarea> values the user is typing (the recipient search, the dispute
+    // reason, the credit-increase reason), to recipient emails, and to receipt
+    // filenames. The user typed "higher volume this month" and watched it
+    // render as "Higher Volume This Month" while the stored value was what
+    // they actually typed. globals.css already ships the escape hatch.
+    <div className="wallet-capitalize" style={{ textTransform: 'capitalize', paddingTop: 'calc(var(--nav-offset, 60px) + var(--space-6))', paddingRight: 'var(--space-4)', paddingBottom: 'var(--space-8)', paddingLeft: 'var(--space-4)', minHeight: '100dvh' }}>
       <div className="glass-panel" style={{ maxWidth: 960, margin: '0 auto', width: '100%' }}>
         <div className="" style={{ padding: 'var(--space-6)', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ marginBottom: -8 }}>
+            <BackButton label="Back To Dashboard" />
+          </div>
           <header style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }}>
             <div>
               <h1 style={{ fontSize: '1.6rem', color: 'var(--white)', margin: 0, fontFamily: 'var(--font-brand)' }}>Wallet</h1>
@@ -297,6 +498,26 @@ export default function WalletPage({
                   <div style={{ fontSize: '0.8rem', color: 'var(--grey-500)', marginTop: 4 }}>
                     Real Funds You Can Send Or Spend Across The Network.
                   </div>
+
+                  {/* Store credit was fetched, stored in state, and rendered
+                      nowhere - so a researcher holding $50 of it saw "Wallet
+                      Balance $0.00" while the Activity tab right below listed
+                      the +$50.00 rows. */}
+                  {storeCredit > 0 && (
+                    <div style={{ fontSize: '0.82rem', color: 'var(--grey-400)', marginTop: 8 }}>
+                      Store Credit:{' '}
+                      <span style={{ color: 'var(--white)', fontWeight: 700 }}>{money(storeCredit)}</span>
+                      <span style={{ color: 'var(--grey-500)' }}> &middot; Spendable At Checkout</span>
+                    </div>
+                  )}
+
+                  {hasCreditLine && (
+                    <div style={{ fontSize: '0.82rem', color: 'var(--grey-400)', marginTop: 4 }}>
+                      Credit Line Available:{' '}
+                      <span style={{ color: 'var(--white)', fontWeight: 700 }}>{money(creditAvailable)}</span>
+                      <span style={{ color: 'var(--grey-500)' }}> &middot; Billed On Your Weekly Statement</span>
+                    </div>
+                  )}
                 </div>
                 {canSend && (
                   <button type="button" onClick={() => setSendOpen(true)} className="btn btn-primary"
@@ -383,64 +604,89 @@ export default function WalletPage({
             </section>
           )}
 
-          {tab === 'statements' && (
-            <section className="glass-panel" style={{ padding: 16, borderRadius: 12 }}>
-              <h3 style={{ color: 'var(--white)', marginTop: 0 }}>Invoice History</h3>
-              {statements.length === 0 ? (
-                <p style={{ color: 'var(--grey-500)' }}>No Invoices Yet.</p>
-              ) : (
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                        <th style={{ textAlign: 'left',  padding: '8px', color: 'var(--silver)' }}>Week</th>
-                        <th style={{ textAlign: 'left',  padding: '8px', color: 'var(--silver)' }}>Bills From</th>
-                        <th style={{ textAlign: 'right', padding: '8px', color: 'var(--silver)' }}>COGS</th>
-                        <th style={{ textAlign: 'right', padding: '8px', color: 'var(--silver)' }}>Shipping</th>
-                        <th style={{ textAlign: 'right', padding: '8px', color: 'var(--teal)' }}>Owed</th>
-                        <th style={{ textAlign: 'center', padding: '8px', color: 'var(--silver)' }}>Status</th>
-                        <th style={{ textAlign: 'center', padding: '8px', color: 'var(--silver)' }}>Print</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(statements || []).slice(0, 24).map((s) => {
-                        const colors = statusColors(s.status);
-                        const billsFromLabel = s.target_type === 'agent_invoice' ? 'Super Agent' : 'Admin';
-                        return (
-                          <tr key={`${s.target_type}-${s.id}`}
-                            style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                            <td onClick={() => { setDetailId(s.id); setDetailType(s.target_type); }} style={{ padding: '10px 8px', color: 'var(--white)', cursor: 'pointer' }}>{fmtDate(s.week_start)}</td>
-                            <td style={{ padding: '10px 8px', color: 'var(--grey-400)' }}>{billsFromLabel}</td>
-                            <td style={{ padding: '10px 8px', color: 'var(--white)', textAlign: 'right' }}>{money(Number(s.total_cogs || 0))}</td>
-                            <td style={{ padding: '10px 8px', color: 'var(--white)', textAlign: 'right' }}>{money(Number(s.total_shipping || 0))}</td>
-                            <td style={{ padding: '10px 8px', color: 'var(--teal)', textAlign: 'right', fontWeight: 700 }}>{money(Number(s.total_owed || 0))}</td>
-                            <td style={{ padding: '10px 8px', textAlign: 'center' }}>
-                              <span style={{
-                                padding: '4px 10px', borderRadius: 6, fontSize: '0.72rem', fontWeight: 700,
-                                background: colors.bg, color: colors.fg,
-                              }}>{statusLabel(s.status)}</span>
-                            </td>
-                            <td style={{ padding: '10px 8px', textAlign: 'center' }}>
-                              <IframeLink
-                                href={`/wallet/print?type=${s.target_type}&id=${s.id}`}
-                                style={{ color: 'var(--teal)', fontSize: '0.78rem', fontWeight: 700, textDecoration: 'none' }}
-                              >
-                                Print
-                              </IframeLink>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+          {tab === 'invoices' && (
+            <>
+              <section className="glass-panel" style={{ padding: 16, borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                  <h3 style={{ color: 'var(--white)', margin: 0, fontSize: '1rem' }}>Your Running Totals</h3>
+                  {weekEndsAtIso && (
+                    <span style={{ color: 'var(--grey-400)', fontSize: '0.78rem' }}>
+                      {weekClosesInLabel(weekEndsAtIso, tick)}
+                    </span>
+                  )}
                 </div>
-              )}
-            </section>
+                {selfLoading && !self ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14 }}>
+                    {[0, 1, 2].map((i) => (
+                      <div key={i}>
+                        <div className="skeleton" style={{ height: 12, width: '60%', borderRadius: 4, marginBottom: 8 }} />
+                        <div className="skeleton" style={{ height: 22, width: '80%', borderRadius: 6 }} />
+                      </div>
+                    ))}
+                  </div>
+                ) : self ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14 }}>
+                    <div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>This Week's Sales</div>
+                      <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--white)' }}>
+                        {self.currentWeekOrderCount} Orders / {money(self.currentWeekOrderTotal)}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Owed Upstream Right Now</div>
+                      <div style={{ fontSize: '1.3rem', fontWeight: 800, color: self.openBillsTotal > 0 ? '#ff6b6b' : 'var(--teal)' }}>
+                        {money(self.openBillsTotal)}{' '}
+                        <span style={{ fontSize: '0.78rem', color: 'var(--grey-500)', fontWeight: 600 }}>
+                          ({self.openBillsCount} {self.openBillsCount === 1 ? 'Bill' : 'Bills'})
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                        {self.accountType === 'prepaid' ? 'Prepaid Balance' : 'Credit Used'}
+                      </div>
+                      <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--teal)' }}>
+                        {self.accountType === 'prepaid' ? (
+                          money(self.prepaidBalance)
+                        ) : (
+                          <>
+                            {money(self.creditUsed)}{' '}
+                            <span style={{ fontSize: '0.78rem', color: 'var(--grey-500)', fontWeight: 600 }}>Of {money(self.creditLimit)}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p style={{ color: 'var(--grey-500)', fontSize: '0.9rem' }}>Could Not Load Your Running Totals.</p>
+                )}
+              </section>
+
+              {/* Money someone says they sent ME. Sits above my own bills
+                  because it is blocking their settlement, not mine. */}
+              {isAgentRole && <PaymentsToConfirm onChanged={refresh} />}
+
+              {/* "Bills To Pay" means UNPAID. It was rendering every statement
+                  including settled ones, so a fully-paid-up agent saw a list of
+                  bills under a heading telling them to pay them. */}
+              {renderStatementsSection('Bills To Pay', openInvoices)}
+
+              {/* The heading used to sit outside DownlineBalances, which
+                  returns null when it is loading, empty, or errored - leaving a
+                  bare "Downline Snapshots" title over dead whitespace. It owns
+                  its own heading and states now. */}
+              <DownlineBalances />
+            </>
           )}
 
-          {tab === 'commissions' && <CommissionsTab />}
-          {tab === 'receipts' && <ReceiptVault />}
-          {tab === 'settings' && <WalletSettings />}
+          {tab === 'statements' && renderStatementsSection('Invoice History')}
+
+          {/* Guarded on isAgentRole as well as the tab id: the tab strip no
+              longer offers these to researchers/admins, but a stale `tab`
+              value must not render a panel whose endpoints will 403. */}
+          {tab === 'commissions' && isAgentRole && <CommissionsTab />}
+          {tab === 'receipts' && isAgentRole && <ReceiptVault />}
+          {tab === 'settings' && isAgentRole && <WalletSettings />}
         </div>
       </div>
 
@@ -452,7 +698,16 @@ export default function WalletPage({
           onPaid={() => { setPayOpen(false); refresh(); }}
         />
       )}
-      {detailId && <StatementDetailModal statementId={detailId} targetType={detailType} onClose={() => setDetailId(null)} />}
+      {/* refresh on close: filing a dispute changed server state, but the
+          parent never refetched, so the badge reverted the moment the modal
+          closed. */}
+      {detailId && (
+        <StatementDetailModal
+          statementId={detailId}
+          targetType={detailType}
+          onClose={() => { setDetailId(null); refresh(); }}
+        />
+      )}
       {creditOpen && (
         <CreditIncreaseForm
           currentLimit={summary?.creditLimit ?? 0}

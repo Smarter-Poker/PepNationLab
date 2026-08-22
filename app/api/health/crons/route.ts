@@ -52,6 +52,7 @@ const KNOWN_CRONS: Array<{ job_name: string; schedule: string; expected_interval
   { job_name: 'shipping_webhook_retry', schedule: '*/15 * * * *', expected_interval_seconds: 15 * 60 },
   // Daily / multi-hour operational jobs
   { job_name: 'abandoned_cart_recovery', schedule: '0 */6 * * *', expected_interval_seconds: 6 * 3600 },
+  { job_name: 'lifecycle_nudges', schedule: '0 16 * * *', expected_interval_seconds: 24 * 3600 },
   { job_name: 'cancel-stale-pending', schedule: '45 3 * * *', expected_interval_seconds: 24 * 3600 },
   { job_name: 'idempotency-sweep', schedule: '30 3 * * *', expected_interval_seconds: 24 * 3600 },
   { job_name: 'recommendations_refresh', schedule: '0 4 * * *', expected_interval_seconds: 24 * 3600 },

@@ -5,6 +5,9 @@ import { computeAgentCostForAgent, computeSubAgentBaselineCost, type AgentTier }
 import { assertSameOrigin } from '@/lib/csrf';
 import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
 import { ManualOrderInputSchema } from '@/lib/schemas/order';
+import { logOrderEvent } from '@/lib/order-events';
+import { notifyAdmins } from '@/lib/notify';
+import { calculateShippingCost } from '@/lib/shipping-cost';
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -38,13 +41,17 @@ export async function POST(req: NextRequest) {
     handler: async () => {
   try {
     const supabase = createAdminClient();
-    const { buyerName, buyerEmail, street, city, state, zip, items, subtotal: clientSubtotal, shippingCost, paymentMethod, fulfillmentMethod } = body;
+    const { buyerName, buyerEmail, street, city, state, zip, items, subtotal: clientSubtotal, paymentMethod, fulfillmentMethod } = body;
 
-    // Agent-entered shipping for a manual order. This is agent-authenticated
-    // (not a researcher-facing exploit), but a typo or bad value should never
-    // create an absurd charge, so clamp to a sane range and round to cents.
-    const safeShipping = Math.min(1000, Math.max(0, Math.round((Number(shippingCost) || 0) * 100) / 100));
     const fulfillment = fulfillmentMethod === 'agent_pickup' ? 'agent_pickup' : 'ship';
+    // Pep Nation ships every order at a flat rate keyed on the destination
+    // state. The agent-entered `shippingCost` field is deliberately IGNORED --
+    // it previously let a manual order carry any amount from $0 to $1000,
+    // which would undercut or overcharge against the published rate card.
+    const safeShipping = calculateShippingCost(
+      fulfillment === 'agent_pickup' ? 'agent_pickup' : 'standard',
+      typeof state === 'string' ? state : null,
+    );
 
     const { data: agentProfile, error: agentProfileError } = await supabase.from('profiles').select('tier, parent_agent_id, role, is_sub_agent, account_type, max_auto_approve_limit').eq('id', agentId).maybeSingle();
     if (agentProfileError || !agentProfile) return NextResponse.json({ error: 'Agent Profile Not Found.' }, { status: 404 });
@@ -91,11 +98,16 @@ export async function POST(req: NextRequest) {
       const ap = (raw.agent_product_id && byId.get(raw.agent_product_id)) || (raw.product_id && byProductId.get(raw.product_id)) || null;
       if (!ap) return NextResponse.json({ error: 'One Or More Items Are Not In Your Catalog.' }, { status: 400 });
 
-      const unitRetail = (Number(ap.retail_price) || 0) / 10;
+      // Everything on the platform is priced and billed PER VIAL: retail_price,
+      // base_cost, super_agent_pricing.baseline_cost and qty are all per-vial.
+      // There is no 10-pack. The /10 that used to be on all three of these
+      // under-charged manually created orders by 10x on both the retail the
+      // researcher owes and the cost the agent is billed.
+      const unitRetail = Number(ap.retail_price) || 0;
       computedSubtotal += unitRetail * qty;
-      const unitCost = (await computeAgentCostForAgent(supabase, ap.product_id, agentId, tier)) / 10;
+      const unitCost = await computeAgentCostForAgent(supabase, ap.product_id, agentId, tier);
       const unitSuperAgentCost = parentAgentId
-        ? (await computeSubAgentBaselineCost(supabase, ap.product_id, parentAgentId)) / 10
+        ? await computeSubAgentBaselineCost(supabase, ap.product_id, parentAgentId)
         : null;
       orderItems.push({ product_id: ap.product_id, product_name: ap.product_name, agent_product_id: ap.id, quantity: qty, unit_retail_price: unitRetail, unit_cost_price: unitCost, unit_super_agent_cost: unitSuperAgentCost });
     }
@@ -152,7 +164,15 @@ export async function POST(req: NextRequest) {
         await supabase.from('orders').delete().eq('id', newOrder.id);
         return NextResponse.json({ error: `Insufficient Prepaid Balance. Requires $${manualCogs.toFixed(2)}, But Balance Is $${balance.toFixed(2)}. Please Recharge Your Account.` }, { status: 402 });
       }
-      const { data: deductOk, error: deductErr } = await supabase.rpc('deduct_prepaid_balance', { agent_id: agentId, amount: manualCogs });
+      // p_order_id is REQUIRED - see the note in agent/orders/approve. Without
+      // it the ledger row carries a NULL reference_id, the duplicate-charge
+      // guard cannot match, and the order is charged again on admin release.
+      const { data: deductOk, error: deductErr } = await supabase.rpc('deduct_prepaid_balance', {
+        agent_id: agentId,
+        amount: manualCogs,
+        p_order_id: newOrder.id,
+        p_description: `Order charge (${String(newOrder.id).slice(0, 8)})`,
+      });
       if (deductErr || !deductOk) {
         await supabase.from('order_items').delete().eq('order_id', newOrder.id);
         await supabase.from('orders').delete().eq('id', newOrder.id);
@@ -196,22 +216,37 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      const { data: admins } = await supabase.from('profiles').select('id').eq('role', 'admin');
-      if (admins && admins.length > 0) {
-        const short = newOrder.id.slice(0, 8).toUpperCase();
-        const totalStr = Number(computedTotal).toFixed(2);
-        const fulfillmentMsg = fulfillment === 'ship' ? 'Ready For Shipping' : 'Ready For Agent Pickup';
-        const notifications = admins.map((admin) => ({
-          user_id: admin.id,
-          title: finalAutoStatus === 'admin_approval_pending' ? 'Manual Order Needs Admin Approval' : 'Manual Order Auto-Approved',
-          body: finalAutoStatus === 'admin_approval_pending'
-            ? `Order #${short} ($${totalStr}) - Agent Created & Approved. Needs Admin Release (${fulfillmentMsg}).`
-            : `Order #${short} ($${totalStr}) - Agent Created & Auto-Approved On Credit Line. (${fulfillmentMsg}).`,
-          type: 'system',
-          url: `/admin/orders?status=${finalAutoStatus}`,
-        }));
-        await supabase.from('notifications').insert(notifications);
+      await logOrderEvent(supabase, {
+        orderId: newOrder.id,
+        event: 'placed',
+        actorId: agentId,
+        actorRole: 'agent',
+        payload: { manual: true, total: computedTotal },
+      });
+      if (finalAutoStatus === 'approved_ship' || finalAutoStatus === 'approved_pickup') {
+        await logOrderEvent(supabase, {
+          orderId: newOrder.id,
+          event: 'approved',
+          actorRole: 'agent',
+          payload: { status: finalAutoStatus, auto: true },
+        });
       }
+    } catch (err) {
+      console.error('Failed to log manual order timeline events', err);
+    }
+
+    try {
+      const short = newOrder.id.slice(0, 8).toUpperCase();
+      const totalStr = Number(computedTotal).toFixed(2);
+      const fulfillmentMsg = fulfillment === 'ship' ? 'Ready For Shipping' : 'Ready For Agent Pickup';
+      await notifyAdmins(supabase, {
+        type: 'system',
+        title: finalAutoStatus === 'admin_approval_pending' ? 'Manual Order Needs Admin Approval' : 'Manual Order Auto-Approved',
+        body: finalAutoStatus === 'admin_approval_pending'
+          ? `Order #${short} ($${totalStr}) - Agent Created & Approved. Needs Admin Release (${fulfillmentMsg}).`
+          : `Order #${short} ($${totalStr}) - Agent Created & Auto-Approved On Credit Line. (${fulfillmentMsg}).`,
+        url: `/admin/orders?status=${finalAutoStatus}`,
+      });
     } catch (err) {
       console.error('Failed to notify admins of manual order', err);
     }

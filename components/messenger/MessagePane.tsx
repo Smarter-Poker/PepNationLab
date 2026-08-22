@@ -1051,6 +1051,7 @@ export default function MessagePane({ userId }: Props) {
         }}
       >
         <div
+          onClick={() => setInfoOpen(true)}
           style={{
             fontWeight: 800,
             fontSize: '1.05rem',
@@ -1062,6 +1063,7 @@ export default function MessagePane({ userId }: Props) {
             whiteSpace: 'nowrap',
             flex: '1 1 0',
             minWidth: 0,
+            cursor: 'pointer',
           }}
         >
           {headerLabel}
@@ -1073,26 +1075,6 @@ export default function MessagePane({ userId }: Props) {
               window.dispatchEvent(new CustomEvent('messenger:start-call', { detail: c }));
             }}
           />
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); setReminderSeed(null); setRemindersOpen(true); }}
-            aria-label="Open Reminders"
-            title="Reminders"
-            className="hover-lift"
-            style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-          >
-            <Image src="/messenger-icons/reminders-icon.jpg" alt="Reminders" width={200} height={200} unoptimized style={{ width: 48, height: 48, objectFit: 'contain', mixBlendMode: 'lighten', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }} />
-          </button>
-          <button
-            type="button"
-            onClick={() => setInfoOpen(true)}
-            aria-label="Conversation Info"
-            title="Info"
-            className="hover-lift"
-            style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-          >
-            <Image src="/messenger-icons/info-icon.jpg" alt="Info" width={200} height={200} unoptimized style={{ width: 48, height: 48, objectFit: 'contain', mixBlendMode: 'lighten', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }} />
-          </button>
         </div>
       </header>
       {pushBanner !== 'hidden' && (

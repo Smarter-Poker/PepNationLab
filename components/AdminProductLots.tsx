@@ -6,6 +6,25 @@ import { toast } from 'sonner';
 import { vibrate } from '@/lib/haptics';
 import IframeLink from '@/components/ui/IframeLink';
 
+/** Format an ISO date string (YYYY-MM-DD) to a human-readable date. */
+function formatLotDate(value: string | null): string {
+  if (!value) return '—';
+  const d = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return value;
+  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' });
+}
+
+/** Compute expiry: stored value or manufactured_at + 24 months (lyophilized peptide industry standard). */
+function computeLotExpiry(expires_at: string | null, manufactured_at: string | null): string {
+  if (expires_at) return formatLotDate(expires_at);
+  if (!manufactured_at) return '—';
+  const mfg = new Date(`${manufactured_at}T00:00:00Z`);
+  if (Number.isNaN(mfg.getTime())) return '—';
+  const exp = new Date(mfg);
+  exp.setUTCMonth(exp.getUTCMonth() + 24);
+  return exp.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' }) + ' (est.)';
+}
+
 interface Lot {
   id: string;
   product_id: string;
@@ -309,7 +328,7 @@ export default function AdminProductLots({ productId }: Props) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '120px' }}>
                   <span style={{ fontSize: '0.75rem', color: 'var(--grey-500)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Dates</span>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', fontSize: '0.8rem' }}>
-                    <span>Mfg: {lot.manufactured_at ?? '-'}</span>
+                    <span>Mfg: {formatLotDate(lot.manufactured_at)}</span>
                     <span>Rcv: {lot.received_at}</span>
                   </div>
                 </div>
@@ -317,7 +336,7 @@ export default function AdminProductLots({ productId }: Props) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '130px' }}>
                   <span style={{ fontSize: '0.75rem', color: 'var(--grey-500)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Expires</span>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
-                    <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{lot.expires_at ?? '-'}</span>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{computeLotExpiry(lot.expires_at, lot.manufactured_at)}</span>
                     {xClass === 'expired' && (
                       <span className="badge" style={{ background: 'rgba(229,62,62,0.2)', color: '#FCA5A5', fontSize: '0.65rem' }}>Expired</span>
                     )}

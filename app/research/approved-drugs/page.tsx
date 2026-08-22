@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     creator: '@PepNationLab',
     title: 'FDA Approved Peptide Drugs | Research Compounds With Regulatory Approval | Pep Nation Lab',
     description: 'Research peptides that have received FDA or international regulatory approval as drug products. Full reference data on approved peptide pharmaceuticals. Research use only.',
-    images: ['https://pepnationlab.com/images/og-card.jpg'],
+    images: ['https://pepnationlab.com/og-card.png'],
   },
 };
 

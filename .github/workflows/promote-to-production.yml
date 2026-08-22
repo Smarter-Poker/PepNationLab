@@ -68,10 +68,33 @@ jobs:
           NEXT_PUBLIC_APP_URL: "https://pepnationlab.com"
         run: npm run build
 
-      - name: Promote — fast-forward the production branch to this green commit
+      - name: Promote — advance the production branch to this green commit
         run: |
           set -euo pipefail
           sha="$(git rev-parse --short HEAD)"
-          # Fast-forward only; production advances forward through main commits.
-          git push origin "HEAD:production"
-          echo "Promoted $sha to production. Vercel will deploy it."
+          git config user.name "Smarter-Poker"
+          git config user.email "254329056+Smarter-Poker@users.noreply.github.com"
+          git fetch origin production
+
+          # A plain fast-forward push is what this used to do, and it SILENTLY
+          # stopped promoting for hours the moment `production` picked up a
+          # commit of its own (a hand-merge, a hotfix landed straight on
+          # production). Every push to main then failed with non-fast-forward,
+          # the build stayed green, nobody was told, and production quietly
+          # froze on an old commit while main marched on. Merge instead: it
+          # works whether or not production has diverged, and it never
+          # discards production-only work.
+          if git merge-base --is-ancestor origin/production HEAD; then
+            git push origin "HEAD:production"
+            echo "Promoted $sha to production (fast-forward). Vercel will deploy it."
+          else
+            echo "production has diverged from main; merging instead of fast-forwarding."
+            git checkout -B promote-production origin/production
+            if ! git merge --no-edit "$sha"; then
+              echo "::error::Merging main into production CONFLICTS. Production is NOT updated."
+              echo "Resolve the conflict on the production branch by hand, then re-run this job."
+              exit 1
+            fi
+            git push origin "promote-production:production"
+            echo "Promoted $sha to production (merge). Vercel will deploy it."
+          fi

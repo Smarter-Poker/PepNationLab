@@ -33,6 +33,7 @@ import {
   KanbanView, ChartsView, AcquisitionView, useInsights,
   type KanbanResearcher,
 } from './researcher-crm/views';
+import AccountDeleteButton from '@/components/AccountDeleteButton';
 
 /* -----------------------------------------------------------------------
    Types
@@ -88,6 +89,7 @@ type TabKey = 'list' | 'kanban' | 'charts' | 'acquisition';
 
 export interface CRMExternalProps {
   isSuperAgent?: boolean;
+  isSubAgent?: boolean;
   onResetPassword?: (r: { id: string; name: string; username: string }) => void;
   onPromote?: (r: { id: string; full_name: string | null; username: string | null; email: string | null; created_at: string; auto_approve_orders?: boolean; }) => void;
   onToggleAutoApprove?: (researcherId: string, currentStatus: boolean) => void;
@@ -469,7 +471,7 @@ function NoteEditor({ researcherId, initialNote, onSave }: { researcherId: strin
    Researcher row (table + expanded detail)
 ----------------------------------------------------------------------- */
 
-function ResearcherRow({ r, expanded, onExpand, selected, onToggleSelect, onMessage, onAddTag, onRemoveTag, onAddReminder, onTogglePin, isSuperAgent, onResetPassword, onPromote, onToggleAutoApprove, onNoteUpdate }: {
+function ResearcherRow({ r, expanded, onExpand, selected, onToggleSelect, onMessage, onAddTag, onRemoveTag, onAddReminder, onTogglePin, isSuperAgent, onResetPassword, onPromote, onToggleAutoApprove, onNoteUpdate, onDeleted }: {
   r: Researcher; expanded: boolean; onExpand: () => void;
   selected?: boolean; onToggleSelect?: () => void;
   onMessage: (r: Researcher) => void;
@@ -482,6 +484,7 @@ function ResearcherRow({ r, expanded, onExpand, selected, onToggleSelect, onMess
   onPromote?: (r: Researcher) => void;
   onToggleAutoApprove?: (id: string, current: boolean) => void;
   onNoteUpdate: (id: string, note: string) => void;
+  onDeleted?: () => void;
 }) {
   const [addingTag, setAddingTag] = useState(false);
   const s = STATUS_STYLES[r.status] ?? STATUS_STYLES.lead;
@@ -536,8 +539,8 @@ function ResearcherRow({ r, expanded, onExpand, selected, onToggleSelect, onMess
         <span style={{ color: '#B0B8C4', fontSize: '0.80rem', textAlign: 'right' }}>{fmtInt(r.orders_count)}</span>
 
         {/* Last Login */}
-        <span style={{ color: lastLogin ? '#B0B8C4' : '#EF4444', fontSize: '0.75rem', fontStyle: lastLogin ? 'normal' : 'italic' }}>
-          {daysAgo(lastLogin)}
+        <span style={{ color: lastLogin ? '#B0B8C4' : 'var(--grey-500)', fontSize: '0.75rem', fontStyle: lastLogin ? 'normal' : 'italic' }}>
+          {lastLogin ? new Date(lastLogin).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Never Logged In'}
         </span>
 
         {/* Status */}
@@ -574,14 +577,14 @@ function ResearcherRow({ r, expanded, onExpand, selected, onToggleSelect, onMess
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 16, marginBottom: 20 }}>
             {[
               { label: 'Joined', value: daysAgo(r.joined_at) },
-              { label: 'Last Login', value: daysAgo(lastLogin), warn: !lastLogin },
+              { label: 'Last Login', value: lastLogin ? new Date(lastLogin).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Never Logged In', warn: !lastLogin },
               { label: 'Last Contacted', value: daysAgo(r.last_contacted_at) },
               { label: 'Last Order', value: daysAgo(r.last_order_at) },
               { label: 'Source', value: r.acquisition_source || 'Direct' },
             ].map(({ label, value, warn }) => (
               <div key={label}>
                 <div style={{ fontSize: '0.63rem', color: '#5A6A7A', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 3 }}>{label}</div>
-                <div style={{ fontSize: '0.84rem', color: warn ? '#EF4444' : '#FFFFFF', fontWeight: 600 }}>{value}</div>
+                <div style={{ fontSize: '0.84rem', color: warn ? 'var(--grey-500)' : '#FFFFFF', fontWeight: 600, fontStyle: warn ? 'italic' : 'normal' }}>{value}</div>
               </div>
             ))}
             {r.email && (
@@ -700,6 +703,15 @@ function ResearcherRow({ r, expanded, onExpand, selected, onToggleSelect, onMess
               onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,196,188,0.10)'; }}>
               <MessageSquare size={12} /> Message
             </button>
+
+            {/* Delete researcher */}
+            <AccountDeleteButton
+              targetId={r.id}
+              targetName={r.full_name || r.username || null}
+              kind="researcher"
+              compact
+              onDeleted={() => { onDeleted?.(); }}
+            />
           </div>
         </div>
       )}
@@ -835,7 +847,7 @@ function GettingStarted({ slug, researcherCount }: { slug: string | null; resear
 ----------------------------------------------------------------------- */
 
 export default function AgentResearcherCRMv2({
-  isSuperAgent, onResetPassword, onPromote, onToggleAutoApprove,
+  isSuperAgent, isSubAgent, onResetPassword, onPromote, onToggleAutoApprove,
 }: CRMExternalProps) {
   const router = useRouter();
   const [data, setData] = useState<Payload | null>(null);
@@ -1099,7 +1111,9 @@ export default function AgentResearcherCRMv2({
         <KpiCard label="New This Month" value={fmtInt(k.new_this_month.value)} spark={k.new_this_month.spark ?? []} delta={k.new_this_month.delta_pct} onClick={() => { setTab('list'); setFilter('new'); }} />
         <KpiCard label="At Risk" value={fmtInt(k.at_risk.value)} spark={k.at_risk.spark ?? []} delta={k.at_risk.delta_pct} color="#F87171" onClick={() => { setTab('list'); setFilter('at_risk'); }} muted={safe(k.at_risk.value) === 0} />
         <KpiCard label="Best Researcher" value={k.best_customer?.label || '-'} spark={k.best_customer?.spark ?? []} delta={k.best_customer?.delta_pct} color="#D0DAE4" subtitle={(k.best_customer?.value ?? 0) > 0 ? fmtUSD(k.best_customer!.value) : undefined} muted={!k.best_customer?.label} />
-        <KpiCard label="Commission Earned" value={fmtUSD(k.lifetime_commission.value)} spark={k.lifetime_commission.spark ?? []} delta={k.lifetime_commission.delta_pct} color="#2DD4BF" />
+        {isSubAgent && (
+          <KpiCard label="Commission Earned" value={fmtUSD(k.lifetime_commission.value)} spark={k.lifetime_commission.spark ?? []} delta={k.lifetime_commission.delta_pct} color="#2DD4BF" />
+        )}
       </div>
 
       {/* Tab bar */}
@@ -1205,6 +1219,7 @@ export default function AgentResearcherCRMv2({
                     isSuperAgent={isSuperAgent} onResetPassword={onResetPassword}
                     onPromote={handlePromote} onToggleAutoApprove={handleAutoApprove}
                     onNoteUpdate={updateNote}
+                    onDeleted={() => { setExpandedId(null); void refresh(); }}
                   />
                 ))
               )}

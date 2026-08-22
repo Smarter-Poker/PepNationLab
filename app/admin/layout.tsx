@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
-import { createClient, getCachedUser } from '@/lib/supabase/server';
+import { isEffectiveAdmin } from '@/lib/platform-admins';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { AdminLayoutClient } from './AdminLayoutClient';
 
 // This layout calls supabase.auth.getUser() (reads cookies) to gate admins, so
@@ -13,19 +14,19 @@ import { AdminLayoutClient } from './AdminLayoutClient';
 export const dynamic = 'force-dynamic';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  // ── Step 1: get the authenticated user from their session cookie ──────────
   const supabase = await createClient();
-  // Deduped per-request with the admin page's auth check - getUser() is a
-  // network call to Supabase Auth.
-  const { user } = await getCachedUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  // maybeSingle() instead of single() so a fresh auth user without a profiles
-  // row does not crash this layout with PGRST116 ("exactly one row expected").
-  // If profile is null, the role check below treats it as non-admin and
-  // redirects to /dashboard.
-  const { data: profile } = await supabase
+  // ── Step 2: role lookup via SERVICE CLIENT (bypasses RLS) ─────────────────
+  // This is the SAME path used by requireAdmin() in all admin API routes.
+  // The user-scoped client can behave differently due to RLS policies; using
+  // the service client ensures the gate is consistent with the API layer.
+  const service = createAdminClient();
+  const { data: profile } = await service
     .from('profiles')
-    .select('role, full_name')
+    .select('role, full_name, is_admin_account')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -33,7 +34,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect('/shipping');
   }
 
-  if (profile?.role !== 'admin') {
+  // Two independent pathways to admin access:
+  // 1. isEffectiveAdmin: role='admin' OR user ID in PLATFORM_ADMIN_IDS allowlist
+  // 2. is_admin_account=true: DB flag set directly on the profile (e.g. Savage Brands)
+  if (!isEffectiveAdmin(user.id, profile?.role) && profile?.is_admin_account !== true) {
     redirect('/dashboard');
   }
 

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { isEffectiveAdmin } from '@/lib/platform-admins';
 import { redirect } from 'next/navigation';
 import AdminAgents from '@/components/AdminAgents';
 
@@ -18,11 +19,11 @@ export default async function AdminAgentsPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, is_admin_account')
     .eq('id', user.id)
     .maybeSingle();
 
-  if (profile?.role !== 'admin') {
+  if (!isEffectiveAdmin(user.id, profile?.role) && profile?.is_admin_account !== true) {
     redirect('/dashboard');
   }
 

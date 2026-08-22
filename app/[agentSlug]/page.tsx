@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { Suspense, cache } from 'react';
 import { preload } from 'react-dom';
-import { notFound, redirect } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 import Link from 'next/link';
@@ -10,6 +10,8 @@ import AgentStorefrontGrid from '@/components/AgentStorefrontGrid';
 import { getCompoundsBySlugs } from '@/lib/compounds-server';
 import { computeAgentCostsForAgent, type AgentTier } from '@/lib/pricing';
 import { getEffectiveBundlesForStore } from '@/lib/bundles';
+import { isSavageNetworkAgent, SAVAGE_BRANDS_SLUG } from '@/lib/brand-network';
+import { buildOffer, getShippingDetailNodes } from '@/lib/structured-data/merchant';
 import CouponLinkCapture from '@/components/CouponLinkCapture';
 import StorefrontRenameBanner from '@/components/StorefrontRenameBanner';
 import Navbar from '@/components/Navbar';
@@ -19,7 +21,15 @@ import AgentLinkCapture from '@/components/AgentLinkCapture';
 
 interface Props {
   params: Promise<{ agentSlug: string }>;
-  searchParams?: Promise<{ sa?: string }>;
+  // There is deliberately no searchParams here. This page used to declare
+  // `searchParams?: Promise<{ sa?: string }>` and never read it, which made it
+  // look as though the server participated in sub-agent attribution when it
+  // does not. The ?sa= param is already read client-side by AgentLinkCapture
+  // straight off window.location.search, and the credit that actually counts
+  // is the `sa` field inside the HMAC-signed pnl_ref_lock cookie minted by
+  // resolveRefCode in proxy.ts. Reading ?sa= here as well would create a
+  // second, unsigned, client-supplied channel for the same fact, and the two
+  // could disagree -- so the declaration is removed rather than wired up.
 }
 
 // Request-scoped memo: both the page body and generateMetadata resolve the
@@ -29,6 +39,17 @@ interface Props {
 // full column set plus tagline for generateMetadata).
 const getAgentProfileBySlug = cache(async (agentSlug: string) => {
   const supabase = await createClient();
+  // Storefront slugs are canonically lowercase (STORE_SLUG_RE in
+  // lib/store-slug.ts only admits [a-z0-9...]), but the URL segment is
+  // whatever the visitor typed or whatever a partner printed on a flyer.
+  // PostgREST's .eq() is case-sensitive, so /SavageBrands used to match no
+  // row and notFound() -- a hard 404 on a live agent's storefront. proxy.ts
+  // has a canonicalising redirect, but it is gated behind
+  // `!refCookiesToSet && (!refLock || refLock.k === 'url')` inside its
+  // `if (!user)` branch, so it never runs for a signed-in visitor: exactly
+  // the returning customer whose order would have been credited to that
+  // agent. Normalising here makes the lookup correct no matter which path
+  // reached it.
   const { data, error } = await supabase
     .from('agent_profiles')
     .select(`
@@ -43,12 +64,14 @@ const getAgentProfileBySlug = cache(async (agentSlug: string) => {
       qr_code_data,
       is_active,
       volume_pricing_enabled,
+      is_manufacturer_store,
       min_order_qty,
       min_overall_qty,
       storefront_renamed_at,
-      featured_products
+      featured_products,
+      custom_branding
     `)
-    .eq('slug', agentSlug)
+    .eq('slug', agentSlug.trim().toLowerCase())
     .maybeSingle();
   return { data, error };
 });
@@ -111,6 +134,7 @@ async function AgentStorefrontDataLoader({
   const products = productsResult.data;
 
   const isStorefrontOwner = !!user && userProfile?.id === agent.id;
+  const isManufacturerStore = (agent as { is_manufacturer_store?: boolean | null }).is_manufacturer_store === true;
 
   // -- Run independent queries in parallel - saves ~2 sequential round-trips --
   const productIds = (products ?? [])
@@ -123,14 +147,16 @@ async function AgentStorefrontDataLoader({
     // 1. Inventory counts
     supabase.rpc('agent_inventory_for_storefront', { p_slug: agentSlug }),
 
-    // 2. COA PDFs (only if we have product IDs)
+    // 2. COA lot numbers — link to /coa?lot= page (no storage file required)
     productIds.length > 0
       ? supabase
           .from('product_lots')
-          .select('product_id, coa_storage_key, received_at')
+          .select('product_id, lot_number, coa_storage_key, received_at')
           .in('product_id', productIds)
           .eq('is_active', true)
-          .not('coa_storage_key', 'is', null)
+          .not('coa_verified_at', 'is', null)
+          .is('coa_retracted_at', null)
+          .is('superseded_by', null)
           .order('received_at', { ascending: false })
       : Promise.resolve({ data: null }),
 
@@ -149,15 +175,20 @@ async function AgentStorefrontDataLoader({
       ?.map(i => [i.product_id, i.stock_count]) ?? []
   );
 
-  // Build COA URL map
+  // Build COA URL map — prefer storage PDF if available, fall back to /coa?lot= page
   const coaByProductId: Record<string, string> = {};
   for (const row of lotsResult.data ?? []) {
-    if (!row.coa_storage_key) continue;
-    if (coaByProductId[row.product_id]) continue; // keep newest
-    const { data: pub } = supabase.storage
-      .from('product-coas')
-      .getPublicUrl(row.coa_storage_key);
-    if (pub?.publicUrl) coaByProductId[row.product_id] = pub.publicUrl;
+    if (coaByProductId[row.product_id]) continue; // keep newest (query ordered desc)
+    if (row.coa_storage_key) {
+      const { data: pub } = supabase.storage
+        .from('product-coas')
+        .getPublicUrl(row.coa_storage_key);
+      if (pub?.publicUrl) { coaByProductId[row.product_id] = pub.publicUrl; continue; }
+    }
+    // No storage file yet — link to the COA detail page by lot number
+    if (row.lot_number) {
+      coaByProductId[row.product_id] = `/coa?lot=${encodeURIComponent(row.lot_number)}`;
+    }
   }
 
   // Wishlist IDs
@@ -168,7 +199,9 @@ async function AgentStorefrontDataLoader({
 
   let productsWithCost: Array<Record<string, unknown>> =
     (products ?? []) as unknown as Array<Record<string, unknown>>;
-  if (isStorefrontOwner && (products?.length ?? 0) > 0) {
+  // Manufacturer owners have no tier-derived cost -- their private cost lives
+  // on agent_products.manufacturer_cost and renders on their own dashboard.
+  if (isStorefrontOwner && !isManufacturerStore && (products?.length ?? 0) > 0) {
     const svc = await createServiceClient();
     const ownerTier = ((userProfile as { tier?: AgentTier } | null)?.tier ?? 'tier_3') as AgentTier;
     // Resolve the owner's pricing context once and price the whole catalog in
@@ -214,12 +247,31 @@ async function AgentStorefrontDataLoader({
       tagline: b.tagline || '',
       description: b.description,
       image_url: b.image_url,
+      vial_image_url: b.vial_image_url,
       product_ids: b.product_ids,
       discount_percent: b.discount_percent,
       custom_price: b.custom_price ?? null,
     }));
   } catch {
     storeBundles = [];
+  }
+
+  // ── Savage Brands network detection (server-side) ─────────────────────────
+  // A downline store (e.g. /eddierazz) — or a downline OF a downline — must
+  // render Savage card art and never fall back to Pep Nation imagery. The
+  // client-side heuristic in the grid sniffs custom_image_url paths, which
+  // fails when a downline's catalog rows were seeded without savage image
+  // paths — so walk the parent_agent_id chain here via the service client
+  // (RLS hides profiles.parent_agent_id from anonymous visitors) and pass an
+  // authoritative flag down.
+  let brandNetworkIsSavage = agentSlug === SAVAGE_BRANDS_SLUG;
+  if (!brandNetworkIsSavage) {
+    try {
+      const svcBrand = await createServiceClient();
+      brandNetworkIsSavage = await isSavageNetworkAgent(svcBrand, agent.id);
+    } catch {
+      // Non-fatal: the grid's client-side heuristics still apply.
+    }
   }
 
   // Build schema.org/Product nodes defensively. `name` is REQUIRED by Google's
@@ -248,27 +300,65 @@ async function AgentStorefrontDataLoader({
           : `https://pepnationlab.com${rawImage}`;
       }
       const price = Number(pp.is_on_sale ? pp.sale_price : pp.retail_price);
-      if (!Number.isFinite(price) || !(price > 0)) return null;
-      node.offers = {
-        '@type': 'Offer',
-        price: price.toFixed(2),
-        priceCurrency: 'USD',
-        availability:
-          (inventoryMap.get(pp.product_id) ?? 0) > 0
-            ? 'https://schema.org/InStock'
-            : 'https://schema.org/OutOfStock',
-        url: `https://pepnationlab.com/${agentSlug}`,
-        priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-        itemCondition: 'https://schema.org/NewCondition',
-        seller: { '@id': 'https://pepnationlab.com/#organization' },
-      };
+      // Every Offer is built by lib/structured-data/merchant so validFrom,
+      // priceValidUntil and shippingDetails cannot go missing on one page and
+      // not another. Returns null for a non-positive price, which drops the
+      // whole Product node rather than publishing a bogus offer.
+      const offer = buildOffer({
+        price,
+        // Deep-link to THIS product. Every offer previously pointed at the bare
+        // storefront URL, so Google saw N distinct products sharing one page
+        // and could not attribute a price to any of them.
+        url: `https://pepnationlab.com/${agentSlug}?product=${encodeURIComponent(String(pp.product_id))}`,
+        inStock: (inventoryMap.get(pp.product_id) ?? 0) > 0,
+        sku: pp.product_id ? String(pp.product_id) : null,
+      });
+      if (!offer) return null;
+      node.offers = offer;
       return node;
     })
     .filter((n): n is Record<string, unknown> => n !== null);
 
   const jsonLd = {
     '@context': 'https://schema.org',
-    '@graph': productJsonLds,
+    // The OfferShippingDetails nodes are emitted once and referenced by @id
+    // from every offer above -- inlining them per product would repeat the
+    // same block up to 250 times on a full catalog page. Omitted entirely when
+    // there are no products, so the graph is never just dangling shipping.
+    '@graph': productJsonLds.length > 0
+      ? [...productJsonLds, ...getShippingDetailNodes()]
+      : [],
+  };
+
+  const agentFaqJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: [
+      {
+        '@type': 'Question',
+        name: `Are the peptides sold by ${agent.display_name} 3rd-party tested?`,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: `Yes, all research products available through ${agent.display_name} include verified 3rd-party Certificates of Analysis (CoAs) for purity and identity.`
+        }
+      },
+      {
+        '@type': 'Question',
+        name: `How quickly does ${agent.display_name} ship orders?`,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: `Orders placed through ${agent.display_name} are typically fulfilled within 0-2 business days and arrive within 2-7 days via standard shipping.`
+        }
+      },
+      {
+        '@type': 'Question',
+        name: `What is the refund policy for ${agent.display_name}?`,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: `All research products are sold strictly for in vitro laboratory use. Please refer to our full terms of service and disclaimer regarding sales policies.`
+        }
+      }
+    ]
   };
 
   return (
@@ -276,6 +366,10 @@ async function AgentStorefrontDataLoader({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(agentFaqJsonLd).replace(/</g, '\\u003c') }}
       />
       <AgentStorefrontGrid
         products={productsWithCost as any}
@@ -286,21 +380,37 @@ async function AgentStorefrontDataLoader({
         agentId={agent.id}
         bundles={storeBundles}
         coaByProductId={coaByProductId}
-        volumePricingEnabled={(agent as any).volume_pricing_enabled !== false}
+        volumePricingEnabled={isManufacturerStore ? false : (agent as any).volume_pricing_enabled !== false}
+        manufacturerStore={isManufacturerStore}
         isStorefrontOwner={isStorefrontOwner}
         viewerTier={(userProfile as any)?.tier ?? 'tier_3'}
         minOrderQty={agent.min_order_qty ?? 1}
         minOverallQty={agent.min_overall_qty ?? 1}
         compoundsBySlug={compoundsBySlug}
         featuredProductIds={agent.featured_products || []}
+        customBranding={(agent as any).custom_branding ?? null}
+        brandNetworkIsSavage={brandNetworkIsSavage}
       />
     </>
   );
 }
 
-export default async function AgentStorefrontPage({ params, searchParams }: Props) {
-  const { agentSlug } = await params;
-  const { sa: rawSa } = searchParams ? await searchParams : {};
+export default async function AgentStorefrontPage({ params }: Props) {
+  const { agentSlug: rawAgentSlug } = await params;
+  const agentSlug = rawAgentSlug.trim().toLowerCase();
+
+  // Send a mixed-case entry to the canonical lowercase path once, so the
+  // odd-cased URL does not stay in circulation collecting links, shares and
+  // duplicate-content penalties, and so everything below this line (the
+  // inventory RPC's p_slug, the AgentLinkCapture attribution write, the
+  // og:url) sees one spelling of the storefront rather than the visitor's.
+  // encodeURIComponent is not decoration: the segment is attacker-controlled,
+  // and passing it raw would let a crafted path turn this into an open
+  // redirect off-site.
+  if (rawAgentSlug !== agentSlug) {
+    permanentRedirect(`/${encodeURIComponent(agentSlug)}`);
+  }
+
   const supabase = await createClient();
 
   const { data: agent, error } = await getAgentProfileBySlug(agentSlug);
@@ -309,29 +419,30 @@ export default async function AgentStorefrontPage({ params, searchParams }: Prop
     notFound(); // returns HTTP 404; prevents bots indexing dead storefronts as valid pages
   }
 
-  // GUEST QR / LINK RULE (2026-07-12): a guest who scans an agent QR code or
-  // opens an agent storefront link lands on the public HOME / sign-up page
-  // first -- a clean, welcoming first screen instead of a bare storefront (and
-  // no longer the full-screen legal wall that read as a broken site). Guests
-  // enter the store via "Continue As Guest" on the landing page.
+  // GUEST STOREFRONT RULE (2026-07-30): scanning an agent's QR code, or opening
+  // pepnationlab.com/<slug> directly, renders THIS STORE. No sign-up wall, no
+  // bounce to the landing screen, no account required to browse products or see
+  // pricing.
   //
-  // The house store (researchstore -- Daniel Bekavac) still renders directly
-  // for guests AND for anonymous crawlers, so it stays indexable and remains
-  // the destination "Continue As Guest" lands on. Signed-in researchers,
-  // agents, and store owners continue to see their own storefront untouched.
+  // This block used to redirect any guest whose ref-lock slug did not already
+  // match this store to /?agent=<slug>. That landing screen leads with LOG IN /
+  // CREATE ACCOUNT, so in practice every first-time scanner was told to make an
+  // account before they could look at anything -- which is precisely what a
+  // referral QR code exists to avoid.
+  //
+  // Removing it does NOT open guest browsing up. Confinement is enforced one
+  // layer earlier, in proxy.ts: a guest holding a hard (QR) lock who requests a
+  // different store is 307'd back to their locked store at the edge, before this
+  // component is ever invoked, and an unlocked guest hitting /<slug> has a soft
+  // lock minted for this store on the same request. This guard only ever
+  // duplicated that decision -- and disagreed with it.
+  //
+  // Attribution is unaffected: <AgentLinkCapture> below records the slug for
+  // signup credit, and the signed pnl_ref_lock cookie (lib/ref-lock.ts) remains
+  // authoritative over anything the client submits at registration.
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user && agentSlug !== DEFAULT_STORE_SLUG) {
-    // Preserve QR / sub-agent attribution across the guest bounce to the
-    // landing: carry the storefront slug (and any ?sa sub-agent id) so the
-    // landing AgentLinkCapture records it for signup credit. Without this the
-    // guest redirect dropped all attribution and agents/sub-agents lost the
-    // referral + commission credit their storefront links are meant to earn.
-    const refParams = new URLSearchParams({ agent: agentSlug });
-    if (rawSa && /^[0-9a-f-]{36}$/i.test(rawSa)) refParams.set('sa', rawSa);
-    redirect(`/?${refParams.toString()}`);
-  }
 
   if (agent.is_active === false) {
     const primaryColor = agent.primary_color ?? '#00C4BC';
@@ -389,7 +500,7 @@ export default async function AgentStorefrontPage({ params, searchParams }: Prop
       {/* Capture agent slug for guest signup attribution */}
       {!user && <AgentLinkCapture agentSlug={agentSlug} />}
       <Navbar agentSlug={agentSlug} />
-      <div style={{ height: 60 }} />
+      <div style={{ height: 'var(--nav-offset, 60px)' }} />
 
       {showRenameBanner ? (
         <StorefrontRenameBanner
@@ -424,6 +535,7 @@ export default async function AgentStorefrontPage({ params, searchParams }: Prop
         </nav>
       </header>
 
+
       {/* Products */}
       <section style={{ paddingTop: 8, paddingBottom: 24, position: 'relative', minHeight: '60vh' }}>
         <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 8px' }}>
@@ -454,7 +566,13 @@ export default async function AgentStorefrontPage({ params, searchParams }: Prop
 }
 
 export async function generateMetadata({ params }: Props) {
-  const { agentSlug } = await params;
+  const { agentSlug: rawAgentSlug } = await params;
+  // Lowercased for the same reason as the page body: `alternates.canonical`
+  // must point at one URL rather than echoing whatever casing was requested,
+  // and `robots.index` compares against DEFAULT_STORE_SLUG -- an untouched
+  // /Pepnationlab would otherwise compare unequal and quietly noindex the
+  // house store.
+  const agentSlug = rawAgentSlug.trim().toLowerCase();
   // Shares the request-scoped cached lookup with the page body, so the
   // agent_profiles row is only fetched once per request.
   const { data: agent } = await getAgentProfileBySlug(agentSlug);

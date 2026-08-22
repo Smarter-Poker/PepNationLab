@@ -47,7 +47,7 @@ export const metadata: Metadata = {
     creator: '@PepNationLab',
     title: 'Correlated Peptides | Research Compound Correlations | Pep Nation Lab',
     description: 'Explore research peptides with correlated mechanisms and overlapping therapeutic applications. Identify compound relationships for advanced research protocols. Research use only.',
-    images: ['https://pepnationlab.com/images/og-card.jpg'],
+    images: ['https://pepnationlab.com/og-card.png'],
   },
 };
 

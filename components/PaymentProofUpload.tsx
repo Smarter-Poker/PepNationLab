@@ -26,6 +26,40 @@ interface Props {
 const ALLOWED_MIME = ['image/png', 'image/jpeg', 'application/pdf'];
 const MAX_BYTES = 10 * 1024 * 1024;
 
+// iPhone photos are often HEIC/HEIF, which the API (and most browsers)
+// cannot render. Where the browser itself can decode HEIC (Safari on
+// iOS 17+ / macOS Sonoma+), transparently re-encode to JPEG via canvas -
+// no external library needed. Browsers that cannot decode HEIC get a clear
+// actionable message instead of a generic upload failure.
+function isHeicFile(file: File): boolean {
+  return /hei[cf]/i.test(file.type) || /\.hei[cf]$/i.test(file.name);
+}
+
+async function convertHeicToJpeg(original: File): Promise<File> {
+  const url = URL.createObjectURL(original);
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = document.createElement('img');
+      el.onload = () => resolve(el);
+      el.onerror = () => reject(new Error('decode'));
+      el.src = url;
+    });
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx || canvas.width === 0 || canvas.height === 0) throw new Error('canvas');
+    ctx.drawImage(img, 0, 0);
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('encode'))), 'image/jpeg', 0.9);
+    });
+    const base = original.name.replace(/\.[^.]+$/, '') || 'payment-proof';
+    return new File([blob], `${base}.jpg`, { type: 'image/jpeg' });
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 export default function PaymentProofUpload({ orderId, uploadDisabled = false }: Props) {
   const [proofs, setProofs] = useState<PaymentProof[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,8 +86,18 @@ export default function PaymentProofUpload({ orderId, uploadDisabled = false }: 
     refresh();
   }, [refresh]);
 
-  const handleFile = async (file: File) => {
+  const handleFile = async (original: File) => {
     setError(null);
+    let file = original;
+    if (isHeicFile(file)) {
+      try {
+        file = await convertHeicToJpeg(file);
+      } catch {
+        setError('This Photo Is In HEIC Format And Your Browser Could Not Convert It. In Your iPhone Camera Settings Choose Formats > "Most Compatible", Or Screenshot The Receipt And Upload The Screenshot Instead.');
+        if (inputRef.current) inputRef.current.value = '';
+        return;
+      }
+    }
     if (!ALLOWED_MIME.includes(file.type)) {
       setError('Unsupported File Type. Use PNG, JPG, Or PDF.');
       return;
@@ -195,7 +239,7 @@ export default function PaymentProofUpload({ orderId, uploadDisabled = false }: 
               <p style={{ fontSize: '0.82rem', color: 'var(--silver)', lineHeight: 1.5, marginBottom: 'var(--space-3)' }}>
                 {hasProof
                   ? 'Add Another Receipt If The Previous One Was Rejected Or Incorrect.'
-                  : 'Upload A Screenshot Or PDF Receipt Of Your Payment To Speed Up Approval. PNG, JPG, Or PDF, Max 10 MB.'}
+                  : 'Upload A Screenshot Or PDF Receipt Of Your Payment To Speed Up Approval. PNG, JPG, HEIC, Or PDF, Max 10 MB.'}
               </p>
               <label
                 htmlFor={`payment-proof-input-${orderId}`}
@@ -213,7 +257,7 @@ export default function PaymentProofUpload({ orderId, uploadDisabled = false }: 
                 ref={inputRef}
                 id={`payment-proof-input-${orderId}`}
                 type="file"
-                accept="image/png,image/jpeg,application/pdf"
+                accept="image/png,image/jpeg,image/heic,image/heif,.heic,.heif,application/pdf"
                 onChange={onChange}
                 disabled={uploading}
                 style={{ display: 'none' }}

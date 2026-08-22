@@ -5,13 +5,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireOrdersAccess } from '@/lib/admin-auth';
 import { canTransition, type OrderStatus } from '@/lib/order-states';
-import { enqueueOrderPush, shortOrderId } from '@/lib/push-enqueue';
+import { shortOrderId } from '@/lib/push-enqueue';
 import { enqueueWebhook, fetchOrderForWebhook, type WebhookEventType } from '@/lib/webhook-dispatch';
 import { assertSameOrigin } from '@/lib/csrf';
-import { notifyAdminOrderStatusChange } from '@/lib/notify';
-import { emailConfigured, sendOrderShippedEmail, sendOrderDeliveredEmail } from '@/lib/email';
-
-type OrderPushEvent = 'order_approved' | 'order_shipped' | 'order_delivered';
+import { notifyAdminOrderStatusChange, notify } from '@/lib/notify';
+import { emailConfigured, sendOrderShippedEmail, sendOrderDeliveredEmail, sendOrderCancelledEmail } from '@/lib/email';
+import { logOrderEvent } from '@/lib/order-events';
+import { recomputeBillingForCancelledOrder } from '@/lib/statement-recompute';
 
 // GET: List all orders with buyer profile join
 export async function GET(req: NextRequest) {
@@ -36,7 +36,8 @@ export async function GET(req: NextRequest) {
         'shipping_cost, subtotal, discount_amount, coupon_code, total, tracking_number, ' +
         'agent_approved_at, agent_approval_notes, created_at, is_wholesale_restock, ' +
         'buyer_name, buyer_email, ' +
-        'profiles!orders_buyer_id_fkey(full_name, email, phone)'
+        'profiles!orders_buyer_id_fkey(full_name, email, contact_email, phone), ' +
+        'agent:profiles!orders_agent_id_fkey(full_name, parent:parent_agent_id(full_name))',
       );
 
     if (status) {
@@ -60,19 +61,31 @@ export async function GET(req: NextRequest) {
       profiles: {
         full_name: string | null;
         email: string;
+        contact_email: string | null;
         phone: string | null;
+      } | null;
+      agent: {
+        full_name: string | null;
+        parent: {
+          full_name: string | null;
+        } | null;
       } | null;
     }
 
     const typedData = (data as unknown) as OrderRow[] | null;
 
-    // Filter out pending_customer_payment and agent_approval_pending orders that belong to an external agent.
+    // Filter out pending_customer_payment and agent_approval_pending orders that belong to an external agent,
+    // EXCEPT for platform admins who have full control over all orders.
     let filteredData = (typedData || []).filter((order) => {
-      if (order.status === 'pending_customer_payment' || order.status === 'agent_approval_pending') {
-        if (order.agent_id && order.agent_id !== gate.userId) {
-          return false;
-        }
+      // 1. Hard privacy boundary: Only true admins can see Pep Nation direct orders or Daniel Bekavac's orders.
+      // Savage Brands (who is a platform admin but role='super_agent') must never see these.
+      if (gate.role !== 'admin') {
+        if (!order.agent_id) return false; // Pep Nation Direct
+        if (order.agent_id === 'b8bd12e6-8196-401e-b37b-f742caf1596c') return false; // Daniel Bekavac
       }
+
+      // Removed pending_customer_payment boundary per user request:
+      // "I SHOULD SEE A LIST OF ALL RECENT SALES, REGUARDLESS IF THEY ARE PENDING, APPROVED OR ANYTHING ELSE."
       return true;
     });
 
@@ -177,19 +190,24 @@ export async function POST(req: NextRequest) {
         p_actor_id: gate.userId,
       });
       updateError = error;
+      if (!error) {
+        // Re-settle any weekly bill this order was already rolled into.
+        await recomputeBillingForCancelledOrder(supabase, id, gate.userId).catch(() => { /* best-effort */ });
+      }
     } else {
       // Optimistic lock: only apply the transition if the status is still the
       // one we validated against. A concurrent cancel/approve on the same order
       // loses this race cleanly (0 rows) instead of overwriting a terminal
       // state (e.g. a stale "mark shipped" clobbering a just-committed cancel).
-      const { data: updatedRows, error } = await supabase
-        .from('orders')
-        .update(updates)
-        .eq('id', id)
-        .eq('status', currentStatus)
-        .select('id');
+      const { data: isSuccess, error } = await supabase.rpc('admin_force_update_order', {
+        p_order_id: id,
+        p_current_status: currentStatus,
+        p_status: status,
+        p_tracking_number: tracking_number ?? null,
+        p_agent_approval_notes: agent_approval_notes ?? null
+      });
       updateError = error;
-      if (!error && (!updatedRows || updatedRows.length === 0)) {
+      if (!error && !isSuccess) {
         return NextResponse.json(
           { error: 'Order Status Changed Concurrently. Please Refresh And Retry.' },
           { status: 409 },
@@ -198,16 +216,42 @@ export async function POST(req: NextRequest) {
     }
 
     if (updateError) {
-      return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
+      // DB ship gate (trg_enforce_payment_confirmation_before_ship): a ship
+      // order whose buyer pays per order cannot be released unconfirmed.
+      // Surface it as an actionable 409, not a raw database error.
+      if (String(updateError.message || '').includes('payment_confirmation_required')) {
+        return NextResponse.json(
+          { error: 'Payment Not Confirmed. Confirm The Buyer\'s Payment (Did You Receive Payment?) On The Order Before Approving It To Ship.', code: 'payment_confirmation_required' },
+          { status: 409 },
+        );
+      }
+      console.error('[admin/orders] POST updateError:', updateError);
+      return NextResponse.json({ error: `Database Error: ${updateError.message || JSON.stringify(updateError)}` }, { status: 500 });
     }
 
     // NOTE: Shipping labels are created MANUALLY (on-demand) only.
 
-    // Credit-line agents: debit their running credit balance for this order's COGS + shipping.
+    // Credit-line agents: debit their running credit balance for this order.
+    // supabase-js returns RPC failures in { error } - it does NOT throw, so
+    // the old try/catch here NEVER fired and a failed charge silently released
+    // unbilled goods. On failure, put the order back to admin review and tell
+    // the admin instead of shipping it with no billing row.
     if (status === 'approved_ship' || status === 'approved_pickup') {
-      try {
-        await supabase.rpc('charge_order_credit_line', { p_order_id: id, p_created_by: gate.userId });
-      } catch { /* credit-line ledger must not break the release */ }
+      const { error: creditErr } = await supabase.rpc('admin_charge_order_billing', { p_order_id: id, p_created_by: gate.userId });
+      if (creditErr) {
+        console.error('[admin/orders] charge_order_credit_line failed for order', id, creditErr.message);
+        const { error: revertErr } = await supabase
+          .from('orders')
+          .update({ status: 'admin_approval_pending', updated_at: new Date().toISOString() })
+          .eq('id', id);
+        if (revertErr) {
+          console.error('[admin/orders] CRITICAL: failed to demote order after charge failure', id, revertErr.message);
+        }
+        return NextResponse.json(
+          { error: `Credit Charge Failed (${creditErr.message}). The Order Was Returned To Admin Review Instead Of Releasing Unbilled.` },
+          { status: 409 },
+        );
+      }
     }
 
     // Write audit log entry (awaited).
@@ -224,30 +268,72 @@ export async function POST(req: NextRequest) {
           ...(agent_approval_notes !== undefined ? { agent_approval_notes } : {}),
         },
       });
-    } catch { /* ignore audit failure */ }
+    } catch (auditErr) { console.error('[admin/orders] audit log insert failed', id, auditErr); }
+
+    // Order timeline event for every admin-driven transition.
+    try {
+      await logOrderEvent(supabase, {
+        orderId: id,
+        event: status === 'cancelled' ? 'cancelled'
+          : status === 'shipped' ? 'shipped'
+          : status === 'delivered' ? 'delivered'
+          : (status === 'approved_ship' || status === 'approved_pickup') ? 'approved'
+          : 'status_changed',
+        actorId: gate.userId,
+        actorRole: 'admin',
+        payload: { from: currentStatus, to: status, tracking_number: tracking_number ?? null },
+      });
+    } catch { /* timeline must not break admin response */ }
 
     // In-app + push notifications (awaited)
     try {
       const { data: orderRow } = await supabase
         .from('orders')
-        .select('buyer_id, tracking_number')
+        .select('buyer_id, agent_id, tracking_number')
         .eq('id', id)
         .maybeSingle();
 
       if (orderRow?.buyer_id) {
         const short = shortOrderId(id);
         const trk = orderRow.tracking_number || tracking_number || null;
-        await notifyAdminOrderStatusChange(supabase, orderRow.buyer_id, id, short, status, trk);
+        // Only on a real transition -- re-saving the same status must not
+        // re-notify. notify() also queues the buyer web push (prefs-gated),
+        // so no separate enqueueOrderPush call is needed.
+        if (currentStatus !== status) {
+          await notifyAdminOrderStatusChange(supabase, orderRow.buyer_id, id, short, status, trk);
+        }
 
-        let event: OrderPushEvent | null = null;
-        if (status === 'approved_ship' || status === 'approved_pickup') event = 'order_approved';
-        else if (status === 'shipped') event = 'order_shipped';
-        else if (status === 'delivered') event = 'order_delivered';
-        // Only push on an actual transition. canTransition() returns true for
-        // from === to, so re-saving an already-shipped order used to re-notify
-        // the buyer; gate the push on a real status change.
-        if (event && currentStatus !== status) {
-          await enqueueOrderPush(supabase, { userId: orderRow.buyer_id, orderId: id, event, tracking: trk });
+        // The storefront owner was previously never told when an admin moved
+        // one of their orders (ship / deliver / cancel). Keep them in the loop
+        // on real transitions so their dashboard is never a surprise.
+        if (orderRow.agent_id && orderRow.agent_id !== gate.userId && currentStatus !== status
+            && ['approved_ship', 'approved_pickup', 'shipped', 'delivered', 'cancelled'].includes(status)) {
+          const agentBodies: Record<string, string> = {
+            approved_ship: `Order #${short} On Your Store Was Approved For Shipping By Admin.`,
+            approved_pickup: `Order #${short} On Your Store Was Approved For Pickup By Admin.`,
+            shipped: `Order #${short} On Your Store Was Marked Shipped${trk ? ` (Tracking: ${trk})` : ''}.`,
+            delivered: `Order #${short} On Your Store Was Delivered.`,
+            cancelled: `Order #${short} On Your Store Was Cancelled By Admin.`,
+          };
+          await notify(supabase, {
+            userId: orderRow.agent_id,
+            type: 'system',
+            title: `Order #${short} Update`,
+            body: agentBodies[status],
+            url: `/dashboard/agent?tab=Orders&order=${short}`,
+          });
+        }
+
+        // Buyer email on an admin cancel (previously in-app only).
+        if (status === 'cancelled' && currentStatus !== status && emailConfigured()) {
+          const { data: buyerProf } = await supabase
+            .from('profiles')
+            .select('contact_email, email_verified, full_name')
+            .eq('id', orderRow.buyer_id)
+            .maybeSingle();
+          if (buyerProf?.contact_email && buyerProf.email_verified) {
+            void sendOrderCancelledEmail({ to: buyerProf.contact_email, fullName: buyerProf.full_name, orderId: id }).catch(() => {});
+          }
         }
 
         // Transactional email for shipped/delivered. Best-effort, non-blocking,
@@ -295,6 +381,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('[admin/orders] POST error:', err);
-    return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
+    return NextResponse.json({ error: `Server Error: ${err instanceof Error ? err.message : 'Unknown'}` }, { status: 500 });
   }
 }

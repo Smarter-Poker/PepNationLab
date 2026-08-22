@@ -35,12 +35,14 @@ import PinToCompareButton from '@/components/research/PinToCompareButton';
 import ResearchCartButton from '@/components/research/ResearchCartButton';
 import EfficacyScoreChart from '@/components/research/EfficacyScoreChart';
 import TrialsMetricsPanel from '@/components/research/TrialsMetricsPanel';
+import DynamicCoaButton from '@/components/storefront/DynamicCoaButton';
 import IframeModal from '@/components/ui/IframeModal';
 import { trackResearchEvent } from '@/lib/research-track';
 
 interface Props {
   compound: Compound;
   related?: RelatedCompoundRef[];
+  coaUrl?: string | null;
 }
 
 const cap: React.CSSProperties = { textTransform: 'capitalize' };
@@ -136,7 +138,7 @@ function InfoCard({ color, children }: { color: string; children: React.ReactNod
   );
 }
 
-export default function MonographTabs({ compound, related = [] }: Props) {
+export default function MonographTabs({ compound, related = [], coaUrl = null }: Props) {
   const router = useRouter();
   const tier = evidenceTier(compound.evidence_tier);
   const risk = RISK_META[compound.risk_level];
@@ -231,6 +233,16 @@ export default function MonographTabs({ compound, related = [] }: Props) {
             productName={compound.display_name}
             size="sm"
           />
+          {coaUrl && (
+            <a
+              href={coaUrl}
+              onClick={(e) => { e.preventDefault(); setModalUrl(coaUrl); }}
+              title="Certificate of Analysis"
+              style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}
+            >
+              <DynamicCoaButton isSmall={true} />
+            </a>
+          )}
           <Link
             href={`/research/${compound.slug}/spec`}
             className="btn-secondary"
@@ -265,7 +277,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
             </span>
           )}
           {isHighRisk && (
-            <span style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', padding: '4px 12px', borderRadius: 9999, background: risk.bg, border: `1px solid ${risk.color}`, color: risk.color }}>
+            <span style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', padding: '4px 12px', borderRadius: 9999, background: `${risk.color}1A`, border: `1px solid ${risk.color}40`, color: risk.color }}>
               {risk.label} Risk
             </span>
           )}
@@ -279,6 +291,31 @@ export default function MonographTabs({ compound, related = [] }: Props) {
               Pro-Angiogenic
             </span>
           )}
+        </div>
+
+        {/* E-E-A-T Medical Review Badge (Visible UI for Google Quality Raters) */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 'var(--space-4)' }}>
+          <Link 
+            href="/research/methodology" 
+            style={{ 
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              gap: 8, 
+              padding: '6px 14px', 
+              background: 'rgba(255,255,255,0.03)', 
+              border: '1px solid rgba(255,255,255,0.08)', 
+              borderRadius: 9999, 
+              textDecoration: 'none' 
+            }}
+            title="Read our Editorial Standards and Research Methodology"
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, borderRadius: '50%', background: '#00C4BC' }}>
+              <Check size={10} color="#000" strokeWidth={3} />
+            </div>
+            <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--silver)' }}>
+              Medically Reviewed by the <span style={{ color: 'var(--white)' }}>Pep Nation Research Board</span>
+            </span>
+          </Link>
         </div>
       </header>
 
@@ -430,8 +467,8 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                       borderRadius: 3,
                     }} />
                   </div>
-                  {compound.coa_url && (
-                    <a href={compound.coa_url} onClick={(e) => { e.preventDefault(); setModalUrl(compound.coa_url!); }} style={{ fontSize: '0.72rem', color: teal, textDecoration: 'none', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                  {(coaUrl ?? compound.coa_url) && (
+                    <a href={coaUrl ?? compound.coa_url!} onClick={(e) => { e.preventDefault(); setModalUrl((coaUrl ?? compound.coa_url)!); }} style={{ fontSize: '0.72rem', color: teal, textDecoration: 'none', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
                       <ExternalLink size={11} /> COA
                     </a>
                   )}

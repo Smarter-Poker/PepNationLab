@@ -34,7 +34,7 @@ export async function GET() {
       type: n.type,
       title: n.title,
       body: n.body,
-      url: n.url || '/dashboard',
+      url: n.url ?? null,
       read_at: n.read_at,
       created_at: n.created_at,
       kind: 'notification' as const,

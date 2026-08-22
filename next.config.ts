@@ -48,9 +48,18 @@ const nextConfig = {
     // /peptides/illinois/oak-lawn), generated from lib/cities/cities-data.ts.
     // Applied at the edge BEFORE routing, so they work regardless of the
     // [agentSlug] serverless route (whose runtime city-match fallback proved
-    // unreliable). Agent slugs and reserved routes have zero collisions.
+    // unreliable).
+    //
+    // These run BEFORE middleware, which means a bare city form that collides
+    // with a live agent storefront makes that storefront permanently
+    // unreachable -- proxy.ts never sees the request. This is not theoretical:
+    // the agent slug `melissa` collided with Melissa, TX and turned every scan
+    // of that agent's QR code into a login wall. The generator is therefore an
+    // async factory that fetches the live storefront-slug list and withholds
+    // any colliding redirect; see lib/cities/city-redirects.cjs.
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const cityRedirects = require("./lib/cities/city-redirects.cjs");
+    const buildCityRedirects = require("./lib/cities/city-redirects.cjs");
+    const cityRedirects = await buildCityRedirects();
     return [
       {
         source: "/:path*",
@@ -110,14 +119,23 @@ const nextConfig = {
             key: "Strict-Transport-Security",
             value: "max-age=63072000; includeSubDomains; preload",
           },
-          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           {
             key: "Permissions-Policy",
-            // microphone=(self) is required for VoiceRecorder (getUserMedia({ audio: true })).
-            // camera=() remains blocked — no video calling in-browser (calls use LiveKit server-side).
-            value: "camera=(), microphone=(self), geolocation=()",
+            // microphone=(self): VoiceRecorder and every call.
+            // camera=(self): REQUIRED for video calls. This used to be
+            //   camera=(), on the since-outdated belief that there was "no
+            //   video calling in-browser". There is — the messenger's
+            //   FaceTime-style calls publish the local camera through LiveKit
+            //   from the browser, and a blocked camera makes
+            //   getUserMedia({ video: true }) reject with NotAllowedError on
+            //   production only, where nothing in local dev would show it.
+            // display-capture=(self): screen sharing during a call. Its
+            //   default allowlist is already self, but naming it here keeps a
+            //   future tightening pass from silently killing the feature.
+            value: "camera=(self), microphone=(self), display-capture=(self), geolocation=()",
           },
           // Cross-origin isolation / XS-Leak hardening. same-origin-allow-popups
           // keeps any future OAuth/popup flow working while severing the
@@ -141,12 +159,18 @@ const nextConfig = {
               // none call eval/new Function at runtime. 'unsafe-inline' stays
               // for now because the app ships inline <style>/JSON-LD blocks that
               // would need nonces/hashes before it can be dropped.
-              "script-src 'self' 'unsafe-inline'; " +
+              // js.stripe.com: Stripe.js v3, loaded at runtime by the agent
+              // Forge shipping-account card form (EasyPost white-label billing).
+              "script-src 'self' 'unsafe-inline' https://js.stripe.com; " +
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
               "font-src 'self' data: https://fonts.gstatic.com; " +
+              // api.stripe.com: Stripe.js tokenization calls for the Forge card form.
               "connect-src 'self' https://*.supabase.co https://easypost-files.s3.us-west-2.amazonaws.com https://easypost-files.s3-us-west-2.amazonaws.com wss://*.supabase.co " +
-                "wss://*.livekit.cloud https://*.livekit.cloud " +
+                "wss://*.livekit.cloud https://*.livekit.cloud https://api.stripe.com " +
                 "https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.us.sentry.io; " +
+              // frame-src was previously governed by default-src 'self'; keep
+              // 'self' (the /api/proxy iframes) and add Stripe Elements frames.
+              "frame-src 'self' https://js.stripe.com; " +
               "worker-src 'self' blob:; " +
               // object-src 'none': block Flash/Java-era plugin embeds entirely.
               "object-src 'none'; " +
@@ -156,7 +180,7 @@ const nextConfig = {
               // form-action 'self': forms can only submit back to us — blocks
               // XSS-injected <form action=\"https://evil\"> credential exfil.
               "form-action 'self'; " +
-              "frame-ancestors 'none'; " +
+              "frame-ancestors 'self'; " +
               // Auto-upgrade any stray http:// subresource to https.
               "upgrade-insecure-requests;",
           },

@@ -7,6 +7,7 @@ import { Loader2, Plus, GripVertical, Edit2 } from 'lucide-react';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { getPopularName } from '@/lib/peptide-popular-names';
+import { getProductImage } from '@/lib/categoryImage';
 
 interface ProductInfo {
   name: string;
@@ -85,8 +86,8 @@ function MarketIntel({ p, priceOverride }: { p: AgentProduct; priceOverride?: nu
   const mktHigh = p.products?.market_high_price != null ? Number(p.products.market_high_price) * packFactor : null;
 
   const listedPer10 = priceOverride != null ? Number(priceOverride) : Number(p.retail_price);
-  const yourPrice = listedPer10 > 0 ? listedPer10 / (isBacWater ? 1 : 10) : null;
-  const yourCost = p.agent_cost != null && p.agent_cost > 0 ? p.agent_cost / (isBacWater ? 1 : 10) : null;
+  const yourPrice = listedPer10 > 0 ? listedPer10  : null;
+  const yourCost = p.agent_cost != null && p.agent_cost > 0 ? p.agent_cost  : null;
 
   const vsPct = yourPrice != null && mktAvg > 0 ? Math.round((yourPrice / mktAvg - 1) * 100) : null;
   // Live profit at the CURRENT listed price (priceOverride carries the
@@ -125,8 +126,9 @@ function MarketIntel({ p, priceOverride }: { p: AgentProduct; priceOverride?: nu
   );
 }
 
-export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', unlimitedMargin = false }: { agentId: string; costLabel?: string; unlimitedMargin?: boolean }) {
+export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Your Cost', unlimitedMargin = false, brandNetworkIsSavage = false }: { agentId: string; agentSlug?: string; costLabel?: string; unlimitedMargin?: boolean; brandNetworkIsSavage?: boolean }) {
   const [products, setProducts] = useState<AgentProduct[]>([]);
+  const [bundles, setBundles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState<FilterMode>('all');
@@ -136,12 +138,20 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
   // Raw Text While Editing The Price So Typing Is Never Reformatted Mid-Keystroke.
   const [priceText, setPriceText] = useState('');
   const [saving, setSaving] = useState(false);
-  const [bulkMargin, setBulkMargin] = useState('50');
-  const [bulkSaving, setBulkSaving] = useState(false);
+
   const [reordering, setReordering] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState('');
   const [isMobile, setIsMobile] = useState(false);
+  // Monotonically-increasing fetch counter so a stale bundle response arriving
+  // after a newer one is silently discarded (prevents race-condition overwrites
+  // when fetchProducts() is called multiple times in quick succession).
+  const bundleFetchGen = React.useRef(0);
+
+  const [editingBundleId, setEditingBundleId] = useState<string | null>(null);
+  const [bundlePriceText, setBundlePriceText] = useState('');
+  const [bundleSaving, setBundleSaving] = useState(false);
+
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -158,6 +168,13 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
     setLoading(true);
     setError('');
     try {
+      const myGen = ++bundleFetchGen.current;
+      fetch('/api/agent/bundles/effective').then(r => r.json()).then(d => {
+        // Discard stale response if fetchProducts() was called again since this fetch started.
+        if (bundleFetchGen.current !== myGen) return;
+        if (d.data) setBundles(d.data);
+      }).catch(e => console.error("Error fetching bundles", e));
+
       const res = await fetch('/api/agent/products');
       const json = await res.json();
       if (res.ok) {
@@ -246,7 +263,7 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
       sale_price: p.sale_price,
     });
     const isBacInit = /bac\.?\s*water/i.test(p.products?.name || '');
-    setPriceText(p.retail_price > 0 ? (p.retail_price / (isBacInit ? 1 : 10)).toFixed(2) : '');
+    setPriceText(p.retail_price > 0 ? (p.retail_price ).toFixed(2) : '');
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -269,11 +286,11 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
     const maxMarginPercent = currentProduct?.products?.max_margin_percent ?? 300;
 
     if (!(listedPrice >= minRetailPrice)) {
-      toast.error(`Listed Price Cannot Be Below The Minimum Advertised Price ($${(minRetailPrice / (/bac\.?\s*water/i.test(currentProduct?.products?.name || "") ? 1 : 10)).toFixed(2)} / Vial).`);
+      toast.error(`Listed Price Cannot Be Below The Minimum Advertised Price ($${(minRetailPrice ).toFixed(2)} / Vial).`);
       return;
     }
     if (!(listedPrice >= agentCostPer10)) {
-      toast.error(`Listed Price Cannot Be Below ${costLabel} ($${(agentCostPer10 / (/bac\.?\s*water/i.test(currentProduct?.products?.name || "") ? 1 : 10)).toFixed(2)} / Vial).`);
+      toast.error(`Listed Price Cannot Be Below ${costLabel} ($${(agentCostPer10 ).toFixed(2)} / Vial).`);
       return;
     }
 
@@ -304,27 +321,52 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
     }
   }
 
-  async function handleBulkAdjust(marginOverride?: number) {
-    const margin = marginOverride !== undefined ? marginOverride : parseFloat(bulkMargin);
-    if (isNaN(margin) || margin < 0) {
-      toast.error('Please Enter A Valid Margin Percentage');
+  async function handleBundlePriceSave(bundle: any) {
+    const newPrice = parseFloat(bundlePriceText);
+    if (!Number.isFinite(newPrice) || newPrice <= 0) {
+      toast.error('Please Enter A Valid Bundle Price');
       return;
     }
-    setBulkSaving(true);
+    if (newPrice > 99999) {
+      toast.error('Bundle Price Cannot Exceed $99,999');
+      return;
+    }
+    // Soft cost-floor guard: warn if below agent cost but don't hard-block
+    // (bundles may span products with different cost bases).
+    const bCost = bundle.base_cost_total || 0;
+    if (bCost > 0 && newPrice < bCost) {
+      toast.error(`Bundle Price ($${newPrice.toFixed(2)}) Cannot Be Below Your Cost ($${bCost.toFixed(2)})`);
+      return;
+    }
+    setBundleSaving(true);
     try {
-      const res = await fetch('/api/agent/products/bulk-margin', {
-        method: 'POST',
+      const res = await fetch('/api/agent/bundles', {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ marginPercent: margin }),
+        body: JSON.stringify({ id: bundle.id, action: 'update_price', custom_price: newPrice }),
       });
-      if (!res.ok) throw new Error('Failed To Apply');
-      await fetchProducts();
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(json.error || 'Failed To Save Bundle Price');
+        return;
+      }
+      // Optimistically update the bundles list
+      setBundles((prev: any[]) =>
+        prev.map((b: any) =>
+          b.id === bundle.id ? { ...b, custom_price: Math.round(newPrice * 100) / 100 } : b,
+        ),
+      );
+      setEditingBundleId(null);
+      setBundlePriceText('');
+      toast.success('Bundle Price Updated');
     } catch (err: any) {
       toast.error(err.message || 'An Error Occurred');
     } finally {
-      setBulkSaving(false);
+      setBundleSaving(false);
     }
   }
+
+
 
   function toggleCategory(cat: string) {
     setExpandedCategories(prev => {
@@ -406,69 +448,191 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
         placeholder="Search Products By Name..."
         value={search}
         onChange={e => setSearch(e.target.value)}
+        className="form-input"
         style={{
           width: '100%',
           padding: '12px 14px',
           fontSize: '0.95rem',
-          background: 'var(--bg-metal-dark)',
-          border: '1px solid rgba(0,0,0,0.8)',
-          boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)',
-          color: '#fff',
           borderRadius: 8,
-          marginBottom: 'var(--space-4)'
+          marginBottom: 16,
         }}
       />
 
       {/* Pricing & Discounts Configuration */}
       <PricingConfig agentId={agentId} />
 
-      {/* Master Reset / Bulk Margin */}
-      <div className="glass-panel">
-        <div className="" style={{ padding: 'var(--space-5)' }}>
-          <h4 style={{ fontSize: '0.9rem', color: '#00E5FF', marginBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Master Reset (Bulk Margin)</h4>
-          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.82rem', marginBottom: 'var(--space-4)', lineHeight: 1.4 }}>
-            Apply a universal bulk margin percentage to all products. This will override existing custom margins and automatically mark up your direct cost, increasing the final displayed retail prices inside your store by this exact percentage.
-            <br/><br/>
-            <strong style={{ color: '#00E5FF' }}>Note:</strong> Any products that hit a Minimum Advertised Price (MAP) or Margin Ceiling will be automatically skipped to protect brand integrity.
-          </p>
-          <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.4)' }}>Apply +</span>
-            <input
-              type="number"
-              className="form-input"
-              style={{ width: 80, padding: '4px 8px', height: 32, background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }}
-              value={bulkMargin}
-              onChange={e => setBulkMargin(e.target.value)}
-            />
-            <span style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.4)' }}>% Margin To All Products</span>
-            
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
-              <button
-                className="btn-silver"
-                onClick={() => { setBulkMargin('50'); handleBulkAdjust(50); }}
-                disabled={bulkSaving}
-                style={{ padding: '6px 16px', fontSize: '0.8rem', height: 32 }}
-              >
-                Reset To Standard Pricing (50%)
-              </button>
-              <button
-                className="btn-neon-cyan"
-                onClick={() => handleBulkAdjust()}
-                disabled={bulkSaving}
-                style={{ padding: '6px 16px', fontSize: '0.8rem', height: 32 }}
-              >
-                {bulkSaving ? 'Applying...' : 'Apply Master Reset'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {error && (
         <div className="glass-panel" style={{ border: '1px solid rgba(229,62,62,0.3)', padding: 'var(--space-3)', fontSize: '0.85rem', color: '#FC8181' }}>
           {error}
         </div>
       )}
+
+      
+      {/* Bundles Section */}
+      {bundles.length > 0 && (
+        <div className="glass-panel">
+          <div style={{ padding: 'var(--space-4) var(--space-5)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            <h4 style={{ fontSize: '1rem', color: '#00E5FF', margin: 0, fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Bundles</h4>
+            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.82rem', margin: '4px 0 0' }}>
+              These Are Your Active Bundle Offers. Bundles Are Managed In The Bundle Manager.
+            </p>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', background: 'rgba(255,255,255,0.05)' }}>
+            {bundles.map((b: any) => {
+              const bCost = b.base_cost_total || 0;
+              const bRetailSeparate = b.retail_value_total || 0; // full price if bought individually
+              const bListRaw = b.custom_price != null ? b.custom_price : (bRetailSeparate * (1 - (b.discount_percent || 0) / 100));
+              const bList = Math.round(bListRaw * 100) / 100;
+              const profit = bList - bCost;
+              const margin = bCost > 0 ? (profit / bCost) * 100 : 0;
+              const savings = bRetailSeparate > 0 ? bRetailSeparate - bList : 0;
+              const isEditingBundle = editingBundleId === b.id;
+
+              // Live preview values during edit
+              const editPrice = parseFloat(bundlePriceText) || 0;
+              const editProfit = isEditingBundle && editPrice > 0 ? editPrice - bCost : profit;
+              const editMargin = isEditingBundle && editPrice > 0 && bCost > 0 ? (editProfit / bCost) * 100 : margin;
+
+              return (
+                <div key={b.id} className="glass-panel" style={{ padding: 'var(--space-4) var(--space-5)', margin: 0, borderRadius: 0, borderLeft: 'none', borderRight: 'none' }}>
+                  <div className="agentprod-card" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+                    {/* Thumbnail */}
+                    {b.image_url ? (
+                      <div style={{ width: 80, height: 80, borderRadius: 8, flexShrink: 0, overflow: 'hidden', position: 'relative' }}>
+                        <Image src={b.image_url} alt={b.name} fill style={{ objectFit: 'contain' }} />
+                      </div>
+                    ) : (
+                      <div style={{ width: 80, height: 80, borderRadius: 8, background: 'rgba(0,196,188,0.1)', border: '1px solid rgba(0,196,188,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#00E5FF', fontWeight: 800, fontSize: '0.8rem', textAlign: 'center', padding: 4 }}>
+                        BUNDLE
+                      </div>
+                    )}
+
+                    <div className="agentprod-info" style={{ flex: 1, minWidth: 0 }}>
+                      {/* Name + badge */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff' }}>{b.name}</span>
+                        <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', padding: '2px 6px', borderRadius: '4px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>Bundle</span>
+                      </div>
+
+                      {/* Products count + "if bought separately" */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)' }}>
+                          {b.product_ids.length} Products Included
+                        </span>
+                        {bRetailSeparate > 0 && (
+                          <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.35)', padding: '1px 8px', borderRadius: 4, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                            If Bought Separately: <span style={{ color: 'rgba(255,255,255,0.55)', fontWeight: 700, textDecoration: 'line-through' }}>${bRetailSeparate.toFixed(2)}</span>
+                            {savings > 0 && <span style={{ color: '#68D391', fontWeight: 700, marginLeft: 6 }}>Save ${savings.toFixed(2)}</span>}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Pricing row — static or edit mode */}
+                      {isEditingBundle ? (
+                        /* ── EDIT MODE ── */
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          {/* Cost (read-only) */}
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>{costLabel}:</span>
+                            <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>${bCost.toFixed(2)}</span>
+                          </div>
+                          <div style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.2)' }}>&rarr;</div>
+                          {/* Price input */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ position: 'relative' }}>
+                              <span style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: '#00E5FF', fontWeight: 700, fontSize: '0.85rem', pointerEvents: 'none' }}>$</span>
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                autoFocus
+                                className="form-input"
+                                style={{ width: 90, padding: '4px 4px 4px 18px', height: 30, fontSize: '0.9rem', background: 'var(--bg-metal-dark)', border: '1px solid #00E5FF', boxShadow: '0 0 5px rgba(0,229,255,0.3)', color: '#fff' }}
+                                value={bundlePriceText}
+                                onChange={e => {
+                                  let clean = e.target.value.replace(/[^0-9.]/g, '');
+                                  const dot = clean.indexOf('.');
+                                  if (dot !== -1) {
+                                    clean = clean.slice(0, dot + 1) + clean.slice(dot + 1).replace(/\./g, '');
+                                    clean = clean.slice(0, dot + 3);
+                                  }
+                                  setBundlePriceText(clean);
+                                }}
+                                onKeyDown={e => { if (e.key === 'Enter') handleBundlePriceSave(b); if (e.key === 'Escape') { setEditingBundleId(null); setBundlePriceText(''); } }}
+                              />
+                            </div>
+                            {/* Live margin + profit preview */}
+                            {editPrice > 0 && bCost > 0 && (
+                              <>
+                                <div style={{ padding: '2px 7px', background: 'rgba(0,229,255,0.1)', borderRadius: 4, border: '1px solid rgba(0,229,255,0.3)' }}>
+                                  <span style={{ fontSize: '0.7rem', color: '#00E5FF', fontWeight: 700 }}>+{Math.round(editMargin)}% Margin</span>
+                                </div>
+                                <div style={{ padding: '2px 7px', background: editProfit >= 0 ? 'rgba(104,211,145,0.1)' : 'rgba(229,62,62,0.1)', borderRadius: 4, border: editProfit >= 0 ? '1px solid rgba(104,211,145,0.3)' : '1px solid rgba(229,62,62,0.3)' }}>
+                                  <span style={{ fontSize: '0.7rem', color: editProfit >= 0 ? '#68D391' : '#FC8181', fontWeight: 700 }}>${editProfit.toFixed(2)} Profit</span>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        /* ── VIEW MODE ── */
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          {/* Cost */}
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>{costLabel}:</span>
+                            <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>${bCost.toFixed(2)}</span>
+                          </div>
+                          <div style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.2)' }}>&rarr;</div>
+                          {/* Listed Price — clickable like individual peptides */}
+                          <div
+                            style={{ display: 'flex', flexDirection: 'column', cursor: 'pointer', padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)', transition: 'all 0.2s' }}
+                            onClick={() => { setEditingBundleId(b.id); setBundlePriceText(bList > 0 ? bList.toFixed(2) : ''); }}
+                            title="Click to edit bundle price"
+                            onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(0,229,255,0.3)'; }}
+                            onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; }}
+                          >
+                            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}>
+                              Listed Price <Edit2 size={10} color="#00E5FF" />
+                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <span style={{ fontSize: '1.05rem', color: '#00E5FF', fontWeight: 800 }}>
+                                ${bList.toFixed(2)}
+                                {b.custom_price != null && <span style={{ fontSize: '0.65rem', marginLeft: 5, fontWeight: 500, color: 'rgba(255,255,255,0.4)' }}>Fixed</span>}
+                              </span>
+                            </div>
+                          </div>
+                          {/* Margin + Profit badges */}
+                          {bCost > 0 && bList > 0 && (
+                            <div style={{ padding: '2px 7px', background: 'rgba(0,196,188,0.1)', borderRadius: 4, border: '1px solid rgba(0,196,188,0.3)' }}>
+                              <span style={{ fontSize: '0.7rem', color: '#00E5FF', fontWeight: 700 }}>+{Math.round(margin)}% Margin</span>
+                            </div>
+                          )}
+                          <div style={{ padding: '2px 7px', background: profit >= 0 ? 'rgba(104,211,145,0.1)' : 'rgba(229,62,62,0.1)', borderRadius: 4, border: profit >= 0 ? '1px solid rgba(104,211,145,0.3)' : '1px solid rgba(229,62,62,0.3)' }}>
+                            <span style={{ fontSize: '0.7rem', color: profit >= 0 ? '#68D391' : '#FC8181', fontWeight: 700 }}>${profit.toFixed(2)} Profit</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Save / Cancel actions (edit mode) */}
+                    {isEditingBundle && (
+                      <div className="agentprod-actions" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                        <button onClick={() => handleBundlePriceSave(b)} disabled={bundleSaving} className="btn-neon-cyan" style={{ padding: '4px 12px', fontSize: '0.75rem', height: 32 }}>
+                          {bundleSaving ? 'Saving...' : 'Save'}
+                        </button>
+                        <button onClick={() => { setEditingBundleId(null); setBundlePriceText(''); }} className="btn-silver" style={{ padding: '4px 12px', fontSize: '0.75rem', height: 32 }}>
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+
 
       {/* Catalog View Controls */}
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--space-4)' }}>
@@ -510,11 +674,11 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
                   {isEditing ? (
                     <div className="agentprod-card" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
                       <Image
-                        src={p.custom_image_url || p.products.image_url || '/images/peptide_clear.png'}
+                        src={getProductImage(p.custom_image_url ?? p.products.image_url ?? null, p.products.category || 'Other', p.products.name, !!p.custom_image_url, agentSlug, brandNetworkIsSavage)}
                         alt={displayName}
                         width={80}
                         height={80}
-                        style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}
+                        style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'contain', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
                           if (!target.src.includes('/images/peptide_clear.png')) {
@@ -539,7 +703,7 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>{costLabel}:</span>
                             {p.agent_cost != null && p.agent_cost > 0 ? (
-                              <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>${(p.agent_cost / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Vials" : "Vial"}</span>
+                              <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>${(p.agent_cost ).toFixed(2)} / Vial</span>
                             ) : (
                               <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>TBD</span>
                             )}
@@ -565,14 +729,14 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
                                   }
                                   setPriceText(clean);
                                   const perVial = parseFloat(clean) || 0;
-                                  const stored = perVial * (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10);
+                                  const stored = perVial ;
                                   const newMargin = p.agent_cost && p.agent_cost > 0 ? Math.round((stored / p.agent_cost - 1) * 100) : editForm.margin_percent ?? 50;
                                   setEditForm({ ...editForm, retail_price: stored, margin_percent: newMargin });
                                 }}
                                 onKeyDown={e => { if (e.key === 'Enter') handleSave(e as any); }}
                               />
                             </div>
-                            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)' }}>/ {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Vials" : "Vial"}</span>
+                            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)' }}>/ Vial</span>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(0,229,255,0.1)', padding: '2px 6px', borderRadius: 4, border: '1px solid rgba(0,229,255,0.3)' }}>
                               <span style={{ fontSize: '0.65rem', color: '#00E5FF', fontWeight: 700 }}>+</span>
                               <input
@@ -585,7 +749,7 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
                                   const pct = Number(e.target.value.replace(/[^0-9-]/g, '')) || 0;
                                   const newPrice = p.agent_cost != null && p.agent_cost > 0 ? p.agent_cost * (1 + pct / 100) : editForm.retail_price;
                                   setEditForm({ ...editForm, margin_percent: pct, retail_price: newPrice });
-                                  setPriceText(Number(newPrice) > 0 ? (Number(newPrice) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2) : '');
+                                  setPriceText(Number(newPrice) > 0 ? (Number(newPrice) ).toFixed(2) : '');
                                 }}
                                 onKeyDown={e => { if (e.key === 'Enter') handleSave(e as any); }}
                               />
@@ -606,12 +770,12 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
                   ) : (
                     <div className="agentprod-card" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
                       <Image
-                        src={p.custom_image_url || p.products.image_url || '/images/peptide_clear.png'}
+                        src={getProductImage(p.custom_image_url ?? p.products.image_url ?? null, p.products.category || 'Other', p.products.name, !!p.custom_image_url, agentSlug, brandNetworkIsSavage)}
                         alt={displayName}
                         width={80}
                         height={80}
                         unoptimized
-                        style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}
+                        style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'contain', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}
                         onError={(e) => { (e.target as any).src = '/images/peptide_clear.png'; }}
                       />
                       <div className="agentprod-info" style={{ flex: 1, minWidth: 0 }}>
@@ -629,7 +793,7 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>{costLabel}:</span>
                             {p.agent_cost != null && p.agent_cost > 0 ? (
-                              <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>${(p.agent_cost / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Vials" : "Vial"}</span>
+                              <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>${(p.agent_cost ).toFixed(2)} / Vial</span>
                             ) : (
                               <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>TBD</span>
                             )}
@@ -640,17 +804,22 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
                               Listed Price <Edit2 size={10} color="#00E5FF" />
                             </span>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <span style={{ fontSize: '1.05rem', color: '#00E5FF', fontWeight: 800 }}>${(Number(p.retail_price) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'rgba(255,255,255,0.4)' }}>/ {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Vials" : "Vial"}</span></span>
+                              <span style={{ fontSize: '1.05rem', color: '#00E5FF', fontWeight: 800 }}>${(Number(p.retail_price) ).toFixed(2)} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'rgba(255,255,255,0.4)' }}>/ Vial</span></span>
                               {p.agent_cost != null && p.agent_cost > 0 && p.retail_price > 0 && (
                                 <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', background: 'rgba(0,229,255,0.1)', color: '#00E5FF', border: '1px solid rgba(0,229,255,0.2)' }}>
-                                  {p.retail_price >= p.agent_cost ? '+' : ''}{Math.round((p.retail_price / p.agent_cost - 1) * 100)}%
+                                  {p.retail_price >= p.agent_cost ? '+' : ''}{Math.round((p.retail_price / p.agent_cost - 1) * 100)}% Margin
+                                </span>
+                              )}
+                              {p.agent_cost != null && p.agent_cost > 0 && p.retail_price > 0 && (
+                                <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', background: p.retail_price >= p.agent_cost ? 'rgba(104,211,145,0.1)' : 'rgba(229,62,62,0.1)', color: p.retail_price >= p.agent_cost ? '#68D391' : '#FC8181', border: p.retail_price >= p.agent_cost ? '1px solid rgba(104,211,145,0.3)' : '1px solid rgba(229,62,62,0.3)' }}>
+                                  ${((Number(p.retail_price) - Number(p.agent_cost)) ).toFixed(2)} Profit
                                 </span>
                               )}
                             </div>
                           </div>
                           {p.is_on_sale && p.sale_price && (
                             <span style={{ fontSize: '0.7rem', color: '#FC8181', fontWeight: 700, background: 'rgba(229,62,62,0.10)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(229,62,62,0.2)' }}>
-                              On Sale ${(Number(p.sale_price) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Vials" : "Vial"}
+                              On Sale ${(Number(p.sale_price) ).toFixed(2)} / Vial
                             </span>
                           )}
                         </div>
@@ -732,12 +901,12 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
                   {isEditing ? (
                     <div className="agentprod-card" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
                       <Image
-                        src={p.custom_image_url || p.products.image_url || '/images/peptide_clear.png'}
+                        src={getProductImage(p.custom_image_url ?? p.products.image_url ?? null, p.products.category || 'Other', p.products.name, !!p.custom_image_url, agentSlug, brandNetworkIsSavage)}
                         alt={displayName}
                         width={80}
                         height={80}
                         unoptimized
-                        style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}
+                        style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'contain', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}
                         onError={(e) => { (e.target as any).src = '/images/peptide_clear.png'; }}
                       />
                       <div className="agentprod-info" style={{ flex: 1, minWidth: 0 }}>
@@ -755,7 +924,7 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>{costLabel}:</span>
                             {p.agent_cost != null && p.agent_cost > 0 ? (
-                              <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>${(p.agent_cost / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Vials" : "Vial"}</span>
+                              <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>${(p.agent_cost ).toFixed(2)} / Vial</span>
                             ) : (
                               <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>TBD</span>
                             )}
@@ -781,14 +950,14 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
                                   }
                                   setPriceText(clean);
                                   const perVial = parseFloat(clean) || 0;
-                                  const stored = perVial * (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10);
+                                  const stored = perVial ;
                                   const newMargin = p.agent_cost && p.agent_cost > 0 ? Math.round((stored / p.agent_cost - 1) * 100) : editForm.margin_percent ?? 50;
                                   setEditForm({ ...editForm, retail_price: stored, margin_percent: newMargin });
                                 }}
                                 onKeyDown={e => { if (e.key === 'Enter') handleSave(e as any); }}
                               />
                             </div>
-                            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)' }}>/ {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Vials" : "Vial"}</span>
+                            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)' }}>/ Vial</span>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(0,229,255,0.1)', padding: '2px 6px', borderRadius: 4, border: '1px solid rgba(0,229,255,0.3)' }}>
                               <span style={{ fontSize: '0.65rem', color: '#00E5FF', fontWeight: 700 }}>+</span>
                               <input
@@ -801,7 +970,7 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
                                   const pct = Number(e.target.value.replace(/[^0-9-]/g, '')) || 0;
                                   const newPrice = p.agent_cost != null && p.agent_cost > 0 ? p.agent_cost * (1 + pct / 100) : editForm.retail_price;
                                   setEditForm({ ...editForm, margin_percent: pct, retail_price: newPrice });
-                                  setPriceText(Number(newPrice) > 0 ? (Number(newPrice) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2) : '');
+                                  setPriceText(Number(newPrice) > 0 ? (Number(newPrice) ).toFixed(2) : '');
                                 }}
                                 onKeyDown={e => { if (e.key === 'Enter') handleSave(e as any); }}
                               />
@@ -822,12 +991,12 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
                   ) : (
                     <div className="agentprod-card" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
                       <Image
-                        src={p.custom_image_url || p.products.image_url || '/images/peptide_clear.png'}
+                        src={getProductImage(p.custom_image_url ?? p.products.image_url ?? null, p.products.category || 'Other', p.products.name, !!p.custom_image_url, agentSlug, brandNetworkIsSavage)}
                         alt={displayName}
                         width={80}
                         height={80}
                         unoptimized
-                        style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}
+                        style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'contain', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}
                         onError={(e) => { (e.target as any).src = '/images/peptide_clear.png'; }}
                       />
                       <div className="agentprod-info" style={{ flex: 1, minWidth: 0 }}>
@@ -845,7 +1014,7 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>{costLabel}:</span>
                             {p.agent_cost != null && p.agent_cost > 0 ? (
-                              <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>${(p.agent_cost / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Vials" : "Vial"}</span>
+                              <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>${(p.agent_cost ).toFixed(2)} / Vial</span>
                             ) : (
                               <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>TBD</span>
                             )}
@@ -856,17 +1025,22 @@ export default function AgentStoreProducts({ agentId, costLabel = 'Your Cost', u
                               Listed Price <Edit2 size={10} color="#00E5FF" />
                             </span>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <span style={{ fontSize: '1.05rem', color: '#00E5FF', fontWeight: 800 }}>${(Number(p.retail_price) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'rgba(255,255,255,0.4)' }}>/ {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Vials" : "Vial"}</span></span>
+                              <span style={{ fontSize: '1.05rem', color: '#00E5FF', fontWeight: 800 }}>${(Number(p.retail_price) ).toFixed(2)} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'rgba(255,255,255,0.4)' }}>/ Vial</span></span>
                               {p.agent_cost != null && p.agent_cost > 0 && p.retail_price > 0 && (
                                 <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', background: 'rgba(0,229,255,0.1)', color: '#00E5FF', border: '1px solid rgba(0,229,255,0.2)' }}>
-                                  {p.retail_price >= p.agent_cost ? '+' : ''}{Math.round((p.retail_price / p.agent_cost - 1) * 100)}%
+                                  {p.retail_price >= p.agent_cost ? '+' : ''}{Math.round((p.retail_price / p.agent_cost - 1) * 100)}% Margin
+                                </span>
+                              )}
+                              {p.agent_cost != null && p.agent_cost > 0 && p.retail_price > 0 && (
+                                <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', background: p.retail_price >= p.agent_cost ? 'rgba(104,211,145,0.1)' : 'rgba(229,62,62,0.1)', color: p.retail_price >= p.agent_cost ? '#68D391' : '#FC8181', border: p.retail_price >= p.agent_cost ? '1px solid rgba(104,211,145,0.3)' : '1px solid rgba(229,62,62,0.3)' }}>
+                                  ${((Number(p.retail_price) - Number(p.agent_cost)) ).toFixed(2)} Profit
                                 </span>
                               )}
                             </div>
                           </div>
                           {p.is_on_sale && p.sale_price && (
                             <span style={{ fontSize: '0.7rem', color: '#FC8181', fontWeight: 700, background: 'rgba(229,62,62,0.10)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(229,62,62,0.2)' }}>
-                              On Sale ${(Number(p.sale_price) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Vials" : "Vial"}
+                              On Sale ${(Number(p.sale_price) ).toFixed(2)} / Vial
                             </span>
                           )}
                         </div>

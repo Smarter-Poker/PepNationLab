@@ -63,7 +63,10 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
     if (ap) {
       const effective = ap.is_on_sale && ap.sale_price != null ? Number(ap.sale_price) : Number(ap.retail_price);
-      referencePrice = Number.isFinite(effective) ? effective / 10 : null;
+      // retail_price / sale_price are stored PER VIAL; no 10-pack divisor.
+      // The /10 here recorded every price-drop alert threshold at a tenth of
+      // the real price, so alerts could never fire.
+      referencePrice = Number.isFinite(effective) ? effective : null;
     }
   }
 

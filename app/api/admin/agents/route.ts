@@ -4,11 +4,13 @@ export const revalidate = 0;
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
-import { generateQrDataUrl } from '@/lib/qr';
+import { generateStorefrontQr } from '@/lib/qr-storefront';
 import { sanitizeUsername } from '@/lib/usernames';
 import { assertSameOrigin } from '@/lib/csrf';
-
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://pepnationlab.com';
+import { seedStorefrontFromHousePrices } from '@/lib/seed-storefront';
+import { validateStoreSlug } from '@/lib/store-slug';
+import { validatePassword } from '@/lib/password-policy';
+import { notifyWelcome } from '@/lib/notify';
 
 // GET: List all agents with their profiles and storefront data
 export async function GET() {
@@ -30,11 +32,12 @@ export async function GET() {
       .from('profiles')
       .select(
         'id, created_at, full_name, first_name, last_name, username, email, phone, role, tier, ' +
-        'account_type, credit_limit, prepaid_balance, is_active, is_super_agent, is_sub_agent, ' +
+        'account_type, credit_limit, prepaid_balance, is_active, is_super_agent, is_sub_agent, is_manufacturer, is_admin_account, ' +
         'parent_agent_id, auto_approve_orders, provisioned_password, last_sign_in_at, ' +
         'agent_profiles(slug, is_active)'
       )
       .in('role', ['agent', 'super_agent'])
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(2000);
 
@@ -86,7 +89,9 @@ export async function POST(req: NextRequest) {
       velocity_cap,
       custom_commission_scale,
       custom_markup_override,
+      markup_pct,
       max_auto_approve_limit,
+      locale,
     } = body;
 
     // Allowlist the caller-supplied account_role. Without this, account_role is
@@ -95,12 +100,14 @@ export async function POST(req: NextRequest) {
     // privileged account - a persistence backdoor that survives the original
     // admin's password rotation. This route may only provision non-privileged
     // account types; new admins/shipping users are created out of band.
-    const ALLOWED_ACCOUNT_ROLES = new Set(['agent', 'super_agent', 'researcher']);
+    const ALLOWED_ACCOUNT_ROLES = new Set(['agent', 'super_agent', 'researcher', 'manufacturer', 'admin_account']);
     if (!ALLOWED_ACCOUNT_ROLES.has(account_role)) {
       return NextResponse.json({ error: 'Invalid Account Role' }, { status: 400 });
     }
 
     const isResearcher = account_role === 'researcher';
+    const isManufacturer = account_role === 'manufacturer';
+    const isAdminAccount = account_role === 'admin_account';
 
     // Platform rule: no commission / gamification level may exceed 40%.
     const MAX_CAP_LIMIT = 40;
@@ -121,12 +128,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing Required Fields' }, { status: 400 });
     }
     if (username.length > 40) return NextResponse.json({ error: 'Username Too Long (Max 40 Characters)' }, { status: 400 });
-    if (password.length > 128) return NextResponse.json({ error: 'Password Too Long (Max 128 Characters)' }, { status: 400 });
     if (effFullName.length > 160) return NextResponse.json({ error: 'Full Name Too Long (Max 160 Characters)' }, { status: 400 });
-    if (slug && slug.length > 80) return NextResponse.json({ error: 'Slug Too Long (Max 80 Characters)' }, { status: 400 });
     if (display_name && display_name.length > 120) return NextResponse.json({ error: 'Display Name Too Long (Max 120 Characters)' }, { status: 400 });
-    if (!isResearcher && (!tier || !account_type || !slug || !display_name)) {
-      return NextResponse.json({ error: 'Missing Required Agent Fields (Tier, Billing, Slug, User Name)' }, { status: 400 });
+    // PRICING MODE (2026-08-07): an account is priced EITHER by an assigned
+    // house tier OR by a flat markup percentage - never both. The database
+    // invariant (trg_sync_tier_lock_on_tier_change) treats a non-null `tier` as
+    // authoritative and clears any flat override, so choosing a flat markup
+    // MUST send tier = null. custom_markup_override is stored as a DECIMAL
+    // FRACTION (0.30 = 30%) because pricing computes cost = base * (1 + it).
+    // markup_pct is the human percent from the form; custom_markup_override is
+    // still accepted (as a fraction) for backwards compatibility.
+    const markupPctInput =
+      markup_pct !== undefined && markup_pct !== null && String(markup_pct).trim() !== ''
+        ? Number(markup_pct)
+        : (custom_markup_override !== undefined && custom_markup_override !== null && String(custom_markup_override).trim() !== ''
+            ? Number(custom_markup_override) * 100
+            : null);
+    if (markupPctInput !== null && (!Number.isFinite(markupPctInput) || markupPctInput < 0 || markupPctInput > 500)) {
+      return NextResponse.json({ error: 'Flat Markup Must Be Between 0 And 500 Percent' }, { status: 400 });
+    }
+    const useFlatMarkup = markupPctInput !== null;
+    if (!isResearcher && ((!tier && !useFlatMarkup) || !account_type || !slug || !display_name)) {
+      return NextResponse.json({ error: 'Missing Required Agent Fields (Tier Or Flat Markup, Billing, Slug, User Name)' }, { status: 400 });
     }
     if (isResearcher && !parent_agent_id) {
       return NextResponse.json({ error: 'Researcher Accounts Must Be Assigned To An Agent' }, { status: 400 });
@@ -134,8 +157,9 @@ export async function POST(req: NextRequest) {
     const resolvedParentAgentId = isResearcher
       ? (parent_agent_id === '__ADMIN__' ? gate.userId : parent_agent_id)
       : parent_agent_id;
-    if (password.length < 8) {
-      return NextResponse.json({ error: 'Password Must Be At Least 8 Characters' }, { status: 400 });
+    const pwError = validatePassword(password);
+    if (pwError) {
+      return NextResponse.json({ error: pwError }, { status: 400 });
     }
 
     if (!isResearcher && account_type === 'credit' && credit_limit !== undefined && credit_limit !== null && credit_limit !== '') {
@@ -194,10 +218,19 @@ export async function POST(req: NextRequest) {
 
     const internalEmail = `${usernameClean}@internal.auth`;
 
+    // Storefront slug shape. This MUST agree with the edge middleware
+    // (proxy.ts), which is what actually routes /<slug>, and with the
+    // agent_profiles_slug_shape CHECK + agent_profiles_slug_not_reserved
+    // trigger in the database. The old check here was /^[a-z0-9\-]+$/ with a
+    // separate 80-character cap, which accepted `-x`, `a`, an 80-char slug and
+    // reserved segments like `admin`/`wallet`/`checkout` -- every one of which
+    // creates an agent whose QR code points somewhere unroutable, with no
+    // error raised until a customer scans it. lib/store-slug.ts is the single
+    // source of truth.
     if (!isResearcher) {
-      const slugRegex = /^[a-z0-9\-]+$/;
-      if (!slugRegex.test(slug)) {
-        return NextResponse.json({ error: 'Slug Must Contain Lowercase Letters, Numbers, And Hyphens Only' }, { status: 400 });
+      const slugError = validateStoreSlug(slug);
+      if (slugError) {
+        return NextResponse.json({ error: slugError }, { status: 400 });
       }
     }
 
@@ -231,7 +264,14 @@ export async function POST(req: NextRequest) {
     }
 
     const userId = authData.user.id;
-    const profileRole = account_role === 'super_agent' ? 'agent' : account_role;
+    // Map account_role to the DB profile role:
+    // - manufacturer + admin_account both land as 'super_agent' in profiles.role
+    //   but carry extra boolean flags to distinguish them
+    const profileRole = (() => {
+      if (account_role === 'super_agent' || account_role === 'manufacturer' || account_role === 'admin_account') return 'super_agent';
+      if (account_role === 'researcher') return 'researcher';
+      return 'agent';
+    })();
     const profileData: Record<string, unknown> = {
       id: userId,
       email: null,
@@ -243,26 +283,49 @@ export async function POST(req: NextRequest) {
       disclaimer_v1_accepted: true,
       disclaimer_accepted_at: new Date().toISOString(),
       is_active: true,
-      must_change_password: true,
+      // Only researchers receive a temp password and must change it.
+      // Agent/super_agent accounts land directly on their dashboard.
+      must_change_password: isResearcher,
       created_by_agent_id: gate.userId,
       created_by_role: 'admin',
       updated_at: new Date().toISOString(),
+      // New account's default UI language (English / Simplified / Traditional),
+      // chosen on the creation form. Seeded into their session on first login.
+      locale: ['en', 'zh-CN', 'zh-TW'].includes(locale) ? locale : 'en',
     };
 
     if (isResearcher) {
       profileData.parent_agent_id = resolvedParentAgentId;
       profileData.referring_agent_id = resolvedParentAgentId;
     } else {
-      profileData.tier = tier;
-      profileData.locked_tier_level = tier ? parseInt(tier.replace('tier_', ''), 10) : null;
-      profileData.fixed_scale_override = true;
-      profileData.custom_markup_override = custom_markup_override !== undefined ? custom_markup_override : null;
+      // Tier OR flat markup, never both (see PRICING MODE above). Every column
+      // the tier lock depends on is written explicitly here AND normalised by
+      // the DB invariant, so an assigned tier can never end up decorative
+      // (which is what made tier picks appear not to save).
+      if (useFlatMarkup) {
+        profileData.tier = null;
+        profileData.locked_tier_level = null;
+        profileData.fixed_scale_override = false;
+        profileData.house_tier_level = null;
+        profileData.custom_markup_override = Math.round((markupPctInput / 100) * 10000) / 10000;
+      } else {
+        const tierLevel = tier ? parseInt(tier.replace('tier_', ''), 10) : null;
+        profileData.tier = tier;
+        profileData.locked_tier_level = tierLevel;
+        profileData.fixed_scale_override = true;
+        profileData.house_tier_level = tierLevel;
+        profileData.custom_markup_override = null;
+      }
       profileData.account_type = account_type;
       profileData.auto_approve_orders = account_type === 'credit';
       profileData.max_auto_approve_limit = account_type === 'credit' && max_auto_approve_limit ? Number(max_auto_approve_limit) : null;
       profileData.credit_limit = account_type === 'credit' ? (Number(credit_limit) || null) : null;
       profileData.prepaid_balance = account_type === 'prepaid' ? (Number(prepaid_balance) || 0) : 0;
-      profileData.is_super_agent = account_role === 'super_agent';
+      profileData.is_super_agent = account_role === 'super_agent' || account_role === 'admin_account' || account_role === 'manufacturer';
+      profileData.is_manufacturer = account_role === 'manufacturer';
+      // Admin Account flag — used to gate the manufacturer-style dashboard & network features
+      // without granting full platform admin access
+      if (account_role === 'admin_account') profileData.is_admin_account = true;
       profileData.commission_pct = commPct;
       profileData.commission_max_pct = commMax;
       profileData.velocity_cap = velCap;
@@ -279,14 +342,10 @@ export async function POST(req: NextRequest) {
     }
 
     if (!isResearcher) {
-      const storefrontUrl = `${APP_URL}/${slug}`;
-      let qrCodeData: string | null = null;
-      try {
-        qrCodeData = await generateQrDataUrl(storefrontUrl);
-      } catch (qrErr) {
-        console.error('QR generation failed:', qrErr);
-        qrCodeData = null;
-      }
+      // Carries ?ref= so a scan mints a HARD first-scan-wins referral lock,
+      // and renders black-on-white so phone cameras can actually decode it.
+      // See lib/qr-storefront.ts.
+      const qrCodeData: string | null = await generateStorefrontQr(slug, usernameClean);
 
       const { error: agentError } = await supabase.from('agent_profiles').upsert({
         id: userId,
@@ -313,30 +372,26 @@ export async function POST(req: NextRequest) {
       }
 
       try {
-        const { data: rookieTier } = await supabase.from('house_tiers').select('markup').eq('level', 3).maybeSingle();
-        const rookieMultiplier = rookieTier?.markup != null ? 1 + Number(rookieTier.markup) : 3.50;
-        if (!rookieMultiplier) {
-          console.warn('[admin/agents] house_tiers rookie level not found; skipping catalog seed');
-        } else {
-          const { data: products } = await supabase.from('products').select('id, base_cost').eq('is_active', true);
-          if (products && products.length > 0) {
-            const agentProductsToInsert = products.map((p) => ({
-              agent_id: userId,
-              product_id: p.id,
-              retail_price: Math.round((Number(p.base_cost) * rookieMultiplier) * 100) / 100,
-              margin_percent: 50,
-              is_visible: true,
-              sort_order: 0,
-            }));
-            await supabase.from('agent_products').insert(agentProductsToInsert);
-          }
-        }
+        // Seed the new storefront with the HOUSE (admin) store's retail prices as
+        // the default "set price"; falls back to rookie house-tier pricing for any
+        // product the house store has not priced. Agent can change prices later.
+        await seedStorefrontFromHousePrices(supabase, userId);
       } catch (provisionErr) {
         console.error('[admin/agents] agent product provisioning failed (non-fatal):', provisionErr);
       }
     }
 
-    const roleLabel = isResearcher ? 'Researcher' : account_role === 'super_agent' ? 'Super Agent' : 'Agent';
+    const roleLabel = isResearcher ? 'Researcher' : isManufacturer ? 'Manufacturer' : isAdminAccount ? 'Admin Account' : account_role === 'super_agent' ? 'Super Agent' : 'Agent';
+
+    // Send a welcome notification to agent-type accounts so they see a
+    // friendly "Let's Complete Your Profile" prompt on first login.
+    if (!isResearcher) {
+      const welcomeRole = (account_role === 'super_agent' || account_role === 'admin_account' || account_role === 'manufacturer')
+        ? 'super_agent'
+        : 'agent';
+      notifyWelcome(supabase, userId, welcomeRole).catch(() => {/* non-fatal */});
+    }
+
     return NextResponse.json({ success: true, userId, username: usernameClean, role: roleLabel });
   } catch (err) {
     console.error('[admin/agents] POST error:', err);

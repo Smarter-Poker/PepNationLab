@@ -27,3 +27,169 @@
     top: var(--nav-offset, 60px) !important;
   }
 }
+
+/* ============================================================
+   PROGRAMMATIC-SCROLL RELIABILITY (2026-07-13)
+   globals.css sets html{scroll-behavior:smooth} globally, which makes
+   JS scrollTo/scrollIntoView calls that don't pass an explicit behavior
+   animate — and on lazy/async pages that animation gets interrupted and
+   never lands (can read scrollTop 0). Default to instant here; any code
+   that WANTS smooth still opts in explicitly via { behavior: 'smooth' },
+   which is unaffected by this rule.
+   ============================================================ */
+html { scroll-behavior: auto; }
+
+
+/* ============================================================
+   LETTER-STACKING FIX (2026-07-18)
+   ------------------------------------------------------------
+   globals.css applies `overflow-wrap: anywhere` broadly to
+   p/span/div/td/th/li/a/label/button/headings (two rules: a global
+   one and a max-width:768px one). Per the CSS spec, `anywhere` folds
+   the soft-wrap opportunities into the min-content intrinsic size, so
+   an element's minimum width becomes a SINGLE CHARACTER. Any flex or
+   grid text column that then loses room (e.g. a sibling badge on a
+   narrow phone) collapses to one-letter-per-line -- the "letter
+   stacking" seen on the mobile researcher cards and elsewhere.
+
+   `overflow-wrap: break-word` gives the exact same long-token wrapping
+   (URLs, hashes, long usernames still break instead of overflowing the
+   page) but does NOT shrink the min-content size, so columns keep their
+   natural width and text never stacks vertically. Loaded after
+   globals.css, so it wins over the identically-specific `anywhere`
+   rules. The narrow, intentional !important uses in chat bubbles /
+   legal docs (higher specificity) are left untouched.
+   ============================================================ */
+p, span, div, td, th, li, a, label, button,
+h1, h2, h3, h4, h5, h6, dd, dt {
+  overflow-wrap: break-word;
+}
+
+/* ============================================================
+   LEGIBILITY-FLOOR GAPS + FORM-CONTROL 16PX RE-FLOOR (2026-07-25)
+   ------------------------------------------------------------
+   1) The pixel-unit legibility floor in globals.css lists text-bearing
+      elements (div/span/p/li/td/th/a/small/label/button) but misses
+      strong, code, and h3, which carry inline 11-13px sizes in the
+      research calculators (CalculatorSuite h3 13px, StackBuilder strong
+      12/13px) and the admin email center (code 11px). Extend the same
+      0.82rem floor to those elements, in BOTH serializations.
+
+   2) Form controls must floor to 16px (iOS zoom prevention), not the
+      0.82rem text floor. The [style*=...] floor rules in globals.css
+      have attribute-selector specificity (0,1,0) and override the plain
+      input/select/textarea 16px rule (0,0,1), which left the 32 tier
+      selects on /dashboard/network (inline font-size: 0.75rem) computing
+      13.12px at 390px. These (0,1,1) selectors re-assert the 16px floor
+      for any inline sub-1rem or sub-16px pixel value on form controls,
+      in BOTH serializations. Verified live: selects below 16px went
+      32 -> 0 with no horizontal overflow introduced.
+   ============================================================ */
+
+@media (max-width: 768px) {
+  strong[style*="font-size:9px"], strong[style*="font-size: 9px"],
+  strong[style*="font-size:10px"], strong[style*="font-size: 10px"],
+  strong[style*="font-size:11px"], strong[style*="font-size: 11px"],
+  strong[style*="font-size:12px"], strong[style*="font-size: 12px"],
+  strong[style*="font-size:13px"], strong[style*="font-size: 13px"],
+  code[style*="font-size:9px"], code[style*="font-size: 9px"],
+  code[style*="font-size:10px"], code[style*="font-size: 10px"],
+  code[style*="font-size:11px"], code[style*="font-size: 11px"],
+  code[style*="font-size:12px"], code[style*="font-size: 12px"],
+  code[style*="font-size:13px"], code[style*="font-size: 13px"],
+  h3[style*="font-size:10px"], h3[style*="font-size: 10px"],
+  h3[style*="font-size:11px"], h3[style*="font-size: 11px"],
+  h3[style*="font-size:12px"], h3[style*="font-size: 12px"],
+  h3[style*="font-size:13px"], h3[style*="font-size: 13px"] {
+    font-size: 0.82rem !important;
+  }
+
+  input[style*="font-size:0."], input[style*="font-size: 0."],
+  select[style*="font-size:0."], select[style*="font-size: 0."],
+  textarea[style*="font-size:0."], textarea[style*="font-size: 0."],
+  input[style*="font-size:11px"], input[style*="font-size: 11px"],
+  input[style*="font-size:12px"], input[style*="font-size: 12px"],
+  input[style*="font-size:13px"], input[style*="font-size: 13px"],
+  input[style*="font-size:14px"], input[style*="font-size: 14px"],
+  input[style*="font-size:15px"], input[style*="font-size: 15px"],
+  select[style*="font-size:11px"], select[style*="font-size: 11px"],
+  select[style*="font-size:12px"], select[style*="font-size: 12px"],
+  select[style*="font-size:13px"], select[style*="font-size: 13px"],
+  select[style*="font-size:14px"], select[style*="font-size: 14px"],
+  select[style*="font-size:15px"], select[style*="font-size: 15px"],
+  textarea[style*="font-size:11px"], textarea[style*="font-size: 11px"],
+  textarea[style*="font-size:12px"], textarea[style*="font-size: 12px"],
+  textarea[style*="font-size:13px"], textarea[style*="font-size: 13px"],
+  textarea[style*="font-size:14px"], textarea[style*="font-size: 14px"],
+  textarea[style*="font-size:15px"], textarea[style*="font-size: 15px"] {
+    font-size: 16px !important;
+  }
+}
+
+/* ============================================================
+   FLEX TEXT-COLUMN BASIS FLOOR ON LIST CARDS (2026-07-31)
+   ------------------------------------------------------------
+   Reported: "Inside the researcher page on mobile. Text is getting
+   stacked instead of displaying correctly."
+
+   The admin list-card row (app/admin/researchers/page.tsx) is a
+   `display:flex; flex-wrap:wrap` row holding four items:
+     [48px avatar] [text column] [status badges] [action buttons]
+   The text column is inline-styled `flex: 1; min-width: 0`, i.e.
+   `flex: 1 1 0%`. Flex line-breaking uses each item's HYPOTHETICAL
+   main size (flex-basis clamped by min/max), so a basis of 0% with
+   min-width:0 means the text column NEVER forces a line break: the
+   ~180px badge group packs onto the same line and the text column is
+   left ~30px on a 375px phone. That is what produced the vertical
+   letter/word stacking in the screenshots — the LETTER-STACKING FIX
+   above stops the one-character-per-line collapse, but the column is
+   still far too narrow without a real flex basis.
+
+   Giving the column a 150px basis makes its hypothetical size big
+   enough to push the badge/action groups onto their own flex lines on
+   a phone, while `flex-grow: 1` still fills the row and `min-width: 0`
+   (kept from the inline style) still lets it shrink below 150px rather
+   than overflow on very narrow viewports. Desktop is untouched — free
+   space there is positive, so grow resolves to the same result as
+   before.
+
+   Inline styles beat stylesheet rules regardless of specificity, so
+   this needs !important. Both React serializations are covered per the
+   CRITICAL SERIALIZATION RULE at the top of this file:
+     - server:  style="flex:1;min-width:0"
+     - client:  style="flex: 1 1 0%; min-width: 0px;"
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .glass-panel.hover-lift.stagger-fade-in > div > div > div[style*="flex:1"][style*="min-width:0"],
+  .glass-panel.hover-lift.stagger-fade-in > div > div > div[style*="flex: 1"][style*="min-width: 0"] {
+    flex-basis: 150px !important;
+  }
+}
+
+/* ============================================================
+   SWITCH CONTROLS EXEMPT FROM THE 44PX BUTTON TAP FLOOR (2026-08-06)
+   ------------------------------------------------------------
+   The mobile touch-target rule in globals.css applies
+   `min-height: 44px` + horizontal padding to EVERY <button>. An
+   on/off switch is a button too, but it draws itself as a fixed
+   44x26 pill via inline width/height — and min-height from a
+   stylesheet BEATS an inline `height`, so on phones every
+   role="switch" ballooned into a ~44px-tall padded blob with the
+   knob floating inside it ("weird circle in a circle", reported
+   with a screenshot from the iPhone notification settings).
+
+   Switches manage their own geometry; exempt them from the floor.
+   Specificity (0,1,1) beats both `button` (0,0,1) and `.btn`
+   (0,1,0), so no !important is needed. Their touch target stays
+   comfortable — the pill is 44px wide, and iOS's own native
+   switches are 51x31.
+   ============================================================ */
+@media (max-width: 768px) {
+  button[role="switch"] {
+    min-height: 0;
+    min-width: 0;
+    padding-left: 0;
+    padding-right: 0;
+  }
+}

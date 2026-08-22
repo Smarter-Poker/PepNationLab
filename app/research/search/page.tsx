@@ -103,7 +103,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<SP>
       <div
         style={{
           position: 'sticky',
-          top: 60,
+          top: 'var(--nav-offset, 60px)',
           zIndex: 50,
           padding: '16px 16px 12px',
           background: 'rgba(5,10,15,0.92)',

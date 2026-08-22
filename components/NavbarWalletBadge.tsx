@@ -54,7 +54,6 @@ export default function NavbarWalletBadge() {
         background: 'none',
         flexShrink: 0,
         position: 'relative',
-        left: -8,
         padding: 4
       }}
     >

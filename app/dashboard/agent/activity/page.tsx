@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import AgentActivityFeed from '@/components/AgentActivityFeed';
+import Navbar from '@/components/Navbar';
+import BackButton from '@/components/ui/BackButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,10 +25,8 @@ export default async function AgentActivityPage() {
 
   return (
     <div className="container" style={{ paddingTop: 'var(--space-6)', paddingBottom: 'var(--space-12)' }}>
-      <Link href="/dashboard/agent" prefetch={false}
-        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--grey-400)', fontSize: '0.82rem', textDecoration: 'none', marginBottom: 'var(--space-4)' }}>
-        <ArrowLeft size={15} /> Back to Dashboard
-      </Link>
+      <Navbar />
+      <BackButton label="Back to Dashboard" />
       <AgentActivityFeed />
     </div>
   );

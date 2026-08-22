@@ -6,18 +6,23 @@ import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { motion, Variants, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-import { Star, X, Heart, FileText, Search, SlidersHorizontal, RotateCcw, Check, ShoppingCart, ArrowRight, Sparkles, Flame, Zap, Brain, Shield, Hourglass, Moon, Activity, Syringe, Wind } from 'lucide-react';
+import {Star, X, Heart, FileText, Search, SlidersHorizontal, RotateCcw, Check, ShoppingCart, ArrowRight, Sparkles, Flame, Zap, Brain, Shield, Hourglass, Moon, Activity, Syringe, Wind, Package} from 'lucide-react';
 import RecommendationStrip, { type RecommendationItem } from './RecommendationStrip';
 import ProductMonograph from './research/ProductMonograph';
 import IframeLink from '@/components/ui/IframeLink';
 import DiscoveryHero, { type MatchedProduct } from './storefront/StorefrontDiscovery';
 import type { ModalGroupedProductRef } from './storefront/ProductModalEnhancements';
 import DynamicAddToCartButton from './storefront/DynamicAddToCartButton';
+import ImageAddToCartButton from './storefront/ImageAddToCartButton';
+import DynamicCoaButton from './storefront/DynamicCoaButton';
 import DynamicCartButton from './storefront/DynamicCartButton';
 import DynamicDetailButton from './storefront/DynamicDetailButton';
 import { evidenceTier, EVIDENCE_TIER, RISK_META, intranasalDisplay, type Compound } from '@/lib/compounds';
 import { getProductImage, toTitleCase } from '@/lib/categoryImage';
+import { optimizedImageSrc, makeImageErrorHandler } from '@/lib/imageOptimize';
+import { setBrandNetworkFlag } from '@/lib/brand-network-client';
 import PeptideVialCard from '@/components/PeptideVialCard';
+import PremiumPeptideCard from '@/components/storefront/PremiumPeptideCard';
 import GuestAuthModal from '@/components/GuestAuthModal';
 import { trackStorefrontEvent } from '@/lib/track';
 import { toast } from 'sonner';
@@ -62,17 +67,18 @@ const StorefrontCompareDrawer = dynamic(() => import('./storefront/StorefrontCom
 export interface BundleConfig {
   id: string;
   name: string;
-  /** Short tagline / popular name shown as a subtitle on the bundle card */
   tagline?: string;
   description?: string;
   image_url?: string | null;
+  vial_image_url?: string | null;
   product_ids: string[];
   /** Optional discount applied to the summed member price at checkout. */
   discount_percent?: number;
-  /** Flat custom price override — when set, overrides discount_percent entirely */
-  custom_price?: number | null;
   /** Legacy pre-computed price; superseded by the summed member price. */
   price?: number;
+  /** Flat fixed price set by the store owner. When >0 it LOCKS the bundle price:
+   *  it overrides the summed member price so the price never drifts. */
+  custom_price?: number | null;
 }
 
 /** A storefront cart line as persisted to pnl_storefront_cart_<slug>. */
@@ -99,12 +105,21 @@ interface Props {
   agentId?: string | null;
   coaByProductId?: Record<string, string>;
   volumePricingEnabled?: boolean;
+  /** Manufacturer store: every product trades in 10-vial packs, storewide. */
+  manufacturerStore?: boolean;
   isStorefrontOwner?: boolean;
   viewerTier?: string;
   minOrderQty?: number;
   minOverallQty?: number;
   compoundsBySlug?: Record<string, Compound>;
   featuredProductIds?: string[];
+  /** Accepted for compatibility with the storefront branding wiring; rendering
+   *  of custom branding is owned by that feature, not the pricing/bundle grid. */
+  customBranding?: Record<string, unknown> | null;
+  /** Server-resolved: this store is Savage Brands or one of its downlines
+   *  (profiles.parent_agent_id chain). Drives brand-scoped card art + vial
+   *  fallbacks so Pep Nation imagery never leaks onto Savage network stores. */
+  brandNetworkIsSavage?: boolean;
 }
 
 const containerVariants: Variants = {
@@ -132,32 +147,44 @@ interface GroupedProduct {
 }
 
 const POPULAR_ORDER: string[] = [
-  'The Appetite Crusher Stack (Cagrilintide 5mg + Semaglutide 5mg)',
-  'GH Synergy Stack (CJC 5mg + IPA 5mg)',
-  'The Wolverine Stack (BPC 10mg + TB 10mg)',
-  'The Wolverine Stack (BPC 5mg + TB 5mg)',
-  'Glow Stack (TB10 + BPC10 + GHK50)',
-  'KLOW STACK (TB10+BPC10+GHK50+KPV10)',
-  'The Furnace Stack (L-Carnitine Blend)',
-  'The Lipolysis Stack (Lemon Bottle)',
-  'Limitless Stack (Semax + Selank)',
-  'Shred Stack (Tirzepatide + AOD9604)',
-  'Semaglutide',
   'Tirzepatide',
   'Retatrutide',
+  'KLOW STACK (TB10+BPC10+GHK50+KPV10)',
+  'Glow Stack (TB10 + BPC10 + GHK50)',
   'BPC 157',
+  'Limitless Stack (Semax + Selank)',
+  'Semaglutide',
+  'The Wolverine Stack (BPC 10mg + TB 10mg)',
+  'The Wolverine Stack (BPC 5mg + TB 5mg)',
   'TB500 (Thymosin B4 Acetate)',
   'Sermorelin Acetate',
-  'Ipamorelin',
-  'GHK-CU',
-  'NAD+',
-  'AOD9604',
+  'Shred Stack (Tirzepatide + AOD9604)',
   'CJC-1295 Without DAC',
   'CJC-1295 With DAC',
+  'GHK-CU',
+  'AOD9604',
+  'BAC Water',
+  'Bacteriostatic Water',
+  'The Appetite Crusher Stack (Cagrilintide 5mg + Semaglutide 5mg)',
+  'GH Synergy Stack (CJC 5mg + IPA 5mg)',
+  'The Furnace Stack (L-Carnitine Blend)',
+  'The Lipolysis Stack (Lemon Bottle)',
+  'Ipamorelin',
+  'NAD+',
   'KPV',
   'Semax',
   'Selank',
 ];
+
+// Explicit Top 10 removals (owner-curated 2026-07-20). Base names (trailing
+// parenthetical stripped, UPPERCASE) that must NEVER appear in the Top 10 card,
+// even though stacks otherwise get a large ranking premium. Removing these frees
+// slots so Tirzepatide + Retatrutide (already ranked next) surface in the Top 10.
+const TOP10_EXCLUDE = new Set<string>([
+  'THE FURNACE STACK',
+  'THE LIPOLYSIS STACK',
+]);
+
 
 const CARD_MAPPINGS = [
   { index: 1, label: 'Top 10 Best Peptides', query: '' },
@@ -183,7 +210,7 @@ function fuzzyMatch(query: string, text: string): boolean {
 }
 
 function formatPrice(price: number): string {
-  return (Number(price) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return price.toFixed(2);
 }
 
 import { highlightText, splitProductName, getEditDistance } from '@/lib/storefront-helpers';
@@ -209,8 +236,9 @@ function pickDefaultVariant(variants: ProductItem[]): string {
  * Does NOT update live React state - the SSR-hydrated props are always
  * authoritative for the current render. The cache only benefits future visits.
  */
-function useCatalogRefresh(agentSlug: string) {
+function useCatalogRefresh(agentSlug: string, agentId?: string | null) {
   const refreshIntervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+  const router = useRouter();
 
   const doRefresh = React.useCallback(async (force = false) => {
     try {
@@ -255,41 +283,53 @@ function useCatalogRefresh(agentSlug: string) {
     );
 
     // ── Realtime: evict + re-fetch the moment any product is updated ────────
-    // Listens for INSERT/UPDATE/DELETE on agent_products (any agent) - the
-    // server-side catalog API is what's actually scoped per agent_id. This
-    // client-side listener just triggers a forced refresh when anything changes,
-    // which is cheap (the API response is served from Vercel edge cache).
     let supabase: ReturnType<typeof createClient> | null = null;
     let realtimeChannel: ReturnType<ReturnType<typeof createClient>['channel']> | null = null;
-    try {
-      supabase = createClient();
-      realtimeChannel = supabase
-        .channel(`catalog-invalidate-${agentSlug}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*', // INSERT, UPDATE, DELETE
-            schema: 'public',
-            table: 'agent_products',
-          },
-          () => {
-            // Evict stale cache and immediately fetch fresh data
-            evictCatalogCache(agentSlug);
-            doRefresh(true);
-          }
-        )
-        .subscribe();
-    } catch {
-      // Realtime unavailable - gracefully degrade to interval-only refresh
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+    
+    // Only subscribe to realtime if we know the agentId
+    if (agentId) {
+      try {
+        supabase = createClient();
+        realtimeChannel = supabase
+          .channel(`catalog-invalidate-${agentSlug}`)
+          .on(
+            'postgres_changes',
+            {
+              event: '*', // INSERT, UPDATE, DELETE
+              schema: 'public',
+              table: 'agent_products',
+              filter: `agent_id=eq.${agentId}`,
+            },
+            () => {
+              if (refreshTimer) clearTimeout(refreshTimer);
+              refreshTimer = setTimeout(() => {
+                // Evict stale cache and immediately fetch fresh data
+                evictCatalogCache(agentSlug);
+                doRefresh(true);
+                // CRITICAL: Force Next.js to re-fetch the Server Component payload
+                // so the authoritative 'products' prop updates in the UI!
+                // Use soft-reload via router to avoid jarring full page reloads.
+                router.refresh();
+              }, 1000);
+            }
+          )
+          .subscribe();
+      } catch {
+        // Realtime unavailable - gracefully degrade to interval-only refresh
+      }
     }
 
     return () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
       if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);
       if (supabase && realtimeChannel) {
         supabase.removeChannel(realtimeChannel);
       }
     };
-  }, [doRefresh, agentSlug]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doRefresh, agentSlug, agentId]);
+
 }
 
 export default function AgentStorefrontGrid({
@@ -302,20 +342,56 @@ export default function AgentStorefrontGrid({
   agentId = null,
   coaByProductId,
   volumePricingEnabled,
+  manufacturerStore = false,
   isStorefrontOwner,
   viewerTier,
   minOrderQty = 1,
   minOverallQty = 1,
   compoundsBySlug = {},
   featuredProductIds = [],
+  customBranding = null,
+  brandNetworkIsSavage = false,
 }: Props) {
+  const isSavageBrandsNetwork = useMemo(() => {
+    // Server-resolved flag first (parent_agent_id chain — covers downlines like
+    // /eddierazz whose catalog rows may not carry savage-brands image paths),
+    // then a client-side heuristic as a safety net for when the server walk
+    // fails closed.
+    if (brandNetworkIsSavage || agentSlug === 'savagebrands') return true;
+
+    // The heuristic used to be `.some(...)` — ONE row carrying a savage path
+    // flipped the whole store to Savage mode. That is not hypothetical: a
+    // KLOW STACK backfill on 2026-08-19 wrote
+    // /images/savage-brands/klow-stack-80mg.jpg onto the KLOW row of ~40
+    // PEP NATION stores. Each of those stores then had exactly 1 savage row
+    // out of ~114, tripped `.some()`, and every OTHER product — whose image
+    // resolves to /images/products/*.png — fell into the savage branch of
+    // getProductImage() and came back as the blank clear vial. The catalog
+    // grid hid the damage because it paints a pre-composited card JPEG and
+    // never renders the vial layer; the detail view and its thumbnails render
+    // it everywhere, which is exactly where the blank vials showed up.
+    //
+    // Require a MAJORITY instead. A real Savage store is ~109/111 savage
+    // rows; a contaminated Pep Nation store is 1/114. One stray row can no
+    // longer misbrand a storefront.
+    const list = products ?? [];
+    if (list.length === 0) return false;
+    const savageRows = list.filter(p => p.custom_image_url?.includes('/images/savage-brands/')).length;
+    return savageRows * 2 > list.length;
+  }, [brandNetworkIsSavage, agentSlug, products]);
+
   const [mounted, setMounted] = useState(false);
   const [showStoreGrid, setShowStoreGrid] = useState(true);
   const [visibleCount, setVisibleCount] = useState(24);
+  // Owner-only toggle: when true, all product cards display the owner's cost
+  // price (cost_price) instead of the retail price, with retail shown as
+  // strikethrough MSRP and the margin shown where "YOU SAVE" normally lives.
+  const [showCostView, setShowCostView] = useState(false);
   // When a logged-out visitor tries a member-only action (e.g. saving to their
   // wishlist), the API returns 401. Instead of silently failing, we surface the
   // sign-in / create-account modal so that guest interest converts to a signup.
   const [guestModalFeature, setGuestModalFeature] = useState<string | null>(null);
+  const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
 
   // These three state declarations must live before any callbacks that reference
   // their setters (closeGrid calls setFilterArea, setFilterCategory, setSearchQuery).
@@ -332,7 +408,7 @@ export default function AgentStorefrontGrid({
 
   // Keep the localStorage catalog cache warm - fires on mount and every 5 min.
   // Benefits: next navigation to this storefront renders instantly from cache.
-  useCatalogRefresh(agentSlug);
+  useCatalogRefresh(agentSlug, agentId);
 
   const openGrid = useCallback(() => {
     if (typeof window !== 'undefined') {
@@ -347,6 +423,9 @@ export default function AgentStorefrontGrid({
       setFilterArea('');
       setFilterCategory('all');
       setSearchQuery('');
+      setDetailProduct(null);
+      setSelectedBundle(null);
+      setReturnToBundle(null);
       try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch {}
     }
   }, []);
@@ -354,6 +433,12 @@ export default function AgentStorefrontGrid({
   useEffect(() => {
     setMounted(true);
   }, []);
+  // Persist the brand-network verdict so client components that render
+  // product imagery outside this page tree (cart drawer, checkout, lab
+  // journal) never fall back to Pep Nation vials on a Savage-network store.
+  useEffect(() => {
+    setBrandNetworkFlag(agentSlug, isSavageBrandsNetwork);
+  }, [agentSlug, isSavageBrandsNetwork]);
   // Funnel analytics (best-effort, non-blocking): storefront pageview. Activates
   // the existing agent analytics dashboard (agent_storefront_analytics_30d).
   useEffect(() => {
@@ -524,7 +609,7 @@ export default function AgentStorefrontGrid({
 
   const pin = useCallback((group: GroupedProduct, activeVariant: ProductItem) => {
     if (typeof window === 'undefined') return;
-    const pricePerVialDollars = activeVariant ? Number(activeVariant.retail_price) / 10 : null;
+    const pricePerVialDollars = activeVariant ? Number(activeVariant.retail_price) : null;
     const detail = {
       productName: group.name,
       imageUrl: group.imageUrl,
@@ -730,6 +815,26 @@ export default function AgentStorefrontGrid({
     if (p) setDetailHistory([p]);
     else setDetailHistory([]);
   };
+  const [selectedBundle, setSelectedBundle] = useState<BundleConfig | null>(null);
+  const [returnToBundle, setReturnToBundle] = useState<BundleConfig | null>(null);
+
+  const handleBundleItemClick = (productId: string) => {
+    // Find the grouped product that has this product variant
+    const grp = grouped.find(g => g.variants.some(v => v.product_id === productId));
+    if (grp) {
+      setReturnToBundle(selectedBundle);
+      setSelectedBundle(null);
+      setDetailProduct(grp);
+    }
+  };
+
+  const handleDetailProductBack = () => {
+    setDetailProduct(null);
+    if (returnToBundle) {
+      setSelectedBundle(returnToBundle);
+      setReturnToBundle(null);
+    }
+  };
   const [showEli5, setShowEli5] = useState(false);
 
   useEffect(() => {
@@ -856,6 +961,9 @@ export default function AgentStorefrontGrid({
   const overallMin  = minOverallQty ?? 1;
   // Bac. water is sold only in 10-packs (increments of 10), storewide.
   const isBacWaterItem = (name: string | null | undefined, slug: string | null | undefined) => slug === 'bac-water' || /bac\.?\s*water/i.test(name || '');
+  // Manufacturer stores trade EVERYTHING in 10-vial packs, storewide -- the
+  // same mechanics Bac. Water already uses (10-pack pricing, steps of 10).
+  const packOf10 = (name: string | null | undefined, slug: string | null | undefined) => manufacturerStore === true;
 
   // Track the most recently viewed product for recommendations context
   const lastViewedProductId = useRef<string | null>(null);
@@ -911,9 +1019,9 @@ export default function AgentStorefrontGrid({
         .map(([vId, qty]) => {
           const item = products.find(p => p.id === vId);
           if (!item) return null;
-          const perVial = item.retail_price / 10;
+          const perVial = item.retail_price;
           const costPerVial = isStorefrontOwner && (item as any).cost_price != null
-            ? Number((item as any).cost_price) / 10
+            ? Number((item as any).cost_price)
             : perVial;
           const sizeLabel = item.products?.unit_size
             ? `(${item.products.unit_size}${item.products.unit_measure || ''})`
@@ -999,7 +1107,7 @@ export default function AgentStorefrontGrid({
         amount_cents: Number.isFinite(Number(variant.retail_price)) ? Math.round(Number(variant.retail_price) * qty * 100) : undefined,
       });
     }
-    setDetailProduct(null);
+    handleDetailProductBack();
     setShowBulkPricing(false);
     setPendingQty(selfBuyMin);
     setShowCartFloat(true);
@@ -1026,6 +1134,9 @@ export default function AgentStorefrontGrid({
             item.custom_image_url ?? item.products?.image_url ?? null,
             item.products?.category || 'Other',
             rawName,
+            !!item.custom_image_url, // allowBrandSpecific: custom_image_url is agent-scoped
+            agentSlug,
+            isSavageBrandsNetwork
           ),
           variants: [],
           lowestPrice: Infinity,
@@ -1048,7 +1159,7 @@ export default function AgentStorefrontGrid({
       group.defaultVariantId = pickDefaultVariant(group.variants);
     }
     return Array.from(map.values());
-  }, [products]);
+  }, [products, isSavageBrandsNetwork, agentSlug]);
 
   const categories = useMemo(() => {
     const cats = new Set<string>();
@@ -1181,7 +1292,7 @@ export default function AgentStorefrontGrid({
       // Eyes / Vision
       ['eyes', 'vision', 'sight', 'macular', 'retina', 'blindness', 'amd', 'optic', 'ocular'],
       // GLP-1 Specific
-      ['glp1', 'glp-1', 'incretin', 'tirzepatide', 'semaglutide', 'retatrutide', 'ozempic', 'wegovy', 'mounjaro', 'appetite', 'craving', 'satiety', 'weightloss-drug', 'injection-diet', 'dual-agonist', 'triple-agonist'],
+      ['glp1', 'glp-1', 'incretin', 'tirzepatide', 'semaglutide', 'retatrutide', 'appetite', 'craving', 'satiety', 'dual-agonist', 'triple-agonist'],
       // BPC-157 / Repair
       ['bpc157', 'bpc-157', 'wolverine', 'repair', 'gut', 'gastrointestinal'],
       // TB-500 / Healing
@@ -1772,7 +1883,11 @@ export default function AgentStorefrontGrid({
       }
 
       // 5. Popularity ranking (2nd priority)
-      score += (1000 - g.popularity);
+      if (g.popularity !== 999) {
+        score += (1000 - g.popularity) * 1000000;
+      } else {
+        score += (1000 - g.popularity);
+      }
 
       // 6. Likelihood to Sell to the Researcher:
       if (compound) {
@@ -1809,11 +1924,17 @@ export default function AgentStorefrontGrid({
       const seenBaseNames = new Map<string, typeof result[0]>();
       for (const item of result) {
         const baseName = item.g.name.replace(/\s*\(.*\)\s*$/, '').trim().toUpperCase();
+        if (TOP10_EXCLUDE.has(baseName)) continue;
         if (!seenBaseNames.has(baseName)) {
           seenBaseNames.set(baseName, item);
         }
       }
-      result = Array.from(seenBaseNames.values()).slice(0, 10);
+      const top10 = Array.from(seenBaseNames.values()).slice(0, 10);
+      const bacWater = withScores.find(({ g }) => g.name.toLowerCase().includes('bacteriostatic water'));
+      if (bacWater && !top10.some(item => item.g.name === bacWater.g.name)) {
+        top10.push(bacWater);
+      }
+      result = top10;
     } else if (activeCardIndex !== null && activeCardIndex > 1 && !deferredSearch.trim()) {
       const activeCard = CARD_MAPPINGS.find(m => m.index === activeCardIndex);
       if (activeCard) {
@@ -1925,13 +2046,17 @@ export default function AgentStorefrontGrid({
     // single source of truth for whether the item is actually added.
     const wasCapped = maxQty !== Infinity && (cartItemsRef.current[variantId] || 0) >= maxQty;
 
+    // Pack items (Bac. Water, and every product on a manufacturer store)
+    // add in steps of 10 vials; everything else steps by 1.
+    const addStep = packOf10(item.products?.name, item.products?.compound_slug) ? 10 : 1;
+
     setCartItems(prev => {
       const currentQty = prev[variantId] || 0;
-      if (maxQty !== Infinity && currentQty >= maxQty) {
+      if (maxQty !== Infinity && currentQty + addStep > maxQty) {
         toast.error(`Maximum Available Stock (${maxQty}) Reached.`);
         return prev;
       }
-      return { ...prev, [variantId]: currentQty + 1 };
+      return { ...prev, [variantId]: currentQty + addStep };
     });
 
     // Funnel step: the add_to_cart event the agent analytics view counts. Before
@@ -1939,7 +2064,7 @@ export default function AgentStorefrontGrid({
     if (!wasCapped) {
       trackStorefrontEvent(agentSlug, 'add_to_cart', {
         product_id: item.product_id,
-        quantity: 1,
+        quantity: addStep,
         amount_cents: Number.isFinite(Number(item.retail_price)) ? Math.round(Number(item.retail_price) * 100) : undefined,
       });
     }
@@ -1964,12 +2089,22 @@ export default function AgentStorefrontGrid({
       members.push(item);
     }
     if (members.length < 2) return null;
-    const fullPrice = members.reduce((sum, m) => sum + (Number(m.retail_price) || 0) / 10, 0);
-    // custom_price overrides discount_percent when set
-    const cp = bundle.custom_price != null && Number(bundle.custom_price) > 0 ? Number(bundle.custom_price) : null;
-    const discountPct = cp != null ? 0 : Math.min(Math.max(Math.round(Number(bundle.discount_percent) || 0), 0), 90);
-    const finalPrice = cp != null ? cp : Math.max(0, fullPrice * (1 - discountPct / 100));
-    return { members, fullPrice, finalPrice, discountPct, isCustomPrice: cp != null };
+    const fullPrice = members.reduce((sum, m) => sum + (Number(m.retail_price) || 0), 0);
+    const discountPct = Math.min(Math.max(Math.round(Number(bundle.discount_percent) || 0), 0), 90);
+    // A stored custom_price is a FIXED price the store owner set. It must never
+    // drift with member product prices, so when present it overrides the summed
+    // member price entirely -- on the card, in the cart, and at checkout.
+    const hasCustomPrice = typeof bundle.custom_price === 'number' && bundle.custom_price > 0;
+    const finalPrice = hasCustomPrice
+      ? Math.round((bundle.custom_price as number) * 100) / 100
+      : Math.max(0, fullPrice * (1 - discountPct / 100));
+    // Effective discount for display: always derived from the actual price delta
+    // so custom-priced bundles show the real savings % rather than a stale
+    // discount_percent value that the custom price has since superseded.
+    const effectiveDiscountPct = fullPrice > 0 && finalPrice < fullPrice
+      ? Math.round(((fullPrice - finalPrice) / fullPrice) * 100)
+      : 0;
+    return { members, fullPrice, finalPrice, discountPct: effectiveDiscountPct };
   }, [products]);
 
   const removeBundleFromCart = useCallback((bundleName: string) => {
@@ -1983,30 +2118,27 @@ export default function AgentStorefrontGrid({
     setBundleCart((prev) => {
       if (prev.some((l) => l.bundleName === bundle.name)) return prev;
       added = true;
+      // Distribute the bundle's effective price (fixed custom price, or the
+      // discounted member sum) proportionally across the member lines so the
+      // cart + checkout subtotal always equals the price shown on the card.
+      const bundleFactor = resolved.fullPrice > 0 ? resolved.finalPrice / resolved.fullPrice : 1;
       const lines: StorefrontCartLine[] = resolved.members.map((m) => {
-        const perVial = (Number(m.retail_price) || 0) / 10;
+        const perVial = (Number(m.retail_price) || 0);
         const costPerVial = isStorefrontOwner && (m as any).cost_price != null
-          ? Number((m as any).cost_price) / 10
+          ? Number((m as any).cost_price)
           : perVial;
         const sizeLabel = m.products?.unit_size ? `(${m.products.unit_size}${m.products.unit_measure || ''})` : '';
-        // For custom-priced bundles, distribute the flat price proportionally across members
-        let bundleCustomPrice: number | null = null;
-        if (resolved.isCustomPrice && resolved.fullPrice > 0) {
-          const share = perVial / resolved.fullPrice;
-          bundleCustomPrice = Math.round(resolved.finalPrice * share * 100) / 100;
-        }
         return {
           id: m.product_id,
           name: `${m.products?.name || 'Product'} ${sizeLabel}`.trim(),
           sku: m.product_id,
           quantity: 1,
-          retailPrice: perVial,
-          costPrice: costPerVial,
+          retailPrice: perVial * bundleFactor,
+          costPrice: costPerVial * bundleFactor,
           weightOz: Number(m.products?.weight_oz) || 0.5,
           agentSelfBuy: isStorefrontOwner,
           bundleName: bundle.name,
-          bundleDiscountPercent: resolved.discountPct,
-          ...(bundleCustomPrice != null && { bundleCustomPrice }),
+          bundleDiscountPercent: 0,
         };
       });
       return [...prev, ...lines];
@@ -2031,56 +2163,195 @@ export default function AgentStorefrontGrid({
     const resolved = resolveBundle(bundle);
     if (!resolved) return null;
     const inCart = bundleCart.some((l) => l.bundleName === bundle.name);
+
+    const memberCount = resolved.members.length;
+    
+    const savings = resolved.discountPct > 0
+      ? Math.round(resolved.fullPrice - resolved.finalPrice)
+      : 0;
+
+    const flyerImg = bundle.image_url || bundle.vial_image_url || '/images/peptide_clear.png';
+    const px = (val: number) => `calc(${val} * 100cqi / 683)`;
+
     return (
-      <div key={bundle.id} className="sf-product-card-nickel" style={{ padding: 'var(--space-5)', display: 'flex', flexDirection: 'column' }}>
-        {bundle.image_url && (
-          <div style={{ position: 'relative', width: '100%', height: 150, borderRadius: 'var(--radius-md)', overflow: 'hidden', marginBottom: 'var(--space-4)', background: 'var(--surface-3)' }}>
-            <Image src={bundle.image_url} alt={bundle.name} fill unoptimized sizes="(max-width: 768px) 100vw, 33vw" style={{ objectFit: 'cover' }} />
+      <motion.div
+        key={bundle.id}
+        className="hover-lift stagger-fade-in"
+        variants={itemVariants}
+        style={{
+          containerType: 'inline-size',
+          width: '100%',
+          maxWidth: 683,
+          margin: '0 auto',
+          cursor: 'pointer',
+          background: '#000000',
+          border: '2px solid #3f444a',
+          borderRadius: '18px',
+          padding: '6px',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+        onClick={() => setSelectedBundle(bundle)}
+      >
+        <div style={{
+          width: '100%',
+          background: '#000000',
+          border: '1px solid #3f444a',
+          borderRadius: '12px',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          {/* Top: Flyer Image fully visible */}
+          <div style={{ position: 'relative', width: '100%', aspectRatio: '2/3', background: '#000' }}>
+            <Image 
+              src={flyerImg} 
+              alt={bundle.name} 
+              fill 
+              unoptimized 
+              style={{ objectFit: 'contain', objectPosition: 'center' }} 
+            />
           </div>
-        )}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: bundle.tagline ? 'var(--space-1)' : 'var(--space-3)', gap: 8 }}>
-          <h4 style={{ fontFamily: 'var(--font-brand)', fontSize: '1.1rem', color: 'var(--white)', letterSpacing: '0.02em', lineHeight: 1.2 }}>{bundle.name}</h4>
-          <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', padding: '4px 10px', borderRadius: 'var(--radius-full)', background: `${primaryColor}20`, border: `1px solid ${primaryColor}40`, color: primaryColor, whiteSpace: 'nowrap' }}>Bundle</span>
-        </div>
-        {/* Tagline (popular name) */}
-        {bundle.tagline && (
-          <p style={{ fontSize: '0.78rem', color: 'var(--teal)', fontStyle: 'italic', marginBottom: 'var(--space-3)', lineHeight: 1.4 }}>"{bundle.tagline}"</p>
-        )}
-        {bundle.description && (
-          <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', lineHeight: 1.5, marginBottom: 'var(--space-3)' }}>{bundle.description}</p>
-        )}
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0, marginBottom: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {resolved.members.map((m) => (
-            <li key={m.id} style={{ fontSize: '0.78rem', color: 'var(--silver)', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ width: 5, height: 5, borderRadius: '50%', background: primaryColor, flexShrink: 0 }} />
-              {m.custom_name || m.products?.name || 'Product'}
-            </li>
-          ))}
-        </ul>
-        <div style={{ marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 'var(--space-4)' }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 'var(--space-3)', flexWrap: 'wrap' }}>
-            {/* Show crossed-out full price when there's a discount or custom price that beats it */}
-            {(resolved.discountPct > 0 || resolved.isCustomPrice) && resolved.fullPrice > resolved.finalPrice && (
-              <span style={{ textDecoration: 'line-through', opacity: 0.55, color: 'var(--silver)', fontSize: '0.95rem' }}>${formatPrice(resolved.fullPrice)}</span>
-            )}
-            <span className="sf-product-price-nickel" style={{ fontSize: '1.3rem', fontWeight: 800, fontFamily: 'var(--font-brand)' }}>${formatPrice(resolved.finalPrice)}</span>
-            {resolved.discountPct > 0 && !resolved.isCustomPrice && (
-              <span style={{ fontSize: '0.72rem', color: '#68D391', fontWeight: 700 }}>({resolved.discountPct}% Off)</span>
-            )}
-            {resolved.isCustomPrice && (
-              <span style={{ fontSize: '0.72rem', color: '#fbbf24', fontWeight: 700 }}>Bundle Price</span>
-            )}
+
+          {/* Divider Solid Line */}
+          <div style={{ height: '3px', background: 'linear-gradient(90deg, #1a1d24 0%, #b9c0c7 50%, #1a1d24 100%)', zIndex: 10 }} />
+
+          {/* Bottom: Data panel */}
+          <div style={{ 
+            position: 'relative', 
+            width: '100%', 
+            background: 'linear-gradient(180deg, #0d1115 0%, #000000 100%)', 
+            padding: px(24) + ' ' + px(24) + ' ' + px(20), 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: px(20) 
+          }}>
+            
+            {/* Row 1: Name and MSRP */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{
+                margin: 0,
+                fontFamily: 'var(--font-montserrat, sans-serif)',
+                fontWeight: 700,
+                fontSize: bundle.name.length > 22 ? px(26) : bundle.name.length > 15 ? px(30) : px(36),
+                letterSpacing: px(-1),
+                lineHeight: 1.1,
+                textTransform: 'uppercase',
+                background: 'linear-gradient(180deg, #FFFFFF 0%, #B9C0C7 40%, #828A92 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}>
+                {bundle.name}
+              </h2>
+              {savings > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: 1.1 }}>
+                  <div style={{ fontFamily: 'var(--font-roboto-condensed, sans-serif)', fontWeight: 700, fontSize: px(22), color: '#8B8F93' }}>
+                    MSRP <span style={{ textDecoration: 'line-through' }}>${resolved.fullPrice.toFixed(2)}</span>
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-roboto-condensed, sans-serif)', fontWeight: 700, fontSize: px(26), color: '#00C7E8', textTransform: 'uppercase' }}>
+                    YOU SAVE ${savings}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Row 2: Pill and Wholesale */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+              {/* Vials Pill */}
+              <div style={{
+                border: '2px solid #5a6068',
+                borderRadius: px(30),
+                padding: px(12) + ' ' + px(24),
+                background: 'transparent',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: px(8)
+              }}>
+                <span style={{
+                  fontFamily: 'var(--font-montserrat, sans-serif)',
+                  fontWeight: 800,
+                  fontSize: px(28),
+                  letterSpacing: px(1),
+                  textTransform: 'uppercase',
+                  color: '#828A92'
+                }}>
+                  {memberCount} VIAL BUNDLES
+                </span>
+              </div>
+
+              {/* Wholesale Price */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: 1.1 }}>
+                <div style={{ fontFamily: 'var(--font-roboto-condensed, sans-serif)', fontWeight: 700, fontSize: px(20), color: '#8B8F93', textTransform: 'uppercase', marginBottom: px(4) }}>
+                  AGENT PRICE
+                </div>
+                <div style={{ fontFamily: 'var(--font-roboto-condensed, sans-serif)', fontWeight: 700, fontSize: px(56), color: '#00D5F2', textShadow: `0 2px 4px rgba(0,0,0,0.5)` }}>
+                  ${resolved.finalPrice.toFixed(2)}
+                </div>
+              </div>
+            </div>
+
+            {/* Row 3: Add To Cart Button */}
+            <div 
+              onClick={(e) => { e.stopPropagation(); inCart ? removeBundleFromCart(bundle.name) : addBundleToCart(bundle); }}
+              style={{
+                position: 'relative',
+                width: '100%',
+                height: px(90),
+                borderRadius: px(45),
+                background: 'linear-gradient(180deg, #111418 0%, #04070a 100%)',
+                border: '2px solid #5a6068',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.5), inset 0 2px 4px rgba(255,255,255,0.05)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer'
+              }}
+            >
+              <div style={{
+                position: 'absolute',
+                left: px(12),
+                width: px(62),
+                height: px(62),
+                borderRadius: '50%',
+                border: '2px solid #5a6068',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: '#0a0d10'
+              }}>
+                <svg width={px(32)} height={px(32)} viewBox="0 0 24 24" fill="none" stroke="#B9C0C7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="9" cy="21" r="1"></circle>
+                  <circle cx="20" cy="21" r="1"></circle>
+                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                </svg>
+              </div>
+              <span style={{
+                fontFamily: 'var(--font-montserrat, sans-serif)',
+                fontWeight: 800,
+                fontSize: px(38),
+                color: inCart ? '#00C7E8' : '#FFFFFF',
+                textShadow: '0 2px 4px rgba(0,0,0,0.8)'
+              }}>
+                {inCart ? "IN CART" : "Add To Cart"}
+              </span>
+            </div>
+
+            {/* Row 4: Footer */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: px(12), marginTop: px(4) }}>
+              <svg width={px(22)} height={px(22)} viewBox="0 0 24 24" fill="none" stroke="#00C7E8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+              </svg>
+              <span style={{ fontFamily: 'var(--font-roboto-condensed, sans-serif)', fontWeight: 700, fontSize: px(20), color: '#00C7E8' }}>IN STOCK</span>
+              <span style={{ fontFamily: 'var(--font-roboto-condensed, sans-serif)', fontWeight: 700, fontSize: px(20), color: '#4a5056' }}>|</span>
+              <span style={{ fontFamily: 'var(--font-roboto-condensed, sans-serif)', fontWeight: 700, fontSize: px(20), color: '#8B8F93' }}>AVAILABLE FOR SAME DAY PICKUP</span>
+            </div>
+
           </div>
-          <button
-            type="button"
-            onClick={() => (inCart ? removeBundleFromCart(bundle.name) : addBundleToCart(bundle))}
-            className={inCart ? 'btn btn-outline' : 'btn-primary'}
-            style={{ width: '100%', height: 40, fontSize: '0.85rem', color: inCart ? 'var(--white)' : undefined, borderColor: inCart ? 'rgba(255,255,255,0.2)' : undefined }}
-          >
-            {inCart ? 'Remove Bundle' : 'Add Bundle To Cart'}
-          </button>
         </div>
-      </div>
+      </motion.div>
     );
   };
   const totalSavedItems = Object.values(savedForLater).reduce((sum, qty) => sum + Number(qty || 0), 0);
@@ -2119,7 +2390,7 @@ export default function AgentStorefrontGrid({
             (a, b) =>
               parseFloat(a.products?.unit_size || '0') - parseFloat(b.products?.unit_size || '0')
           )[0] || matches[0];
-      const addQty = isBacWaterItem(pick.products?.name, pick.products?.compound_slug) ? 10 : 1;
+      const addQty = 1;
       setCartItems((prev) => ({ ...prev, [pick.id]: (prev[pick.id] || 0) + addQty }));
       setShowCartFloat(true);
       toast.success(`${pick.products?.name || name} Added To Cart.`);
@@ -2147,366 +2418,118 @@ export default function AgentStorefrontGrid({
   }
 
   const renderProductCard = (group: GroupedProduct) => {
-          const selectedVariantId = selectedVariants[group.name] || group.defaultVariantId;
-          const activeVariant = group.variants.find(v => v.id === selectedVariantId) || group.variants[0];
+    const selectedVariantId = selectedVariants[group.name] || group.defaultVariantId;
+    const activeVariant = group.variants.find(v => v.id === selectedVariantId) || group.variants[0];
 
-          const stockAgentCount = Math.max(0, Number(inventoryMap[activeVariant.product_id] ?? 0));
-          const stockMasterInventory = Math.max(0, Number(activeVariant.products?.inventory_count ?? 0));
-          const stockThreshold = Math.max(0, Number(activeVariant.products?.low_stock_threshold ?? 5));
-          const stockBackorder = Math.max(0, Number(activeVariant.products?.backorder_days ?? 0));
-          const stockState = computeStockState(stockAgentCount, stockMasterInventory, stockThreshold, stockBackorder);
+    const stockAgentCount = Math.max(0, Number(inventoryMap[activeVariant.product_id] ?? 0));
+    const stockMasterInventory = Math.max(0, Number(activeVariant.products?.inventory_count ?? 0));
+    const stockThreshold = Math.max(0, Number(activeVariant.products?.low_stock_threshold ?? 5));
+    const stockBackorder = Math.max(0, Number(activeVariant.products?.backorder_days ?? 0));
+    const stockState = computeStockState(stockAgentCount, stockMasterInventory, stockThreshold, stockBackorder);
 
-          return (
-            <motion.div
-              key={group.name} className="sf-product-card-nickel hover-lift stagger-fade-in" variants={itemVariants}
-              style={{
-                cursor: 'pointer'
-              }}
-              onMouseEnter={() => {
-                // Prefetch recommendations for this product on hover so data
-                // is already cached by the time the user clicks to open the detail.
-                const seedId = activeVariant.product_id;
-                if (seedId) {
-                  // Prefetch via standard fetch so it triggers the Service Worker cache
-                  fetch(
-                    `/api/storefront/recommendations?product_id=${encodeURIComponent(seedId)}&agent_slug=${encodeURIComponent(agentSlug)}&limit=8`
-                  ).catch(() => {});
-                }
-              }}
-              onClick={() => {
-                setDetailProduct(group);
-                logRecentlyViewed(activeVariant.product_id);
-                const defaultVId = group.defaultVariantId || group.variants[0]?.id;
-                const existingQty = defaultVId ? cartItems[defaultVId] : undefined;
-                const bw = isBacWaterItem(group.name, group.compoundSlug);
-                setPendingQty(existingQty ?? (bw ? 10 : (selfBuyMin)));
-              }}
-              role="button"
-              tabIndex={0}
-              aria-label={`View Details For ${group.name}`}
-              onKeyDown={(e: React.KeyboardEvent<HTMLElement>) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  if (e.key === ' ') e.preventDefault();
-                  e.currentTarget.click();
-                }
-              }}
-            >
-              <div className="" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', padding: 0, position: 'relative' }}>
+    const { main, subtitle } = splitProductName(toTitleCase(group.name));
+    const defaultV = group.variants.find(v => v.id === group.defaultVariantId) || group.variants[0];
+    const size = defaultV.products?.unit_size || '10';
+    const measure = defaultV.products?.unit_measure || 'mg';
+    const isBW = packOf10(group.name, defaultV.products?.compound_slug);
+    const displaySizeText = isBW ? `10x ${size}${measure} Vials` : `${size}${measure} Vials`;
 
-              <div style={{
-                height: 220,
-                background: `radial-gradient(circle at 50% 50%, ${primaryColor}20 0%, var(--black) 100%)`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
-                borderBottom: '1px solid rgba(255,255,255,0.02)', position: 'relative'
-              }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, transparent, ${primaryColor}50, transparent)` }} />
-                {group._search?.reason && (
-                  <div style={{
-                    position: 'absolute',
-                    top: 52,
-                    left: 10,
-                    right: 10,
-                    zIndex: 10,
-                    display: 'flex',
-                    justifyContent: 'center',
-                    pointerEvents: 'none'
-                  }}>
-                    <div style={{
-                      background: 'rgba(20, 25, 30, 0.75)',
-                      backdropFilter: 'blur(8px)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      padding: '4px 10px',
-                      borderRadius: 20,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                      color: 'var(--white)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                    }}>
-                      <Sparkles size={11} style={{ marginRight: 4 }} /> Matched: {toTitleCase(group._search.reason)}
-                    </div>
-                  </div>
-                )}
+    const perVialBase = defaultV.retail_price;
+    const isOnSale = (defaultV as any).is_on_sale && (defaultV as any).sale_price;
+    const perVialDisplay = isOnSale ? (defaultV as any).sale_price : perVialBase;
+    const displayPrice = isBW ? perVialDisplay * 10 : perVialDisplay;
+    const _marketAvgVial = Number((defaultV as any).products?.market_avg_price) || 0;
+    const _marketAvgDisplay = isBW ? _marketAvgVial * 10 : _marketAvgVial;
+    const _showMarketAvg = _marketAvgDisplay > displayPrice;
+    const _comparePrice = _showMarketAvg ? _marketAvgDisplay : (isOnSale ? (isBW ? perVialBase * 10 : perVialBase) : 0);
+    const _hasCompare = _comparePrice > displayPrice;
+    const _youSave = _hasCompare ? _comparePrice - displayPrice : 0;
 
-                {/* Compare Checkbox opposite of the heart (which is on top-right, so this is on top-left) */}
-                <label
-                  onClick={(e) => e.stopPropagation()}
-                  style={{
-                    position: 'absolute',
-                    top: 12,
-                    left: 12,
-                    zIndex: 10,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    boxSizing: 'border-box',
-                    transition: 'transform 0.15s ease',
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.10)'}
-                  onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-                >
-                  <input
-                    type="checkbox"
-                    checked={pinnedNames.has(group.name)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        if (pinnedNames.size >= 4) {
-                          toast.error('You can compare up to 4 compounds at a time.');
-                          return;
-                        }
-                        try {
-                          const raw = window.localStorage.getItem('pnl:compare') || '[]';
-                          const list = JSON.parse(raw);
-                          if (Array.isArray(list) && list.length > 0) {
-                            const firstItem = list[0];
-                            const firstCategory = firstItem.category;
-                            if (firstCategory && firstCategory !== group.category) {
-                              toast.error(`You can only compare peptides within the same category ("${firstCategory}").`);
-                              return;
-                            }
-                          }
-                        } catch {}
-                        pin(group, activeVariant);
-                      } else {
-                        unpin(group);
-                      }
-                    }}
-                    disabled={!pinnedNames.has(group.name) && pinnedNames.size >= 4}
-                    style={{
-                      width: 17,
-                      height: 17,
-                      accentColor: primaryColor,
-                      cursor: 'pointer',
-                      margin: 0,
-                    }}
-                    title="Compare this peptide"
-                    aria-label={`Compare ${group.name}`}
-                  />
-                  <span
-                    style={{
-                      fontSize: '0.55rem',
-                      fontWeight: 800,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em',
-                      color: pinnedNames.has(group.name) ? primaryColor : 'rgba(255,255,255,0.85)',
-                      textShadow: '0 1px 3px rgba(0, 0, 0, 0.9), 0 0 1px rgba(0, 0, 0, 0.9)',
-                      transition: 'color 0.15s',
-                      pointerEvents: 'none',
-                      marginTop: 4
-                    }}
-                  >
-                    Compare
-                  </span>
-                </label>
+    // ── Owner cost-view mode ─────────────────────────────────────────────
+    // When showCostView is true and cost_price is available, swap the card's
+    // main price to the owner's buy cost and use the retail price as the
+    // strikethrough MSRP so the margin is immediately visible.
+    const rawCostPrice = (defaultV as any).cost_price;
+    const hasCostData = isStorefrontOwner && showCostView && rawCostPrice != null;
+    const costPerVialDisplay = hasCostData
+      ? (isBW ? Number(rawCostPrice) : Number(rawCostPrice))
+      : null;
+    const finalDisplayPrice = hasCostData ? (costPerVialDisplay ?? displayPrice) : displayPrice;
+    const finalMsrp = hasCostData ? displayPrice : (_hasCompare ? _comparePrice : undefined);
+    const finalSavings = hasCostData
+      ? Math.max(0, Math.floor(displayPrice - (costPerVialDisplay ?? displayPrice)))
+      : (_hasCompare ? Math.floor(_youSave) : undefined);
+    const finalSavingsLabel = hasCostData ? 'YOUR PROFIT' : 'YOU SAVE';
+    const finalHasCompare = hasCostData ? true : _hasCompare;
 
-                {(() => {
-                  const wished = wishlist.has(activeVariant.product_id);
-                  return (
-                    <button
-                      type="button"
-                      aria-label={wished ? 'Remove From Wishlist' : 'Add To Wishlist'}
-                      onClick={e => { e.stopPropagation(); void toggleWishlist(activeVariant.product_id); }}
-                      className="sf-wishlist-btn"
-                      style={{
-                        background: wished ? 'rgba(229,62,62,0.20)' : 'rgba(0,0,0,0.55)',
-                        border: `1px solid ${wished ? 'rgba(229,62,62,0.50)' : 'rgba(255,255,255,0.20)'}`,
-                      }}
-                    >
-                      <Heart
-                        size={17}
-                        stroke={wished ? '#FF5A6E' : 'rgba(220,220,220,0.9)'}
-                        fill={wished ? '#FF5A6E' : 'none'}
-                        strokeWidth={2}
-                        aria-hidden="true"
-                      />
-                    </button>
-                  );
-                })()}
-
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <Image
-                  src={group.imageUrl || '/images/peptide_clear.png'}
-                  alt={group.name}
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  style={{ objectFit: 'contain', objectPosition: 'center', padding: '8px', transition: 'transform 0.4s ease' }}
-                  className="store-image-hover"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    const fallback = getProductImage(null, group.category || 'Other', group.name);
-                    if (target.src !== fallback && !target.src.includes(fallback)) {
-                      target.srcset = '';
-                      target.src = fallback;
-                    } else {
-                      target.srcset = '';
-                      target.src = '/images/peptide_clear.png';
-                      target.style.opacity = '0.9';
-                    }
-                  }}
-                />
-
-                {stockState.kind !== 'in_stock' && (
-                  <div
-                    onClick={e => e.stopPropagation()}
-                    style={{ position: 'absolute', bottom: 12, left: 12, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}
-                  >
-                    <StockBadge state={stockState} />
-                    {stockState.kind === 'out_of_stock' && (
-                      <NotifyMeButton productId={activeVariant.product_id} agentId={agentId} compact />
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div style={{ padding: 'var(--space-5)', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                {(() => {
-                  const { main, subtitle } = splitProductName(toTitleCase(group.name));
-                  const searchReason = (group as any)._search?.reason;
-                  const confidence = (group as any)._search?.confidence as 'high' | 'medium' | 'low' | undefined;
-                  // ── #6 Confidence tier colour map ─────────────────────────
-                  const confidenceStyle: Record<'high' | 'medium' | 'low', { bg: string; border: string; color: string; label: string }> = {
-                    high:   { bg: 'rgba(79,209,197,0.12)',  border: 'rgba(79,209,197,0.35)',  color: '#4FD1C5', label: 'Strong Match' },
-                    medium: { bg: 'rgba(235,178,54,0.10)',  border: 'rgba(235,178,54,0.30)',  color: '#EBB236', label: 'Good Match'   },
-                    low:    { bg: 'rgba(160,174,192,0.08)', border: 'rgba(160,174,192,0.22)', color: '#A0AEC0', label: 'Partial Match' },
-                  };
-                  const cs = confidence ? confidenceStyle[confidence] : null;
-                  return (
-                    <div style={{ textAlign: 'center', marginBottom: 'var(--space-2)' }}>
-                      {searchReason && cs && (
-                        <div style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 5,
-                          background: cs.bg, border: `1px solid ${cs.border}`,
-                          color: cs.color, fontSize: '0.63rem', fontWeight: 700,
-                          padding: '3px 8px', borderRadius: 'var(--radius-full)',
-                          textTransform: 'uppercase', marginBottom: 'var(--space-2)',
-                          letterSpacing: '0.04em', maxWidth: '100%',
-                        }}>
-                          <Sparkles size={9} />
-                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>
-                            {cs.label}: {searchReason}
-                          </span>
-                        </div>
-                      )}
-                      <h4 style={{
-                        fontFamily: 'var(--font-brand)',
-                        fontSize: '1.15rem', color: 'var(--white)', letterSpacing: '0.02em', lineHeight: 1.2,
-                        marginBottom: subtitle ? 2 : 0
-                      }}>
-                        {highlightText(main, deferredSearch)}
-                      </h4>
-                      {subtitle && (
-                        <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', fontWeight: 500 }}>
-                          {highlightText(subtitle, deferredSearch)}
-                        </span>
-                      )}
-                      {(() => {
-                        const _canonicalName = group.variants[0]?.products?.name || group.name;
-                        const _nick = getPopularName(_canonicalName);
-                        if (!_nick) return null;
-                        return (
-                          <span style={{ fontSize: '0.72rem', color: 'var(--teal)', fontStyle: 'italic', fontWeight: 500, display: 'block', marginTop: 2 }}>
-                            {_nick}
-                          </span>
-                        );
-                      })()}
-                      {(() => {
-  const _c = group.compoundSlug ? compoundsBySlug?.[group.compoundSlug] : undefined;
-  const _nasal = intranasalDisplay(_c);
-  if (!_nasal.nasal) return null;
-  return (
-    <span title={_nasal.caveat ?? undefined} style={{
-      display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6,
-      padding: '3px 9px', borderRadius: 'var(--radius-full)',
-      background: _nasal.bg, border: `1px solid ${_nasal.border}`,
-      color: _nasal.color, fontSize: '0.62rem', fontWeight: 800,
-      textTransform: 'uppercase', letterSpacing: '0.04em',
-    }}>
-      <Wind size={9} aria-hidden="true" />{_nasal.badgeLabel}
-    </span>
-  );
-})()}
-                      {(() => {
-                        // CRO: purity and third-party COAs are the strongest
-                        // objection-handlers for research buyers, but they only
-                        // appeared deep inside the detail modal. Surface a
-                        // display-only trust chip at the browse stage using the
-                        // same catalog data (click still opens the modal).
-                        const _c2 = group.compoundSlug ? compoundsBySlug?.[group.compoundSlug] : undefined;
-                        const _purity = Number((_c2 as any)?.purity_percentage) || 0;
-                        const _hasCoa = group.variants.some(v => v.product_id && coaByProductId?.[v.product_id]);
-                        if (!_hasCoa && _purity <= 0) return null;
-                        return (
-                          <span style={{
-                            display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6, marginLeft: 4,
-                            padding: '3px 9px', borderRadius: 'var(--radius-full)',
-                            background: 'rgba(0, 196, 188, 0.08)', border: '1px solid rgba(0, 196, 188, 0.30)',
-                            color: 'var(--teal)', fontSize: '0.62rem', fontWeight: 800,
-                            textTransform: 'uppercase', letterSpacing: '0.04em',
-                          }}>
-                            <Shield size={9} aria-hidden="true" />
-                            {_purity > 0 ? `${_purity}%+ Tested` : 'COA Available'}
-                          </span>
-                        );
-                      })()}
-
-                    </div>
-                  );
-                })()}
-
-              <div style={{
-                  marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 'var(--space-4)',
-                  textAlign: 'center'
-                }}>
-                  {(() => {
-                    const defaultV = group.variants.find(v => v.id === group.defaultVariantId) || group.variants[0];
-                    const size = defaultV.products?.unit_size || '10';
-                    const measure = defaultV.products?.unit_measure || 'mg';
-                    const perVialBase = defaultV.retail_price / 10;
-                    const isOnSale = (defaultV as any).is_on_sale && (defaultV as any).sale_price;
-                    const perVialDisplay = isOnSale ? (defaultV as any).sale_price / 10 : perVialBase;
-                    const perVialOriginal = perVialBase;
-                    
-                    const isBW = isBacWaterItem(group.name, defaultV.products?.compound_slug);
-                    const displayPrice = isBW ? perVialDisplay * 10 : perVialDisplay;
-                      const _marketAvgVial = Number((defaultV as any).products?.market_avg_price) || 0;
-                      const _marketAvgDisplay = isBW ? _marketAvgVial * 10 : _marketAvgVial;
-                      const _showMarketAvg = agentSlug === 'researchstore' && _marketAvgDisplay > displayPrice;
-                    const displayOriginalPrice = isBW ? perVialOriginal * 10 : perVialOriginal;
-                    const displaySizeText = isBW ? `10x ${size}${measure} Vials` : `${size}${measure} Vials`;
-
-                    return (
-                      <>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                          {isOnSale && (
-                            <span style={{ fontSize: '0.95rem', color: 'var(--grey-500)', textDecoration: 'line-through', fontWeight: 600 }}>
-                              ${formatPrice(displayOriginalPrice)}
-                            </span>
-                          )}
-                          {_showMarketAvg && (
-                            <span style={{ fontSize: '0.95rem', color: 'var(--grey-500)', textDecoration: 'line-through', fontWeight: 600 }}>
-                              ${formatPrice(_marketAvgDisplay)}
-                            </span>
-                          )}
-                          <span className="sf-product-price-nickel" style={{
-                            fontSize: '1.2rem', fontWeight: 800,
-                            fontFamily: 'var(--font-brand)',
-                          }}>
-                            {displaySizeText} &nbsp;${formatPrice(displayPrice)}
-                          </span>
-                        </div>
-                      </>
-                    );
-                  })()}
-                </div>
-              </div>
-              </div>
-            </motion.div>
-          );
-
+    return (
+      <motion.div
+        key={group.name} className="hover-lift stagger-fade-in" variants={itemVariants}
+        style={{ width: '100%', position: 'relative' }}
+      >
+        <PremiumPeptideCard
+          productName={main}
+          vialSizeBadge={displaySizeText}
+          msrp={finalHasCompare ? finalMsrp : undefined}
+          savings={finalHasCompare ? finalSavings : undefined}
+          savingsLabel={finalSavingsLabel}
+          wholesalePrice={finalDisplayPrice}
+          inStockText={stockState.kind === 'out_of_stock' ? "OUT OF STOCK" : "IN STOCK"}
+          pickupText="AVAILABLE FOR SAME DAY PICKUP"
+          buttonText="Add To Cart"
+          imageSrc={group.imageUrl || '/images/peptide_clear.png'}
+          imageObjectFit={group.imageUrl?.includes('stack') || group.name.toLowerCase().includes('stack') ? 'cover' : 'contain'}
+          cardBg={(() => {
+            const slug = group.compoundSlug ?? '';
+            if (!slug) return undefined;
+            // Route each storefront to its own brand image folder — never mix.
+            // Savage Brands AND its downline stores get savage card art; the
+            // old `agentSlug === 'savagebrands'` check left downlines (e.g.
+            // /eddierazz) on Pep Nation cards.
+            const brand = isSavageBrandsNetwork ? 'savagebrands' : 'pepnation';
+            const path = `/images/storefront/${brand}/${slug}-card.jpg`;
+            return path;
+          })()}
+          isPinned={pinnedNames.has(group.name)}
+          isWishlisted={wishlist.has(activeVariant.product_id)}
+          isOwnerCostMode={hasCostData}
+          onCompareToggle={(e) => {
+            if (e.target.checked) {
+              if (pinnedNames.size >= 4) { toast.error('You can compare up to 4 compounds at a time.'); return; }
+              pin(group, activeVariant);
+            } else {
+              unpin(group);
+            }
+          }}
+          onWishlistToggle={(e) => {
+            e.stopPropagation();
+            void toggleWishlist(activeVariant.product_id);
+          }}
+          onClick={() => {
+            setDetailProduct(group);
+            logRecentlyViewed(activeVariant.product_id);
+            const defaultVId = group.defaultVariantId || group.variants[0]?.id;
+            const existingQty = defaultVId ? cartItems[defaultVId] : undefined;
+            const bw = isBacWaterItem(group.name, group.compoundSlug);
+            setPendingQty(existingQty ?? (bw ? 10 : (selfBuyMin)));
+          }}
+          onAddToCart={(e) => {
+            e.stopPropagation();
+            const defaultVId = group.defaultVariantId || group.variants[0]?.id;
+            if (defaultVId) {
+              setCartItems((prev) => ({ ...prev, [defaultVId]: (prev[defaultVId] || 0) + 1 }));
+              setShowCartFloat(true);
+              toast.success(`Added ${group.name} to cart`);
+            }
+          }}
+          onHover={() => {
+            const seedId = activeVariant.product_id;
+            if (seedId) fetch(`/api/storefront/recommendations?product_id=${encodeURIComponent(seedId)}&agent_slug=${encodeURIComponent(agentSlug)}&limit=8`).catch(() => {});
+          }}
+          hasSearchMatch={group._search as { reason?: string; confidence?: 'high' | 'medium' | 'low' } | undefined}
+        />
+      </motion.div>
+    );
   };
 
   return (
@@ -2591,11 +2614,13 @@ export default function AgentStorefrontGrid({
           width: 100%;
           min-height: 100vh;
           background: linear-gradient(180deg, #131b24 0%, #0a0f14 100%);
+          padding-top: 12px;
         }
         .sf-modal-sheet {
           width: 100%; max-width: 860px; margin: 0 auto;
           display: flex; flex-direction: column;
           padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+          background: linear-gradient(180deg, #131b24 0%, #0a0f14 100%);
         }
         .sf-modal-drag-bar { display: none; }
         .sf-modal-img {
@@ -2634,6 +2659,7 @@ export default function AgentStorefrontGrid({
                         linear-gradient(135deg, #b0b5bc 0%, #5c626b 20%, #e2e6eb 50%, #5c626b 80%, #b0b5bc 100%) border-box;
             box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 24px 80px rgba(0,0,0,0.85);
           }
+          .sf-modal-sticky-header { border-top-left-radius: 15px; border-top-right-radius: 15px; }
           .sf-modal-img { height: 320px; border-radius: 18px 18px 0 0; }
           .sf-modal-body { padding: 32px 40px 16px; }
           .sf-modal-h2 { font-size: 1.8rem !important; }
@@ -2653,6 +2679,9 @@ export default function AgentStorefrontGrid({
         .sf-product-price-nickel {
           color: #A8B4C0 !important;
           text-shadow: none !important;
+        }
+        .sf-pricing-row {
+          flex-wrap: nowrap !important;
         }
       `}} />
 
@@ -2714,6 +2743,7 @@ export default function AgentStorefrontGrid({
                 const v0 = grp.variants[0];
                 const priceDollars = grp.lowestPrice || 0;
                 const evTier = compoundsBySlug?.[slug]?.evidence_tier ?? null;
+                const inStock = grp.variants.some((v: any) => (v.inventory_count ?? 1) > 0);
                 out.push({
                   product_id: v0?.id || '',
                   display_name: grp.name,
@@ -2722,7 +2752,7 @@ export default function AgentStorefrontGrid({
                   evidence_tier: evTier,
                   rationale: '',
                   image_url: grp.imageUrl,
-                  in_stock: true,
+                  in_stock: inStock,
                 });
               }
               return out;
@@ -2795,6 +2825,11 @@ export default function AgentStorefrontGrid({
           type="text"
           aria-label="Search compounds by name, goal, or mechanism"
           value={searchQuery}
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
+          className="focus:outline-none focus:ring-0 bg-transparent"
           onChange={(e) => {
             const val = e.target.value;
             setSearchQuery(val);
@@ -2813,6 +2848,9 @@ export default function AgentStorefrontGrid({
             background: 'transparent',
             border: 'none',
             outline: 'none',
+            boxShadow: 'none',
+            WebkitAppearance: 'none',
+            appearance: 'none',
             color: '#FFFFFF',
             fontSize: 'max(16px, 2.2vw)',
             fontWeight: 500,
@@ -2869,7 +2907,6 @@ export default function AgentStorefrontGrid({
           const CARD_LEFTS = [1.270, 12.207, 23.242, 34.180, 45.215, 56.152, 67.188, 78.125, 89.160];
           const left = CARD_LEFTS[card.index - 1];
           const width = 9.570;
-          const isActive = activeCardIndex === card.index;
 
           return (
             <button
@@ -2889,37 +2926,226 @@ export default function AgentStorefrontGrid({
                 height: '39.7%',
                 cursor: 'pointer',
                 background: 'transparent',
-                border: isActive ? '2px solid rgba(255, 255, 255, 0.45)' : '2px solid transparent',
+                border: 'none',
                 borderRadius: 14,
-                boxShadow: isActive ? '0 0 15px rgba(255,255,255,0.15), inset 0 0 10px rgba(255,255,255,0.05)' : 'none',
-                backgroundColor: isActive ? 'rgba(255, 255, 255, 0.03)' : 'transparent',
                 outline: 'none',
-                boxSizing: 'border-box',
                 margin: 0,
                 padding: 0,
-                transition: 'background 0.2s, border-color 0.2s, box-shadow 0.2s',
+                transition: 'background 0.2s',
               }}
               onMouseEnter={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
-                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
-                }
+                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
               }}
               onMouseLeave={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                  e.currentTarget.style.borderColor = 'transparent';
-                }
+                e.currentTarget.style.backgroundColor = 'transparent';
               }}
               title={card.label}
               aria-label={card.label}
             />
           );
         })}
+
+        {/* ── Custom Branding Overlay ── covers baked-in 'PEP NATION'S RESEARCH STORE' title */}
+        {customBranding && (customBranding as any).logo_url && (
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            /* Cover exactly the title row — matches the image layout where the title
+               sits in the top ~27% before the search bar at 26.9% */
+            height: '24%',
+            background: '#000000',
+            zIndex: 6,
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '12px',
+            padding: '4px 3% 0',
+            pointerEvents: 'none',
+          }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={(customBranding as any).logo_url}
+              alt={(customBranding as any).brand_name ?? 'Store Logo'}
+              style={{
+                height: '70%',
+                width: 'auto',
+                objectFit: 'contain',
+                flexShrink: 0,
+                filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.9)) contrast(1.3) brightness(1.1)',
+                mixBlendMode: 'screen',
+              }}
+            />
+            <span style={{
+              background: 'linear-gradient(180deg, #E2E8F0 0%, #94A3B8 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              fontSize: 'max(14px, 2.2vw)',
+              fontWeight: 900,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}>
+              {(customBranding as any).storefront_heading ?? (customBranding as any).brand_name}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Grid section - hidden when product detail is shown */}
       <div style={{ display: detailProduct ? 'none' : undefined }}>
+
+      {/* ── Owner Cost View Banner ─────────────────────────────────────────
+          Visible ONLY to the store owner (isStorefrontOwner). Customers and
+          guests never see this. Provides a toggle to switch all product card
+          prices from retail to the owner's buy cost so they can audit margins
+          at a glance without leaving the storefront. */}
+      {isStorefrontOwner && (
+        <>
+          {/* Mobile-responsive styles for the owner banner */}
+          <style>{`
+            .owner-banner { flex-wrap: nowrap !important; }
+            .owner-banner-desc { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; min-width: 0; }
+            .owner-banner-divider { flex-shrink: 0; }
+            .owner-banner-btn-text { white-space: nowrap; }
+            @media (max-width: 540px) {
+              .owner-banner-desc { display: none !important; }
+              .owner-banner-divider { display: none !important; }
+            }
+            @media (max-width: 360px) {
+              .owner-banner-btn-text { display: none !important; }
+            }
+          `}</style>
+          <div className="owner-banner" style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            marginBottom: 20,
+            padding: '11px 14px',
+            borderRadius: 14,
+            border: '3px solid transparent',
+            background: showCostView
+              ? `rgba(0, 196, 188, 0.07) padding-box,
+                 linear-gradient(135deg, #b0b5bc 0%, #5c626b 20%, #e2e6eb 50%, #5c626b 80%, #b0b5bc 100%) border-box`
+              : `rgba(10, 18, 28, 0.90) padding-box,
+                 linear-gradient(135deg, #b0b5bc 0%, #5c626b 20%, #e2e6eb 50%, #5c626b 80%, #b0b5bc 100%) border-box`,
+            backdropFilter: 'blur(12px)',
+            boxShadow: showCostView
+              ? 'inset 0 1px 0 rgba(0,196,188,0.10), 0 6px 24px rgba(0,0,0,0.55)'
+              : 'inset 0 1px 0 rgba(255,255,255,0.05), 0 6px 24px rgba(0,0,0,0.55)',
+            transition: 'all 0.25s ease',
+          }}>
+            {/* Icon + label */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={showCostView ? '#00C4BC' : '#A8B4C0'} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ transition: 'stroke 0.2s', flexShrink: 0 }}>
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <path d="M3 9h18M9 21V9"/>
+              </svg>
+              <span style={{
+                fontSize: '0.68rem',
+                fontWeight: 800,
+                color: showCostView ? '#00C4BC' : '#A8B4C0',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                whiteSpace: 'nowrap',
+                transition: 'color 0.2s',
+              }}>
+                Owner View
+              </span>
+            </div>
+
+            {/* Divider — hidden on mobile */}
+            <div className="owner-banner-divider" style={{
+              width: 1, height: 18,
+              background: showCostView ? 'rgba(0,196,188,0.3)' : 'rgba(192,197,206,0.2)',
+              transition: 'background 0.2s',
+            }} />
+
+            {/* Status text — hidden on small screens, truncates with ellipsis */}
+            <span className="owner-banner-desc" style={{
+              fontSize: '0.88rem',
+              color: showCostView ? '#A8B4C0' : 'rgba(168,180,192,0.70)',
+              fontWeight: 500,
+              transition: 'color 0.2s',
+              flex: 1,
+            }}>
+              {showCostView
+                ? 'Cost Mode Active — Prices shown are your agent buy cost'
+                : 'View your cost of goods for each product'}
+            </span>
+
+            {/* Spacer pushes button to the right when desc is hidden */}
+            <div style={{ flex: 1, minWidth: 0 }} className="owner-banner-spacer" />
+
+            {/* Toggle button */}
+            <button
+              type="button"
+              id="owner-cost-view-toggle"
+              aria-pressed={showCostView}
+              onClick={() => setShowCostView(v => !v)}
+              style={{
+                flexShrink: 0,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 7,
+                padding: '8px 16px',
+                borderRadius: 20,
+                border: '1.5px solid #9BA3AB',
+                cursor: 'pointer',
+                fontWeight: 700,
+                fontSize: '0.75rem',
+                letterSpacing: '0.05em',
+                textTransform: 'uppercase',
+                transition: 'all 0.2s ease',
+                whiteSpace: 'nowrap',
+                background: showCostView
+                  ? 'linear-gradient(180deg, #00C4BC 0%, #009B94 100%)'
+                  : 'linear-gradient(180deg, #1e2a35 0%, #131d26 100%)',
+                color: showCostView ? '#000d0c' : '#C8CDD4',
+                boxShadow: showCostView
+                  ? 'inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 14px rgba(0,196,188,0.3)'
+                  : 'inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 12px rgba(0,0,0,0.5)',
+              }}
+              onMouseEnter={e => {
+                if (!showCostView) {
+                  e.currentTarget.style.color = '#FFFFFF';
+                  e.currentTarget.style.borderColor = '#C8CDD4';
+                  e.currentTarget.style.background = 'linear-gradient(180deg, #243242 0%, #1a2635 100%)';
+                }
+              }}
+              onMouseLeave={e => {
+                if (!showCostView) {
+                  e.currentTarget.style.color = '#C8CDD4';
+                  e.currentTarget.style.borderColor = '#9BA3AB';
+                  e.currentTarget.style.background = 'linear-gradient(180deg, #1e2a35 0%, #131d26 100%)';
+                }
+              }}
+            >
+              {/* Eye icon */}
+              <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0 }}>
+                {showCostView ? (
+                  <>
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                  </>
+                ) : (
+                  <>
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </>
+                )}
+              </svg>
+              <span className="owner-banner-btn-text">
+                {showCostView ? 'Hide My Cost' : 'Show My Cost'}
+              </span>
+            </button>
+          </div>
+        </>
+      )}
 
       {/* Did You Mean Banner */}
       {didYouMeanSuggestion && (
@@ -3005,10 +3231,14 @@ export default function AgentStorefrontGrid({
 
       {/* Peptide Stacks tab: bundles as full cards (image, discount, add-to-cart). */}
       {activeCardIndex === 9 && renderableBundles.length > 0 && (
-        <div style={{ marginTop: 0 }}>
-          <h3 style={{ fontFamily: 'var(--font-brand)', fontSize: '1.05rem', color: 'var(--white)', marginBottom: 'var(--space-4)', letterSpacing: '0.03em' }}>
-            Research Stacks &amp; Bundles
-          </h3>
+        <div style={{ marginTop: 0, marginBottom: 'var(--space-10)' }}>
+          <div style={{ margin: '0 auto 10px', textAlign: 'center', width: '100%' }}>
+            <img 
+              src="/images/storefront/bundle-savings-banner.png" 
+              alt="Save even more, buy in bundles" 
+              style={{ width: '100%', maxWidth: '800px', height: 'auto', display: 'block', margin: '0 auto' }}
+            />
+          </div>
           <div className="grid-3" style={{ gap: 'var(--space-6)' }}>
             {renderableBundles.map(renderBundleCard)}
           </div>
@@ -3179,12 +3409,13 @@ export default function AgentStorefrontGrid({
 
       {/* Research Bundles: shown directly below the Top 10 on the default view. */}
       {activeCardIndex === 1 && !deferredSearch.trim() && filterCategory === 'all' && !filterArea && renderableBundles.length > 0 && (
-        <div style={{ marginTop: 'var(--space-8)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 'var(--space-5)' }}>
-            <div style={{ background: primaryColor, padding: '6px', borderRadius: '8px', display: 'flex' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-            </div>
-            <h2 style={{ fontSize: '1.4rem', color: 'var(--white)', margin: 0, fontWeight: 700 }}>Research Bundles</h2>
+        <div style={{ marginTop: '10px' }}>
+          <div style={{ margin: '0 auto 10px', textAlign: 'center', width: '100%' }}>
+            <img 
+              src="/images/storefront/bundle-savings-banner.png" 
+              alt="Save even more, buy in bundles" 
+              style={{ width: '100%', maxWidth: '800px', height: 'auto', display: 'block', margin: '0 auto' }}
+            />
           </div>
           <div className="grid-3" style={{ gap: 'var(--space-6)' }}>
             {renderableBundles.map(renderBundleCard)}
@@ -3274,12 +3505,16 @@ export default function AgentStorefrontGrid({
                     item.custom_image_url ?? item.products?.image_url ?? null,
                     item.products?.category || 'Other',
                     name,
+                    !!item.custom_image_url, // allowBrandSpecific: custom_image_url is agent-scoped
+                    agentSlug,
+                    isSavageBrandsNetwork
                   );
-                  const perVial = item.retail_price / 10;
+                  const perVial = item.retail_price;
                   // Bac. water sells in fixed 10-packs; show it as packs (10x), not loose vials.
-                  const isBW = isBacWaterItem(item.products?.name, item.products?.compound_slug);
+                  const isBWReal = isBacWaterItem(item.products?.name, item.products?.compound_slug);
+                  const isBW = packOf10(item.products?.name, item.products?.compound_slug);
                   const packSize = 10;
-                  const lineName = isBW ? 'Bac. Water 10x 10ml Vials' : `${name}${size ? ` (${size})` : ''}`;
+                  const lineName = isBW ? `${name}${size ? ` (${size})` : ''} - 10 Pack` : `${name}${size ? ` (${size})` : ''}`;
                   const unitPrice = isBW ? perVial * packSize : perVial;
                   const displayCount = isBW ? Math.round(qty / packSize) : qty;
                   return (
@@ -3292,10 +3527,10 @@ export default function AgentStorefrontGrid({
                         alt={name}
                         width={64}
                         height={64}
-                        style={{ width: 64, height: 64, borderRadius: 10, objectFit: 'cover', flexShrink: 0, background: '#0F1923' }}
+                        style={{ width: 64, height: 64, borderRadius: 10, objectFit: 'contain', flexShrink: 0, background: '#0F1923' }}
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
-                          const fallback = getProductImage(null, item.products?.category || 'Other', name);
+                          const fallback = getProductImage(null, item.products?.category || 'Other', name, false, agentSlug, isSavageBrandsNetwork);
                           if (target.src !== fallback && !target.src.includes(fallback)) {
                             target.srcset = '';
                             target.src = fallback;
@@ -3312,8 +3547,8 @@ export default function AgentStorefrontGrid({
                           // so the cart over-quoted the price and never asked for
                           // the next tier. Mirror the server math per line.
                           const qdEligible = volumePricingEnabled !== false && !isBW && !isVolumeDiscountExcluded(item.products?.name) && !isStorefrontOwner;
-                          const pct = qdEligible ? quantityDiscountPct(qty) : 0;
-                          const discUnit = qdEligible ? discountedUnitPrice(perVial, qty) : perVial;
+                          const pct = qdEligible ? quantityDiscountPct(qty, item.products?.name) : 0;
+                          const discUnit = qdEligible ? discountedUnitPrice(perVial, qty, item.products?.name) : perVial;
                           const nextTier = qdEligible
                             ? [...QUANTITY_DISCOUNT_TIERS].reverse().find(t => qty < t.minQty && t.pct > pct)
                             : undefined;
@@ -3438,8 +3673,11 @@ export default function AgentStorefrontGrid({
                         item.custom_image_url ?? item.products?.image_url ?? null,
                         item.products?.category || 'Other',
                         name,
+                        !!item.custom_image_url, // allowBrandSpecific: custom_image_url is agent-scoped
+                        agentSlug,
+                        isSavageBrandsNetwork
                       );
-                      const perVial = item.retail_price / 10;
+                      const perVial = item.retail_price;
                       return (
                         <div key={variantId} style={{
                           display: 'flex', alignItems: 'center', gap: 12, padding: 10,
@@ -3450,10 +3688,10 @@ export default function AgentStorefrontGrid({
                             alt={name}
                             width={56}
                             height={56}
-                            style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'cover', flexShrink: 0, background: '#0F1923', opacity: 0.9 }}
+                            style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'contain', flexShrink: 0, background: '#0F1923', opacity: 0.9 }}
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
-                              const fallback = getProductImage(null, item.products?.category || 'Other', name);
+                              const fallback = getProductImage(null, item.products?.category || 'Other', name, false, agentSlug, isSavageBrandsNetwork);
                               if (target.src !== fallback) {
                                 target.src = fallback;
                               } else {
@@ -3513,6 +3751,8 @@ export default function AgentStorefrontGrid({
                       })}
                       loading={recommendationsLoading}
                       primaryColor={primaryColor}
+                      agentSlug={agentSlug}
+                      isSavageBrandsNetwork={isSavageBrandsNetwork}
                       onSelect={(productId) => {
                         // Find the grouped product and open its detail sheet
                         const product = products.find(p => p.product_id === productId);
@@ -3543,13 +3783,12 @@ export default function AgentStorefrontGrid({
                   for (const [vId, qty] of Object.entries(cartItems)) {
                     const item = products.find(p => p.id === vId);
                     if (!item) continue;
-                    const per = item.retail_price / 10;
+                    const per = item.retail_price;
                     flatTotal += per * qty;
                     const eligible = volumePricingEnabled !== false
                       && !isStorefrontOwner
-                      && !isBacWaterItem(item.products?.name, item.products?.compound_slug)
                       && !isVolumeDiscountExcluded(item.products?.name);
-                    discTotal += (eligible ? discountedUnitPrice(per, qty) : per) * qty;
+                    discTotal += (eligible ? discountedUnitPrice(per, qty, item.products?.name) : per) * qty;
                   }
                   const saved = flatTotal - discTotal;
                   return (
@@ -3559,16 +3798,16 @@ export default function AgentStorefrontGrid({
                         <span style={{ color: 'var(--white)', fontWeight: 800, fontSize: '1.25rem', letterSpacing: '0.01em' }}>
                           {saved > 0.004 && (
                             <span style={{ textDecoration: 'line-through', color: 'var(--grey-400)', fontWeight: 600, fontSize: '0.9rem', marginRight: 8 }}>
-                              ${formatPrice(flatTotal)}
+                              ${flatTotal.toFixed(2)}
                             </span>
                           )}
-                          ${formatPrice(discTotal)}
+                          ${discTotal.toFixed(2)}
                         </span>
                       </div>
                       {saved > 0.004 && (
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#68D391', fontWeight: 700, marginBottom: 4 }}>
                           <span>Quantity Discounts Applied</span>
-                          <span>You Save ${formatPrice(saved)}</span>
+                          <span>You Save ${saved.toFixed(2)}</span>
                         </div>
                       )}
                       {totalCartItems > 0 && totalCartItems < overallMin && (
@@ -3586,7 +3825,7 @@ export default function AgentStorefrontGrid({
                   const cartSubtotal = Object.entries(cartItems).reduce((sum, [vId, qty]) => {
                     const item = products.find(p => p.id === vId);
                     if (!item) return sum;
-                    return sum + (item.retail_price / 10) * qty;
+                    return sum + (item.retail_price) * qty;
                   }, 0);
                   const remaining = 100 - cartSubtotal;
                   return (
@@ -3599,7 +3838,7 @@ export default function AgentStorefrontGrid({
                     }}>
                       {remaining <= 0
                         ? 'Your Order Qualifies For Free Shipping'
-                        : `Add $${formatPrice(remaining)} More To Unlock Free Shipping On Orders $100+`}
+                        : `Add $${remaining.toFixed(2)} More To Unlock Free Shipping On Orders $100+`}
                     </div>
                   );
                 })()}
@@ -3615,9 +3854,9 @@ export default function AgentStorefrontGrid({
                       .map(([vId, qty]) => {
                         const item = products.find(p => p.id === vId);
                         if (!item) return null;
-                        const perVial = item.retail_price / 10;
+                        const perVial = item.retail_price;
                         const costPerVial = isStorefrontOwner && (item as any).cost_price != null
-                          ? Number((item as any).cost_price) / 10
+                          ? Number((item as any).cost_price)
                           : perVial;
                         const sizeLabel = item.products?.unit_size
                           ? `(${item.products.unit_size}${item.products.unit_measure || ''})`
@@ -3703,33 +3942,7 @@ export default function AgentStorefrontGrid({
       {detailProduct && (
         <div className="sf-modal-overlay">
           <div className="sf-modal-sheet">
-            {/* Back / close bar */}
-            <div style={{
-              display: 'flex', alignItems: 'center', padding: '14px 18px 10px',
-              background: 'linear-gradient(180deg, #131b24 78%, rgba(19,27,36,0))',
-            }}>
-              <button
-                onClick={() => setDetailProduct(null)}
-                aria-label="Back"
-                style={{
-                  width: 34, height: 34, minWidth: 34, minHeight: 34,
-                  borderRadius: '50%', padding: 0,
-                  background: 'linear-gradient(180deg, #2b3744 0%, #1b242e 100%)',
-                  border: '1px solid rgba(190,200,210,0.30)',
-                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18), 0 3px 9px rgba(0,0,0,0.5)',
-                  cursor: 'pointer', display: 'flex', alignItems: 'center',
-                  justifyContent: 'center', boxSizing: 'border-box', flexShrink: 0,
-                  transition: 'background 0.15s ease',
-                }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
-              </button>
-              <div style={{ flex: 1 }} />
-              <div style={{ width: 44, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.20)' }} aria-hidden="true" />
-              <div style={{ flex: 1 }} />
-            </div>
-
-            {/* CRO: sticky quick-add bar. The main Add-To-Cart CTA sits far
+            {/* Header removed to eliminate bloat. Back button moved to sticky bar below. */}            {/* CRO: sticky quick-add bar. The main Add-To-Cart CTA sits far
                 below the fold (after description, monograph, and size picker),
                 so the purchase action stays visible from the first pixel and
                 while scrolling. Uses the same shared handler as the main CTA. */}
@@ -3740,17 +3953,33 @@ export default function AgentStorefrontGrid({
               const stickyRaw = (stickyV as any).is_on_sale && (stickyV as any).sale_price
                 ? (stickyV as any).sale_price
                 : stickyV.retail_price;
-              const stickyPer = stickyRaw / 10;
+              const stickyPer = stickyRaw;
               const stickyQty = Math.max(1, pendingQty);
               return (
-                <div style={{
-                  position: 'sticky', top: 0, zIndex: 40,
+                <div className="sf-modal-sticky-header" style={{
+                  position: 'sticky', top: 'var(--nav-offset, 60px)', zIndex: 40,
                   display: 'flex', alignItems: 'center', gap: 12,
                   padding: '10px 18px',
                   background: 'rgba(15,25,35,0.96)',
                   backdropFilter: 'blur(8px)',
                   borderBottom: '1px solid rgba(255,255,255,0.08)',
                 }}>
+                  <button
+                    onClick={handleDetailProductBack}
+                    aria-label="Back"
+                    style={{
+                      width: 32, height: 32, minWidth: 32, minHeight: 32,
+                      borderRadius: '50%', padding: 0,
+                      background: 'linear-gradient(180deg, #2b3744 0%, #1b242e 100%)',
+                      border: '1px solid rgba(190,200,210,0.30)',
+                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18), 0 3px 9px rgba(0,0,0,0.5)',
+                      cursor: 'pointer', display: 'flex', alignItems: 'center',
+                      justifyContent: 'center', boxSizing: 'border-box', flexShrink: 0,
+                      transition: 'background 0.15s ease',
+                    }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
+                  </button>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{
                       fontSize: '0.85rem', fontWeight: 700, color: 'var(--white)',
@@ -3759,12 +3988,26 @@ export default function AgentStorefrontGrid({
                       {toTitleCase(detailProduct.name)}
                     </div>
                     <div style={{ fontSize: '0.8rem', color: primaryColor, fontWeight: 800, fontFamily: 'var(--font-brand)' }}>
-                      ${formatPrice(stickyPer)} Per Vial{stickyQty > 1 ? ` - ${stickyQty} Selected` : ''}
+                      ${stickyPer.toFixed(2)} Per Vial{stickyQty > 1 ? ` - ${stickyQty} Selected` : ''}
                     </div>
                   </div>
-                  <DynamicAddToCartButton
+                  {(() => {
+                    const _coaPid = detailProduct.variants.find(v => !!coaByProductId?.[v.product_id])?.product_id;
+                    const coaUrl = _coaPid ? coaByProductId?.[_coaPid] : undefined;
+                    if (!coaUrl) return null;
+                    return (
+                      <IframeLink
+                        href={coaUrl}
+                        aria-label="View Certificate of Analysis"
+                        style={{ display: 'block', cursor: 'pointer', flexShrink: 0 }}
+                      >
+                        <DynamicCoaButton style={{ width: 136, height: 38 }} />
+                      </IframeLink>
+                    );
+                  })()}
+                  <ImageAddToCartButton
                     onClick={addDetailProductToCart}
-                    style={{ width: 122, height: 38, fontSize: '0.8rem', flexShrink: 0 }}
+                    width={150}
                   />
                 </div>
               );
@@ -3773,26 +4016,24 @@ export default function AgentStorefrontGrid({
                 className="sf-modal-img"
                 style={{ background: `radial-gradient(circle at 50% 50%, ${primaryColor}20 0%, var(--black) 100%)` }}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <Image
-                  src={detailProduct.imageUrl || '/images/peptide_clear.png'}
-                  alt={detailProduct.name}
-                  fill
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  style={{ objectFit: 'contain', objectPosition: 'center', padding: '16px', transition: 'transform 0.4s ease' }}
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    const fallback = getProductImage(null, detailProduct.category || 'Other', detailProduct.name);
-                    if (target.src !== fallback && !target.src.includes(fallback)) {
-                      target.srcset = '';
-                      target.src = fallback;
-                    } else {
-                      target.srcset = '';
-                      target.src = '/images/peptide_clear.png';
-                      target.style.opacity = '0.9';
-                    }
-                  }}
-                />
+                {(() => {
+                  // MOBILE BLANK-VIAL FIX: the hero vial is painted into a box
+                  // that is at most ~600px wide, but the source art is 1024px+.
+                  // Route it through the Next optimizer so mobile decodes a
+                  // right-sized AVIF instead of the full-resolution original.
+                  // See lib/imageOptimize.ts for the full explanation.
+                  const rawSrc = getProductImage(detailProduct.imageUrl, detailProduct.category || 'Other', detailProduct.name, true, agentSlug, isSavageBrandsNetwork);
+                  return (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={optimizedImageSrc(rawSrc, 320)}
+                      alt={detailProduct.name}
+                      decoding="async"
+                      style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', transition: 'transform 0.4s ease' }}
+                      onError={makeImageErrorHandler(rawSrc)}
+                    />
+                  );
+                })()}
                 <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, background: 'linear-gradient(transparent, var(--surface-2))' }} />
               </div>
 
@@ -3806,6 +4047,7 @@ export default function AgentStorefrontGrid({
                     Back To {detailHistory[detailHistory.length - 2].name}
                   </button>
                 )}
+
                 <div style={{ textAlign: 'center', marginBottom: 'var(--space-3)' }}>
                   {(() => {
                     const { main, subtitle } = splitProductName(toTitleCase(detailProduct.name));
@@ -3898,31 +4140,6 @@ export default function AgentStorefrontGrid({
                   })()}
                 </div>
 
-                {(() => {
-                  const selVId0 = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
-                  const selV0 = detailProduct.variants.find(v => v.id === selVId0) || detailProduct.variants[0];
-                  const localStock = Math.max(0, Number(inventoryMap[selV0?.product_id ?? ''] ?? 0));
-                  if (localStock <= 0) return null;
-                  return (
-                    <div style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 8,
-                      padding: '7px 14px', borderRadius: 'var(--radius-md)',
-                      background: 'rgba(72,187,120,0.10)',
-                      border: '1px solid rgba(72,187,120,0.30)',
-                      marginBottom: 'var(--space-4)'
-                    }}>
-                      <span style={{
-                        width: 8, height: 8, borderRadius: '50%',
-                        background: '#68D391', flexShrink: 0,
-                        boxShadow: '0 0 6px #68D39180'
-                      }} />
-                      <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>
-                        {localStock} Vial{localStock !== 1 ? 's' : ''} In Agent Local Stock - Ships Immediately
-                      </span>
-                    </div>
-                  );
-                })()}
-
                 {/* CRO: verified purity chip. purity_percentage is real catalog
                     data that previously only surfaced deep inside the monograph
                     portal - now it sits on the decision surface next to price. */}
@@ -3948,35 +4165,7 @@ export default function AgentStorefrontGrid({
                   );
                 })()}
 
-                {(() => {
-                  const firstVariant = detailProduct.variants[0];
-                  const pid = firstVariant?.product_id;
-                  const coaUrl = pid ? coaByProductId?.[pid] : undefined;
-                  if (!coaUrl) return null;
-                  return (
-                    <div style={{ marginBottom: 'var(--space-6)' }}>
-                      <IframeLink
-                        href={coaUrl}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 8,
-                          padding: '8px 14px',
-                          borderRadius: 'var(--radius-md)',
-                          background: `${primaryColor}15`,
-                          color: primaryColor,
-                          border: `1px solid ${primaryColor}40`,
-                          fontSize: '0.85rem',
-                          fontWeight: 700,
-                          textDecoration: 'none',
-                        }}
-                      >
-                        <FileText size={14} aria-hidden="true" />
-                        View Certificate Of Analysis
-                      </IframeLink>
-                    </div>
-                  );
-                })()}
+
 
                 {(() => {
                   const compound = detailProduct.compoundSlug
@@ -3992,15 +4181,15 @@ export default function AgentStorefrontGrid({
                   const selectedVId = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
                   const activeV = detailProduct.variants.find(v => v.id === selectedVId) || detailProduct.variants[0];
                   const qty = pendingQty;
-                  const isBW = isBacWaterItem(detailProduct.name, detailProduct.compoundSlug);
+                  const isBW = packOf10(detailProduct.name, detailProduct.compoundSlug);
                   const step = isBW ? 10 : selfBuyStep;
                   const minQ = isBW ? 10 : selfBuyMin;
                   const rawPrice = (activeV as any).is_on_sale && (activeV as any).sale_price
                     ? (activeV as any).sale_price
                     : activeV.retail_price;
-                  const basePrice = rawPrice / 10;
+                  const basePrice = rawPrice;
 
-                  const agentCostPerVial = (activeV as any).cost_price != null ? Number((activeV as any).cost_price) / 10 : basePrice;
+                  const agentCostPerVial = (activeV as any).cost_price != null ? Number((activeV as any).cost_price) : basePrice;
 
                   // Quantity Discounts: Buying More Of The SAME Peptide Saves
                   // 10/15/20%. Diluents (BAC Water) And Owner Restocks Stay Flat.
@@ -4037,29 +4226,34 @@ export default function AgentStorefrontGrid({
                           </label>
                           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                             {detailProduct.variants.map(v => {
-                              const size = v.products?.unit_size ? `${v.products.unit_size}${v.products.unit_measure || ''}` : 'Standard';
+                              const sizeStr = v.products?.unit_size ? `${v.products.unit_size}${v.products.unit_measure || ''}` : 'Standard';
+                              const displaySize = sizeStr === 'Standard' ? sizeStr : `${sizeStr} Vials`;
                               const isSelected = v.id === activeV.id;
+
                               return (
                                 <button
                                   key={v.id}
                                   onClick={() => setSelectedVariants(prev => ({ ...prev, [detailProduct.name]: v.id }))}
                                   style={{
-                                    flex: '1 1 calc(16.666% - 8px)', minWidth: 60,
+                                    flex: '0 1 auto', minWidth: 90,
                                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center',
-                                    padding: '10px 6px', borderRadius: 10,
-                                    border: isSelected ? `1px solid ${primaryColor}` : '1px solid rgba(190,200,210,0.22)',
-                                    background: isSelected
+                                    padding: '8px 14px', borderRadius: 10,
+                                    border: isSelected ? `1px solid ${primaryColor}` : '1px solid rgba(190,200,210,0.30)',
+                                    background: isSelected 
                                       ? `linear-gradient(180deg, ${primaryColor}26 0%, ${primaryColor}10 100%)`
-                                      : 'linear-gradient(180deg, #2b3744 0%, #1b242e 100%)',
+                                      : 'linear-gradient(180deg, #34424f 0%, #1d2630 55%, #151d26 100%)',
                                     boxShadow: isSelected
-                                      ? `inset 0 1px 0 rgba(255,255,255,0.18), 0 0 0 1px ${primaryColor}55, 0 0 12px ${primaryColor}40`
-                                      : 'inset 0 1px 0 rgba(255,255,255,0.10), 0 2px 6px rgba(0,0,0,0.4)',
+                                      ? `inset 0 1px 0 rgba(255,255,255,0.18), 0 0 12px ${primaryColor}40`
+                                      : 'inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 4px rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.5)',
                                     color: isSelected ? primaryColor : 'var(--grey-200)',
-                                    fontWeight: isSelected ? 800 : 600, fontSize: '0.85rem',
+                                    fontFamily: 'var(--font-brand)',
+                                    fontWeight: isSelected ? 800 : 700, 
+                                    fontSize: '0.95rem',
+                                    letterSpacing: '0.02em',
                                     cursor: 'pointer', transition: 'all 0.15s ease'
                                   }}
                                 >
-                                  {size}
+                                  {displaySize}
                                 </button>
                               );
                             })}
@@ -4137,51 +4331,18 @@ export default function AgentStorefrontGrid({
                                 </div>
                               )}
                               <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, whiteSpace: 'nowrap' }}>
-                                <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>${formatPrice(unitPrice)} × {qty} =</span>
-                                <span style={{ fontSize: '1.4rem', fontWeight: 800, color: primaryColor, fontFamily: 'var(--font-brand)' }}>${formatPrice(lineTotal)}</span>
+                                <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>${unitPrice.toFixed(2)} × {qty} =</span>
+                                <span style={{ fontSize: '1.4rem', fontWeight: 800, color: primaryColor, fontFamily: 'var(--font-brand)' }}>${lineTotal.toFixed(2)}</span>
                               </div>
                             </div>
-                            <DynamicAddToCartButton
+                            <ImageAddToCartButton
                               onClick={addDetailProductToCart}
-                              style={{ width: 140, height: 44, fontSize: '0.9rem' }}
+                              width={150}
                             />
                           </div>
                         )}
                       </div>
 
-                      {(volumePricingEnabled) && (
-                        <>
-                          <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: 'var(--space-5) 0' }} />
-                          <div style={{
-                            border: '6px solid #E2E8F0',
-                            borderRadius: 'var(--radius-md)', overflow: 'hidden'
-                          }}>
-                          <div style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.04)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--silver)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                            Volume Discounts
-                          </div>
-                          {tiers.map((t, i) => {
-                            const tierPrice = parseFloat((basePrice * (1 + t.pct / 100)).toFixed(2));
-                            const isActive = displayQty >= t.min && displayQty <= t.max;
-                            return (
-                              <div key={i} style={{
-                                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                padding: '10px 16px', borderTop: '1px solid rgba(255,255,255,0.04)',
-                                background: isActive ? `${primaryColor}10` : 'transparent'
-                              }}>
-                                <span style={{ fontSize: '0.85rem', color: isActive ? 'var(--white)' : 'var(--grey-400)', fontWeight: isActive ? 600 : 400 }}>
-                                  {t.label ?? (t.max === Infinity ? `${t.min}+ vials` : `${t.min}-${t.max} vials`)}
-                                  {t.pct < 0 && <span style={{ color: '#68D391', marginLeft: 8, fontSize: '0.75rem' }}>Save {-t.pct}%</span>}
-                                  {t.pct === 0 && tiers.length > 1 && <span style={{ color: 'var(--grey-400)', marginLeft: 8, fontSize: '0.75rem' }}>Standard</span>}
-                                </span>
-                                <span style={{ fontSize: '0.95rem', fontWeight: 700, fontFamily: 'var(--font-brand)', color: isActive ? primaryColor : 'var(--grey-300)' }}>
-                                  ${formatPrice(tierPrice)}/ea
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </>
-                    )}
                     </div>
                   );
                 })()}
@@ -4228,6 +4389,7 @@ export default function AgentStorefrontGrid({
                     setCartItems((prev) => ({ ...prev, [variantId]: (prev[variantId] || 0) + qty }));
                     setShowCartFloat(true);
                   }}
+                  onAddToCart={addDetailProductToCart}
                 >
                   {showBulkPricing && (
                       <div style={{
@@ -4263,7 +4425,7 @@ export default function AgentStorefrontGrid({
                           const selVId2 = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
                           const activeV2 = detailProduct.variants.find(v => v.id === selVId2) || detailProduct.variants[0];
                           const rawP = (activeV2 as any).is_on_sale && (activeV2 as any).sale_price ? (activeV2 as any).sale_price : activeV2.retail_price;
-                          const bp = rawP / 10;
+                          const bp = rawP;
                           return [{ min: 100, pct: 5 }, { min: 300, pct: 10 }, { min: 500, pct: 15 }].map((tier, i) => {
                             const dp = parseFloat((bp * (1 - tier.pct / 100)).toFixed(2));
                             return (
@@ -4272,7 +4434,7 @@ export default function AgentStorefrontGrid({
                                   {tier.min}+ Vials <span style={{ color: '#68D391', marginLeft: 8, fontSize: '0.9rem', fontWeight: 700 }}>{tier.pct}% Off</span>
                                 </span>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                  <span style={{ fontSize: '0.9rem', fontWeight: 700, fontFamily: 'var(--font-brand)', color: 'var(--grey-300)' }}>${formatPrice(dp)} / Vial</span>
+                                  <span style={{ fontSize: '0.9rem', fontWeight: 700, fontFamily: 'var(--font-brand)', color: 'var(--grey-300)' }}>${dp.toFixed(2)} / Vial</span>
                                   <button
                                     type="button"
                                     aria-label={`Add ${tier.min} Vials To Cart`}
@@ -4571,6 +4733,395 @@ export default function AgentStorefrontGrid({
         onClose={() => setGuestModalFeature(null)}
         featureLabel={guestModalFeature ?? 'This Feature'}
       />
+
+      {/* Bundle detail modal — proper fixed overlay */}
+      {selectedBundle && mounted && (() => {
+        const resolved = resolveBundle(selectedBundle);
+        if (!resolved) return null;
+        const inCart = bundleCart.some((l) => l.bundleName === selectedBundle.name);
+        return createPortal(
+          <div
+            onClick={() => setSelectedBundle(null)}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 999998,
+              background: 'rgba(10,15,20,0.85)',
+              overflowY: 'auto',
+              display: 'flex', flexDirection: 'column',
+              padding: '20px 0'
+            }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="sf-modal-sheet"
+              style={{
+                maxWidth: 560, margin: 'auto',
+                minHeight: 'auto',
+              }}
+            >
+              {/* Back bar */}
+              <div style={{
+                display: 'flex', alignItems: 'center', padding: '14px 18px 10px',
+                background: 'linear-gradient(180deg, #131b24 78%, rgba(19,27,36,0))',
+                position: 'sticky', top: 0, zIndex: 10,
+              }}>
+
+                <button
+                  onClick={() => setSelectedBundle(null)}
+                  aria-label="Close bundle"
+                  style={{
+                    width: 34, height: 34, minWidth: 34, minHeight: 34,
+                    borderRadius: '50%', padding: 0,
+                    background: 'linear-gradient(180deg, #2b3744 0%, #1b242e 100%)',
+                    border: '1px solid rgba(190,200,210,0.30)',
+                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18), 0 3px 9px rgba(0,0,0,0.5)',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', boxSizing: 'border-box', flexShrink: 0,
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
+                </button>
+                <div style={{ flex: 1 }} />
+                <div style={{ width: 44, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.20)' }} aria-hidden="true" />
+                <div style={{ flex: 1 }} />
+              </div>
+
+              {/* Sticky add-to-cart top bar */}
+              <div style={{
+                position: 'sticky', top: 0, zIndex: 40,
+                display: 'flex', alignItems: 'center', gap: 12,
+                padding: '10px 18px',
+                background: 'rgba(15,25,35,0.96)',
+                backdropFilter: 'blur(8px)',
+                borderBottom: '1px solid rgba(255,255,255,0.06)',
+              }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--white)', fontFamily: 'var(--font-brand)' }}>
+                    {selectedBundle.name}
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: primaryColor, fontWeight: 600 }}>
+                    ${formatPrice(resolved.finalPrice)}
+                    {resolved.discountPct > 0 && (
+                      <span style={{ color: '#68D391', marginLeft: 8, fontSize: '0.72rem' }}>Save {resolved.discountPct}%</span>
+                    )}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { inCart ? removeBundleFromCart(selectedBundle.name) : addBundleToCart(selectedBundle); }}
+                  style={{
+                    padding: '9px 18px', borderRadius: 8, fontWeight: 700, fontSize: '0.82rem',
+                    background: inCart ? 'transparent' : `linear-gradient(135deg, ${primaryColor} 0%, ${primaryColor}cc 100%)`,
+                    border: inCart ? '1px solid rgba(255,255,255,0.2)' : 'none',
+                    color: 'var(--white)', cursor: 'pointer', whiteSpace: 'nowrap',
+                    boxShadow: inCart ? 'none' : '0 2px 12px rgba(0,0,0,0.4)',
+                    transition: 'opacity 0.15s',
+                  }}
+                >
+                  <ShoppingCart size={14} style={{ display: 'inline', marginRight: 6, verticalAlign: 'middle' }} />
+                  {inCart ? 'Remove' : 'Add To Cart'}
+                </button>
+              </div>
+
+              {/* Hero image */}
+              {(selectedBundle.vial_image_url || selectedBundle.image_url) && agentSlug === 'savagebrands' ? (
+                <div 
+                  className="sf-modal-img"
+                  style={{ width: '100%', background: 'var(--surface-3)', cursor: 'pointer', position: 'relative', height: 'auto' }}
+                  onClick={() => setFullScreenImage(selectedBundle.vial_image_url || selectedBundle.image_url || null)}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={optimizedImageSrc(selectedBundle.vial_image_url || selectedBundle.image_url || '', 320)}
+                    alt={selectedBundle.name}
+                    decoding="async"
+                    onError={makeImageErrorHandler(selectedBundle.vial_image_url || selectedBundle.image_url || '')}
+                    style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'contain' }}
+                  />
+                  <div style={{
+                    position: 'absolute',
+                    bottom: 12, right: 12,
+                    background: 'rgba(0,0,0,0.6)',
+                    padding: '4px 8px',
+                    borderRadius: 4,
+                    fontSize: '0.75rem',
+                    color: 'var(--white)',
+                    pointerEvents: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6
+                  }}>
+                    <Search size={12} /> Click to enlarge
+                  </div>
+                </div>
+              ) : (selectedBundle.vial_image_url || selectedBundle.image_url) ? (
+                <div 
+                  className="sf-modal-img"
+                  style={{ 
+                    position: 'relative', 
+                    width: '100%', 
+                    height: 220, 
+                    background: 'var(--surface-3)',
+                    cursor: 'pointer'
+                  }}
+                  onClick={() => setFullScreenImage(selectedBundle.vial_image_url || selectedBundle.image_url || null)}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={optimizedImageSrc(selectedBundle.vial_image_url || selectedBundle.image_url || '', 320)}
+                    alt={selectedBundle.name}
+                    decoding="async"
+                    onError={makeImageErrorHandler(selectedBundle.vial_image_url || selectedBundle.image_url || '')}
+                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }}
+                  />
+                  <div style={{
+                    position: 'absolute',
+                    bottom: 12, right: 12,
+                    background: 'rgba(0,0,0,0.6)',
+                    padding: '4px 8px',
+                    borderRadius: 4,
+                    fontSize: '0.75rem',
+                    color: 'var(--white)',
+                    pointerEvents: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6
+                  }}>
+                    <Search size={12} /> Click to enlarge
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Body */}
+              <div style={{ padding: '24px 20px 40px' }}>
+                {/* Bundle name + badge */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: selectedBundle.tagline ? 16 : 10, textAlign: 'center' }}>
+                  <h2 style={{ fontFamily: 'var(--font-brand)', fontSize: '1.75rem', color: 'var(--white)', margin: 0, lineHeight: 1.2, marginBottom: selectedBundle.tagline ? 4 : 0 }}>
+                    {selectedBundle.name}
+                  </h2>
+                  {selectedBundle.tagline && (
+                    <div style={{
+                      fontSize: '1.25rem',
+                      fontWeight: 800,
+                      fontStyle: 'italic',
+                      fontFamily: 'var(--font-brand)',
+                      background: 'linear-gradient(to bottom, #ffffff 0%, #a1a1aa 48%, #e4e4e7 50%, #52525b 100%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      filter: 'drop-shadow(0px 2px 3px rgba(0,0,0,0.8))',
+                      letterSpacing: '0.02em'
+                    }}>{selectedBundle.tagline}</div>
+                  )}
+                </div>
+
+                {/* Description */}
+                {selectedBundle.description && (
+                  <div style={{ fontSize: '0.9rem', color: 'var(--grey-300)', lineHeight: 1.65, marginBottom: 24, whiteSpace: 'pre-wrap' }}>
+                    {selectedBundle.description}
+                  </div>
+                )}
+
+                <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '24px 0' }} />
+
+                {/* What's included */}
+                <div style={{ marginBottom: 28 }}>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--grey-500)', marginBottom: 12 }}>
+                    What&apos;s Included ({resolved.members.length} Products)
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {resolved.members.map((m) => {
+                      const img = getProductImage(m.custom_image_url ?? m.products?.image_url ?? null, m.products?.category || 'Other', m.products?.name, !!m.custom_image_url, agentSlug, isSavageBrandsNetwork);
+                      const size = m.products?.unit_size ? `${m.products.unit_size}${m.products.unit_measure || ''}` : '';
+                      const baseName = m.custom_name || m.products?.name || 'Product';
+                      const name = size ? `${size} ${baseName}` : baseName;
+                      const perVial = (Number(m.retail_price) || 0);
+                      return (
+                        <div
+                          key={m.id}
+                          className="hover-lift"
+                          onClick={() => handleBundleItemClick(m.product_id)}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleBundleItemClick(m.product_id); }}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 14,
+                            background: 'rgba(255,255,255,0.04)', borderRadius: 10,
+                            padding: '10px 14px', border: '1px solid rgba(255,255,255,0.07)',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {/* MOBILE BLANK-VIAL FIX: was `unoptimized`, which
+                              shipped the full 1024px original for a 48px thumb.
+                              See lib/imageOptimize.ts. */}
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={optimizedImageSrc(img, 48)}
+                            alt={name}
+                            width={48}
+                            height={48}
+                            loading="lazy"
+                            decoding="async"
+                            style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'contain', flexShrink: 0 }}
+                            onError={makeImageErrorHandler(img)}
+                          />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--white)', marginBottom: 2 }}>{name}</div>
+                          </div>
+                          <div style={{ fontSize: '0.88rem', fontWeight: 700, color: primaryColor, whiteSpace: 'nowrap' }}>
+                            ${formatPrice(perVial)}<span style={{ fontSize: '0.65rem', color: 'var(--grey-500)', fontWeight: 400 }}>/vial</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Bundle Member Monographs */}
+                <div style={{ marginBottom: 28 }}>
+                  {Array.from(new Set(resolved.members.map(m => grouped.find(g => g.defaultVariantId === m.product_id)?.compoundSlug).filter(Boolean))).map((slug) => {
+                    const compound = compoundsBySlug[slug as string];
+                    if (!compound) return null;
+                    return (
+                      <ProductMonograph 
+                        key={slug as string} 
+                        compound={compound} 
+                        primaryColor={primaryColor} 
+                        buttonLabel={`Research Profile: ${compound.display_name}`} 
+                      />
+                    );
+                  })}
+                </div>
+
+                <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '24px 0' }} />
+
+                {/* Pricing summary */}
+                <div style={{
+                  background: 'rgba(0,0,0,0.35)', borderRadius: 12, padding: '18px 20px',
+                  border: '1px solid rgba(255,255,255,0.08)', marginBottom: 24,
+                }}>
+                  {resolved.discountPct > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, gap: 8 }}>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>MSRP (If Bought Separately)</span>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)', textDecoration: 'line-through', whiteSpace: 'nowrap', flexShrink: 0 }}>${formatPrice(resolved.fullPrice)}</span>
+                    </div>
+                  )}
+                  {resolved.discountPct > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, gap: 8 }}>
+                      <span style={{ fontSize: '0.85rem', color: '#68D391' }}>Bundle Savings</span>
+                      <span style={{ fontSize: '0.85rem', color: '#68D391', fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>−${formatPrice(resolved.fullPrice - resolved.finalPrice)} ({resolved.discountPct}% Off)</span>
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, borderTop: resolved.discountPct > 0 ? '1px solid rgba(255,255,255,0.08)' : 'none', paddingTop: resolved.discountPct > 0 ? 12 : 0, marginTop: resolved.discountPct > 0 ? 8 : 0 }}>
+                    <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--white)' }}>Bundle Price</span>
+                    <span style={{ fontSize: '1.3rem', fontWeight: 800, color: primaryColor, fontFamily: 'var(--font-brand)', whiteSpace: 'nowrap', flexShrink: 0 }}>${formatPrice(resolved.finalPrice)}</span>
+                  </div>
+                </div>
+
+                {/* Main CTA */}
+                <div 
+                  onClick={() => { inCart ? removeBundleFromCart(selectedBundle.name) : addBundleToCart(selectedBundle); }}
+                  style={{ width: '100%', cursor: 'pointer', opacity: inCart ? 0.7 : 1, transition: 'opacity 0.2s', display: 'flex', justifyContent: 'center' }}
+                >
+                  <Image 
+                    src="/images/add_stack_to_cart_btn.png" 
+                    alt={inCart ? "Remove Bundle" : "Add Bundle To Cart"} 
+                    width={400} 
+                    height={60} 
+                    unoptimized 
+                    style={{ width: '100%', maxWidth: 400, height: 'auto', objectFit: 'contain', display: 'block' }} 
+                  />
+                </div>
+
+                <div style={{ marginTop: 24 }}>
+                  <ProductModalEnhancements
+                    currentCompound={compoundsBySlug?.[grouped.find(g => g.defaultVariantId === resolved.members[0]?.product_id)?.compoundSlug ?? ''] ?? null}
+                    currentCompoundSlug={grouped.find(g => g.defaultVariantId === resolved.members[0]?.product_id)?.compoundSlug ?? null}
+                    currentProductName={selectedBundle.name}
+                    currentBundlePriceDollars={resolved.finalPrice}
+                    grouped={grouped.map<ModalGroupedProductRef>((g) => ({
+                      name: g.name,
+                      category: g.category,
+                      imageUrl: g.imageUrl,
+                      lowestPrice: g.lowestPrice,
+                      defaultVariantId: g.defaultVariantId,
+                      compoundSlug: g.compoundSlug,
+                    }))}
+                    compoundsBySlug={compoundsBySlug}
+                    primaryColor={primaryColor}
+                    onOpenProductBySlug={(slug) => {
+                      const grp = grouped.find((g) => g.compoundSlug === slug);
+                      if (grp) {
+                        setDetailHistory([grp]);
+                        setPendingQty(1);
+                        setSelectedBundle(null);
+                      }
+                    }}
+                    onOpenProductByName={(name) => {
+                      const match = grouped.find((g) => g.name === name);
+                      if (match) {
+                        setDetailHistory([match]);
+                        setPendingQty(1);
+                        setSelectedBundle(null);
+                      }
+                    }}
+                    onAddVariantToCart={(variantId, qty) => {
+                      setCartItems((prev) => ({ ...prev, [variantId]: (prev[variantId] || 0) + qty }));
+                      setShowCartFloat(true);
+                    }}
+                    hideBulkPricing={true}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>,
+          document.body
+        );
+      })()}
+
+      {/* Full Screen Image Viewer Modal */}
+      {fullScreenImage && createPortal(
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            zIndex: 999999,
+            background: 'rgba(0,0,0,0.9)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'zoom-out'
+          }}
+          onClick={() => setFullScreenImage(null)}
+        >
+          <div style={{ position: 'relative', width: '90%', height: '90%', maxWidth: 1200 }}>
+            <Image
+              src={fullScreenImage}
+              alt="Full screen view"
+              fill
+              unoptimized
+              style={{ objectFit: 'contain' }}
+            />
+          </div>
+          <button
+            onClick={(e) => { e.stopPropagation(); setFullScreenImage(null); }}
+            style={{
+              position: 'absolute',
+              top: 24, right: 24,
+              background: 'rgba(0,0,0,0.5)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              color: 'var(--white)',
+              width: 44, height: 44,
+              borderRadius: '50%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer'
+            }}
+            aria-label="Close full screen image"
+          >
+            <X size={24} />
+          </button>
+        </div>,
+        document.body
+      )}
     </div>
+
   );
 }

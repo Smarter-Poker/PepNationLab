@@ -19,7 +19,8 @@ export async function POST(req: NextRequest) {
   const supabase = createAdminClient();
   const rawBody: unknown = await req.json().catch(() => ({}));
 
-  // Schema-locked: newPassword must be a STRING of 8-128 chars and userId a
+  // Schema-locked via lib/password-policy: newPassword must be a STRING
+  // obeying the platform rule (at least 8 characters), and userId a
   // UUID. The previous hand check called `.length` on an untyped value, so a
   // non-string JSON value bypassed both length bounds.
   const parsed = AdminUpdatePasswordSchema.safeParse(rawBody);
@@ -46,7 +47,8 @@ export async function POST(req: NextRequest) {
 
   const { error } = await supabase.auth.admin.updateUserById(userId, { password: newPassword });
   if (error) {
-    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    console.error('[admin/update-password] Supabase auth error:', error.message, error);
+    return NextResponse.json({ error: error.message || 'An unexpected error occurred.' }, { status: 500 });
   }
 
   // Set must_change_password to true so they are forced to change it on their next login.

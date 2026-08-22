@@ -4,6 +4,7 @@ import { Phone, PhoneOff, Video, LogIn } from 'lucide-react';
 import type { CallSignalRow } from '@/lib/messenger/realtime';
 import { createRingTone } from '@/lib/messenger/ringTone';
 import { toast } from 'sonner';
+import { preflightMedia } from '@/lib/messenger/mediaPreflight';
 
 interface Props {
   call: CallSignalRow;
@@ -46,6 +47,14 @@ export default function IncomingCallScreen({ call, onAccept, onDecline }: Props)
   const [callerAvatar, setCallerAvatar] = useState<string | null>(call.caller_avatar ?? null);
   const [isBusy, setIsBusy] = useState(false);
   const [authExpired, setAuthExpired] = useState(false);
+  // Group-call support: an ACTIVE call surfaced here is an ongoing group call
+  // the user can still join (someone else accepted first). Ring UX becomes
+  // join UX: no ringtone, "Join" instead of "Accept", and dismissing it is a
+  // purely local action — it must never send a decline that could touch a
+  // live call.
+  const isJoin = call.status === 'active';
+  const isGroupCall = call.conversation_type === 'group';
+  const displayName = isGroupCall && call.conversation_title ? call.conversation_title : callerName;
 
   useEffect(() => {
     if (call.caller_name && call.caller_name !== callerName) {
@@ -95,15 +104,31 @@ export default function IncomingCallScreen({ call, onAccept, onDecline }: Props)
   }, [call.conversation_id, call.initiator_id]);
 
   useEffect(() => {
-    if (authExpired) return;
+    // No ringtone for a joinable in-progress call — the moment someone
+    // accepts a group call, everyone else's ring falls silent and the screen
+    // becomes an invitation rather than an alarm.
+    if (authExpired || isJoin) return;
     const ring = createRingTone();
     if (ring) ring.start();
     return () => { if (ring) ring.stop(); };
-  }, [authExpired]);
+  }, [authExpired, isJoin]);
 
   const handleAction = async (action: 'accept' | 'decline') => {
-    if (isBusy) return;
+    // Decline is deliberately NOT gated on isBusy. Accepting raises the
+    // browser's camera/microphone prompt and blocks on it; with a single busy
+    // flag, someone who left that prompt sitting there could no longer
+    // decline either — the call just rang on with both buttons dead.
+    if (isBusy && action !== 'decline') return;
     setIsBusy(true);
+
+    // Dismissing a joinable in-progress call is local-only: there is nothing
+    // to decline server-side, and a stray decline must never reach a live
+    // group call.
+    if (action === 'decline' && isJoin) {
+      setIsBusy(false);
+      onDecline();
+      return;
+    }
 
     try {
       const h = await import('@/lib/messenger/haptics');
@@ -119,18 +144,23 @@ export default function IncomingCallScreen({ call, onAccept, onDecline }: Props)
     // later async chain. Tracks are stopped immediately; we only want the
     // grant.
     if (action === 'accept') {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-          video: call.call_type === 'video',
-        });
-        stream.getTracks().forEach((t) => t.stop());
-      } catch (err) {
-        toast.error('Camera And Microphone Required. Please Allow Access To Answer The Call.');
+      // Answering must NEVER be turned into declining. This used to call
+      // onDecline() whenever getUserMedia threw — so a person on a desktop
+      // with no webcam, who pressed Answer, sent the caller a "Declined" they
+      // never chose. Worse, the message blamed permissions, so they went
+      // hunting through browser settings for a camera that does not exist.
+      //
+      // Now the only thing that stops us answering is an outright refusal the
+      // user has to reverse themselves. Missing hardware just means you join
+      // with whatever you do have — and with nothing at all you can still
+      // watch and listen, which needs no permission.
+      const media = await preflightMedia(call.call_type === 'video');
+      if (!media.canJoin) {
+        toast.error(media.message);
         setIsBusy(false);
-        onDecline();
         return;
       }
+      if (media.message) toast.info(media.message);
     }
 
     if (action === 'accept') {
@@ -222,7 +252,7 @@ export default function IncomingCallScreen({ call, onAccept, onDecline }: Props)
           }}
         >
           {isVideo ? <Video size={16} aria-hidden="true" /> : <Phone size={16} aria-hidden="true" />}
-          PepNationLab {isVideo ? 'Video' : 'Voice'} Call
+          PepNationLab {isGroupCall ? 'Group ' : ''}{isVideo ? 'Video' : 'Voice'} Call
         </div>
       </div>
 
@@ -260,10 +290,14 @@ export default function IncomingCallScreen({ call, onAccept, onDecline }: Props)
             letterSpacing: '-0.01em',
           }}
         >
-          {callerName}
+          {displayName}
         </div>
         <div style={{ fontSize: '1rem', color: 'rgba(255, 255, 255, 0.62)', fontWeight: 500 }}>
-          {isVideo ? 'Incoming Video Call' : 'Incoming Voice Call'}
+          {isJoin
+            ? `${callerName ? callerName + "'s " : ''}Call Is In Progress — Tap To Join`
+            : isGroupCall
+            ? (isVideo ? 'Incoming Group Video Call' : 'Incoming Group Voice Call')
+            : (isVideo ? 'Incoming Video Call' : 'Incoming Voice Call')}
         </div>
       </div>
 
@@ -330,7 +364,7 @@ export default function IncomingCallScreen({ call, onAccept, onDecline }: Props)
             <PhoneOff size={32} aria-hidden="true" />
           </button>
           <div style={{ color: 'rgba(255, 255, 255, 0.72)', marginTop: 12, fontSize: '0.92rem', fontWeight: 600 }}>
-            Decline
+            {isJoin ? 'Dismiss' : 'Decline'}
           </div>
         </div>
         <div style={{ textAlign: 'center' }}>
@@ -396,7 +430,7 @@ export default function IncomingCallScreen({ call, onAccept, onDecline }: Props)
                 <Phone size={32} aria-hidden="true" />
               </button>
               <div style={{ color: 'rgba(255, 255, 255, 0.72)', marginTop: 12, fontSize: '0.92rem', fontWeight: 600 }}>
-                Accept
+                {isJoin ? 'Join' : 'Accept'}
               </div>
             </>
           )}

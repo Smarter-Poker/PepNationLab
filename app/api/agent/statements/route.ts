@@ -13,7 +13,7 @@ export async function GET(req: Request) {
     // Statements from admin (top-level agents + super-agents)
     const { data: weekly, error: stmtErr } = await supabase
       .from('weekly_statements')
-      .select('id, week_start, week_end, total_cogs, total_shipping, total_owed, status, due_date, paid_at, payment_method')
+      .select('id, week_start, week_end, total_cogs, total_shipping, total_owed, status, due_date, paid_at, payment_method, disputed_at, dispute_reason, payment_submitted_at')
       .eq('agent_id', agentId)
       .order('week_start', { ascending: false })
       .limit(100);
@@ -24,7 +24,7 @@ export async function GET(req: Request) {
     // Invoices from super-agent (sub-agents)
     const { data: invoices, error: invErr } = await supabase
       .from('agent_invoices')
-      .select('id, super_agent_id, week_start, week_end, total_cogs, total_shipping, total_owed, status, due_date, paid_at, payment_method')
+      .select('id, super_agent_id, week_start, week_end, total_cogs, total_shipping, total_owed, status, due_date, paid_at, payment_method, payment_submitted_at')
       .eq('agent_id', agentId)
       .order('week_start', { ascending: false })
       .limit(100);

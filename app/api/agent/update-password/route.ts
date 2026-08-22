@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireSession } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { validatePassword } from '@/lib/password-policy';
 
 /**
  * Agents can reset passwords for their own researchers and sub-agents.
@@ -36,11 +37,9 @@ export async function POST(req: NextRequest) {
   if (!userId || !newPassword) {
     return NextResponse.json({ error: 'Missing Required Fields' }, { status: 400 });
   }
-  if (typeof newPassword !== 'string' || newPassword.length < 8) {
-    return NextResponse.json({ error: 'Password Must Be At Least 8 Characters' }, { status: 400 });
-  }
-  if (newPassword.length > 128) {
-    return NextResponse.json({ error: 'Password Must Be 128 Characters Or Fewer' }, { status: 400 });
+  const pwError = validatePassword(newPassword);
+  if (pwError) {
+    return NextResponse.json({ error: pwError }, { status: 400 });
   }
 
   // Verify the target user belongs to this agent (referring_agent_id = caller)
@@ -64,7 +63,8 @@ export async function POST(req: NextRequest) {
 
   const { error } = await serviceSupabase.auth.admin.updateUserById(userId, { password: newPassword });
   if (error) {
-    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    console.error('[agent/update-password] Supabase auth error:', error.message, error);
+    return NextResponse.json({ error: error.message || 'An unexpected error occurred.' }, { status: 500 });
   }
 
   // Set must_change_password to true so they are forced to change it on their next login.

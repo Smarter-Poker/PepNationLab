@@ -150,7 +150,7 @@ export async function getAreaProducts(
       productIds.map(async (pid) => {
         try {
           const cost = await computeAgentCostForAgent(svc, pid, agentId!, ownerTier);
-          if (cost != null) costPrices.set(pid, cost / 10); // per-vial
+          if (cost != null) costPrices.set(pid, cost); // per-vial
         } catch { /* skip */ }
       })
     );
@@ -164,8 +164,8 @@ export async function getAreaProducts(
 
     const isOnSale = !!(ap.is_on_sale && ap.sale_price);
     const retailPricePerVial = isOnSale
-      ? Number(ap.sale_price) / 10
-      : Number(ap.retail_price) / 10;
+      ? Number(ap.sale_price)
+      : Number(ap.retail_price);
 
     result.push({
       productId: mp.id,
@@ -177,6 +177,8 @@ export async function getAreaProducts(
         ap.custom_image_url || mp.image_url || null,
         mp.category || '',
         mp.name,
+        !!ap.custom_image_url,
+        agentSlug ?? undefined,
       ),
       unitSize: mp.unit_size || null,
       unitMeasure: mp.unit_measure || null,
@@ -185,7 +187,7 @@ export async function getAreaProducts(
       weightOz: Number(mp.weight_oz) || 0.5,
       sku: mp.sku || null,
       isOnSale,
-      salePrice: isOnSale ? Number(ap.sale_price) / 10 : null,
+      salePrice: isOnSale ? Number(ap.sale_price) : null,
       inventoryCount: Number(mp.inventory_count) || 0,
       description: mp.description || null,
     });

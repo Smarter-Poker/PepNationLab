@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     creator: '@PepNationLab',
     title: 'Discontinued Research Compounds | Pep Nation Lab',
     description: 'Research reference data on discontinued and withdrawn peptide compounds. Full historical data including mechanism, evidence, and discontinuation context. Research use only.',
-    images: ['https://pepnationlab.com/images/og-card.jpg'],
+    images: ['https://pepnationlab.com/og-card.png'],
   },
 };
 

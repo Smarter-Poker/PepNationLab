@@ -5,6 +5,12 @@ import { createClient } from '@/lib/supabase/client';
 import { useTheme } from '@/components/ThemeProvider';
 import AvatarUpload from '@/components/AvatarUpload';
 import PushNotificationToggle from '@/components/PushNotificationToggle';
+import {
+  MIN_PASSWORD_LENGTH,
+  MAX_PASSWORD_LENGTH,
+  PASSWORD_RULE_TEXT,
+  PASSWORD_TOO_SHORT_ERROR,
+} from '@/lib/password-policy';
 
 interface AdminSettingsClientProps {
   profile: {
@@ -77,7 +83,7 @@ function SettingsPasswordForm() {
     setPwError('');
     setPwSuccess('');
     if (newPw !== confirmPw) { setPwError('Passwords Do Not Match'); return; }
-    if (newPw.length < 8) { setPwError('Password Must Be At Least 8 Characters'); return; }
+    if (newPw.length < MIN_PASSWORD_LENGTH) { setPwError(PASSWORD_TOO_SHORT_ERROR); return; }
     setPwLoading(true);
     try {
       const { error } = await supabase.auth.updateUser({ password: newPw });
@@ -96,15 +102,15 @@ function SettingsPasswordForm() {
     <form onSubmit={handleChangePw}>
       <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
         <label className="form-label">New Password</label>
-        <input type="password" className="form-input" value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="Minimum 8 Characters" required minLength={8} autoComplete="new-password" />
+        <input type="password" className="form-input" value={newPw} onChange={e => setNewPw(e.target.value)} placeholder={PASSWORD_RULE_TEXT} required minLength={MIN_PASSWORD_LENGTH} maxLength={MAX_PASSWORD_LENGTH} autoComplete="new-password" />
       </div>
       <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
         <label className="form-label">Confirm New Password</label>
-        <input type="password" className="form-input" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder="Re-Enter New Password" required minLength={8} autoComplete="new-password" />
+        <input type="password" className="form-input" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder="Re-Enter New Password" required minLength={MIN_PASSWORD_LENGTH} maxLength={MAX_PASSWORD_LENGTH} autoComplete="new-password" />
       </div>
       {pwError && <p style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 'var(--space-3)' }}>{pwError}</p>}
       {pwSuccess && <p style={{ color: 'var(--teal)', fontSize: '0.85rem', marginBottom: 'var(--space-3)' }}>{pwSuccess}</p>}
-      <button type="submit" className="btn btn-primary" disabled={pwLoading || newPw.length < 8 || newPw !== confirmPw}>
+      <button type="submit" className="btn btn-primary" disabled={pwLoading || newPw.length < MIN_PASSWORD_LENGTH || newPw !== confirmPw}>
         {pwLoading ? 'Updating...' : 'Update Password'}
       </button>
     </form>

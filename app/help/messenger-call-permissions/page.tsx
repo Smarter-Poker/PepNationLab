@@ -1,9 +1,6 @@
-import type { Metadata } from 'next';
+'use client';
 
-export const metadata: Metadata = {
-  title: 'Enable Microphone And Camera | Pep Nation Lab',
-  robots: { index: false, follow: true },
-};
+import { useRouter } from 'next/navigation';
 
 /**
  * Help page reached from the call overlay's permission-denied state
@@ -21,9 +18,37 @@ export default function MessengerCallPermissionsHelpPage() {
   const h2Style: React.CSSProperties = { color: '#00C4BC', fontSize: '1rem', margin: '0 0 8px' };
   const liStyle: React.CSSProperties = { marginBottom: 6, lineHeight: 1.5 };
 
+  const router = useRouter();
+
   return (
     <div style={{ minHeight: '100dvh', background: '#05070A', color: '#E2E8F0', padding: '24px 16px' }}>
       <div style={{ maxWidth: 680, margin: '0 auto' }}>
+
+        {/* Close / back button */}
+        <button
+          type="button"
+          onClick={() => router.back()}
+          aria-label="Close and go back"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            background: 'transparent',
+            border: 'none',
+            padding: '0.4rem 0',
+            marginBottom: '1.25rem',
+            cursor: 'pointer',
+            color: '#A8B4C0',
+            fontSize: '0.9rem',
+            fontWeight: 500,
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          Back To Call
+        </button>
+
         <h1 style={{ fontSize: '1.5rem', color: '#FFFFFF', margin: '0 0 6px' }}>
           Enable Your Microphone And Camera
         </h1>

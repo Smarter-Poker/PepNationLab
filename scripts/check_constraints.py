@@ -1,0 +1,17 @@
+import os
+import psycopg2
+
+db_url = os.getenv("DATABASE_URL")
+if not db_url:
+    print("No DATABASE_URL")
+else:
+    conn = psycopg2.connect(db_url)
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT conname, pg_get_constraintdef(c.oid)
+        FROM pg_constraint c
+        JOIN pg_class t ON c.conrelid = t.oid
+        WHERE t.relname = 'profiles';
+    """)
+    for row in cur.fetchall():
+        print(row)

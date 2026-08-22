@@ -1,4 +1,4 @@
-import { MatchedProduct } from '../storefront/StorefrontDiscovery';
+import { MatchedProduct } from '../storefront/discovery-shared';
 import { Calendar, Droplet, Pill, Zap } from 'lucide-react';
 
 export function ProtocolScheduler({ results, primaryColor }: { results: MatchedProduct[]; primaryColor: string }) {
@@ -6,27 +6,22 @@ export function ProtocolScheduler({ results, primaryColor }: { results: MatchedP
   const scheduled = results.filter(r => r.halfLife && r.halfLife.toLowerCase() !== 'n/a');
 
   if (scheduled.length === 0) {
-    return (
-      <div style={{ padding: 24, textAlign: 'center', color: '#A8B4C0' }}>
-        No Scheduling Data Available For This Protocol.
-      </div>
-    );
+    return null;
   }
 
-  // Very naive heuristic parser for demonstration
-  // Real implementation would use exact hours/days mapped from the DB
-  const getFrequency = (halfLife: string) => {
-    const hl = halfLife.toLowerCase();
-    if (hl.includes('min') || hl.includes('hour') && parseInt(hl) < 24) return 'Daily (AM/PM)';
-    if (hl.includes('day') && parseInt(hl) < 3) return 'Daily';
-    if (hl.includes('day') && parseInt(hl) >= 3) return '2x Weekly';
-    if (hl.includes('week') || (hl.includes('day') && parseInt(hl) >= 7)) return 'Weekly';
+  // Use the exact frequency mapped from the DB (typical_frequency)
+  // Fall back to daily if typicalFrequency is not provided
+  const getFrequency = (item: MatchedProduct) => {
+    if (item.typicalFrequency) {
+      return item.typicalFrequency;
+    }
     return 'Daily'; // Fallback
   };
 
   const getIcon = (freq: string) => {
-    if (freq.includes('AM/PM')) return <Zap size={16} color={primaryColor} />;
-    if (freq === 'Weekly' || freq === '2x Weekly') return <Droplet size={16} color={primaryColor} />;
+    const f = freq.toLowerCase();
+    if (f.includes('am/pm') || f.includes('twice')) return <Zap size={16} color={primaryColor} />;
+    if (f.includes('week')) return <Droplet size={16} color={primaryColor} />;
     return <Pill size={16} color={primaryColor} />;
   };
 
@@ -42,10 +37,11 @@ export function ProtocolScheduler({ results, primaryColor }: { results: MatchedP
       </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {scheduled.map((item, idx) => {
-          const freq = getFrequency(item.halfLife!);
+        {scheduled.map((item) => {
+          const freq = getFrequency(item);
+          const key = item.product_id || item.compound_slug || item.display_name;
           return (
-            <div key={idx} style={{ display: 'flex', alignItems: 'center', padding: 16, background: 'rgba(0,0,0,0.2)', borderRadius: 12 }}>
+            <div key={key} style={{ display: 'flex', alignItems: 'center', padding: 16, background: 'rgba(0,0,0,0.2)', borderRadius: 12 }}>
               <div style={{ padding: 12, background: 'rgba(255,255,255,0.05)', borderRadius: 12, marginRight: 16 }}>
                 {getIcon(freq)}
               </div>

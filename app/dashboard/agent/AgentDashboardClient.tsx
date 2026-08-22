@@ -15,6 +15,7 @@ import AgentInventory from '@/components/AgentInventory';
 import AgentDownline from '@/components/AgentDownline';
 import AgentOverview from '@/components/AgentOverview';
 import AgentStorefrontConfig from '@/components/AgentStorefrontConfig';
+import AgentShippingAccountCard from '@/components/AgentShippingAccountCard';
 import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
 import AgentOrders from '@/components/AgentOrders';
 import AgentBundles from '@/components/AgentBundles';
@@ -27,6 +28,7 @@ import PaymentMethodsPanel from '@/components/PaymentMethodsPanel';
 import AvatarUpload from '@/components/AvatarUpload';
 import MyQRCodeModal from '@/components/MyQRCodeModal';
 import { useAvailability, availabilityMessage } from '@/lib/useAvailability';
+import { MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH, PASSWORD_RULE_TEXT } from '@/lib/password-policy';
 
 
 interface Profile {
@@ -90,6 +92,7 @@ interface AgentDashboardClientProps {
   initialResearchers: Researcher[];
   initialOrders: Order[];
   initialAgentsCount?: number;
+  brandNetworkIsSavage?: boolean;
 }
 
 
@@ -98,7 +101,8 @@ export default function AgentDashboardClient({
   initialAgentProfile,
   initialResearchers,
   initialOrders,
-  initialAgentsCount = 0
+  initialAgentsCount = 0,
+  brandNetworkIsSavage = false,
 }: AgentDashboardClientProps) {
   const supabase = useMemo(() => createClient(), []);
 
@@ -117,8 +121,11 @@ export default function AgentDashboardClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab') as any;
+  // ?order=<shortId> — deep-link from a notification; passed to AgentOrders
+  // so it can auto-open the matching order detail modal on mount.
+  const orderDeepLink = searchParams.get('order') ?? null;
   
-  const defaultTab = (initialAgentProfile && (!initialAgentProfile.payment_handles || Object.keys(initialAgentProfile.payment_handles || {}).every((k) => !(initialAgentProfile.payment_handles as any)?.[k]))) ? 'Storefront Config' : 'Overview';
+  const defaultTab = 'Overview' as AgentTabName;
 
   // Whitelist of valid tabs. Any unknown / malformed ?tab= value (e.g. a link
   // whose "&" terminated the query string, leaving "Sales ") must fall back to
@@ -216,6 +223,7 @@ export default function AgentDashboardClient({
   const [promotePaymentModel, setPromotePaymentModel] = useState<'credit'|'prepaid'>('prepaid');
   const [promoteCreditLimit, setPromoteCreditLimit] = useState('0');
   const [promoteLoading, setPromoteLoading] = useState(false);
+  const [promoteTargetRole, setPromoteTargetRole] = useState<'agent'|'super_agent'>('agent');
 
   const handleToggleTrust = async (targetUserId: string, currentStatus: boolean, isSubAgent: boolean = false) => {
     setTogglingTrust(targetUserId);
@@ -289,7 +297,8 @@ export default function AgentDashboardClient({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           researcherId: promoteResearcher.id,
-          commissionPct: promoteCommission,
+          markupPct: promoteCommission,
+          isSuperAgent: userProfile.is_super_agent ? promoteTargetRole === 'super_agent' : false,
           paymentModel: promotePaymentModel,
           creditLimit: promoteCreditLimit
         })
@@ -339,28 +348,18 @@ export default function AgentDashboardClient({
       return;
     }
 
-    // Block submit until AT LEAST ONE payment handle is filled in. The storefront
-    // needs at least one offline payment instruction shown to researchers.
+    // Payment handles and warehouse address are optional at setup.
+    // The agent can add them any time from the Storefront Config tab.
     const zelle = setupZelle.trim();
     const cashapp = setupCashApp.trim();
     const venmo = setupVenmo.trim();
     const applePay = setupApplePay.trim();
-    // Require at least one payment method at setup; agents add more later in Settings
-    if (!zelle && !cashapp && !venmo && !applePay) {
-      setError('At Least One Payment Method Is Required (Zelle, Cash App, Venmo, Or Apple Cash).');
-      return;
-    }
 
-    // Block submit until warehouse address is filled in (ship-from address).
     const whName = setupWhName.trim();
     const whStreet1 = setupWhStreet1.trim();
     const whCity = setupWhCity.trim();
     const whState = setupWhState.trim();
     const whZip = setupWhZip.trim();
-    if (!whName || !whStreet1 || !whCity || !whState || !whZip) {
-      setError('Warehouse Address Is Required (Name, Street, City, State, Zip).');
-      return;
-    }
 
     setLoading(true);
 
@@ -372,20 +371,20 @@ export default function AgentDashboardClient({
           slug: cleanSlug,
           display_name: setupDisplayName.trim(),
           is_active: true,
-          payment_handles: {
+          payment_handles: (zelle || cashapp || venmo || applePay) ? {
             zelle,
             cashapp,
             venmo,
             apple_cash: applePay,
-          },
-          warehouse_address: {
+          } : null,
+          warehouse_address: (whName && whStreet1 && whCity && whState && whZip) ? {
             name: whName,
             street1: whStreet1,
             street2: setupWhStreet2.trim() || null,
             city: whCity,
             state: whState,
             zip: whZip,
-          },
+          } : null,
         })
         .select()
         .maybeSingle();
@@ -496,9 +495,9 @@ export default function AgentDashboardClient({
             </div>
 
             <div style={{ paddingTop: 'var(--space-4)', marginTop: 'var(--space-2)' }}>
-              <h4 style={{ color: 'var(--teal)', fontSize: '0.95rem', marginBottom: 'var(--space-2)' }}>Payment Handles</h4>
+              <h4 style={{ color: 'var(--teal)', fontSize: '0.95rem', marginBottom: 'var(--space-2)' }}>Payment Handles <span style={{ fontWeight: 400, color: 'var(--grey-400)', fontSize: '0.82rem' }}>(Optional — add later in Storefront Config)</span></h4>
               <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 'var(--space-3)' }}>
-                Shown To Researchers After Checkout. At Least One Is Required.
+                Shown To Researchers After Checkout. You Can Skip This Now And Add Later.
               </p>
               <div className="grid-2">
                 <div className="form-group" style={{ marginTop: 0 }}>
@@ -523,19 +522,18 @@ export default function AgentDashboardClient({
             </div>
 
             <div style={{ paddingTop: 'var(--space-4)', marginTop: 'var(--space-2)' }}>
-              <h4 style={{ color: 'var(--teal)', fontSize: '0.95rem', marginBottom: 'var(--space-2)' }}>Warehouse Address</h4>
+              <h4 style={{ color: 'var(--teal)', fontSize: '0.95rem', marginBottom: 'var(--space-2)' }}>Warehouse Address <span style={{ fontWeight: 400, color: 'var(--grey-400)', fontSize: '0.82rem' }}>(Optional — add later)</span></h4>
               <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 'var(--space-3)' }}>
-                Used As The Ship-From Address When Buying Labels. Required Before Generating Shipping Labels.
+                Used As The Ship-From Address When Generating Shipping Labels. Not Required To Launch.
               </p>
               <div className="form-group">
                 <label className="form-label">Warehouse Contact Name</label>
-                <input type="text" className="form-input" value={setupWhName} onChange={(e) => setSetupWhName(e.target.value)} required />
+                <input type="text" className="form-input" value={setupWhName} onChange={(e) => setSetupWhName(e.target.value)} />
               </div>
               <div className="form-group">
                 <label className="form-label">Street Address Line 1</label>
                 <AddressAutocompleteInput
                   className="form-input"
-                  required
                   value={setupWhStreet1}
                   onChange={setSetupWhStreet1}
                   onSelect={(a) => { setSetupWhStreet1(a.street1); if (a.city) setSetupWhCity(a.city); if (a.state) setSetupWhState(a.state); if (a.zip) setSetupWhZip(a.zip); }}
@@ -548,15 +546,15 @@ export default function AgentDashboardClient({
               <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 'var(--space-3)' }}>
                 <div className="form-group" style={{ marginTop: 0 }}>
                   <label className="form-label">City</label>
-                  <input type="text" className="form-input" value={setupWhCity} onChange={(e) => setSetupWhCity(e.target.value)} required />
+                  <input type="text" className="form-input" value={setupWhCity} onChange={(e) => setSetupWhCity(e.target.value)} />
                 </div>
                 <div className="form-group" style={{ marginTop: 0 }}>
                   <label className="form-label">State</label>
-                  <input type="text" className="form-input" maxLength={2} value={setupWhState} onChange={(e) => setSetupWhState(e.target.value.toUpperCase())} required />
+                  <input type="text" className="form-input" maxLength={2} value={setupWhState} onChange={(e) => setSetupWhState(e.target.value.toUpperCase())} />
                 </div>
                 <div className="form-group" style={{ marginTop: 0 }}>
                   <label className="form-label">Zip</label>
-                  <input type="text" className="form-input" maxLength={10} value={setupWhZip} onChange={(e) => setSetupWhZip(e.target.value)} required />
+                  <input type="text" className="form-input" maxLength={10} value={setupWhZip} onChange={(e) => setSetupWhZip(e.target.value)} />
                 </div>
               </div>
             </div>
@@ -611,7 +609,7 @@ export default function AgentDashboardClient({
 
         {activeTab === 'Store Products' && (
           <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <AgentStoreProducts agentId={userProfile.id} />
+            <AgentStoreProducts agentId={userProfile.id} agentSlug={agentProfile.slug} brandNetworkIsSavage={brandNetworkIsSavage} />
           </div>
         )}
 
@@ -662,7 +660,7 @@ export default function AgentDashboardClient({
         {/* TAB: Orders & Fulfillment */}
         {activeTab === 'Orders' && (
           <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <AgentOrders orders={orders} setOrders={setOrders} />
+            <AgentOrders orders={orders} setOrders={setOrders} initialOpenShortId={orderDeepLink} />
           </div>
         )}
 
@@ -709,7 +707,7 @@ export default function AgentDashboardClient({
                           textShadow: '0 1px 3px rgba(0,0,0,0.6)',
                           fontFamily: 'var(--font-brand)',
                         }}>
-                          {userProfile.is_super_agent ? 'Promote To Agent' : 'Promote To Sub-Agent'}
+                          {userProfile.is_super_agent ? `Promote To ${promoteTargetRole === 'super_agent' ? 'Super Agent' : 'Agent'}` : 'Promote To Sub-Agent'}
                         </h3>
                       </div>
                       <button
@@ -729,13 +727,29 @@ export default function AgentDashboardClient({
                       </button>
                     </div>
 
-                    <p style={{ color: '#d0d8e4', fontSize: '0.95rem', marginBottom: 20, lineHeight: 1.5 }}>
-                      {userProfile.is_super_agent ? 'Promote This Researcher To An Agent?' : 'Promote This Researcher To A Sub-Agent? They Will Be Able To Set Prices For Their Own Downline.'}
-                    </p>
+                    {userProfile.is_super_agent ? (
+                      <div className="form-group" style={{ marginBottom: 16 }}>
+                        <label className="form-label" style={{ color: '#8a9ab0', fontSize: '0.8rem', fontWeight: 600 }}>Role To Assign</label>
+                        <select className="form-input" value={promoteTargetRole} onChange={e => setPromoteTargetRole(e.target.value as 'agent' | 'super_agent')}>
+                          <option value="agent">Agent</option>
+                          <option value="super_agent">Super Agent</option>
+                        </select>
+                        <div style={{ fontSize: '0.75rem', color: '#8a9ab0', marginTop: 4 }}>
+                          {promoteTargetRole === 'agent' 
+                            ? 'Sells on their own storefront under your network. Sets their own prices within their markup.'
+                            : 'Full agent with the ability to recruit and manage their own downline of agents.'}
+                        </div>
+                      </div>
+                    ) : (
+                      <p style={{ color: '#d0d8e4', fontSize: '0.95rem', marginBottom: 20, lineHeight: 1.5 }}>
+                        Promote This Researcher To A Sub-Agent? They Will Be Able To Set Prices For Their Own Downline.
+                      </p>
+                    )}
 
                     <div className="form-group" style={{ marginBottom: 16 }}>
-                      <label className="form-label" style={{ color: '#8a9ab0', fontSize: '0.8rem', fontWeight: 600 }}>Commission Percentage (% Of Total Sales)</label>
-                      <input type="number" className="form-input" min="0" max="40" value={promoteCommission} onChange={e => setPromoteCommission(e.target.value)} />
+                      <label className="form-label" style={{ color: '#8a9ab0', fontSize: '0.8rem', fontWeight: 600 }}>Markup % On Your Base Cost (10–200%)</label>
+                      <input type="number" className="form-input" min="10" max="200" step="5" value={promoteCommission} onChange={e => setPromoteCommission(e.target.value)} />
+                      <div style={{ fontSize: '0.75rem', color: '#8a9ab0', marginTop: 4 }}>Agent pays your cost + this markup and sets their own retail price on top.</div>
                     </div>
 
                     <div className="form-group" style={{ marginBottom: 16 }}>
@@ -768,7 +782,7 @@ export default function AgentDashboardClient({
                         onClick={handlePromoteResearcher}
                         disabled={promoteLoading}
                       >
-                        {promoteLoading ? 'Promoting...' : (userProfile.is_super_agent ? 'Promote To Agent' : 'Promote To Sub-Agent')}
+                        {promoteLoading ? 'Promoting...' : (userProfile.is_super_agent ? `Promote To ${promoteTargetRole === 'super_agent' ? 'Super Agent' : 'Agent'}` : 'Promote To Sub-Agent')}
                       </button>
                     </div>
                   </div>
@@ -1034,7 +1048,9 @@ export default function AgentDashboardClient({
                           value={crPassword}
                           onChange={e => setCrPassword(e.target.value)}
                           required
-                          placeholder="At Least 8 Characters"
+                          minLength={MIN_PASSWORD_LENGTH}
+                          maxLength={MAX_PASSWORD_LENGTH}
+                          placeholder={PASSWORD_RULE_TEXT}
                           style={{
                             width: '100%', boxSizing: 'border-box',
                             background: 'linear-gradient(180deg, #0a0c14 0%, #0d1018 100%)',
@@ -1149,6 +1165,7 @@ export default function AgentDashboardClient({
 
               <AgentResearcherCRMv2
                 isSuperAgent={userProfile.is_super_agent}
+                isSubAgent={userProfile.is_sub_agent}
                 onResetPassword={setResetPwUser}
                 onPromote={(r: any) => setPromoteResearcher(r)}
                 onToggleAutoApprove={handleToggleTrust}
@@ -1182,16 +1199,6 @@ export default function AgentDashboardClient({
         {/* TAB: Storefront Configuration */}
         {activeTab === 'Storefront Config' && (
           <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            {handlesEmpty && (
-              <div style={{
-                background: 'var(--red-bg)', border: '1px solid var(--red)', borderRadius: 8, padding: 'var(--space-4)', marginBottom: 'var(--space-6)'
-              }}>
-                <h4 style={{ color: 'var(--red)', margin: '0 0 var(--space-2) 0', fontSize: '1rem' }}>Action Required: Add Payment Handles</h4>
-                <p style={{ color: 'var(--red)', fontSize: '0.9rem', margin: 0 }}>
-                  You Must Configure At Least One Payment Method Before You Can Access The Rest Of Your Dashboard. This Ensures Researchers Know How To Pay You.
-                </p>
-              </div>
-            )}
             <AgentStorefrontConfig
               displayName={displayName} setDisplayName={setDisplayName}
               slug={slug} setSlug={setSlug}
@@ -1217,6 +1224,9 @@ export default function AgentDashboardClient({
                 ) : null
               }
             />
+            {/* EasyPost Forge white-label shipping account. Renders nothing
+                while the admin Forge toggle is off. */}
+            <AgentShippingAccountCard />
           </div>
         )}
 
@@ -1269,16 +1279,17 @@ export default function AgentDashboardClient({
                   className="form-input"
                   value={resetPwValue}
                   onChange={e => setResetPwValue(e.target.value)}
-                  placeholder="Minimum 8 Characters"
+                  placeholder={PASSWORD_RULE_TEXT}
                   required
-                  minLength={8}
+                  minLength={MIN_PASSWORD_LENGTH}
+                  maxLength={MAX_PASSWORD_LENGTH}
                   autoComplete="off"
                   style={{ width: '100%' }}
                 />
               </div>
               <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
                 <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setResetPwUser(null); setResetPwValue(''); }} disabled={resetPwSaving}>Cancel</button>
-                <button type="submit" className="btn btn-primary btn-sm" disabled={resetPwSaving || resetPwValue.length < 8}>
+                <button type="submit" className="btn btn-primary btn-sm" disabled={resetPwSaving || resetPwValue.length < MIN_PASSWORD_LENGTH}>
                   {resetPwSaving ? 'Saving...' : 'Update Password'}
                 </button>
               </div>

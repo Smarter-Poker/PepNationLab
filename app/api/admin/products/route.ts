@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     if (!id) {
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, slug, category, base_cost, is_active, is_banned')
+        .select('id, name, slug, category, base_cost, house_cost, is_active, is_banned')
         .eq('is_banned', false)
         .eq('is_active', true)
         .order('name', { ascending: true });
@@ -95,6 +95,7 @@ export async function POST(req: NextRequest) {
         description: description || null,
         image_url: image_url || null,
         base_cost: parsedBaseCost,
+        house_cost: parsedBaseCost,
         unit_size: unit_size || null,
         unit_measure: unit_measure || 'mg',
         inventory_count: inventory_count ?? 0,
@@ -148,7 +149,7 @@ export async function PATCH(req: NextRequest) {
 
     const ALLOWED_FIELDS = [
       'name', 'sku', 'category', 'description', 'image_url',
-      'base_cost', 'unit_size', 'unit_measure',
+      'base_cost', 'house_cost', 'unit_size', 'unit_measure',
       'inventory_count', 'low_stock_threshold', 'backorder_days',
       'is_active', 'admin_bulk_price', 'admin_bulk_threshold'
     ] as const;

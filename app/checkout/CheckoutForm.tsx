@@ -9,13 +9,15 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { US_STATES } from '@/lib/us-states';
 import PaymentProofUpload from '@/components/PaymentProofUpload';
-import { toTitleCase } from '@/lib/categoryImage';
+import { toTitleCase, getProductImage } from '@/lib/categoryImage';
+import { getBrandNetworkIsSavage } from '@/lib/brand-network-client';
 import { createClient } from '@/lib/supabase/client';
-import { calculateShippingCost as getShippingCost, ShippingOption } from '@/lib/shipping-cost';
+import { calculateShippingCost as getShippingCost, getShippingZone, getShippingZoneLabel, SHIPPING_RATES, ShippingOption } from '@/lib/shipping-cost';
 import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
 import { Copy, Check } from 'lucide-react';
 import { quantityDiscountPct, isVolumeDiscountExcluded } from '@/lib/quantity-discount';
 import { trackStorefrontEvent } from '@/lib/track';
+import ProfileGateModal from '@/components/checkout/ProfileGateModal';
 
 type PaymentMethodId = 'zelle' | 'cashapp' | 'venmo' | 'apple_pay' | 'apple_cash' | 'paypal' | 'google_wallet' | 'wise' | 'chime' | 'varo';
 
@@ -65,6 +67,12 @@ interface CheckoutFormProps {
   minOrderQty?: number;
   /** Per-Peptide Quantity Discounts (3+/5+/7+ Vials) -- Mirrors The Server */
   volumeDiscountsEnabled?: boolean;
+  /** Manufacturer store: items trade in multiples of 10, no coupons ever. */
+  manufacturerStore?: boolean;
+  /** Profile gate: fields missing from the user's profile that block checkout */
+  missingCheckoutFields?: string[];
+  /** Current profile values for pre-filling the gate form */
+  profileInitialValues?: { first_name: string; last_name: string; phone: string };
 }
 
 interface SavedAddress {
@@ -89,11 +97,17 @@ interface ActiveFlashSale {
   ends_at: string;
 }
 
-export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, agentSlug, agentPaymentHandles, minOverallQty = 1, minOrderQty = 1, volumeDiscountsEnabled = true }: CheckoutFormProps) {
+export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, agentSlug, agentPaymentHandles, minOverallQty = 1, minOrderQty = 1, volumeDiscountsEnabled = true, manufacturerStore = false, missingCheckoutFields = [], profileInitialValues = { first_name: '', last_name: '', phone: '' } }: CheckoutFormProps) {
+  // Brand-safe image resolver for the diluent upsell tiles: on a
+  // Savage-network storefront (verdict persisted by the storefront grid),
+  // never render a Pep Nation vial -- getProductImage swaps in the savage
+  // custom image or the generic clear vial.
+  const brandSafeImage = (url: string | null, name: string): string | null =>
+    url ? getProductImage(url, 'Other', name, true, agentSlug ?? undefined, getBrandNetworkIsSavage(agentSlug)) : null;
   const isAgentByRole = userProfile.role === 'agent' || userProfile.role === 'super_agent';
   const isSubAgent = userProfile.is_sub_agent === true;
   const isAgentSelfBuy = isAgentByRole && !isSubAgent;
-  const couponDisabled = isAgentSelfBuy || isSubAgent;
+  const couponDisabled = isAgentSelfBuy || isSubAgent || manufacturerStore;
 
   const availablePaymentMethods = (
     agentPaymentHandles &&
@@ -106,6 +120,10 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     : ALL_PAYMENT_METHODS;
   const { cart: contextCart, cartSubtotal: contextSubtotal, clearCart, addToCart } = useCart();
   const router = useRouter();
+
+  // Profile gate: if the user has missing required fields, show the gate modal.
+  // gateCleared flips to true after a successful profile save + router.refresh().
+  const [gateCleared, setGateCleared] = useState(missingCheckoutFields.length === 0);
 
   const storefrontCartKey = agentSlug
     ? `pnl_storefront_cart_${agentSlug}`
@@ -155,7 +173,15 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
   const cart = storefrontCart.length > 0 ? storefrontCart : contextCart;
   const totalCartQty = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const meetsOverallMin = totalCartQty >= minOverallQty;
+  // Order minimums count PEPTIDES only: reconstitution supplies (BAC water,
+  // acetic acid) are add-ons this checkout itself recommends, and letting
+  // them satisfy the minimum meant 2 peptides + 1 BAC water vial passed a
+  // 3-vial minimum. Mirrors the server-side rule in /api/orders.
+  const peptideCartQty = cart.reduce((sum, item) => {
+    if (/bacteriostatic|bac\s*water|acetic\s*acid/i.test(String(item.name ?? ''))) return sum;
+    return sum + item.quantity;
+  }, 0);
+  const meetsOverallMin = peptideCartQty >= minOverallQty;
 
   const cartSubtotal = storefrontCart.length > 0
     ? storefrontCart.reduce((sum, item) => {
@@ -211,13 +237,9 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     }
   }, [error]);
 
-  const [liveShippingRate, setLiveShippingRate] = useState<number | null>(null);
-  // True when the shown rate is the flat weight-based estimate rather than a
-  // live carrier quote, so the summary can label it honestly.
-  const [shippingEstimated, setShippingEstimated] = useState(false);
-  // Live carrier name (e.g. "USPS") when the rate came back from a real quote.
-  const [shippingCarrier, setShippingCarrier] = useState<string | null>(null);
-  const shippingFetchAbortRef = useRef<AbortController | null>(null);
+  // Shipping is a flat rate keyed on the destination state, so the charge is a
+  // pure local lookup -- no preview request, no "estimated" caveat, and no way
+  // for the quoted rate to disagree with what /api/orders charges.
 
   const getIdempotencyKey = () => {
     if (!idempotencyKeyRef.current) {
@@ -242,6 +264,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     weightOz: number;
     unitSize: string | null;
     unitMeasure: string | null;
+    imageUrl: string | null;
   } | null>(null);
 
   const [aceticProduct, setAceticProduct] = useState<{
@@ -253,193 +276,277 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     weightOz: number;
     unitSize: string | null;
     unitMeasure: string | null;
+    imageUrl: string | null;
   } | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        if (!agentSlug) {
-          const supabase = createClient();
-          const { data: p } = await supabase
-            .from('products')
-            .select('id, name, base_cost, weight_oz, unit_size, unit_measure')
-            .eq('compound_slug', 'bac-water')
-            .limit(1)
-            .maybeSingle();
-          if (p) {
-            const basePrice = Number(p.base_cost) || 0;
-            const sizeLabel = p.unit_size ? `(${p.unit_size}${p.unit_measure || ''})` : '';
-            setBacProduct({
-              id: p.id,
-              agentProductId: p.id,
-              name: `${p.name} ${sizeLabel}`.trim(),
-              retailPrice: basePrice,
-              costPrice: basePrice,
-              weightOz: Number(p.weight_oz) || 0.5,
-              unitSize: p.unit_size ?? null,
-              unitMeasure: p.unit_measure ?? null,
-            });
-          }
+  // Server-computed smart reconstitution volume (mL) for the whole cart. See
+  // /api/cart/bac-water, which sums each vial's strength-based BAC water need.
+  const [smartBacMl, setSmartBacMl] = useState<number | null>(null);
+  const [smartPeptideVials, setSmartPeptideVials] = useState<number | null>(null);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      // Resolve the BAC Water + Acetic Acid diluents for the CURRENT user with a
+      // GUARANTEED result so the smart reconstitution estimator + one-click add
+      // renders for EVERY role and store -- researcher, agent, super-agent,
+      // manufacturer (agent-direct pricing), and admin alike. Resolution order,
+      // most-specific/correct price first:
+      //   1. Agent self-buy  -> /api/agent/products (their true agent-direct cost)
+      //   2. Store context    -> that store's agent_products retail price
+      //   3. Global catalog   -> products table fallback so it ALWAYS resolves,
+      //                          even when a store hasn't added the diluent
+      // Previously self-buy accounts returned early after step 1 and step 1
+      // filtered on products.compound_slug -- which /api/agent/products did not
+      // return -- so bacProduct stayed null and the estimator never showed for
+      // agents/super-agents. Now each step only fills what's still missing.
+      type Diluent = {
+        id: string; agentProductId: string; name: string;
+        retailPrice: number; costPrice: number; weightOz: number;
+        unitSize: string | null; unitMeasure: string | null; imageUrl: string | null;
+      };
+      let bac: Diluent | null = null;
+      let acetic: Diluent | null = null;
+      const supabase = createClient();
+
+      try {
+        // 1) Agent self-buy: agent-direct cost basis from /api/agent/products.
+        if (isAgentSelfBuy) {
+          try {
+            const res = await fetch('/api/agent/products');
+            if (res.ok) {
+              const json = await res.json();
+              const items = json.data || [];
+
+              const bacMatches = items.filter((item: any) => item.products?.compound_slug === 'bac-water');
+              const matched = bacMatches.find((item: any) => String(item.products?.unit_size) === '10') ?? bacMatches[0];
+              if (matched) {
+                const retail = matched.retail_price / 10;
+                const cost = matched.agent_cost != null ? matched.agent_cost / 10 : retail;
+                const sizeLabel = matched.products?.unit_size
+                  ? `(${matched.products.unit_size}${matched.products.unit_measure || ''})`
+                  : '';
+                bac = {
+                  id: matched.product_id,
+                  agentProductId: matched.id,
+                  name: `${matched.products?.name || 'Bac. Water'} ${sizeLabel}`.trim(),
+                  retailPrice: retail,
+                  costPrice: cost,
+                  weightOz: Number(matched.products?.weight_oz) || 0.5,
+                  unitSize: matched.products?.unit_size ?? null,
+                  unitMeasure: matched.products?.unit_measure ?? null,
+                  imageUrl: matched.custom_image_url || matched.products?.image_url || null,
+                };
+              }
+
+              const matchedAcetic = items.find((item: any) => (item.products?.name || '').toLowerCase().includes('acetic acid'));
+              if (matchedAcetic) {
+                const retail = matchedAcetic.retail_price / 10;
+                const cost = matchedAcetic.agent_cost != null ? matchedAcetic.agent_cost / 10 : retail;
+                const sizeLabel = matchedAcetic.products?.unit_size
+                  ? `(${matchedAcetic.products.unit_size}${matchedAcetic.products.unit_measure || ''})`
+                  : '';
+                acetic = {
+                  id: matchedAcetic.product_id,
+                  agentProductId: matchedAcetic.id,
+                  name: `${matchedAcetic.products?.name || 'Acetic Acid'} ${sizeLabel}`.trim(),
+                  retailPrice: retail,
+                  costPrice: cost,
+                  weightOz: Number(matchedAcetic.products?.weight_oz) || 0.5,
+                  unitSize: matchedAcetic.products?.unit_size ?? null,
+                  unitMeasure: matchedAcetic.products?.unit_measure ?? null,
+                  imageUrl: matchedAcetic.custom_image_url || matchedAcetic.products?.image_url || null,
+                };
+              }
+            }
+          } catch { /* fall through to store / global resolution */ }
+        }
+
+        // 2) Store context: per-store retail price from agent_products. Runs for
+        //    any agentSlug (researcher/admin buying a store's catalog) and also
+        //    backfills a self-buy account whose /api/agent/products lacked the
+        //    diluent. Only fills what step 1 did not already resolve.
+        if ((!bac || !acetic) && agentSlug) {
+          const { data: agentProfile } = await supabase
+            .from('agent_profiles')
+            .select('id')
+            .eq('slug', agentSlug)
+            .maybeSingle();
+
+          if (agentProfile) {
+            if (!bac) {
+              // Canonical resolution is by compound_slug -- NOT by name. Name
+              // matching has broken this feature twice (a `.limit(1)` name
+              // match can return the 3 mL vial, silently producing the wrong
+              // volume and price). compound_slug is the stable identity; the
+              // name `.or()` is only a secondary net for rows missing a slug.
+              // Fetch several and explicitly PREFER the 10 mL vial.
+              const { data: apBacRows, error: apBacErr } = await supabase
+                .from('agent_products')
+                .select(`id, product_id, retail_price, custom_image_url, products!inner ( name, unit_size, unit_measure, weight_oz, compound_slug, image_url )`)
+                .eq('agent_id', agentProfile.id)
+                .eq('is_visible', true)
+                .or('compound_slug.eq.bac-water,name.ilike.%bacteriostatic water%,name.ilike.%bac%water%', { referencedTable: 'products' })
+                .limit(10);
+              if (apBacErr) console.error('[checkout] store BAC water lookup failed:', apBacErr.message);
+              const rowSize = (row: any) => {
+                const pr = Array.isArray(row?.products) ? row.products[0] : row?.products;
+                return String(pr?.unit_size ?? '');
+              };
+              const apBac = (apBacRows ?? []).find((r: any) => rowSize(r) === '10') ?? (apBacRows ?? [])[0] ?? null;
+              if (apBac) {
+                const retail = apBac.retail_price / 10;
+                const prod = (Array.isArray(apBac.products) ? apBac.products[0] : apBac.products) as any;
+                const sizeLabel = prod?.unit_size ? `(${prod.unit_size}${prod.unit_measure || ''})` : '';
+                bac = {
+                  id: apBac.product_id, agentProductId: apBac.id,
+                  name: `${prod?.name || 'BAC Water'} ${sizeLabel}`.trim(),
+                  retailPrice: retail, costPrice: retail,
+                  weightOz: Number(prod?.weight_oz) || 0.5,
+                  unitSize: prod?.unit_size ?? null, unitMeasure: prod?.unit_measure ?? null,
+                  imageUrl: (apBac as any).custom_image_url ?? prod?.image_url ?? null,
+                };
+              }
+            }
+
+            if (!acetic) {
+              const { data: apAcetic, error: apAceticErr } = await supabase
+                .from('agent_products')
+                .select(`id, product_id, retail_price, custom_image_url, products!inner ( name, unit_size, unit_measure, weight_oz, compound_slug, image_url )`)
+                .eq('agent_id', agentProfile.id)
+                .eq('is_visible', true)
+                // Embedded-table columns are filtered with the DOTTED path.
+                // `.ilike('name', ..., { foreignTable })` silently filters
+                // agent_products.name -- a column that does not exist -- so
+                // PostgREST answered 400 and this upsell died without a trace.
+                .ilike('products.name', '%acetic acid%')
+                .limit(1)
+                .maybeSingle();
+              if (apAceticErr) console.error('[checkout] store acetic acid lookup failed:', apAceticErr.message);
+              if (apAcetic) {
+                const retail = apAcetic.retail_price / 10;
+                const prod = (Array.isArray(apAcetic.products) ? apAcetic.products[0] : apAcetic.products) as any;
+                const sizeLabel = prod?.unit_size ? `(${prod.unit_size}${prod.unit_measure || ''})` : '';
+                acetic = {
+                  id: apAcetic.product_id, agentProductId: apAcetic.id,
+                  name: `${prod?.name || 'Acetic Acid'} ${sizeLabel}`.trim(),
+                  retailPrice: retail, costPrice: retail,
+                  weightOz: Number(prod?.weight_oz) || 0.5,
+                  unitSize: prod?.unit_size ?? null, unitMeasure: prod?.unit_measure ?? null,
+                  imageUrl: (apAcetic as any).custom_image_url ?? prod?.image_url ?? null,
+                };
+              }
+            }
+          }
+        }
+
+        // 3) Global catalog fallback: guarantees a diluent product for EVERY user
+        //    even with no store context or a store that never added it. Uses the
+        //    canonical catalog price (base_cost) as the last resort.
+        if (!bac) {
+          const { data: bacRows } = await supabase
+            .from('products')
+            .select('id, name, base_cost, max_retail_price, weight_oz, unit_size, unit_measure, image_url')
+            .or('name.ilike.%bacteriostatic water%,name.ilike.%bac%water%')
+            .eq('is_active', true)
+            .limit(5);
+          const p = ((bacRows as any) ?? []).find((r: any) => String(r.unit_size) === '10') ?? ((bacRows as any) ?? [])[0] ?? null;
+          if (p) {
+            // Canonical per-vial retail is the admin ceiling price. max_retail_price
+            // is PER VIAL (sync_max_retail_price sets it from the per-vial base_cost),
+            // so there is no pack-to-vial divisor -- the /10 that used to be here
+            // auto-added BAC Water at a tenth of its price. Only if that's unset do we
+            // fall back to base_cost.
+            const perVial = Number(p.max_retail_price) > 0 ? Number(p.max_retail_price) : (Number(p.base_cost) || 0);
+            const sizeLabel = p.unit_size ? `(${p.unit_size}${p.unit_measure || ''})` : '';
+            bac = {
+              id: p.id, agentProductId: p.id,
+              name: `${p.name} ${sizeLabel}`.trim(),
+              retailPrice: perVial, costPrice: perVial,
+              weightOz: Number(p.weight_oz) || 0.5,
+              unitSize: p.unit_size ?? null, unitMeasure: p.unit_measure ?? null,
+              imageUrl: p.image_url ?? null,
+            };
+          }
+        }
+        if (!acetic) {
           const { data: pAcetic } = await supabase
             .from('products')
-            .select('id, name, base_cost, weight_oz, unit_size, unit_measure')
+            .select('id, name, base_cost, weight_oz, unit_size, unit_measure, image_url')
             .ilike('name', '%acetic acid%')
             .limit(1)
             .maybeSingle();
           if (pAcetic) {
             const basePrice = Number(pAcetic.base_cost) || 0;
             const sizeLabel = pAcetic.unit_size ? `(${pAcetic.unit_size}${pAcetic.unit_measure || ''})` : '';
-            setAceticProduct({
-              id: pAcetic.id,
-              agentProductId: pAcetic.id,
+            acetic = {
+              id: pAcetic.id, agentProductId: pAcetic.id,
               name: `${pAcetic.name} ${sizeLabel}`.trim(),
-              retailPrice: basePrice,
-              costPrice: basePrice,
+              retailPrice: basePrice, costPrice: basePrice,
               weightOz: Number(pAcetic.weight_oz) || 0.5,
-              unitSize: pAcetic.unit_size ?? null,
-              unitMeasure: pAcetic.unit_measure ?? null,
-            });
-          }
-          return;
-        }
-
-        if (isAgentSelfBuy) {
-          const res = await fetch('/api/agent/products');
-          if (res.ok) {
-            const json = await res.json();
-            const items = json.data || [];
-            
-            const matched = items.find((item: any) => item.products?.compound_slug === 'bac-water');
-            if (matched) {
-              const retail = matched.retail_price / 10;
-              const cost = matched.agent_cost != null ? matched.agent_cost / 10 : retail;
-              const sizeLabel = matched.products?.unit_size
-                ? `(${matched.products.unit_size}${matched.products.unit_measure || ''})`
-                : '';
-              setBacProduct({
-                id: matched.product_id,
-                agentProductId: matched.id,
-                name: `${matched.products?.name || 'Bac. Water'} ${sizeLabel}`.trim(),
-                retailPrice: retail,
-                costPrice: cost,
-                weightOz: Number(matched.products?.weight_oz) || 0.5,
-                unitSize: matched.products?.unit_size ?? null,
-                unitMeasure: matched.products?.unit_measure ?? null,
-              });
-            }
-
-            const matchedAcetic = items.find((item: any) => (item.products?.name || '').toLowerCase().includes('acetic acid'));
-            if (matchedAcetic) {
-              const retail = matchedAcetic.retail_price / 10;
-              const cost = matchedAcetic.agent_cost != null ? matchedAcetic.agent_cost / 10 : retail;
-              const sizeLabel = matchedAcetic.products?.unit_size
-                ? `(${matchedAcetic.products.unit_size}${matchedAcetic.products.unit_measure || ''})`
-                : '';
-              setAceticProduct({
-                id: matchedAcetic.product_id,
-                agentProductId: matchedAcetic.id,
-                name: `${matchedAcetic.products?.name || 'Acetic Acid'} ${sizeLabel}`.trim(),
-                retailPrice: retail,
-                costPrice: cost,
-                weightOz: Number(matchedAcetic.products?.weight_oz) || 0.5,
-                unitSize: matchedAcetic.products?.unit_size ?? null,
-                unitMeasure: matchedAcetic.products?.unit_measure ?? null,
-              });
-            }
-            return;
+              unitSize: pAcetic.unit_size ?? null, unitMeasure: pAcetic.unit_measure ?? null,
+              imageUrl: pAcetic.image_url ?? null,
+            };
           }
         }
 
-        const supabase = createClient();
-        const { data: agentProfile } = await supabase
-          .from('agent_profiles')
-          .select('id')
-          .eq('slug', agentSlug)
-          .maybeSingle();
-
-        if (agentProfile) {
-          const { data: ap } = await supabase
-            .from('agent_products')
-            .select(`
-              id,
-              product_id,
-              retail_price,
-              products!inner (
-                name,
-                unit_size,
-                unit_measure,
-                weight_oz,
-                compound_slug
-              )
-            `)
-            .eq('agent_id', agentProfile.id)
-            .eq('is_visible', true)
-            .eq('products.compound_slug', 'bac-water')
-            .limit(1)
-            .maybeSingle();
-
-          if (ap) {
-            const retail = ap.retail_price / 10;
-            const prod = (Array.isArray(ap.products) ? ap.products[0] : ap.products) as any;
-            const sizeLabel = prod?.unit_size
-              ? `(${prod.unit_size}${prod.unit_measure || ''})`
-              : '';
-            setBacProduct({
-              id: ap.product_id,
-              agentProductId: ap.id,
-              name: `${prod?.name || 'Bac. Water'} ${sizeLabel}`.trim(),
-              retailPrice: retail,
-              costPrice: retail,
-              weightOz: Number(prod?.weight_oz) || 0.5,
-              unitSize: prod?.unit_size ?? null,
-              unitMeasure: prod?.unit_measure ?? null,
-            });
-          }
-
-          const { data: apAcetic } = await supabase
-            .from('agent_products')
-            .select(`
-              id,
-              product_id,
-              retail_price,
-              products!inner (
-                name,
-                unit_size,
-                unit_measure,
-                weight_oz,
-                compound_slug
-              )
-            `)
-            .eq('agent_id', agentProfile.id)
-            .eq('is_visible', true)
-            .ilike('products.name', '%acetic acid%')
-            .limit(1)
-            .maybeSingle();
-
-          if (apAcetic) {
-            const retail = apAcetic.retail_price / 10;
-            const prod = (Array.isArray(apAcetic.products) ? apAcetic.products[0] : apAcetic.products) as any;
-            const sizeLabel = prod?.unit_size
-              ? `(${prod.unit_size}${prod.unit_measure || ''})`
-              : '';
-            setAceticProduct({
-              id: apAcetic.product_id,
-              agentProductId: apAcetic.id,
-              name: `${prod?.name || 'Acetic Acid'} ${sizeLabel}`.trim(),
-              retailPrice: retail,
-              costPrice: retail,
-              weightOz: Number(prod?.weight_oz) || 0.5,
-              unitSize: prod?.unit_size ?? null,
-              unitMeasure: prod?.unit_measure ?? null,
-            });
-          }
-        }
+        if (cancelled) return;
+        if (bac) setBacProduct(bac);
+        if (acetic) setAceticProduct(acetic);
       } catch (err) {
         console.error('Error fetching reconstitution products:', err);
       }
     })();
+    return () => { cancelled = true; };
   }, [agentSlug, isAgentSelfBuy]);
+
+  // Ask the server exactly how much BAC water this cart needs, based on each
+  // product's labeled strength (mg/iu). Falls back to a conservative estimate
+  // (see bacTotalMlNeeded) until this resolves. The endpoint excludes BAC
+  // water, acetic-acid peptides, supplies, and pre-mixed liquids itself.
+  useEffect(() => {
+    const items = (cart || []) as any[];
+    const idFor = (i: any) => (i.productId || i.id);
+    const ids = Array.from(new Set(items.map(idFor).filter((v: any): v is string => !!v)));
+    if (ids.length === 0) { setSmartBacMl(0); return; }
+    const quantities: Record<string, number> = {};
+    for (const i of items) { const k = idFor(i); if (k) quantities[k] = (quantities[k] || 0) + i.quantity; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/cart/bac-water', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ productIds: ids, quantities, agentSlug: agentSlug || undefined }),
+        });
+        if (!res.ok) return;
+        const json = await res.json();
+        if (!cancelled && typeof json?.totalMlNeeded === 'number') {
+          setSmartBacMl(json.totalMlNeeded);
+          if (typeof json?.totalPeptideVials === 'number') setSmartPeptideVials(json.totalPeptideVials);
+          if (json.bacWaterProduct) {
+            setBacProduct((prev) => {
+              if (prev) return prev;
+              const sizeLabel = json.bacWaterProduct.unit_size ? `(${json.bacWaterProduct.unit_size}${json.bacWaterProduct.unit_measure || ''})` : '';
+              return {
+                id: json.bacWaterProduct.id,
+                agentProductId: json.bacWaterProduct.id,
+                name: `${json.bacWaterProduct.name} ${sizeLabel}`.trim(),
+                retailPrice: json.bacWaterProduct.retail_price || 0,
+                costPrice: json.bacWaterProduct.retail_price || 0,
+                weightOz: 0.5,
+                unitSize: json.bacWaterProduct.unit_size ?? null,
+                unitMeasure: json.bacWaterProduct.unit_measure ?? null,
+                imageUrl: json.bacWaterProduct.image_url ?? null,
+              };
+            });
+          }
+        }
+      } catch { /* keep the conservative fallback estimate */ }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify((cart || []).map((i: any) => [i.productId || i.id, i.quantity])), agentSlug]);
 
   const [fullName, setFullName] = useState(userProfile.full_name ?? '');
   const [street, setStreet] = useState('');
@@ -538,13 +645,36 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const [disclaimer2, setDisclaimer2] = useState(false);
   const [disclaimer3, setDisclaimer3] = useState(false);
 
+  // Final-step BAC water reminder (Step 3, directly above Place Research
+  // Order). The Order Inventory panel's reminder is pushed to the TOP of the
+  // page on mobile (.checkout-grid > :last-child { order: -1 }), so buyers
+  // finishing the form never saw it. This one lives at the true end of the
+  // checkout process on every viewport.
+  const [bacReminderDismissed, setBacReminderDismissed] = useState(false);
+  const [bacAddedQty, setBacAddedQty] = useState(0);
+  const [aceticReminderDismissed, setAceticReminderDismissed] = useState(false);
+  const [aceticAddedQty, setAceticAddedQty] = useState(0);
+
   const [couponInput, setCouponInput] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
   const [couponError, setCouponError] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
   const [flashSale, setFlashSale] = useState<ActiveFlashSale | null>(null);
 
-  const ACETIC_ACID_SLUGS = /\b(igf[-_\s]?1[-_\s]?(lr3|des|des-1-3)|aod[-_\s]?9604|ghk[-_\s]?cu|ghrp[-_\s]?[26]|fragment[-_\s]?(176|hgh[-_\s]?frag)|melanotan[-_\s]?[i12]|epital[o]?n|epithalon|nad\+?)\b/i;
+  // Acetic-class peptides: reconstitute with dilute acetic acid rather than BAC
+  // water. Narrowed 2026-07-18 to match the authoritative per-compound
+  // compounds.handling.diluent data: of the on-sale catalog, ONLY IGF-1 LR3/DES
+  // list acetic acid. The prior regex wrongly flagged AOD-9604, GHK-Cu, GHRP-2/6,
+  // HGH-Fragment, Epithalon, NAD+ and Melanotan as acetic — every one of those
+  // actually reconstitutes with bacteriostatic/sterile water, so they now
+  // correctly route to the BAC Water suggestion instead.
+  const ACETIC_ACID_SLUGS = /\b(igf[-_\s]?1[-_\s]?(lr3|des|des-?1-?3))\b/i;
+
+  // Pre-mixed aqueous products ship as ready liquids and need NO diluent.
+  // (The Lipolysis Stack "Lemon Bottle", The Skinny Shot "Lipo-C" -- and any
+  // future product named accordingly.) Counting them over-suggested BAC water.
+  const isPreMixedName = (name: string | null | undefined) =>
+    !!name && /(lemon\s*bottle|skinny\s*shot|lipo-?c\b|pre-?mixed)/i.test(name);
 
   const isDiluentName = (name: string | null | undefined) => {
     if (!name) return false;
@@ -565,7 +695,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   }, 0);
 
   const bacPeptideVials = (cart || []).reduce((sum, item) => {
-    if (isDiluentName(item.name)) return sum;
+    if (isDiluentName(item.name) || isPreMixedName(item.name)) return sum;
     const isAcetic = ACETIC_ACID_SLUGS.test(item.name) || (item.sku && ACETIC_ACID_SLUGS.test(item.sku));
     if (isAcetic) return sum;
     let vialsPerUnit = 1;
@@ -585,10 +715,18 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     return sum;
   }, 0);
 
-  const requiredBacWaterVials = bacPeptideVials > 0 ? Math.ceil(bacPeptideVials / 10) * 10 : 0;
+  // Smart reconstitution: the server (/api/cart/bac-water) sums each vial's
+  // strength-based BAC water need in mL. Until it responds, fall back to a
+  // conservative ~2 mL per research vial. Vials = ceil(totalMl / real vial size).
+  const bacVialSizeMl = parseFloat(String(bacProduct?.unitSize ?? '')) || 10;
+  const bacTotalMlNeeded = smartBacMl != null ? smartBacMl : bacPeptideVials * 2;
+  // Prefer the server's peptide-vial count so the displayed count and the mL
+  // describe the same item set (the server also drops cosmetic-tier compounds).
+  const bacPeptideVialsDisplay = smartPeptideVials != null ? smartPeptideVials : bacPeptideVials;
+  const requiredBacWaterVials = bacTotalMlNeeded > 0 ? Math.ceil(bacTotalMlNeeded / bacVialSizeMl) : 0;
   const neededBacWaterVials = Math.max(0, requiredBacWaterVials - currentBacWaterVials);
 
-  const requiredAceticAcidVials = aceticPeptideVials > 0 ? Math.ceil(aceticPeptideVials / 10) * 10 : 0;
+  const requiredAceticAcidVials = aceticPeptideVials > 0 ? aceticPeptideVials : 0;
   const neededAceticAcidVials = Math.max(0, requiredAceticAcidVials - currentAceticAcidVials);
 
   const handleAddBacWater = () => {
@@ -671,51 +809,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     setStorefrontCart(updatedCart);
   };
 
-  const totalWeightOz = (cart || []).reduce((acc, item) => acc + (item.weightOz ?? 0.5) * item.quantity, 0);
 
-  useEffect(() => {
-    if (shippingFetchAbortRef.current) shippingFetchAbortRef.current.abort();
-    const ctrl = new AbortController();
-    shippingFetchAbortRef.current = ctrl;
-    if (shippingOption === 'agent_pickup') { setLiveShippingRate(0); setShippingEstimated(false); setShippingCarrier(null); return; }
-    const addrComplete = !!(street.trim() && city.trim() && state.trim() && zip.trim());
-    (async () => {
-      try {
-        const res = await fetch('/api/shipping-preview', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            weightOz: totalWeightOz,
-            shippingOption,
-            totalQty: (cart || []).reduce((a, it) => a + it.quantity, 0),
-            agentSlug,
-            // Only send a destination once it is complete, so the server can
-            // return a live carrier quote that equals the final charge.
-            to: addrComplete ? { street1: street.trim(), city: city.trim(), state: state.trim(), zip: zip.trim(), country: 'US' } : undefined,
-          }),
-          signal: ctrl.signal,
-        });
-        if (!res.ok) return;
-        const json = await res.json();
-        setLiveShippingRate(Number(json.rate) || 0);
-        setShippingEstimated(!!json.estimated);
-        setShippingCarrier(typeof json.carrier === 'string' && json.carrier ? json.carrier : null);
-      } catch (err) {
-        const fallback = getShippingCost(shippingOption, totalWeightOz);
-        setLiveShippingRate(fallback);
-        setShippingEstimated(true);
-        setShippingCarrier(null);
-        // AbortError is expected whenever this effect re-runs or unmounts -- reporting
-        // it would flood the sink. Only a real failure means we silently charged an
-        // estimated rate instead of the live one.
-        if ((err as { name?: string })?.name !== 'AbortError') {
-          reportClientError('checkout.live-shipping-rate', err, { meta: { fallbackRate: fallback } });
-        }
-      }
-    })();
-    return () => ctrl.abort();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [totalWeightOz, shippingOption, street, city, state, zip, agentSlug]);
 
   const couponAutoAppliedRef = useRef(false);
   useEffect(() => {
@@ -756,10 +850,10 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
   if (!storefrontLoaded) return null;
 
+  const shippingZone = getShippingZone(state);
   const calculateShippingCost = () => {
     if (shippingOption === 'agent_pickup') return 0;
-    if (liveShippingRate !== null) return liveShippingRate;
-    return getShippingCost(shippingOption, totalWeightOz);
+    return getShippingCost(shippingOption, state);
   };
 
   const shippingCost = (agentSlug === 'researchstore' && cartSubtotal >= 100) ? 0 : calculateShippingCost();
@@ -773,7 +867,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const volumeDiscount = (volumeDiscountsEnabled && !isAgentSelfBuy && !isSubAgent)
     ? cart.reduce((sum, item) => {
         if (item.bundleName || isVolumeDiscountExcluded(item.name)) return sum;
-        const pct = quantityDiscountPct(item.quantity);
+        const pct = quantityDiscountPct(item.quantity, item.name);
         if (pct <= 0) return sum;
         const unit = (item as { retailPrice?: number }).retailPrice ?? item.costPrice;
         const discountedUnit = Math.round(unit * (1 - pct / 100) * 100) / 100;
@@ -787,13 +881,20 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     setError(null);
     if (step === 1) {
       if (!meetsOverallMin) {
-        setError(`This Storefront Requires A Minimum Overall Order Of ${minOverallQty} Items. Please Add More Items To Proceed.`);
+        setError(`This Storefront Requires A Minimum Overall Order Of ${minOverallQty} Peptides. Reconstitution Supplies Like BAC Water Do Not Count. Please Add More Peptides To Proceed.`);
         return;
       }
       const violatingItem = cart.find(item => !isDiluentName(item.name) && item.quantity < minOrderQty);
       if (violatingItem) {
         setError(`This Storefront Requires A Minimum Of ${minOrderQty} Per Peptide. "${violatingItem.name}" Has Only ${violatingItem.quantity}.`);
         return;
+      }
+      if (manufacturerStore) {
+        const offStep = cart.find(item => item.quantity < 10 || item.quantity % 10 !== 0);
+        if (offStep) {
+          setError(`This Store Sells In Multiples Of 10. "${offStep.name}" Has ${offStep.quantity} - Please Adjust To 10, 20, 30, And So On.`);
+          return;
+        }
       }
       if (fulfillmentMethod === 'ship') {
         if (!fullName.trim() || !street.trim() || !city.trim() || !state.trim() || !zip.trim()) {
@@ -861,13 +962,20 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     // 10-vial minimum removed: agents can order any quantity from their own store.
 
     if (!meetsOverallMin) {
-      setError(`This Storefront Requires A Minimum Overall Order Of ${minOverallQty} Items. Please Add More Items To Proceed.`);
+      setError(`This Storefront Requires A Minimum Overall Order Of ${minOverallQty} Peptides. Reconstitution Supplies Like BAC Water Do Not Count. Please Add More Peptides To Proceed.`);
       return;
     }
     const violatingItem = cart.find(item => !isDiluentName(item.name) && item.quantity < minOrderQty);
     if (violatingItem) {
       setError(`This Storefront Requires A Minimum Of ${minOrderQty} Per Peptide. "${violatingItem.name}" Has Only ${violatingItem.quantity}.`);
       return;
+    }
+    if (manufacturerStore) {
+      const offStep = cart.find(item => item.quantity < 10 || item.quantity % 10 !== 0);
+      if (offStep) {
+        setError(`This Store Sells In Multiples Of 10. "${offStep.name}" Has ${offStep.quantity} - Please Adjust To 10, 20, 30, And So On.`);
+        return;
+      }
     }
     const overLimit = cart.find(item => item.quantity > 10_000);
     if (overLimit) {
@@ -1137,12 +1245,73 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     );
   }
 
+  // SINGLE SOURCE OF TRUTH for the reconstitution reminder. It is rendered
+  // in TWO places (under Fulfillment Method on step 1, and again on the
+  // Compliance step) from this one definition, so the two copies can never
+  // drift apart or silently vanish from one of them the way they did before.
+  const bacWaterReminderPanel = (
+    <>
+      {/* End-of-checkout BAC water reminder: reviews the order, states
+          the calculated amount needed for the WHOLE order, and adds the
+          suggested quantity in one click. Hidden once covered,
+          dismissed, or when no reconstitution vials are in the cart. */}
+      {neededBacWaterVials > 0 && bacProduct && !bacReminderDismissed && (
+        <div role="status" style={{ background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.35)', borderRadius: 'var(--radius-md)', padding: 'var(--space-4)', boxShadow: '0 0 18px rgba(0,196,188,0.10)' }}>
+          <strong style={{ display: 'block', color: 'var(--white)', fontSize: '0.85rem', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>Wait Does Your Lab Have BAC Water?</strong>
+          {bacProduct.imageUrl && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '0 0 10px' }}>
+              <img src={brandSafeImage(bacProduct.imageUrl, bacProduct.name) ?? bacProduct.imageUrl} alt={`Bacteriostatic Water${bacProduct.unitSize ? ` ${bacProduct.unitSize}${bacProduct.unitMeasure || 'ml'}` : ''}`} width={50} height={50} loading="lazy" decoding="async" style={{ flex: '0 0 auto', width: 50, height: 50, objectFit: 'contain', borderRadius: 6, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(0,196,188,0.3)', padding: 3 }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+              <span style={{ color: 'var(--teal)', fontSize: '0.8rem', fontWeight: 700, lineHeight: 1.3 }}>Bacteriostatic Water{bacProduct.unitSize ? ` ${bacProduct.unitSize}${bacProduct.unitMeasure || 'ml'} Vials` : ''}</span>
+            </div>
+          )}
+          <p style={{ color: 'var(--silver-light)', fontSize: '0.8rem', margin: '0 0 12px', lineHeight: 1.5 }}>
+            We Reviewed Your Order: <strong style={{ color: 'var(--white)' }}>{bacPeptideVialsDisplay}</strong> Research Vial{bacPeptideVialsDisplay !== 1 ? 's' : ''} Require{bacPeptideVialsDisplay === 1 ? 's' : ''} Bacteriostatic Water For Reconstitution{currentBacWaterVials > 0 ? <> And Your Cart Currently Includes <strong style={{ color: 'var(--white)' }}>{currentBacWaterVials}</strong> BAC Water Vial{currentBacWaterVials !== 1 ? 's' : ''}</> : ', And Your Cart Has None'}. Based On Per-Vial Strength, This Order Needs Approximately <strong style={{ color: 'var(--white)' }}>{bacTotalMlNeeded} mL</strong> Of BAC Water Suggested: <strong style={{ color: 'var(--white)' }}>{neededBacWaterVials}</strong> × {bacProduct.unitSize || '10'}{bacProduct.unitMeasure || 'ml'} Vial{neededBacWaterVials !== 1 ? 's' : ''}.
+          </p>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => { setBacAddedQty(neededBacWaterVials); handleAddBacWater(); }}
+              className="btn-neon-cyan"
+              style={{ flex: '1 1 230px', padding: '11px 14px', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', borderRadius: 6, cursor: 'pointer' }}
+            >
+              Add {neededBacWaterVials} BAC Water Vial{neededBacWaterVials !== 1 ? 's' : ''} ${((isAgentSelfBuy ? bacProduct.costPrice : bacProduct.retailPrice) * neededBacWaterVials).toFixed(2)}
+            </button>
+            <button
+              type="button"
+              onClick={() => setBacReminderDismissed(true)}
+              style={{ flex: '0 1 auto', padding: '11px 14px', fontSize: '0.78rem', background: 'transparent', border: '1px solid rgba(255,255,255,0.18)', color: 'var(--silver)', borderRadius: 6, cursor: 'pointer' }}
+            >
+              My Lab Is Covered
+            </button>
+          </div>
+        </div>
+      )}
+      {bacAddedQty > 0 && neededBacWaterVials === 0 && (
+        <div role="status" style={{ background: 'rgba(45,212,191,0.07)', border: '1px solid rgba(45,212,191,0.3)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', color: '#2DD4BF', fontSize: '0.8rem', fontWeight: 600 }}>
+          {bacAddedQty} Vial{bacAddedQty !== 1 ? 's' : ''} Of Bacteriostatic Water Added To Your Order.
+        </div>
+      )}
+    </>
+  );
+
   return (
     <div className="checkout-container page-transition" style={{ padding: 'var(--space-6)', maxWidth: 1200, margin: '0 auto', paddingBottom: '100px' }}>
-      
+
+      {/* Profile gate — renders before anything else if required fields are missing */}
+      {!gateCleared && (
+        <ProfileGateModal
+          missingFields={missingCheckoutFields}
+          initialValues={profileInitialValues}
+          onComplete={() => {
+            router.refresh();
+            setGateCleared(true);
+          }}
+        />
+      )}
+
       {!meetsOverallMin && totalCartQty > 0 && (
         <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)', color: '#fca5a5', textAlign: 'center' }}>
-          <strong>Order Minimum Not Met:</strong> This Storefront Requires An Overall Minimum Order Of {minOverallQty} Items. You Currently Have {totalCartQty} Item{totalCartQty !== 1 ? 's' : ''} In Your Cart.
+          <strong>Order Minimum Not Met:</strong> This Storefront Requires An Overall Minimum Order Of {minOverallQty} Peptides. You Currently Have {peptideCartQty} Peptide{peptideCartQty !== 1 ? 's' : ''} In Your Cart. Reconstitution Supplies Like BAC Water Do Not Count Toward The Minimum.
           {/* CRO: the banner told users to go back but gave them no way to -
               a dead-end error state at the top of the funnel. */}
           <div style={{ marginTop: 'var(--space-3)' }}>
@@ -1175,7 +1344,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
         {[{ num: 1, label: 'Fulfillment' }, { num: 2, label: 'Billing' }, { num: 3, label: 'Compliance' }].map((s) => (
           <div key={s.num} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
             <div style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontFamily: 'var(--font-brand)', fontSize: '0.88rem', background: step === s.num ? 'var(--teal)' : step > s.num ? 'rgba(192, 184, 168, 0.15)' : 'var(--surface-3)', color: step === s.num ? '#fff' : step > s.num ? 'var(--teal)' : 'var(--silver-dark)', border: step >= s.num ? '1px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)', boxShadow: step === s.num ? 'var(--shadow-teal-sm)' : 'none', transition: 'all 0.3s ease' }}>{s.num}</div>
-            <span style={{ fontSize: '0.85rem', fontWeight: 600, fontFamily: 'var(--font-brand)', color: step === s.num ? 'var(--teal)' : step > s.num ? 'var(--white)' : 'var(--silver-dark)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{s.label}</span>
+            <span>{s.label}</span>
             {s.num < 3 && <div style={{ width: 40, height: 1, background: step > s.num ? 'var(--teal)' : 'rgba(255, 255, 255, 0.1)', margin: '0 8px' }} />}
           </div>
         ))}
@@ -1225,43 +1394,38 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                           <input type="radio" name="shippingOption" checked={shippingOption === 'agent_pickup'} onChange={() => { setShippingOption('agent_pickup'); setFulfillmentMethod('agent_pickup'); }} style={{ accentColor: 'var(--teal)' }} />
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <strong style={{ color: 'var(--white)', fontSize: '0.95rem', lineHeight: '1.2' }}>Free Shipping To Agent</strong>
-                            <span style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginTop: '2px' }}>7-10 Days</span>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginTop: '2px' }}>Same Day Pick Up Or Delivery Of In Stock Items</span>
                           </div>
                         </div>
                         <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#2DD4BF' }}>Free</span>
                       </div>
-                      <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', paddingLeft: 22 }}>Zero Cost Shipping To Your Referring Representative. Coordinate Pickup Directly.</span>
+                      <div style={{ paddingLeft: 22, display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}>
+                        <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--grey-300)' }}>— OR —</span>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)' }}>Free Zero Cost Shipping To Your Referring Representative. Coordinate Pickup Directly For Items That Must Be Ordered 7-10 Days</span>
+                      </div>
                     </label>
 
-                    <label style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', background: shippingOption === 'fedex' ? 'rgba(192, 184, 168, 0.06)' : 'var(--surface-2)', border: shippingOption === 'fedex' ? '2px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', boxShadow: shippingOption === 'fedex' ? 'var(--shadow-teal-sm)' : 'none', transition: 'all 0.25s ease' }}>
+                    <label style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', background: shippingOption === 'standard' ? 'rgba(192, 184, 168, 0.06)' : 'var(--surface-2)', border: shippingOption === 'standard' ? '2px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', boxShadow: shippingOption === 'standard' ? 'var(--shadow-teal-sm)' : 'none', transition: 'all 0.25s ease' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <input type="radio" name="shippingOption" checked={shippingOption === 'fedex'} onChange={() => { setShippingOption('fedex'); setFulfillmentMethod('ship'); }} style={{ accentColor: 'var(--teal)' }} />
+                          <input type="radio" name="shippingOption" checked={shippingOption === 'standard'} onChange={() => { setShippingOption('standard'); setFulfillmentMethod('ship'); }} style={{ accentColor: 'var(--teal)' }} />
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            <strong style={{ color: 'var(--white)', fontSize: '0.95rem', lineHeight: '1.2' }}>FedEx - UPS</strong>
-                            <span style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginTop: '2px' }}>6-9 Days</span>
+                            <strong style={{ color: 'var(--white)', fontSize: '0.95rem', lineHeight: '1.2' }}>Standard Shipping</strong>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginTop: '2px' }}>Shipped Direct By Pep Nation</span>
                           </div>
                         </div>
-                        <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--teal)' }}>${getShippingCost('fedex', totalWeightOz).toFixed(2)}</span>
+                        <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--teal)' }}>${getShippingCost('standard', state).toFixed(2)}</span>
                       </div>
-                      <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', paddingLeft: 22 }}>Fast Shipping. Base Rate Is $80 For The First 500g, Plus $10 For Each Additional 500g.</span>
-                    </label>
-
-                    <label style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', background: shippingOption === 'usps' ? 'rgba(192, 184, 168, 0.06)' : 'var(--surface-2)', border: shippingOption === 'usps' ? '2px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', boxShadow: shippingOption === 'usps' ? 'var(--shadow-teal-sm)' : 'none', transition: 'all 0.25s ease' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <input type="radio" name="shippingOption" checked={shippingOption === 'usps'} onChange={() => { setShippingOption('usps'); setFulfillmentMethod('ship'); }} style={{ accentColor: 'var(--teal)' }} />
-                          <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            <strong style={{ color: 'var(--white)', fontSize: '0.95rem', lineHeight: '1.2' }}>USPS International</strong>
-                            <span style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginTop: '2px' }}>12-18 Days</span>
-                          </div>
-                        </div>
-                        <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--teal)' }}>${getShippingCost('usps', totalWeightOz).toFixed(2)}</span>
-                      </div>
-                      <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', paddingLeft: 22 }}>Cheaper Shipping. Base Rate Is $40 For The First 500g, Plus $10 For Each Additional 500g.</span>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', paddingLeft: 22 }}>
+                        {state.trim()
+                          ? `Flat $${getShippingCost('standard', state).toFixed(2)} To ${getShippingZoneLabel(shippingZone)} Addresses \u2014 Any Order Size.`
+                          : `Flat Rate By Destination: $${SHIPPING_RATES.midwest} Midwest & Inland, $${SHIPPING_RATES.coastal} East / West Coast, $${SHIPPING_RATES.noncontiguous} Alaska, Hawaii & Territories.`}
+                      </span>
                     </label>
                   </div>
                 </div>
+
+                {bacWaterReminderPanel}
 
                 {fulfillmentMethod === 'ship' && (
                   <div>
@@ -1409,6 +1573,41 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                   <h3 style={{ color: 'var(--red)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4, fontFamily: 'var(--font-brand)' }}>Binding Attestation</h3>
                   <p style={{ color: 'var(--silver-light)', fontSize: '0.78rem', margin: 0, lineHeight: 1.5 }}>Acceptance Of These Agreements Digitally Validates Your Institutional Consent. False Audits May Result In Restrictive Ban Of Profile Access To All Catalog Inventory.</p>
                 </div>
+
+                {bacWaterReminderPanel}
+
+                {/* Acetic-acid parity: GLP-1/IGF-class vials reconstitute with
+                    acetic acid, not BAC water. Same end-of-checkout treatment. */}
+                {neededAceticAcidVials > 0 && aceticProduct && !aceticReminderDismissed && (
+                  <div role="status" style={{ background: 'rgba(235,178,54,0.05)', border: '1px solid rgba(235,178,54,0.32)', borderRadius: 'var(--radius-md)', padding: 'var(--space-4)' }}>
+                    <strong style={{ display: 'block', color: 'var(--white)', fontSize: '0.85rem', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>Acetic Acid Check</strong>
+                    <p style={{ color: 'var(--silver-light)', fontSize: '0.8rem', margin: '0 0 12px', lineHeight: 1.5 }}>
+                      <strong style={{ color: 'var(--white)' }}>{aceticPeptideVials}</strong> Vial{aceticPeptideVials !== 1 ? 's' : ''} In Your Order Reconstitute{aceticPeptideVials === 1 ? 's' : ''} With Acetic Acid 0.6% Instead Of BAC Water Suggested: <strong style={{ color: 'var(--white)' }}>{neededAceticAcidVials}</strong> Vial{neededAceticAcidVials !== 1 ? 's' : ''}.
+                    </p>
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={() => { setAceticAddedQty(neededAceticAcidVials); handleAddAceticAcid(); }}
+                        style={{ flex: '1 1 230px', padding: '11px 14px', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', borderRadius: 6, cursor: 'pointer', background: 'transparent', border: '1px solid #EBB236', color: '#EBB236' }}
+                      >
+                        Add {neededAceticAcidVials} Acetic Acid Vial{neededAceticAcidVials !== 1 ? 's' : ''} - ${((isAgentSelfBuy ? aceticProduct.costPrice : aceticProduct.retailPrice) * neededAceticAcidVials).toFixed(2)}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAceticReminderDismissed(true)}
+                        style={{ flex: '0 1 auto', padding: '11px 14px', fontSize: '0.78rem', background: 'transparent', border: '1px solid rgba(255,255,255,0.18)', color: 'var(--silver)', borderRadius: 6, cursor: 'pointer' }}
+                      >
+                        My Lab Is Covered
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {aceticAddedQty > 0 && neededAceticAcidVials === 0 && (
+                  <div role="status" style={{ background: 'rgba(235,178,54,0.07)', border: '1px solid rgba(235,178,54,0.3)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', color: '#EBB236', fontSize: '0.8rem', fontWeight: 600 }}>
+                    {aceticAddedQty} Vial{aceticAddedQty !== 1 ? 's' : ''} Of Acetic Acid Added To Your Order.
+                  </div>
+                )}
+
                 <div className="step-buttons">
                   <button type="button" onClick={handlePrevStep} className="btn" style={{ minWidth: 150, background: 'rgba(255,255,255,0.05)', color: 'var(--white)' }} disabled={loading}>Back</button>
                   <button type="submit" className="btn-neon-cyan" style={{ minWidth: 180, display: 'flex', alignItems: 'center', justifyContent: 'center' }} disabled={loading} aria-busy={loading}>
@@ -1443,18 +1642,18 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 });
                 return groupedCart.map((group, groupIndex) => {
                   if (group.isBundle) {
-                    const bundleSubtotal = group.items.reduce((acc, item) => { const bulkEligible = !isAgentSelfBuy && item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold; const activePrice = bulkEligible ? (item.bulkCostPrice as number) : item.costPrice; return acc + (activePrice * 0.9) * item.quantity; }, 0);
+                    const bundleSubtotal = group.items.reduce((acc, item) => { const bulkEligible = !isAgentSelfBuy && item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold; const activePrice = bulkEligible ? (item.bulkCostPrice as number) : item.costPrice; return acc + activePrice * item.quantity; }, 0);
                     return (
                       <div key={`bundle-${group.name}-${groupIndex}`} style={{ background: 'rgba(0,196,188, 0.03)', border: '1px solid rgba(0,196,188, 0.2)', borderRadius: 8, padding: '10px', display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 6 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(0,196,188,0.1)', paddingBottom: 6, marginBottom: 4 }}>
                           <div>
                             <h3 style={{ fontSize: '0.85rem', margin: 0, fontFamily: 'var(--font-brand)', color: '#00C4BC' }}>{group.name}</h3>
-                            <div style={{ fontSize: '0.65rem', color: '#2DD4BF', marginTop: 2, fontWeight: 700 }}>Stack Discount (10% Off) Applied</div>
+                            <div style={{ fontSize: '0.65rem', color: '#2DD4BF', marginTop: 2, fontWeight: 700 }}>Bundle Price Applied</div>
                             <div style={{ fontSize: '0.65rem', color: 'var(--grey-400)', marginTop: 4, fontStyle: 'italic', maxWidth: '90%' }}>Note: This peptide stack is not all inside one vial, it is individually packaged as the vials listed below.</div>
                           </div>
                           <div style={{ fontSize: '0.85rem', color: '#00C4BC', fontWeight: 800 }}>${bundleSubtotal.toFixed(2)}</div>
                         </div>
-                        {group.items.map(item => { const bulkEligible = !isAgentSelfBuy && item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold; const activePrice = bulkEligible ? (item.bulkCostPrice as number) : item.costPrice; return (<div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', alignItems: 'flex-start', paddingLeft: 6 }}><div style={{ flexGrow: 1, paddingRight: 'var(--space-3)' }}><span style={{ color: 'var(--silver-light)', fontWeight: 500 }}>&#x21B3; {toTitleCase(item.name)}</span><div style={{ color: 'var(--grey-400)', fontSize: '0.72rem' }}>Qty: {item.quantity}</div></div><div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}><div style={{ color: 'var(--grey-500)', fontSize: '0.70rem', textDecoration: 'line-through' }}>${(activePrice * item.quantity).toFixed(2)}</div><strong style={{ color: '#00C4BC' }}>${((activePrice * 0.9) * item.quantity).toFixed(2)}</strong></div></div>); })}
+                        {group.items.map(item => { const bulkEligible = !isAgentSelfBuy && item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold; const activePrice = bulkEligible ? (item.bulkCostPrice as number) : item.costPrice; return (<div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', alignItems: 'flex-start', paddingLeft: 6 }}><div style={{ flexGrow: 1, paddingRight: 'var(--space-3)' }}><span style={{ color: 'var(--silver-light)', fontWeight: 500 }}>&#x21B3; {toTitleCase(item.name)}</span><div style={{ color: 'var(--grey-400)', fontSize: '0.72rem' }}>Qty: {item.quantity}</div></div><div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}><strong style={{ color: '#00C4BC' }}>${(activePrice * item.quantity).toFixed(2)}</strong></div></div>); })}
                       </div>
                     );
                   }
@@ -1468,9 +1667,14 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                   <strong style={{ color: 'var(--white)', fontSize: '0.82rem', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>Reconstitution Supplies</strong>
                 </div>
-                <p style={{ color: 'var(--silver-light)', fontSize: '0.76rem', margin: '0 0 10px', lineHeight: 1.4 }}>Your Order Contains <strong style={{ color: 'var(--white)' }}>{bacPeptideVials}</strong> Research Vial{bacPeptideVials !== 1 ? 's' : ''} Requiring BAC Water. You Need Approximately <strong style={{ color: 'var(--white)' }}>{requiredBacWaterVials}</strong> Vial{requiredBacWaterVials !== 1 ? 's' : ''} Of Bacteriostatic Water.</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  {bacProduct.imageUrl && (
+                    <img src={brandSafeImage(bacProduct.imageUrl, bacProduct.name) ?? bacProduct.imageUrl} alt={`Bacteriostatic Water${bacProduct.unitSize ? ` ${bacProduct.unitSize}${bacProduct.unitMeasure || 'ml'}` : ''}`} width={54} height={54} loading="lazy" decoding="async" style={{ flex: '0 0 auto', width: 54, height: 54, objectFit: 'contain', borderRadius: 6, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(0,196,188,0.25)', padding: 3 }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                  )}
+                  <p style={{ color: 'var(--silver-light)', fontSize: '0.76rem', margin: 0, lineHeight: 1.4 }}>Your Order Contains <strong style={{ color: 'var(--white)' }}>{bacPeptideVialsDisplay}</strong> Research Vial{bacPeptideVialsDisplay !== 1 ? 's' : ''} Requiring BAC Water Approximately <strong style={{ color: 'var(--teal)' }}>{bacTotalMlNeeded} mL</strong> Total Based On Per-Vial Strength. We Recommend <strong style={{ color: 'var(--white)' }}>{requiredBacWaterVials}</strong> × <strong style={{ color: 'var(--teal)' }}>{bacProduct.unitSize || '10'}{bacProduct.unitMeasure || 'ml'}</strong> Vial{requiredBacWaterVials !== 1 ? 's' : ''} Of Bacteriostatic Water.</p>
+                </div>
                 <button type="button" onClick={handleAddBacWater} className="btn-neon-cyan" style={{ width: '100%', padding: '8px 12px', fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer', borderRadius: 6, transition: 'all 0.2s ease' }}>
-                  <span>Add {neededBacWaterVials} Vials To Order</span>
+                  <span>Add {neededBacWaterVials} × {bacProduct.unitSize || '10'}{bacProduct.unitMeasure || 'ml'} Vial{neededBacWaterVials !== 1 ? 's' : ''} To Order</span>
                   <strong style={{ color: 'var(--white)' }}>(${((isAgentSelfBuy ? bacProduct.costPrice : bacProduct.retailPrice) * neededBacWaterVials).toFixed(2)})</strong>
                 </button>
               </div>
@@ -1481,7 +1685,12 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                   <strong style={{ color: 'var(--white)', fontSize: '0.82rem', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>Special Reconstitution Supplies</strong>
                 </div>
-                <p style={{ color: 'var(--silver-light)', fontSize: '0.76rem', margin: '0 0 10px', lineHeight: 1.4 }}>Your Order Contains <strong style={{ color: 'var(--white)' }}>{aceticPeptideVials}</strong> Research Vial{aceticPeptideVials !== 1 ? 's' : ''} Requiring Acetic Acid For Solubility. You Need Approximately <strong style={{ color: 'var(--white)' }}>{requiredAceticAcidVials}</strong> Vial{requiredAceticAcidVials !== 1 ? 's' : ''} Of Acetic Acid 0.6%.</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  {aceticProduct.imageUrl && (
+                    <img src={brandSafeImage(aceticProduct.imageUrl, aceticProduct.name) ?? aceticProduct.imageUrl} alt={`Acetic Acid${aceticProduct.unitSize ? ` ${aceticProduct.unitSize}${aceticProduct.unitMeasure || 'ml'}` : ''}`} width={54} height={54} loading="lazy" decoding="async" style={{ flex: '0 0 auto', width: 54, height: 54, objectFit: 'contain', borderRadius: 6, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(235,178,54,0.3)', padding: 3 }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                  )}
+                  <p style={{ color: 'var(--silver-light)', fontSize: '0.76rem', margin: 0, lineHeight: 1.4 }}>Your Order Contains <strong style={{ color: 'var(--white)' }}>{aceticPeptideVials}</strong> Research Vial{aceticPeptideVials !== 1 ? 's' : ''} Requiring Acetic Acid For Solubility. You Need Approximately <strong style={{ color: 'var(--white)' }}>{requiredAceticAcidVials}</strong> Vial{requiredAceticAcidVials !== 1 ? 's' : ''} Of Acetic Acid 0.6%{aceticProduct.unitSize ? <> (<strong style={{ color: '#EBB236' }}>{aceticProduct.unitSize}{aceticProduct.unitMeasure || 'ml'}</strong> Each)</> : ''}.</p>
+                </div>
                 <button type="button" onClick={handleAddAceticAcid} style={{ width: '100%', padding: '8px 12px', fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer', borderRadius: 6, transition: 'all 0.2s ease', background: 'transparent', border: '1px solid #EBB236', color: '#EBB236', boxShadow: '0 0 12px rgba(235, 178, 54, 0.25)' }} onMouseEnter={e => { e.currentTarget.style.background = '#EBB236'; e.currentTarget.style.color = '#000000'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#EBB236'; }}>
                   <span>Add {neededAceticAcidVials} Vials To Order</span>
                   <strong style={{ color: 'inherit' }}>(${((isAgentSelfBuy ? aceticProduct.costPrice : aceticProduct.retailPrice) * neededAceticAcidVials).toFixed(2)})</strong>
@@ -1507,44 +1716,44 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             )}
 
             <div style={{ paddingTop: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
-                <span style={{ color: 'var(--grey-400)' }}>{isAgentSelfBuy ? 'Agent Direct Subtotal' : 'Items Subtotal'}</span>
-                <strong style={{ color: 'var(--white)' }}>${cartSubtotal.toFixed(2)}</strong>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', gap: 8 }}>
+                <span style={{ color: 'var(--grey-400)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{isAgentSelfBuy ? 'Agent Direct Subtotal' : 'Items Subtotal'}</span>
+                <strong style={{ color: 'var(--white)', whiteSpace: 'nowrap', flexShrink: 0 }}>${cartSubtotal.toFixed(2)}</strong>
               </div>
               {agentPricingDiscount > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '6px 10px', background: 'rgba(0,196,188,0.06)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(0,196,188,0.2)' }}>
-                  <span style={{ color: 'var(--teal)', fontWeight: 600 }}>Agent Direct Pricing Discount</span>
-                  <strong style={{ color: 'var(--teal)' }}>-${agentPricingDiscount.toFixed(2)}</strong>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', gap: 8, padding: '6px 10px', background: 'rgba(0,196,188,0.06)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(0,196,188,0.2)' }}>
+                  <span style={{ color: 'var(--teal)', fontWeight: 600, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Agent Direct Pricing Discount</span>
+                  <strong style={{ color: 'var(--teal)', whiteSpace: 'nowrap', flexShrink: 0 }}>-${agentPricingDiscount.toFixed(2)}</strong>
                 </div>
               )}
               {volumeDiscount > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '6px 10px', background: 'rgba(45,212,191,0.06)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(45,212,191,0.2)' }}>
-                  <span style={{ color: '#2DD4BF', fontWeight: 600 }}>Volume Discount (3+ Vials Per Peptide)</span>
-                  <strong style={{ color: '#2DD4BF' }}>-${volumeDiscount.toFixed(2)}</strong>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', gap: 8, padding: '6px 10px', background: 'rgba(45,212,191,0.06)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(45,212,191,0.2)' }}>
+                  <span style={{ color: '#2DD4BF', fontWeight: 600, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Volume Discount (3+ Vials Per Peptide)</span>
+                  <strong style={{ color: '#2DD4BF', whiteSpace: 'nowrap', flexShrink: 0 }}>-${volumeDiscount.toFixed(2)}</strong>
                 </div>
               )}
               {appliedCoupon && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', gap: 8 }}>
                   <span style={{ color: '#2DD4BF' }}>Coupon Discount</span>
-                  <strong style={{ color: '#2DD4BF' }}>-${discount.toFixed(2)}</strong>
+                  <strong style={{ color: '#2DD4BF', whiteSpace: 'nowrap', flexShrink: 0 }}>-${discount.toFixed(2)}</strong>
                 </div>
               )}
               {flashDiscount > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '6px 10px', background: 'rgba(45,212,191,0.06)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(45,212,191,0.2)' }}>
-                  <span style={{ color: '#2DD4BF', fontWeight: 600 }}>Flash Sale ({flashSale!.discount_pct}% Off)</span>
-                  <strong style={{ color: '#2DD4BF' }}>-${flashDiscount.toFixed(2)}</strong>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', gap: 8, padding: '6px 10px', background: 'rgba(45,212,191,0.06)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(45,212,191,0.2)' }}>
+                  <span style={{ color: '#2DD4BF', fontWeight: 600, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Flash Sale ({flashSale!.discount_pct}% Off)</span>
+                  <strong style={{ color: '#2DD4BF', whiteSpace: 'nowrap', flexShrink: 0 }}>-${flashDiscount.toFixed(2)}</strong>
                 </div>
               )}
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
-                <span style={{ color: 'var(--grey-400)' }}>{shippingCarrier ? shippingCarrier : (shippingOption === 'fedex' ? 'FedEx / UPS Fast' : shippingOption === 'usps' ? 'USPS / China Post Cheap' : 'Fulfillment')}{shippingOption !== 'agent_pickup' && shippingEstimated ? ' (Estimated)' : ''}</span>
-                {shippingOption !== 'agent_pickup' ? <strong style={{ color: 'var(--white)' }}>${shippingCost.toFixed(2)}</strong> : <strong style={{ color: 'var(--teal)' }}>Free Shipping To Agent</strong>}
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', gap: 8 }}>
+                <span style={{ color: 'var(--grey-400)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{shippingOption === 'agent_pickup' ? 'Fulfillment' : `Standard Shipping${state.trim() ? ` (${getShippingZoneLabel(shippingZone)})` : ''}`}</span>
+                {shippingOption !== 'agent_pickup' ? <strong style={{ color: 'var(--white)', whiteSpace: 'nowrap', flexShrink: 0 }}>${shippingCost.toFixed(2)}</strong> : <strong style={{ color: 'var(--teal)', whiteSpace: 'nowrap', flexShrink: 0 }}>Free Shipping To Agent</strong>}
               </div>
               {shippingOption !== 'agent_pickup' && (
-                <div style={{ fontSize: '0.7rem', color: 'var(--grey-400)', textAlign: 'right', marginTop: -4 }}>Total Weight: {totalWeightOz.toFixed(1)} Oz ({(totalWeightOz * 28.3495).toFixed(0)}g)</div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--grey-400)', textAlign: 'right', marginTop: -4 }}>{state.trim() ? 'Flat Rate - Any Order Size' : 'Select Your State For The Exact Rate'}</div>
               )}
-              <div style={{ paddingTop: 'var(--space-3)', display: 'flex', justifyContent: 'space-between', fontSize: '1.05rem', marginTop: 'var(--space-1)' }}>
+              <div style={{ paddingTop: 'var(--space-3)', display: 'flex', justifyContent: 'space-between', fontSize: '1.05rem', marginTop: 'var(--space-1)', gap: 8 }}>
                 <span style={{ color: 'var(--white)', fontWeight: 600 }}>Total Due</span>
-                <strong style={{ color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>${grandTotal.toFixed(2)}</strong>
+                <strong style={{ color: 'var(--teal)', fontFamily: 'var(--font-brand)', whiteSpace: 'nowrap', flexShrink: 0 }}>${grandTotal.toFixed(2)}</strong>
               </div>
             </div>
             </div>
