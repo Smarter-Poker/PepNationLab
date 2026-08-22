@@ -2,6 +2,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { isSavageNetworkAgent } from '@/lib/brand-network';
 import { Heart, Bell, ShieldCheck, Gift } from 'lucide-react';
 import LabJournalClient from './LabJournalClient';
 import PageShell from '@/components/PageShell';
@@ -47,6 +48,14 @@ export default async function LabJournalPage() {
       .maybeSingle();
     storefrontSlug = agentRow?.slug ?? null;
   }
+
+  // Savage-network verdict for the catalog this journal shops against, so no
+  // Pep Nation vial imagery renders for researchers/agents in that network.
+  let brandNetworkIsSavage = false;
+  try {
+    const brandAgentId = referringAgentId ?? (isAgentSelfBuy ? user.id : null);
+    brandNetworkIsSavage = await isSavageNetworkAgent(service, brandAgentId);
+  } catch { /* non-fatal */ }
 
   // --- Fetch Wishlist and Past Orders ---
   const { data: favRows } = await service
@@ -135,11 +144,15 @@ export default async function LabJournalPage() {
     }
   }
 
+  // customImageMap: maps product_id -> agent-specific custom_image_url
+  // Populated below for both referred researchers and agent self-buy.
+  const customImageMap = new Map<string, string>();
+
   const priceMap = new Map<string, { price: number; is_on_sale: boolean; agent_product_id: string }>();
   if (referringAgentId && allProductIds.length > 0) {
     const { data: agentProducts } = await service
       .from('agent_products')
-      .select('id, product_id, retail_price, is_on_sale, sale_price')
+      .select('id, product_id, retail_price, is_on_sale, sale_price, custom_image_url')
       .eq('agent_id', referringAgentId)
       .in('product_id', allProductIds);
     for (const ap of agentProducts ?? []) {
@@ -152,13 +165,27 @@ export default async function LabJournalPage() {
           agent_product_id: ap.id
         });
       }
+      if (ap.custom_image_url) customImageMap.set(ap.product_id, ap.custom_image_url);
+    }
+  }
+
+  // For agent self-buy: fetch custom images separately (price logic uses base_cost, not retail)
+  if (isAgentSelfBuy && !referringAgentId && allProductIds.length > 0) {
+    const { data: selfApImages } = await service
+      .from('agent_products')
+      .select('product_id, custom_image_url')
+      .eq('agent_id', user.id)
+      .in('product_id', allProductIds)
+      .not('custom_image_url', 'is', null);
+    for (const ap of selfApImages ?? []) {
+      if (ap.custom_image_url) customImageMap.set(ap.product_id, ap.custom_image_url);
     }
   }
 
   const mapToItem = (p: any, additional?: any) => ({
     product_id: p.id,
     name: p.name,
-    image_url: p.image_url,
+    image_url: customImageMap.get(p.id) ?? p.image_url,
     category: p.category,
     base_cost: p.base_cost != null ? Number(p.base_cost) / 10 : null,
     retail_price: priceMap.get(p.id)?.price ?? null,
@@ -224,7 +251,7 @@ export default async function LabJournalPage() {
     bundles = bData.map((p: any) => ({
       product_id: p.id,
       name: p.name,
-      image_url: p.image_url,
+      image_url: customImageMap.get(p.id) ?? p.image_url,
       category: p.category,
       base_cost: p.base_cost != null ? Number(p.base_cost) / 10 : null,
       retail_price: priceMap.get(p.id)?.price ?? null,
@@ -240,7 +267,7 @@ export default async function LabJournalPage() {
     catalog = cData.map((p: any) => ({
       product_id: p.id,
       name: p.name,
-      image_url: p.image_url,
+      image_url: customImageMap.get(p.id) ?? p.image_url,
       category: p.category,
       base_cost: p.base_cost != null ? Number(p.base_cost) / 10 : null,
       retail_price: priceMap.get(p.id)?.price ?? null,
@@ -274,6 +301,7 @@ export default async function LabJournalPage() {
             categories={categories}
             storefrontSlug={storefrontSlug}
             isAgentSelfBuy={isAgentSelfBuy}
+            brandNetworkIsSavage={brandNetworkIsSavage}
           />
         </div>
       </div>

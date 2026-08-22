@@ -42,6 +42,36 @@ export function chicagoMidnightIso(dateStr: string): string {
  *
  * Always returns a Monday calendar date in Chicago.
  */
+/**
+ * Snap `now` to the Monday (YYYY-MM-DD) that begins the CURRENTLY OPEN week
+ * in America/Chicago - the week that will be billed at the next cron fire.
+ *
+ * This is the forecast counterpart to previousCompletedWeekStartCst. Both
+ * anchor on Chicago's calendar day so the week boundary lands at Chicago
+ * midnight, not UTC midnight: an order placed Sunday 7pm CT belongs to the
+ * week that is closing, but a UTC-anchored boundary would call it Monday and
+ * push it into next week. That 5-6 hour skew was why the wallet forecast and
+ * the Monday statement disagreed about which week an order fell in.
+ */
+export function currentWeekStartCst(now: Date): string {
+  const chiToday = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Chicago',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(now);
+
+  const [y, m, d] = chiToday.split('-').map(Number);
+  // Noon-UTC anchor on the same Chicago calendar day, so getUTCDay() reports
+  // Chicago's weekday (noon UTC = 6-7am Chicago).
+  const anchor = new Date(Date.UTC(y, m - 1, d, 12));
+  const day = anchor.getUTCDay(); // 0 = Sun, 1 = Mon, ... 6 = Sat
+  const diff = day === 0 ? -6 : 1 - day; // snap back to this week's Monday
+  anchor.setUTCDate(anchor.getUTCDate() + diff);
+
+  return anchor.toISOString().slice(0, 10);
+}
+
 export function previousCompletedWeekStartCst(now: Date): string {
   // "Today" in Chicago at the moment the cron fires. en-CA's locale
   // formatter always emits YYYY-MM-DD which is what we want.

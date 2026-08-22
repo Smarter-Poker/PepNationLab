@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import HomeClient from './HomeClient';
 import HomeSeoContent from '@/components/HomeSeoContent';
 import AgentLinkCapture from '@/components/AgentLinkCapture';
+import { REF_LOCK_COOKIE, verifyRefLock } from '@/lib/ref-lock';
 
 export const metadata: Metadata = {
   title: 'Pep Nation Lab | Premium Research Peptide Distribution',
@@ -24,7 +26,16 @@ export const metadata: Metadata = {
   },
 };
 
-export default function HomePage() {
+export default async function HomePage() {
+  // Guests who scanned an agent QR carry the signed referral-lock cookie set by
+  // the middleware. Reading it here (which makes this page dynamic) lets the
+  // hitmap send "Continue As Guest" to that agent's storefront and carry the
+  // referral code into sign-up (see lib/ref-lock.ts).
+  const cookieStore = await cookies();
+  const lock = await verifyRefLock(cookieStore.get(REF_LOCK_COOKIE)?.value);
+  const guestStoreSlug = lock?.s ?? null;
+  const refCode = lock?.c ?? null;
+
   return (
     <>
       <script
@@ -54,7 +65,7 @@ export default function HomePage() {
       {/* Capture guest QR / sub-agent attribution carried via ?agent / ?sa
           through the storefront guest redirect (invisible; no-op without ?agent). */}
       <AgentLinkCapture />
-      <HomeClient />
+      <HomeClient guestStoreSlug={guestStoreSlug} refCode={refCode} />
       {/* Server-rendered crawlable homepage content: gives the root domain a
           real H1, intro copy, and descriptive internal links beneath the
           image-based landing artwork. */}

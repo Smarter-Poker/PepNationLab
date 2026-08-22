@@ -24,5 +24,10 @@ export default async function WalletRoute() {
   // returns nothing.
   const allowed = ['researcher', 'agent', 'super_agent', 'admin'].includes(profile.role);
   if (!allowed) redirect('/dashboard');
-  return <WalletPage userId={user.id} role={profile.role} isSuperAgent={!!profile.is_super_agent} />;
+  // The global Navbar is mounted once by app/wallet/layout.tsx - rendering a
+  // second one here double-mounted the notification bell and crashed the
+  // route (duplicate realtime channel subscription on the singleton client).
+  return (
+    <WalletPage userId={user.id} role={profile.role} isSuperAgent={!!profile.is_super_agent} />
+  );
 }

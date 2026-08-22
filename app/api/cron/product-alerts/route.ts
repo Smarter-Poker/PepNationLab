@@ -72,7 +72,7 @@ export async function GET(req: Request) {
           .eq('product_id', a.product_id)
           .maybeSingle();
         if (ap) {
-          const effective = (ap.is_on_sale && ap.sale_price != null ? Number(ap.sale_price) : Number(ap.retail_price)) / 10;
+          const effective = (ap.is_on_sale && ap.sale_price != null ? Number(ap.sale_price) : Number(ap.retail_price));
           shouldNotify = Number.isFinite(effective) && effective < Number(a.reference_price);
         }
       }

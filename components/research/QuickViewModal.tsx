@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { X } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -8,6 +9,8 @@ import { Compound, evidenceTier, intranasalDisplay } from '@/lib/compounds';
 import InteractiveGlossaryText from '@/components/research/InteractiveGlossaryText';
 import PinToCompareButton from '@/components/research/PinToCompareButton';
 import ResearchCartButton from '@/components/research/ResearchCartButton';
+import DynamicCoaButton from '@/components/storefront/DynamicCoaButton';
+import IframeModal from '@/components/ui/IframeModal';
 import { useModalA11y } from '@/lib/useModalA11y';
 
 interface QuickViewModalProps {
@@ -17,9 +20,11 @@ interface QuickViewModalProps {
   imageUrl?: string;
   price?: number | null;
   storeProduct?: any;
+  coaUrl?: string | null;
 }
 
-export default function QuickViewModal({ compound, isOpen, onClose, imageUrl, price, storeProduct }: QuickViewModalProps) {
+export default function QuickViewModal({ compound, isOpen, onClose, imageUrl, price, storeProduct, coaUrl = null }: QuickViewModalProps) {
+  const [coaModalUrl, setCoaModalUrl] = useState<string | null>(null);
   const formatPrice = (p: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(p);
   const nasal = intranasalDisplay(compound);
   // A11y: initial focus, Tab trap, Escape-to-close, focus restore
@@ -78,9 +83,21 @@ export default function QuickViewModal({ compound, isOpen, onClose, imageUrl, pr
                   </div>
                 )}
               </div>
-              <button onClick={onClose} aria-label="Close Quick View" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#FFF', borderRadius: '50%', padding: 8, cursor: 'pointer', display: 'flex', transition: 'all 0.2s ease-in-out' }}>
-                <X size={20} />
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                {coaUrl && (
+                  <a
+                    href={coaUrl}
+                    onClick={(e) => { e.preventDefault(); setCoaModalUrl(coaUrl); }}
+                    title="Certificate of Analysis"
+                    style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}
+                  >
+                    <DynamicCoaButton />
+                  </a>
+                )}
+                <button onClick={onClose} aria-label="Close Quick View" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#FFF', borderRadius: '50%', padding: 8, cursor: 'pointer', display: 'flex', transition: 'all 0.2s ease-in-out' }}>
+                  <X size={20} />
+                </button>
+              </div>
             </div>
 
             <div style={{ padding: '24px 32px 0 32px' }}>
@@ -208,6 +225,9 @@ export default function QuickViewModal({ compound, isOpen, onClose, imageUrl, pr
             </div>
           </motion.div>
         </div>
+      )}
+      {coaModalUrl && (
+        <IframeModal url={coaModalUrl} title="Certificate of Analysis" onClose={() => setCoaModalUrl(null)} />
       )}
     </AnimatePresence>
   );

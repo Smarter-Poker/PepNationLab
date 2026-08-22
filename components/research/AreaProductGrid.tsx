@@ -780,6 +780,7 @@ export default function AreaProductGrid({
                     handling: { form: 'Vial' },
                     _imageUrl: p.imageUrl,
                     _price: p.agentProductId ? (p.isOnSale && p.salePrice != null ? p.salePrice : p.retailPrice) : null,
+                    _coaUrl: compound.coaUrl && compound.coaUrl !== '#' ? compound.coaUrl : null,
                   });
                 }
               }}
@@ -1000,6 +1001,7 @@ export default function AreaProductGrid({
         compound={quickViewCompound}
         imageUrl={quickViewCompound?._imageUrl}
         price={quickViewCompound?._price}
+        coaUrl={quickViewCompound?._coaUrl ?? null}
         onClose={() => setQuickViewCompound(null)}
       />
 

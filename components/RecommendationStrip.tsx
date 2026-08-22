@@ -21,9 +21,14 @@ interface Props {
   recommendations: RecommendationItem[];
   loading?: boolean;
   primaryColor?: string;
+  agentSlug?: string;
   onSelect?: (productId: string) => void;
   buildHref?: (productId: string) => string | null;
   hideWhenEmpty?: boolean;
+  /** Authoritative Savage-network flag from the caller (server-resolved or
+   *  grid-computed). ORed with the local image-path heuristic so Pep Nation
+   *  vials never render on Savage-network stores. */
+  isSavageBrandsNetwork?: boolean;
 }
 
 
@@ -52,7 +57,16 @@ export default function RecommendationStrip({
   onSelect,
   buildHref,
   hideWhenEmpty = true,
+  agentSlug,
+  isSavageBrandsNetwork = false,
 }: Props) {
+  // Caller-supplied flag first (covers Savage downlines whose catalog rows
+  // carry no savage image paths), then the slug/path heuristics.
+  const savageNetwork = (item: RecommendationItem) =>
+    isSavageBrandsNetwork ||
+    agentSlug === 'savagebrands' ||
+    (item.image_url || '').includes('/images/savage-brands/');
+
   if (!loading && hideWhenEmpty && recommendations.length === 0) {
     return null;
   }
@@ -83,8 +97,15 @@ export default function RecommendationStrip({
           display: 'flex',
           gap: 'var(--space-2)',
           overflowX: 'auto',
+          // Isolate the carousel's horizontal scroll from the page WITHOUT
+          // trapping vertical page-scroll: overscroll-behavior-x:none stops the
+          // horizontal swipe from chaining to browser back/forward at the edge,
+          // while touch-action pan-x pan-y still lets a vertical swipe that
+          // starts on the strip scroll the page (a bare pan-x blocked it on
+          // Android, so a thumb resting over this full-width strip could not
+          // scroll the page up/down).
           overscrollBehaviorX: 'none',
-          touchAction: 'pan-x',
+          touchAction: 'pan-x pan-y',
           WebkitOverflowScrolling: 'touch',
           paddingBottom: 6,
           scrollbarWidth: 'thin',
@@ -127,9 +148,9 @@ export default function RecommendationStrip({
                       justifyContent: 'center',
                     }}
                   >
-                    {getProductImage(item.image_url, item.category || 'Other', item.name) ? (
+                    {getProductImage(item.image_url, item.category || 'Other', item.name, false, agentSlug, savageNetwork(item)) ? (
                       <Image
-                        src={getProductImage(item.image_url, item.category || 'Other', item.name)}
+                        src={getProductImage(item.image_url, item.category || 'Other', item.name, false, agentSlug, savageNetwork(item))}
                         alt={item.name}
                         width={200}
                         height={200}
@@ -142,7 +163,7 @@ export default function RecommendationStrip({
                         }}
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
-                          const fallback = getProductImage(null, item.category || 'Other', item.name);
+                          const fallback = getProductImage(null, item.category || 'Other', item.name, false, agentSlug, savageNetwork(item));
                           if (target.src !== fallback) {
                             target.src = fallback;
                           }

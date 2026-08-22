@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import Navbar from '@/components/Navbar';
+import BackButton from '@/components/ui/BackButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +22,7 @@ interface MetricCardProps {
 function MetricCard({ label, value, sub, index = 0 }: MetricCardProps) {
   return (
     <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', animationDelay: `${0.1 + index * 0.1}s` }}>
+      <Navbar />
       <div style={{ color: 'var(--silver)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
       <div style={{ color: 'var(--white)', fontSize: '1.6rem', fontWeight: 800, marginTop: 4 }}>{value}</div>
       {sub && <div style={{ color: 'var(--silver)', fontSize: '0.78rem', marginTop: 2 }}>{sub}</div>}
@@ -106,9 +109,7 @@ export default async function AgentAnalyticsPage() {
   return (
     <div style={{ padding: 'var(--space-5)' }}>
       <div style={{ marginBottom: 'var(--space-4)' }}>
-        <Link href="/dashboard/agent" style={{ color: 'var(--teal)', fontSize: '0.85rem', textDecoration: 'none' }}>
-          Back To Agent Dashboard
-        </Link>
+        <BackButton label="Back To Agent Dashboard" />
       </div>
       <h1 className="animated-gradient-text" style={{ color: 'var(--white)', fontSize: '1.5rem', marginBottom: 'var(--space-2)' }}>
         Storefront Analytics

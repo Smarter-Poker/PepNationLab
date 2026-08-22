@@ -18,6 +18,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, Sparkles } from 'lucide-react';
+import DynamicCoaButton from '../storefront/DynamicCoaButton';
 import {
   type Compound,
   evidenceTier,
@@ -238,9 +239,21 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
             <Image src="/back-arrow.png" alt="Back" width={38} height={38} unoptimized style={{ objectFit: 'contain' }} />
             Back
           </button>
-          <span style={{ marginLeft: 'auto', fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--silver)' }}>
-            {VIEW_TITLE[view]}
-          </span>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 16 }}>
+            {coaUrl && (
+              <a
+                href={coaUrl}
+                onClick={(e) => { e.preventDefault(); setCoaOpen(true); }}
+                title="View Certificate of Analysis"
+                style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}
+              >
+                <DynamicCoaButton />
+              </a>
+            )}
+            <span style={{ fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--silver)' }}>
+              {VIEW_TITLE[view]}
+            </span>
+          </div>
         </div>
 
         {/* Scroll body */}
@@ -414,26 +427,13 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
                   <Fact label="Net Quantity Per Vial" value="Reported On The Batch Certificate" />
                 </div>
 
-                {coaUrl ? (
-                  <button
-                    type="button"
-                    onClick={() => setCoaOpen(true)}
-                    style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 18px',
-                      borderRadius: 'var(--radius-md)', background: primaryColor, color: '#04221F',
-                      fontWeight: 800, fontSize: '0.88rem', border: 'none', cursor: 'pointer',
-                    }}
-                  >
-                    View Batch Certificate Of Analysis
-                  </button>
-                ) : (
+                {/* Removed from here to move to the top */}
                   <div style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.10)' }}>
                     <Para>
                       A Batch-Specific Certificate Of Analysis For The Current Lot Is Available On Request.
                       Contact Your Agent To Receive The Latest Lot Certificate For This Product.
                     </Para>
                   </div>
-                )}
               </div>
             )}
 

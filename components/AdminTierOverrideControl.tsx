@@ -5,29 +5,21 @@ import { toast } from 'sonner';
 
 interface TierLevel { level: number; name: string; markup?: number }
 
-// Static fallback only - replaced by live house_tiers config from the GET
-// endpoint so markup labels always reflect the admin's current multipliers.
-const DEFAULT_LEVELS: TierLevel[] = [
-  { level: 1, name: 'Premium', markup: 1.5 },
-  { level: 2, name: 'Pro', markup: 2.0 },
-  { level: 3, name: 'Rookie', markup: 2.5 },
-];
-
 /**
- * Admin "Fixed Scale Override" control for one agent. Locks the agent to a
- * specific House tier regardless of rolling volume (or releases back to
- * volume-driven). Self-contained: loads current state from GET and writes via
- * POST /api/admin/agents/tier-override. Only affects pricing once the tier
- * ladder feature flag is enabled.
+ * Admin flat-markup control for one TOP-LEVEL agent.
+ *
+ * Owner request 2026-07-22: markup is set by MANUALLY typing a percentage - no
+ * predetermined Tier 1/2/3 options and no volume "gamification" scale. The admin
+ * types the % the agent pays over house cost and hits Apply. Writes customMarkup
+ * (a flat percent) via POST /api/admin/agents/tier-override (enabled:false), the
+ * same endpoint/column the old "Flat Markup (Custom %)" path already used, so no
+ * server change is needed. When the agent currently has no explicit override, the
+ * box is pre-filled with their current effective tier markup % so the admin sees
+ * the live number and can adjust it directly.
  */
 export default function AdminTierOverrideControl({ agentId }: { agentId: string }) {
   const [loaded, setLoaded] = useState(false);
-  const [enabled, setEnabled] = useState(false);
-  const [level, setLevel] = useState(3);
-  const [currentLevel, setCurrentLevel] = useState<number | null>(null);
-  const [customMarkup, setCustomMarkup] = useState<string>('');
-  const [ladderActive, setLadderActive] = useState(false);
-  const [levels, setLevels] = useState<TierLevel[]>(DEFAULT_LEVELS);
+  const [markup, setMarkup] = useState<string>('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -38,17 +30,15 @@ export default function AdminTierOverrideControl({ agentId }: { agentId: string 
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || 'load failed');
         if (cancelled) return;
-        setEnabled(!!json.enabled);
-        if (json.level) setLevel(Number(json.level));
-        if (json.currentLevel) setCurrentLevel(Number(json.currentLevel));
         if (json.customMarkup !== null && json.customMarkup !== undefined) {
-          setCustomMarkup(String(json.customMarkup));
+          setMarkup(String(json.customMarkup));
+        } else if (json.currentLevel && Array.isArray(json.levels)) {
+          // No explicit override yet: pre-fill with the agent's current effective
+          // tier markup % so the admin sees the live number and can change it.
+          const lvl = (json.levels as TierLevel[]).find((l) => l.level === Number(json.currentLevel));
+          setMarkup(lvl?.markup != null ? String(Math.round(lvl.markup * 100)) : '');
         } else {
-          setCustomMarkup('');
-        }
-        setLadderActive(!!json.ladderActive);
-        if (Array.isArray(json.levels) && json.levels.length > 0) {
-          setLevels(json.levels);
+          setMarkup('');
         }
       } catch {
         /* non-blocking: leave defaults */
@@ -59,42 +49,29 @@ export default function AdminTierOverrideControl({ agentId }: { agentId: string 
     return () => { cancelled = true; };
   }, [agentId]);
 
-  async function save(nextEnabled: boolean, nextLevel: number, nextCustomMarkup?: string) {
-    setSaving(true);
-    const resolvedMarkup = nextCustomMarkup !== undefined ? nextCustomMarkup : customMarkup;
-    // Fail-closed client guard mirroring the server rule (finite, 0-500%):
-    // a non-numeric entry previously became NaN in the payload and relied on
-    // the server 400 to bounce it.
-    if (resolvedMarkup !== '') {
-      const markupNum = Number(resolvedMarkup);
-      if (!Number.isFinite(markupNum) || markupNum < 0 || markupNum > 500) {
-        toast.error('Flat Markup Must Be A Number Between 0 And 500.');
-        setSaving(false);
-        return;
-      }
+  async function save() {
+    if (markup === '') {
+      toast.error('Enter A Markup % (0-500).');
+      return;
     }
+    // Fail-closed client guard mirroring the server rule (finite, 0-500%).
+    const markupNum = Number(markup);
+    if (!Number.isFinite(markupNum) || markupNum < 0 || markupNum > 500) {
+      toast.error('Markup Must Be A Number Between 0 And 500.');
+      return;
+    }
+    setSaving(true);
     try {
       const res = await fetch('/api/admin/agents/tier-override', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          agentId, 
-          enabled: nextEnabled, 
-          level: nextEnabled ? nextLevel : undefined,
-          customMarkup: resolvedMarkup === '' ? null : Number(resolvedMarkup)
-        }),
+        body: JSON.stringify({ agentId, enabled: false, customMarkup: markupNum }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed To Save Override');
-      setEnabled(nextEnabled);
-      
-      if (resolvedMarkup !== '') {
-        toast.success(`Flat Markup Set To ${resolvedMarkup}%`);
-      } else {
-        toast.success(nextEnabled ? `Locked To ${levels.find((l) => l.level === nextLevel)?.name ?? `Level ${nextLevel}`}` : 'Switched To Gamification Scale');
-      }
+      if (!res.ok) throw new Error(json.error || 'Failed To Save Markup');
+      toast.success(`Markup Set To ${markupNum}%`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed To Save Override');
+      toast.error(err instanceof Error ? err.message : 'Failed To Save Markup');
     } finally {
       setSaving(false);
     }
@@ -102,115 +79,45 @@ export default function AdminTierOverrideControl({ agentId }: { agentId: string 
 
   if (!loaded) return null;
 
-  let selectValue = 'auto';
-  if (customMarkup !== '') {
-    selectValue = 'custom';
-  } else if (enabled) {
-    selectValue = `tier_${level}`;
-  }
-
-  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const val = e.target.value;
-    if (val === 'auto') {
-      save(false, level, '');
-      setCustomMarkup('');
-    } else if (val.startsWith('tier_')) {
-      const newLevel = Number(val.split('_')[1]);
-      setLevel(newLevel);
-      save(true, newLevel, '');
-      setCustomMarkup('');
-    } else if (val === 'custom') {
-      // Don't save immediately, let the user type in the input box
-      setCustomMarkup('0');
-    }
-  };
-
-  const currentTierName = currentLevel ? levels.find(l => l.level === currentLevel)?.name : null;
-  const autoLabel = currentTierName
-    ? `Gamification Scale (Currently Tier ${currentLevel}: ${currentTierName})`
-    : 'Gamification Scale (Volume-Based)';
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-        <select
-          value={selectValue}
-          disabled={saving}
-          onChange={handleSelectChange}
-          style={{ 
-            background: 'var(--surface-3)', 
-            color: 'var(--white)', 
-            border: '1px solid rgba(255,255,255,0.15)', 
-            borderRadius: 6, 
-            padding: '6px 12px', 
-            fontSize: '0.85rem', 
-            cursor: saving ? 'not-allowed' : 'pointer',
-            flex: 1,
-            minWidth: 200,
-            maxWidth: '300px'
-          }}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ position: 'relative', width: 120 }}>
+          <input
+            type="number"
+            min="0"
+            max="500"
+            value={markup}
+            onChange={(e) => setMarkup(e.target.value.replace(/[^0-9.]/g, ''))}
+            onKeyDown={(e) => { if (e.key === 'Enter') save(); }}
+            disabled={saving}
+            placeholder="100"
+            style={{
+              width: '100%',
+              background: 'var(--surface-3)',
+              border: '1px solid var(--teal)',
+              color: 'var(--white)',
+              borderRadius: 6,
+              padding: '6px 24px 6px 12px',
+              fontSize: '0.85rem',
+              outline: 'none',
+            }}
+          />
+          <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--silver)', fontSize: '0.85rem', pointerEvents: 'none' }}>%</span>
+        </div>
+        <button
+          type="button"
+          className="btn btn-primary btn-sm"
+          disabled={saving || markup === ''}
+          onClick={save}
+          style={{ height: 32 }}
         >
-          <option value="auto">{autoLabel}</option>
-          
-          <optgroup label="Lock To A Standard Tier">
-            {levels.map((l) => (
-              <option key={`tier_${l.level}`} value={`tier_${l.level}`}>
-                Tier {l.level}: {l.name}{l.markup != null ? ` (${Math.round(l.markup * 100)}% Markup = ${(1 + l.markup).toFixed(1)}x Cost)` : ''}
-              </option>
-            ))}
-          </optgroup>
-
-          <option value="custom">Flat Markup (Custom %)...</option>
-        </select>
-        
-        {selectValue === 'custom' && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ position: 'relative', width: 90 }}>
-              <input
-                type="number"
-                min="0"
-                max="500"
-                value={customMarkup}
-                onChange={(e) => setCustomMarkup(e.target.value)}
-                onBlur={() => {
-                  if (customMarkup !== '') {
-                    save(false, level, customMarkup);
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && customMarkup !== '') {
-                    save(false, level, customMarkup);
-                  }
-                }}
-                disabled={saving}
-                style={{
-                  width: '100%',
-                  background: 'var(--surface-3)',
-                  border: '1px solid var(--teal)',
-                  color: 'var(--white)',
-                  borderRadius: 6,
-                  padding: '6px 24px 6px 12px',
-                  fontSize: '0.85rem',
-                  outline: 'none'
-                }}
-              />
-              <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--silver)', fontSize: '0.85rem', pointerEvents: 'none' }}>%</span>
-            </div>
-            <button 
-              type="button" 
-              className="btn btn-primary btn-sm" 
-              disabled={saving || customMarkup === ''} 
-              onClick={() => save(false, level, customMarkup)}
-              style={{ height: 32 }}
-            >
-              Apply
-            </button>
-          </div>
-        )}
+          {saving ? 'Saving...' : 'Apply Markup'}
+        </button>
       </div>
-      {!ladderActive && (
-        <span style={{ fontSize: '0.65rem', color: 'var(--grey-500)', marginTop: 4 }}>Volume Based Pricing Takes Effect When Tier Ladder Is Enabled</span>
-      )}
+      <span style={{ fontSize: '0.65rem', color: 'var(--grey-500)', marginTop: 2 }}>
+        This Agent Pays House Cost Plus This Markup %. Type Any Number - No Preset Tiers.
+      </span>
     </div>
   );
 }

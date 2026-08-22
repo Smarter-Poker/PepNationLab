@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { isEffectiveAdmin } from '@/lib/platform-admins';
 import { redirect } from 'next/navigation';
 import AdminCatalogRisk from '@/components/AdminCatalogRisk';
 
@@ -11,10 +12,10 @@ export default async function AdminCatalogRiskPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, is_admin_account')
     .eq('id', user.id)
     .maybeSingle();
-  if (profile?.role !== 'admin') redirect('/dashboard');
+  if (!isEffectiveAdmin(user.id, profile?.role) && profile?.is_admin_account !== true) redirect('/dashboard');
 
   return (
     <div style={{ padding: 'var(--space-8)' }}>

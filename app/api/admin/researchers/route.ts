@@ -8,6 +8,9 @@ import { requireAdmin } from '@/lib/admin-auth';
 import { unwrapMaybe } from '@/lib/supabase/unwrap';
 import { assertSameOrigin } from '@/lib/csrf';
 import { safeError } from '@/lib/api-error';
+import { validateStoreSlug } from '@/lib/store-slug';
+import { generateStorefrontQr } from '@/lib/qr-storefront';
+import { seedStorefrontFromHousePrices } from '@/lib/seed-storefront';
 
 // GET: List all profiles with optional roles and search query
 export async function GET(req: NextRequest) {
@@ -27,7 +30,8 @@ export async function GET(req: NextRequest) {
 
     let dbQuery = supabase
       .from('profiles')
-      .select('*, agent_profiles(slug, display_name, is_active)', { count: 'exact' });
+      .select('*, agent_profiles(slug, display_name, is_active)', { count: 'exact' })
+      .is('deleted_at', null);
 
     if (role) {
       dbQuery = dbQuery.eq('role', role); // @ts-ignore
@@ -189,6 +193,7 @@ export async function POST(req: NextRequest) {
           .from('profiles')
           .select('id, role')
           .eq('id', id)
+          .is('deleted_at', null)
           .maybeSingle()
       );
       if (!target) return NextResponse.json({ error: 'Researcher Not Found' }, { status: 404 });
@@ -218,6 +223,7 @@ export async function POST(req: NextRequest) {
             .from('profiles')
             .select('id, role, is_active')
             .eq('id', assign_to_agent_id)
+            .is('deleted_at', null)
             .maybeSingle()
         );
         if (!owner || (owner.role !== 'agent' && owner.role !== 'super_agent')) {
@@ -263,7 +269,22 @@ export async function POST(req: NextRequest) {
 
     const isSuperPromotion = role === 'super_agent';
     const isAgentRole = role === 'agent' || role === 'super_agent';
-    const canonicalRole = isSuperPromotion ? 'agent' : role;
+    // This used to fold a super-agent promotion down to role='agent' while
+    // still setting is_super_agent=true below, which is exactly the pairing the
+    // chk_super_agent_role_sync CHECK forbids. That constraint is a strict
+    // biconditional:
+    //
+    //   ((is_super_agent = false) OR (role = 'super_agent'))
+    //   AND ((role <> 'super_agent') OR (is_super_agent = true))
+    //
+    // i.e. is_super_agent = true if and only if role = 'super_agent'. So every
+    // super-agent promotion through this endpoint was rejected outright by the
+    // database with a 23514, surfaced to the admin as the generic
+    // "An Unexpected Error Occurred" -- the promotion simply never worked.
+    // 'super_agent' is a real user_role enum member, so writing it through is
+    // both legal and what the rest of the platform already expects (the agents
+    // list queries .in('role', ['agent','super_agent'])).
+    const canonicalRole = role;
 
     // Validate agent-specific fields BEFORE updating the profile to avoid
     // leaving the user in a broken state (role=agent but no agent_profiles row)
@@ -271,9 +292,18 @@ export async function POST(req: NextRequest) {
     if (isAgentRole) {
       if (!slug || !display_name) return NextResponse.json({ error: 'Slug And User Name Are Required For Agents' }, { status: 400 });
       if (typeof display_name !== 'string' || display_name.length > 100) return NextResponse.json({ error: 'User Name Length Must Be 100 Characters Or Less' }, { status: 400 });
-      const slugRegex = /^[a-z0-9\-]+$/;
-      if (!slugRegex.test(slug)) return NextResponse.json({ error: 'Slug Must Contain Lowercase Letters, Numbers, And Hyphens Only' }, { status: 400 });
-      if (slug.length < 2 || slug.length > 50) return NextResponse.json({ error: 'Slug Length Must Be Between 2 And 50 Characters' }, { status: 400 });
+      // Storefront slug shape comes from lib/store-slug.ts - the same definition
+      // the edge middleware (proxy.ts) matches on and the
+      // agent_profiles_slug_shape CHECK + agent_profiles_slug_not_reserved
+      // trigger enforce in the database.
+      //
+      // The old /^[a-z0-9\-]+$/ plus a 2..50 length pair had the right bounds
+      // but no reserved-segment guard and allowed a leading hyphen, so
+      // promoting a researcher onto slug `admin`, `wallet`, `checkout` or `-x`
+      // produced a storefront the middleware refuses to route -- permanently
+      // dead, with its QR code, and no error surfaced anywhere.
+      const slugError = validateStoreSlug(slug);
+      if (slugError) return NextResponse.json({ error: slugError }, { status: 400 });
 
       const existingSlug = await unwrapMaybe<any>('researcher.slug_check', supabase.from('agent_profiles').select('id').eq('slug', slug).neq('id', id).maybeSingle());
       if (existingSlug) return NextResponse.json({ error: 'This Agent Storefront Slug Is Already Taken' }, { status: 400 });
@@ -318,13 +348,65 @@ export async function POST(req: NextRequest) {
     });
 
     if (isAgentRole) {
-      const agentProfileData = {
+      // Promotion to agent creates (or re-points) a storefront, and a
+      // storefront with no qr_code_data is a storefront whose owner has no
+      // code to hand out. This branch never generated one, so every agent
+      // promoted from a researcher account shipped with a NULL QR while
+      // agents created through the four /api/*/agents routes got theirs at
+      // creation time. Generate it here too, from the same shared helper, so
+      // the payload and the scanner-safe palette match everywhere.
+      //
+      // referral_code is the referral namespace when set, username otherwise;
+      // proxy.ts's resolveRefCode() accepts either (and the slug), so the
+      // fallback chain always yields a working hard lock.
+      const { data: refRow } = await supabase
+        .from('profiles')
+        .select('username, referral_code')
+        .eq('id', id)
+        .maybeSingle();
+      const refCode =
+        (refRow as { username?: string | null; referral_code?: string | null } | null)?.referral_code ||
+        (refRow as { username?: string | null } | null)?.username ||
+        slug;
+      const qrCodeData = await generateStorefrontQr(slug, refCode);
+
+      const agentProfileData: Record<string, unknown> = {
         id, slug, display_name,
         is_active: is_active !== undefined ? is_active : true,
         updated_at: new Date().toISOString(),
       };
+      // Only write the column when the render succeeded - a null would wipe a
+      // working code off an agent_profiles row that already had one.
+      if (qrCodeData) agentProfileData.qr_code_data = qrCodeData;
+
       const { error: agentError } = await supabase.from('agent_profiles').upsert(agentProfileData);
       if (agentError) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
+
+      // A storefront with no products is a storefront whose QR code scans to an
+      // empty shelf. POST /api/admin/agents seeds every agent it creates from
+      // the HOUSE (admin) store's retail prices; this promotion path created the
+      // agent_profiles row and the QR but never the catalog, so a researcher
+      // promoted here got a live, routable, code-carrying store with nothing in
+      // it -- the customer scans, lands, sees zero products and leaves.
+      //
+      // Guarded by a count, unlike the creation route: this endpoint is an
+      // upsert an admin can re-run on an existing agent (to rename, retier or
+      // reactivate them), and re-seeding then would stomp prices the agent has
+      // since set by hand. Seed only when the catalog is genuinely empty.
+      // Non-fatal, matching admin/agents: the agent and storefront both exist
+      // regardless, and failing the whole request would be worse than an
+      // unseeded catalog the admin can retry.
+      try {
+        const { count: prodCount } = await supabase
+          .from('agent_products')
+          .select('id', { count: 'exact', head: true })
+          .eq('agent_id', id);
+        if (!prodCount) {
+          await seedStorefrontFromHousePrices(supabase, id);
+        }
+      } catch (provisionErr) {
+        console.error('[admin/researchers] storefront seeding failed (non-fatal):', provisionErr);
+      }
     } else {
       await supabase.from('agent_profiles').update({ is_active: false }).eq('id', id);
     }

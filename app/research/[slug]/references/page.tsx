@@ -18,9 +18,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   const compound = await getCompound(slug);
   const name = compound?.display_name ?? 'Compound';
+  const description = `Complete bibliography for ${name} — curated peer-reviewed references, PubMed citations, regulatory sources, and clinical literature. Research Use Only.`;
   return {
     title: `Bibliography For ${name} | Research Library | Pep Nation Lab`,
-    robots: { index: false, follow: true },
+    description,
+    robots: { index: true, follow: true },
+    alternates: { canonical: `https://pepnationlab.com/research/${slug}/references` },
   };
 }
 

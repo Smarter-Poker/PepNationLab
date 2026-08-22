@@ -4,9 +4,11 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { freshDefaultLadder } from '@/lib/gamification';
 import AgentFreezeToggle from '@/components/AgentFreezeToggle';
+import AccountDeleteButton from '@/components/AccountDeleteButton';
 import AdminTierOverrideControl from '@/components/AdminTierOverrideControl';
 import ViewAsButton from '@/components/ViewAsButton';
 import { createClient } from '@/lib/supabase/client';
+import { MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH, PASSWORD_RULE_TEXT } from '@/lib/password-policy';
 
 /**
  * AgentAccountDetail - full management drawer for a single downline FULL agent.
@@ -47,6 +49,11 @@ type Detail = {
     commission_active_since: string | null;
     is_active: boolean;
     is_sub_agent?: boolean;
+    // Present when this account is a parented downline (non-sub-agent).
+    // Chain-aware pricing means ITS cost is commission_pct compounded on its
+    // parent's cost - the Global Pricing Override (house tier / flat
+    // custom_markup_override) below only applies to a TOP-LEVEL account.
+    parent_agent_id?: string | null;
     // Invoice v2 - freeze state surfaced on the detail row so the panel
     // shows the current toggle position without a separate request.
     is_transactions_frozen?: boolean;
@@ -75,6 +82,16 @@ type Detail = {
     commission_pct: number | null;
     created_at: string;
     provisioned_password?: string | null;
+  }>;
+  downline_agents?: Array<{
+    id: string;
+    full_name: string | null;
+    username: string | null;
+    email: string | null;
+    is_active: boolean;
+    is_super_agent?: boolean;
+    commission_pct: number | null;
+    created_at: string;
   }>;
   researchers: Array<{
     id: string;
@@ -127,17 +144,17 @@ export default function AgentAccountDetail({
   onViewDownline?: (agent: any) => void;
 }) {
   const [detail, setDetail] = useState<Detail | null>(null);
-  // PLATFORM RULE: super agents may ONLY promote researchers in their own
-  // downline to full Agent. Granting or revoking SUPER agent status is an
-  // admin-only action (the API already rejects non-admins), so the Make
-  // Super button must only render for admin viewers.
+  // Promote/demote is available to admins AND super-agents (for their own downline).
   const [viewerIsAdmin, setViewerIsAdmin] = useState(false);
+  const [viewerIsSuperAgent, setViewerIsSuperAgent] = useState(false);
+  const [roleChanging, setRoleChanging] = useState(false);
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
-      const { data } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+      const { data } = await supabase.from('profiles').select('role, is_super_agent').eq('id', user.id).maybeSingle();
       setViewerIsAdmin(data?.role === 'admin');
+      setViewerIsSuperAgent(data?.is_super_agent === true || data?.role === 'super_agent');
     });
   }, []);
   const [loading, setLoading] = useState(true);
@@ -158,7 +175,7 @@ export default function AgentAccountDetail({
   const [isActive, setIsActive] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<'Overview' | 'Sub Agents' | 'Researchers'>('Overview');
+  const [activeTab, setActiveTab] = useState<'Overview' | 'Downline Agents' | 'Sub Agents' | 'Researchers'>('Overview');
 
   // Password management for sub-agents and researchers in this drawer
   const [revealedDownlinePasswords, setRevealedDownlinePasswords] = useState<Set<string>>(new Set());
@@ -253,43 +270,37 @@ export default function AgentAccountDetail({
   const isSubAgent = detail?.agent?.is_sub_agent === true;
 
   async function saveChanges() {
-    if (commissionMode === 'gamified') {
-      const over = customSteps.find(s => Number(s.bonus_pct) > MAX_CAP_LIMIT);
-      if (over) {
-        toast.error('Gamification Levels Cannot Exceed 40%.');
-        return;
-      }
-    }
     setSaving(true);
     try {
-      const baseVal: number = commissionMode === 'gamified'
-        ? (Number(customSteps[0].bonus_pct) || 0)
-        : (commissionPct === '' ? 0 : Number(commissionPct));
+      // Markup (commission_pct) is editable below for parented full agents and
+      // is added to the payload further down, but ONLY when a value is present,
+      // so an unrelated edit (e.g. fixing a phone number) can never clobber an
+      // unset (50% default) markup by coercing an empty input to 0.
       const payload: Record<string, any> = {
         full_name: `${firstName.trim()} ${lastName.trim()}`.trim(),
         email,
         phone,
         account_type: accountType,
-        commission_pct: baseVal,
         is_active: isActive,
         display_name: isSubAgent ? undefined : (displayName || undefined),
         slug: isSubAgent ? undefined : (slug || undefined),
       };
-      if (commissionMode === 'fixed') {
-        payload.commission_max_pct = baseVal;
-        payload.velocity_cap = null;
-        payload.custom_commission_scale = null;
-      } else {
-        payload.commission_max_pct = Number(customSteps[customSteps.length - 1].bonus_pct);
-        payload.velocity_cap = null;
-        payload.custom_commission_scale = customSteps.map(s => ({
-          min_volume: Number(s.min_volume) || 0,
-          bonus_pct: Math.max(0, Number(s.bonus_pct) - baseVal),
-        }));
-      }
       if (accountType === 'credit') {
         payload.credit_limit = creditLimit === '' ? 0 : Number(creditLimit);
         payload.max_auto_approve_limit = maxAutoApproveLimit === '' ? null : Number(maxAutoApproveLimit);
+      }
+
+      // Fixed markup for a parented full agent: persist the % the admin/super
+      // entered. Sending commission_max_pct === commission_pct puts the agent on
+      // a FLAT fixed markup (the volume ladder is fully neutralized). Only sent
+      // for parented non-sub-agents, and only when a value is present, so an
+      // unrelated edit never overwrites an unset (50% default) markup.
+      if (!isSubAgent && detail?.agent?.parent_agent_id && commissionPct.trim() !== '') {
+        const pct = Number(commissionPct);
+        if (Number.isFinite(pct) && pct >= 0 && pct <= 200) {
+          payload.commission_pct = pct;
+          payload.commission_max_pct = pct;
+        }
       }
 
       const res = await fetch(`/api/agent/agents/${agentId}`, {
@@ -330,6 +341,27 @@ export default function AgentAccountDetail({
     }
   }
 
+  async function changeRole(makeSuperAgent: boolean) {
+    if (!detail) return;
+    setRoleChanging(true);
+    try {
+      const res = await fetch('/api/admin/agents/super-upgrade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agentId: detail.agent.id, is_super_agent: makeSuperAgent }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed To Update Role.');
+      toast.success(makeSuperAgent ? `${detail.agent.full_name || 'Agent'} Promoted To Super Agent` : `${detail.agent.full_name || 'Agent'} Demoted To Agent`);
+      await load();
+      onChanged();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed To Update Role.');
+    } finally {
+      setRoleChanging(false);
+    }
+  }
+
   return (
     <>
     <div
@@ -358,28 +390,14 @@ export default function AgentAccountDetail({
                   View Downline
                 </button>
               )}
-              {detail && viewerIsAdmin && (
-                <button 
-                  onClick={async () => {
-                    try {
-                      const res = await fetch('/api/admin/agents/super-upgrade', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ agentId: detail.agent.id, is_super_agent: !detail.agent.is_super_agent })
-                      });
-                      const json = await res.json();
-                      if (!res.ok) throw new Error(json.error);
-                      toast.success(detail.agent.is_super_agent ? 'Super Agent Status Revoked' : 'Promoted To Super Agent');
-                      load();
-                      onChanged();
-                    } catch (err: any) {
-                      toast.error(err.message || 'Failed To Update Super Agent Status');
-                    }
-                  }}
-                  className="btn-silver" style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-                  disabled={detail.agent.is_sub_agent}
+              {detail && (viewerIsAdmin || viewerIsSuperAgent) && !detail.agent.is_sub_agent && (
+                <button
+                  onClick={() => changeRole(!detail.agent.is_super_agent)}
+                  className={detail.agent.is_super_agent ? 'btn-secondary' : 'btn-neon-cyan'}
+                  style={{ padding: '6px 14px', fontSize: '0.8rem', fontWeight: 700 }}
+                  disabled={roleChanging}
                 >
-                  {detail.agent.is_super_agent ? 'Revoke Super' : 'Make Super'}
+                  {roleChanging ? '...' : detail.agent.is_super_agent ? '⬇ Demote To Agent' : '⬆ Make Super Agent'}
                 </button>
               )}
               {detail && (
@@ -413,6 +431,21 @@ export default function AgentAccountDetail({
                 >
                   Overview
                 </button>
+                {!isSubAgent && (detail.agent.is_super_agent === true || (detail.downline_agents?.length ?? 0) > 0) && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('Downline Agents')}
+                    style={{
+                      background: 'none', border: 'none', padding: '0 0 8px 0', cursor: 'pointer',
+                      fontSize: '1rem', fontWeight: 700,
+                      color: activeTab === 'Downline Agents' ? '#00C4BC' : 'var(--grey-400)',
+                      borderBottom: activeTab === 'Downline Agents' ? '2px solid #00C4BC' : '2px solid transparent',
+                      textTransform: 'uppercase', letterSpacing: '0.05em'
+                    }}
+                  >
+                    Downline Agents ({detail.downline_agents?.length || 0})
+                  </button>
+                )}
                 {!isSubAgent && (
                   <button
                     type="button"
@@ -518,8 +551,37 @@ export default function AgentAccountDetail({
                     </div>
 
                     <div style={{ marginTop: 'var(--space-4)', padding: 'var(--space-3)', background: 'var(--surface-2)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)' }}>
-                      <label style={{ ...labelStyle, marginBottom: 8, display: 'block' }}>Global Pricing Override</label>
-                      <AdminTierOverrideControl agentId={agentId} />
+                      {!isSubAgent && detail.agent.parent_agent_id ? (
+                        // Chain-aware pricing (2026-07-21, editable 2026-07-22):
+                        // a parented account's real cost is commission_pct, a
+                        // FIXED markup over its super's cost. It is editable here;
+                        // saving sends commission_max_pct === commission_pct so the
+                        // agent stays on a flat fixed markup (no volume ladder).
+                        <>
+                          <label style={{ ...labelStyle, marginBottom: 8, display: 'block' }}>Agent Markup % (Over Your Cost)</label>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <input
+                              style={{ ...inputStyle, width: 120 }}
+                              type="number"
+                              min="0"
+                              max="200"
+                              step="1"
+                              value={commissionPct}
+                              onChange={(e) => setCommissionPct(e.target.value.replace(/[^0-9.]/g, ''))}
+                              placeholder="50"
+                            />
+                            <span style={{ fontSize: '0.85rem', color: 'var(--silver)' }}>% Markup</span>
+                          </div>
+                          <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginTop: 6 }}>
+                            This Agent Pays Your Cost Plus This Fixed Markup. Leave Blank For The 50% Default.
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <label style={{ ...labelStyle, marginBottom: 8, display: 'block' }}>Global Pricing Override</label>
+                          <AdminTierOverrideControl agentId={agentId} />
+                        </>
+                      )}
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-4)' }}>
@@ -632,8 +694,58 @@ export default function AgentAccountDetail({
                         onChanged={() => { load(); onChanged(); }}
                       />
                     </div>
+                    {/* Account deletion 2026-07-29. Reversible soft delete: releases the
+                        username / email / referral code for re-use and blocks login, while
+                        keeping all order and payment history. */}
+                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 'var(--space-4)' }}>
+                      <div style={{ marginBottom: 10 }}>
+                        <div style={{ fontWeight: 700, color: 'var(--white)' }}>Delete Agent</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)' }}>
+                          Removes This Account From All Lists And Blocks Login Immediately. Their Username, Email And Referral Code Are Released For Re-Use. Order And Payment History Is Kept. Any Agents Or Researchers In Their Downline Are Automatically Moved To The Main Admin Account.
+                        </div>
+                      </div>
+                      <AccountDeleteButton
+                        targetId={agentId}
+                        targetName={detail.agent.full_name || agentName}
+                        kind="agent"
+                        onDeleted={() => { onChanged(); onClose(); }}
+                      />
+                    </div>
                   </div>
                 </>
+              )}
+
+              {activeTab === 'Downline Agents' && (
+                <div className="glass-panel">
+                  <h3 className="metal-text" style={{ fontSize: '1rem', margin: '0 0 var(--space-3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Downline Agents</h3>
+                  {!detail.downline_agents || detail.downline_agents.length === 0 ? (
+                    <div style={{ color: 'var(--grey-400)', fontSize: '0.85rem', padding: 'var(--space-3) 0' }}>No Downline Agents Yet.</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {detail.downline_agents.map((a) => (
+                        <div key={a.id} style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', padding: '10px 12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, gap: 12 }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: '1 1 160px' }}>
+                            <span style={{ color: 'var(--white)', fontWeight: 700 }}>
+                              {a.full_name || a.username || 'Anonymous'}
+                              {a.is_super_agent && <span style={{ marginLeft: 6, fontSize: '0.66rem', color: 'var(--teal)', border: '1px solid var(--teal)', borderRadius: 4, padding: '1px 6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Super</span>}
+                            </span>
+                            <span style={{ color: a.is_active ? '#2DD4BF' : '#F87171', fontSize: '0.75rem' }}>{a.is_active ? 'Active' : 'Inactive'}</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: '1 1 140px' }}>
+                            <span style={{ fontSize: '0.68rem', color: 'var(--grey-500)', minWidth: 52 }}>Username</span>
+                            <span style={{ fontFamily: 'monospace', color: 'var(--teal)', fontWeight: 700, fontSize: '0.82rem' }}>{a.username || '-'}</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            {/* NULL means the 50% platform default, not 0 -- match the Overview
+                                Pricing block's own copy so this list doesn't understate the
+                                assigned markup for accounts left on the default. */}
+                            <span style={{ color: '#00C4BC', fontWeight: 700, fontSize: '0.82rem' }}>{a.commission_pct != null ? fmtPct(Number(a.commission_pct)) : '50% (Default)'} Markup</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
 
               {activeTab === 'Sub Agents' && (
@@ -775,16 +887,17 @@ export default function AgentAccountDetail({
                     className="form-input"
                     value={downlineNewPassword}
                     onChange={e => setDownlineNewPassword(e.target.value)}
-                    placeholder="Minimum 8 Characters"
+                    placeholder={PASSWORD_RULE_TEXT}
                     required
-                    minLength={8}
+                    minLength={MIN_PASSWORD_LENGTH}
+                    maxLength={MAX_PASSWORD_LENGTH}
                     autoComplete="off"
                     style={{ width: '100%' }}
                   />
                 </div>
                 <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
                   <button type="button" className="btn-silver" style={{ padding: '4px 12px', fontSize: '0.8rem' }} onClick={() => { setDownlinePasswordAgent(null); setDownlineNewPassword(''); }} disabled={downlinePasswordSaving}>Cancel</button>
-                  <button type="submit" className="btn-neon-cyan" style={{ padding: '4px 12px', fontSize: '0.8rem' }} disabled={downlinePasswordSaving || downlineNewPassword.length < 8}>
+                  <button type="submit" className="btn-neon-cyan" style={{ padding: '4px 12px', fontSize: '0.8rem' }} disabled={downlinePasswordSaving || downlineNewPassword.length < MIN_PASSWORD_LENGTH}>
                     {downlinePasswordSaving ? 'Saving...' : 'Update Password'}
                   </button>
                 </div>

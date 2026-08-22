@@ -2,6 +2,18 @@
 
 import { useState } from 'react';
 import { Key } from 'lucide-react';
+import {
+  MIN_PASSWORD_LENGTH,
+  MAX_PASSWORD_LENGTH,
+  PASSWORD_RULE_TEXT,
+  PASSWORD_TOO_SHORT_ERROR,
+} from '@/lib/password-policy';
+
+// Forced first-login password change for accounts provisioned with a
+// temporary password. The length rule comes from lib/password-policy (at
+// least 8 characters) — this page once hardcoded "at least 12" while the API
+// it submits to demanded "exactly 8", a contradiction that made changing the
+// password impossible. Never restate a length literal here.
 
 export default function ChangePasswordPage() {
   const [newPassword, setNewPassword] = useState('');
@@ -12,8 +24,8 @@ export default function ChangePasswordPage() {
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setError('');
-    if (newPassword.length < 12) {
-      setError('Password Must Be At Least 12 Characters');
+    if (newPassword.length < MIN_PASSWORD_LENGTH) {
+      setError(PASSWORD_TOO_SHORT_ERROR);
       return;
     }
     if (newPassword !== confirm) {
@@ -114,8 +126,10 @@ export default function ChangePasswordPage() {
                 type="password"
                 value={newPassword}
                 onChange={e => setNewPassword(e.target.value)}
-                placeholder="At Least 12 Characters"
+                placeholder={PASSWORD_RULE_TEXT}
                 required
+                minLength={MIN_PASSWORD_LENGTH}
+                maxLength={MAX_PASSWORD_LENGTH}
                 autoComplete="new-password"
                 style={{
                   width: '100%', boxSizing: 'border-box',
@@ -142,6 +156,8 @@ export default function ChangePasswordPage() {
                 onChange={e => setConfirm(e.target.value)}
                 placeholder="Re-enter Password"
                 required
+                minLength={MIN_PASSWORD_LENGTH}
+                maxLength={MAX_PASSWORD_LENGTH}
                 autoComplete="new-password"
                 style={{
                   width: '100%', boxSizing: 'border-box',

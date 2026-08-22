@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { seedStorefrontFromHousePrices } from '@/lib/seed-storefront';
+import { validateStoreSlug } from '@/lib/store-slug';
+import { validatePassword } from '@/lib/password-policy';
+import { notifyWelcome } from '@/lib/notify';
 
 /**
  * GET /api/agent/agents
@@ -34,11 +38,13 @@ export async function GET(_req: NextRequest) {
         account_type, credit_limit, prepaid_balance,
         created_at, is_active,
         last_sign_in_at, first_sign_in_at,
+        is_super_agent,
         agent_profiles(slug, display_name)
       `)
       .eq('parent_agent_id', callerId)
       .eq('is_sub_agent', false)
-      .eq('role', 'agent')
+      .in('role', ['agent', 'super_agent'])
+      .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -53,18 +59,29 @@ export async function GET(_req: NextRequest) {
   }
 }
 
-import { generateQrDataUrl } from '@/lib/qr';
+import { generateStorefrontQr } from '@/lib/qr-storefront';
 import { sanitizeUsername } from '@/lib/usernames';
-
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://pepnationlab.com';
 
 // Platform rule: the gamification Max Cap can never exceed 40%.
 const MAX_CAP_LIMIT = 40;
+// The Super-Agent-to-Agent markup (commission_pct on a non-sub-agent profile,
+// reused as base_markup by fn_agent_effective_markup) is a separate range from
+// the sub-agent recruiter commission / gamification cap above - a Super Agent
+// can mark an Agent's cost up well past 40%.
+const MARKUP_MAX = 200;
 
 /**
  * POST /api/agent/agents
  *
  * Creates a brand new full Agent Account under the calling Super Agent.
+ *
+ * Nested Super Agents: when the caller passes `is_super_agent: true`, the new
+ * downline account is provisioned as a Super Agent in its own right (role =
+ * 'super_agent', is_super_agent = true) while still sitting under the caller
+ * in the billing chain (parent_agent_id = callerId). This mirrors the pattern
+ * already used by /api/manufacturer/agents (make_super_agent) and the DB's
+ * chk_super_agent_role_sync constraint, which requires role = 'super_agent'
+ * whenever is_super_agent = true - role can never stay 'agent' here.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -78,21 +95,13 @@ export async function POST(req: NextRequest) {
 
     const { data: callerProfile } = await supabase
       .from('profiles')
-      .select('role, is_super_agent, is_sub_agent, default_agent_markup_pct, default_agent_pricing_mode')
+      .select('role, is_super_agent, is_sub_agent')
       .eq('id', callerId)
       .maybeSingle();
 
     if (!callerProfile || !callerProfile.is_super_agent) {
       return NextResponse.json({ error: 'Forbidden. Only Super Agents can create Agent Accounts.' }, { status: 403 });
     }
-
-    const callerPricing = callerProfile as { default_agent_markup_pct?: number | null; default_agent_pricing_mode?: string | null };
-    const defaultAgentMarkupOverride: number | null | undefined =
-      callerPricing.default_agent_pricing_mode === 'gamified'
-        ? null
-        : callerPricing.default_agent_markup_pct != null
-          ? Math.round((Number(callerPricing.default_agent_markup_pct) / 100) * 10000) / 10000
-          : undefined;
 
     const body = await req.json().catch(() => ({}));
     const {
@@ -108,14 +117,28 @@ export async function POST(req: NextRequest) {
       commission_max_pct,
       velocity_cap,
       custom_commission_scale,
+      locale,
+      is_super_agent,
     } = body;
+
+    // Only the caller's own explicit choice makes the new downline a Super
+    // Agent. Already gated above: only an existing Super Agent (or an admin
+    // impersonating one via requireAgent) can reach this handler at all.
+    const makeSuperAgent = is_super_agent === true;
 
     if (!full_name || !username || !password || !account_type || !slug || !display_name) {
       return NextResponse.json({ error: 'Missing Required Fields (Name, Username, Password, Billing, Slug, User Name)' }, { status: 400 });
     }
 
-    if (password.length < 8) {
-      return NextResponse.json({ error: 'Password Must Be At Least 8 Characters' }, { status: 400 });
+    // Password rule comes from lib/password-policy: at least 8 characters, at
+    // most 128. This route used to demand an EXACT length of 8 "to match the
+    // rest of the platform" -- but the create-agent form it serves offers the
+    // full range, so a Super Agent typing a longer password got a 400 telling
+    // them a rule the form never mentioned. The policy module is the only
+    // place that number is allowed to live.
+    const pwError = validatePassword(password);
+    if (pwError) {
+      return NextResponse.json({ error: pwError }, { status: 400 });
     }
 
     if (account_type === 'credit' && credit_limit !== undefined && credit_limit !== null && credit_limit !== '') {
@@ -133,10 +156,12 @@ export async function POST(req: NextRequest) {
 
     let commPct: number | null = null;
     if (commission_pct !== undefined && commission_pct !== null && commission_pct !== '') {
-      commPct = Number(commission_pct);
-      if (!Number.isFinite(commPct) || commPct < 0 || commPct > MAX_CAP_LIMIT) {
-        return NextResponse.json({ error: 'Commission Rate Cannot Exceed 40%' }, { status: 400 });
+      const rawMarkup = Number(commission_pct);
+      if (!Number.isFinite(rawMarkup) || rawMarkup < 0 || rawMarkup > MARKUP_MAX) {
+        return NextResponse.json({ error: 'Markup Percent Must Be Between 0 And 200' }, { status: 400 });
       }
+      // commission_pct is NUMERIC(5,2) in the DB - round to 2dp.
+      commPct = Math.round(rawMarkup * 100) / 100;
     }
     let commMax: number | null = null;
     if (commission_max_pct !== undefined && commission_max_pct !== null && commission_max_pct !== '') {
@@ -163,9 +188,17 @@ export async function POST(req: NextRequest) {
 
     const internalEmail = `${usernameClean}@internal.auth`;
 
-    const slugRegex = /^[a-z0-9\-]+$/;
-    if (!slugRegex.test(slug)) {
-      return NextResponse.json({ error: 'Slug Must Contain Lowercase Letters, Numbers, And Hyphens Only' }, { status: 400 });
+    // Storefront slug shape. This MUST agree with the edge middleware
+    // (proxy.ts), which is what actually routes /<slug>, and with the
+    // agent_profiles_slug_shape CHECK + agent_profiles_slug_not_reserved
+    // trigger in the database. The old /^[a-z0-9\-]+$/ here accepted `-x`,
+    // `a`, an unbounded-length slug and reserved segments like
+    // `admin`/`wallet`/`checkout` -- each of which produces an Agent whose QR
+    // code points at something unroutable, with no error until a customer
+    // scans it. lib/store-slug.ts is the single source of truth.
+    const slugError = validateStoreSlug(slug);
+    if (slugError) {
+      return NextResponse.json({ error: slugError }, { status: 400 });
     }
 
     // Use .eq() not .ilike() - sanitized usernames may contain underscores (a LIKE wildcard).
@@ -179,11 +212,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'This Storefront Slug Is Already Taken' }, { status: 400 });
     }
 
+    // The new profile's role must match is_super_agent per chk_super_agent_role_sync
+    // (a DB check constraint requires role = 'super_agent' whenever is_super_agent =
+    // true, and role = 'agent' otherwise) - keep the auth JWT's app_metadata.role in
+    // sync too, since several permission gates check role === 'super_agent' there.
+    const newProfileRole = makeSuperAgent ? 'super_agent' : 'agent';
+
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: internalEmail,
       password,
       email_confirm: true,
-      app_metadata: { role: 'agent' }
+      app_metadata: { role: newProfileRole, is_super_agent: makeSuperAgent }
     });
 
     if (authError || !authData.user) {
@@ -197,7 +236,8 @@ export async function POST(req: NextRequest) {
       email: null,
       username: usernameClean,
       full_name,
-      role: 'agent',
+      role: newProfileRole,
+      is_super_agent: makeSuperAgent,
       is_sub_agent: false,
       parent_agent_id: callerId,
       referring_agent_id: callerId,
@@ -206,18 +246,38 @@ export async function POST(req: NextRequest) {
       disclaimer_v1_accepted: true,
       disclaimer_accepted_at: new Date().toISOString(),
       is_active: true,
-      must_change_password: true,
+      // Agent accounts go straight to the dashboard — no forced password change.
+      // A welcome notification guides them to complete their profile at their own pace.
+      must_change_password: false,
       provisioned_password: password,
       updated_at: new Date().toISOString(),
       tier: 'tier_3',
       account_type: account_type,
-      credit_limit: account_type === 'credit' ? (Number(credit_limit) || null) : null,
+      // `Number(x) || null` coerced an explicit 0 credit limit to NULL (0 is
+      // falsy) -- an agent set up with $0 credit ended up with an unlimited
+      // (null) limit instead. Number.isFinite preserves 0 while still mapping
+      // unset/blank input to NULL.
+      credit_limit: account_type === 'credit'
+        ? (credit_limit === undefined || credit_limit === null || credit_limit === '' ? null : (Number.isFinite(Number(credit_limit)) ? Number(credit_limit) : null))
+        : null,
       prepaid_balance: account_type === 'prepaid' ? (Number(prepaid_balance) || 0) : 0,
       commission_pct: commPct,
       commission_max_pct: commMax,
       velocity_cap: velCap,
       commission_ladder_config: Array.isArray(custom_commission_scale) ? custom_commission_scale : undefined,
-      custom_markup_override: defaultAgentMarkupOverride,
+      // custom_markup_override is intentionally NOT set here (2026-07-21):
+      // every account this route creates is nested (parent_agent_id =
+      // callerId), and under chain-aware pricing (lib/pricing.ts) a parented
+      // profile's cost is always commission_pct (this form's "Your Markup On
+      // This Agent") compounded through its upline - custom_markup_override
+      // on a parented profile is now ignored by design. Previously this was
+      // seeded from the caller's own default_agent_markup_pct, which had
+      // nothing to do with the commission_pct assigned above and was the
+      // dead weight behind rows showing custom_markup_override=1 on nested
+      // Super Agents that otherwise looked correctly configured.
+      // New agent's default UI language (English / Simplified / Traditional)
+      // chosen on the create form; seeded into their session on first login.
+      locale: ['en', 'zh-CN', 'zh-TW'].includes(locale) ? locale : 'en',
     };
 
     const { error: profileError } = await supabase.from('profiles').upsert(profileData);
@@ -237,14 +297,11 @@ export async function POST(req: NextRequest) {
     }
 
     // QR payload carries utm params so scans are attributable as offline/QR
-    // traffic in first-party attribution (UtmCapture ingests and strips them).
-    const storefrontUrl = `${APP_URL}/${slug}?utm_source=qr&utm_medium=offline`;
-    let qrCodeData: string | null = null;
-    try {
-      qrCodeData = await generateQrDataUrl(storefrontUrl);
-    } catch (qrErr) {
-      console.error('QR generation failed:', qrErr);
-    }
+    // traffic in first-party attribution (UtmCapture ingests and strips them),
+    // AND ?ref= so the scan mints a HARD first-scan-wins referral lock rather
+    // than the replaceable soft lock a bare storefront URL produces.
+    // See lib/qr-storefront.ts.
+    const qrCodeData: string | null = await generateStorefrontQr(slug, usernameClean);
 
     const { error: agentError } = await supabase.from('agent_profiles').upsert({
       id: userId,
@@ -261,31 +318,25 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      // Seed at Rookie pricing (house_tiers level 3) - most conservative starting point.
-      // V2 engine is live; use house_tiers directly instead of pricing_tiers.
-      const { data: rookieTier } = await supabase.from('house_tiers').select('markup').eq('level', 3).maybeSingle();
-      const { data: products } = await supabase.from('products').select('id, base_cost').eq('is_active', true);
-      
-      if (rookieTier && products && products.length > 0) {
-        const rookieMultiplier = 1 + Number(rookieTier.markup);
-        const agentProductsToInsert = products.map((p) => {
-          const retailPrice = Math.round((Number(p.base_cost) * rookieMultiplier) * 100) / 100;
-          return {
-            agent_id: userId,
-            product_id: p.id,
-            retail_price: retailPrice,
-            margin_percent: 50,
-            is_visible: true,
-            sort_order: 0
-          };
-        });
-        await supabase.from('agent_products').insert(agentProductsToInsert);
-      }
+      // Seed the new storefront with the HOUSE (admin) store's retail prices as
+      // the default "set price"; falls back to rookie house-tier pricing for any
+      // product the house store has not priced. Agent can change prices later.
+      await seedStorefrontFromHousePrices(supabase, userId);
     } catch (provisionErr) {
       console.error('Failed to auto-provision agent products:', provisionErr);
     }
 
-    return NextResponse.json({ success: true, userId, username: usernameClean, role: 'Agent Account' });
+    // Fire a welcome notification so the new account sees
+    // "Let's Complete Your Profile" on first login.
+    notifyWelcome(supabase, userId, makeSuperAgent ? 'super_agent' : 'agent').catch(() => {/* non-fatal */});
+
+    return NextResponse.json({
+      success: true,
+      userId,
+      username: usernameClean,
+      role: makeSuperAgent ? 'Super Agent Account' : 'Agent Account',
+      is_super_agent: makeSuperAgent,
+    });
   } catch (error) {
     console.error('[POST create-agent] unexpected error:', error);
     return NextResponse.json({ error: 'Internal Server Error.' }, { status: 500 });

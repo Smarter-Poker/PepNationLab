@@ -1,13 +1,16 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { requireAgent } from '@/lib/admin-auth';
+// requireAgentOrAdmin: admins operate their own house storefront through
+// these agent routes (every check below is ownership-scoped), and the plain
+// requireAgent gate 403'd the admin's own dashboard buttons.
+import { requireAgentOrAdmin } from '@/lib/admin-auth';
 import { isAgentAncestorOf } from '@/lib/agent-auth';
 
 // GET: Line items for a single order. The agent must own the order (or be its
 // super-agent ancestor); admins are always allowed.
 export async function GET(req: NextRequest) {
-  const gate = await requireAgent();
+  const gate = await requireAgentOrAdmin();
   if (!gate.ok) return gate.response;
 
   const supabase = createAdminClient();
@@ -64,9 +67,21 @@ export async function GET(req: NextRequest) {
     if (item.product_id) {
       const { data: product } = await supabase
         .from('products')
-        .select('compound_slug')
+        .select('compound_slug, unit_size, unit_measure, base_cost')
         .eq('id', item.product_id)
         .maybeSingle();
+
+      if (product) {
+        item.unit_size = product.unit_size;
+        item.unit_measure = product.unit_measure;
+        // base_cost is stored in DOLLARS PER VIAL (e.g. 7.02 = $7.02/vial), not
+        // in "dimes" and not per 10-pack — the old comment here was stale and
+        // the /10 it justified showed this figure at a tenth of its real value.
+        // This is Pep Nation's raw supplier COGS per vial, for display
+        // transparency only. The authoritative "SB owes PN" figure is
+        // unit_super_agent_cost (already on order_items, in dollars per vial).
+        item.unit_base_cost = product.base_cost != null ? Number(product.base_cost) : null;
+      }
 
       if (product?.compound_slug) {
         const { data: compound } = await supabase

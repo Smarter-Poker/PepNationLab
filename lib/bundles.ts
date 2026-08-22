@@ -27,6 +27,7 @@ export interface StoredBundle {
   tagline: string;
   description: string;
   image_url: string | null;
+  vial_image_url: string | null;
   product_ids: string[];
   discount_percent: number;
   /** Flat custom price override — when set, overrides discount_percent entirely */
@@ -38,7 +39,7 @@ export interface StoredBundle {
 }
 
 export const MIN_BUNDLE_PRODUCTS = 2;
-export const MAX_BUNDLE_PRODUCTS = 5;
+export const MAX_BUNDLE_PRODUCTS = 6;
 export const MAX_BUNDLE_DISCOUNT = 90;
 
 /** Clamp a discount to a whole percentage in [0, MAX_BUNDLE_DISCOUNT]. */
@@ -66,6 +67,7 @@ export function normalizeBundle(raw: unknown): StoredBundle | null {
     tagline: typeof r.tagline === 'string' ? r.tagline : '',
     description: typeof r.description === 'string' ? r.description : '',
     image_url: typeof r.image_url === 'string' && r.image_url ? r.image_url : null,
+    vial_image_url: typeof r.vial_image_url === 'string' && r.vial_image_url ? r.vial_image_url : null,
     product_ids,
     discount_percent: clampDiscount(r.discount_percent),
     custom_price: typeof r.custom_price === 'number' && r.custom_price > 0 ? Math.round(r.custom_price * 100) / 100 : null,
@@ -123,11 +125,17 @@ export async function getEffectiveBundlesForStore(
     readBundlesConfig(supabase, 'id', storeAgentId),
     supabase
       .from('profiles')
-      .select('parent_agent_id')
+      .select('parent_agent_id, is_manufacturer')
       .eq('id', storeAgentId)
       .maybeSingle(),
     readBundlesConfig(supabase, 'slug', DEFAULT_STORE_SLUG),
   ]);
+
+  // Manufacturer stores carry no bundles at all: their prices are their own
+  // and house 'global' bundle discounts must never cascade onto them.
+  if ((ownerProfileRes as { data: { is_manufacturer?: boolean | null } | null })?.data?.is_manufacturer === true) {
+    return [];
+  }
 
   const parentId = (ownerProfileRes as { data: { parent_agent_id?: string | null } | null })
     ?.data?.parent_agent_id;

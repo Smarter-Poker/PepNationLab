@@ -3,6 +3,8 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { requireSession, canInvite } from '@/lib/messenger/server';
 import { messengerRateLimit, messengerRateLimitResponse } from '@/lib/messengerRateLimit';
+import { maskAdminCounterparty } from '@/lib/messenger/identity';
+import { isPlatformAdminId } from '@/lib/platform-admins';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -83,41 +85,48 @@ async function buildDownlineRows(
   callerRole: string,
   existing: RawConv[],
 ): Promise<RawConv[]> {
+  // fn_get_user_conversations returns rows ORDER BY last_message_at DESC NULLS LAST.
+  // A user may have multiple conversations with the same counterparty (e.g. a regular
+  // direct DM stub AND a support thread). We must keep only the FIRST one encountered
+  // (the most recent / most relevant) — Map.set() would otherwise overwrite it with the
+  // last one iterated, which is the NULL-timestamp empty stub, hiding the support thread.
   const byCounterparty = new Map<string, RawConv>();
   for (const c of existing) {
-    if (typeof c.counterparty_id === 'string') byCounterparty.set(c.counterparty_id, c);
+    if (typeof c.counterparty_id === 'string' && !byCounterparty.has(c.counterparty_id)) {
+      byCounterparty.set(c.counterparty_id, c);
+    }
   }
 
-  let membersData: { id: string; full_name: string | null; username: string | null; role: string | null }[] = [];
+  let membersData: { id: string; full_name: string | null; username: string | null; role: string | null; avatar_url: string | null }[] = [];
 
   if (parentId) {
     const [byParent, byReferring, bySubReferring] = await Promise.all([
-      svc.from('profiles').select('id, full_name, username, role').eq('parent_agent_id', parentId).eq('is_active', true).limit(500),
-      svc.from('profiles').select('id, full_name, username, role').eq('referring_agent_id', parentId).eq('is_active', true).limit(500),
-      svc.from('profiles').select('id, full_name, username, role').eq('referring_sub_agent_id', parentId).eq('is_active', true).limit(500),
+      svc.from('profiles').select('id, full_name, username, role, avatar_url').eq('parent_agent_id', parentId).eq('is_active', true).limit(500),
+      svc.from('profiles').select('id, full_name, username, role, avatar_url').eq('referring_agent_id', parentId).eq('is_active', true).limit(500),
+      svc.from('profiles').select('id, full_name, username, role, avatar_url').eq('referring_sub_agent_id', parentId).eq('is_active', true).limit(500),
     ]);
     membersData = [...((byParent.data ?? []) as never[]), ...((byReferring.data ?? []) as never[]), ...((bySubReferring.data ?? []) as never[])];
   } else {
     if (callerRole === 'admin') {
       const { data: topAgents } = await svc
         .from('profiles')
-        .select('id, full_name, username, role')
+        .select('id, full_name, username, role, avatar_url')
         .in('role', ['agent', 'super_agent'])
         .is('parent_agent_id', null)
         .eq('is_active', true)
         .limit(500);
       const { data: directResearchers } = await svc
         .from('profiles')
-        .select('id, full_name, username, role')
+        .select('id, full_name, username, role, avatar_url')
         .eq('referring_agent_id', viewerId)
         .eq('is_active', true)
         .limit(500);
       membersData = [...((topAgents ?? []) as never[]), ...((directResearchers ?? []) as never[])];
     } else {
       const [byParent, byReferring, bySubReferring] = await Promise.all([
-        svc.from('profiles').select('id, full_name, username, role').eq('parent_agent_id', viewerId).eq('is_active', true).limit(500),
-        svc.from('profiles').select('id, full_name, username, role').eq('referring_agent_id', viewerId).eq('is_active', true).limit(500),
-        svc.from('profiles').select('id, full_name, username, role').eq('referring_sub_agent_id', viewerId).eq('is_active', true).limit(500),
+        svc.from('profiles').select('id, full_name, username, role, avatar_url').eq('parent_agent_id', viewerId).eq('is_active', true).limit(500),
+        svc.from('profiles').select('id, full_name, username, role, avatar_url').eq('referring_agent_id', viewerId).eq('is_active', true).limit(500),
+        svc.from('profiles').select('id, full_name, username, role, avatar_url').eq('referring_sub_agent_id', viewerId).eq('is_active', true).limit(500),
       ]);
       membersData = [...((byParent.data ?? []) as never[]), ...((byReferring.data ?? []) as never[]), ...((bySubReferring.data ?? []) as never[])];
     }
@@ -153,7 +162,7 @@ async function buildDownlineRows(
         counterparty_full_name: m.full_name,
         counterparty_username: m.username,
         counterparty_role: m.role,
-        counterparty_avatar_url: null,
+        counterparty_avatar_url: (m as { avatar_url?: string | null }).avatar_url ?? null,
       });
     }
   }
@@ -174,6 +183,8 @@ async function buildDownlineRows(
       if (!isDirect) {
         rows.push(c);
       } else if (cRole === 'admin') {
+        rows.push(c);
+      } else if (c.last_message_at != null) {
         rows.push(c);
       }
     } else if (typeof c.counterparty_id !== 'string') {
@@ -198,8 +209,15 @@ async function buildDownlineRows(
 
 async function shouldUseHierarchy(
   svc: Awaited<ReturnType<typeof createServiceClient>>,
-  caller: { id: string; role: string; is_super_agent: boolean; is_sub_agent: boolean },
+  caller: { id: string; role: string; is_super_agent: boolean; is_sub_agent: boolean; is_admin_account: boolean },
 ): Promise<boolean> {
+  // Platform-admin-allowlisted users (e.g. Savage Brands — role='super_agent'
+  // but granted admin-panel access via PLATFORM_ADMIN_IDS) must always see
+  // the flat, agent-level messenger. They are brand owners, not platform ops.
+  if (isPlatformAdminId(caller.id)) return false;
+  // Admin accounts flagged in the DB (is_admin_account=true) also always get
+  // the flat view — they are brand-level admins, not the platform superadmin.
+  if (caller.is_admin_account) return false;
   if (caller.role === 'admin') return true;
   if (caller.is_super_agent === true) return true;
   if (caller.is_sub_agent === true) return false;
@@ -240,7 +258,7 @@ export async function POST(req: NextRequest) {
 
   const { data: me } = await svc
     .from('profiles')
-    .select('id, role, is_super_agent, is_sub_agent, referring_agent_id, referring_sub_agent_id')
+    .select('id, role, is_super_agent, is_sub_agent, is_admin_account, referring_agent_id, referring_sub_agent_id')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -256,6 +274,7 @@ export async function POST(req: NextRequest) {
       role,
       is_super_agent: (me as { is_super_agent?: boolean }).is_super_agent === true,
       is_sub_agent: (me as { is_sub_agent?: boolean }).is_sub_agent === true,
+      is_admin_account: (me as { is_admin_account?: boolean }).is_admin_account === true,
     });
 
     if (hierarchical) {
@@ -340,6 +359,11 @@ export async function POST(req: NextRequest) {
   // Final canonical ordering for every viewer type (hierarchical, flat, and
   // researcher-appended stubs): most recent conversation at the top.
   conversations.sort(sortByRecency);
+
+  // Non-admin viewers must see any admin counterparty (e.g. the standing admin
+  // support DM) as the generic "PepNation Support" identity (display only).
+  const viewerIsAdmin = ((me as { role?: string } | null)?.role ?? null) === 'admin';
+  conversations = conversations.map((c) => maskAdminCounterparty(c, viewerIsAdmin));
 
   const res = NextResponse.json({ conversations });
   res.headers.set('Cache-Control', 'private, no-store, max-age=0');

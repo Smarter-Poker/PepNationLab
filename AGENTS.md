@@ -69,3 +69,69 @@ calling `buildStepper()` and skips the overwrite automatically. No changes neede
 **Never re-generate or overwrite JS-SVG content for a module already marked ✅.**
 <!-- END:peptide-101-module-image-convention -->
 
+
+<!-- BEGIN:savage-brands-image-protection -->
+# HARD RULE: Savage Brands Vial Images Are Frozen — Never Overwrite
+
+The files in `public/images/savage-brands/` are **canonical 3D vial renders** approved by the brand owner. They must NEVER be regenerated, replaced, overwritten, or deleted by any AI agent, script, or pipeline — under any circumstances.
+
+**What "regenerate" means and why it is banned:**
+- Running any image-generation script (Python, node, API call) that writes to `public/images/savage-brands/`
+- Checking out a different version of these files from git
+- Replacing them with flat label versions, AI-generated versions, or any other style
+- Any commit that touches these files without explicit written instruction from the user in the current session
+
+**The ONLY time these files may change:** If the user explicitly says, in the current conversation, "replace/update/regenerate the Savage Brands vial images." Even then, back up the originals first.
+
+**If you are asked to do anything that would involve these files:** Stop, confirm with the user that they want to overwrite the canonical 3D renders, and wait for explicit approval before proceeding.
+<!-- END:savage-brands-image-protection -->
+
+
+<!-- BEGIN:products-table-image-protection -->
+# HARD RULE: Never Write Brand-Specific Image Paths to the Shared `products` Table
+
+The `products` table is **shared across all storefronts**. Its `image_url` column must NEVER be set to a brand-specific path such as `/images/savage-brands/...`.
+
+**Why:** Every storefront (PepNation, all agents) reads `products.image_url` as the default fallback image. Writing a Savage Brands path here causes every PepNation product and every agent's storefront to display Savage Brands vials instead of PepNation vials.
+
+**The correct architecture:**
+- `products.image_url` → generic platform images only (Supabase Storage CDN URLs from the `product-images` bucket)
+- `agent_products.custom_image_url` → per-agent overrides (e.g. `/images/savage-brands/...` for Savage Brands ONLY)
+- `lib/categoryImage.ts` → PepNation fallback vials by product name / category
+
+**Never:**
+- Run any script, API call, or migration that writes `/images/savage-brands/...` into `products.image_url`
+- Use the `/api/admin/products/bulk-images` route to upload Savage Brands images (it writes to the shared `products` table)
+- Execute any SQL `UPDATE products SET image_url = ...` with brand-specific paths
+
+**If you need to update Savage Brands product images:** Update `agent_products.custom_image_url` WHERE `agent_id = (SELECT id FROM agent_profiles WHERE slug = 'savagebrands')` — never touch `products.image_url`.
+<!-- END:products-table-image-protection -->
+
+
+<!-- BEGIN:ui-ux-event-bubbling-rule -->
+# HARD RULE: Never Nest Interactive Elements Inside Labels
+
+Never place a `<button>`, `<a>`, or other interactive elements inside a `<label>` element.
+
+**Why:** The HTML spec strictly forbids interactive elements inside labels (except for the single specific `<input>` the label is for). Placing a secondary interactive element (like a "Test" or "Info" button) inside a label causes event bubbling bugs: when a user clicks the button, the browser inherently triggers the label, which will immediately toggle the associated checkbox and mutate state unintentionally.
+
+**The Correct Architecture:**
+If you need a toggle switch or checkbox with an associated secondary button:
+```tsx
+// ❌ WRONG (Accidental toggling)
+<label>
+  <input type="checkbox" />
+  <span>Enable Feature</span>
+  <button onClick={doSomethingElse}>Test</button>
+</label>
+
+// ✅ CORRECT (Isolated hit areas)
+<div>
+  <label>
+    <input type="checkbox" />
+    <span>Enable Feature</span>
+  </label>
+  <button onClick={doSomethingElse}>Test</button>
+</div>
+```
+<!-- END:ui-ux-event-bubbling-rule -->

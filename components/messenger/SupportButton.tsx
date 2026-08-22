@@ -96,6 +96,10 @@ function Inner() {
 
   const afterHours = useMemo(() => isAfterHoursCentral(new Date(nowTick)), [nowTick]);
 
+  // uplineId: if the user has a parent agent / referring agent, they should
+  // message them directly via a regular DM instead of a formal support ticket.
+  const [uplineId, setUplineId] = useState<string | null>(null);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (!pathname || !pathname.startsWith('/messenger')) {
@@ -111,21 +115,30 @@ function Inner() {
         if (!user || cancelled) return;
         const { data: profile } = await supabase
           .from('profiles')
-          .select('role')
+          .select('role, parent_agent_id, referring_agent_id, referring_sub_agent_id')
           .eq('id', user.id)
           .maybeSingle();
         if (cancelled) return;
-        if (profile?.role !== 'admin') {
-          setShow(true);
-        } else {
+        if (profile?.role === 'admin') {
           setShow(false);
+          return;
         }
+        // If this user has a network upline, store it so we can route their
+        // "Support" click to a regular DM instead of a formal ticket queue.
+        const upline =
+          (profile as any)?.parent_agent_id ||
+          (profile as any)?.referring_agent_id ||
+          (profile as any)?.referring_sub_agent_id ||
+          null;
+        setUplineId(upline);
+        setShow(true);
       } catch {
         setShow(false);
       }
     })();
     return () => { cancelled = true; };
   }, [pathname]);
+
 
   // Honor URL params: openSupport=1 + optional orderId pre-fills + auto-opens.
   useEffect(() => {
@@ -157,10 +170,37 @@ function Inner() {
     return () => window.removeEventListener('keydown', onKey);
   }, [modalOpen]);
 
-  const onOpenModal = useCallback(() => {
+  const onOpenModal = useCallback(async () => {
     if (busy) return;
+
+    // If this user has a network upline, skip the support ticket entirely
+    // and open a regular direct message with them instead.
+    if (uplineId) {
+      setBusy(true);
+      try {
+        const res = await fetch('/api/messenger/start-conversation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'direct', participantIds: [uplineId] }),
+        });
+        const json = await res.json();
+        if (!res.ok) {
+          toast.error(json.error || 'Could Not Open Conversation');
+          return;
+        }
+        router.push(`/messenger?conversation=${encodeURIComponent(json.conversationId)}`);
+      } catch {
+        toast.error('Network Error');
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
+
+    // No upline — show the formal support topic picker.
     setModalOpen(true);
-  }, [busy]);
+  }, [busy, uplineId, router]);
+
 
   const onSubmit = useCallback(async () => {
     if (busy) return;

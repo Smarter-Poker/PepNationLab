@@ -2,6 +2,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { CITIES, getCitiesGroupedByState, getStatesSlugs, getStateName, CITY_CONTENT_UPDATED } from '@/lib/cities/cities-data';
 
+// ISR: regenerate hourly so the city count/list reflects data changes between
+// full deploys (city pages already use ISR; hubs were static-only).
+export const revalidate = 3600;
+
 export const metadata: Metadata = {
   title: 'Research Peptides By City | Nationwide Coverage | Pep Nation Lab',
   description: `Pep Nation Lab ships research-grade peptides to qualified researchers in ${CITIES.length} US cities. Browse by state and city to find local research peptide coverage. 100+ research compounds at wholesale pricing.`,

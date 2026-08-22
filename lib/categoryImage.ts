@@ -14,20 +14,18 @@
 // Key: lowercase product name (trimmed). Add new entries here as images are generated.
 const PRODUCT_IMAGE_MAP: Record<string, string> = {
   // ── Custom Stacks ───────────────────────────────────────────────────────────
-  'appetite crusher':                         '/images/products/cagrilintide-sema.png',
+  'appetite crusher':                         '/images/products/cagrisema-combo.png',
   'furnace stack':                            '/images/products/l-carnitine-blend.png',
   'skinny shot':                              '/images/products/lipo-c.png',
   'lipolysis stack':                          '/images/products/lemon-bottle.png',
   'gh synergy':                               '/images/products/cjc-1295-ipa.png',
-  'wolverine stack':                          '/images/products/wolverine-stack.png',
+  'wolverine stack':                          '/images/products/bpc-tb-combo.png',
   'shred stack':                              '/images/products/shred-stack.png',
   'limitless stack':                          '/images/products/limitless-stack.png',
   
   // ── Weight Loss & Metabolism - RED cap ──────────────────────────────────────
   'tirzepatide':                              '/images/products/tirzepatide.png',
   'semaglutide':                              '/images/products/semaglutide.png',
-  'ozempic':                                  '/images/products/semaglutide.png',
-  'wegovy':                                   '/images/products/semaglutide.png',
   'retatrutide':                              '/images/products/retatrutide.png',
   'lemon bottle':                             '/images/products/lemon-bottle.png',
   'l-carnitine blend':                        '/images/products/l-carnitine-blend.png',
@@ -49,10 +47,10 @@ const PRODUCT_IMAGE_MAP: Record<string, string> = {
   '5 amino 1mq':                              '/images/products/5-amino-1mq.png',
   'lipo-c':                                   '/images/products/lipo-c.png',
   'lipo c':                                   '/images/products/lipo-c.png',
-  'cagrilintide and semaglutide':             '/images/products/cagrilintide-sema.png',
-  'cagri / sema':                             '/images/products/cagrilintide-sema.png',
-  'cagri sema':                               '/images/products/cagrilintide-sema.png',
-  'cagri+sema':                               '/images/products/cagrilintide-sema.png',
+  'cagrilintide and semaglutide':             '/images/products/cagrisema-combo.png',
+  'cagri / sema':                             '/images/products/cagrisema-combo.png',
+  'cagri sema':                               '/images/products/cagrisema-combo.png',
+  'cagri+sema':                               '/images/products/cagrisema-combo.png',
 
   // ── Healing & Recovery - TEAL cap ───────────────────────────────────────────
   'bpc-157':                                  '/images/products/bpc-157.png',
@@ -63,11 +61,11 @@ const PRODUCT_IMAGE_MAP: Record<string, string> = {
   'tb500':                                    '/images/products/tb-500.png',
   'thymosin beta 4 acetate':                  '/images/products/tb-500.png',
   'thymosin beta-4':                          '/images/products/tb-500.png',
-  'bpc 10mg + tb 10mg':                       '/images/products/bpc-tb-blend.png',
-  'bpc-157 and tb-500':                       '/images/products/bpc-tb-blend.png',
-  'bpc10 + tb10':                             '/images/products/bpc-tb-blend.png',
-  'bpc/tb':                                   '/images/products/bpc-tb-blend.png',
-  'bpc + tb':                                 '/images/products/bpc-tb-blend.png',
+  'bpc 10mg + tb 10mg':                       '/images/products/bpc-tb-combo.png',
+  'bpc-157 and tb-500':                       '/images/products/bpc-tb-combo.png',
+  'bpc10 + tb10':                             '/images/products/bpc-tb-combo.png',
+  'bpc/tb':                                   '/images/products/bpc-tb-combo.png',
+  'bpc + tb':                                 '/images/products/bpc-tb-combo.png',
   'kpv':                                      '/images/products/kpv.png',
   'thymosin alpha-1':                         '/images/products/thymosin-alpha-1.png',
   'thymosin alpha 1':                         '/images/products/thymosin-alpha-1.png',
@@ -160,6 +158,17 @@ const PRODUCT_IMAGE_MAP: Record<string, string> = {
 
   // ── Curated Stacks ─────────────────────────────────────────────────────────
   'gh synergy stack':                         '/images/products/cjc-1295-ipa.png',
+
+  // ── Missing Compounds added from Audit ─────────────────────────────────────
+  'hcg':                                      '/images/products/hcg-g5k.png',
+  'ss-31':                                    '/images/products/ss-31-2s50.png',
+  'survodutide':                              '/images/products/survodutide-sur10.png',
+  'cerebrolysin':                             '/images/products/cerebrolysin-cbl60.png',
+  'aicar':                                    '/images/products/aicar-ar50.png',
+  'thymalin':                                 '/images/products/thymalin-ty10.png',
+  'melatonin':                                '/images/products/melatonin-mt10.png',
+  'mt-1':                                     '/images/products/mt-1-mt1.png',
+  'vip':                                      '/images/products/vip-vp10.png',
 };
 
 // ─── Category → base vial image (fallback when no individual image exists) ───
@@ -289,13 +298,47 @@ export function toTitleCase(name: string): string {
 /**
  * Main resolver: product name takes priority over category.
  * Pass explicit imageUrl if the product has a custom one in the database.
+ *
+ * @param allowBrandSpecific - Set true when imageUrl comes from agent_products.custom_image_url
+ *   (agent-level override). Brand-specific paths like /images/savage-brands/ are valid there.
+ *   Leave false (default) when imageUrl comes from the shared products table — brand-specific
+ *   paths must never leak from that table into other storefronts.
  */
 export function getProductImage(
   imageUrl: string | null | undefined,
   category: string,
   productName?: string,
+  allowBrandSpecific?: boolean,
+  agentSlug?: string,
+  isSavageBrandsNetwork?: boolean
 ): string {
-  if (imageUrl && imageUrl.trim() !== '') return imageUrl;
+  // STRICT HARDENING: If this is the Savage Brands store (or one of its downlines),
+  // we MUST NEVER leak PepNation vials (products table or category fallbacks).
+  if (agentSlug === 'savagebrands' || isSavageBrandsNetwork) {
+    if (imageUrl && imageUrl.trim() !== '' && imageUrl.includes('/images/savage-brands/')) {
+      // BUST iOS SAFARI AND VERCEL EDGE CACHES: If a 404 was previously cached,
+      // appending a query parameter forces a completely fresh fetch.
+      const hasQuery = imageUrl.includes('?');
+      return `${imageUrl}${hasQuery ? '&' : '?'}v=2`;
+    }
+    // If no specific 3D vial is assigned yet, fallback to the generic clear vial.
+    // This absolutely guarantees that PepNation black vials never appear here.
+    return '/images/peptide_clear.png';
+  }
+
+  // SAFETY GUARD: The shared `products` table must ONLY contain generic platform
+  // image paths (Supabase CDN or /images/products/).
+  // Brand-specific paths like /images/savage-brands/ must NEVER appear here —
+  // if one sneaks in, treat it as null so the correct PepNation vials are shown.
+  // Exception: agent_products.custom_image_url is agent-scoped and may contain
+  // brand-specific paths — callers set allowBrandSpecific=true for those.
+  const safeUrl =
+    imageUrl && imageUrl.trim() !== '' &&
+    (allowBrandSpecific || !imageUrl.includes('/images/savage-brands/'))
+      ? imageUrl
+      : null;
+
+  if (safeUrl) return safeUrl;
   if (productName) {
     const specific = getProductVialImage(productName);
     if (specific) return specific;

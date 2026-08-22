@@ -17,7 +17,7 @@ export default async function DashboardPage({
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, role, tier, prepaid_balance, credit_limit, account_type, disclaimer_v1_accepted, phone, referring_agent_id, username, is_sub_agent, is_super_agent, onboarding_completed_at')
+    .select('full_name, role, tier, prepaid_balance, credit_limit, account_type, disclaimer_v1_accepted, phone, referring_agent_id, username, is_sub_agent, is_super_agent, is_manufacturer, is_admin_account, onboarding_completed_at')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -27,19 +27,21 @@ export default async function DashboardPage({
   if (role === 'admin') redirect('/admin');
   if (role === 'shipping') redirect('/shipping');
 
-  // Onboarding gate: new + promoted agent-type accounts must finish the guided
-  // setup wizard before reaching any dashboard. Admins/shipping above are
-  // exempt; researchers (handled below) are never gated.
-  // See migration 20260608000050 + /onboarding.
-  {
-    const isSubAgent = (profile as { is_sub_agent?: boolean | null })?.is_sub_agent === true;
-    const isAgentType =
-      isSubAgent || role === 'agent' || role === 'super_agent' ||
-      (profile as { is_super_agent?: boolean | null })?.is_super_agent === true;
-    if (isAgentType && !(profile as { onboarding_completed_at?: string | null })?.onboarding_completed_at) {
-      redirect('/onboarding');
-    }
+  // Manufacturer accounts (is_manufacturer = true) intentionally flow through
+  // the SAME routing as agents/super agents below - full feature parity per
+  // owner request 2026-07-15. Their pricing/ledger differences live in DB
+  // triggers; the legacy /dashboard/manufacturer page stays reachable by URL.
+
+  // NOTE: The guided setup wizard at /onboarding is optional and no longer
+  // gates dashboard access -- agent-type accounts route straight to their
+  // dashboard below and can visit /onboarding later if they choose.
+
+  // Admin Accounts get their own dedicated Command Center dashboard (network
+  // tools, agent management, recruiting) -- separate from the manufacturer page.
+  if ((profile as { is_admin_account?: boolean | null })?.is_admin_account === true) {
+    redirect('/dashboard/network');
   }
+
   // SACA: sub-agents have role='agent' + is_sub_agent=true. They get their
   // own dashboard at /dashboard/sub-agent - NEVER the full agent dashboard,
   // which would expose storefront config they don't own and order management
@@ -70,8 +72,8 @@ export default async function DashboardPage({
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--black)' }}>
       <Navbar />
-      {/* 60px spacer for fixed navbar */}
-      <div style={{ height: 60 }} />
+      {/* Spacer for the fixed navbar */}
+      <div style={{ height: 'var(--nav-offset, 60px)' }} />
 
       <div>
         {/* Welcome banner */}

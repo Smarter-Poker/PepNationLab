@@ -9,8 +9,6 @@ import {
 import Link from 'next/link';
 import AgentOrders from './AgentOrders';
 import { createClient } from '@/lib/supabase/client';
-import AgentStatements from './AgentStatements';
-import AgentDownlineInvoices from './AgentDownlineInvoices';
 import AgentTierWidget from './AgentTierWidget';
 import { Star, ArrowUp, ArrowDown } from 'lucide-react';
 
@@ -82,7 +80,19 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
   const [insights, setInsights] = useState<any | null>(null);
   const [wallet, setWallet] = useState<WalletSummary | null>(null);
   const [commission, setCommission] = useState<{ lifetime: number; thisMonth: number; has: boolean } | null>(null);
-  const [view, setView] = useState<string>('30'); // '7' | '30' | '90' | 'm0' | 'm1' | ...
+  
+  const [timeFilter, setTimeFilter] = useState('all');
+  
+  const filteredOrders = useMemo(() => {
+    if (timeFilter === 'all') return orders;
+    const now = Date.now();
+    let cutoff = 0;
+    if (timeFilter === '7d') cutoff = now - 7 * 24 * 60 * 60 * 1000;
+    else if (timeFilter === '30d') cutoff = now - 30 * 24 * 60 * 60 * 1000;
+    else if (timeFilter === '90d') cutoff = now - 90 * 24 * 60 * 60 * 1000;
+    else if (timeFilter === '1y') cutoff = now - 365 * 24 * 60 * 60 * 1000;
+    return orders.filter((o: any) => new Date(o.created_at).getTime() >= cutoff);
+  }, [orders, timeFilter]); // '7' | '30' | '90' | 'm0' | 'm1' | ...
   const [goal, setGoal] = useState<number>(0);
   const [goalLoaded, setGoalLoaded] = useState(false);
   const [editingGoal, setEditingGoal] = useState(false);
@@ -223,8 +233,12 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
 
   // -- All analytics derived from the orders array --
   const a = useMemo(() => {
-    const all = (orders || []) as any[];
-    const collected = all.filter((o) => COLLECTED.has(o.status));
+    const all = (filteredOrders || []) as any[];
+    const absoluteAll = (orders || []) as any[];
+    const absoluteCollected = absoluteAll;
+    const _sum = (arr: any[], k: string) => arr.reduce((s, o) => s + (Number(o[k]) || 0), 0);
+    const absoluteLifetimeRevenue = _sum(absoluteCollected, 'total');
+    const collected = all;
     const pending = all.filter((o) => PENDING.has(o.status));
 
     const sum = (arr: any[], k: string) => arr.reduce((s, o) => s + (Number(o[k]) || 0), 0);
@@ -235,6 +249,15 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
     const aov = lifetimeOrders ? lifetimeRevenue / lifetimeOrders : 0;
     const margin = lifetimeRevenue ? (lifetimeProfit / lifetimeRevenue) * 100 : 0;
     const pipeline = sum(pending, 'total');
+
+    // Super agent split: profit/sales earned on the agent's own orders vs the
+    // markup spread earned on a downline agent's orders.
+    const downlineCollected = collected.filter((o) => o.is_downline_order);
+    const ownCollected = collected.filter((o) => !o.is_downline_order);
+    const ownProfit = sum(ownCollected, 'profit');
+    const downlineProfit = sum(downlineCollected, 'profit');
+    const downlineSalesTotal = sum(downlineCollected, 'total');
+    const downlineOrderCount = downlineCollected.length;
 
     const orderCogs = (o: any) => (o.items || []).reduce((s: number, it: any) => s + (Number(it.unit_cost_price) || 0) * (Number(it.quantity) || 0), 0);
 
@@ -349,9 +372,10 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
     }
     const pnl = Array.from(pnlMap.values()).sort((x, y) => y.ts - x.ts).slice(0, 12);
 
-    return {
+    return { absoluteLifetimeRevenue,
       hasCollected: collected.length > 0,
       lifetimeRevenue, lifetimeProfit, lifetimeOrders, aov, margin, pipeline,
+      ownProfit, downlineProfit, downlineSalesTotal, downlineOrderCount,
       pendingCount: pending.length,
       rev30, revDelta30: pct(rev30, revPrev30), orders30, ordersDelta30: pct(orders30, ordersPrev30),
       monthRevenue, monthProfit, lastMonthRevenue, momDelta, projectedMonth, daysInMonth, dayOfMonth,
@@ -359,26 +383,17 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
       productMix, topProductSlices, payMix, pnl,
       dailyMap: daily, series7: series(7), series30: series(30), series90: series(90),
     };
-  }, [orders]);
+  }, [orders, filteredOrders]);
 
   // Build chart data from the current view (trailing window or a calendar month).
   const chartData = useMemo(() => {
-    if (view === '7') return a.series7;
-    if (view === '30') return a.series30;
-    if (view === '90') return a.series90;
-    const k = Number(view.slice(1)) || 0;
-    const base = new Date();
-    const y = base.getFullYear(); const m = base.getMonth() - k;
-    const first = new Date(y, m, 1);
-    const days = new Date(y, m + 1, 0).getDate();
-    const out: { date: string; revenue: number; profit: number }[] = [];
-    for (let i = 1; i <= days; i++) {
-      const d = new Date(first.getFullYear(), first.getMonth(), i);
-      const rec = a.dailyMap.get(dayKey(d));
-      out.push({ date: `${d.getMonth() + 1}/${d.getDate()}`, revenue: rec?.revenue || 0, profit: rec?.profit || 0 });
-    }
-    return out;
-  }, [view, a]);
+    if (timeFilter === '7d') return a.series7;
+    if (timeFilter === '30d') return a.series30;
+    if (timeFilter === '90d') return a.series90;
+    if (timeFilter === '1y') return a.series90; // Fallback or could add series365
+    if (timeFilter === 'all') return a.series90; 
+    return a.series30;
+  }, [timeFilter, a]);
 
   const monthOptions = useMemo(() => {
     const out: { value: string; label: string }[] = [];
@@ -397,8 +412,8 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
   const paceGap = Math.abs(a.monthRevenue - expectedByNow);
 
   // Milestones
-  const nextMilestone = MILESTONES.find((m) => a.lifetimeRevenue < m.amount) || null;
-  const achievedMilestones = MILESTONES.filter((m) => a.lifetimeRevenue >= m.amount);
+  const nextMilestone = MILESTONES.find((m) => a.absoluteLifetimeRevenue < m.amount) || null;
+  const achievedMilestones = MILESTONES.filter((m) => a.absoluteLifetimeRevenue >= m.amount);
 
   // -- Celebration: fire once when a new milestone or the monthly goal is crossed.
   //    Seeds silently on first load so we never burst on initial mount. --
@@ -470,12 +485,26 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
   if (error) return <div style={{ padding: 'var(--space-6)', color: 'var(--red)' }}>Error: {error}</div>;
 
   const isSub = userProfile?.is_sub_agent === true;
-  const showCommission = !!(commission?.has || userProfile?.is_super_agent || userProfile?.is_sub_agent);
+  const showCommission = !!userProfile?.is_sub_agent;
   const tabHref = (tab: string) => `/dashboard/agent?tab=${encodeURIComponent(tab)}`;
   const PROFIT_HELP = 'Profit = what the customer paid, minus your product cost and the shipping the platform bills you.';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '-16px' }}>
+        <select 
+          className="sa-month-select" 
+          style={{ padding: '8px 16px', borderRadius: '8px', background: 'var(--grey-900)', border: '1px solid rgba(255,255,255,0.2)', color: 'var(--white)', fontSize: '0.95rem', fontWeight: 800, cursor: 'pointer' }}
+          value={timeFilter} 
+          onChange={(e) => setTimeFilter(e.target.value)}
+        >
+          <option value="all">All Time</option>
+          <option value="7d">Last 7 Days</option>
+          <option value="30d">Last 30 Days</option>
+          <option value="90d">Last 90 Days</option>
+          <option value="1y">Last Year</option>
+        </select>
+      </div>
       <style dangerouslySetInnerHTML={{ __html: `
         .sa-label { font-size: 0.72rem; color: var(--grey-400); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
         .sa-stat { font-size: 1.9rem; font-weight: 800; font-family: var(--font-brand); color: var(--white); line-height: 1.1; }
@@ -505,6 +534,9 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
           <Link href="/dashboard/agent/analytics" className="btn-silver" style={{ textDecoration: 'none' }}>
             Storefront Analytics
           </Link>
+          <Link href="/dashboard/agent/invoices" className="btn-silver" style={{ textDecoration: 'none' }}>
+            Invoices
+          </Link>
           <Link href="/dashboard/agent/sales-v2" className="btn-neon-cyan" style={{ textDecoration: 'none' }}>
             Sales Performance
           </Link>
@@ -513,46 +545,58 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
 
       {/* ACCOUNTING / MONEY STRIP */}
       <div className="sa-capitalize-all" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-4)' }}>
-        <div className="glass-panel">
-          <div className=" sa-box-centered" style={{ padding: 'var(--space-5)' }}>
-            <div className="sa-label">{wallet?.primaryLabel || 'Available'}</div>
-            <div className="sa-stat" style={{ color: '#00E5FF', marginTop: 6 }}>{fmt(wallet?.primary ?? 0)}</div>
-            <a href="/wallet" style={{ color: 'var(--teal)', fontSize: '0.76rem', fontWeight: 700, marginTop: 8, display: 'inline-block' }}>Open Wallet</a>
-          </div>
-        </div>
-        <div className="glass-panel">
-          <div className=" sa-box-centered" style={{ padding: 'var(--space-5)' }}>
-            <div className="sa-label">Owed This Week</div>
-            <div className="sa-stat" style={{ color: (wallet?.owedThisWeek ?? 0) > 0 ? '#FF6B81' : 'var(--white)', marginTop: 6 }}>{fmt(wallet?.owedThisWeek ?? 0)}</div>
-            <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>
-              {wallet?.nextStatementDate ? `Due ${new Date(wallet.nextStatementDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : 'No Open Statement'}
+        <div className="glass-panel" style={{ cursor: 'pointer', transition: 'all 0.2s ease', position: 'relative' }}>
+          <Link href="/wallet" style={{ textDecoration: 'none', color: 'inherit', display: 'block', height: '100%' }}>
+            <div className=" sa-box-centered" style={{ padding: 'var(--space-5)' }}>
+              <div className="sa-label">{wallet?.primaryLabel || 'Available'}</div>
+              <div className="sa-stat" style={{ color: '#00E5FF', marginTop: 6 }}>{fmt(wallet?.primary ?? 0)}</div>
+              <span style={{ color: 'var(--teal)', fontSize: '0.76rem', fontWeight: 700, marginTop: 8, display: 'inline-block' }}>Open Wallet</span>
             </div>
-          </div>
+          </Link>
         </div>
-        <div className="glass-panel">
-          <div className=" sa-box-centered" style={{ padding: 'var(--space-5)' }}>
-            <div className="sa-label">Profit This Month<span className="sa-info" title={PROFIT_HELP}>i</span></div>
-            <div className="sa-stat" style={{ color: '#00FF9D', marginTop: 6 }}>{fmt(a.monthProfit)}</div>
-            <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>{fmt(a.monthRevenue)} Revenue</div>
-          </div>
+        <div className="glass-panel" style={{ cursor: 'pointer', transition: 'all 0.2s ease', position: 'relative' }}>
+          <Link href="/wallet" style={{ textDecoration: 'none', color: 'inherit', display: 'block', height: '100%' }}>
+            <div className=" sa-box-centered" style={{ padding: 'var(--space-5)' }}>
+              <div className="sa-label">Owed This Week</div>
+              <div className="sa-stat" style={{ color: (wallet?.owedThisWeek ?? 0) > 0 ? '#FF6B81' : 'var(--white)', marginTop: 6 }}>{fmt(wallet?.owedThisWeek ?? 0)}</div>
+              <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>
+                {wallet?.nextStatementDate ? `Due ${new Date(wallet.nextStatementDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : 'No Open Statement'}
+              </div>
+            </div>
+          </Link>
         </div>
-        <div className="glass-panel">
-          <div className=" sa-box-centered" style={{ padding: 'var(--space-5)' }}>
-            <div className="sa-label">Lifetime Profit<span className="sa-info" title={PROFIT_HELP}>i</span></div>
-            <div className="sa-stat" style={{ marginTop: 6 }}>{fmt(a.lifetimeProfit)}</div>
-            <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>{Number(a.margin || 0).toFixed(0)}% Margin</div>
-          </div>
+        <div className="glass-panel" style={{ cursor: 'pointer', transition: 'all 0.2s ease', position: 'relative' }}>
+          <Link href="/dashboard/agent?tab=Orders" style={{ textDecoration: 'none', color: 'inherit', display: 'block', height: '100%' }}>
+            <div className=" sa-box-centered" style={{ padding: 'var(--space-5)' }}>
+              <div className="sa-label">Profit This Month<span className="sa-info" title={PROFIT_HELP}>i</span></div>
+              <div className="sa-stat" style={{ color: '#00FF9D', marginTop: 6 }}>{fmt(a.monthProfit)}</div>
+              <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>{fmt(a.monthRevenue)} Revenue</div>
+            </div>
+          </Link>
+        </div>
+        <div className="glass-panel" style={{ cursor: 'pointer', transition: 'all 0.2s ease', position: 'relative' }}>
+          <Link href="/dashboard/agent?tab=Orders" style={{ textDecoration: 'none', color: 'inherit', display: 'block', height: '100%' }}>
+            <div className=" sa-box-centered" style={{ padding: 'var(--space-5)' }}>
+              <div className="sa-label">Lifetime Profit<span className="sa-info" title={PROFIT_HELP}>i</span></div>
+              <div className="sa-stat" style={{ marginTop: 6 }}>{fmt(a.lifetimeProfit)}</div>
+              <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>{Number(a.margin || 0).toFixed(0)}% Margin</div>
+            </div>
+          </Link>
         </div>
         {showCommission && (
-          <div className="glass-panel">
-            <div className=" sa-box-centered" style={{ padding: 'var(--space-5)' }}>
-              <div className="sa-label">Commission Earned</div>
-              <div className="sa-stat" style={{ color: '#7C5CFF', marginTop: 6 }}>{fmt(commission?.thisMonth ?? 0)}</div>
-              <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>This Month · {fmt(commission?.lifetime ?? 0)} Lifetime</div>
-            </div>
+          <div className="glass-panel" style={{ cursor: 'pointer', transition: 'all 0.2s ease', position: 'relative' }}>
+            <Link href="/wallet" style={{ textDecoration: 'none', color: 'inherit', display: 'block', height: '100%' }}>
+              <div className=" sa-box-centered" style={{ padding: 'var(--space-5)' }}>
+                <div className="sa-label">Commission Earned</div>
+                <div className="sa-stat" style={{ color: '#7C5CFF', marginTop: 6 }}>{fmt(commission?.thisMonth ?? 0)}</div>
+                <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>This Month · {fmt(commission?.lifetime ?? 0)} Lifetime</div>
+              </div>
+            </Link>
           </div>
         )}
       </div>
+
+
 
       {/* GETTING STARTED (no sales yet) */}
       {!a.hasCollected && (
@@ -577,7 +621,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
             <GoalRing pct={goalPct} hit={goalPct >= 100} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                <div className="sa-label">Monthly Revenue Goal</div>
+                <div className="sa-label">Monthly Sales Goal</div>
                 {!editingGoal && (
                   <button onClick={() => { setGoalDraft(String(goal)); setEditingGoal(true); }} style={{ background: 'none', border: 'none', color: 'var(--teal)', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', padding: 0 }}>Edit</button>
                 )}
@@ -645,7 +689,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 14 }}>
             {MILESTONES.map((m) => {
-              const hit = a.lifetimeRevenue >= m.amount;
+              const hit = a.absoluteLifetimeRevenue >= m.amount;
               return (
                 <span key={m.amount} className="sa-badge" style={{
                   background: hit ? 'rgba(0,255,157,0.12)' : 'rgba(255,255,255,0.04)',
@@ -659,10 +703,10 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
             <div style={{ marginTop: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 6 }}>
                 <span>Next: {nextMilestone.label}</span>
-                <span>{fmt(a.lifetimeRevenue)} / {fmt(nextMilestone.amount)}</span>
+                <span>{fmt(a.absoluteLifetimeRevenue)} / {fmt(nextMilestone.amount)}</span>
               </div>
               <div style={{ height: 8, borderRadius: 999, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
-                <div style={{ width: `${Math.min(100, (a.lifetimeRevenue / nextMilestone.amount) * 100)}%`, height: '100%', background: 'linear-gradient(90deg, #00E5FF, #00FF9D)', borderRadius: 999, transition: 'width 0.6s ease' }} />
+                <div style={{ width: `${Math.min(100, (a.absoluteLifetimeRevenue / nextMilestone.amount) * 100)}%`, height: '100%', background: 'linear-gradient(90deg, #00E5FF, #00FF9D)', borderRadius: 999, transition: 'width 0.6s ease' }} />
               </div>
             </div>
           )}
@@ -671,11 +715,26 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
 
       {/* KPI SNAPSHOT */}
       <div className="sa-capitalize-all" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 'var(--space-4)' }}>
-        <KpiCard label="Collected Revenue" value={fmt(a.lifetimeRevenue)} delta={a.revDelta30} deltaLabel="Vs Prior 30d" />
-        <KpiCard label="Total Profit" value={fmt(a.lifetimeProfit)} color="#00FF9D" help={PROFIT_HELP} />
-        <KpiCard label="Orders" value={String(a.lifetimeOrders)} delta={a.ordersDelta30} deltaLabel="Vs Prior 30d" color="#00E5FF" />
-        <KpiCard label="Avg Order Value" value={fmt(a.aov)} />
-        <KpiCard label="Repeat Buyer Rate" value={`${Number(a.repeatRate || 0).toFixed(0)}%`} sub={`${a.distinctBuyers} Buyers`} />
+        <KpiCard
+          label={timeFilter === 'all' ? "Lifetime Revenue" : "Revenue"}
+          value={fmt(a.lifetimeRevenue)}
+          delta={a.revDelta30}
+          deltaLabel="Vs Prior 30d"
+          sub={a.downlineOrderCount > 0 ? `Includes ${a.downlineOrderCount} Downline Orders (${fmt(a.downlineSalesTotal)})` : undefined}
+          href="/dashboard/agent?tab=Orders"
+        />
+        {a.downlineOrderCount > 0 ? (
+          <>
+            <KpiCard label="My Sales Profit" value={fmt(a.ownProfit)} color="#00FF9D" help={PROFIT_HELP} href="/wallet" />
+            <KpiCard label="Downline Profit" value={fmt(a.downlineProfit)} color="#7C5CFF" href="/wallet" />
+            <KpiCard label="Total Profit" value={fmt(a.lifetimeProfit)} color="#00FF9D" help={PROFIT_HELP} href="/wallet" />
+          </>
+        ) : (
+          <KpiCard label="Total Profit" value={fmt(a.lifetimeProfit)} color="#00FF9D" help={PROFIT_HELP} href="/wallet" />
+        )}
+        <KpiCard label="Orders" value={String(a.lifetimeOrders)} delta={a.ordersDelta30} deltaLabel="Vs Prior 30d" color="#00E5FF" href="/dashboard/agent?tab=Orders" />
+        <KpiCard label="Avg Order Value" value={fmt(a.aov)} href="/dashboard/agent/analytics" />
+        <KpiCard label="Repeat Buyer Rate" value={`${Number(a.repeatRate || 0).toFixed(0)}%`} sub={`${a.distinctBuyers} Buyers`} href="/dashboard/agent/analytics" />
       </div>
 
       {/* TREND CHART */}
@@ -683,15 +742,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
         <div className="" style={{ padding: 'var(--space-6)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 'var(--space-4)' }}>
             <h2 className="metal-text" style={{ fontSize: '1.15rem', fontFamily: 'var(--font-brand)', margin: 0 }}>Revenue And Profit</h2>
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-              {['7', '30', '90'].map((r) => (
-                <button key={r} className={`sa-range-btn ${view === r ? 'active' : ''}`} onClick={() => setView(r)}>{r}D</button>
-              ))}
-              <select className="sa-month-select" value={view.startsWith('m') ? view : ''} onChange={(e) => e.target.value && setView(e.target.value)}>
-                <option value="">By Month...</option>
-                {monthOptions.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
-              </select>
-            </div>
+            
           </div>
           <div style={{ width: '100%', height: 320 }} role="img" aria-label="Area Chart Of Revenue And Profit Over The Selected Date Range">
             {a.hasCollected ? (
@@ -822,16 +873,12 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
         <button onClick={exportOrdersCsv} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.18)', color: 'var(--white)', borderRadius: 10, padding: '9px 16px', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}>Export Orders CSV</button>
       </div>
       <div style={{ minWidth: 0 }}>
-        <AgentOrders orders={orders} setOrders={setOrders} />
+        <AgentOrders orders={orders} setOrders={setOrders} timeFilterOverride={timeFilter} hideDropdown={true} />
       </div>
 
       {/* ACCOUNTING */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
         <AgentTierWidget />
-        {!isSub && <div style={{ animation: 'fadeIn 0.3s ease-out' }}><AgentStatements /></div>}
-        {(userProfile?.is_super_agent || isSub) && (
-          <div style={{ animation: 'fadeIn 0.3s ease-out' }}><AgentDownlineInvoices isSuperAgent={!!userProfile?.is_super_agent} /></div>
-        )}
       </div>
 
       {/* RETENTION TAB */}
@@ -967,19 +1014,23 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
 }
 
 // -- Small presentational helpers --
-function KpiCard({ label, value, delta, deltaLabel, sub, color, help }: { label: string; value: string; delta?: number; deltaLabel?: string; sub?: string; color?: string; help?: string }) {
+function KpiCard({ label, value, delta, deltaLabel, sub, color, help, href }: { label: string; value: string; delta?: number; deltaLabel?: string; sub?: string; color?: string; help?: string; href?: string }) {
+  const content = (
+    <div className=" sa-box-centered" style={{ padding: 'var(--space-5)' }}>
+      <div className="sa-label">{label}{help && <span className="sa-info" title={help}>i</span>}</div>
+      <div className="sa-stat" style={{ marginTop: 6, color: color || 'var(--white)' }}>{value}</div>
+      {typeof delta === 'number' && (
+        <div className={delta >= 0 ? 'sa-delta-up' : 'sa-delta-down'} style={{ marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+          {delta >= 0 ? <ArrowUp size={12} aria-hidden /> : <ArrowDown size={12} aria-hidden />} {Math.abs(delta).toFixed(0)}% <span style={{ color: 'var(--grey-500)', fontWeight: 600 }}>{deltaLabel}</span>
+        </div>
+      )}
+      {sub && <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 6 }}>{sub}</div>}
+    </div>
+  );
+
   return (
-    <div className="glass-panel">
-      <div className=" sa-box-centered" style={{ padding: 'var(--space-5)' }}>
-        <div className="sa-label">{label}{help && <span className="sa-info" title={help}>i</span>}</div>
-        <div className="sa-stat" style={{ marginTop: 6, color: color || 'var(--white)' }}>{value}</div>
-        {typeof delta === 'number' && (
-          <div className={delta >= 0 ? 'sa-delta-up' : 'sa-delta-down'} style={{ marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-            {delta >= 0 ? <ArrowUp size={12} aria-hidden /> : <ArrowDown size={12} aria-hidden />} {Math.abs(delta).toFixed(0)}% <span style={{ color: 'var(--grey-500)', fontWeight: 600 }}>{deltaLabel}</span>
-          </div>
-        )}
-        {sub && <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 6 }}>{sub}</div>}
-      </div>
+    <div className="glass-panel" style={href ? { cursor: 'pointer', transition: 'all 0.2s ease', position: 'relative' } : undefined}>
+      {href ? <Link href={href} style={{ textDecoration: 'none', color: 'inherit', display: 'block', height: '100%' }}>{content}</Link> : content}
     </div>
   );
 }

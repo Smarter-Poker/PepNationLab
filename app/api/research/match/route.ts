@@ -91,10 +91,20 @@ export async function POST(req: NextRequest) {
   // { prompt } which we parse server-side -- letting the typed-goal search hit
   // this endpoint in a single round trip instead of pre-calling /ai-match.
   const rawBody = body as { input?: unknown; prompt?: unknown } | null;
-  const input =
-    rawBody && typeof rawBody.prompt === 'string' && rawBody.prompt.trim()
-      ? parseInput(parsePromptToMatchInput(rawBody.prompt))
-      : parseInput(rawBody?.input ?? body);
+  let input;
+  try {
+    input =
+      rawBody && typeof rawBody.prompt === 'string' && rawBody.prompt.trim()
+        ? parseInput(parsePromptToMatchInput(rawBody.prompt))
+        : parseInput(rawBody?.input ?? body);
+  } catch (error) {
+    console.error('[Match API] Parse Error', error);
+    return NextResponse.json(
+      { error: 'Failed to parse match input', note: RESEARCH_NOTE },
+      { status: 400 },
+    );
+  }
+
   if (!input) {
     return NextResponse.json(
       {
@@ -106,7 +116,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const compounds = await getAllCompounds();
+  let compounds;
+  try {
+    compounds = await getAllCompounds();
+  } catch (error) {
+    console.error('[Match API] Failed to fetch compounds from DB', error);
+    return NextResponse.json(
+      { error: 'Internal database error', note: RESEARCH_NOTE },
+      { status: 500 },
+    );
+  }
 
   const goals = input.goals && input.goals.length > 0 ? input.goals : [input.goal];
   const allMatchesMap = new Map<string, MatchResult>();
@@ -130,18 +149,66 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const matches = Array.from(allMatchesMap.values())
+  let matches = Array.from(allMatchesMap.values())
     .sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
       return a.displayName.localeCompare(b.displayName);
     })
     .slice(0, 12);
 
-  // Detect synergistic stack relationships among the top results
+  // Never-empty guarantee. A real research goal must ALWAYS surface candidates.
+  // If the user's constraints (evidence comfort, risk tolerance, no-injectables,
+  // long-half-life, prep, or single-vs-stack preference) combined to exclude every
+  // compound, re-run the scoring with ALL of those hard gates dropped -- keeping
+  // only the goal itself -- so the drawer shows the most relevant compounds (with
+  // their true, honest evidence tiers) instead of a dead-end "0 Matches" screen.
+  // The only surviving filter is goal relevance, so any concrete goal that has
+  // catalog coverage is guaranteed to return results. `relaxed` is surfaced so the
+  // UI can tell the user their filters were broadened -- never a silent change.
+  // ('any'-goal empties have nothing to relax to and are left as-is.)
+  let relaxed = false;
+  if (matches.length === 0 && goals.some(g => g !== 'any')) {
+    const relaxedMap = new Map<string, MatchResult>();
+    for (const g of goals) {
+      // Fresh input: drop every optional hard gate rather than spreading `input`
+      // (which would carry excludeInjectables / preference / requireLongHalfLife
+      // forward and could keep the result empty). Budget is scoring-only, not a
+      // gate, so it is safe to preserve for ranking.
+      const relaxedInput: MatchInput = {
+        goal: g,
+        evidenceComfort: 'any',
+        riskTolerance: 'any',
+        preference: 'either',
+        excludeInjectables: false,
+        requireLongHalfLife: false,
+        prep: 'all',
+        budget: input.budget,
+      };
+      const scoredData = scoreCompounds(relaxedInput, compounds);
+      for (const match of scoredData.matches) {
+        const existing = relaxedMap.get(match.slug);
+        if (!existing || match.score > existing.score) {
+          relaxedMap.set(match.slug, match);
+        }
+      }
+    }
+    matches = Array.from(relaxedMap.values())
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return a.displayName.localeCompare(b.displayName);
+      })
+      .slice(0, 12);
+    relaxed = matches.length > 0;
+  }
+
+  // Detect synergistic stack relationships among the top results.
+  // Index the catalog by slug once so the nested pair scan does O(1) lookups
+  // instead of a full compounds.find() linear scan on every comparison.
+  const compoundBySlug = new Map(compounds.map(c => [c.slug, c]));
   for (let i = 0; i < matches.length; i++) {
     for (let j = i + 1; j < matches.length; j++) {
-      const cA = compounds.find(c => c.slug === matches[i].slug);
-      const cB = compounds.find(c => c.slug === matches[j].slug);
+      const cA = compoundBySlug.get(matches[i].slug);
+      const cB = compoundBySlug.get(matches[j].slug);
       if (cA && cB) {
         // Match the engine's own stack logic: case-insensitive, by slug OR display
         // name. The previous case-sensitive slug-only check under-detected stacks.
@@ -184,6 +251,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     results: matches,
     excluded: excluded,
+    relaxed,
     note: RESEARCH_NOTE,
   });
 }

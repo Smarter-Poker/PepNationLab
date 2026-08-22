@@ -214,7 +214,7 @@ export async function GET(request: NextRequest) {
     "style-src 'self' https: 'unsafe-inline'; " +
     "font-src 'self' https: data:; " +
     `script-src 'nonce-${nonce}'; ` +
-    "object-src 'none'; " +
+    "object-src 'self' https: data: blob:; " +
     "frame-ancestors 'self'; " +
     "form-action https:";
   const secureHtmlHeaders = (): Headers => {

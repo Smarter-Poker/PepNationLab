@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import SalesPageV2 from '@/components/sales/SalesPageV2';
+import Navbar from '@/components/Navbar';
+import BackButton from '@/components/ui/BackButton';
 
 export const dynamic = 'force-dynamic';
 export const metadata = {
@@ -14,5 +16,10 @@ export default async function SalesV2Route() {
   if (!user) redirect('/login');
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
   if (!profile || !['agent', 'super_agent', 'admin'].includes(profile?.role)) redirect('/dashboard');
-  return <SalesPageV2 />;
+  return (
+    <>
+      <Navbar />
+      <SalesPageV2 />
+    </>
+  );
 }

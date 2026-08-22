@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     creator: '@PepNationLab',
     title: 'Browse Peptides By Administration Route | Research Library | Pep Nation Lab',
     description: 'Browse research peptides by administration route - subcutaneous, intramuscular, intranasal, oral, and topical. Understand delivery method differences. Research use only.',
-    images: ['https://pepnationlab.com/images/og-card.jpg'],
+    images: ['https://pepnationlab.com/og-card.png'],
   },
 };
 

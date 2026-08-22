@@ -1,5 +1,6 @@
 
 import type { Metadata } from "next";
+import { isEffectiveAdmin } from '@/lib/platform-admins';
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
@@ -25,10 +26,10 @@ export default async function AdminAuditPage({
   if (!user) redirect("/login");
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select('role, is_admin_account')
     .eq("id", user.id)
     .maybeSingle();
-  if (profile?.role !== "admin") redirect("/dashboard");
+  if (!isEffectiveAdmin(user.id, profile?.role) && profile?.is_admin_account !== true) redirect("/dashboard");
 
   const sp = await searchParams;
   const limit = 50;
