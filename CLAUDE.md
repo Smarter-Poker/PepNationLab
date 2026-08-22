@@ -1,3 +1,20 @@
+
+## ↗ START HERE: `AGENT-PLAYBOOK.md`
+
+**Before this file, before anything: read [`AGENT-PLAYBOOK.md`](./AGENT-PLAYBOOK.md).**
+
+It is byte-identical in all seven repos and it answers, in one page, how to ship
+without losing work: claim your own worktree, commit, push, open a pull request,
+stop. It also lists every guard that is protecting you, what each one is telling
+you when it speaks, and **where every credential lives** (never the value — the
+place). `estate-integrity` checks hourly that all seven copies still agree.
+
+If you are lost, cannot find a credential, or something is red and you do not
+know why, that file is the answer. This one is the repo-specific detail
+underneath it.
+
+---
+
 > **Note:** Secret values in this document have been replaced with env-var references
 > (`${VAR_NAME}`). For the actual values, see the Vercel project settings or your
 > team's secret store. This sanitized copy is checked into the public repo so any
