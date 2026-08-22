@@ -1,97 +1,29 @@
 'use client';
 
-import { useEffect, useSyncExternalStore } from 'react';
-import { usePathname } from 'next/navigation';
-import DisclaimerGate from './DisclaimerGate';
-import { isDisclaimerAccepted, recordDisclaimerAcceptance } from '@/lib/disclaimer-client';
-
-// Acceptance lives in localStorage (an external store), so we read it with
-// useSyncExternalStore: the server snapshot reports "accepted" (children
-// render, no gate in SSR HTML), and after hydration the real client snapshot
-// takes over. Re-reads are triggered by the custom acceptance event (same
-// tab) and the storage event (other tabs).
-const ACCEPTED_EVENT = 'pnl-disclaimer-accepted';
-
-function subscribeToAcceptance(callback: () => void) {
-  window.addEventListener(ACCEPTED_EVENT, callback);
-  window.addEventListener('storage', callback);
-  return () => {
-    window.removeEventListener(ACCEPTED_EVENT, callback);
-    window.removeEventListener('storage', callback);
-  };
-}
+import type { ReactNode } from 'react';
 
 /**
- * Layer 1 of the mandatory 4-layer research-only disclaimer.
+ * Site-Entry Acknowledgment -- Passthrough (2026-07-12).
  *
- * Wraps the entire site so the Site Entry acknowledgment appears on ANY
- * first route a visitor lands on. Acceptance is recorded in localStorage
- * under a version-scoped key so bumping the disclaimer version forces
- * re-acknowledgment.
+ * The full-screen Research-Only acknowledgment used to be painted on top of
+ * the FIRST page any visitor hit (every route except "/" and "/peptides").
+ * On an agent QR scan that meant a wall of legal text over a half-loaded
+ * storefront -- it read as a broken link / dead site. Per Dan's direction the
+ * on-arrival overlay is removed: a QR scan or cold link now opens straight to
+ * a clean, fully rendered page.
  *
- * SEO-CRITICAL RENDERING CONTRACT (do not regress):
- * Children are ALWAYS rendered - on the server and on the client. The gate
- * is a fixed full-screen overlay (`.modal-overlay`, z-index 1000, opaque
- * backdrop) painted ON TOP of the page after hydration when acceptance has
- * not been recorded. The previous implementation returned `null` until the
- * localStorage check completed, which meant every server-rendered page
- * (city landing pages, the research library, everything) shipped an EMPTY
- * <body> to crawlers. Search engines and AI crawlers (GPTBot, ClaudeBot,
- * PerplexityBot) do not execute JavaScript or accept the gate, so the site
- * was invisible to them. Rendering content beneath a legally required
- * interstitial keeps the compliance gate fully intact for human visitors
- * (the overlay blocks all interaction and scrolling until accepted) while
- * letting crawlers index the page. Google explicitly exempts legally
- * required interstitials from its intrusive-interstitial policy.
+ * The Research-Only acknowledgment is NOT weakened -- it is still enforced,
+ * independently, at every point where it legally matters:
+ *   - Sign-up: three required checkboxes (records layer 'registration').
+ *   - Add-to-cart: blocking modal in CartContext (records layer 'add_to_cart').
+ *   - Checkout: three required checkboxes + /api/orders hard-refuses any order
+ *     missing the acknowledgment (records layer 'checkout').
+ *   - Landing page "Continue As Guest": app/HomeClient.tsx shows the same gate
+ *     before a guest enters the store (records layer 'site_entry').
  *
- * EXCEPTION: The Public Landing Page ("/") Renders Without The Gate.
- * First-Time Visitors Must See The Landing Artwork First; The Landing
- * Page Itself Intercepts Every Button Click And Shows This Same
- * Disclaimer Before Navigating Anywhere (See app/page.tsx).
- *
- * EXCEPTION: City Landing Pages ("/peptides...") Render Without The Gate
- * So Visitors Can Read The Local SEO Content First; The Gate Appears On
- * Any Further Navigation Into The Platform.
+ * This component is kept as a transparent passthrough (rather than deleted) so
+ * the on-arrival gate can be reinstated in a single file if it is ever needed.
  */
-export default function SiteDisclaimerGate({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const pathname = usePathname();
-  const accepted = useSyncExternalStore(
-    subscribeToAcceptance,
-    isDisclaimerAccepted,
-    // Server snapshot: report "accepted" so SSR HTML never contains the gate
-    // (crawlers see clean content); the client snapshot corrects post-hydration.
-    () => true,
-  );
-
-  const exempt = pathname === '/' || pathname.startsWith('/peptides');
-  const showGate = !accepted && !exempt;
-
-  // Lock body scroll while the gate overlay is up so the page behind it
-  // cannot be scrolled or interacted with until the acknowledgment.
-  useEffect(() => {
-    if (!showGate) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [showGate]);
-
-  const handleAccept = () => {
-    recordDisclaimerAcceptance();
-    // Notify the external-store subscription so this (and any other mounted
-    // reader) re-reads acceptance and unmounts the gate immediately.
-    window.dispatchEvent(new Event(ACCEPTED_EVENT));
-  };
-
-  return (
-    <>
-      {children}
-      {showGate && <DisclaimerGate onAccept={handleAccept} />}
-    </>
-  );
+export default function SiteDisclaimerGate({ children }: { children: ReactNode }) {
+  return <>{children}</>;
 }

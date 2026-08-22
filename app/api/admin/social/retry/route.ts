@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { createServiceClient } from '@/lib/supabase/server';
+import { safeError } from '@/lib/api-error';
 
 /**
  * Admin-only: act on a queued social post.
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
     .eq('id', id)
     .maybeSingle();
 
-  if (loadErr) return NextResponse.json({ error: loadErr.message }, { status: 500 });
+  if (loadErr) return safeError('admin.social.retry.load', loadErr, 500, 'Failed To Load Post.');
   if (!existing) return NextResponse.json({ error: 'Post Not Found' }, { status: 404 });
 
   const status = (existing as { status: string }).status;
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Cannot Delete A Posted Or In-Flight Post' }, { status: 409 });
     }
     const { error } = await supabase.from('social_posts').delete().eq('id', id);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return safeError('admin.social.retry.delete', error, 500, 'Failed To Delete Post.');
     return NextResponse.json({ ok: true, action: 'delete' });
   }
 
@@ -64,7 +65,7 @@ export async function POST(req: NextRequest) {
       scheduled_for: new Date().toISOString(),
     })
     .eq('id', id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return safeError('admin.social.retry.update', error, 500, 'Failed To Requeue Post.');
 
   return NextResponse.json({ ok: true, action: 'retry' });
 }

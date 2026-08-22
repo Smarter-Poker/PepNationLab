@@ -7,7 +7,7 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
-import { validateAddress, type AddressInput } from '@/lib/shippo';
+import { validateAddress, type AddressInput } from '@/lib/shipping';
 import { createServiceClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
@@ -46,8 +46,8 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     try {
       const validation = await validateAddress(addrInput);
       if (!validation.isValid) return NextResponse.json({ error: 'Address Validation Failed.', messages: validation.messages, suggestion: validation.suggestion ?? null }, { status: 422 });
-      updates.shippo_address_id = validation.shippoAddressId ?? null;
-    } catch { /* Shippo unavailable - proceed without re-validating */ }
+      updates.provider_address_id = validation.providerAddressId ?? null;
+    } catch { /* EasyPost unavailable - proceed without re-validating */ }
   }
 
   if (updates.is_default === true) await supabase.from('shipping_origins').update({ is_default: false }).eq('is_default', true).neq('id', id);

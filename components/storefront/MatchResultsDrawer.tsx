@@ -6,7 +6,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingCart, X, Sparkles, Check, AlertTriangle } from 'lucide-react';
 import DynamicAddToCartButton from './DynamicAddToCartButton';
 import { ProtocolScheduler } from '../research/ProtocolScheduler';
+import { SharedCompareModal, mapToCompareItem } from '../research/SharedCompareModal';
 import { getTierPercent, getRiskPercent, getRiskColor, type MatchedProduct, type ExcludedCompound } from './discovery-shared';
+import { useModalA11y } from '@/lib/useModalA11y';
 
 export function MatchResultsDrawer({
   open,
@@ -17,6 +19,7 @@ export function MatchResultsDrawer({
   followUp,
   submitFollowUp,
   matchError,
+  relaxed = false,
   onRetry,
   onClose,
   onAddToCart,
@@ -31,6 +34,7 @@ export function MatchResultsDrawer({
   followUp: { question: string; originalGoal: string } | null;
   submitFollowUp: (answer: string) => void;
   matchError: boolean;
+  relaxed?: boolean;
   onRetry: () => void;
   onClose: () => void;
   onAddToCart: (productId: string) => void;
@@ -41,13 +45,14 @@ export function MatchResultsDrawer({
   const [filterHumanOnly, setFilterHumanOnly] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
   const [compareIds, setCompareIds] = useState<string[]>([]);
-  const [followUpInput, setFollowUpInput] = useState('');
   const [shareCopied, setShareCopied] = useState(false);
+  const [shareError, setShareError] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
 
   const handleShare = async () => {
     if (isSharing) return;
     setIsSharing(true);
+    setShareError(false);
     try {
       const res = await fetch('/api/research/share', {
         method: 'POST',
@@ -61,7 +66,18 @@ export function MatchResultsDrawer({
       if (!res.ok) throw new Error('Share request failed');
       const data = await res.json();
       if (data.url) {
-        await navigator.clipboard.writeText(window.location.origin + data.url);
+        const fullUrl = window.location.origin + data.url;
+        try {
+          await navigator.clipboard.writeText(fullUrl);
+        } catch (err) {
+          // Fallback for Firefox strict mode / iOS WKWebView
+          const textArea = document.createElement('textarea');
+          textArea.value = fullUrl;
+          document.body.appendChild(textArea);
+          textArea.select();
+          try { document.execCommand('copy'); } catch (e) {}
+          document.body.removeChild(textArea);
+        }
         setShareCopied(true);
         setTimeout(() => setShareCopied(false), 2000);
       } else {
@@ -69,11 +85,12 @@ export function MatchResultsDrawer({
       }
     } catch (e) {
       console.error('Failed to share', e);
-      // Show user-visible feedback via the button label
+      // Surface the failure through React state so the label is not clobbered on
+      // the next render (the old direct textContent write was, and it reset to
+      // the wrong 'Share Results' label instead of 'Share Protocol').
       setShareCopied(false);
-      // Brief flash of error label reusing the button state
-      const el = document.getElementById('pnl-share-btn');
-      if (el) { el.textContent = 'Error — Try Again'; setTimeout(() => { if (el) el.textContent = 'Share Results'; }, 2000); }
+      setShareError(true);
+      setTimeout(() => setShareError(false), 2000);
     } finally {
       setIsSharing(false);
     }
@@ -91,13 +108,13 @@ export function MatchResultsDrawer({
     }
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', onKey);
     return () => {
       document.body.style.overflow = prev;
-      window.removeEventListener('keydown', onKey);
     };
-  }, [open, onClose]);
+  }, [open]);
+
+  // A11y: initial focus, Tab trap, Escape-to-close, focus restore
+  const dialogRef = useModalA11y<HTMLDivElement>(open, { onClose });
 
   const filteredResults = useMemo(() => {
     return results.filter(r => {
@@ -111,8 +128,13 @@ export function MatchResultsDrawer({
     });
   }, [results, filterOralOnly, filterHumanOnly]);
 
-  const inCatalog = filteredResults.filter(r => r.in_stock);
-  const outOfCatalog = filteredResults.filter(r => !r.in_stock);
+  // A card is purchasable only when the caller resolved it to a real, in-stock
+  // product. Everything else -- out-of-stock, or a page that sells nothing (the
+  // global Find A Peptide page) -- still renders as a full recommendation card so
+  // the engine's answer is NEVER hidden. This is the display half of the fix that
+  // stops the guided wizard from "walking you through but never recommending".
+  const inCatalog = filteredResults.filter(r => r.product_id && r.in_stock);
+  const recommendations = filteredResults.filter(r => !(r.product_id && r.in_stock));
   const stackItems = inCatalog.filter(r => r.isStackPartner);
 
   const handleAddStack = () => {
@@ -128,6 +150,7 @@ export function MatchResultsDrawer({
       <AnimatePresence>
         {open && (
           <motion.div
+          ref={dialogRef}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -255,8 +278,16 @@ export function MatchResultsDrawer({
             )}
 
             <div style={{ overflowY: 'auto', padding: '14px 20px 18px', flex: 1 }}>
+              {/* Screen-reader announcement of the result count once matching resolves */}
+              <span
+                role="status"
+                aria-live="polite"
+                style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 }}
+              >
+                {!loading && !matchError && !followUp ? `${filteredResults.length} Matches Found` : ''}
+              </span>
               {loading ? (
-                <div style={{ padding: '64px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
+                <div role="status" aria-live="polite" style={{ padding: '64px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
                   <div style={{
                     width: 60, height: 60, borderRadius: '50%',
                     border: '3px solid rgba(192, 197, 206, 0.2)',
@@ -323,11 +354,28 @@ export function MatchResultsDrawer({
                 </div>
               ) : null}
 
+              {/* Filters-broadened notice. The engine relaxed the requested
+                  evidence/risk/format constraints because nothing matched them, so
+                  we say so plainly rather than silently changing what the user asked
+                  for. */}
+              {!loading && !matchError && !followUp && relaxed && filteredResults.length > 0 && (
+                <div style={{
+                  display: 'flex', alignItems: 'flex-start', gap: 8,
+                  margin: '0 0 14px', padding: '10px 12px', borderRadius: 10,
+                  background: 'rgba(246,173,85,0.08)', border: '1px solid rgba(246,173,85,0.3)',
+                }}>
+                  <Sparkles size={14} color="#F6AD55" style={{ flexShrink: 0, marginTop: 2 }} aria-hidden />
+                  <span style={{ color: '#E2E8F0', fontSize: '0.8rem', lineHeight: 1.4 }}>
+                    No Compounds Met Every Filter You Chose, So We Broadened The Evidence And Risk Settings To Show The Closest Matches For Your Goal. Check Each Compound&apos;s Evidence And Safety Bars Below.
+                  </span>
+                </div>
+              )}
+
               {/* Stack "Add Protocol to Cart" logic */}
               {!loading && stackItems.length > 1 && !filterOralOnly && !filterHumanOnly && (
-                <div style={{ background: 'rgba(246,173,85,0.08)', border: '1px solid rgba(246,173,85,0.3)', borderRadius: 16, padding: '14px', marginBottom: 16 }}>
+                <div style={{ background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.25)', borderRadius: 16, padding: '14px', marginBottom: 16 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <div style={{ color: '#F6AD55', fontWeight: 800, fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Sparkles size={14} /> Recommended Protocol Stack</div>
+                    <div style={{ color: '#00C4BC', fontWeight: 800, fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Sparkles size={14} /> Recommended Protocol Stack</div>
                     <button
                       type="button"
                       onClick={handleAddStack}
@@ -375,9 +423,9 @@ export function MatchResultsDrawer({
                         /* eslint-disable-next-line @next/next/no-img-element */
                         <Image
                           src={r.image_url}
-                          alt=""
+                          alt={r.display_name}
                           onClick={() => onOpenProduct(r.product_id)}
-                          style={{ width: 72, height: 72, borderRadius: 10, objectFit: 'cover', cursor: 'pointer', flexShrink: 0 }}
+                          style={{ width: 72, height: 72, borderRadius: 10, objectFit: 'contain', cursor: 'pointer', flexShrink: 0 }}
                           width={200} height={200} unoptimized
                         />
                       ) : (
@@ -401,11 +449,11 @@ export function MatchResultsDrawer({
                             <span style={{
                               fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase',
                               padding: '3px 7px', borderRadius: 6,
-                              background: 'rgba(246,173,85,0.14)', color: '#F6AD55',
-                              border: '1px solid rgba(246,173,85,0.35)', flexShrink: 0,
+                              background: 'rgba(0,196,188,0.12)', color: '#00C4BC',
+                              border: '1px solid rgba(0,196,188,0.35)', flexShrink: 0,
                               display: 'inline-flex', alignItems: 'center', gap: '4px'
                             }} title="Synergizes well with other matched compounds">
-                              <Sparkles size={10} /> Synergistic Stack Partner
+                              <Sparkles size={10} /> Stack Partner
                             </span>
                           )}
                         </div>
@@ -421,14 +469,14 @@ export function MatchResultsDrawer({
                           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
                             <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--silver)', textTransform: 'uppercase' }}>Target Efficacy</div>
                             <div style={{ width: '100%', height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden' }}>
-                              <div style={{ width: `${r.score || 0}%`, height: '100%', background: 'linear-gradient(90deg, #3182ce, #63b3ed)', borderRadius: 4 }} />
+                              <div style={{ width: `${r.score || 0}%`, height: '100%', background: 'linear-gradient(90deg, #00C4BC, #4FD1C5)', borderRadius: 4 }} />
                             </div>
                           </div>
                           {/* Evidence */}
                           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
                             <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--silver)', textTransform: 'uppercase' }}>Human Data</div>
                             <div style={{ width: '100%', height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden' }}>
-                              <div style={{ width: `${getTierPercent(r.evidence_tier)}%`, height: '100%', background: 'linear-gradient(90deg, #805ad5, #b794f4)', borderRadius: 4 }} />
+                              <div style={{ width: `${getTierPercent(r.evidence_tier)}%`, height: '100%', background: 'linear-gradient(90deg, #0A9B94, #00C4BC)', borderRadius: 4 }} />
                             </div>
                           </div>
                           {/* Safety */}
@@ -440,7 +488,7 @@ export function MatchResultsDrawer({
                           </div>
                         </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, flexWrap: 'wrap' }}>
                           <div style={{ color: '#C0C5CE', fontWeight: 900, fontSize: '1rem' }}>
                             ${(r.price_cents / 100).toFixed(2)}
                           </div>
@@ -449,14 +497,14 @@ export function MatchResultsDrawer({
                             type="button"
                             onClick={() => onOpenProduct(r.product_id)}
                             style={{
-                              background: 'transparent',
-                              border: '1px solid rgba(255,255,255,0.16)',
-                              color: '#FFFFFF', fontWeight: 700, fontSize: '0.82rem',
-                              padding: '8px 12px', borderRadius: 10, cursor: 'pointer',
+                              background: primaryColor,
+                              border: 'none',
+                              color: '#0A1018', fontWeight: 800, fontSize: '0.82rem',
+                              padding: '8px 16px', borderRadius: 10, cursor: 'pointer',
                               minHeight: 40,
                             }}
                           >
-                            View Details
+                            View Research Profile
                           </button>
                           <DynamicAddToCartButton
                             onClick={() => onAddToCart(r.product_id)}
@@ -470,25 +518,198 @@ export function MatchResultsDrawer({
                 </div>
               )}
 
-              {!loading && outOfCatalog.length > 0 && (
+              {/* Full recommendation cards ONLY when there is nothing purchasable
+                  to show (e.g. the global Find A Peptide page, or a store that
+                  stocks none of the matches). When the store DOES stock some
+                  matches, non-stocked compounds stay as the compact chips below so
+                  the store's own sellable inventory keeps visual priority -- that
+                  was the pre-existing merchandising behavior and is preserved. */}
+              {!loading && recommendations.length > 0 && inCatalog.length === 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {recommendations.map((r) => (
+                    <div
+                      key={`rec-${r.compound_slug || r.display_name}`}
+                      style={{
+                        display: 'flex', gap: 12, alignItems: 'stretch',
+                        background: 'rgba(255,255,255,0.04)',
+                        border: '1px solid rgba(255,255,255,0.10)',
+                        borderRadius: 14, padding: 12, position: 'relative',
+                      }}
+                    >
+                      {r.image_url ? (
+                        <Image
+                          src={r.image_url}
+                          alt={r.display_name}
+                          onClick={() => { if (r.product_id) onOpenProduct(r.product_id); }}
+                          style={{ width: 72, height: 72, borderRadius: 10, objectFit: 'contain', cursor: r.product_id ? 'pointer' : 'default', flexShrink: 0 }}
+                          width={200} height={200} unoptimized
+                        />
+                      ) : (
+                        <div style={{ width: 72, height: 72, borderRadius: 10, background: 'rgba(192,197,206,0.08)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                          <Sparkles size={22} color={primaryColor} style={{ opacity: 0.5 }} />
+                          <div
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const cid = r.product_id || r.compound_slug || r.display_name;
+                              if (compareIds.includes(cid)) {
+                                setCompareIds(compareIds.filter(id => id !== cid));
+                              } else {
+                                if (compareIds.length >= 3) {
+                                  alert('You can compare up to 3 matches at once.');
+                                  return;
+                                }
+                                setCompareIds([...compareIds, cid]);
+                                setCompareOpen(true);
+                              }
+                            }}
+                            style={{
+                              position: 'absolute', top: -6, left: -6, width: 24, height: 24,
+                              background: compareIds.includes(r.product_id || r.compound_slug || r.display_name) ? primaryColor : 'rgba(0,0,0,0.6)',
+                              border: `2px solid ${compareIds.includes(r.product_id || r.compound_slug || r.display_name) ? primaryColor : 'rgba(255,255,255,0.4)'}`,
+                              borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              cursor: 'pointer', zIndex: 10
+                            }}
+                          >
+                            {compareIds.includes(r.product_id || r.compound_slug || r.display_name) && <Check size={14} color="#000" strokeWidth={4} />}
+                          </div>
+                        </div>
+                      )}
+
+                      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                          <div style={{ color: '#FFFFFF', fontWeight: 800, fontSize: '0.96rem', lineHeight: 1.25, flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {r.display_name}
+                          </div>
+                          {typeof r.score === 'number' && (
+                            <span style={{
+                              fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.04em',
+                              padding: '3px 8px', borderRadius: 6, flexShrink: 0,
+                              background: 'rgba(61,217,164,0.14)', color: '#3DD9A4',
+                              border: '1px solid rgba(61,217,164,0.35)',
+                            }} title="Match score out of 100">
+                              {r.score}% Match
+                            </span>
+                          )}
+                          {r.isStackPartner && (
+                            <span style={{
+                              fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase',
+                              padding: '3px 7px', borderRadius: 6,
+                              background: 'rgba(246,173,85,0.14)', color: '#F6AD55',
+                              border: '1px solid rgba(246,173,85,0.35)', flexShrink: 0,
+                              display: 'inline-flex', alignItems: 'center', gap: '4px',
+                            }} title="Synergizes well with other matched compounds">
+                              <Sparkles size={10} /> Stack Partner
+                            </span>
+                          )}
+                        </div>
+
+                        {r.rationale && (
+                          <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.82rem', lineHeight: 1.4 }}>
+                            <span style={{ color: 'var(--grey-400, #C8D2DD)', fontWeight: 700 }}>Why This Match: </span>
+                            {r.rationale}
+                          </div>
+                        )}
+
+                        {/* Visualizations */}
+                        <div style={{ display: 'flex', gap: 16, marginTop: 6, marginBottom: 6 }}>
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--silver)', textTransform: 'uppercase' }}>Target Efficacy</div>
+                            <div style={{ width: '100%', height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden' }}>
+                              <div style={{ width: `${r.score || 0}%`, height: '100%', background: 'linear-gradient(90deg, #3182ce, #63b3ed)', borderRadius: 4 }} />
+                            </div>
+                          </div>
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--silver)', textTransform: 'uppercase' }}>Human Data</div>
+                            <div style={{ width: '100%', height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden' }}>
+                              <div style={{ width: `${getTierPercent(r.evidence_tier)}%`, height: '100%', background: 'linear-gradient(90deg, #805ad5, #b794f4)', borderRadius: 4 }} />
+                            </div>
+                          </div>
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--silver)', textTransform: 'uppercase' }}>Safety Profile</div>
+                            <div style={{ width: '100%', height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden' }}>
+                              <div style={{ width: `${getRiskPercent(r.riskLevel)}%`, height: '100%', background: getRiskColor(r.riskLevel), borderRadius: 4 }} />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, flexWrap: 'wrap' }}>
+                          {r.product_id && r.price_cents > 0 && (
+                            <div style={{ color: '#C0C5CE', fontWeight: 900, fontSize: '1rem' }}>
+                              ${(r.price_cents / 100).toFixed(2)}
+                            </div>
+                          )}
+                          <div style={{ flex: 1 }} />
+                          {r.product_id ? (
+                            <button
+                              type="button"
+                              onClick={() => onOpenProduct(r.product_id)}
+                              style={{
+                                background: 'transparent', border: '1px solid rgba(255,255,255,0.16)',
+                                color: '#FFFFFF', fontWeight: 700, fontSize: '0.82rem',
+                                padding: '8px 12px', borderRadius: 10, cursor: 'pointer', minHeight: 40,
+                              }}
+                            >
+                              View Details
+                            </button>
+                          ) : r.compound_slug ? (
+                            <a
+                              href={`/research/${r.compound_slug}`}
+                              style={{
+                                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                                background: primaryColor, border: 'none',
+                                color: '#0A1018', fontWeight: 800, fontSize: '0.82rem',
+                                padding: '8px 14px', borderRadius: 10, cursor: 'pointer', minHeight: 40,
+                                textDecoration: 'none',
+                              }}
+                            >
+                              View Research Profile
+                            </a>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Compact "also studied" chips -- shown only when the store stocks
+                  some matches, so its sellable inventory keeps priority. Same
+                  treatment as before the recommendation-card change. */}
+              {!loading && recommendations.length > 0 && inCatalog.length > 0 && (
                 <div style={{ marginTop: 14 }}>
                   <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>
                     Also Studied For This Goal - Not Currently Stocked Here
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {outOfCatalog.map((r) => (
-                      <span
-                        key={`oos-${r.compound_slug || r.display_name}`}
-                        style={{
-                          background: 'rgba(255,255,255,0.04)',
-                          border: '1px solid rgba(255,255,255,0.10)',
-                          color: 'var(--silver, #A8B4C0)',
-                          borderRadius: 999, padding: '6px 10px',
-                          fontSize: '0.78rem', fontWeight: 600,
-                        }}
-                      >
-                        {r.display_name}
-                      </span>
+                    {recommendations.map((r) => (
+                      r.compound_slug ? (
+                        <a
+                          key={`oos-${r.compound_slug}`}
+                          href={`/research/${r.compound_slug}`}
+                          style={{
+                            background: 'rgba(255,255,255,0.04)',
+                            border: '1px solid rgba(255,255,255,0.10)',
+                            color: 'var(--silver, #A8B4C0)',
+                            borderRadius: 999, padding: '6px 10px',
+                            fontSize: '0.78rem', fontWeight: 600, textDecoration: 'none',
+                          }}
+                        >
+                          {r.display_name}
+                        </a>
+                      ) : (
+                        <span
+                          key={`oos-${r.display_name}`}
+                          style={{
+                            background: 'rgba(255,255,255,0.04)',
+                            border: '1px solid rgba(255,255,255,0.10)',
+                            color: 'var(--silver, #A8B4C0)',
+                            borderRadius: 999, padding: '6px 10px',
+                            fontSize: '0.78rem', fontWeight: 600,
+                          }}
+                        >
+                          {r.display_name}
+                        </span>
+                      )
                     ))}
                   </div>
                 </div>
@@ -527,9 +748,9 @@ export function MatchResultsDrawer({
                   aria-busy={isSharing}
                   style={{ flex: 1, padding: '14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#FFF', borderRadius: 8, fontWeight: 800, cursor: isSharing ? 'not-allowed' : 'pointer', transition: 'all 0.2s', opacity: isSharing ? 0.6 : 1 }}
                 >
-                  {isSharing ? 'Sharing...' : shareCopied ? 'Copied Link!' : 'Share Protocol'}
+                  {isSharing ? 'Sharing...' : shareError ? 'Error — Try Again' : shareCopied ? 'Copied Link!' : 'Share Protocol'}
                 </button>
-                {stackItems.length > 0 && (
+                {stackItems.length > 1 && (
                   <button
                     onClick={handleAddStack}
                     style={{ flex: 2, padding: '14px', background: primaryColor, border: 'none', color: '#0A1018', borderRadius: 8, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
@@ -546,106 +767,14 @@ export function MatchResultsDrawer({
     </AnimatePresence>
 
       {/* Compare Modal */}
-      <AnimatePresence>
-        {compareOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            style={{
-              position: 'fixed', inset: 0, zIndex: 900,
-              background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(20px)',
-              display: 'flex', flexDirection: 'column', alignItems: 'center',
-              padding: 'env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px)',
-            }}
-          >
-            <div style={{ width: '100%', maxWidth: 1000, flex: 1, display: 'flex', flexDirection: 'column', padding: 24 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-                <h2 style={{ color: '#FFF', margin: 0 }}>Compare Matches</h2>
-                <button
-                  type="button"
-                  onClick={() => setCompareOpen(false)}
-                  style={{
-                    background: 'rgba(255,255,255,0.1)', color: '#FFF', border: 'none',
-                    padding: 8, borderRadius: 12, cursor: 'pointer'
-                  }}
-                >
-                  <X size={24} />
-                </button>
-              </div>
-
-              <div style={{ flex: 1, overflowX: 'auto', background: 'rgba(255,255,255,0.03)', border: '6px solid #E2E8F0', boxSizing: 'border-box', borderRadius: 20 }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', color: '#E2E8F0', minWidth: 800 }}>
-                  <thead>
-                    <tr>
-                      <th style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.1)', width: 180 }}>Attribute</th>
-                      {compareIds.map(id => {
-                        const item = results.find(r => r.product_id === id);
-                        return (
-                          <th key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.1)', minWidth: 200 }}>
-                            {item?.display_name}
-                          </th>
-                        );
-                      })}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 700, color: '#A8B4C0' }}>Price</td>
-                      {compareIds.map(id => {
-                        const item = results.find(r => r.product_id === id);
-                        return <td key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 800, color: '#C0C5CE' }}>${(item?.price_cents ? item.price_cents / 100 : 0).toFixed(2)}</td>;
-                      })}
-                    </tr>
-                    <tr>
-                      <td style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 700, color: '#A8B4C0' }}>Target Efficacy</td>
-                      {compareIds.map(id => {
-                        const item = results.find(r => r.product_id === id);
-                        return <td key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{item?.score}%</td>;
-                      })}
-                    </tr>
-                    <tr>
-                      <td style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 700, color: '#A8B4C0' }}>Human Data Tier</td>
-                      {compareIds.map(id => {
-                        const item = results.find(r => r.product_id === id);
-                        return <td key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{item?.evidence_tier?.replace(/_/g, ' ')}</td>;
-                      })}
-                    </tr>
-                    <tr>
-                      <td style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 700, color: '#A8B4C0' }}>Safety Profile</td>
-                      {compareIds.map(id => {
-                        const item = results.find(r => r.product_id === id);
-                        return <td key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', textTransform: 'capitalize' }}>{item?.riskLevel} Risk</td>;
-                      })}
-                    </tr>
-                    <tr>
-                      <td style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 700, color: '#A8B4C0' }}>Half Life</td>
-                      {compareIds.map(id => {
-                        const item = results.find(r => r.product_id === id);
-                        return <td key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{item?.halfLife || 'N/A'}</td>;
-                      })}
-                    </tr>
-                    <tr>
-                      <td style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 700, color: '#A8B4C0' }}>Molecular Wt</td>
-                      {compareIds.map(id => {
-                        const item = results.find(r => r.product_id === id);
-                        return <td key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{item?.molecularWeight ? `${item.molecularWeight} Da` : 'N/A'}</td>;
-                      })}
-                    </tr>
-                    <tr>
-                      <td style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 700, color: '#A8B4C0' }}>Why This Match</td>
-                      {compareIds.map(id => {
-                        const item = results.find(r => r.product_id === id);
-                        return <td key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.85rem', lineHeight: 1.5 }}>{item?.rationale}</td>;
-                      })}
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {compareOpen && (
+        <SharedCompareModal
+          items={compareIds.map(id => mapToCompareItem(results.find(r => r.product_id === id || r.compound_slug === id || r.display_name === id)!))}
+          onClose={() => setCompareOpen(false)}
+          storefrontMode={true}
+          onOpenProduct={onOpenProduct}
+        />
+      )}
     </>
   );
 }

@@ -138,7 +138,7 @@ export default async function CompareCompoundsPage({
             }}
           >
             Select Up To Four Compounds To Review Their Evidence, Targets, And Handling Side By Side. <br/>
-            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85em', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', marginTop: 12, display: 'inline-block' }}>For Laboratory Research Only</span>
+            <span style={{ color: 'var(--grey-400)', fontSize: '0.85em', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', marginTop: 12, display: 'inline-block' }}>For Laboratory Research Only</span>
           </p>
         </header>
 

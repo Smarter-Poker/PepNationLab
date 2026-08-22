@@ -10,9 +10,12 @@ export default function PageShell({ children, hideFooter = false }: { children: 
   return (
     <>
       <Navbar />
-      <main className="page-top-padding">
+      {/* A11y: plain div — the single main landmark lives in app/layout.tsx
+          (.page-container). Mobile bottom padding preserved via the
+          div.page-top-padding selector in globals.css. */}
+      <div className="page-top-padding">
         {children}
-      </main>
+      </div>
       {!hideFooter && <FooterSection />}
     </>
   );

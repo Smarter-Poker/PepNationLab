@@ -18,6 +18,43 @@ These are non-negotiable. Every agent session MUST follow them without exception
 
 ---
 
+## MANDATORY: Git Commit Identity And Account Usage -- Zero Exceptions
+
+**This is a hard platform rule with zero exceptions. It applies to EVERY agent
+and EVERY environment (Cowork, Antigravity, Claude Code, CI bots, or any other).**
+
+The repo is PRIVATE. Vercel BLOCKS any production deployment whose git commit
+author is not a member of the Smarter-Poker Vercel team. A commit authored under
+the wrong identity deploys as **Blocked**, never reaches production, and strands
+its content on `main` until someone re-commits it under an approved identity.
+
+### The ONLY git identity any agent may commit under:
+- Name: `Smarter-Poker`
+- Email: `254329056+Smarter-Poker@users.noreply.github.com`
+- GitHub account: `Smarter-Poker` (id `254329056`)
+
+Set it in every environment BEFORE committing:
+
+```
+git config user.name "Smarter-Poker"
+git config user.email "254329056+Smarter-Poker@users.noreply.github.com"
+```
+
+### NEVER commit or deploy under any of these -- they are BLOCKED by Vercel:
+- `daniel@bekavactrading.com` (author name "Cowork Audit" or "Dan")
+- The `SmarterPoker` GitHub account (id `253155403`) -- note: no hyphen. This is
+  a DIFFERENT account from the team account `Smarter-Poker` (id `254329056`).
+- Any personal email or any identity not listed above.
+
+### Do NOT add new users to clear a block.
+Never add a member to the Vercel team or the GitHub org to make a blocked commit
+deploy, and never change the Vercel Git author-authorization setting. The fix is
+ALWAYS to re-commit the same changes under the approved `Smarter-Poker` identity
+above. Adding or changing accounts is a security decision reserved for the repo
+owner and must never be done by an agent.
+
+---
+
 ## MANDATORY: No Emojis Anywhere -- Zero Exceptions
 
 **This is a hard platform rule with zero exceptions.**
@@ -161,7 +198,12 @@ any older note or assumption.
 ## Research-Only Compliance -- 4-Layer Disclaimer
 
 The 4-layer disclaimer gate is mandatory and must never be removed:
-1. **Site Entry** -- DisclaimerGate overlay (records `layer = 'site_entry'`)
+1. **Site Entry** -- `HomeClient.tsx` "Continue As Guest" button shows a `DisclaimerGate`
+   modal BEFORE entering the store (records `layer = 'site_entry'`). The old on-arrival
+   full-screen overlay (`SiteDisclaimerGate`) was intentionally removed 2026-07-12 (commit
+   `b516fb8`) because it presented a wall of legal text over a half-loaded store on QR scans.
+   `SiteDisclaimerGate.tsx` is now a transparent passthrough -- **do NOT reinstate the
+   on-arrival overlay**. The gate still fires; only its trigger point moved.
 2. **Registration** -- 3-checkbox acknowledgment (records `layer = 'registration'`)
 3. **Add-to-Cart** -- inline warning, recorded once per session via the cart
    provider (records `layer = 'add_to_cart'`); this was previously a gap and is
@@ -288,6 +330,9 @@ NEXT_PUBLIC_APP_NAME=Pep Nation Lab
 NEXT_PUBLIC_DISCLAIMER_VERSION=v1.0
 RESEND_API_KEY=<set in Vercel dashboard>
 RESEND_FROM_EMAIL=research@pepnationlab.com
+CRON_SECRET=<SET in Vercel production 2026-07-11 - secret; value lives ONLY in the Vercel dashboard. Do NOT ask Dan for it again and NEVER commit it - this repo is public>
+PAYER_EIN=<SET in Vercel production 2026-07-11 - PIQ Training Inc federal EIN; value in Vercel dashboard only>
+PAYER_LEGAL_NAME=<SET in Vercel production 2026-07-11 - PIQ TRAINING INC>
 ```
 
 > **Note:** Transactional email is ENABLED via a zero-dependency HTTP sender in
@@ -384,7 +429,7 @@ RESEND_FROM_EMAIL=research@pepnationlab.com
 | Animation | framer-motion 12.40 |
 | Charts | recharts 3.8 |
 | Toasts | sonner 2.0 |
-| Shipping | Shippo SDK 2.18 |
+| Shipping | EasyPost REST API -- zero-dependency `fetch` client in `lib/shipping.ts` (rates, labels, refunds, tracking, webhooks); no npm SDK |
 | Email | Enabled -- zero-dependency HTTP sender in `lib/email.ts` (Resend API via `fetch`, no npm package); safe no-op when unconfigured |
 | QR Codes | qrcode 1.5 |
 | Validation | zod 4.4 |
@@ -538,7 +583,7 @@ pepnationlab/
 | Table | Purpose |
 |---|---|
 | `profiles` | User accounts (linked to `auth.users`). Fields include: `role`, `tier`, `referring_agent_id`, `parent_agent_id`, `account_type`, `prepaid_balance`, `credit_limit`, `username`, `is_active`, `cart_state`, `cart_updated_at`, `last_cart_reminder_at`, `disclaimer_v1_accepted`, `disclaimer_accepted_at`, `is_super_agent` |
-| `agent_profiles` | Agent storefront config: `slug`, `display_name`, `tagline`, `bio`, `colors`, `logo`, `qr_code_data`, payment handles, `warehouse_address` (JSONB), `shippo_api_key`, `bundles_config` (JSONB) |
+| `agent_profiles` | Agent storefront config: `slug`, `display_name`, `tagline`, `bio`, `colors`, `logo`, `qr_code_data`, payment handles, `warehouse_address` (JSONB), `warehouse_origin_id`, `bundles_config` (JSONB) |
 | `products` | Master product catalog: `name`, `slug`, `category`, `base_cost`, `weight_oz`, `inventory_count`, `admin_bulk_price`, `admin_bulk_threshold`, `is_active`, `is_banned`, `sku` |
 | `agent_products` | Agent storefront catalog: links to products, custom naming, `retail_price`, `is_on_sale`, `sale_price`, visibility |
 | `pricing_tiers` | Admin-configurable multipliers: Tier 1 (5x), Tier 2 (6x), Tier 3 (7x). Now gated read-only to agents+admin (no public read) |
@@ -634,7 +679,7 @@ Super Agent Flow:
 20260528000007_update_inventory_trigger.sql
 20260528000008_bulk_pricing.sql                -- Bulk pricing
 20260528000009_wholesale_restock.sql           -- Wholesale restock system
-20260528000010_shippo_api_key.sql              -- Shippo integration
+20260528000010_shippo_api_key.sql              -- Shippo integration (retired 2026-07-11; see 20260711130000_easypost_provider_neutral.sql)
 20260528000011_order_label_url.sql             -- Shipping label URL
 20260528000012_trigger_username.sql            -- Username trigger
 20260528000013_fix_rls_recursion.sql           -- RLS recursion fix

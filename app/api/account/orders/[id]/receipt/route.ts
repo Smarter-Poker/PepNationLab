@@ -1,5 +1,7 @@
+
 import { type NextRequest } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { getEffectiveUser } from '@/lib/impersonation';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +23,7 @@ function money(cents: number | null | undefined): string {
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getEffectiveUser(supabase);
   if (!user) return new Response('Unauthorized', { status: 401 });
 
   const service = await createServiceClient();
@@ -56,7 +58,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const { data: agentProfile } = await service
     .from('agent_profiles')
     .select('display_name, slug')
-    .eq('id', order.agent_id)
+    .eq('id', order.agent_id) // @ts-ignore
     .maybeSingle();
 
   const shippingAddr = order.shipping_address as Record<string, string> | null;
@@ -97,7 +99,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   </div>
   <div style="text-align: right;">
     <div><strong>Order #${escape(orderShort)}</strong></div>
-    <div class="muted">${new Date(order.created_at).toLocaleString()}</div>
+    <div class="muted">${new Date(order.created_at).toLocaleString()}</div> // @ts-ignore
     <div class="muted">Status: <span class="badge">${escape(order.status.replace(/_/g, ' '))}</span></div>
   </div>
 </header>

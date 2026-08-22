@@ -1,7 +1,8 @@
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient, getCachedUser } from '@/lib/supabase/server';
+import { isEffectiveAdmin } from '@/lib/platform-admins';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import AdminAnalytics from '@/components/LazyAdminAnalytics';
@@ -22,7 +23,7 @@ const ICON_PROPS = {
 };
 
 function formatCurrency(n: number): string {
-  return `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `$${(Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function formatAuditAction(action: string): string {
@@ -35,12 +36,14 @@ function formatAuditAction(action: string): string {
 export default async function AdminDashboard() {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  // Deduped per-request with the admin layout's auth check - getUser() is a
+  // network call to Supabase Auth.
+  const { user } = await getCachedUser();
   if (!user) redirect('/login');
 
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+  const { data: profile } = await supabase.from('profiles').select('role, is_admin_account').eq('id', user.id).maybeSingle();
 
-  if (profile?.role !== 'admin') {
+  if (!isEffectiveAdmin(user.id, profile?.role) && profile?.is_admin_account !== true) {
     return redirect('/dashboard');
   }
 
@@ -74,6 +77,15 @@ export default async function AdminDashboard() {
   }
 
   const delta = computeGmvDelta(metrics.gmvLast7, metrics.gmvPrior7);
+
+  // Site traffic snapshot (last 7 days) for the Site Traffic KPI box.
+  let traffic7 = { visitors: 0, signups: 0, pageviews: 0 };
+  try {
+    const svc = await createServiceClient();
+    const { data: tr } = await svc.rpc('site_traffic_summary', { p_agent_id: null, p_days: 7 });
+    const tt = (tr && typeof tr === 'object' ? (tr as { totals?: Record<string, number> }).totals : null) ?? {};
+    traffic7 = { visitors: Number(tt.visitors) || 0, signups: Number(tt.signups) || 0, pageviews: Number(tt.pageviews) || 0 };
+  } catch (e) { console.error('[admin/page] traffic snapshot failed:', e); }
   const impersonation = await getImpersonationContext();
   const activeImpersonation =
     impersonation && impersonation.impersonatorId === user.id ? impersonation : null;
@@ -116,7 +128,7 @@ export default async function AdminDashboard() {
       label: 'Awaiting My Approval',
       value: String(metrics.awaitingAdminApproval),
       sub: 'Agent-Approved, Needs Admin Release',
-      href: '/admin/orders?status=approved_ship',
+      href: '/admin/orders?status=admin_approval_pending',
       color: metrics.awaitingAdminApproval > 0 ? 'var(--red)' : 'var(--grey-400)',
       icon: <svg {...ICON_PROPS}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>,
     },
@@ -192,17 +204,45 @@ export default async function AdminDashboard() {
       color: delta.direction === 'up' ? '#68D391' : delta.direction === 'down' ? 'var(--red)' : 'var(--grey-400)',
       icon: <svg {...ICON_PROPS}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>,
     },
+    {
+      label: 'All Orders',
+      value: String(metrics.totalOrdersLast7d),
+      sub: 'All Orders \u00b7 Past 7 Days',
+      href: `/admin/orders?from=${new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10)}`,
+      color: 'var(--blue)',
+      icon: <svg {...ICON_PROPS}><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>,
+    },
+    {
+      label: 'Site Traffic',
+      value: String(traffic7.visitors),
+      sub: `Visitors \u00b7 7d \u00b7 ${traffic7.signups} New Sign-Ups`,
+      href: '/admin/traffic',
+      color: 'var(--teal)',
+      icon: <svg {...ICON_PROPS}><path d="M3 3v18h18" /><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3" /></svg>,
+    },
   ];
 
   return (
     <div style={{ padding: 'var(--space-8)' }}>
       <AdminDashboardRealtime />
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-8)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
-        <h1 className="animated-gradient-text" style={{ fontSize: '1.6rem', margin: 0 }}>Admin Dashboard</h1>
-        <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', margin: 0, fontFamily: 'var(--font-brand)', letterSpacing: '0.5px' }}>
-          Pep Nation Lab Control Center
-        </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
+        <div>
+          <h1 className="animated-gradient-text" style={{ fontSize: '1.6rem', margin: 0 }}>Admin Dashboard</h1>
+          <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', margin: 0, fontFamily: 'var(--font-brand)', letterSpacing: '0.5px' }}>
+            Pep Nation Lab Control Center
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+          <Link href="/dashboard/labels" className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <svg {...ICON_PROPS} width="16" height="16"><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" /></svg>
+            Print Labels
+          </Link>
+          <Link href="/admin/store-preview" className="btn btn-ghost btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <svg {...ICON_PROPS} width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="3" y1="9" x2="21" y2="9" /></svg>
+            Storefront
+          </Link>
+        </div>
       </div>
 
       {activeImpersonation && (

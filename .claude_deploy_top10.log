@@ -1,0 +1,16 @@
+=== top10 deploy started Mon Jul 20 19:31:00 CDT 2026 ===
+From https://github.com/Smarter-Poker/PepNationLab
+ * branch              main       -> FETCH_HEAD
+   1575dc83..de603b58  main       -> origin/main
+Preparing worktree (detached HEAD de603b58)
+Updating files:  77% (2526/3258)Updating files:  78% (2542/3258)Updating files:  79% (2574/3258)Updating files:  80% (2607/3258)Updating files:  81% (2639/3258)Updating files:  82% (2672/3258)Updating files:  83% (2705/3258)Updating files:  84% (2737/3258)Updating files:  85% (2770/3258)Updating files:  86% (2802/3258)Updating files:  87% (2835/3258)Updating files:  88% (2868/3258)Updating files:  89% (2900/3258)Updating files:  90% (2933/3258)Updating files:  91% (2965/3258)Updating files:  92% (2998/3258)Updating files:  93% (3030/3258)Updating files:  94% (3063/3258)Updating files:  95% (3096/3258)Updating files:  96% (3128/3258)Updating files:  97% (3161/3258)Updating files:  98% (3193/3258)Updating files:  99% (3226/3258)Updating files: 100% (3258/3258)Updating files: 100% (3258/3258), done.
+HEAD is now at de603b58 Replace Global Pricing Override with the actual chain markup for parented downline accounts
+PATCHED: /var/folders/xm/cl1_6q2j51lg55xmmk7dlrzc0000gn/T/tmp.fzCAXTbPT3/pnl-top10/components/AgentStorefrontGrid.tsx
+SKIP (already patched): /var/folders/xm/cl1_6q2j51lg55xmmk7dlrzc0000gn/T/tmp.fzCAXTbPT3/pnl-top10/lib/cities/top10-server.ts
+PATCH_OK
+[detached HEAD e10f8c5b] Top 10 card: exclude Semaglutide + Furnace + Lipolysis stacks so Tirzepatide + Retatrutide surface
+ 1 file changed, 11 insertions(+)
+To https://github.com/Smarter-Poker/PepNationLab.git
+   de603b58..e10f8c5b  HEAD -> main
+PUSHED e10f8c5bde2b72004daa2e35f88fe00ad60dc7b4
+DEPLOY_OK

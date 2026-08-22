@@ -4,12 +4,10 @@ import { requireAgent } from '@/lib/admin-auth';
 import { computeAgentCostForAgent, computeSubAgentBaselineCost, type AgentTier } from '@/lib/pricing';
 import { assertSameOrigin } from '@/lib/csrf';
 import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
-
-interface ManualOrderItemInput {
-  product_id?: string;
-  agent_product_id?: string;
-  quantity?: number;
-}
+import { ManualOrderInputSchema } from '@/lib/schemas/order';
+import { logOrderEvent } from '@/lib/order-events';
+import { notifyAdmins } from '@/lib/notify';
+import { calculateShippingCost } from '@/lib/shipping-cost';
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -19,8 +17,22 @@ export async function POST(req: NextRequest) {
   if (!gate.ok) return gate.response;
   const agentId = gate.user.id;
 
-  const body = await req.json().catch(() => ({}));
-  
+  const rawBody: unknown = await req.json().catch(() => ({}));
+
+  // Schema-locked body: quantities are bounded ints (1..10,000, matching
+  // checkout), paymentMethod is the shared enum, buyer/address strings are
+  // length-capped, and shippingCost must be a finite 0..1000 number. Prices
+  // are still NEVER taken from the client -- the subtotal is recomputed from
+  // the agent's catalog below.
+  const validation = ManualOrderInputSchema.safeParse(rawBody);
+  if (!validation.success) {
+    return NextResponse.json(
+      { error: 'Invalid Order Data.', details: validation.error.issues },
+      { status: 400 }
+    );
+  }
+  const body = validation.data;
+
   return withIdempotency({
     userId: agentId,
     route: '/api/agent/orders/new',
@@ -29,15 +41,17 @@ export async function POST(req: NextRequest) {
     handler: async () => {
   try {
     const supabase = createAdminClient();
-    const { buyerName, buyerEmail, street, city, state, zip, items, subtotal: clientSubtotal, shippingCost, paymentMethod, fulfillmentMethod } = body as {
-      buyerName?: string; buyerEmail?: string; street?: string; city?: string; state?: string; zip?: string;
-      items?: ManualOrderItemInput[]; subtotal?: number; shippingCost?: number; paymentMethod?: string; fulfillmentMethod?: string;
-    };
+    const { buyerName, buyerEmail, street, city, state, zip, items, subtotal: clientSubtotal, paymentMethod, fulfillmentMethod } = body;
 
-    if (!Array.isArray(items) || items.length === 0) return NextResponse.json({ error: 'Order Must Contain Items.' }, { status: 400 });
-
-    const safeShipping = Math.max(0, Number(shippingCost) || 0);
     const fulfillment = fulfillmentMethod === 'agent_pickup' ? 'agent_pickup' : 'ship';
+    // Pep Nation ships every order at a flat rate keyed on the destination
+    // state. The agent-entered `shippingCost` field is deliberately IGNORED --
+    // it previously let a manual order carry any amount from $0 to $1000,
+    // which would undercut or overcharge against the published rate card.
+    const safeShipping = calculateShippingCost(
+      fulfillment === 'agent_pickup' ? 'agent_pickup' : 'standard',
+      typeof state === 'string' ? state : null,
+    );
 
     const { data: agentProfile, error: agentProfileError } = await supabase.from('profiles').select('tier, parent_agent_id, role, is_sub_agent, account_type, max_auto_approve_limit').eq('id', agentId).maybeSingle();
     if (agentProfileError || !agentProfile) return NextResponse.json({ error: 'Agent Profile Not Found.' }, { status: 404 });
@@ -84,11 +98,16 @@ export async function POST(req: NextRequest) {
       const ap = (raw.agent_product_id && byId.get(raw.agent_product_id)) || (raw.product_id && byProductId.get(raw.product_id)) || null;
       if (!ap) return NextResponse.json({ error: 'One Or More Items Are Not In Your Catalog.' }, { status: 400 });
 
-      const unitRetail = (Number(ap.retail_price) || 0) / 10;
+      // Everything on the platform is priced and billed PER VIAL: retail_price,
+      // base_cost, super_agent_pricing.baseline_cost and qty are all per-vial.
+      // There is no 10-pack. The /10 that used to be on all three of these
+      // under-charged manually created orders by 10x on both the retail the
+      // researcher owes and the cost the agent is billed.
+      const unitRetail = Number(ap.retail_price) || 0;
       computedSubtotal += unitRetail * qty;
-      const unitCost = (await computeAgentCostForAgent(supabase, ap.product_id, agentId, tier)) / 10;
+      const unitCost = await computeAgentCostForAgent(supabase, ap.product_id, agentId, tier);
       const unitSuperAgentCost = parentAgentId
-        ? (await computeSubAgentBaselineCost(supabase, ap.product_id, parentAgentId)) / 10
+        ? await computeSubAgentBaselineCost(supabase, ap.product_id, parentAgentId)
         : null;
       orderItems.push({ product_id: ap.product_id, product_name: ap.product_name, agent_product_id: ap.id, quantity: qty, unit_retail_price: unitRetail, unit_cost_price: unitCost, unit_super_agent_cost: unitSuperAgentCost });
     }
@@ -120,6 +139,9 @@ export async function POST(req: NextRequest) {
       agent_product_id: item.agent_product_id, quantity: item.quantity,
       unit_retail_price: item.unit_retail_price, unit_cost_price: item.unit_cost_price,
       unit_super_agent_cost: item.unit_super_agent_cost,
+      // Explicit false so the inventory approval trigger always deducts from global
+      // (products.inventory_count) rather than agent_inventory for manual orders.
+      fulfilled_locally: false,
     }));
 
     const { error: itemsError } = await supabase.from('order_items').insert(itemsPayload);
@@ -142,18 +164,23 @@ export async function POST(req: NextRequest) {
         await supabase.from('orders').delete().eq('id', newOrder.id);
         return NextResponse.json({ error: `Insufficient Prepaid Balance. Requires $${manualCogs.toFixed(2)}, But Balance Is $${balance.toFixed(2)}. Please Recharge Your Account.` }, { status: 402 });
       }
-      const { data: deductOk, error: deductErr } = await supabase.rpc('deduct_prepaid_balance', { agent_id: agentId, amount: manualCogs });
+      // p_order_id is REQUIRED - see the note in agent/orders/approve. Without
+      // it the ledger row carries a NULL reference_id, the duplicate-charge
+      // guard cannot match, and the order is charged again on admin release.
+      const { data: deductOk, error: deductErr } = await supabase.rpc('deduct_prepaid_balance', {
+        agent_id: agentId,
+        amount: manualCogs,
+        p_order_id: newOrder.id,
+        p_description: `Order charge (${String(newOrder.id).slice(0, 8)})`,
+      });
       if (deductErr || !deductOk) {
         await supabase.from('order_items').delete().eq('order_id', newOrder.id);
         await supabase.from('orders').delete().eq('id', newOrder.id);
         return NextResponse.json({ error: 'Failed To Deduct Prepaid Balance. Please Try Again.' }, { status: 500 });
       }
       prepaidCharged = true;
-      await supabase.from('balance_transactions').insert({
-        agent_id: agentId, type: 'order_charge', amount: manualCogs,
-        balance_before: balance, balance_after: Math.round((balance - manualCogs) * 100) / 100,
-        description: `Charge For Manual Order ${newOrder.id}`, reference_id: newOrder.id, reference_type: 'order', created_by: agentId,
-      });
+      // Ledger row written atomically inside deduct_prepaid_balance; a second
+      // manual balance_transactions insert here double-recorded the charge.
     }
 
     const limit = agentProfile.max_auto_approve_limit !== undefined && agentProfile.max_auto_approve_limit !== null ? Number(agentProfile.max_auto_approve_limit) : Infinity;
@@ -189,22 +216,37 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      const { data: admins } = await supabase.from('profiles').select('id').eq('role', 'admin');
-      if (admins && admins.length > 0) {
-        const short = newOrder.id.slice(0, 8).toUpperCase();
-        const totalStr = Number(computedTotal).toFixed(2);
-        const fulfillmentMsg = fulfillment === 'ship' ? 'Ready For Shipping' : 'Ready For Agent Pickup';
-        const notifications = admins.map((admin) => ({
-          user_id: admin.id,
-          title: finalAutoStatus === 'admin_approval_pending' ? 'Manual Order Needs Admin Approval' : 'Manual Order Auto-Approved',
-          body: finalAutoStatus === 'admin_approval_pending'
-            ? `Order #${short} ($${totalStr}) - Agent Created & Approved. Needs Admin Release (${fulfillmentMsg}).`
-            : `Order #${short} ($${totalStr}) - Agent Created & Auto-Approved On Credit Line. (${fulfillmentMsg}).`,
-          type: 'system',
-          url: `/admin/orders?status=${finalAutoStatus}`,
-        }));
-        await supabase.from('notifications').insert(notifications);
+      await logOrderEvent(supabase, {
+        orderId: newOrder.id,
+        event: 'placed',
+        actorId: agentId,
+        actorRole: 'agent',
+        payload: { manual: true, total: computedTotal },
+      });
+      if (finalAutoStatus === 'approved_ship' || finalAutoStatus === 'approved_pickup') {
+        await logOrderEvent(supabase, {
+          orderId: newOrder.id,
+          event: 'approved',
+          actorRole: 'agent',
+          payload: { status: finalAutoStatus, auto: true },
+        });
       }
+    } catch (err) {
+      console.error('Failed to log manual order timeline events', err);
+    }
+
+    try {
+      const short = newOrder.id.slice(0, 8).toUpperCase();
+      const totalStr = Number(computedTotal).toFixed(2);
+      const fulfillmentMsg = fulfillment === 'ship' ? 'Ready For Shipping' : 'Ready For Agent Pickup';
+      await notifyAdmins(supabase, {
+        type: 'system',
+        title: finalAutoStatus === 'admin_approval_pending' ? 'Manual Order Needs Admin Approval' : 'Manual Order Auto-Approved',
+        body: finalAutoStatus === 'admin_approval_pending'
+          ? `Order #${short} ($${totalStr}) - Agent Created & Approved. Needs Admin Release (${fulfillmentMsg}).`
+          : `Order #${short} ($${totalStr}) - Agent Created & Auto-Approved On Credit Line. (${fulfillmentMsg}).`,
+        url: `/admin/orders?status=${finalAutoStatus}`,
+      });
     } catch (err) {
       console.error('Failed to notify admins of manual order', err);
     }

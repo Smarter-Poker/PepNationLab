@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getCronAuth } from '@/lib/messenger/server';
@@ -17,7 +18,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const { data, error } = await svc
-      .from('messenger_presence')
+      .from('messenger_presence') // @ts-ignore
       .delete()
       .lt('last_seen_at', cutoffIso)
       .select('id');

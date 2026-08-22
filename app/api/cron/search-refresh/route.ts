@@ -8,6 +8,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 
@@ -37,6 +38,13 @@ export async function GET(req: Request) {
     }
     const refreshedAt = new Date().toISOString();
     await finishCronRun(claim.id, 'succeeded', `refreshed at ${refreshedAt}`);
+    // The search view only refreshes after catalog/alias/tier edits, so expire
+    // the shared 'compounds' Data Cache tag too - the cached readers in
+    // lib/compounds-server.ts should reflect those same edits immediately
+    // instead of waiting out the 1-hour TTL. Next 16 form: { expire: 0 }.
+    try {
+      revalidateTag('compounds', { expire: 0 });
+    } catch { /* best-effort cache refresh */ }
     return NextResponse.json({ ok: true, refreshedAt });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

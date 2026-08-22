@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit } from '@/lib/rate-limit';
+import { AdminUpdatePasswordSchema } from '@/lib/schemas/auth';
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -16,18 +17,21 @@ export async function POST(req: NextRequest) {
   if (!rl.allowed) return NextResponse.json({ error: 'Too Many Requests. Slow Down.' }, { status: 429 });
 
   const supabase = createAdminClient();
-  const body = await req.json().catch(() => ({}));
-  const { userId, newPassword } = body;
+  const rawBody: unknown = await req.json().catch(() => ({}));
 
-  if (!userId || !newPassword) {
-    return NextResponse.json({ error: 'Missing Required Fields' }, { status: 400 });
+  // Schema-locked via lib/password-policy: newPassword must be a STRING
+  // obeying the platform rule (at least 8 characters), and userId a
+  // UUID. The previous hand check called `.length` on an untyped value, so a
+  // non-string JSON value bypassed both length bounds.
+  const parsed = AdminUpdatePasswordSchema.safeParse(rawBody);
+  if (!parsed.success) {
+    const first = parsed.error.issues[0];
+    const message = first?.path?.[0] === 'newPassword' && first.code !== 'invalid_type'
+      ? first.message
+      : 'Missing Required Fields';
+    return NextResponse.json({ error: message }, { status: 400 });
   }
-  if (newPassword.length < 8) {
-    return NextResponse.json({ error: 'Password Must Be At Least 8 Characters' }, { status: 400 });
-  }
-  if (newPassword.length > 128) {
-    return NextResponse.json({ error: 'Password Must Be 128 Characters Or Fewer' }, { status: 400 });
-  }
+  const { userId, newPassword } = parsed.data;
 
   // Block resetting another admin's password - prevents horizontal privilege escalation.
   // Admins should use the Supabase dashboard or their own account settings for self-reset.
@@ -43,7 +47,8 @@ export async function POST(req: NextRequest) {
 
   const { error } = await supabase.auth.admin.updateUserById(userId, { password: newPassword });
   if (error) {
-    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    console.error('[admin/update-password] Supabase auth error:', error.message, error);
+    return NextResponse.json({ error: error.message || 'An unexpected error occurred.' }, { status: 500 });
   }
 
   // Set must_change_password to true so they are forced to change it on their next login.

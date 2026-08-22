@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
@@ -113,6 +114,7 @@ async function runScenario(
 
     const { data: upserted, error: upsertErr } = await admin
       .from('profiles')
+      //  Database schema mismatch from generated types
       .upsert(payload, { onConflict: 'id' })
       .select('id, referring_agent_id, referring_sub_agent_id, role, created_by_role');
     if (upsertErr) {

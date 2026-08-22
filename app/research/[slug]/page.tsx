@@ -15,7 +15,7 @@
 
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getCompound, getAllCompounds, getCompoundBindings } from '@/lib/compounds-server';
+import { getCompound, getAllCompounds, getCompoundBindings, getCOAUrlByCompoundSlug } from '@/lib/compounds-server';
 import { relatedCompounds } from '@/lib/compounds';
 import { COMPARISON_PAIRS, matchupSlug } from '@/lib/research/comparisons';
 import MonographTabs from '@/components/research/MonographTabs';
@@ -26,11 +26,13 @@ import MechanismSVG from '@/components/research/MechanismSVG';
 import { PKChart, ReceptorAffinityHeatmap } from '@/components/research/LazyCharts';
 import SaveToCollectionButton from '@/components/research/SaveToCollectionButton';
 import AddToReadingQueueButton from '@/components/research/AddToReadingQueueButton';
+import MarkQueueRead from '@/components/research/MarkQueueRead';
 import SubscribeButton from '@/components/research/SubscribeButton';
 import PinToCompareButton from '@/components/research/PinToCompareButton';
 import ResearchCartButton from '@/components/research/ResearchCartButton';
 import MonographSeoContent from '@/components/research/MonographSeoContent';
 import MonographCitations from '@/components/research/MonographCitations';
+import DoseFrequencyPanel from '@/components/research/DoseFrequencyPanel';
 
 // ISR: monographs are static reference content that changes rarely. Pre-render
 // every compound at build and revalidate hourly. This ships full, instant HTML
@@ -55,11 +57,15 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const compound = await getCompound(slug);
   if (!compound) return { title: 'Compound | Research | Pep Nation Lab', robots: { index: false } };
   const name = compound.display_name;
-  const summary = (compound.plain_summary ?? '').slice(0, 155);
+  const raw = compound.plain_summary ?? '';
+  const clipped = raw.length > 130 ? raw.slice(0, 130).replace(/\s+\S*$/, '') + '...' : raw;
+  const description = clipped
+    ? `${name}: ${clipped} Research Use Only.`
+    : `${name} research-use-only reference: mechanism, evidence, handling, and references.`;
   // Open this monograph to indexing - it's pure RUO reference content.
   return {
     title: `${name} | Research Library | Pep Nation Lab`,
-    description: summary || `${name} research-use-only reference: mechanism, evidence, handling, and references.`,
+    description,
     keywords: [name, ...(compound.aliases ?? []).slice(0, 4), 'research peptide', 'RUO compound', 'peptide research', 'Pep Nation Lab'].join(', '),
     robots: { index: true, follow: true },
     alternates: { 
@@ -68,18 +74,19 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
         'text/markdown': `https://pepnationlab.com/api/llm/compound/${slug}`,
       },
     },
+    // NOTE: no `images` here on purpose - the file-based opengraph-image.tsx
+    // in this route segment generates a unique per-compound OG card. Declaring
+    // a static image in metadata would override and kill the dynamic one.
     openGraph: {
       title: `${name} - Research Reference | Pep Nation Lab`,
-      description: summary || `${name} research-use-only reference: mechanism, evidence, handling, and references.`,
+      description,
       url: `https://pepnationlab.com/research/${slug}`,
       type: 'article',
-      images: [{ url: '/og-card.png', width: 1200, height: 630, alt: `${name} Research Reference - Pep Nation Lab` }],
     },
     twitter: {
       card: 'summary_large_image',
       title: `${name} | Pep Nation Lab Research Library`,
-      description: summary || `${name} RUO research reference: mechanism, evidence tier, and handling data.`,
-      images: ['/og-card.png'],
+      description,
     },
   };
 }
@@ -93,8 +100,9 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   const related = relatedCompounds(compound, all);
 
   // Server-fetch the Wave 2 enriched data (bindings + structures); fail-soft.
-  const [bindingsRes] = await Promise.all([
+  const [bindingsRes, coaUrl] = await Promise.all([
     getCompoundBindings(slug),
+    getCOAUrlByCompoundSlug(slug),
   ]);
   const bindings = bindingsRes as Array<{
     target_name: string;
@@ -226,6 +234,12 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     })
     .filter((x): x is { href: string; name: string } => x !== null);
 
+  // Content freshness pulled from the compound row itself (updated_at /
+  // created_at) - never fabricated from the render date.
+  const freshness = compound as { updated_at?: string | null; created_at?: string | null };
+  const reviewedDate = (freshness.updated_at ?? freshness.created_at)?.slice(0, 10) ?? null;
+  const publishedDate = freshness.created_at?.slice(0, 10) ?? null;
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@graph': [
@@ -242,9 +256,13 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         // entity; lastReviewed communicates content freshness to Google and
         // AI answer engines.
         publisher: { '@id': 'https://pepnationlab.com/#organization' },
-        reviewedBy: { '@id': 'https://pepnationlab.com/#organization' },
-        maintainer: { '@id': 'https://pepnationlab.com/#organization' },
-        lastReviewed: new Date().toISOString().slice(0, 10),
+        // reviewedBy/maintainer point at the distinct research-team entity (not
+        // the publisher org) so author != publisher - the E-E-A-T signal
+        // Google's YMYL systems and AI answer engines actually reward.
+        reviewedBy: { '@id': 'https://pepnationlab.com/#research-team' },
+        maintainer: { '@id': 'https://pepnationlab.com/#research-team' },
+        ...(reviewedDate ? { lastReviewed: reviewedDate, dateModified: reviewedDate } : {}),
+        ...(publishedDate ? { datePublished: publishedDate } : {}),
         audience: {
           '@type': 'Audience',
           audienceType: 'Qualified Researchers And Scientific Institutions',
@@ -281,7 +299,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     <div style={{ minHeight: '100dvh', background: 'var(--black)' }}>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
       />
 
       {/* Server-rendered SEO content: emits the core compound prose into the
@@ -295,7 +313,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
           HTML. Clicks are intercepted into IframeModal (never navigate away). */}
       <MonographCitations sources={compound.sources ?? []} compoundName={compound.display_name} />
 
-      <MonographTabs compound={compound} related={related} />
+      <MonographTabs compound={compound} related={related} coaUrl={coaUrl} />
 
       {/* Personalization rail - server emits markup; the buttons handle auth themselves. */}
       <div
@@ -310,6 +328,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
       >
         <SaveToCollectionButton compoundSlug={compound.slug} compoundName={compound.display_name} />
         <AddToReadingQueueButton compoundSlug={compound.slug} compoundName={compound.display_name} />
+        <MarkQueueRead compoundSlug={compound.slug} />
         <SubscribeButton compoundSlug={compound.slug} compoundName={compound.display_name} />
         <PinToCompareButton
           compoundSlug={compound.slug}
@@ -321,6 +340,9 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
           productName={compound.display_name}
         />
       </div>
+
+      {/* Dose & Frequency — branded collapsible panel, research reference only */}
+      <DoseFrequencyPanel slug={compound.slug} compoundName={compound.display_name} />
 
       {/* Visualization rail - each component fails gracefully when its data is missing. */}
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 var(--space-4, 16px) var(--space-6, 32px)', display: 'grid', gap: 'var(--space-4, 16px)' }}>

@@ -94,7 +94,10 @@ export default function UtmCapture() {
         body: JSON.stringify(payload),
         keepalive: true,
       })
-        .then(() => {
+        .then((res) => {
+          // Only stamp the throttle on success: a 429/500 response used to
+          // suppress retries for 30 minutes, silently losing the touch.
+          if (!res.ok) return;
           try {
             window.localStorage.setItem(SENT_KEY, String(Date.now()));
           } catch {

@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { X, Bookmark } from 'lucide-react';
+import { useModalA11y } from '@/lib/useModalA11y';
 import { toast } from 'sonner';
 
 interface BookmarkRow {
@@ -34,13 +35,6 @@ function formatWhen(iso: string): string {
 export default function BookmarksDrawer({ onClose, onJump }: Props) {
   const [rows, setRows] = useState<BookmarkRow[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Audit2 fix: Escape key closes the drawer.
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [onClose]);
 
   useEffect(() => {
     let cancelled = false;
@@ -79,8 +73,12 @@ export default function BookmarksDrawer({ onClose, onJump }: Props) {
     }
   };
 
+  // A11y: initial focus, Tab trap, Escape-to-close, focus restore (WCAG 2.1.2, 2.4.3).
+  const dialogRef = useModalA11y<HTMLDivElement>(true, { onClose });
+
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-label="Bookmarks"

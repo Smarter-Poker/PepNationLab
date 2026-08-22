@@ -5,9 +5,11 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { X } from 'lucide-react';
 import { toast } from 'sonner';
+import AccountDeleteButton from '@/components/AccountDeleteButton';
 import Pagination from '@/components/Pagination';
 import ViewAsButton from '@/components/ViewAsButton';
 import { useAvailability, availabilityMessage } from '@/lib/useAvailability';
+import { MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH, PASSWORD_RULE_TEXT } from '@/lib/password-policy';
 
 const PAGE_SIZE = 25;
 
@@ -82,8 +84,10 @@ function ResearchersAdminPageInner() {
   // Researcher-ownership filter (Researchers tab only): 'house' shows only
   // researchers still owned by the admin / house store, 'assigned' shows only
   // those handed to a real agent, 'all' shows everyone.
+  // Default: 'all' — both the super-admin and platform admins (e.g. Savage Brands)
+  // need to see the full global list on first visit. Use ?owner=house to narrow down.
   const [ownerFilter, setOwnerFilter] = useState<'house' | 'assigned' | 'all'>(
-    (searchParams.get('owner') as 'house' | 'assigned' | 'all') ?? 'house'
+    (searchParams.get('owner') as 'house' | 'assigned' | 'all') ?? 'all'
   );
   // Assign-to-agent modal state.
   const [assignAgentId, setAssignAgentId] = useState('');
@@ -151,7 +155,10 @@ function ResearchersAdminPageInner() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/admin/researchers');
+      // Limit=500 so all agents appear in the Assign modal dropdown even for
+      // large networks. The API caps at 500 per call which covers all realistic
+      // platform sizes.
+      const res = await fetch('/api/admin/researchers?limit=500');
       const json = await res.json();
       if (res.ok) {
         setProfiles(json.data || []);
@@ -423,8 +430,8 @@ function ResearchersAdminPageInner() {
           account_type: newAccountType,
           credit_limit: newAccountType === 'credit' ? Number(newCreditLimit) : null,
           prepaid_balance: newAccountType === 'prepaid' ? Number(newPrepaidBalance) : 0,
-          slug: newSlug,
-          display_name: newDisplayName,
+          slug: newSlug || newUsername.toLowerCase().replace(/[^a-z0-9\-]/g, ''),
+          display_name: newDisplayName || newUsername,
         }),
       });
       const json = await res.json();
@@ -451,7 +458,7 @@ function ResearchersAdminPageInner() {
     if (tierFilter !== 'all') params.set('tier', tierFilter);
     if (accountTypeFilter !== 'all') params.set('accountType', accountTypeFilter);
     if (outstandingOnly) params.set('outstanding', '1');
-    if (ownerFilter !== 'house') params.set('owner', ownerFilter);
+    if (ownerFilter !== 'all') params.set('owner', ownerFilter);
     const qs = params.toString();
     router.replace(qs ? `/admin/researchers?${qs}` : '/admin/researchers', { scroll: false });
   }, [searchQuery, activeTab, roleFilter, activeFilter, tierFilter, accountTypeFilter, outstandingOnly, ownerFilter, router]);
@@ -539,7 +546,7 @@ function ResearchersAdminPageInner() {
     setTierFilter('all');
     setAccountTypeFilter('all');
     setOutstandingOnly(false);
-    setOwnerFilter('house');
+    setOwnerFilter('all');
   }
 
   const inputStyle = { accentColor: 'var(--teal)', width: 18, height: 18 };
@@ -649,7 +656,7 @@ function ResearchersAdminPageInner() {
             </label>
           </>
         )}
-        {(searchQuery || roleFilter !== 'all' || activeFilter !== 'all' || tierFilter !== 'all' || accountTypeFilter !== 'all' || outstandingOnly || (activeTab === 'researchers' && ownerFilter !== 'house')) && (
+        {(searchQuery || roleFilter !== 'all' || activeFilter !== 'all' || tierFilter !== 'all' || accountTypeFilter !== 'all' || outstandingOnly || (activeTab === 'researchers' && ownerFilter !== 'all')) && (
           <button type="button" onClick={resetResearcherFilters}
             style={{ fontSize: '0.78rem', color: 'var(--grey-400)', background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '5px 12px', cursor: 'pointer' }}>
             Clear Filters
@@ -792,6 +799,15 @@ function ResearchersAdminPageInner() {
                           {profile.is_active ? 'Deactivate' : 'Reactivate'}
                         </button>
                       )}
+                      {profile.role !== 'admin' && (
+                        <AccountDeleteButton
+                          targetId={profile.id}
+                          targetName={profile.full_name || profile.username || null}
+                          kind={isAgent ? 'agent' : 'researcher'}
+                          compact
+                          onDeleted={() => { fetchProfiles(); }}
+                        />
+                      )}
                     </div>
                   </div>
                   {isAgent && (
@@ -878,10 +894,6 @@ function ResearchersAdminPageInner() {
                   <input type="text" className="form-input" placeholder="First Name" value={newFirstName}
                     onChange={e => {
                       setNewFirstName(e.target.value);
-                      if (!usernameDirty) {
-                        const sanitized = e.target.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
-                        setNewUsername(sanitized);
-                      }
                     }} required />
                 </div>
                 <div className="form-group" style={{ marginTop: 0 }}>
@@ -894,6 +906,7 @@ function ResearchersAdminPageInner() {
               <div className="form-group">
                 <label className="form-label">Login Username</label>
                 <input type="text" className="form-input" placeholder="E.g. john_doe (Login Handle)" value={newUsername}
+                  name="new_researcher_username_no_autofill" autoComplete="off" data-lpignore="true" data-form-type="other"
                   onChange={e => { setNewUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '')); setUsernameDirty(true); }} required />
                 {newUsernameMsg && (
                   <p style={{ fontSize: '0.72rem', marginTop: 4, color: newUsernameMsg.color }}>
@@ -904,8 +917,9 @@ function ResearchersAdminPageInner() {
 
               <div className="form-group">
                 <label className="form-label">Temporary Password</label>
-                <input type="password" className="form-input" placeholder="Set Initial Password" value={newPassword}
-                  onChange={e => setNewPassword(e.target.value)} required minLength={6} />
+                <input type="password" className="form-input" placeholder={PASSWORD_RULE_TEXT} value={newPassword}
+                  name="new_researcher_password_no_autofill" autoComplete="new-password" data-lpignore="true"
+                  onChange={e => setNewPassword(e.target.value)} required minLength={MIN_PASSWORD_LENGTH} maxLength={MAX_PASSWORD_LENGTH} />
               </div>
 
               {createRole === 'researcher' && (
@@ -957,16 +971,16 @@ function ResearchersAdminPageInner() {
 
               <h4 style={{ fontSize: '0.88rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>Storefront Setup</h4>
               <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
-                <label className="form-label">Display Name</label>
-                <input type="text" className="form-input" placeholder="E.g. Pep Nation Orlando" value={newDisplayName}
-                  onChange={e => setNewDisplayName(e.target.value)} required />
+                <label className="form-label">Display Name (Optional)</label>
+                <input type="text" className="form-input" placeholder={`Defaults to Username (${newUsername || '...'})`} value={newDisplayName}
+                  onChange={e => setNewDisplayName(e.target.value)} />
               </div>
               <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
-                <label className="form-label">Storefront Slug (URL)</label>
+                <label className="form-label">Storefront Slug (URL) (Optional)</label>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                   <span style={{ color: 'var(--grey-500)', marginRight: 4, fontSize: '0.85rem', whiteSpace: 'nowrap' }}>pepnationlab.com/</span>
-                  <input type="text" className="form-input" placeholder="E.g. orlando-peps" value={newSlug}
-                    onChange={e => setNewSlug(e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, ''))} required />
+                  <input type="text" className="form-input" placeholder={`Defaults to Username (${newUsername.toLowerCase().replace(/[^a-z0-9\-]/g, '') || '...'})`} value={newSlug}
+                    onChange={e => setNewSlug(e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, ''))} />
                 </div>
               </div>
 

@@ -362,7 +362,7 @@ export default function AdminCoaEditor({
                 </label>
               </div>
 
-              <p style={{ color: '#6B7A8A', fontSize: '0.8rem', marginTop: '0.85rem', lineHeight: 1.5 }}>
+              <p style={{ color: '#A8B4C0', fontSize: '0.8rem', marginTop: '0.85rem', lineHeight: 1.5 }}>
                 Publishing Requires A Testing Laboratory, A Test Date, And A Reported Purity. Enter The
                 Real Laboratory Readings; Blank Fields Publish As Not Reported.
               </p>

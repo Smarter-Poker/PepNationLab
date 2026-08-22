@@ -16,13 +16,18 @@ import { CITIES, getCity, CITY_CONTENT_UPDATED } from '@/lib/cities/cities-data'
 import { getStoreTop10 } from '@/lib/cities/top10-server';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 import CityPage from './CityPage';
+import { getCityFAQs } from '@/lib/cities/city-content';
+import { getResearchAnchors } from '@/lib/cities/research-anchors';
+import { getCityWikipediaUrl } from '@/lib/cities/wikipedia-links';
+import { buildOffer, getShippingDetailNodes } from '@/lib/structured-data/merchant';
+import { isSeoIndexableCity } from '@/lib/cities/seo-tier';
 
 // ISR: regenerate each city page at most every 5 minutes so the Top 10 grid
 // tracks the live storefront catalog - admin price/name changes flow through
 // without a redeploy.
 export const revalidate = 300;
 
-// ─── Static params (build-time pre-rendering) ─────────────────────
+// ─── Static params (build-time pre-rendering) ─────────────────
 // Scale-ready ISR: at build we pre-render ONLY the highest-priority markets
 // (sorted by tier, then population) up to this small cap. Every other city -
 // and any city added later - is rendered on first request via ISR and cached
@@ -44,7 +49,7 @@ export async function generateStaticParams() {
     }));
 }
 
-// ─── Per-city metadata ──────────────────────────────────────────────────
+// ─── Per-city metadata ──────────────────────────────────────
 export async function generateMetadata({
   params,
 }: {
@@ -54,8 +59,15 @@ export async function generateMetadata({
   const city = getCity(stateSlug, citySlug);
   if (!city) return { robots: { index: false } };
 
-  const title = `Peptide Research In ${city.name}, ${city.stateAbbr} - Pep Nation Lab`;
-  const description = `Pep Nation Lab supplies research-grade peptides to qualified researchers in ${city.name}, ${city.state}. BPC-157, Semaglutide, Tirzepatide, TB-500 & 100+ more research compounds. Wholesale pricing. Verified accounts only.`;
+  // 2026-08-14 SEO audit: only major metros are indexable (see
+  // lib/cities/seo-tier.ts) and the retained pages target the transactional
+  // phrasing competitors actually rank for ("buy peptides <city>") instead of
+  // the informational "research peptides in <city>" nobody searches.
+  const indexable = isSeoIndexableCity(city);
+  const title = `Buy Research Peptides In ${city.name}, ${city.stateAbbr} | Pep Nation Lab`;
+  // Lead with the keyword + city + offer (SERP-visible), then append the city's
+  // unique local blurb so every meta description is genuinely distinct.
+  const description = `Buy research-grade peptides for laboratory use in ${city.name}, ${city.stateAbbr} - BPC-157, Semaglutide, Tirzepatide & 100+ compounds for sale at wholesale pricing with batch COAs. ${city.localBlurb}`;
 
   return {
     title,
@@ -81,10 +93,12 @@ export async function generateMetadata({
       images: ['/og-card.png'],
     },
     robots: {
-      index: true,
+      // noindex,FOLLOW for the long tail: links keep flowing through the
+      // city mesh, but only retained metros enter the index.
+      index: indexable,
       follow: true,
       googleBot: {
-        index: true,
+        index: indexable,
         follow: true,
         'max-snippet': -1,
         'max-image-preview': 'large',
@@ -94,7 +108,7 @@ export async function generateMetadata({
   };
 }
 
-// ─── Page shell (server component) ───────────────────────────────────────
+// ─── Page shell (server component) ─────────────────────────────────
 export default async function CityLandingPage({
   params,
 }: {
@@ -110,11 +124,34 @@ export default async function CityLandingPage({
   // static FEATURED_PEPTIDES list.
   const top10 = await getStoreTop10();
 
+  // Validated Wikipedia article for this city, or null when none resolves
+  // (see lib/cities/wikipedia-links.ts) - keeps the Service sameAs off dead pages.
+  const cityWikipediaUrl = getCityWikipediaUrl(`${stateSlug}/${citySlug}`, city.name, city.state);
+
+  // Regional research institutions (universities, academic medical centers,
+  // national labs) mapped for this metro. Emitted as schema.org `mentions`
+  // entities on the WebPage node - honest entity/topical signal, not a claim
+  // of affiliation. Empty array when the region is not mapped.
+  const _anchors = getResearchAnchors(city.region);
+  const researchMentions = _anchors
+    ? _anchors.map((a) => ({
+        '@type':
+          a.kind === 'University'
+            ? 'CollegeOrUniversity'
+            : a.kind === 'Medical Center'
+              ? 'MedicalOrganization'
+              : a.kind === 'National Lab' || a.kind === 'Research Institute'
+                ? 'ResearchOrganization'
+                : 'Organization',
+        name: a.name,
+      }))
+    : [];
   const jsonLd = {
     '@context': 'https://schema.org',
     '@graph': [
       {
         '@type': 'BreadcrumbList',
+        '@id': `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}#breadcrumb`,
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
           { '@type': 'ListItem', position: 2, name: 'Peptides By City', item: 'https://pepnationlab.com/peptides' },
@@ -138,11 +175,10 @@ export default async function CityLandingPage({
         areaServed: {
           '@type': 'City',
           name: city.name,
-          // Entity disambiguation: ties this City node to its Wikipedia
-          // entry so search engines resolve the exact municipality.
-          sameAs: encodeURI(
-            `https://en.wikipedia.org/wiki/${city.name.replace(/ /g, '_')},_${city.state.replace(/ /g, '_')}`
-          ),
+          // Entity disambiguation: ties this City node to its validated
+          // Wikipedia article (see lib/cities/wikipedia-links.ts); omitted when
+          // no real article resolves so sameAs never points at a dead page.
+          ...(cityWikipediaUrl ? { sameAs: cityWikipediaUrl } : {}),
           containedInPlace: {
             '@type': 'State',
             name: city.state,
@@ -168,31 +204,42 @@ export default async function CityLandingPage({
                 url: `https://pepnationlab.com/${DEFAULT_STORE_SLUG}?product=${p.productId}`,
               })),
             },
+            // Product nodes are only emitted for items with a real price:
+            // Google's Product spec requires offers/review/rating, and a
+            // Product with none of them draws "missing field (offers)"
+            // warnings in Search Console. Unpriced items still appear in the
+            // ItemList above.
             ...top10
-              .filter((p) => String(p.name || '').trim() !== '')
+              .filter((p) => String(p.name || '').trim() !== '' && Number.isFinite(Number(p.price)) && Number(p.price) > 0)
               .map((p) => {
                 const name = p.subtitle ? `${p.name} (${p.subtitle})` : p.name;
+                const price = Number(p.price);
                 const node: Record<string, unknown> = {
                   '@type': 'Product',
                   // name is REQUIRED by Google's Product spec — never omit it.
                   name,
                   description: `Research-grade ${p.name} for qualified researchers.`,
                   brand: { '@id': 'https://pepnationlab.com/#organization' },
-                };
-                if (p.image) node.image = `https://pepnationlab.com${p.image}`;
-                const price = Number(p.price);
-                if (Number.isFinite(price) && price > 0) {
-                  node.offers = {
-                    '@type': 'Offer',
-                    price: price.toFixed(2),
-                    priceCurrency: 'USD',
-                    availability: 'https://schema.org/InStock',
+                  // Offer shape (validFrom, priceValidUntil, shippingDetails)
+                  // is owned by lib/structured-data/merchant so this page can
+                  // never drift from the storefront's.
+                  offers: buildOffer({
+                    price,
                     url: `https://pepnationlab.com/${DEFAULT_STORE_SLUG}?product=${p.productId}`,
-                    seller: { '@id': 'https://pepnationlab.com/#organization' },
-                  };
+                    inStock: true,
+                    sku: p.productId ? String(p.productId) : null,
+                  }),
+                };
+                if (p.image) {
+                  // Guard: DB image URLs may already be absolute (Supabase storage).
+                  node.image = String(p.image).startsWith('http')
+                    ? p.image
+                    : `https://pepnationlab.com${p.image}`;
                 }
                 return node;
               }),
+            // Emitted once; each offer above references these by @id.
+            ...getShippingDetailNodes(),
           ]
         : []),
       {
@@ -200,10 +247,23 @@ export default async function CityLandingPage({
         '@id': `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}`,
         url: `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}`,
         name: `Peptide Research In ${city.name}, ${city.stateAbbr}`,
+        inLanguage: 'en-US',
         isPartOf: { '@id': 'https://pepnationlab.com/#website' },
+        breadcrumb: { '@id': `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}#breadcrumb` },
+        mainEntity: { '@id': `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}#service` },
         publisher: { '@id': 'https://pepnationlab.com/#organization' },
         datePublished: '2026-07-01',
         dateModified: CITY_CONTENT_UPDATED.toISOString().slice(0, 10),
+        ...(researchMentions.length > 0 ? { mentions: researchMentions } : {}),
+      },
+      {
+        '@type': 'FAQPage',
+        '@id': `https://pepnationlab.com/peptides/${stateSlug}/${citySlug}#faq`,
+        mainEntity: getCityFAQs(city).map((f) => ({
+          '@type': 'Question',
+          name: f.question,
+          acceptedAnswer: { '@type': 'Answer', text: f.answer },
+        })),
       },
     ],
   };

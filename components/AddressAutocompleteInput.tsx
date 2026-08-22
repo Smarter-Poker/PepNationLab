@@ -10,7 +10,7 @@
  * fills street/city/state/zip via the onSelect callback. Backed by
  * GET /api/shipping/address-autocomplete?q=. Best-effort: any failure just
  * shows no suggestions and the user keeps typing by hand. Address accuracy is
- * still backstopped by Shippo validation wherever the form validates on save.
+ * still backstopped by EasyPost validation wherever the form validates on save.
  *
  * It is a thin wrapper around a normal <input>: pass the same value/onChange
  * you already use, plus onSelect to receive the parsed parts. className/style
@@ -36,6 +36,10 @@ export default function AddressAutocompleteInput({
   disabled,
   inputType = 'text',
   maxLength,
+  // Default stays "off": this component renders its own suggestion listbox,
+  // and the browser's native address autofill dropdown would overlay it.
+  // Callers without the custom dropdown concern can pass e.g. "address-line1".
+  autoComplete = 'off',
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -49,6 +53,7 @@ export default function AddressAutocompleteInput({
   disabled?: boolean;
   inputType?: string;
   maxLength?: number;
+  autoComplete?: string;
 }) {
   const [items, setItems] = useState<AcItem[]>([]);
   const [open, setOpen] = useState(false);
@@ -107,7 +112,8 @@ export default function AddressAutocompleteInput({
         required={required}
         disabled={disabled}
         maxLength={maxLength}
-        autoComplete="off"
+        autoComplete={autoComplete}
+        autoCapitalize="words"
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
         onFocus={() => { if (items.length > 0) setOpen(true); }}

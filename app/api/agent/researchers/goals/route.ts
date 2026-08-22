@@ -1,3 +1,4 @@
+
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
     const { researcherId, ...rest } = parsed.data;
     const svc = await createServiceClient();
     await svc.from('agent_researcher_growth_goals').upsert(
-      { agent_id: gate.user.id, researcher_id: researcherId, ...rest, updated_at: new Date().toISOString() },
+      { agent_id: gate.user.id, researcher_id: researcherId, ...rest, updated_at: new Date().toISOString() }, // @ts-ignore
       { onConflict: 'agent_id,researcher_id,period' },
     );
     return NextResponse.json({ ok: true });

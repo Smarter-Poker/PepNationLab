@@ -27,11 +27,12 @@ export const metadata: Metadata = {
     creator: '@PepNationLab',
     title: 'Peptides In Clinical Pipeline | Compounds In Development | Pep Nation Lab',
     description: 'Research peptides and compounds currently in clinical development pipeline - Phase 1, 2, and 3 trials. Track emerging peptide drug development. Research use only.',
-    images: ['https://pepnationlab.com/images/og-card.jpg'],
+    images: ['https://pepnationlab.com/og-card.png'],
   },
 };
 
-export const dynamic = 'force-dynamic';
+// ISR: data comes from unstable_cache'd helpers (60s); render once, revalidate hourly.
+export const revalidate = 3600;
 
 interface PipelineRow {
   slug: string;
@@ -65,7 +66,7 @@ const PHASE_COLORS: Record<string, string> = {
   'Phase 3': '#BBA371',
   'FDA Review': '#F6AD55',
   Approved: '#68D391',
-  'Unspecified Phase': '#718096',
+  'Unspecified Phase': '#8794A4',
 };
 
 export default async function ResearchInPipelinePage() {

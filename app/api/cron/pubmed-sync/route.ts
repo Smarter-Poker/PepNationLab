@@ -12,6 +12,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 import { esearch } from '@/lib/research/pubmed';
@@ -112,6 +113,15 @@ export async function GET(req: Request) {
       'succeeded',
       `processed=${processed} updated=${updated} failed=${failed}`,
     );
+
+    // Expire the shared 'compounds' cache tag when compound rows changed so
+    // public surfaces pick up the refreshed counters. In Next 16 revalidateTag
+    // takes a profile arg; { expire: 0 } is the immediate-expiration form.
+    if (updated > 0) {
+      try {
+        revalidateTag('compounds', { expire: 0 });
+      } catch { /* best-effort cache refresh */ }
+    }
 
     return NextResponse.json({
       ok: true,

@@ -27,11 +27,12 @@ export const metadata: Metadata = {
     creator: '@PepNationLab',
     title: 'Browse Peptides By Peptide Class | Research Library | Pep Nation Lab',
     description: 'Browse research-grade peptides organized by peptide class - GLP-1 agonists, GHRPs, GHRHs, BPC analogs, melanocortins, and more. Research use only.',
-    images: ['https://pepnationlab.com/images/og-card.jpg'],
+    images: ['https://pepnationlab.com/og-card.png'],
   },
 };
 
-export const dynamic = 'force-dynamic';
+// ISR: data comes from unstable_cache'd helpers (60s); render once, revalidate hourly.
+export const revalidate = 3600;
 
 export default async function ResearchByClassPage() {
   const jsonLd = {
@@ -51,7 +52,7 @@ export default async function ResearchByClassPage() {
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
           { '@type': 'ListItem', position: 2, name: 'Research Library', item: 'https://pepnationlab.com/research' },
-          { '@type': 'ListItem', position: 3, name: 'by class', item: 'https://pepnationlab.com/research/by-class' }
+          { '@type': 'ListItem', position: 3, name: 'By Class', item: 'https://pepnationlab.com/research/by-class' }
         ]
       }
     ]
@@ -150,7 +151,7 @@ export default async function ResearchByClassPage() {
       </nav>
       <header style={{ marginBottom: 'var(--space-5, 24px)' }}>
         <h1 style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--white, #FFFFFF)', margin: 0 }}>
-          Browse By Compound Class
+          Browse Peptides By Class
         </h1>
         <p
           style={{

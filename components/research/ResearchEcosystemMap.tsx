@@ -1,10 +1,12 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Network } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ResearchEcosystemMap() {
+  // A11y: honor prefers-reduced-motion — skip the infinite boxShadow pulse.
+  const prefersReducedMotion = useReducedMotion();
   // A visual representation of compound relationships
   // BPC-157 (Center) -> TB-500, GHK-Cu, CJC-1295, Thymosin Alpha-1
 
@@ -51,8 +53,10 @@ export default function ResearchEcosystemMap() {
         <Link href="/research/bpc-157" style={{ zIndex: 10, textDecoration: 'none' }}>
           <motion.div 
             whileHover={{ scale: 1.1, boxShadow: '0 0 30px rgba(0,229,255,0.6)' }}
-            animate={{ boxShadow: ['0 0 10px rgba(0,229,255,0.2)', '0 0 30px rgba(0,229,255,0.4)', '0 0 10px rgba(0,229,255,0.2)'] }}
-            transition={{ duration: 4, repeat: Infinity }}
+            animate={prefersReducedMotion
+              ? { boxShadow: '0 0 10px rgba(0,229,255,0.2)' }
+              : { boxShadow: ['0 0 10px rgba(0,229,255,0.2)', '0 0 30px rgba(0,229,255,0.4)', '0 0 10px rgba(0,229,255,0.2)'] }}
+            transition={prefersReducedMotion ? { duration: 0 } : { duration: 4, repeat: Infinity }}
             style={{
               position: 'absolute',
               top: '50%', left: '50%',

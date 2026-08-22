@@ -34,8 +34,7 @@ type Overview = {
 };
 
 function fmtMoney(v: number | null | undefined): string {
-  if (v == null) return '$0.00';
-  return `$${Number(v).toFixed(2)}`;
+  return `$${(Number(v) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function fmtDate(s: string | null | undefined): string {

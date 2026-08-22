@@ -284,7 +284,7 @@ strong{color:var(--text);}
   transition:border-color .2s;
   min-height:48px;
 }
-.field input:focus,.field select:focus{outline:none;border-color:var(--teal);}
+.field input:focus,.field select:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,196,188,0.4);}
 .calc-result{
   background:linear-gradient(135deg,rgba(0,196,188,0.1),rgba(59,130,246,0.08));
   border:1px solid rgba(0,196,188,0.3);
@@ -307,7 +307,7 @@ strong{color:var(--text);}
   color:var(--text);font-size:15px;font-family:'Inter',sans-serif;
   transition:border-color .2s;min-height:48px;margin-bottom:12px;
 }
-.calc-input:focus{outline:none;border-color:var(--teal);}
+.calc-input:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,196,188,0.4);}
 .tbl-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border);}
 table{width:100%;border-collapse:collapse;font-size:13px;}
 th{
@@ -331,7 +331,7 @@ tr:hover td{background:rgba(0,196,188,0.04);}
   margin-bottom:12px;transition:border-color .2s;
   min-height:48px;
 }
-.tbl-search:focus{outline:none;border-color:var(--teal);}
+.tbl-search:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,196,188,0.4);}
 .peptide-card{
   background:var(--surface);border:1px solid var(--border);
   border-radius:var(--r);padding:20px;margin-bottom:12px;

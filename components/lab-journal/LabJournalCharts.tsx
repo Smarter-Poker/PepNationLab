@@ -30,6 +30,7 @@ export function BiometricTrendChart({
   yMax: number;
 }) {
   return (
+    <div style={{ width: '100%', height: '100%' }} role="img" aria-label={`Trend Chart Of ${metric} Readings Over Time${goal != null && !isNaN(goal) ? ` With A Goal Line At ${goal}` : ''}`}>
     <ResponsiveContainer width="100%" height="100%">
       <ComposedChart data={data} margin={{ top: 10, right: 8, left: -18, bottom: 0 }}>
         <defs>
@@ -52,6 +53,7 @@ export function BiometricTrendChart({
         <Line type="monotone" dataKey="trend" name="Trend" stroke="#00E5FF" strokeWidth={3} dot={false} activeDot={{ r: 5 }} />
       </ComposedChart>
     </ResponsiveContainer>
+    </div>
   );
 }
 
@@ -65,6 +67,7 @@ export function BiometricDoseOverlayChart({
   colors: string[];
 }) {
   return (
+    <div style={{ width: '100%', height: '100%' }} role="img" aria-label={`Combined Chart Overlaying ${metric} Readings With Dose Bars For ${compoundsPresent.join(', ') || 'Logged Compounds'}`}>
     <ResponsiveContainer width="100%" height="100%">
       <ComposedChart data={chartData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
@@ -89,16 +92,19 @@ export function BiometricDoseOverlayChart({
         ))}
       </ComposedChart>
     </ResponsiveContainer>
+    </div>
   );
 }
 
 export function AdherenceRing({ adherence }: { adherence: number | null | undefined }) {
   return (
+    <div style={{ width: '100%', height: '100%' }} role="img" aria-label={`Adherence Ring Showing ${Math.round(adherence ?? 0)} Percent Dose Adherence`}>
     <ResponsiveContainer width="100%" height="100%">
       <RadialBarChart innerRadius="70%" outerRadius="100%" data={[{ v: adherence ?? 0, fill: 'var(--teal)' }]} startAngle={90} endAngle={-270}>
         <RadialBar background={{ fill: 'rgba(255,255,255,0.08)' }} dataKey="v" cornerRadius={20} />
       </RadialBarChart>
     </ResponsiveContainer>
+    </div>
   );
 }
 
@@ -110,6 +116,7 @@ export function ActiveInSystemChart({
   colors: readonly string[];
 }) {
   return (
+    <div style={{ width: '100%', height: '100%' }} role="img" aria-label={`Area Chart Of Estimated Active Levels In System Over Time For ${compounds.join(', ') || 'Logged Compounds'}`}>
     <ResponsiveContainer width="100%" height="100%">
       <AreaChart data={data} margin={{ top: 10, right: 8, left: -20, bottom: 0 }}>
         <defs>
@@ -131,11 +138,13 @@ export function ActiveInSystemChart({
         ))}
       </AreaChart>
     </ResponsiveContainer>
+    </div>
   );
 }
 
 export function MetricSparkline({ spark, metric }: { spark: any[]; metric: string }) {
   return (
+    <div style={{ width: '100%', height: '100%' }} role="img" aria-label={`Sparkline Of Recent ${metric} Readings`}>
     <ResponsiveContainer width="100%" height="100%">
       <AreaChart data={spark} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
         <defs>
@@ -147,5 +156,6 @@ export function MetricSparkline({ spark, metric }: { spark: any[]; metric: strin
         <Area type="monotone" dataKey="v" stroke="#00E5FF" strokeWidth={1.5} fill={`url(#sp-${metric.replace(/\W/g, '')})`} dot={false} />
       </AreaChart>
     </ResponsiveContainer>
+    </div>
   );
 }

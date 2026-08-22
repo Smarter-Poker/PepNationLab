@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isEffectiveAdmin } from '@/lib/platform-admins';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { isTierLadderV2 } from '@/lib/pricing';
+import { writeAuditLog } from '@/lib/admin-audit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -27,7 +29,7 @@ export async function GET(req: NextRequest) {
     .maybeSingle();
 
   const { data: caller } = await svc.from('profiles').select('role').eq('id', gate.userId).maybeSingle();
-  if (caller?.role !== 'admin' && data?.parent_agent_id !== gate.userId) {
+  if (!isEffectiveAdmin(gate.userId, caller?.role) && data?.parent_agent_id !== gate.userId) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
@@ -97,7 +99,7 @@ export async function POST(req: NextRequest) {
 
   const svc = await createServiceClient();
 
-  const { data: target } = await svc.from('profiles').select('id, role, parent_agent_id').eq('id', agentId).maybeSingle();
+  const { data: target } = await svc.from('profiles').select('id, role, parent_agent_id, is_sub_agent').eq('id', agentId).maybeSingle();
   if (!target || !['agent', 'super_agent'].includes(String(target.role))) {
     return NextResponse.json({ error: 'Agent Not Found.' }, { status: 404 });
   }
@@ -108,6 +110,18 @@ export async function POST(req: NextRequest) {
     if (target.parent_agent_id !== gate.userId) {
       return NextResponse.json({ error: 'Forbidden. You do not own this agent.' }, { status: 403 });
     }
+  }
+
+  // Chain-priced guard: a parented non-sub-agent's cost is derived from its
+  // upline chain cost x (1 + commission_pct/100) - a tier lock or flat
+  // custom_markup_override written here is never read by lib/pricing for such
+  // an account (the UI already hides this control for them; this is the
+  // server-side backstop so the admin API can't silently no-op the same way).
+  if (target.parent_agent_id && target.is_sub_agent !== true) {
+    return NextResponse.json(
+      { error: 'This Account Is Chain-Priced. Its Cost Comes From Its Upline Cost Plus The Assigned Markup - Set The Markup Instead Of A Tier Override.' },
+      { status: 409 },
+    );
   }
 
   const update: Record<string, unknown> = {
@@ -136,6 +150,14 @@ export async function POST(req: NextRequest) {
   // 2026-07-06): the DB trigger fn_recalc_agent_products_on_markup_change
   // keeps retail_price fixed and re-derives margin_percent from the new
   // wholesale cost. No retail recalculation here.
+
+  await writeAuditLog(svc, {
+    actorId: gate.userId,
+    action: 'agent_tier_override_set',
+    entityType: 'profile',
+    entityId: agentId,
+    changes: { enabled, level: enabled ? level : null, custom_markup_pct: customMarkupPct },
+  });
 
   return NextResponse.json({ success: true, agentId, enabled, level: enabled ? level : null, customMarkup: customMarkupPct });
 }

@@ -60,7 +60,10 @@ function parseFieldValue(raw: string): FieldFilter | null {
 
 function tokenize(raw: string): string[] {
   const tokens: string[] = [];
-  const re = /"([^"]*)"|( \S+)/g;
+  // NOTE: the second alternative must NOT require a leading space -
+  // /( \S+)/ silently dropped the first (or only) word of every query,
+  // which nulled out the entire public research search in production.
+  const re = /"([^"]*)"|(\S+)/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(raw)) !== null) {
     if (m[1] !== undefined) tokens.push(`"${m[1]}"`);

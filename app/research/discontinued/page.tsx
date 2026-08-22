@@ -27,11 +27,12 @@ export const metadata: Metadata = {
     creator: '@PepNationLab',
     title: 'Discontinued Research Compounds | Pep Nation Lab',
     description: 'Research reference data on discontinued and withdrawn peptide compounds. Full historical data including mechanism, evidence, and discontinuation context. Research use only.',
-    images: ['https://pepnationlab.com/images/og-card.jpg'],
+    images: ['https://pepnationlab.com/og-card.png'],
   },
 };
 
-export const dynamic = 'force-dynamic';
+// ISR: data comes from unstable_cache'd helpers (60s); render once, revalidate hourly.
+export const revalidate = 3600;
 
 interface DiscontinuedRow {
   slug: string;

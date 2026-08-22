@@ -20,9 +20,9 @@ import { isDisclaimerAccepted, recordDisclaimerAcceptance } from '@/lib/disclaim
 // keyword stuffing. The image itself is never modified.
 //
 // Flow: The Landing Artwork Is ALWAYS The First Thing A Visitor Sees.
-// Clicking ANY Zone Checks The Layer-1 Disclaimer; First-Time Visitors
-// Get The Mandatory Research-Only Acknowledgment Before Being Taken To
-// Their Destination (Log In, Create Account, Guest, Etc.).
+// Only "Continue As Guest" (entering the store without an account) shows the
+// Research-Only acknowledgment before navigating. Log In and Create Account go
+// straight through -- sign-up and checkout each carry their own acknowledgment.
 
 // Standard "visually hidden" pattern: present in the DOM and the accessibility
 // tree (so crawlers and screen readers read it), but painted 1px and clipped so
@@ -49,32 +49,94 @@ type Zone = {
   height: string;
 };
 
-const ZONES: Zone[] = [
-  // Right-Side Hexagon Badges
-  { href: '/find-a-peptide', label: 'Discover', anchor: 'Discover Research Peptides', top: '12.56%', left: '79.17%', width: '18.4%', height: '7.77%' },
-  { href: '/research', label: 'Research', anchor: 'Research Library', top: '21.83%', left: '79.17%', width: '18.4%', height: '8.07%' },
-  { href: '/peptide-101', label: 'Learn', anchor: 'Peptide 101 Research Education', top: '31.10%', left: '79.17%', width: '18.4%', height: '8.07%' },
-  { href: `/${DEFAULT_STORE_SLUG}`, label: 'Transform', anchor: 'Browse The Research Catalog', top: '40.37%', left: '79.17%', width: '18.4%', height: '8.37%' },
-  // Primary Action Buttons
-  { href: '/login', label: 'Log In', anchor: 'Log In To Your Researcher Account', top: '71.29%', left: '20.72%', width: '58.98%', height: '3.59%' },
-  { href: '/signup', label: 'Create Account', anchor: 'Create A Verified Researcher Account', top: '76.85%', left: '20.72%', width: '58.98%', height: '3.59%' },
-  { href: `/${DEFAULT_STORE_SLUG}`, label: 'Continue As Guest', anchor: 'Browse Research Peptides As A Guest', top: '82.06%', left: '20.72%', width: '58.98%', height: '3.59%' },
-  // Footer Compliance Line
-  { href: '/disclaimer', label: 'For Research Purposes Only', anchor: 'Research Use Only Disclaimer', top: '97.1%', left: '10%', width: '80%', height: '2.4%' },
-];
+function buildZones(guestStoreSlug: string | null): Zone[] {
+  // Guests who scanned an agent QR are locked to that agent's storefront (see
+  // lib/ref-lock.ts) -- the middleware only lets an unauthenticated guest
+  // browse that one store, so both store entries ("Continue As Guest" and the
+  // "Transform" / Browse The Research Catalog badge) must go there rather than
+  // the house store -- otherwise the badge just bounces off the middleware.
+  // Without a lock, the house-store behavior is unchanged.
+  const guestStoreHref = guestStoreSlug ? `/${guestStoreSlug}` : `/${DEFAULT_STORE_SLUG}`;
+  // DELIBERATELY BARE -- never `/signup?ref=<code>`.
+  //
+  // proxy.ts treats a GET carrying ?ref= on /signup, /register, /login, /join
+  // or /create-account as a referral ENTRY POINT and redirects it to the
+  // locked storefront, because a scanned QR must never land on an account
+  // wall. This link is the opposite case: a guest who is already browsing the
+  // locked store and has deliberately tapped "Create Account". Appending the
+  // code here made the middleware bounce that tap straight back to the
+  // storefront, so a locked guest could never reach the sign-up form at all.
+  //
+  // Dropping the parameter costs nothing. Attribution does NOT travel in the
+  // URL: it travels in the httpOnly, HMAC-signed pnl_ref_lock cookie, which is
+  // the only source app/api/storefront/register and app/auth/callback trust
+  // when awarding referral credit. The sign-up form reads the companion
+  // client-readable pnl_ref_display cookie to show the locked "referred by"
+  // line, so the visible confirmation survives too -- and unlike a query
+  // string, neither can be edited by the visitor to re-point their own credit.
+  //
+  // proxy.ts additionally exempts same-origin navigations from that redirect,
+  // but Safari before 16.4 sends no Sec-Fetch-Site header at all, so that
+  // exemption cannot be the only guard for an iPhone audience. This is.
+  const signupHref = '/signup';
+  return [
+    // Right-Side Hexagon Badges
+    { href: '/find-a-peptide', label: 'Discover', anchor: 'Discover Research Peptides', top: '12.56%', left: '79.17%', width: '18.4%', height: '7.77%' },
+    { href: '/research', label: 'Research', anchor: 'Research Library', top: '21.83%', left: '79.17%', width: '18.4%', height: '8.07%' },
+    { href: '/peptide-101', label: 'Learn', anchor: 'Peptide 101 Research Education', top: '31.10%', left: '79.17%', width: '18.4%', height: '8.07%' },
+    { href: guestStoreHref, label: 'Transform', anchor: 'Browse The Research Catalog', top: '40.37%', left: '79.17%', width: '18.4%', height: '8.37%' },
+    // Primary Action Buttons
+    { href: '/login', label: 'Log In', anchor: 'Log In To Your Researcher Account', top: '71.29%', left: '20.72%', width: '58.98%', height: '3.59%' },
+    { href: signupHref, label: 'Create Account', anchor: 'Create A Verified Researcher Account', top: '76.85%', left: '20.72%', width: '58.98%', height: '3.59%' },
+    { href: guestStoreHref, label: 'Continue As Guest', anchor: 'Browse Research Peptides As A Guest', top: '82.06%', left: '20.72%', width: '58.98%', height: '3.59%' },
+    // Footer Compliance Line
+    { href: '/disclaimer', label: 'For Research Purposes Only', anchor: 'Research Use Only Disclaimer', top: '97.1%', left: '10%', width: '80%', height: '2.4%' },
+  ];
+}
 
-export default function HomeClient() {
+type HomeClientProps = {
+  /** Agent storefront slug from the QR referral lock (lib/ref-lock.ts), if any. */
+  guestStoreSlug?: string | null;
+  /**
+   * Referral code from the QR referral lock, if any.
+   *
+   * Retained so app/page.tsx keeps compiling and so the value is available if
+   * the landing page ever needs to display it. It is intentionally NOT used to
+   * build any href -- see the signupHref comment in buildZones for why putting
+   * a referral code in a landing-page link breaks sign-up for locked guests.
+   */
+  refCode?: string | null;
+};
+
+export default function HomeClient({ guestStoreSlug = null }: HomeClientProps) {
   const router = useRouter();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
 
+  const zones = buildZones(guestStoreSlug);
+
+  // Only ENTERING THE STORE as a guest requires the Research-Only
+  // acknowledgment here. Both store entries -- "Continue As Guest" and the
+  // "Browse The Research Catalog" badge -- point at the QR-locked agent
+  // storefront when a referral lock is present, and at the house store
+  // otherwise, so we gate by destination against both. Every other zone (Log
+  // In, Create Account, and the research / education links) navigates straight
+  // through -- sign-up and checkout carry their own.
+  const STORE_HREF = `/${DEFAULT_STORE_SLUG}`;
+  const GUEST_STORE_HREF = guestStoreSlug ? `/${guestStoreSlug}` : STORE_HREF;
+
   const handleZoneClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
-    if (isDisclaimerAccepted()) {
-      router.push(href);
+    const isStoreEntry = (base: string) =>
+      href === base ||
+      href.startsWith(`${base}?`) ||
+      href.startsWith(`${base}#`);
+    const isGuestStoreEntry = isStoreEntry(STORE_HREF) || isStoreEntry(GUEST_STORE_HREF);
+    if (isGuestStoreEntry && !isDisclaimerAccepted()) {
+      // First-time guest entering the store: acknowledge first, then navigate.
+      setPendingHref(href);
       return;
     }
-    // First-Time Visitor: Show The Mandatory Acknowledgment Before Navigating.
-    setPendingHref(href);
+    router.push(href);
   };
 
   const handleAccept = () => {
@@ -94,7 +156,7 @@ export default function HomeClient() {
         <h1>Pep Nation Lab - Wholesale Research-Grade Peptides For Qualified Researchers</h1>
         <p>
           Pep Nation Lab supplies research-grade peptides to verified researchers and scientific
-          institutions across all 50 US states. Browse a catalog of 100+ research compounds - including
+          institutions across all 50 US states. Explore a 300+ compound research library with 100+ research compounds available - including
           BPC-157, Semaglutide, Tirzepatide, TB-500, Ipamorelin, and CJC-1295 - at wholesale pricing,
           with a full research library, compound monographs, dosing calculators, and local coverage in
           hundreds of US cities. All products are strictly for in vitro laboratory research use only.
@@ -123,10 +185,23 @@ export default function HomeClient() {
           priority
           fetchPriority="high"
           quality={40}
-          sizes="(max-width: 941px) 100vw, 941px"
+          // Slow-mobile / SMS-launch: the tap zones below are positioned over
+          // this artwork, so on a weak connection the above-the-fold nav would
+          // be an invisible blank until the optimized image arrives. An inline
+          // ~200-byte LQIP (8x14 WebP derived from the artwork itself) paints a
+          // recognizable blurred preview immediately at FCP, so the layout and
+          // where-to-tap are visible from the first frame. Zero extra request.
+          placeholder="blur"
+          blurDataURL="data:image/webp;base64,UklGRmYAAABXRUJQVlA4IFoAAADwAQCdASoIAA4AAwBSJZACdAYsjkQqUwAA/vXtohMfCrMd0H9GOtFJCx/IHpXBGBsFAcIgwsMVBmp8ZtuTTKGp0nAp/SjpN+0+hb6GMfx4WyrfBPjlQ1PxVgA="
+          // Mobile LCP: the artwork is a 941px-wide source, so at 100vw a
+          // DPR-3 phone pulls the full-width candidate (~941px x 1672px).
+          // Capping the slot at 250 CSS px on small screens selects the 750w
+          // candidate instead (~36% fewer pixels to download and decode) at a
+          // 1.5x upscale that is visually acceptable for this flat artwork.
+          sizes="(max-width: 480px) 250px, (max-width: 941px) 100vw, 941px"
           style={{ width: '100%', height: 'auto', display: 'block' }}
         />
-        {ZONES.map(zone => (
+        {zones.map(zone => (
           <a
             key={zone.label}
             href={zone.href}
@@ -139,6 +214,10 @@ export default function HomeClient() {
               left: zone.left,
               width: zone.width,
               height: zone.height,
+              // Tap-target floor (WCAG 2.5.8 / 48dp guidance): percentage
+              // heights shrink below 24px on small phones; the transparent
+              // hit area may grow beyond the painted button.
+              minHeight: 24,
               cursor: 'pointer',
               zIndex: 10,
             }}
@@ -177,7 +256,7 @@ export default function HomeClient() {
             </a>
           ))}
         </nav>
-        <p style={{ fontSize: '0.68rem', color: 'rgba(168,180,192,0.35)', textAlign: 'center', margin: '12px 0 0' }}>
+        <p style={{ fontSize: '0.85rem', color: 'rgba(168,180,192,0.35)', textAlign: 'center', margin: '12px 0 0' }}>
           {new Date().getFullYear()} Pep Nation Lab LLC. All Products For In Vitro Research Use Only.
         </p>
       </footer>

@@ -78,6 +78,7 @@ export default function NewProductPage() {
     const supabase = createClient();
     let finalImageUrl = form.image_url;
 
+    try {
     if (fileInputRef.current?.files?.[0]) {
       setUploadingImage(true);
       const file = fileInputRef.current.files[0];
@@ -128,6 +129,12 @@ export default function NewProductPage() {
 
     router.push('/admin/products');
     router.refresh();
+    } catch {
+      // Never leave the Save button stuck on a network drop / non-JSON 5xx.
+      setError('Could Not Create Product. Check Your Connection And Try Again.');
+      setLoading(false);
+      setUploadingImage(false);
+    }
   }
 
   const baseCost = parseFloat(form.base_cost);

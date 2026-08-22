@@ -155,6 +155,19 @@ export const RESEARCH_AREA_CONTENT: Record<string, AreaContent> = {
         url: 'https://pubmed.ncbi.nlm.nih.gov/22074294/',
       },
     ],
+    diagram: `graph TD;
+    Injury[Injury / Post-Op Stress] --> BPC(BPC-157);
+    Injury --> ARA(ARA-290);
+    Injury --> KPV(KPV);
+    BPC --> NO[eNOS / Nitric-Oxide Tone];
+    ARA --> IRR[Innate Repair Receptor];
+    KPV --> NFkB[NF-kB Suppression];
+    NO --> Resolve[Inflammation Resolution];
+    IRR --> Resolve;
+    NFkB --> Resolve;
+    Resolve --> Recovery[Systemic Recovery];
+    style Recovery fill:#00C4BC,stroke:#000,stroke-width:2px,color:#fff;
+    `,
   },
 
   metabolic: {
@@ -282,6 +295,18 @@ export const RESEARCH_AREA_CONTENT: Record<string, AreaContent> = {
         url: 'https://pubmed.ncbi.nlm.nih.gov/29599478/',
       },
     ],
+    diagram: `graph TD;
+    Aging[Cellular Aging] --> Epi(Epithalon);
+    Aging --> NAD(NAD+);
+    Aging --> FOXO(FOXO4-DRI);
+    Epi --> Telo[Telomerase Activity];
+    NAD --> Sirt[Sirtuin / NAD+ Metabolism];
+    FOXO --> Seno[Senescent-Cell Clearance];
+    Telo --> Health[Healthspan Extension];
+    Sirt --> Health;
+    Seno --> Health;
+    style Health fill:#00C4BC,stroke:#000,stroke-width:2px,color:#fff;
+    `,
   },
 
   cosmetic: {
@@ -336,6 +361,17 @@ export const RESEARCH_AREA_CONTENT: Record<string, AreaContent> = {
         url: 'https://pubmed.ncbi.nlm.nih.gov/26132941/',
       },
     ],
+    diagram: `graph TD;
+    Skin[Skin & Hair Research] --> GHK(GHK-Cu);
+    Skin --> SNAP(SNAP-8);
+    GHK --> ECM[Collagen / ECM Remodeling];
+    GHK --> LOX[Lysyl Oxidase];
+    SNAP --> Neuro[Neurotransmitter-Release Modulation];
+    ECM --> Derm[Dermal Regeneration];
+    LOX --> Derm;
+    Neuro --> Derm;
+    style Derm fill:#00C4BC,stroke:#000,stroke-width:2px,color:#fff;
+    `,
   },
 
   cognitive: {
@@ -390,6 +426,18 @@ export const RESEARCH_AREA_CONTENT: Record<string, AreaContent> = {
         url: 'https://pubmed.ncbi.nlm.nih.gov/6646394/',
       },
     ],
+    diagram: `graph TD;
+    Brain[Cognitive Research] --> Semax(Semax);
+    Brain --> Selank(Selank);
+    Brain --> Cere(Cerebrolysin);
+    Semax --> BDNF[BDNF / NGF Upregulation];
+    Selank --> GABA[GABA / Serotonin Modulation];
+    Cere --> Neurotroph[Neurotrophic Support];
+    BDNF --> Cog[Neuroprotection & Cognition];
+    GABA --> Cog;
+    Neurotroph --> Cog;
+    style Cog fill:#00C4BC,stroke:#000,stroke-width:2px,color:#fff;
+    `,
   },
 
   immune: {
@@ -444,6 +492,18 @@ export const RESEARCH_AREA_CONTENT: Record<string, AreaContent> = {
           'Romanova IV, et al. Effects of thymalin on the immune system in radiation-exposed and aged organisms. Adv Gerontol. 2012;25(2):245-9.',
       },
     ],
+    diagram: `graph TD;
+    Immune[Immune Modulation] --> TA1(Thymosin Alpha-1);
+    Immune --> Thym(Thymalin);
+    Immune --> LL37(LL-37);
+    TA1 --> TCell[T-Cell Maturation];
+    Thym --> Treg[Immune Balance / Treg];
+    LL37 --> AMP[Antimicrobial Defense];
+    TCell --> Host[Host Defense];
+    Treg --> Host;
+    AMP --> Host;
+    style Host fill:#00C4BC,stroke:#000,stroke-width:2px,color:#fff;
+    `,
   },
 
   sexual_health: {
@@ -496,6 +556,18 @@ export const RESEARCH_AREA_CONTENT: Record<string, AreaContent> = {
         url: 'https://pubmed.ncbi.nlm.nih.gov/20047458/',
       },
     ],
+    diagram: `graph TD;
+    Arousal[Sexual-Health Research] --> PT141(PT-141);
+    Arousal --> Kiss(Kisspeptin-10);
+    Arousal --> Oxy(Oxytocin);
+    PT141 --> MC[Melanocortin MC4R Activation];
+    Kiss --> HPG[HPG Axis / GnRH Release];
+    Oxy --> Bond[Oxytocin Signaling];
+    MC --> Resp[Arousal & Libido Response];
+    HPG --> Resp;
+    Bond --> Resp;
+    style Resp fill:#00C4BC,stroke:#000,stroke-width:2px,color:#fff;
+    `,
   },
 
   performance: {
@@ -548,6 +620,19 @@ export const RESEARCH_AREA_CONTENT: Record<string, AreaContent> = {
           'Sinha-Hikim I, et al. Effects of testosterone supplementation on skeletal muscle fiber hypertrophy and satellite cells. J Clin Endocrinol Metab. 2006;91(8):3024-33.',
       },
     ],
+    diagram: `graph TD;
+    Train[Performance & Muscle] --> Ipa(Ipamorelin);
+    Train --> CJC(CJC-1295);
+    Train --> Tesa(Tesamorelin);
+    Ipa --> GHR[Ghrelin Receptor / GH Pulse];
+    CJC --> GHRH[GHRH Receptor];
+    Tesa --> GHRH;
+    GHR --> GH[Growth-Hormone Release];
+    GHRH --> GH;
+    GH --> IGF[IGF-1 / Protein Synthesis];
+    IGF --> Muscle[Lean Mass & Recovery];
+    style Muscle fill:#00C4BC,stroke:#000,stroke-width:2px,color:#fff;
+    `,
   },
 
   sleep: {
@@ -599,6 +684,18 @@ export const RESEARCH_AREA_CONTENT: Record<string, AreaContent> = {
         url: 'https://pubmed.ncbi.nlm.nih.gov/16423108/',
       },
     ],
+    diagram: `graph TD;
+    Sleep[Sleep & Circadian] --> DSIP(DSIP);
+    Sleep --> Epi(Epitalon);
+    Sleep --> Mel(Melatonin);
+    DSIP --> Delta[Delta-Wave Modulation];
+    Epi --> Pineal[Pineal / Melatonin Regulation];
+    Mel --> Circ[Circadian Entrainment];
+    Delta --> Arch[Sleep Architecture];
+    Pineal --> Arch;
+    Circ --> Arch;
+    style Arch fill:#00C4BC,stroke:#000,stroke-width:2px,color:#fff;
+    `,
   },
 
   mitochondrial: {
@@ -653,6 +750,18 @@ export const RESEARCH_AREA_CONTENT: Record<string, AreaContent> = {
         url: 'https://pubmed.ncbi.nlm.nih.gov/29599478/',
       },
     ],
+    diagram: `graph TD;
+    Cell[Mitochondrial Research] --> MOTS(MOTS-c);
+    Cell --> SS31(SS-31);
+    Cell --> AMQ(5-Amino-1MQ);
+    MOTS --> AMPK[AMPK Activation];
+    SS31 --> Cardio[Cardiolipin Stabilization];
+    AMQ --> NNMT[NNMT Inhibition];
+    AMPK --> Energy[Cellular Bioenergetics];
+    Cardio --> Energy;
+    NNMT --> Energy;
+    style Energy fill:#00C4BC,stroke:#000,stroke-width:2px,color:#fff;
+    `,
   },
 
   weight_management: {
@@ -716,6 +825,22 @@ export const RESEARCH_AREA_CONTENT: Record<string, AreaContent> = {
         url: 'https://www.accessdata.fda.gov/scripts/cder/daf/',
       },
     ],
+    diagram: `graph TD;
+    Weight[Weight & Fat-Loss Research] --> Sema(Semaglutide);
+    Weight --> Tirz(Tirzepatide);
+    Weight --> Reta(Retatrutide);
+    Weight --> Cagri(Cagrilintide);
+    Sema --> GLP1[GLP-1 Agonism];
+    Tirz --> GIP[GIP + GLP-1 Agonism];
+    Reta --> Triple[GLP-1 / GIP / Glucagon];
+    Cagri --> Amylin[Amylin Agonism];
+    GLP1 --> Satiety[Satiety & Delayed Gastric Emptying];
+    GIP --> Satiety;
+    Triple --> Satiety;
+    Amylin --> Satiety;
+    Satiety --> Fat[Reduced Intake & Fat Mass];
+    style Fat fill:#00C4BC,stroke:#000,stroke-width:2px,color:#fff;
+    `,
   },
 
   gut_health: {
@@ -772,6 +897,19 @@ export const RESEARCH_AREA_CONTENT: Record<string, AreaContent> = {
         url: 'https://pubmed.ncbi.nlm.nih.gov/21964837/',
       },
     ],
+    diagram: `graph TD;
+    Gut[Gut & GI Repair] --> BPC(BPC-157);
+    Gut --> KPV(KPV);
+    Gut --> VIP(VIP);
+    BPC --> Muc[Mucosal Cytoprotection];
+    KPV --> Inflam[Intestinal NF-kB Suppression];
+    VIP --> Barrier[Epithelial-Barrier Signaling];
+    Muc --> TJ[Tight-Junction Integrity];
+    Inflam --> TJ;
+    Barrier --> TJ;
+    TJ --> GI[GI Mucosal Integrity];
+    style GI fill:#00C4BC,stroke:#000,stroke-width:2px,color:#fff;
+    `,
   },
 
   pain_inflammation: {
@@ -827,6 +965,21 @@ export const RESEARCH_AREA_CONTENT: Record<string, AreaContent> = {
         url: 'https://pubmed.ncbi.nlm.nih.gov/18092346/',
       },
     ],
+    diagram: `graph TD;
+    Pain[Pain & Inflammation] --> BPC(BPC-157);
+    Pain --> TB(TB-500);
+    Pain --> ARA(ARA-290);
+    Pain --> LL37(LL-37);
+    BPC --> Cyto[Cytokine Modulation];
+    TB --> Mac[Macrophage Polarization];
+    ARA --> IRR[Innate Repair Receptor];
+    LL37 --> Imm[Immune Signaling];
+    Cyto --> Reduce[Reduced Inflammatory Load];
+    Mac --> Reduce;
+    IRR --> Reduce;
+    Imm --> Reduce;
+    style Reduce fill:#00C4BC,stroke:#000,stroke-width:2px,color:#fff;
+    `,
   },
 
   bone_joint: {
@@ -886,5 +1039,20 @@ export const RESEARCH_AREA_CONTENT: Record<string, AreaContent> = {
         url: 'https://pubmed.ncbi.nlm.nih.gov/16352683/',
       },
     ],
+    diagram: `graph TD;
+    Joint[Joint & Bone Research] --> BPC(BPC-157);
+    Joint --> TB(TB-500);
+    Joint --> GHK(GHK-Cu);
+    Joint --> IGF(IGF-1 LR3);
+    BPC --> Angio[Angiogenesis at Injury Site];
+    TB --> Migr[Cell Migration];
+    GHK --> Collagen[Collagen Cross-Linking];
+    IGF --> Osteo[Osteoblast / Chondrocyte Support];
+    Angio --> Repair[Bone & Cartilage Repair];
+    Migr --> Repair;
+    Collagen --> Repair;
+    Osteo --> Repair;
+    style Repair fill:#00C4BC,stroke:#000,stroke-width:2px,color:#fff;
+    `,
   },
 };

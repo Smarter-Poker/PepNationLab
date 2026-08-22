@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
@@ -14,6 +15,7 @@ import AgentInventory from '@/components/AgentInventory';
 import AgentDownline from '@/components/AgentDownline';
 import AgentOverview from '@/components/AgentOverview';
 import AgentStorefrontConfig from '@/components/AgentStorefrontConfig';
+import AgentShippingAccountCard from '@/components/AgentShippingAccountCard';
 import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
 import AgentOrders from '@/components/AgentOrders';
 import AgentBundles from '@/components/AgentBundles';
@@ -26,6 +28,7 @@ import PaymentMethodsPanel from '@/components/PaymentMethodsPanel';
 import AvatarUpload from '@/components/AvatarUpload';
 import MyQRCodeModal from '@/components/MyQRCodeModal';
 import { useAvailability, availabilityMessage } from '@/lib/useAvailability';
+import { MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH, PASSWORD_RULE_TEXT } from '@/lib/password-policy';
 
 
 interface Profile {
@@ -52,10 +55,8 @@ interface AgentProfile {
   payment_handles: Record<string, any> | null;
   warehouse_address?: Record<string, any> | null;
   is_active?: boolean | null;
-  shippo_api_key: string | null;
-  shippo_api_key_present?: boolean;
-  shippo_api_key_last4?: string | null;
   volume_pricing_enabled?: boolean | null;
+  featured_products?: string[] | null;
 }
 
 interface Researcher {
@@ -90,6 +91,8 @@ interface AgentDashboardClientProps {
   initialAgentProfile: AgentProfile | null;
   initialResearchers: Researcher[];
   initialOrders: Order[];
+  initialAgentsCount?: number;
+  brandNetworkIsSavage?: boolean;
 }
 
 
@@ -97,7 +100,9 @@ export default function AgentDashboardClient({
   userProfile,
   initialAgentProfile,
   initialResearchers,
-  initialOrders
+  initialOrders,
+  initialAgentsCount = 0,
+  brandNetworkIsSavage = false,
 }: AgentDashboardClientProps) {
   const supabase = useMemo(() => createClient(), []);
 
@@ -116,8 +121,11 @@ export default function AgentDashboardClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab') as any;
+  // ?order=<shortId> — deep-link from a notification; passed to AgentOrders
+  // so it can auto-open the matching order detail modal on mount.
+  const orderDeepLink = searchParams.get('order') ?? null;
   
-  const defaultTab = (initialAgentProfile && (!initialAgentProfile.payment_handles || Object.keys(initialAgentProfile.payment_handles || {}).every((k) => !(initialAgentProfile.payment_handles as any)?.[k]))) ? 'Storefront Config' : 'Overview';
+  const defaultTab = 'Overview' as AgentTabName;
 
   // Whitelist of valid tabs. Any unknown / malformed ?tab= value (e.g. a link
   // whose "&" terminated the query string, leaving "Sales ") must fall back to
@@ -159,7 +167,7 @@ export default function AgentDashboardClient({
   const [setupVenmo, setSetupVenmo] = useState('');
   const [setupApplePay, setSetupApplePay] = useState('');
 
-  // Warehouse address (required for Shippo "from" address)
+  // Warehouse address (Required As The Ship-From Address For Carrier Labels)
   const [setupWhName, setSetupWhName] = useState('');
   const [setupWhStreet1, setSetupWhStreet1] = useState('');
   const [setupWhStreet2, setSetupWhStreet2] = useState('');
@@ -189,6 +197,7 @@ export default function AgentDashboardClient({
   // diverge from their name via a typo (e.g. "Danimal" -> "dainimal").
   const [crUsernameDirty, setCrUsernameDirty] = useState(false);
   const [crPassword, setCrPassword] = useState('');
+  const [crContactEmail, setCrContactEmail] = useState('');
   // R36: live username availability check for the Create Researcher modal.
   // Mirrors the pattern used by the public storefront register form.
   const crUsernameCheck = useAvailability({ field: 'username', value: crUsername, minLength: 2 });
@@ -214,6 +223,7 @@ export default function AgentDashboardClient({
   const [promotePaymentModel, setPromotePaymentModel] = useState<'credit'|'prepaid'>('prepaid');
   const [promoteCreditLimit, setPromoteCreditLimit] = useState('0');
   const [promoteLoading, setPromoteLoading] = useState(false);
+  const [promoteTargetRole, setPromoteTargetRole] = useState<'agent'|'super_agent'>('agent');
 
   const handleToggleTrust = async (targetUserId: string, currentStatus: boolean, isSubAgent: boolean = false) => {
     setTogglingTrust(targetUserId);
@@ -250,7 +260,7 @@ export default function AgentDashboardClient({
       const res = await fetch('/api/agent/create-researcher', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ firstName, lastName, username: crUsername, password: crPassword }),
+        body: JSON.stringify({ firstName, lastName, username: crUsername, password: crPassword, contactEmail: crContactEmail.trim() }),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -268,6 +278,7 @@ export default function AgentDashboardClient({
         setCrUsername('');
         setCrUsernameDirty(false);
         setCrPassword('');
+        setCrContactEmail('');
         setTimeout(() => { setShowCreateResearcher(false); setCrSuccess(''); }, 2000);
       }
     } catch (err: any) {
@@ -286,7 +297,8 @@ export default function AgentDashboardClient({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           researcherId: promoteResearcher.id,
-          commissionPct: promoteCommission,
+          markupPct: promoteCommission,
+          isSuperAgent: userProfile.is_super_agent ? promoteTargetRole === 'super_agent' : false,
           paymentModel: promotePaymentModel,
           creditLimit: promoteCreditLimit
         })
@@ -336,28 +348,18 @@ export default function AgentDashboardClient({
       return;
     }
 
-    // Block submit until AT LEAST ONE payment handle is filled in. The storefront
-    // needs at least one offline payment instruction shown to researchers.
+    // Payment handles and warehouse address are optional at setup.
+    // The agent can add them any time from the Storefront Config tab.
     const zelle = setupZelle.trim();
     const cashapp = setupCashApp.trim();
     const venmo = setupVenmo.trim();
     const applePay = setupApplePay.trim();
-    // Require at least one payment method at setup; agents add more later in Settings
-    if (!zelle && !cashapp && !venmo && !applePay) {
-      setError('At Least One Payment Method Is Required (Zelle, Cash App, Venmo, Or Apple Cash).');
-      return;
-    }
 
-    // Block submit until warehouse address is filled in (Shippo From Address).
     const whName = setupWhName.trim();
     const whStreet1 = setupWhStreet1.trim();
     const whCity = setupWhCity.trim();
     const whState = setupWhState.trim();
     const whZip = setupWhZip.trim();
-    if (!whName || !whStreet1 || !whCity || !whState || !whZip) {
-      setError('Warehouse Address Is Required (Name, Street, City, State, Zip).');
-      return;
-    }
 
     setLoading(true);
 
@@ -369,20 +371,20 @@ export default function AgentDashboardClient({
           slug: cleanSlug,
           display_name: setupDisplayName.trim(),
           is_active: true,
-          payment_handles: {
+          payment_handles: (zelle || cashapp || venmo || applePay) ? {
             zelle,
             cashapp,
             venmo,
             apple_cash: applePay,
-          },
-          warehouse_address: {
+          } : null,
+          warehouse_address: (whName && whStreet1 && whCity && whState && whZip) ? {
             name: whName,
             street1: whStreet1,
             street2: setupWhStreet2.trim() || null,
             city: whCity,
             state: whState,
             zip: whZip,
-          },
+          } : null,
         })
         .select()
         .maybeSingle();
@@ -395,10 +397,10 @@ export default function AgentDashboardClient({
         throw new Error(insertError.message ?? 'Failed To Create Storefront Profile.');
       }
 
-      setAgentProfile(data);
-      setDisplayName(data.display_name);
-      setSlug(data.slug ?? '');
-      setLogoUrl(data.logo_url ?? '');
+      setAgentProfile(data as any); // @ts-ignore
+      setDisplayName(data.display_name); // @ts-ignore
+      setSlug(data.slug ?? ''); // @ts-ignore
+      setLogoUrl(data.logo_url ?? ''); // @ts-ignore
       setSuccess('Your Storefront White-Label Profile Has Been Successfully Activated!');
     } catch (err: any) {
       setError(err.message ?? 'An Error Occurred During Setup.');
@@ -493,9 +495,9 @@ export default function AgentDashboardClient({
             </div>
 
             <div style={{ paddingTop: 'var(--space-4)', marginTop: 'var(--space-2)' }}>
-              <h4 style={{ color: 'var(--teal)', fontSize: '0.95rem', marginBottom: 'var(--space-2)' }}>Payment Handles</h4>
+              <h4 style={{ color: 'var(--teal)', fontSize: '0.95rem', marginBottom: 'var(--space-2)' }}>Payment Handles <span style={{ fontWeight: 400, color: 'var(--grey-400)', fontSize: '0.82rem' }}>(Optional — add later in Storefront Config)</span></h4>
               <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 'var(--space-3)' }}>
-                Shown To Researchers After Checkout. At Least One Is Required.
+                Shown To Researchers After Checkout. You Can Skip This Now And Add Later.
               </p>
               <div className="grid-2">
                 <div className="form-group" style={{ marginTop: 0 }}>
@@ -520,19 +522,18 @@ export default function AgentDashboardClient({
             </div>
 
             <div style={{ paddingTop: 'var(--space-4)', marginTop: 'var(--space-2)' }}>
-              <h4 style={{ color: 'var(--teal)', fontSize: '0.95rem', marginBottom: 'var(--space-2)' }}>Warehouse Address</h4>
+              <h4 style={{ color: 'var(--teal)', fontSize: '0.95rem', marginBottom: 'var(--space-2)' }}>Warehouse Address <span style={{ fontWeight: 400, color: 'var(--grey-400)', fontSize: '0.82rem' }}>(Optional — add later)</span></h4>
               <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 'var(--space-3)' }}>
-                Used As The Ship-From Address When Buying Labels. Required Before Generating Shippo Labels.
+                Used As The Ship-From Address When Generating Shipping Labels. Not Required To Launch.
               </p>
               <div className="form-group">
                 <label className="form-label">Warehouse Contact Name</label>
-                <input type="text" className="form-input" value={setupWhName} onChange={(e) => setSetupWhName(e.target.value)} required />
+                <input type="text" className="form-input" value={setupWhName} onChange={(e) => setSetupWhName(e.target.value)} />
               </div>
               <div className="form-group">
                 <label className="form-label">Street Address Line 1</label>
                 <AddressAutocompleteInput
                   className="form-input"
-                  required
                   value={setupWhStreet1}
                   onChange={setSetupWhStreet1}
                   onSelect={(a) => { setSetupWhStreet1(a.street1); if (a.city) setSetupWhCity(a.city); if (a.state) setSetupWhState(a.state); if (a.zip) setSetupWhZip(a.zip); }}
@@ -545,15 +546,15 @@ export default function AgentDashboardClient({
               <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 'var(--space-3)' }}>
                 <div className="form-group" style={{ marginTop: 0 }}>
                   <label className="form-label">City</label>
-                  <input type="text" className="form-input" value={setupWhCity} onChange={(e) => setSetupWhCity(e.target.value)} required />
+                  <input type="text" className="form-input" value={setupWhCity} onChange={(e) => setSetupWhCity(e.target.value)} />
                 </div>
                 <div className="form-group" style={{ marginTop: 0 }}>
                   <label className="form-label">State</label>
-                  <input type="text" className="form-input" maxLength={2} value={setupWhState} onChange={(e) => setSetupWhState(e.target.value.toUpperCase())} required />
+                  <input type="text" className="form-input" maxLength={2} value={setupWhState} onChange={(e) => setSetupWhState(e.target.value.toUpperCase())} />
                 </div>
                 <div className="form-group" style={{ marginTop: 0 }}>
                   <label className="form-label">Zip</label>
-                  <input type="text" className="form-input" maxLength={10} value={setupWhZip} onChange={(e) => setSetupWhZip(e.target.value)} required />
+                  <input type="text" className="form-input" maxLength={10} value={setupWhZip} onChange={(e) => setSetupWhZip(e.target.value)} />
                 </div>
               </div>
             </div>
@@ -606,54 +607,9 @@ export default function AgentDashboardClient({
             onOpenConfig={() => { setActiveTab('Storefront Config'); }}
           />
 
-          {/* My Referrals Quick Link */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--space-3)' }}>
-            <Link
-              href="/dashboard/agent/referrals"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                color: 'var(--teal)',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                textDecoration: 'none',
-                padding: '6px 14px',
-                borderRadius: 8,
-                border: '1px solid rgba(0,196,188,0.3)',
-                background: 'rgba(0,196,188,0.06)',
-                transition: 'background 0.15s',
-              }}
-            >
-              <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-              </svg>
-              My Referrals
-            </Link>
-          </div>
-
-        {/* My Sub-Agents Tab - only rendered for regular agents; super-agents are remapped by resolveTab */}
-        {activeTab === 'My Sub-Agents' && (
-          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <AgentSubAgents agentId={userProfile.id} />
-          </div>
-        )}
-
-        {/* My Agent Accounts Tab */}
-        {activeTab === 'My Agent Accounts' && (
-          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <AgentDownline agentId={userProfile.id} />
-            <AgentNetworkMap />
-          </div>
-        )}
-
-        {/* Store Products Tab */}
         {activeTab === 'Store Products' && (
           <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <AgentStoreProducts agentId={userProfile.id} />
+            <AgentStoreProducts agentId={userProfile.id} agentSlug={agentProfile.slug} brandNetworkIsSavage={brandNetworkIsSavage} />
           </div>
         )}
 
@@ -672,16 +628,12 @@ export default function AgentDashboardClient({
         )}
 
 
-        {/* TAB: Overview - full-bleed image fills 100dvh minus navbar */}
+        {/* TAB: Overview - Live Agent Action Center */}
         {activeTab === 'Overview' && (
-          <div style={{
-            animation: 'fadeIn 0.3s ease-out',
-            marginLeft: 'calc(-1 * var(--container-px, var(--space-6)))',
-            marginRight: 'calc(-1 * var(--container-px, var(--space-6)))',
-            marginTop: 'calc(-1 * var(--space-8))',
-          }}>
-            <AgentOverview 
+          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+            <AgentOverview
               activeResearchersCount={activeResearchersCount}
+              activeAgentsCount={initialAgentsCount}
               activeOrdersCount={activeOrdersCount}
               totalRevenue={totalRevenue}
               storefrontUrl={storefrontUrl}
@@ -708,7 +660,7 @@ export default function AgentDashboardClient({
         {/* TAB: Orders & Fulfillment */}
         {activeTab === 'Orders' && (
           <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <AgentOrders orders={orders} setOrders={setOrders} />
+            <AgentOrders orders={orders} setOrders={setOrders} initialOpenShortId={orderDeepLink} />
           </div>
         )}
 
@@ -755,7 +707,7 @@ export default function AgentDashboardClient({
                           textShadow: '0 1px 3px rgba(0,0,0,0.6)',
                           fontFamily: 'var(--font-brand)',
                         }}>
-                          {userProfile.is_super_agent ? 'Promote To Agent' : 'Promote To Sub-Agent'}
+                          {userProfile.is_super_agent ? `Promote To ${promoteTargetRole === 'super_agent' ? 'Super Agent' : 'Agent'}` : 'Promote To Sub-Agent'}
                         </h3>
                       </div>
                       <button
@@ -775,13 +727,29 @@ export default function AgentDashboardClient({
                       </button>
                     </div>
 
-                    <p style={{ color: '#d0d8e4', fontSize: '0.95rem', marginBottom: 20, lineHeight: 1.5 }}>
-                      {userProfile.is_super_agent ? 'Promote This Researcher To An Agent?' : 'Promote This Researcher To A Sub-Agent? They Will Be Able To Set Prices For Their Own Downline.'}
-                    </p>
+                    {userProfile.is_super_agent ? (
+                      <div className="form-group" style={{ marginBottom: 16 }}>
+                        <label className="form-label" style={{ color: '#8a9ab0', fontSize: '0.8rem', fontWeight: 600 }}>Role To Assign</label>
+                        <select className="form-input" value={promoteTargetRole} onChange={e => setPromoteTargetRole(e.target.value as 'agent' | 'super_agent')}>
+                          <option value="agent">Agent</option>
+                          <option value="super_agent">Super Agent</option>
+                        </select>
+                        <div style={{ fontSize: '0.75rem', color: '#8a9ab0', marginTop: 4 }}>
+                          {promoteTargetRole === 'agent' 
+                            ? 'Sells on their own storefront under your network. Sets their own prices within their markup.'
+                            : 'Full agent with the ability to recruit and manage their own downline of agents.'}
+                        </div>
+                      </div>
+                    ) : (
+                      <p style={{ color: '#d0d8e4', fontSize: '0.95rem', marginBottom: 20, lineHeight: 1.5 }}>
+                        Promote This Researcher To A Sub-Agent? They Will Be Able To Set Prices For Their Own Downline.
+                      </p>
+                    )}
 
                     <div className="form-group" style={{ marginBottom: 16 }}>
-                      <label className="form-label" style={{ color: '#8a9ab0', fontSize: '0.8rem', fontWeight: 600 }}>Commission Percentage (% Of Total Sales)</label>
-                      <input type="number" className="form-input" min="0" max="40" value={promoteCommission} onChange={e => setPromoteCommission(e.target.value)} />
+                      <label className="form-label" style={{ color: '#8a9ab0', fontSize: '0.8rem', fontWeight: 600 }}>Markup % On Your Base Cost (10–200%)</label>
+                      <input type="number" className="form-input" min="10" max="200" step="5" value={promoteCommission} onChange={e => setPromoteCommission(e.target.value)} />
+                      <div style={{ fontSize: '0.75rem', color: '#8a9ab0', marginTop: 4 }}>Agent pays your cost + this markup and sets their own retail price on top.</div>
                     </div>
 
                     <div className="form-group" style={{ marginBottom: 16 }}>
@@ -814,7 +782,7 @@ export default function AgentDashboardClient({
                         onClick={handlePromoteResearcher}
                         disabled={promoteLoading}
                       >
-                        {promoteLoading ? 'Promoting...' : (userProfile.is_super_agent ? 'Promote To Agent' : 'Promote To Sub-Agent')}
+                        {promoteLoading ? 'Promoting...' : (userProfile.is_super_agent ? `Promote To ${promoteTargetRole === 'super_agent' ? 'Super Agent' : 'Agent'}` : 'Promote To Sub-Agent')}
                       </button>
                     </div>
                   </div>
@@ -1043,6 +1011,33 @@ export default function AgentDashboardClient({
                         )}
                       </div>
 
+                      <div style={{ marginBottom: 12 }}>
+                        <label style={{
+                          display: 'block', fontSize: '0.92rem', fontWeight: 700,
+                          color: '#d0d8e4', marginBottom: 8,
+                        }}>Contact Email (Optional)</label>
+                        <input
+                          type="email"
+                          value={crContactEmail}
+                          onChange={e => setCrContactEmail(e.target.value)}
+                          placeholder="For password resets"
+                          style={{
+                            width: '100%', boxSizing: 'border-box',
+                            background: 'linear-gradient(180deg, #0a0c14 0%, #0d1018 100%)',
+                            border: '1px solid #2a3045',
+                            borderRadius: 8,
+                            padding: '13px 14px',
+                            color: '#ffffff',
+                            fontSize: '0.95rem',
+                            outline: 'none',
+                            boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.7), inset 0 1px 3px rgba(0,0,0,0.5)',
+                            caretColor: '#00C4BC',
+                          }}
+                          onFocus={e => { e.currentTarget.style.border = '1px solid #00C4BC'; }}
+                          onBlur={e => { e.currentTarget.style.border = '1px solid #2a3045'; }}
+                        />
+                      </div>
+
                       <div style={{ marginBottom: 6 }}>
                         <label style={{
                           display: 'block', fontSize: '0.92rem', fontWeight: 700,
@@ -1053,7 +1048,9 @@ export default function AgentDashboardClient({
                           value={crPassword}
                           onChange={e => setCrPassword(e.target.value)}
                           required
-                          placeholder="At Least 8 Characters"
+                          minLength={MIN_PASSWORD_LENGTH}
+                          maxLength={MAX_PASSWORD_LENGTH}
+                          placeholder={PASSWORD_RULE_TEXT}
                           style={{
                             width: '100%', boxSizing: 'border-box',
                             background: 'linear-gradient(180deg, #0a0c14 0%, #0d1018 100%)',
@@ -1168,6 +1165,7 @@ export default function AgentDashboardClient({
 
               <AgentResearcherCRMv2
                 isSuperAgent={userProfile.is_super_agent}
+                isSubAgent={userProfile.is_sub_agent}
                 onResetPassword={setResetPwUser}
                 onPromote={(r: any) => setPromoteResearcher(r)}
                 onToggleAutoApprove={handleToggleTrust}
@@ -1180,6 +1178,20 @@ export default function AgentDashboardClient({
         {/* TAB: Discount Coupons */}
         {activeTab === 'Coupons' && <AgentCoupons />}
 
+        {/* TAB: My Sub-Agents (regular agents manage their promoted sub-agents) */}
+        {activeTab === 'My Sub-Agents' && (
+          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+            <AgentSubAgents />
+          </div>
+        )}
+
+        {/* TAB: My Agent Accounts (super-agents create + manage their agent accounts) */}
+        {activeTab === 'My Agent Accounts' && (
+          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+            <AgentDownline agentId={userProfile.id} />
+            <AgentNetworkMap />
+          </div>
+        )}
 
 
 
@@ -1187,22 +1199,13 @@ export default function AgentDashboardClient({
         {/* TAB: Storefront Configuration */}
         {activeTab === 'Storefront Config' && (
           <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            {handlesEmpty && (
-              <div style={{
-                background: 'var(--red-bg)', border: '1px solid var(--red)', borderRadius: 8, padding: 'var(--space-4)', marginBottom: 'var(--space-6)'
-              }}>
-                <h4 style={{ color: 'var(--red)', margin: '0 0 var(--space-2) 0', fontSize: '1rem' }}>Action Required: Add Payment Handles</h4>
-                <p style={{ color: 'var(--red)', fontSize: '0.9rem', margin: 0 }}>
-                  You Must Configure At Least One Payment Method Before You Can Access The Rest Of Your Dashboard. This Ensures Researchers Know How To Pay You.
-                </p>
-              </div>
-            )}
             <AgentStorefrontConfig
               displayName={displayName} setDisplayName={setDisplayName}
               slug={slug} setSlug={setSlug}
               logoUrl={logoUrl} setLogoUrl={setLogoUrl}
               warehouseAddress={agentProfile?.warehouse_address}
               displayNameChangedAt={agentProfile?.display_name_changed_at}
+              featuredProducts={agentProfile?.featured_products || []}
               agentId={userProfile.id}
               onSaveSuccess={(updatedData) => {
                 if (agentProfile) {
@@ -1221,6 +1224,9 @@ export default function AgentDashboardClient({
                 ) : null
               }
             />
+            {/* EasyPost Forge white-label shipping account. Renders nothing
+                while the admin Forge toggle is off. */}
+            <AgentShippingAccountCard />
           </div>
         )}
 
@@ -1273,16 +1279,17 @@ export default function AgentDashboardClient({
                   className="form-input"
                   value={resetPwValue}
                   onChange={e => setResetPwValue(e.target.value)}
-                  placeholder="Minimum 8 Characters"
+                  placeholder={PASSWORD_RULE_TEXT}
                   required
-                  minLength={8}
+                  minLength={MIN_PASSWORD_LENGTH}
+                  maxLength={MAX_PASSWORD_LENGTH}
                   autoComplete="off"
                   style={{ width: '100%' }}
                 />
               </div>
               <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
                 <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setResetPwUser(null); setResetPwValue(''); }} disabled={resetPwSaving}>Cancel</button>
-                <button type="submit" className="btn btn-primary btn-sm" disabled={resetPwSaving || resetPwValue.length < 8}>
+                <button type="submit" className="btn btn-primary btn-sm" disabled={resetPwSaving || resetPwValue.length < MIN_PASSWORD_LENGTH}>
                   {resetPwSaving ? 'Saving...' : 'Update Password'}
                 </button>
               </div>
@@ -1295,4 +1302,3 @@ export default function AgentDashboardClient({
     </div>
   );
 }
-

@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import UniqueField from '@/components/UniqueField';
 import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
+import BundleManager from '@/components/BundleManager';
 
 interface AgentStorefrontConfigProps {
   displayName: string;
@@ -17,6 +18,7 @@ interface AgentStorefrontConfigProps {
   warehouseAddress?: Record<string, any> | null;
   agentId: string;
   displayNameChangedAt?: string | null;
+  featuredProducts?: string[];
   onSaveSuccess?: (updatedData: any) => void;
   paymentMethodsNode?: React.ReactNode;
 }
@@ -39,6 +41,7 @@ export default function AgentStorefrontConfig({
   warehouseAddress,
   agentId,
   displayNameChangedAt,
+  featuredProducts = [],
   onSaveSuccess,
   paymentMethodsNode,
 }: AgentStorefrontConfigProps) {
@@ -63,6 +66,9 @@ export default function AgentStorefrontConfig({
   const [whCity, setWhCity] = React.useState(warehouseAddress?.city ?? '');
   const [whState, setWhState] = React.useState(warehouseAddress?.state ?? '');
   const [whZip, setWhZip] = React.useState(warehouseAddress?.zip ?? '');
+  // Retained so the existing featured_products value is preserved on save even
+  // though the Featured Products picker has been replaced by Store Bundles.
+  const [selectedFeatured] = React.useState<string[]>(featuredProducts);
 
   const canChangeDisplayName = React.useMemo(() => {
     if (!displayNameChangedAt) return true;
@@ -123,6 +129,7 @@ export default function AgentStorefrontConfig({
           state: whState.trim(),
           zip: whZip.trim(),
         },
+        featured_products: selectedFeatured,
       };
 
       // TODO [P2]: Refactor to use a server-side API route instead of direct
@@ -229,15 +236,26 @@ export default function AgentStorefrontConfig({
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
-                      const supabase = createClient();
-                      const ext = file.name.split('.').pop() || 'png';
-                      const path = `agent-logos/${agentId}-${Date.now()}.${ext}`;
-                      const { error: uploadError } = await supabase.storage.from('public-assets').upload(path, file, { upsert: true });
-                      if (uploadError) { toast.error('Failed To Upload Logo: ' + uploadError.message); return; }
-                      const { data: pub } = supabase.storage.from('public-assets').getPublicUrl(path);
-                      if (pub?.publicUrl) {
-                        setLogoUrl(pub.publicUrl);
-                        toast.success('Logo Uploaded. Click Save To Apply.');
+                      // Upload via server-side route (uses service-role client,
+                      // bypassing the conflicting client-side RLS policies).
+                      const fd = new FormData();
+                      fd.append('file', file);
+                      try {
+                        const res = await fetch('/api/agent/storefront/logo-upload', {
+                          method: 'POST',
+                          body: fd,
+                        });
+                        const json = await res.json().catch(() => ({}));
+                        if (!res.ok) {
+                          toast.error('Failed To Upload Logo: ' + (json?.error ?? res.statusText));
+                          return;
+                        }
+                        setLogoUrl(json.url);
+                        // Also propagate to parent so the save payload is fresh
+                        if (onSaveSuccess) onSaveSuccess({ logo_url: json.url } as any);
+                        toast.success('Logo Uploaded Successfully.');
+                      } catch (err: any) {
+                        toast.error('Failed To Upload Logo: ' + (err?.message ?? 'Network error'));
                       }
                     }}
                   />
@@ -264,12 +282,13 @@ export default function AgentStorefrontConfig({
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 'var(--space-4)' }}>
             <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label" style={{ color: 'var(--grey-400)' }}>Warehouse Name</label>
-              <input className="form-input" value={whName} onChange={e => setWhName(e.target.value)} placeholder="e.g. Primary Fulfillment Center" />
+              <label className="form-label" htmlFor="wh-name" style={{ color: 'var(--grey-400)' }}>Warehouse Name</label>
+              <input id="wh-name" className="form-input" value={whName} onChange={e => setWhName(e.target.value)} placeholder="e.g. Primary Fulfillment Center" />
             </div>
             <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label" style={{ color: 'var(--grey-400)' }}>Street Address</label>
+              <label className="form-label" htmlFor="wh-street" style={{ color: 'var(--grey-400)' }}>Street Address</label>
               <AddressAutocompleteInput
+                id="wh-street"
                 className="form-input"
                 value={whStreet1}
                 onChange={setWhStreet1}
@@ -279,25 +298,34 @@ export default function AgentStorefrontConfig({
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
               <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label" style={{ color: 'var(--grey-400)' }}>Apt / Suite (Optional)</label>
-                <input className="form-input" value={whStreet2} onChange={e => setWhStreet2(e.target.value)} placeholder="Suite 100" />
+                <label className="form-label" htmlFor="wh-suite" style={{ color: 'var(--grey-400)' }}>Apt / Suite (Optional)</label>
+                <input id="wh-suite" className="form-input" value={whStreet2} onChange={e => setWhStreet2(e.target.value)} placeholder="Suite 100" />
               </div>
               <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label" style={{ color: 'var(--grey-400)' }}>City</label>
-                <input className="form-input" value={whCity} onChange={e => setWhCity(e.target.value)} placeholder="Austin" />
+                <label className="form-label" htmlFor="wh-city" style={{ color: 'var(--grey-400)' }}>City</label>
+                <input id="wh-city" className="form-input" value={whCity} onChange={e => setWhCity(e.target.value)} placeholder="Austin" />
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
               <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label" style={{ color: 'var(--grey-400)' }}>State / Region</label>
-                <input className="form-input" value={whState} onChange={e => setWhState(e.target.value)} placeholder="TX" />
+                <label className="form-label" htmlFor="wh-state" style={{ color: 'var(--grey-400)' }}>State / Region</label>
+                <input id="wh-state" className="form-input" value={whState} onChange={e => setWhState(e.target.value)} placeholder="TX" />
               </div>
               <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label" style={{ color: 'var(--grey-400)' }}>ZIP / Postal Code</label>
-                <input className="form-input" value={whZip} onChange={e => setWhZip(e.target.value)} placeholder="78701" />
+                <label className="form-label" htmlFor="wh-zip" style={{ color: 'var(--grey-400)' }}>ZIP / Postal Code</label>
+                <input id="wh-zip" className="form-input" value={whZip} onChange={e => setWhZip(e.target.value)} placeholder="78701" />
               </div>
             </div>
           </div>
+        </section>
+
+        <section className="glass-panel" style={{ padding: 'var(--space-6)', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, width: 4, height: '100%', background: 'linear-gradient(180deg, #F472B6 0%, #FB7185 100%)' }} />
+          <h4 style={{ fontSize: '1.1rem', color: 'var(--white)', fontWeight: 600, marginBottom: 'var(--space-5)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F472B6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            Store Bundles
+          </h4>
+          <BundleManager agentId={agentId} />
         </section>
 
         {paymentMethodsNode && (

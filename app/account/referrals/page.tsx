@@ -26,6 +26,15 @@ export default async function ReferralsPage() {
     .order('created_at', { ascending: false })
     .limit(50);
 
+  // Referee side: has this user already applied someone's code?
+  const { data: myReferral } = await supabase
+    .from('researcher_referrals')
+    .select('status')
+    .eq('referee_id', user.id)
+    .in('status', ['applied', 'qualifying', 'pending', 'rewarded'])
+    .limit(1)
+    .maybeSingle();
+
   // Fetch referral settings
   const { data: settings } = await supabase
     .from('referral_settings')
@@ -38,6 +47,7 @@ export default async function ReferralsPage() {
       referralCode={referralCode}
       referrals={referrals ?? []}
       settings={settings ?? { referrer_reward: 25, referee_reward: 25, min_order_total: 100, is_active: true }}
+      myReferralStatus={myReferral?.status ?? null}
     />
   );
 }

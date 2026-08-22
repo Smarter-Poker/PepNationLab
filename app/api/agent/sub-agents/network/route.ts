@@ -66,8 +66,9 @@ export async function GET() {
     const subList = subs ?? [];
     const subIds = subList.map((s) => s.id as string);
 
-    // Batched: orders for all sub-agents, pending commission ledger, storefront slugs.
-    const [ordersRes, ledgerRes, profilesRes] = await Promise.all([
+    // Batched: orders for all sub-agents, pending commission ledger, storefront
+    // slugs, plus each node's own downline (agents + researchers under it).
+    const [ordersRes, ledgerRes, profilesRes, childAgentsRes, childResearchersRes] = await Promise.all([
       subIds.length
         ? svc.from('orders').select('agent_id, total, status').in('agent_id', subIds)
         : Promise.resolve({ data: [] as Array<{ agent_id: string; total: number; status: string }> }),
@@ -77,6 +78,12 @@ export async function GET() {
       subIds.length
         ? svc.from('agent_profiles').select('id, slug, display_name').in('id', subIds)
         : Promise.resolve({ data: [] as Array<{ id: string; slug: string; display_name: string }> }),
+      subIds.length
+        ? svc.from('profiles').select('parent_agent_id').in('parent_agent_id', subIds).in('role', ['agent', 'super_agent'])
+        : Promise.resolve({ data: [] as Array<{ parent_agent_id: string }> }),
+      subIds.length
+        ? svc.from('profiles').select('referring_agent_id').in('referring_agent_id', subIds).eq('role', 'researcher')
+        : Promise.resolve({ data: [] as Array<{ referring_agent_id: string }> }),
     ]);
 
     const revenueBySub = new Map<string, number>();
@@ -98,6 +105,16 @@ export async function GET() {
     const slugBySub = new Map<string, string>();
     for (const p of (profilesRes.data ?? []) as Array<{ id: string; slug: string }>) {
       slugBySub.set(p.id, p.slug);
+    }
+
+    // How many agents + researchers sit under each node (their own downline).
+    const agentCountBySub = new Map<string, number>();
+    for (const c of (childAgentsRes.data ?? []) as Array<{ parent_agent_id: string }>) {
+      agentCountBySub.set(c.parent_agent_id, (agentCountBySub.get(c.parent_agent_id) ?? 0) + 1);
+    }
+    const researcherCountBySub = new Map<string, number>();
+    for (const c of (childResearchersRes.data ?? []) as Array<{ referring_agent_id: string }>) {
+      researcherCountBySub.set(c.referring_agent_id, (researcherCountBySub.get(c.referring_agent_id) ?? 0) + 1);
     }
 
     let totalDownlineRevenue = 0;
@@ -124,6 +141,8 @@ export async function GET() {
         revenue,
         order_count: orderCount,
         pending_commission: pending,
+        agent_count: agentCountBySub.get(id) ?? 0,
+        researcher_count: researcherCountBySub.get(id) ?? 0,
       };
     });
 

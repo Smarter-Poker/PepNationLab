@@ -1,5 +1,6 @@
 'use client';
 
+import { AuthResolveResponseSchema } from '@/lib/schemas/auth';
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -43,11 +44,13 @@ export default function AgentStorefrontLogin({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username: raw }),
         });
-        const data = await res.json();
-        if (!res.ok || !data.email) {
+        const rawData: unknown = await res.json();
+        // Schema-locked: feeds signInWithPassword directly.
+        const parsed = AuthResolveResponseSchema.safeParse(rawData);
+        if (!res.ok || !parsed.success) {
           throw new Error('Invalid Username Or Password');
         }
-        authEmail = data.email;
+        authEmail = parsed.data.email;
       }
 
       const supabase = createClient();

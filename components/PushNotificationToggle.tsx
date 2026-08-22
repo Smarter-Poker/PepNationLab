@@ -14,6 +14,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import {
   isWebPushSupported,
   notificationPermission,
@@ -143,17 +144,29 @@ export default function PushNotificationToggle({
     return () => { cancelled = true; };
   }, [showTypePrefs]);
 
+  // Belt-and-suspenders stuck-guard: enablePush() has hard per-step timeouts
+  // (lib/push-client), but a real device once sat on "Enabling..." forever, so
+  // the UI enforces its own outer ceiling too - the button can NEVER wedge.
+  const STUCK_GUARD_MS = 120_000;
+  const stuck = <T,>(p: Promise<T>, fallback: T): Promise<T> =>
+    Promise.race([p, new Promise<T>((res) => window.setTimeout(() => res(fallback), STUCK_GUARD_MS))]);
+
   const onEnable = useCallback(async () => {
     setBusy(true);
     setMsg(null);
     try {
-      const r = await enablePush();
+      const r = await stuck(enablePush(), { ok: false, error: 'Enabling Took Too Long. Please Try Again.' });
       if (r.ok) {
+        toast.success('Notifications Enabled On This Device', {
+          description: 'You Will Now Receive Real-Time Alerts Here - Even When The App Is Closed.',
+        });
         setMsg({ text: 'Notifications Enabled On This Device.', ok: true });
         await refresh();
       } else {
+        toast.error('Could Not Enable Notifications', { description: r.error });
         setMsg({ text: r.error || 'Could Not Enable Notifications.', ok: false });
         setPermission(notificationPermission());
+        await refresh();
       }
     } finally {
       setBusy(false);
@@ -164,11 +177,13 @@ export default function PushNotificationToggle({
     setBusy(true);
     setMsg(null);
     try {
-      const r = await disablePush();
+      const r = await stuck(disablePush(), { ok: false, error: 'Disabling Took Too Long. Please Try Again.' });
       if (r.ok) {
+        toast.success('Notifications Disabled On This Device');
         setMsg({ text: 'Notifications Disabled On This Device.', ok: true });
         await refresh();
       } else {
+        toast.error('Could Not Disable Notifications', { description: r.error });
         setMsg({ text: r.error || 'Could Not Disable Notifications.', ok: false });
       }
     } finally {
@@ -180,10 +195,12 @@ export default function PushNotificationToggle({
     setTestBusy(true);
     setMsg(null);
     try {
-      const r = await sendTestPush();
+      const r = await stuck(sendTestPush(), { ok: false, error: 'The Test Took Too Long. Please Try Again.' });
       if (r.ok) {
+        toast.success(`Test Notification Sent To ${r.sent ?? 0} Device${r.sent === 1 ? '' : 's'}`);
         setMsg({ text: `Test Notification Sent To ${r.sent ?? 0} Device${r.sent === 1 ? '' : 's'}.`, ok: true });
       } else {
+        toast.error('Test Notification Failed', { description: r.error });
         setMsg({ text: r.error || 'Test Notification Failed.', ok: false });
       }
     } finally {
@@ -265,21 +282,23 @@ export default function PushNotificationToggle({
                 </p>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 'var(--space-2)', flexShrink: 0 }}>
-              {subscribed ? (
-                <>
-                  <button type="button" onClick={onTest} disabled={testBusy} className="btn btn-ghost btn-sm">
-                    {testBusy ? 'Sending...' : 'Send Test'}
-                  </button>
-                  <button type="button" onClick={onDisable} disabled={busy} className="btn btn-secondary btn-sm">
-                    {busy ? 'Saving...' : 'Disable'}
-                  </button>
-                </>
-              ) : (
-                <button type="button" onClick={onEnable} disabled={busy} className="btn btn-primary btn-sm">
-                  {busy ? 'Enabling...' : 'Enable Notifications'}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexShrink: 0 }}>
+              {subscribed && (
+                <button type="button" onClick={onTest} disabled={testBusy} className="btn btn-ghost btn-sm">
+                  {testBusy ? 'Sending...' : 'Send Test'}
                 </button>
               )}
+              {busy && (
+                <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>
+                  {subscribed ? 'Turning Off...' : 'Enabling...'}
+                </span>
+              )}
+              <TealSwitch
+                label="Device Notifications"
+                checked={!!subscribed}
+                busy={busy}
+                onChange={() => (subscribed ? void onDisable() : void onEnable())}
+              />
             </div>
           </div>
           {msg && (

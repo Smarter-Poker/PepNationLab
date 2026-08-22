@@ -8,6 +8,8 @@ import { z } from 'zod';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
+import { safeError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -76,6 +78,17 @@ export async function POST(req: Request) {
     ? `Admin Payment: ${body.note.trim().slice(0, 180)}`
     : 'Weekly Bill Payment';
 
+  // Idempotency: this moves money (tops up prepaid_balance / pays down
+  // credit_used and can mark statements Paid In Full). A lost response +
+  // retry previously double-credited the agent. The admin UI sends an
+  // Idempotency-Key per submission; replays return the recorded response.
+  return withIdempotency({
+    userId: gate.userId,
+    route: '/api/admin/payments',
+    key: readIdempotencyKey(req),
+    request: { agentId: body.agentId, amount, note: body.note ?? null },
+    handler: async () => {
+
   const svc = await createServiceClient();
   const { data, error } = await svc.rpc('admin_credit_account', {
     p_agent_id: body.agentId,
@@ -84,8 +97,7 @@ export async function POST(req: Request) {
     p_description: description,
   });
   if (error) {
-    console.error('[admin/payments] admin_credit_account failed:', error.message);
-    return NextResponse.json({ error: 'Failed To Record Payment. Please Try Again.' }, { status: 500 });
+    return safeError('admin.payments.credit_account', error, 500, 'Failed To Record Payment. Please Try Again.');
   }
 
   // Audit (best-effort).
@@ -109,4 +121,6 @@ export async function POST(req: Request) {
   } catch { /* notify must not block */ }
 
   return NextResponse.json({ ok: true, result: data });
+    },
+  });
 }

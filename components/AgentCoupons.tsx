@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { reportClientError } from '@/lib/report-client-error';
 import { exportCSV, downloadCSV } from '@/lib/export';
+import { fetchJson } from '@/lib/fetch-json';
 
 // Types
 interface Coupon {
@@ -12,7 +13,7 @@ interface Coupon {
   code: string;
   discount_type: 'percent' | 'fixed';
   discount_value: number;
-  min_subtotal: number | null;
+  min_order_amount: number | null;
   max_uses: number | null;
   uses_count: number;
   is_active: boolean;
@@ -34,7 +35,7 @@ interface BulkGenerateOptions {
   count: number;
   discount_type: 'percent' | 'fixed';
   discount_value: number;
-  min_subtotal: string;
+  min_order_amount: string;
   max_uses: string;
   expires_at: string;
   starts_at: string;
@@ -135,7 +136,7 @@ function QrModal({ coupon, storefront }: { coupon: Coupon; storefront: string })
 
   return (
     <div style={{ textAlign: 'center' }}>
-      <canvas ref={canvasRef} style={{ borderRadius: '8px', marginBottom: 'var(--space-4)' }} />
+      <canvas ref={canvasRef} role="img" aria-label={`QR Code Linking To ${coupon.code ? `${storefront}?coupon=${coupon.code}` : storefront}`} style={{ borderRadius: '8px', marginBottom: 'var(--space-4)' }} />
       <p style={{ color: 'var(--silver)', fontSize: '0.85rem' }}>
         QR Code Links To Storefront With Coupon: <strong style={{ color: 'var(--teal)' }}>{coupon.code}</strong>
       </p>
@@ -155,13 +156,11 @@ function RedemptionsModal({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/agent/coupons/${coupon.id}/redemptions`)
-      .then((r) => r.json())
-      .then((j) => {
-        setData(j.data || []);
+    fetchJson<{ data: any[] }>(`/api/agent/coupons/${coupon.id}/redemptions`)
+      .then((res) => {
+        if (res.ok) setData(res.data?.data || []);
         setLoading(false);
-      })
-      .catch(() => setLoading(false));
+      });
   }, [coupon.id]);
 
   return loading ? (
@@ -204,7 +203,7 @@ function BulkGenerateModal({
     count: 10,
     discount_type: 'percent',
     discount_value: 10,
-    min_subtotal: '',
+    min_order_amount: '',
     max_uses: '1',
     expires_at: '',
     starts_at: '',
@@ -265,9 +264,9 @@ function BulkGenerateModal({
             className="form-input"
             type="number"
             placeholder="None"
-            value={opts.min_subtotal}
+            value={opts.min_order_amount}
             step={0.01}
-            onChange={(e) => set('min_subtotal', e.target.value)}
+            onChange={(e) => set('min_order_amount', e.target.value)}
           />
         </div>
         <div>
@@ -374,10 +373,9 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
   const fetchCoupons = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/agent/coupons');
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed To Fetch Coupons');
-      setCoupons(json.data || []);
+      const res = await fetchJson<{ data: Coupon[] }>('/api/agent/coupons');
+      if (!res.ok) throw new Error(res.error || 'Failed To Fetch Coupons');
+      setCoupons(res.data?.data || []);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -387,10 +385,9 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
 
   const fetchPerformance = useCallback(async () => {
     try {
-      const res = await fetch('/api/agent/coupons/performance');
+      const res = await fetchJson<{ data: Record<string, CouponPerformance> }>('/api/agent/coupons/performance');
       if (!res.ok) return;
-      const json = await res.json();
-      setPerf(json.data || {});
+      setPerf(res.data?.data || {});
     } catch {
       // ignore
     }
@@ -398,10 +395,8 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
 
   useEffect(() => {
     if (!propSlug) {
-      fetch('/api/agent/me')
-        .then((r) => r.json())
-        .then((j) => { if (j.slug) setResolvedSlug(j.slug); })
-        .catch(() => {});
+      fetchJson<{ slug?: string }>('/api/agent/me')
+        .then((res) => { if (res.ok && res.data?.slug) setResolvedSlug(res.data.slug); });
     }
     fetchCoupons();
     fetchPerformance();
@@ -429,7 +424,7 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
     setCode(c.code);
     setDiscountType(c.discount_type);
     setDiscountValue(String(c.discount_value));
-    setMinSubtotal(c.min_subtotal != null ? String(c.min_subtotal) : '');
+    setMinSubtotal(c.min_order_amount != null ? String(c.min_order_amount) : '');
     setMaxUses(c.max_uses != null ? String(c.max_uses) : '');
     setExpiresAt(c.expires_at ? c.expires_at.slice(0, 16) : '');
     setStartsAt((c as any).starts_at ? (c as any).starts_at.slice(0, 16) : '');
@@ -450,20 +445,19 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
         code: code.trim().toUpperCase(),
         discount_type: discountType,
         discount_value: Number(discountValue),
-        min_subtotal: minSubtotal ? Number(minSubtotal) : null,
+        min_order_amount: minSubtotal ? Number(minSubtotal) : null,
         max_uses: maxUses ? Number(maxUses) : null,
         expires_at: expiresAt || null,
         starts_at: startsAt || null,
       };
       const url = editingId ? `/api/agent/coupons/${editingId}` : '/api/agent/coupons';
-      const method = editingId ? 'PUT' : 'POST';
-      const res = await fetch(url, {
+      const method = editingId ? 'PATCH' : 'POST';
+      const res = await fetchJson<any>(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed To Save Coupon');
+      if (!res.ok) throw new Error(res.error || 'Failed To Save Coupon');
       toast.success(editingId ? 'Coupon Updated Successfully' : 'Coupon Created Successfully');
       setShowForm(false);
       resetForm();
@@ -477,13 +471,14 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
 
   const toggleActive = async (coupon: Coupon) => {
     try {
-      const res = await fetch(`/api/agent/coupons/${coupon.id}`, {
-        method: 'PUT',
+      const res = await fetchJson<any>(`/api/agent/coupons/${coupon.id}`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...coupon, is_active: !coupon.is_active }),
+        // PATCH semantics: send only the field being changed. Spreading the
+        // whole row re-submitted display fields on every toggle.
+        body: JSON.stringify({ is_active: !coupon.is_active }),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed To Toggle Coupon');
+      if (!res.ok) throw new Error(res.error || 'Failed To Toggle Coupon');
       toast.success(coupon.is_active ? 'Coupon Deactivated' : 'Coupon Activated');
       fetchCoupons();
     } catch (err: any) {
@@ -493,9 +488,8 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
 
   const deleteCoupon = async (couponId: string) => {
     try {
-      const res = await fetch(`/api/agent/coupons/${couponId}`, { method: 'DELETE' });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed To Archive Coupon');
+      const res = await fetchJson<any>(`/api/agent/coupons/${couponId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(res.error || 'Failed To Archive Coupon');
       toast.success('Coupon Archived Successfully');
       setConfirmArchiveId(null);
       fetchCoupons();
@@ -507,7 +501,7 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
 
   const handleBulkGenerate = async (opts: BulkGenerateOptions) => {
     try {
-      const res = await fetch('/api/agent/coupons/bulk', {
+      const res = await fetchJson<{ count?: number }>('/api/agent/coupons/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -515,15 +509,14 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
           count: opts.count,
           discount_type: opts.discount_type,
           discount_value: opts.discount_value,
-          min_subtotal: opts.min_subtotal ? Number(opts.min_subtotal) : null,
+          min_order_amount: opts.min_order_amount ? Number(opts.min_order_amount) : null,
           max_uses: opts.max_uses ? Number(opts.max_uses) : null,
           expires_at: opts.expires_at || null,
           starts_at: opts.starts_at || null,
         }),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed To Bulk Generate Coupons');
-      toast.success(`${json.count ?? opts.count} Coupon Codes Generated Successfully`);
+      if (!res.ok) throw new Error(res.error || 'Failed To Bulk Generate Coupons');
+      toast.success(`${res.data?.count ?? opts.count} Coupon Codes Generated Successfully`);
       setShowBulkModal(false);
       fetchCoupons();
     } catch (err: any) {
@@ -537,7 +530,7 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
         code: c.code,
         discount_type: c.discount_type,
         discount_value: c.discount_value,
-        min_subtotal: c.min_subtotal ?? '',
+        min_order_amount: c.min_order_amount ?? '',
         max_uses: c.max_uses ?? 'Unlimited',
         uses_count: c.uses_count,
         is_active: c.is_active,
@@ -548,7 +541,7 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
         { key: 'code', label: 'Code' },
         { key: 'discount_type', label: 'Type' },
         { key: 'discount_value', label: 'Value' },
-        { key: 'min_subtotal', label: 'Min Subtotal' },
+        { key: 'min_order_amount', label: 'Min Subtotal' },
         { key: 'max_uses', label: 'Max Uses' },
         { key: 'uses_count', label: 'Uses' },
         { key: 'is_active', label: 'Active' },
@@ -561,10 +554,9 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
 
   const notifyDownline = async (coupon: Coupon) => {
     try {
-      const res = await fetch(`/api/agent/coupons/${coupon.id}/notify-downline`, { method: 'POST' });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed To Notify Downline');
-      toast.success(`Downline Notified - ${json.count ?? 0} Message${json.count === 1 ? '' : 's'} Sent`);
+      const res = await fetchJson<{ count?: number }>(`/api/agent/coupons/${coupon.id}/notify-downline`, { method: 'POST' });
+      if (!res.ok) throw new Error(res.error || 'Failed To Notify Downline');
+      toast.success(`Downline Notified - ${res.data?.count ?? 0} Message${res.data?.count === 1 ? '' : 's'} Sent`);
     } catch (err: any) {
       toast.error(err.message || 'Failed To Notify Downline');
     }
@@ -660,10 +652,10 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
                       </div>
                       <span style={{ fontSize: '0.82rem', color: 'var(--silver)' }}>
                         {c.discount_type === 'percent' ? `${c.discount_value}% Off` : `$${c.discount_value.toFixed(2)} Off`}
-                        {c.min_subtotal ? ` On Orders Over $${c.min_subtotal}` : ''}
+                        {c.min_order_amount ? ` On Orders Over $${c.min_order_amount}` : ''}
                       </span>
                       {c.expires_at && (
-                        <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Expires: {new Date(c.expires_at).toLocaleDateString()}</span>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Expires: {new Date(`${c.expires_at}T00:00:00Z`).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' })}</span>
                       )}
                     </div>
 
@@ -783,7 +775,16 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
                   onChange={(e) => { setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 24)); touch('code'); }}
                   onBlur={() => touch('code')}
                   placeholder="SUMMER20"
+                  // Code / discount type / discount value are immutable once a coupon
+                  // exists: PATCH /api/agent/coupons/[id] deliberately ignores them to
+                  // protect redemption + statement integrity. Editing them silently
+                  // no-oped before; lock them in the UI so the contract is visible.
+                  disabled={!!editingId}
+                  readOnly={!!editingId}
                 />
+                {editingId && (
+                  <p style={{ color: 'var(--grey-400)', fontSize: '0.7rem', marginTop: 4 }}>Code Is Locked After Creation. Create A New Coupon To Change It.</p>
+                )}
                 {touched.code && validation.code && (
                   <p style={{ color: 'var(--red)', fontSize: '0.72rem', marginTop: 4 }}>{validation.code}</p>
                 )}
@@ -792,7 +793,7 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--grey-300)', display: 'block', marginBottom: 4 }}>Discount Type *</label>
-                  <select className="form-input" value={discountType} onChange={(e) => setDiscountType(e.target.value as 'percent' | 'fixed')}>
+                  <select className="form-input" value={discountType} onChange={(e) => setDiscountType(e.target.value as 'percent' | 'fixed')} disabled={!!editingId}>
                     <option value="percent">Percent Off (%)</option>
                     <option value="fixed">Fixed Dollar ($)</option>
                   </select>
@@ -810,7 +811,12 @@ export default function AgentCoupons({ agentSlug: propSlug }: { agentSlug?: stri
                     step={discountType === 'percent' ? 1 : 0.01}
                     min={0.01}
                     placeholder={discountType === 'percent' ? '10' : '5.00'}
+                    disabled={!!editingId}
+                    readOnly={!!editingId}
                   />
+                  {editingId && (
+                    <p style={{ color: 'var(--grey-400)', fontSize: '0.7rem', marginTop: 4 }}>Discount Is Locked After Creation.</p>
+                  )}
                   {touched.discountValue && validation.discountValue && (
                     <p style={{ color: 'var(--red)', fontSize: '0.72rem', marginTop: 4 }}>{validation.discountValue}</p>
                   )}

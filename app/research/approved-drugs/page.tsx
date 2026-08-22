@@ -28,11 +28,12 @@ export const metadata: Metadata = {
     creator: '@PepNationLab',
     title: 'FDA Approved Peptide Drugs | Research Compounds With Regulatory Approval | Pep Nation Lab',
     description: 'Research peptides that have received FDA or international regulatory approval as drug products. Full reference data on approved peptide pharmaceuticals. Research use only.',
-    images: ['https://pepnationlab.com/images/og-card.jpg'],
+    images: ['https://pepnationlab.com/og-card.png'],
   },
 };
 
-export const dynamic = 'force-dynamic';
+// ISR: data comes from unstable_cache'd helpers (60s); render once, revalidate hourly.
+export const revalidate = 3600;
 
 interface ApprovedDrug {
   slug: string;
@@ -108,7 +109,7 @@ export default async function ResearchApprovedDrugsPage() {
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
           { '@type': 'ListItem', position: 2, name: 'Research Library', item: 'https://pepnationlab.com/research' },
-          { '@type': 'ListItem', position: 3, name: 'approved drugs', item: 'https://pepnationlab.com/research/approved-drugs' }
+          { '@type': 'ListItem', position: 3, name: 'Approved Drugs', item: 'https://pepnationlab.com/research/approved-drugs' }
         ]
       }
     ] as Record<string, unknown>[]

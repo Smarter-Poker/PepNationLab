@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { createServiceClient } from '@/lib/supabase/server';
@@ -80,6 +81,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     changes: { product_id: id, fields: Object.keys(patch).filter(k => k !== 'updated_at') },
   });
 
+  // Lot edits (is_active toggles especially) change which COA the public
+  // storefront catalog surfaces - purge the cached catalogs.
+  try {
+    revalidateTag('storefront-catalog', { expire: 0 });
+  } catch { /* best-effort cache refresh */ }
+
   return NextResponse.json({ lot });
 }
 
@@ -143,6 +150,12 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     entity_id: lotId,
     changes: { product_id: id, lot_number: existing.lot_number },
   });
+
+  // Deleting a lot removes its COA from the public storefront catalog -
+  // purge the cached catalogs so a dead COA URL is not served.
+  try {
+    revalidateTag('storefront-catalog', { expire: 0 });
+  } catch { /* best-effort cache refresh */ }
 
   return NextResponse.json({ ok: true });
 }

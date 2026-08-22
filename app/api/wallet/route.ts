@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { resolveEffectiveUserId } from '@/lib/impersonation';
+import { safeError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
+
+// Authed money route: balances and transaction history. Must never be cached
+// by the browser, CDN, or any shared proxy - success or error alike.
+const NO_STORE = { 'Cache-Control': 'private, no-store' } as const;
 
 /**
  * GET /api/wallet
@@ -41,54 +47,78 @@ export async function GET() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized. Please Sign In.' }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized. Please Sign In.' }, { status: 401, headers: NO_STORE });
   }
 
   const service = await createServiceClient();
 
+  // Honor an active admin "View As" session so the wallet reflects the agent
+  // being viewed, not the admin's own $100k balance.
+  const { effectiveUserId } = await resolveEffectiveUserId(user.id);
+
   const { data: profile } = await service
     .from('profiles')
-    .select('role, account_type, prepaid_balance, credit_limit')
-    .eq('id', user.id)
+    .select('role, account_type, prepaid_balance, credit_limit, credit_used')
+    .eq('id', effectiveUserId)
     .maybeSingle();
 
   if (!profile) {
-    return NextResponse.json({ error: 'Profile Not Found.' }, { status: 404 });
+    return NextResponse.json({ error: 'Profile Not Found.' }, { status: 404, headers: NO_STORE });
   }
 
   const role = (profile.role as string) || 'researcher';
   const accountType = (profile.account_type as string | null) ?? null;
   const prepaidBalance = num(profile.prepaid_balance);
-  const creditLimit = profile.credit_limit != null ? num(profile.credit_limit) : null;
+  // Only surface a credit line to accounts explicitly set to account_type='credit'.
+  // All profiles have a credit_limit DB column (default $100k) as an internal
+  // ceiling, but prepaid agents must NOT see it as an available credit line.
+  const creditLimit =
+    accountType === 'credit' && profile.credit_limit != null
+      ? num(profile.credit_limit)
+      : null;
 
   // ── Legacy store credit (vestigial) ───────────────────────────────
-  const { data: scRows } = await service
+  const { data: scRows, error: scError } = await service
     .from('store_credits')
     .select('id, amount, balance_before, balance_after, type, description, created_at')
-    .eq('user_id', user.id)
+    .eq('user_id', effectiveUserId)
     .order('created_at', { ascending: false })
     .limit(500);
+
+  if (scError) {
+    return safeError('wallet.store_credits', scError, 500, 'Could Not Load Your Wallet. Please Try Again.');
+  }
 
   const storeCredit = (scRows ?? []).reduce((acc, r) => acc + num(r.amount), 0);
 
   // ── Unified wallet ledger (all roles) ──────────────────────────
-  const { data: btRows } = await service
+  const { data: btRows, error: btError } = await service
     .from('balance_transactions')
     .select('id, type, amount, balance_before, balance_after, description, created_at')
-    .eq('agent_id', user.id)
+    .eq('agent_id', effectiveUserId)
     .order('created_at', { ascending: false })
     .limit(500);
 
-  // ── Credit line usage (for credit-line agents) ────────────────────
-  let creditUsed = 0;
-  if ((creditLimit != null && creditLimit > 0) || accountType === 'credit') {
-    const { data: stmts } = await service
-      .from('weekly_statements')
-      .select('total_owed')
-      .eq('agent_id', user.id)
-      .eq('status', 'pending_payment');
-    creditUsed = (stmts ?? []).reduce((acc, s) => acc + num(s.total_owed), 0);
+  if (btError) {
+    return safeError('wallet.balance_transactions', btError, 500, 'Could Not Load Your Wallet. Please Try Again.');
   }
+
+  // ── Credit line usage (for credit-line agents) ────────────────────
+  // profiles.credit_used is AUTHORITATIVE: it is the running counter that
+  // charge_order_credit_line enforces against credit_limit, i.e. the number
+  // that actually decides whether an order is refused.
+  //
+  // This used to sum weekly_statements where status='pending_payment', which
+  // disagreed with it on every axis - it missed 'open' statements, missed
+  // agent_invoices entirely, and missed every approved-but-not-yet-billed
+  // order. The practical effect was that /wallet showed an agent MORE
+  // available credit than they had, while /api/agent/wallet/summary (which
+  // reads credit_used) showed the truth. Two screens, two numbers, no label
+  // saying either was an estimate.
+  const creditUsed =
+    (creditLimit != null && creditLimit > 0) || accountType === 'credit'
+      ? num(profile.credit_used)
+      : 0;
   const creditAvailable =
     creditLimit != null ? Math.max(0, Math.round((creditLimit - creditUsed) * 100) / 100) : null;
 
@@ -154,5 +184,5 @@ export async function GET() {
     creditUsed: Math.round(creditUsed * 100) / 100,
     creditAvailable,
     transactions,
-  });
+  }, { headers: NO_STORE });
 }

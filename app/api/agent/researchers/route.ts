@@ -38,6 +38,7 @@ export async function GET(_req: NextRequest) {
       .eq('role', 'researcher')
       .eq('referring_agent_id', callerId)
       .eq('is_active', true)
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(500);
 

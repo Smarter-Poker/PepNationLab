@@ -93,6 +93,8 @@ export async function GET() {
   return new NextResponse(text, {
     headers: {
       'Content-Type': 'text/plain; charset=utf-8',
+      // CDN edge cache to match the 1h ISR revalidate above; stale for a day.
+      'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
     },
   });
 }

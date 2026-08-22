@@ -31,7 +31,9 @@ export async function GET() {
       { count: count ?? 0 },
       {
         headers: {
-          'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=60',
+          // CDN 5m plus 10m stale-while-revalidate - matches the platform-wide
+          // public-endpoint cache policy; the count is social proof, not real-time.
+          'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
         },
       }
     );

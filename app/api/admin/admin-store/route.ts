@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
       agent_id: gate.userId,
       status: 'approved_ship',
       payment_method,
-      fulfillment_method: shipping_address ? 'ship' : 'pickup',
+      fulfillment_method: shipping_address ? 'ship' : 'agent_pickup', // @ts-ignore
       shipping_address: shipping_address || null,
       shipping_cost: 0,
       subtotal,

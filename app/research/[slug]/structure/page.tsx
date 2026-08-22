@@ -6,8 +6,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
-import { getCompound } from '@/lib/compounds-server';
+import { unstable_cache } from 'next/cache';
+import { createServiceClient } from '@/lib/supabase/server';
+import { getCompound, supabaseEnvReady } from '@/lib/compounds-server';
 import StructureViewer3D from '@/components/research/StructureViewer3D';
 import IframeLink from '@/components/ui/IframeLink';
 
@@ -23,7 +24,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export const dynamic = 'force-dynamic';
+// ISR: reads only the public compound_pdb_structures table (refreshed by the
+// weekly sync crons) with no per-request/cookie data, so it is safe to
+// statically cache and revalidate hourly instead of rendering dynamically.
+export const revalidate = 3600;
+export const dynamicParams = true;
 
 interface PdbRow {
   id: string;
@@ -42,21 +47,35 @@ interface CompoundStructureMeta {
   alphafold_id: string | null;
 }
 
+// Cached fetcher: the service client is constructed INSIDE unstable_cache so
+// the query runs in the Data Cache scope (the proven ISR pattern from
+// lib/compounds-server.ts) - a raw createServerClient call at render time
+// breaks static prerendering. Keyed by slug (args are part of the cache key).
+const getCompoundPdbStructures = unstable_cache(
+  async (slug: string) => {
+    // Env-less builds (e.g. Vercel Preview without the service key) prerender
+    // to an empty list instead of crashing - same guard as compounds-server.
+    if (!supabaseEnvReady()) return [];
+    const supabase = await createServiceClient();
+    const { data } = await supabase
+      .from('compound_pdb_structures')
+      .select('id, compound_slug, source, pdb_id, resolution_a, experimental_method, title, release_year, url')
+      .eq('compound_slug', slug)
+      .order('release_year', { ascending: false, nullsFirst: false });
+    return data ?? [];
+  },
+  ['research-compound-pdb-structures'],
+  { revalidate: 3600, tags: ['compounds', 'structures'] }
+);
+
 export default async function CompoundStructurePage({ params }: PageProps) {
   const { slug } = await params;
   const compound = await getCompound(slug);
   if (!compound) notFound();
 
-  const supabase = await createClient();
   const m = (compound ?? {}) as unknown as CompoundStructureMeta;
 
-  const { data: pdbRows } = await supabase
-    .from('compound_pdb_structures')
-    .select('id, compound_slug, source, pdb_id, resolution_a, experimental_method, title, release_year, url')
-    .eq('compound_slug', slug)
-    .order('release_year', { ascending: false, nullsFirst: false });
-
-  const pdbs = (pdbRows ?? []) as PdbRow[];
+  const pdbs = (await getCompoundPdbStructures(slug)) as PdbRow[];
 
   const primaryPdb = (m.pdb_ids && m.pdb_ids[0]) || pdbs.find((p) => p.source?.toLowerCase().includes('rcsb'))?.pdb_id || null;
   const primaryAf = m.alphafold_id || pdbs.find((p) => p.source?.toLowerCase().includes('alpha'))?.pdb_id || null;

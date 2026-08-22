@@ -1,13 +1,15 @@
+import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { Database, Clock, CheckCircle2, AlertTriangle, Activity } from 'lucide-react';
+import { requireAdmin } from '@/lib/admin-auth';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export const metadata: Metadata = {
   title: 'System Status | Pep Nation Lab',
-  robots: { index: false, follow: true },
+  robots: { index: false, follow: false },
 };
 
 interface StatusReport {
@@ -44,6 +46,10 @@ function statusLabel(s: string | undefined): string {
 }
 
 export default async function StatusPage() {
+  // Admin-only page — non-admins are redirected to /dashboard
+  const gate = await requireAdmin();
+  if (!gate.ok) redirect('/dashboard');
+
   const report = await fetchStatus();
   const overall = report?.status;
   const color = statusColor(overall);

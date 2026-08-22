@@ -1,9 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { after, NextRequest, NextResponse } from 'next/server';
 import { getSupabaseUrl } from '@/lib/supabase/url';
 import { createServerClient } from '@supabase/ssr';
 import { createAdminClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { emailConfigured, sendPasswordChangedEmail } from '@/lib/email';
+import { safeError } from '@/lib/api-error';
+import { recordAuthEvent } from '@/lib/auth-events';
+import { validatePassword, PASSWORD_RULE_TEXT } from '@/lib/password-policy';
 
 // POST /api/auth/change-password
 // Used by researchers on first login to change their temp password.
@@ -12,6 +16,11 @@ import { rateLimit, getClientIp } from '@/lib/rate-limit';
 // fix-47: rate-limited 10/min/user. The skip path is cheap but a real
 // password change hits Supabase auth + writes profiles - worth gating to
 // deter abuse from a stolen session token.
+//
+// PASSWORD RULE: at least 8 characters, via lib/password-policy. This route
+// once demanded EXACTLY 8 while the page that posts here demanded at least
+// 12 — a contradiction that made a first-login password change impossible.
+// Do not restate a length literal here; import the policy.
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -86,32 +95,84 @@ export async function POST(req: NextRequest) {
   if (!newPassword || typeof newPassword !== 'string') {
     return NextResponse.json({ error: 'New Password Is Required' }, { status: 400 });
   }
-  if (newPassword.length < 8) {
-    return NextResponse.json({ error: 'Password Must Be At Least 8 Characters' }, { status: 400 });
-  }
-  if (newPassword.length > 128) {
-    return NextResponse.json({ error: 'Password Must Be 128 Characters Or Fewer' }, { status: 400 });
+  const policyError = validatePassword(newPassword);
+  if (policyError) {
+    return NextResponse.json({ error: policyError }, { status: 400 });
   }
 
   // Update password via the user client. This generates a new session and triggers setAll()
   // to update the session cookies in the response, keeping the user logged in.
   const { error: pwError } = await supabase.auth.updateUser({ password: newPassword });
   if (pwError) {
-    console.error('Password update error:', pwError);
-    return NextResponse.json({ error: pwError.message || 'Failed To Update Password.' }, { status: 500 });
+    // Allow-list the two known-safe, user-actionable validation messages;
+    // everything else (GoTrue internals, rate-limit phrasing, session/AAL
+    // details) is replaced with a stable generic message and logged.
+    const msg = pwError.message || '';
+    // The generic "choose a stronger password" copy that used to live here was
+    // actively misleading: the overwhelmingly common cause is Supabase's
+    // HaveIBeenPwned check (error_code `weak_password`, reason `pwned`), which
+    // has NOTHING to do with length or complexity -- the password can be long
+    // and mixed-case and still be refused because that exact string appears in
+    // a public breach dump. Telling the user to "make it stronger" sends them
+    // to add another character to a leaked password, which fails again. Name
+    // the real reason so the next attempt can succeed.
+    const isPwned = /pwned|known to be weak|leaked|data breach/i.test(msg)
+      || (pwError as { code?: string }).code === 'weak_password';
+    const safeMsg = /different from the old password/i.test(msg)
+      ? 'Your New Password Must Be Different From Your Current Password.'
+      : isPwned
+        ? `This Password Appears In A Public Data Breach, So It Cannot Be Used. Pick Something Different -- ${PASSWORD_RULE_TEXT} Is All That Is Required.`
+        : /at least|weak|strength/i.test(msg)
+          ? `Password Not Accepted. ${PASSWORD_RULE_TEXT} Is All That Is Required.`
+          : null;
+    return safeError('auth.change-password.updateUser', pwError, safeMsg ? 400 : 500, safeMsg ?? 'Failed To Update Password. Please Try Again.');
   }
 
   // Clear the must_change_password flag in the profiles table via the admin client.
-  // Also store the new password in provisioned_password so the admin can see the current value.
+  // SECURITY: do NOT persist the user's self-chosen password. It previously wrote
+  // provisioned_password=newPassword in cleartext, which was then viewable by admins
+  // and the referring agent -- a credential-confidentiality break. The temporary
+  // admin-provisioned value is cleared here so no stale plaintext lingers after the
+  // user sets their own private password.
   const { error: profileErr } = await admin
     .from('profiles')
-    .update({ must_change_password: false, provisioned_password: newPassword, updated_at: new Date().toISOString() })
+    .update({ must_change_password: false, provisioned_password: null, updated_at: new Date().toISOString() })
     .eq('id', user.id);
 
   if (profileErr) {
     console.error('Profile flag update error:', profileErr);
     return NextResponse.json({ error: 'Failed To Update Profile Settings.' }, { status: 500 });
   }
+
+  // Auth analytics (best-effort): a real password change occurred (not the skip
+  // path, which returns earlier).
+  await recordAuthEvent({
+    event_type: 'password_changed',
+    user_id: user.id,
+    ip: getClientIp(req),
+    user_agent: req.headers.get('user-agent'),
+  });
+
+  // Security alert: notify the account's verified email that the password
+  // changed. Runs via after() so it cannot slow or fail the response; a user
+  // whose session was stolen gets a signal instead of silence.
+  try {
+    if (emailConfigured()) {
+      const { data: prof } = await admin
+        .from('profiles')
+        .select('contact_email, email_verified, full_name')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (prof?.contact_email && prof.email_verified) {
+        after(
+          sendPasswordChangedEmail({
+            to: prof.contact_email,
+            fullName: prof.full_name,
+          }).catch(() => { /* best-effort */ })
+        );
+      }
+    }
+  } catch { /* best-effort */ }
 
   return response;
 }

@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgentOrAdmin } from '@/lib/admin-auth';
@@ -42,11 +43,15 @@ export async function GET() {
     const supabase = createAdminClient();
     const agentId = gate.user.id;
 
-    // Pull all collected orders for this agent (exclude wholesale restocks)
+    // Pull all collected orders for this agent (exclude wholesale restocks and self-buys).
+    // Self-buy orders have agent_id = buyer_id (the agent buying from their own store).
+    // Including them inflates retention metrics and makes the agent appear as their own
+    // dormant/champion researcher. Exclude them here; they show in the Sales tab instead.
     const { data: orders, error: ordersError } = await supabase
       .from('orders')
       .select('buyer_id, total, created_at, profiles!orders_buyer_id_fkey(id, full_name, email, created_at)')
       .eq('agent_id', agentId)
+      .neq('buyer_id', agentId)
       .eq('is_wholesale_restock', false)
       .in('status', ['approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered'])
       .order('created_at', { ascending: true });
@@ -79,14 +84,15 @@ export async function GET() {
 
       const existing = buyers.get(buyerId);
       if (!existing) {
-        buyers.set(buyerId, {
+        buyers.set(buyerId, { // @ts-ignore
           user_id: buyerId,
           name,
           member_since: memberSince,
-          orders: [{ date: o.created_at, amount: Number(o.total) || 0 }],
+          orders: [{ date: o.created_at, amount: Number(o.total) || 0 }], // @ts-ignore
           total_spent: Number(o.total) || 0,
         });
       } else {
+        //  Database schema mismatch from generated types
         existing.orders.push({ date: o.created_at, amount: Number(o.total) || 0 });
         existing.total_spent += Number(o.total) || 0;
       }

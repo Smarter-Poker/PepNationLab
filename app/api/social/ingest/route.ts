@@ -3,6 +3,7 @@ import { assertCronAuth } from '@/lib/cron';
 import { createServiceClient } from '@/lib/supabase/server';
 import { runComplianceGate } from '@/lib/social';
 import type { Platform, MediaType } from '@/lib/social/types';
+import { safeError } from '@/lib/api-error';
 
 /**
  * Batch enqueue for the social publishing queue - the generator's way in.
@@ -129,7 +130,7 @@ export async function POST(req: Request) {
     .select('id, platform, status, dedupe_key');
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return safeError('social.ingest.upsert', error, 500, 'Failed To Ingest Posts.');
   }
 
   const inserted = data ?? [];

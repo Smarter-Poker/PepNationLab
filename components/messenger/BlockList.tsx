@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { toast } from 'sonner';
 import Avatar from './Avatar';
+import { useModalA11y } from '@/lib/useModalA11y';
 
 interface BlockRow {
   id: string;
@@ -29,13 +30,6 @@ export default function BlockList({ onClose }: Props) {
   const [rows, setRows] = useState<BlockRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<Record<string, boolean>>({});
-
-  // Audit2 fix: Escape key closes the modal.
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [onClose]);
 
   useEffect(() => {
     let cancelled = false;
@@ -89,8 +83,12 @@ export default function BlockList({ onClose }: Props) {
     }
   }, []);
 
+  // A11y: initial focus, Tab trap, Escape-to-close, focus restore (WCAG 2.1.2, 2.4.3).
+  const dialogRef = useModalA11y<HTMLDivElement>(true, { onClose });
+
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-label="Blocked Users"

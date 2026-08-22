@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getEffectiveUser } from '@/lib/impersonation';
 import { assertSameOrigin } from '@/lib/csrf';
 import { safeError } from '@/lib/api-error';
 
-const VALID_PAYMENT_METHODS = ['zelle', 'cashapp', 'venmo', 'apple_pay', 'apple_cash'] as const;
+// Full platform method list. Must stay in step with the payment_method DB
+// enum, PAYMENT_METHOD_ENUM in /api/account/payment-method, and the orders
+// route schema (all 10 methods, including Varo).
+const VALID_PAYMENT_METHODS = ['zelle', 'cashapp', 'venmo', 'apple_pay', 'apple_cash', 'paypal', 'google_wallet', 'wise', 'chime', 'varo'] as const;
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -11,7 +15,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await getEffectiveUser(supabase);
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

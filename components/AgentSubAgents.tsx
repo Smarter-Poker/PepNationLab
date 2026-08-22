@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { SubAgentPricingSchema } from '@/lib/schemas/product';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { pickOne } from '@/lib/relations';
 import SubAgentCommissionEditor from './SubAgentCommissionEditor';
 import AgentAccountDetail from '@/components/AgentAccountDetail';
+import { MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH, PASSWORD_RULE_TEXT } from '@/lib/password-policy';
 import {
   exportCSV,
   downloadCSV,
@@ -233,21 +235,24 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
     try {
       setPricingError(null);
       setPricingSuccess(null);
-      const cost = parseFloat(baselineCost);
-      if (isNaN(cost) || cost < 0) throw new Error('Invalid Cost Value');
-      
-      const bulkCost = bulkCostStr ? parseFloat(bulkCostStr) : null;
-      const bulkThreshold = bulkThreshStr ? parseInt(bulkThreshStr, 10) : 100;
+      // Schema-locked payload: every field is validated together. Previously
+      // only baselineCost had a NaN check; a non-numeric bulk cost/threshold
+      // became NaN, which JSON.stringify serializes as null -- silently
+      // CLEARING the super-agent billing baseline instead of erroring.
+      const parsedPricing = SubAgentPricingSchema.safeParse({
+        product_id: productId,
+        baseline_cost: parseFloat(baselineCost),
+        bulk_baseline_cost: bulkCostStr ? parseFloat(bulkCostStr) : null,
+        bulk_threshold: bulkThreshStr ? parseInt(bulkThreshStr, 10) : 100,
+      });
+      if (!parsedPricing.success) {
+        throw new Error('Please Enter Valid Numeric Pricing Values.');
+      }
 
       const res = await fetch('/api/agent/super-agent/pricing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          product_id: productId, 
-          baseline_cost: cost,
-          bulk_baseline_cost: bulkCost,
-          bulk_threshold: bulkThreshold
-        })
+        body: JSON.stringify(parsedPricing.data)
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Failed To Save Pricing');
@@ -259,7 +264,7 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
     }
   };
 
-  const formatCurrency = (val: number) => `$${(Number(val) || 0).toFixed(2)}`;
+  const formatCurrency = (val: number) => `$${(Number(val) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   async function downloadInvoice(invoiceId: string, format: 'pdf' | 'csv') {
     try {
@@ -345,11 +350,11 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
         </div>
         <div style="display:flex;justify-content:space-between;margin-bottom:24px;font-size:11px;">
           <div>
-            <div style="font-size:9px;color:#718096;text-transform:uppercase;letter-spacing:0.05em;">From</div>
+            <div style="font-size:9px;color:#A8B4C0;text-transform:uppercase;letter-spacing:0.05em;">From</div>
             <strong>${escapeHtml(superName)}</strong>
           </div>
           <div>
-            <div style="font-size:9px;color:#718096;text-transform:uppercase;letter-spacing:0.05em;">Billed To</div>
+            <div style="font-size:9px;color:#A8B4C0;text-transform:uppercase;letter-spacing:0.05em;">Billed To</div>
             <strong>${escapeHtml(subName)}</strong>
           </div>
         </div>`;
@@ -357,7 +362,7 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
       const footerHtml = `
         <div class="footer" style="display:flex;justify-content:flex-end;">
           <div style="text-align:right;">
-            <div style="font-size:10px;color:#718096;text-transform:uppercase;letter-spacing:0.05em;">Total Owed</div>
+            <div style="font-size:10px;color:#A8B4C0;text-transform:uppercase;letter-spacing:0.05em;">Total Owed</div>
             <div class="total">$${total}</div>
           </div>
         </div>
@@ -781,15 +786,18 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                     style={{ width: '100%', padding: '10px 14px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                     value={resetPwValue}
                     onChange={e => setResetPwValue(e.target.value)}
-                    placeholder="Minimum 8 Characters"
+                    placeholder={PASSWORD_RULE_TEXT}
                     required
-                    minLength={8}
-                    autoComplete="off"
+                    minLength={MIN_PASSWORD_LENGTH}
+                    maxLength={MAX_PASSWORD_LENGTH}
+                    name="subagent_reset_password_no_autofill"
+                    autoComplete="new-password"
+                    data-lpignore="true"
                   />
                 </div>
                 <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
                   <button type="button" className="btn-silver" onClick={() => { setResetPwUser(null); setResetPwValue(''); }} disabled={resetPwSaving}>Cancel</button>
-                  <button type="submit" className="btn-neon-cyan" disabled={resetPwSaving || resetPwValue.length < 8}>
+                  <button type="submit" className="btn-neon-cyan" disabled={resetPwSaving || resetPwValue.length < MIN_PASSWORD_LENGTH}>
                     {resetPwSaving ? 'Saving...' : 'Update Password'}
                   </button>
                 </div>

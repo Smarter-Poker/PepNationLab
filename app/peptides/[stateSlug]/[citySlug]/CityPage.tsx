@@ -1,4 +1,4 @@
-'use client';
+
 
 /**
  * CityPage.tsx
@@ -16,9 +16,11 @@ import { CITIES } from '@/lib/cities/cities-data';
 import type { City } from '@/lib/cities/cities-data';
 import { CITY_COMPOUNDS } from '@/lib/cities/city-compounds';
 import { FEATURED_PEPTIDES } from '@/lib/cities/keywords';
-import { getCityIntro, getCityFAQs, getCityFacts, VALUE_PROPS, getRegionLabel, getRegionArea } from '@/lib/cities/city-content';
+import { getCityIntro, getCityFAQs, VALUE_PROPS, getRegionLabel, getRegionArea } from '@/lib/cities/city-content';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 import type { StoreTop10Item } from '@/lib/cities/top10-server';
+import { getNearMeCities } from '@/lib/cities/near-me';
+import CityNarrative from './CityNarrative';
 
 interface Props {
   city: City;
@@ -54,7 +56,6 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
   const intro = getCityIntro(city);
   const faqs = getCityFAQs(city);
   const region = getRegionLabel(city);
-  const facts = getCityFacts(city);
 
   // The Top 10 grid mirrors the storefront's "Top 10 Best Peptides" card:
   // identical products, names, sizes, and live prices. Cards deep-link into
@@ -87,7 +88,7 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
     <>
 
       <style>{`
-        /* ── City-page scoped styles ─────────────────── */
+        /* -- City-page scoped styles ------------------- */
         .city-crumb:hover { color: var(--teal) !important; }
         .city-pill:hover  { color: var(--teal) !important; border-color: rgba(192,184,168,0.35) !important; }
         .city-pcard-wrapper {
@@ -179,7 +180,7 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
         }
         .city-fadein { animation: city-fadein 0.75s ease forwards; }
 
-        /* PNG image buttons — transparent bg, full clickable area */
+        /* PNG image buttons - transparent bg, full clickable area */
         .city-btn-img {
           display: block;
           height: 84px;
@@ -223,12 +224,12 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
             ld+json block here - duplicate Service/Breadcrumb nodes on the same
             URL are conflicting structured data and hurt rich-result parsing. */}
 
-        {/* ═════════════════════════════════════════════
+        {/* =========================================
             HERO - 3D peptide helix full-bleed
-        ═════════════════════════════════════════════ */}
+        ========================================= */}
         <section style={{ position: 'relative', minHeight: 'clamp(640px, 95vh, 980px)', display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
           {/* BG image */}
-          <Image src="/images/city-hero-peptide.jpg" alt={`Research Peptides In ${city.name}, ${city.state}${city.county ? ` - ${city.county} County` : ''} - Research-Grade Peptide Supply For Verified Researchers`} fill priority
+          <Image src="/images/city-hero-peptide.jpg" alt={`Buy Research Peptides In ${city.name}, ${city.state}${city.county ? ` - ${city.county} County` : ''} - Research-Grade Peptide Supply For Verified Researchers`} fill priority
             fetchPriority="high"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1400px" quality={45}
             style={{ objectFit: 'cover', objectPosition: 'center right', opacity: 0.75 }} />
@@ -291,7 +292,7 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
 
             {/* H1 */}
             <h1 style={{ color: 'var(--white)', fontSize: 'clamp(2.4rem, 6vw, 4.5rem)', fontWeight: 900, lineHeight: 1.05, letterSpacing: '-0.03em', marginBottom: 'var(--space-5)', maxWidth: 700, fontFamily: 'var(--font-brand)' }}>
-              Peptide Research<br />
+              Buy Research Peptides<br />
               In <span style={{ color: 'var(--teal)', textShadow: '0 0 40px rgba(0,196,188,0.5)' }}>{city.name}</span>
             </h1>
 
@@ -310,13 +311,13 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
 
 
 
-            {/* CTAs — custom PNG buttons */}
+            {/* CTAs - custom PNG buttons */}
             <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap', marginBottom: 'var(--space-10)', alignItems: 'center' }}>
-              <Link href="/research" className="city-btn-link">
-                <Image src="/images/buttons/btn-access.png" alt="Access The Lab" width={280} height={56} className="city-btn-img" style={{ width: 'auto', height: 84 }} />
+              <Link href="/research" className="btn btn-neon-cyan btn-lg">
+                Access The Lab
               </Link>
-              <Link href={`/${DEFAULT_STORE_SLUG}`} className="city-btn-link">
-                <Image src="/images/buttons/btn-browse.png" alt="Browse Catalog" width={280} height={56} className="city-btn-img" style={{ width: 'auto', height: 84 }} />
+              <Link href={`/${DEFAULT_STORE_SLUG}`} className="btn btn-secondary btn-lg">
+                Browse Catalog
               </Link>
             </div>
 
@@ -335,7 +336,7 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
               ))}
             </div>
 
-            {/* ── RUO DISCLAIMER - moved to BOTTOM of hero ── */}
+            {/* -- RUO DISCLAIMER - moved to BOTTOM of hero -- */}
             <div data-nosnippet style={{ display: 'flex', alignItems: 'flex-start', gap: 12, background: 'rgba(229,62,62,0.06)', border: '1px solid rgba(229,62,62,0.18)', borderRadius: 'var(--radius-lg)', padding: '11px 16px', maxWidth: 580, marginTop: 'var(--space-8)' }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2" style={{ flexShrink: 0, marginTop: 2 }}>
                 <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
@@ -349,9 +350,9 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
           </div>
         </section>
 
-        {/* ═════════════════════════════════════════════
+        {/* =========================================
             FEATURED PEPTIDES - LIVE storefront Top 10 (same names + prices)
-        ═════════════════════════════════════════════ */}
+        ========================================= */}
         <section style={{ position: 'relative', padding: 'clamp(64px, 8vw, 100px) 0', overflow: 'hidden' }}>
           {/* Nano Banana background */}
           <Image src="/images/city-sections/bg-catalog.jpg" alt="" fill aria-hidden
@@ -362,9 +363,9 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
           <div className="container" style={{ position: 'relative', zIndex: 2 }}>
             {/* Section header */}
             <div style={{ marginBottom: 'clamp(40px, 5vw, 64px)' }}>
-              <h3 style={{ color: 'var(--teal)', fontSize: '1rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 'var(--space-2)' }}>
+              <div style={{ color: 'var(--teal)', fontSize: '1rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 'var(--space-2)' }}>
                 Research Catalog
-              </h3>
+              </div>
               <h2 style={{ color: 'var(--white)', fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 800, letterSpacing: '-0.025em', marginBottom: 'var(--space-3)', maxWidth: 640 }}>
                 Top 10 Research Compounds Near{' '}
                 <span style={{ color: 'var(--teal)' }}>{city.name}</span>
@@ -438,61 +439,22 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
 
             {/* See full catalog CTA */}
             <div style={{ textAlign: 'center', marginTop: 'var(--space-12)' }}>
-              <Link href={`/${DEFAULT_STORE_SLUG}`} className="city-btn-link">
-                <Image src="/images/buttons/btn-browse-full.png" alt="Browse Full Research Catalog" width={420} height={56} className="city-btn-img" style={{ width: 'auto', height: 84 }} />
+              <Link href={`/${DEFAULT_STORE_SLUG}`} className="btn btn-primary btn-xl">
+                Browse Full Research Catalog
               </Link>
             </div>
           </div>
         </section>
 
-        {/* ═════════════════════════════════════════════
-            AT A GLANCE - dense, quotable fact box (answer-engine bait:
-            AI assistants and featured snippets quote exactly this kind
-            of self-contained factual block)
-        ═════════════════════════════════════════════ */}
-        {/* Visually hidden (clip-rect) but fully present in the HTML and
-            accessibility tree. This dense fact block is answer-engine bait -
-            AI assistants and featured snippets quote exactly this kind of
-            self-contained factual content - but it read as a generic text
-            glob on the visible page. Do not remove; hide-only. */}
-        <section aria-label={`${city.name} Research Supply Facts`} style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0 }}>
-          {/* Nano Banana background */}
-          <Image src="/images/city-sections/bg-facts.jpg" alt="" fill aria-hidden
-            sizes="100vw" quality={35} style={{ objectFit: 'cover', objectPosition: 'center top', opacity: 0.22 }} />
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, var(--black) 0%, rgba(5,10,18,0.7) 50%, var(--black) 100%)', zIndex: 1 }} />
-          <div className="container" style={{ position: 'relative', zIndex: 2 }}>
-            <h2 style={{ color: 'var(--white)', fontSize: '1.15rem', fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 'var(--space-4)' }}>
-              Research Peptide Supply In {city.name} - At A Glance
-            </h2>
-            {/* Intro is fact-oriented and does NOT repeat city.localBlurb
-                (which already renders as a standalone paragraph under the H1)
-                to avoid duplicate copy on the same page. */}
-            <p style={{ fontSize: '0.92rem', color: 'var(--silver-light)', lineHeight: 1.75, maxWidth: 780, marginBottom: 'var(--space-5)' }}>
-              Key facts for verified researchers sourcing research-grade peptides in {city.name}, {city.stateAbbr}. Every order ships nationwide with full batch COA documentation, strictly for in vitro laboratory use.
-            </p>
-            <dl style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-              gap: 'var(--space-3)',
-              margin: 0,
-            }}>
-              {facts.map(({ label, value }) => (
-                <div key={label} className="glass-panel" style={{ padding: 'var(--space-4) var(--space-5)', border: 'var(--border-subtle)' }}>
-                  <dt style={{ fontSize: '0.65rem', color: 'var(--grey-500)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>
-                    {label}
-                  </dt>
-                  <dd style={{ fontSize: '0.85rem', color: 'var(--silver-light)', margin: 0, lineHeight: 1.55 }}>
-                    {value}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-        </section>
+        {/* The former hidden "At A Glance" block (clip-rect concealed but
+            crawlable) was removed 2026-08-14: crawler-only text that users
+            cannot see is a hidden-text violation of Google's spam policies,
+            replicated across every city page. If the fact box is worth
+            having, render it visibly. */}
 
-        {/* ═════════════════════════════════════════════
+        {/* =========================================
             WHY PEP NATION LAB - dynamic BG + Nano Banana 3D icons
-        ═════════════════════════════════════════════ */}
+        ========================================= */}
         <section style={{ position: 'relative', padding: 'clamp(64px, 8vw, 100px) 0', overflow: 'hidden' }}>
           {/* Nano Banana background */}
           <Image src="/images/city-sections/bg-why.jpg" alt="" fill aria-hidden
@@ -501,12 +463,12 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
 
           <div className="container" style={{ position: 'relative', zIndex: 2 }}>
             <div style={{ textAlign: 'center', marginBottom: 'clamp(40px, 5vw, 64px)' }}>
-              <h3 style={{ color: 'var(--grey-300)', fontSize: '1rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 'var(--space-2)' }}>
+              <div style={{ color: 'var(--grey-300)', fontSize: '1rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 'var(--space-2)' }}>
                 Why Researchers Choose Us
-              </h3>
+              </div>
               <h2 style={{ color: 'var(--white)', fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 800, letterSpacing: '-0.025em', marginBottom: 'var(--space-3)' }}>
-                The {region}&apos;s Trusted Source For{' '}
-                <span style={{ color: 'var(--teal)' }}>Research Peptides</span>
+                The Trusted Source For{' '}
+                <span style={{ color: 'var(--teal)' }}>Research Peptides</span> In The {getRegionArea(region)}
               </h2>
               <p style={{ color: 'var(--grey-400)', fontSize: '0.95rem', maxWidth: 480, margin: '0 auto', lineHeight: 1.65 }}>
                 Researchers in {city.name} choose Pep Nation Lab for quality that scales with their lab.
@@ -540,9 +502,9 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
           </div>
         </section>
 
-        {/* ═════════════════════════════════════════════
+        {/* =========================================
             AGENT NETWORK CTA
-        ═════════════════════════════════════════════ */}
+        ========================================= */}
         <section style={{ position: 'relative', borderTop: 'var(--border-subtle)', borderBottom: 'var(--border-subtle)', padding: 'clamp(48px, 6vw, 80px) 0', overflow: 'hidden' }}>
           {/* Nano Banana background */}
           <Image src="/images/city-sections/bg-agent.jpg" alt="" fill aria-hidden
@@ -552,9 +514,9 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
           <div className="container" style={{ position: 'relative', zIndex: 2 }}>
             <div style={{ background: 'linear-gradient(135deg, rgba(0,196,188,0.06) 0%, rgba(0,0,0,0) 60%)', border: 'var(--border-teal)', borderRadius: 'var(--radius-2xl)', padding: 'clamp(28px, 4vw, 52px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--space-8)' }}>
               <div style={{ maxWidth: 520 }}>
-                <h3 style={{ color: 'var(--teal)', fontSize: '1rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 'var(--space-2)' }}>
+                <div style={{ color: 'var(--teal)', fontSize: '1rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 'var(--space-2)' }}>
                   {region} Agent Network
-                </h3>
+                </div>
                 <h2 style={{ color: 'var(--white)', fontSize: 'clamp(1.5rem, 3vw, 2.2rem)', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 'var(--space-4)' }}>
                   Serve Researchers In<br />
                   <span style={{ color: '#d4cdbb' }}>{city.name}</span>
@@ -564,8 +526,8 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
                 </p>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', alignItems: 'center' }}>
-                <Link href="/become-agent" className="city-btn-link">
-                  <Image src="/images/buttons/btn-agent.png" alt="Become An Agent" width={280} height={56} className="city-btn-img" style={{ width: 'auto', height: 84 }} />
+                <Link href="/become-agent" className="btn btn-neon-cyan btn-lg">
+                  Become An Agent
                 </Link>
                 <Link href="/login" style={{ fontSize: '0.8rem', color: 'var(--grey-500)', textDecoration: 'underline', textUnderlineOffset: 3, textAlign: 'center' }}>
                   Already An Agent? Sign In
@@ -575,20 +537,20 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
           </div>
         </section>
 
-        {/* ═════════════════════════════════════════════
+        {/* =========================================
             FAQ - dynamic hero BG reused at low opacity
-        ═════════════════════════════════════════════ */}
+        ========================================= */}
         <section style={{ position: 'relative', padding: 'clamp(64px, 8vw, 100px) 0', overflow: 'hidden' }}>
           {/* Nano Banana background */}
           <Image src="/images/city-sections/bg-faq.jpg" alt="" fill aria-hidden
-            sizes="100vw" quality={35} style={{ objectFit: 'cover', objectPosition: 'center', opacity: 0.28 }} />
+            sizes="100vw" quality={40} style={{ objectFit: 'cover', objectPosition: 'center', opacity: 0.28 }} />
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, var(--black) 0%, rgba(3,6,8,0.55) 50%, var(--black) 100%)', zIndex: 1 }} />
 
           <div className="container" style={{ position: 'relative', zIndex: 2, maxWidth: 780, margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: 'clamp(40px, 5vw, 56px)' }}>
-              <h3 style={{ color: 'var(--grey-300)', fontSize: '1rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 'var(--space-2)' }}>
+              <div style={{ color: 'var(--grey-300)', fontSize: '1rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 'var(--space-2)' }}>
                 Common Questions
-              </h3>
+              </div>
               <h2 style={{ color: 'var(--white)', fontSize: 'clamp(1.8rem, 4vw, 2.6rem)', fontWeight: 800, letterSpacing: '-0.025em', marginBottom: 'var(--space-3)' }}>
                 Peptide Research In{' '}
                 <span style={{ color: 'var(--teal)' }}>{city.name}, {city.stateAbbr}</span>
@@ -618,9 +580,9 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
           </div>
         </section>
 
-        {/* ═════════════════════════════════════════════
+        {/* =========================================
             FINAL CTA
-        ═════════════════════════════════════════════ */}
+        ========================================= */}
         <section style={{ position: 'relative', borderTop: 'var(--border-subtle)', padding: 'clamp(64px, 8vw, 100px) 0', textAlign: 'center', overflow: 'hidden' }}>
           {/* Nano Banana background */}
           <Image src="/images/city-sections/bg-cta.jpg" alt="" fill aria-hidden
@@ -638,11 +600,11 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
             </p>
 
             <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'center', flexWrap: 'wrap', alignItems: 'center' }}>
-              <Link href="/research" className="city-btn-link">
-                <Image src="/images/buttons/btn-access.png" alt="Access The Lab" width={280} height={56} className="city-btn-img" style={{ width: 'auto', height: 84 }} />
+              <Link href="/research" className="btn btn-neon-cyan btn-lg">
+                Access The Lab
               </Link>
-              <Link href={`/${DEFAULT_STORE_SLUG}`} className="city-btn-link">
-                <Image src="/images/buttons/btn-browse-full.png" alt="Browse Full Catalog" width={420} height={56} className="city-btn-img" style={{ width: 'auto', height: 84 }} />
+              <Link href={`/${DEFAULT_STORE_SLUG}`} className="btn btn-primary btn-lg">
+                Browse Full Catalog
               </Link>
             </div>
 
@@ -652,9 +614,9 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
           </div>
         </section>
 
-        {/* ═════════════════════════════════════════════
+        {/* =========================================
             NEARBY CITIES STRIP
-        ═════════════════════════════════════════════ */}
+        ========================================= */}
         {/* POPULAR RESEARCH COMPOUNDS IN THIS CITY - crawlable pill links to compound-city pages */}
         <section style={{ padding: 'var(--space-10) 0', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
           <div className='container'>
@@ -671,11 +633,22 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
           </div>
         </section>
 
+        {/* Nearby coverage - visible section (distinct from NearbyStrip). */}
+        <NearMeSection city={city} stateSlug={stateSlug} region={region} />
+
+        <CountyStrip city={city} />
+
         <NearbyStrip stateSlug={stateSlug} currentCitySlug={citySlug} stateName={city.state} region={city.region} />
 
-        {/* ═════════════════════════════════════════════
+        {city.tier === 1 && <MajorMarketsStrip currentCitySlug={citySlug} />}
+
+        {/* TIER-1 DEEP NARRATIVE - long-form, per-city-unique body copy; renders
+            only on tier-1 markets (getCityNarrative returns null otherwise). */}
+        <CityNarrative city={city} />
+
+        {/* =========================================
             FOOTER
-        ═════════════════════════════════════════════ */}
+        ========================================= */}
         <footer style={{ background: 'var(--black)', borderTop: '1px solid rgba(192,184,168,0.06)', padding: 'var(--space-8) 0' }}>
           <div className="container">
             <div data-nosnippet style={{ background: 'rgba(229,62,62,0.04)', border: '1px solid rgba(229,62,62,0.12)', borderRadius: 'var(--radius-md)', padding: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
@@ -714,7 +687,7 @@ export default function CityPage({ city, stateSlug, citySlug, top10 }: Props) {
   );
 }
 
-// ─── Nearby cities strip ──────────────────────────────────────────────────────────────────────────────
+// --- Nearby cities strip ----------------------------------------------------------------------------------------------
 // Links same-state cities PLUS same-region cities across state lines (metro
 // areas like Kansas City or the NYC tri-state span states), strengthening the
 // internal link mesh between related pages.
@@ -756,6 +729,111 @@ function NearbyStrip({ stateSlug, currentCitySlug, stateName, region }: {
           <Link href={`/peptides/${stateSlug}`} style={{ padding: '5px 14px', fontSize: '0.78rem', color: 'var(--teal)', background: 'var(--teal-subtle)', border: 'var(--border-teal)', borderRadius: 'var(--radius-full)', textDecoration: 'none', fontWeight: 600 }}>
             All {stateName} Cities
           </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// --- Nearby coverage section --------------------------------------------------
+// Visible geographic coverage block rendered before the NearbyStrip, built
+// from genuine nearby-city data (same region first, then same state - see
+// lib/cities/near-me.ts). 2026-08-14: no longer phrased around "peptides
+// near me" — those queries resolve to local-service results (clinics with
+// physical premises) that a nationwide mail-order supplier cannot win, and
+// the Title-Case keyword paragraph read as machine-generated spam.
+function NearMeSection({ city, stateSlug, region }: { city: City; stateSlug: string; region: string }) {
+  const nearby = getNearMeCities(city);
+  if (nearby.length === 0) return null;
+  const area = getRegionArea(region);
+  const topThree = nearby.slice(0, 3).map((c) => c.name);
+  const topThreeLabel =
+    topThree.length >= 3
+      ? `${topThree[0]}, ${topThree[1]}, And ${topThree[2]}`
+      : topThree.join(' And ');
+  return (
+    <section aria-label={`Research Supply Coverage - ${city.name} Area`} style={{ padding: 'clamp(48px, 6vw, 80px) 0', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+      <div className="container">
+        <div style={{ color: 'var(--teal)', fontSize: '1rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 'var(--space-2)' }}>
+          Local Research Coverage
+        </div>
+        <h2 style={{ color: 'var(--white)', fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)', fontWeight: 800, letterSpacing: '-0.025em', marginBottom: 'var(--space-3)' }}>
+          Research Supply Coverage - <span style={{ color: 'var(--teal)' }}>{city.name} Area</span>
+        </h2>
+        <p style={{ color: 'var(--grey-400)', fontSize: '0.92rem', maxWidth: 720, lineHeight: 1.7, marginBottom: 'var(--space-6)' }}>
+          Nationwide shipping covers {nearby.length} nearby {nearby.length === 1 ? 'city' : 'cities'} in the {area}, including {topThreeLabel}. All orders ship with full batch COA documentation, strictly for in vitro research use only.
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: 'var(--space-3)' }}>
+          {nearby.map((c) => (
+            <Link key={`${c.stateSlug}-${c.slug}`} href={`/peptides/${c.stateSlug}/${c.slug}`} className="city-vcard glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: 'var(--space-4) var(--space-5)', border: 'var(--border-subtle)', textDecoration: 'none' }}>
+              <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--silver-light)' }}>
+                {c.stateSlug === stateSlug ? c.name : `${c.name}, ${c.stateAbbr}`}
+              </span>
+              {c.county && (
+                <span style={{ fontSize: '0.72rem', color: 'var(--grey-500)' }}>
+                  {c.county} County
+                </span>
+              )}
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// --- County-level clusters ----------------------------------------------------
+// Links to other cities in the exact same county to strengthen local silos.
+function CountyStrip({ city }: { city: City }) {
+  if (!city.county) return null;
+  
+  const countyCities = CITIES
+    .filter((c) => c.stateSlug === city.stateSlug && c.county === city.county && c.slug !== city.slug)
+    .sort((a, b) => b.population - a.population)
+    .slice(0, 15);
+
+  if (countyCities.length === 0) return null;
+
+  return (
+    <section style={{ padding: 'var(--space-10) 0', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+      <div className="container">
+        <p style={{ fontSize: '0.7rem', color: 'var(--grey-600)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 'var(--space-4)' }}>
+          Research Supply In {city.county} County, {city.stateAbbr}
+        </p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+          {countyCities.map((c) => (
+            <Link key={`${c.stateSlug}-${c.slug}`} href={`/peptides/${c.stateSlug}/${c.slug}`} className="city-pill" style={{ padding: '5px 14px', fontSize: '0.78rem', color: 'var(--grey-500)', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 'var(--radius-full)', textDecoration: 'none', transition: 'all 0.2s' }}>
+              {c.name}
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// --- Major Markets (Tier-1) ---------------------------------------------------
+// Links top tier-1 markets nationwide for tier-1 ↔ tier-1 mesh.
+function MajorMarketsStrip({ currentCitySlug }: { currentCitySlug: string }) {
+  const majorMarkets = CITIES
+    .filter((c) => c.tier === 1 && c.slug !== currentCitySlug)
+    .sort((a, b) => b.population - a.population)
+    .slice(0, 15);
+
+  if (majorMarkets.length === 0) return null;
+
+  return (
+    <section style={{ padding: 'var(--space-10) 0', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+      <div className="container">
+        <p style={{ fontSize: '0.7rem', color: 'var(--grey-600)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 'var(--space-4)' }}>
+          Major US Research Hubs
+        </p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+          {majorMarkets.map((c) => (
+            <Link key={`${c.stateSlug}-${c.slug}`} href={`/peptides/${c.stateSlug}/${c.slug}`} className="city-pill" style={{ padding: '5px 14px', fontSize: '0.78rem', color: 'var(--grey-500)', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 'var(--radius-full)', textDecoration: 'none', transition: 'all 0.2s' }}>
+              {c.name}, {c.stateAbbr}
+            </Link>
+          ))}
         </div>
       </div>
     </section>

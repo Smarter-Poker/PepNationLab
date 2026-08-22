@@ -1,53 +1,46 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { after, NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
-import { z } from 'zod';
-import { applyBulkPrice, isTierLadderV2 } from '@/lib/pricing';
+import { getEffectiveUser } from '@/lib/impersonation';
+import { CheckoutSchema } from '@/lib/schemas/order';
+import { applyBulkPrice, isTierLadderV2, computeAgentCostsForAgent, computeAgentTopOfChainCostsForAgent, resolveAgentPricingContext } from '@/lib/pricing';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
-import { calculateShippingCost, getCarrierName } from '@/lib/shipping';
+import { calculateShippingCost, getCarrierName } from '@/lib/shipping-cost';
+import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
+import { getEffectiveBundlesForStore } from '@/lib/bundles';
 import { resolveCartIdsToProductIds } from '@/lib/cart-ids';
 import { computeLineSplit, type ItemFulfillmentSplit } from '@/lib/order-line-splits';
 import { quantityDiscountPct, isVolumeDiscountExcluded } from '@/lib/quantity-discount';
+import { resolveCheckoutCoupon, getHouseAgentId } from '@/lib/coupons';
 import { enqueuePush, shortOrderId } from '@/lib/push-enqueue';
-import { notifyOrderPlaced, notify, notifyCouponRedeemed } from '@/lib/notify';
-import { sendOrderConfirmationEmail } from '@/lib/email';
-
-
-const CheckoutSchema = z.object({
-  items: z.array(z.object({
-    id: z.string().uuid(),
-    quantity: z.number().int().min(1),
-    bundleName: z.string().optional()
-  })).min(1, 'Cart Cannot Be Empty.'),
-  fulfillmentMethod: z.enum(['ship', 'agent_pickup']),
-  shippingOption: z.enum(['fedex', 'usps', 'agent_pickup']).optional(),
-  paymentMethod: z.enum(['zelle', 'cashapp', 'venmo', 'apple_pay', 'apple_cash', 'paypal', 'google_wallet', 'wise', 'chime']),
-  shippingAddress: z.object({
-    fullName: z.string().min(1),
-    street: z.string().min(1),
-    suite: z.string().optional().default(''),
-    city: z.string().min(1),
-    state: z.string().min(2),
-    zip: z.string().min(5),
-    phone: z.string().optional().default(''),
-  }).optional().nullable(),
-  couponCode: z.string().optional().nullable(),
-  idempotencyKey: z.string().uuid().optional().nullable(),
-  wholesale: z.boolean().optional(),
-
-  /** Which agent storefront initiated this checkout - used for closed-loop catalog validation */
-  agentSlug: z.string().regex(/^[a-zA-Z0-9_-]+$/).optional().nullable(),
-});
+import { notifyOrderPlaced, notify, notifyCouponRedeemed, notifyAdmins, notifyDownlineOrderPlaced, notifyCommissionEarned } from '@/lib/notify';
+import { sendOrderConfirmationEmail, sendAgentSaleEmail } from '@/lib/email';
+import { logOrderEvent } from '@/lib/order-events';
+import { PAYMENT_METHOD_LABELS } from '@/lib/payment-method-labels';
+import { captureError } from '@/lib/sentry';
+import { logError } from '@/lib/log';
+// CheckoutSchema lives in lib/schemas/order.ts -- the shared client/server
+// single source of truth for the checkout contract. The client
+// (app/checkout/CheckoutForm.tsx) parses the response against
+// OrderCreateResponseSchema from the same module, so request AND response
+// shapes are locked on both sides.
 
 export async function POST(request: NextRequest) {
   const csrf = assertSameOrigin(request);
   if (csrf) return csrf;
+  // Compensation state hoisted above the try so the outer catch can undo
+  // reserved inventory / coupon redemption / prepaid deduction when the route
+  // throws unexpectedly between STEP A and the order insert. Before this, a
+  // transient throw in that window permanently leaked stock, coupon uses,
+  // and prepaid money with only a console line as evidence.
+  let compensateOnThrow: (() => Promise<void>) | null = null;
+  let orderCommitted = false;
   try {
     const supabase = await createClient();
     const serviceSupabase = createAdminClient();
 
     // Authenticate the user session
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await getEffectiveUser(supabase);
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized. Please Sign In.' }, { status: 401 });
     }
@@ -75,7 +68,10 @@ export async function POST(request: NextRequest) {
     const validation = CheckoutSchema.safeParse(rawBody);
 
     if (!validation.success) {
-      return NextResponse.json({ error: 'Invalid Checkout Data.', details: validation.error.issues }, { status: 400 });
+      const firstIssue = validation.error.issues[0];
+      const fieldPath = firstIssue?.path.join('.');
+      const errorMsg = firstIssue ? `Invalid Checkout Data: ${firstIssue.message}${fieldPath ? ` at ${fieldPath}` : ''}` : 'Invalid Checkout Data.';
+      return NextResponse.json({ error: errorMsg, details: validation.error.issues }, { status: 400 });
     }
 
     const {
@@ -104,6 +100,16 @@ export async function POST(request: NextRequest) {
         .eq('buyer_id', user.id)
         .maybeSingle();
       if (existing) {
+        // If the prior order under this key was cancelled (e.g. swept by
+        // cancel_stale_pending_orders) before the client retried, do NOT report
+        // success -- that would leave the buyer believing a cancelled order is
+        // live. Treat the key as spent and ask them to start a new order.
+        if (existing.status === 'cancelled') {
+          return NextResponse.json(
+            { error: 'Your Previous Order Was Cancelled. Please Start A New Order.' },
+            { status: 409 }
+          );
+        }
         return NextResponse.json({
           success: true,
           orderId: existing.id,
@@ -116,7 +122,7 @@ export async function POST(request: NextRequest) {
     // Get researcher profile (full_name added for buyer_name on order insert)
     const { data: profile, error: profileError } = await serviceSupabase
       .from('profiles')
-      .select('id, full_name, contact_email, email_verified, referring_agent_id, role, tier, parent_agent_id, account_type, prepaid_balance, credit_limit, max_auto_approve_limit, auto_approve_orders, is_sub_agent, referring_sub_agent_id')
+      .select('id, full_name, contact_email, email_verified, referring_agent_id, role, tier, parent_agent_id, account_type, prepaid_balance, credit_limit, max_auto_approve_limit, auto_approve_orders, is_sub_agent, referring_sub_agent_id, is_manufacturer, manufacturer_commission_pct, is_transactions_frozen')
       .eq('id', user.id)
       .maybeSingle();
 
@@ -139,7 +145,7 @@ export async function POST(request: NextRequest) {
         superAgentProfile = sap;
       }
     } else if (profile.referring_agent_id) {
-      const { data: ap } = await serviceSupabase.from('profiles').select('id, role, tier, parent_agent_id, auto_approve_orders, account_type, max_auto_approve_limit, is_sub_agent, referring_sub_agent_id').eq('id', profile.referring_agent_id).maybeSingle();
+      const { data: ap } = await serviceSupabase.from('profiles').select('id, role, tier, parent_agent_id, auto_approve_orders, account_type, max_auto_approve_limit, is_sub_agent, referring_sub_agent_id, is_manufacturer, manufacturer_commission_pct').eq('id', profile.referring_agent_id).maybeSingle();
       agentProfile = ap;
       if (ap && ap.parent_agent_id) {
         const { data: sap } = await serviceSupabase.from('profiles').select('id, tier, account_type, prepaid_balance, credit_limit, max_auto_approve_limit, auto_approve_orders').eq('id', ap.parent_agent_id).maybeSingle();
@@ -154,6 +160,108 @@ export async function POST(request: NextRequest) {
         { error: 'Sub-Agent Account Configuration Error. Please Contact Your Parent Agent.' },
         { status: 403 }
       );
+    }
+
+    // FREEZE GATE. Until now the frozen-chain check lived ONLY in the agent
+    // approval route, so a frozen account could still take orders all day:
+    // checkout succeeded, the researcher got a confirmation, inventory was
+    // held, and the order sat in the queue until a human noticed and declined
+    // it. Freezing is also how a DELETED account is tombstoned, so a deleted
+    // agent's storefront kept accepting orders that could never be fulfilled.
+    //
+    // Refuse at the door instead. The walk starts at the AGENT OF RECORD
+    // because walk_billing_chain climbs parent_agent_id - a researcher is
+    // attached to their store by referring_agent_id, so walking from the
+    // buyer would stop at their own row and miss the store owner entirely.
+    // The buyer's own flag is checked separately for the same reason.
+    {
+      const buyerFrozen = (profile as { is_transactions_frozen?: boolean | null }).is_transactions_frozen === true;
+      if (buyerFrozen) {
+        return NextResponse.json(
+          { error: 'This Account Is Frozen And Cannot Place Orders. Please Contact Support.' },
+          { status: 423 }
+        );
+      }
+
+      const freezeRoot = agentProfile?.id ?? null;
+      if (freezeRoot) {
+        // Only the FREEZE half is wanted here - the credit half is handled by
+        // checkSuperAgentCredit further down, which prices the real cart.
+        // Calling assertChainCanTransact ran both, and its credit result was
+        // provably discarded: a recursive CTE plus two aggregate scans per
+        // chain level on every single checkout, for nothing.
+        const { data: frozenRows, error: frozenErr } = await serviceSupabase.rpc('is_chain_frozen', {
+          p_agent_id: freezeRoot,
+        });
+
+        if (frozenErr) {
+          // FAIL CLOSED. Falling through on an RPC error let a frozen - or
+          // deleted - agent's storefront transact freely for as long as the
+          // check was unavailable, which defeats the entire gate.
+          logError('orders.POST.freeze_check_failed', { agentId: freezeRoot }, frozenErr);
+          captureError(frozenErr, { context: 'orders.POST.freeze_check_failed', severity: 'critical', agentId: freezeRoot });
+          return NextResponse.json(
+            { error: 'We Could Not Verify This Store Right Now. Please Try Again In A Moment.' },
+            { status: 503 }
+          );
+        }
+
+        const frozen = Array.isArray(frozenRows) ? frozenRows[0] : (frozenRows as { frozen?: boolean } | null);
+        if (frozen?.frozen === true) {
+          // The person reading this is a RESEARCHER checking out, not the
+          // agent. The billing-chain copy ("Contact Your Upline To Resolve
+          // Before Placing Orders") is meaningless to them - they have no
+          // upline and no idea what one is.
+          return NextResponse.json(
+            { error: 'This Store Is Not Accepting Orders Right Now. Please Contact The Store Owner Or Try Another Store.' },
+            { status: 423 }
+          );
+        }
+      }
+    }
+
+    // MANUFACTURER STORES (2026-07-15): the agent of record is the factory
+    // itself. Their store trades on its own rules -- every line in multiples
+    // of 10, no coupons/promos/automatic discounts, pricing unrestricted, and
+    // the platform keeps manufacturer_commission_pct of the product subtotal
+    // (recorded in manufacturer_ledger after the order commits).
+    const isManufacturerStore = Boolean(
+      (agentProfile as { is_manufacturer?: boolean | null } | null)?.is_manufacturer
+    );
+    const manufacturerCommissionPct = isManufacturerStore
+      ? Math.min(Math.max(Number((agentProfile as { manufacturer_commission_pct?: unknown } | null)?.manufacturer_commission_pct ?? 10) || 10, 0), 100)
+      : 0;
+
+    // Manufacturers supply the inventory -- they never buy through the platform.
+    if (isManufacturerStore && (isAgentSelfBuy || explicitWholesale === true)) {
+      return NextResponse.json(
+        { error: 'Manufacturer Accounts Supply Inventory And Do Not Purchase Through The Platform.' },
+        { status: 403 }
+      );
+    }
+
+    // Consolidated agent_profiles config for the agent of record. One query
+    // covers everything this route needs from that table: slug + min-qty rules
+    // (storefront checks below), bundles_config (stack discount),
+    // volume_pricing_enabled (quantity discounts), and payment_handles (so the
+    // buyer's confirmation email can carry the actual pay-to handle) --
+    // previously fetched in up to three separate round trips.
+    let agentConfig: {
+      id: string;
+      slug: string | null;
+      min_overall_qty: number | null;
+      min_order_qty: number | null;
+      bundles_config: unknown;
+      volume_pricing_enabled: boolean | null;
+      payment_handles?: Record<string, string> | null;
+    } | null = null;
+    if (agentProfile) {
+      const { data: acRow } = await serviceSupabase
+        .from('agent_profiles')
+        .select('id, slug, min_overall_qty, min_order_qty, bundles_config, volume_pricing_enabled, payment_handles')
+        .eq('id', agentProfile.id)
+        .maybeSingle();
+      agentConfig = acRow ?? null;
     }
 
     // Cart item ids may be agent_product ids (mobile by-name / quick-add path via
@@ -178,12 +286,16 @@ export async function POST(request: NextRequest) {
     // Retrieve active product definitions matching requested cart item IDs
     const { data: dbProducts, error: dbProductsError } = await serviceSupabase
       .from('products')
-      .select('id, name, base_cost, weight_oz, is_active, is_banned, sku, inventory_count, admin_bulk_price, admin_bulk_threshold')
+      .select('id, name, base_cost, house_cost, weight_oz, is_active, is_banned, sku, inventory_count, admin_bulk_price, admin_bulk_threshold')
       .in('id', items.map(i => i.id));
 
     if (dbProductsError || !dbProducts || dbProducts.length === 0) {
       return NextResponse.json({ error: 'Failed To Retrieve Product Data.' }, { status: 400 });
     }
+
+    // O(1) product lookups inside the per-item loops below (replaces repeated
+    // Array.find scans; same rows, same misses).
+    const productById = new Map(dbProducts.map(p => [p.id as string, p]));
 
     // Fetch Agent Inventory if a researcher is buying
     let agentStockMap: Record<string, number> = {};
@@ -204,7 +316,7 @@ export async function POST(request: NextRequest) {
     // Check for banned or deactivated products and inventory limits
     for (let idx = 0; idx < items.length; idx++) {
       const cartItem = items[idx];
-      const dbProduct = dbProducts.find(p => p.id === cartItem.id);
+      const dbProduct = productById.get(cartItem.id);
       if (!dbProduct) {
         return NextResponse.json(
           { error: `Product ID "${cartItem.id}" Is No Longer Available. Please Return To The Store And Refresh Your Cart.` },
@@ -221,6 +333,14 @@ export async function POST(request: NextRequest) {
       if (qty > 10_000) {
         return NextResponse.json(
           { error: `Quantity For "${dbProduct.name}" Exceeds The Maximum Allowed (10,000 Per Item).` },
+          { status: 400 }
+        );
+      }
+
+      // Manufacturer stores trade in 10-vial multiples only -- no singles.
+      if (isManufacturerStore && (qty < 10 || qty % 10 !== 0)) {
+        return NextResponse.json(
+          { error: `"${dbProduct.name}" Is Sold In Multiples Of 10 On This Store. Please Set The Quantity To 10, 20, 30, And So On.` },
           { status: 400 }
         );
       }
@@ -251,19 +371,29 @@ export async function POST(request: NextRequest) {
       const visibleSet = new Set((visibleRows ?? []).map((r: any) => r.product_id as string));
       const blocked = items.find(i => !visibleSet.has(i.id));
       if (blocked) {
-        const blockedName = dbProducts?.find(p => p.id === blocked.id)?.name ?? blocked.id;
+        const blockedName = productById.get(blocked.id)?.name ?? blocked.id;
         return NextResponse.json({ error: `Product "${blockedName}" Is Not Available Through This Agent's Store.` }, { status: 403 });
       }
     }
 
     if (agentSlug) {
+      // Reuse the consolidated agent-of-record row when its slug is an exact
+      // match for the requested storefront (agent_profiles.slug is UNIQUE, so
+      // the by-slug query would return the same row). Otherwise fall back to
+      // the by-slug lookup -- e.g. an agent self-buy on a different agent's
+      // storefront, or a buyer with no agent of record.
       // Use .eq() not .ilike() -- slug is a user-supplied value; underscore in
       // .ilike() is a LIKE wildcard that could match wrong storefronts.
-      const { data: storefrontAgent } = await serviceSupabase
-        .from('agent_profiles')
-        .select('id, min_overall_qty, min_order_qty')
-        .eq('slug', agentSlug)
-        .maybeSingle();
+      let storefrontAgent: { id: string; min_overall_qty: number | null; min_order_qty: number | null } | null =
+        agentConfig && agentConfig.slug === agentSlug ? agentConfig : null;
+      if (!storefrontAgent) {
+        const { data: slugAgent } = await serviceSupabase
+          .from('agent_profiles')
+          .select('id, min_overall_qty, min_order_qty')
+          .eq('slug', agentSlug)
+          .maybeSingle();
+        storefrontAgent = slugAgent ?? null;
+      }
 
       if (!storefrontAgent) {
         return NextResponse.json({ error: 'Agent Storefront Not Found.' }, { status: 404 });
@@ -276,14 +406,27 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      const totalRequestedQty = items.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
+      // Order minimums count PEPTIDES only. Reconstitution supplies (BAC
+      // water, acetic acid) are add-ons the checkout itself recommends;
+      // letting them satisfy the minimum meant 2 peptides + 1 BAC water vial
+      // passed a 3-item minimum. They are excluded from the overall count AND
+      // from the per-item minimum (a single recommended BAC vial must not be
+      // rejected by a per-peptide minimum of 3).
+      const isReconstitutionSupply = (name: string | null | undefined): boolean =>
+        /bacteriostatic|bac\s*water|acetic\s*acid/i.test(String(name ?? ''));
+      const peptideRequestedQty = items.reduce((acc, item) => {
+        const dbName = productById.get(item.id)?.name;
+        if (isReconstitutionSupply(dbName)) return acc;
+        return acc + (Number(item.quantity) || 0);
+      }, 0);
       const minQty = Number(storefrontAgent.min_overall_qty) || 1;
-      if (totalRequestedQty < minQty) {
-        return NextResponse.json({ error: `This Storefront Requires A Minimum Overall Order Of ${minQty} Items.` }, { status: 400 });
+      if (peptideRequestedQty < minQty) {
+        return NextResponse.json({ error: `This Storefront Requires A Minimum Overall Order Of ${minQty} Peptides. Reconstitution Supplies Like BAC Water Do Not Count Toward The Minimum.` }, { status: 400 });
       }
 
       const minPerItem = Number(storefrontAgent.min_order_qty) || 1;
       for (const item of items) {
+        if (isReconstitutionSupply(productById.get(item.id)?.name)) continue;
         if ((Number(item.quantity) || 0) < minPerItem) {
           return NextResponse.json({ error: `This Storefront Requires A Minimum Of ${minPerItem} Per Peptide.` }, { status: 400 });
         }
@@ -292,116 +435,247 @@ export async function POST(request: NextRequest) {
       // per-slug visible-products query since the universal guard ran first.
     }
 
-    // 1. Fetch Admin Default Multipliers
-    const { data: tiers } = await serviceSupabase.from('pricing_tiers').select('tier_name, multiplier');
-    const tierMultipliers: Record<string, number> = {};
-    tiers?.forEach(t => { tierMultipliers[t.tier_name] = Number(t.multiplier); });
-
-    // fix-57 #2: fetch active flash sale (if any). Single row max.
-    // Applied to researcher retail pricing only - agent self-buys and
-    // wholesale restocks are exempt (already at wholesale tier).
+    // Wholesale / flash-sale eligibility flags (decide which pricing reads to
+    // issue below).
+    // fix-57 #2: flash sale applies to researcher retail pricing only - agent
+    // self-buys and wholesale restocks are exempt (already at wholesale tier).
     const wholesaleExplicit = explicitWholesale === true &&
       (profile.role === 'agent' || profile.role === 'super_agent') &&
       !isSubAgent;
-    const flashSaleEligible = !isAgentSelfBuy && !isSubAgent && !wholesaleExplicit;
+    const flashSaleEligible = !isAgentSelfBuy && !isSubAgent && !wholesaleExplicit && !isManufacturerStore;
+
+    const agentTier = agentProfile?.tier || 'tier_3';
+    const superAgentTier = superAgentProfile ? (superAgentProfile.tier || 'tier_3') : null;
+    const cartProductIds = items.map(i => i.id);
+    const nowIso = new Date().toISOString();
+
+    // 1-5. Pricing inputs. Every read below is independent of the others once
+    // the agent of record and the cart are known, so issue them as one
+    // parallel batch instead of sequential round trips: pricing_tiers, active
+    // flash sale (single row max), product_tier_overrides (agent + super tiers
+    // in ONE query, cart products only), agent_products custom retail (cart
+    // products only), super_agent_pricing baselines, and the effective-markup
+    // RPC (agent ID is constant for the entire checkout, so one call).
+    const [
+      { data: tiers },
+      { data: activeSale },
+      { data: overrideRows },
+      { data: acr },
+      { data: sab },
+      { data: markupData },
+    ] = await Promise.all([
+      serviceSupabase.from('pricing_tiers').select('tier_name, multiplier'),
+      flashSaleEligible
+        ? serviceSupabase
+            .from('flash_sales')
+            .select('discount_pct')
+            .eq('is_active', true)
+            .lte('starts_at', nowIso)
+            .gte('ends_at', nowIso)
+            .order('ends_at', { ascending: true })
+            .limit(1)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+      serviceSupabase
+        .from('product_tier_overrides')
+        .select('tier_name, product_id, custom_multiplier')
+        .in('tier_name', superAgentTier && superAgentTier !== agentTier ? [agentTier, superAgentTier] : [agentTier])
+        .in('product_id', cartProductIds),
+      agentProfile
+        ? serviceSupabase
+            .from('agent_products')
+            .select('product_id, retail_price, is_on_sale, sale_price')
+            .eq('agent_id', agentProfile.id)
+            .in('product_id', cartProductIds)
+        : Promise.resolve({ data: null }),
+      superAgentProfile
+        ? serviceSupabase
+            .from('super_agent_pricing')
+            .select('product_id, baseline_cost, bulk_baseline_cost, bulk_threshold')
+            .eq('super_agent_id', superAgentProfile.id)
+        : Promise.resolve({ data: null }),
+      agentProfile && !agentProfile.is_sub_agent
+        ? serviceSupabase.rpc('fn_agent_effective_markup', { p_agent: agentProfile.id })
+        : Promise.resolve({ data: null }),
+    ]);
+
+    // 1. Admin default multipliers
+    const tierMultipliers: Record<string, number> = {};
+    tiers?.forEach((t: { tier_name: string; multiplier: unknown }) => { tierMultipliers[t.tier_name] = Number(t.multiplier); });
+
+    // 1a. Precompute Agent Cost Maps
+    const productListForPricing = (dbProducts || []).map(p => ({ id: p.id, base_cost: Number(p.base_cost) }));
+    let agentCosts = new Map<string, number>();
+    if (agentProfile && !isManufacturerStore) {
+      agentCosts = await computeAgentCostsForAgent(serviceSupabase, agentProfile.id, agentTier, productListForPricing);
+    }
+    let superAgentCosts = new Map<string, number>();
+    if (superAgentProfile && !isManufacturerStore) {
+      superAgentCosts = await computeAgentCostsForAgent(serviceSupabase, superAgentProfile.id, superAgentTier || 'tier_3', productListForPricing);
+    }
+    // Fix 3 (2026-07-21): top-of-chain cost basis for order_items.unit_house_cost.
+    // For a chain sale (agentProfile has a parent -- superAgentProfile is set),
+    // the immediate parent's cost (superAgentCosts above) is NOT the house's true
+    // cost basis under 3+ level chains -- it's just the next hop up. Resolving
+    // agentProfile's own chain to its top ancestor gives the actual house cost,
+    // regardless of how many Super Agent hops sit in between.
+    if (superAgentProfile && agentProfile && !isManufacturerStore) {
+    }
+
     let flashSaleDiscountPct = 0;
-    if (flashSaleEligible) {
-      const nowIso = new Date().toISOString();
-      const { data: activeSale } = await serviceSupabase
-        .from('flash_sales')
-        .select('discount_pct')
-        .eq('is_active', true)
-        .lte('starts_at', nowIso)
-        .gte('ends_at', nowIso)
-        .order('ends_at', { ascending: true })
-        .limit(1)
-        .maybeSingle();
-      if (activeSale) {
-        const d = Number(activeSale.discount_pct);
-        if (Number.isFinite(d) && d > 0 && d <= 90) {
-          flashSaleDiscountPct = d;
-        }
+    if (flashSaleEligible && activeSale) {
+      const d = Number(activeSale.discount_pct);
+      if (Number.isFinite(d) && d > 0 && d <= 90) {
+        flashSaleDiscountPct = d;
       }
     }
     const flashMultiplier = 1 - (flashSaleDiscountPct / 100);
 
     // 2. Agent profiles already resolved above.
 
-    // 3. Fetch Override Rule Sets
-    const getOverrides = async (tier: string) => {
-      const { data } = await serviceSupabase.from('product_tier_overrides').select('product_id, custom_multiplier').eq('tier_name', tier);
-      const map: Record<string, number> = {};
-      data?.forEach(o => { map[o.product_id] = Number(o.custom_multiplier); });
-      return map;
+    // 3. Override rule sets: both tiers came back in the single query above;
+    // split them into the same two per-tier maps as before. Precedence is
+    // unchanged -- agent and super-agent overrides are consulted independently
+    // in the per-item loop below.
+    const agentOverrides: Record<string, number> = {};
+    const superAgentOverrides: Record<string, number> = {};
+    overrideRows?.forEach((o: { tier_name: string; product_id: string; custom_multiplier: unknown }) => {
+      if (o.tier_name === agentTier) agentOverrides[o.product_id] = Number(o.custom_multiplier);
+      if (superAgentTier !== null && o.tier_name === superAgentTier) superAgentOverrides[o.product_id] = Number(o.custom_multiplier);
+    });
+
+    // 4. Custom retail prices (cart products only; fetched above)
+    const agentCustomRetail: Record<string, number> = {};
+    acr?.forEach((a: { product_id: string; retail_price: unknown; is_on_sale: boolean | null; sale_price: number | null }) => {
+      const rawPrice = a.is_on_sale && a.sale_price != null
+        ? Number(a.sale_price)
+        : Number(a.retail_price);
+      agentCustomRetail[a.product_id] = rawPrice;
+    });
+
+    // 4a. Legitimate stack/bundle membership. The 10% bundle discount is applied
+    // per line only when the client-supplied bundleName matches an ACTIVE bundle
+    // owned by the agent of record AND the line's product is a member of that
+    // bundle. Without this check, any client could attach an arbitrary bundleName
+    // string to every cart line and skim 10% off the whole order.
+    // Map: normalized bundle name -> Set of member product_ids.
+    const validBundleMembers = new Map<string, Set<string>>();
+    const bundleDiscountByName = new Map<string, number>();
+    /** Per-bundle flat custom price. When set, overrides the discount_percent factor. */
+    const bundleCustomPriceByName = new Map<string, number>();
+    /** Total individual retail price for all members of a bundle (to compute per-item shares). */
+    const bundleFullPriceByName = new Map<string, number>();
+    if (agentProfile && !isManufacturerStore) {
+      // Effective bundles for the agent of record: the store's own bundles plus
+      // any cascaded from a parent super-agent ('downline') or the house store
+      // ('global'). The shared resolver keeps the authoritative checkout discount
+      // in lockstep with what renders on the storefront. A resolution failure
+      // must never break checkout -- the order just proceeds with no bundle
+      // discount.
+      let effectiveBundles: Awaited<ReturnType<typeof getEffectiveBundlesForStore>> = [];
+      try {
+        effectiveBundles = await getEffectiveBundlesForStore(serviceSupabase, agentProfile.id);
+      } catch {
+        effectiveBundles = [];
+      }
+      for (const b of effectiveBundles) {
+        if (b.is_active === false || typeof b.name !== 'string' || !Array.isArray(b.product_ids)) continue;
+        const key = b.name.trim().toLowerCase();
+        const set = validBundleMembers.get(key) ?? new Set<string>();
+        b.product_ids.forEach(pid => { if (typeof pid === 'string') set.add(pid); });
+        validBundleMembers.set(key, set);
+        if (b.custom_price != null && Number(b.custom_price) > 0) {
+          bundleCustomPriceByName.set(key, Number(b.custom_price));
+        } else {
+          // If two bundles normalize to the same name, keep the larger discount.
+          const disc = Math.min(Math.max(Number(b.discount_percent) || 0, 0), 90);
+          bundleDiscountByName.set(key, Math.max(bundleDiscountByName.get(key) ?? 0, disc));
+        }
+      }
+    }
+    const isValidBundleLine = (bundleName: string | null | undefined, productId: string): boolean => {
+      if (!bundleName) return false;
+      const members = validBundleMembers.get(bundleName.trim().toLowerCase());
+      return !!members && members.has(productId);
     };
-
-    const agentTier = agentProfile?.tier || 'tier_3';
-    const agentOverrides = await getOverrides(agentTier);
-
-    let superAgentOverrides: Record<string, number> = {};
-    if (superAgentProfile) {
-      superAgentOverrides = await getOverrides(superAgentProfile.tier || 'tier_3');
-    }
-
-    // 4. Fetch Custom Retail Prices
-    let agentCustomRetail: Record<string, number> = {};
-    if (agentProfile) {
-      const { data: acr } = await serviceSupabase
-        .from('agent_products')
-        .select('product_id, retail_price, is_on_sale, sale_price')
-        .eq('agent_id', agentProfile.id);
-      acr?.forEach(a => {
-        const rawPrice = a.is_on_sale && a.sale_price != null
-          ? Number(a.sale_price)
-          : Number(a.retail_price);
-        agentCustomRetail[a.product_id] = rawPrice / 10;
-      });
-    }
+    // Per-bundle discount factor (1 = no discount). For custom-priced bundles,
+    // the factor is computed per-line by callers using bundleCustomPriceByName.
+    // Defaults to the legacy 10% only for a validated bundle line whose bundle
+    // somehow carries no percent.
+    const bundleDiscountFactor = (bundleName: string | null | undefined): number => {
+      if (!bundleName) return 1;
+      // Custom price bundles: handled separately, return 1 here so the caller
+      // can apply the per-item custom price proportionally.
+      const key = bundleName.trim().toLowerCase();
+      if (bundleCustomPriceByName.has(key)) return 1;
+      const pct = bundleDiscountByName.get(key);
+      const eff = pct === undefined ? 10 : pct;
+      return Math.max(0, 1 - eff / 100);
+    };
 
     // 4b. Quantity Discount Eligibility -- Honors The Storefront's
     // volume_pricing_enabled Toggle (Default On). Researcher Retail Only.
     let volumeDiscountsEnabled = true;
     if (agentProfile && !isAgentSelfBuy && !isSubAgent) {
-      const { data: vpRow } = await serviceSupabase
-        .from('agent_profiles')
-        .select('volume_pricing_enabled')
-        .eq('id', agentProfile.id)
-        .maybeSingle();
-      volumeDiscountsEnabled = vpRow?.volume_pricing_enabled !== false;
+      volumeDiscountsEnabled = agentConfig?.volume_pricing_enabled !== false;
+    }
+    if (isManufacturerStore) {
+      volumeDiscountsEnabled = false;
     }
 
-    // 5. Fetch Super Agent Baseline Costs
-    let superAgentBaselines: Record<string, { baseline_cost: number, bulk_baseline_cost: number | null, bulk_threshold: number }> = {};
-    if (superAgentProfile) {
-      const { data: sab } = await serviceSupabase
-        .from('super_agent_pricing')
-        .select('product_id, baseline_cost, bulk_baseline_cost, bulk_threshold')
-        .eq('super_agent_id', superAgentProfile.id);
-      sab?.forEach(b => {
-        superAgentBaselines[b.product_id] = {
-          baseline_cost: Number(b.baseline_cost),
-          bulk_baseline_cost: b.bulk_baseline_cost !== null ? Number(b.bulk_baseline_cost) : null,
-          bulk_threshold: b.bulk_threshold ?? 100
-        };
-      });
+    // 4c. Pre-calculate unit retail sums for custom-priced bundles in the cart
+    const cartBundleUnitRetailSum = new Map<string, number>();
+    const seenBundleProducts = new Set<string>();
+    
+    for (const cartItem of items) {
+      const dbProduct = productById.get(cartItem.id);
+      if (!dbProduct || !isValidBundleLine(cartItem.bundleName, dbProduct.id)) continue;
+      const key = cartItem.bundleName!.trim().toLowerCase();
+      if (!bundleCustomPriceByName.has(key)) continue;
+      
+      const uniqueKey = `${key}:${dbProduct.id}`;
+      if (seenBundleProducts.has(uniqueKey)) continue;
+      seenBundleProducts.add(uniqueKey);
+
+      let unitRetail = 0;
+      if (Object.prototype.hasOwnProperty.call(agentCustomRetail, dbProduct.id)) {
+        unitRetail = agentCustomRetail[dbProduct.id];
+      } else {
+        const retailMultiplier = tierMultipliers['tier_3'] ?? 10;
+        unitRetail = Number(dbProduct.base_cost) * retailMultiplier;
+      }
+      cartBundleUnitRetailSum.set(key, (cartBundleUnitRetailSum.get(key) || 0) + unitRetail);
     }
+
+    // 5. Super agent baseline costs (fetched above)
+    const superAgentBaselines: Record<string, { baseline_cost: number, bulk_baseline_cost: number | null, bulk_threshold: number }> = {};
+    sab?.forEach((b: { product_id: string; baseline_cost: unknown; bulk_baseline_cost: number | null; bulk_threshold: number | null }) => {
+      superAgentBaselines[b.product_id] = {
+        baseline_cost: Number(b.baseline_cost),
+        bulk_baseline_cost: b.bulk_baseline_cost !== null ? Number(b.bulk_baseline_cost) : null,
+        bulk_threshold: b.bulk_threshold ?? 100
+      };
+    });
 
     // 6. Compute Costs per Item
     let subtotal = 0;
+    // "One offer at a time" (2026-07-12 audit): tally each automatic discount at the ORDER
+    // level; flash / quantity / coupon never stack -- only the single largest applies below.
+    let flashDiscTotal = 0;
+    let qtyDiscTotal = 0;
     let totalWeightOz = 0;
     const computedItems = [];
 
-    // Hoist the effective-markup RPC out of the per-item loop -- the agent ID
-    // is constant for the entire checkout, calling it once saves N-1 round trips.
+    // Effective markup was fetched once in the parallel batch above (the agent
+    // ID is constant for the entire checkout); consume the result here.
     let agentEffectiveMarkupPct = 0;
     if (agentProfile && !agentProfile.is_sub_agent) {
-      const { data: markupData } = await serviceSupabase.rpc('fn_agent_effective_markup', { p_agent: agentProfile.id });
       agentEffectiveMarkupPct = Number(markupData) || 0;
     }
 
     for (let idx = 0; idx < items.length; idx++) {
       const cartItem = items[idx];
-      const dbProduct = dbProducts.find(p => p.id === cartItem.id);
+      const dbProduct = productById.get(cartItem.id);
       if (!dbProduct) {
         return NextResponse.json(
           { error: `Product ID "${cartItem.id}" Is No Longer Available. Please Return To The Store And Refresh Your Cart.` },
@@ -411,11 +685,18 @@ export async function POST(request: NextRequest) {
 
       const baseCost = Number(dbProduct.base_cost);
 
+      // Only honor a client-supplied bundleName when it maps to a real active
+      // bundle owned by the agent of record that actually contains this product.
+      const isBundleLine = isValidBundleLine(cartItem.bundleName, dbProduct.id);
+
       let retailPrice = 0;
 
       if (isAgentSelfBuy || isSubAgent) {
         // costPrice path; retail collapses to cost for wholesale buyers below.
-      } else if (agentCustomRetail[dbProduct.id]) {
+      } else if (Object.prototype.hasOwnProperty.call(agentCustomRetail, dbProduct.id)) {
+        // Presence check, not truthiness: an agent may legitimately set retail_price
+        // to 0 (giveaway/sample). A `0 is falsy` check previously skipped this and
+        // charged full tier-3 retail instead of the intended free price.
         retailPrice = agentCustomRetail[dbProduct.id];
       } else {
         // Fix 7: return 500 if tier multipliers cannot be loaded instead of using hardcoded fallback
@@ -423,7 +704,7 @@ export async function POST(request: NextRequest) {
         if (retailMultiplier === undefined || retailMultiplier === null) {
           return NextResponse.json({ error: 'Pricing Configuration Unavailable. Please Try Again.' }, { status: 500 });
         }
-        retailPrice = baseCost * retailMultiplier / 10;
+        retailPrice = baseCost * retailMultiplier;
       }
 
       const itemQty = Number(cartItem.quantity) || 1;
@@ -437,26 +718,43 @@ export async function POST(request: NextRequest) {
 
       let costPrice = retailPrice;
       let superAgentCost = null;
+      let houseCost: number | null = null;
       // Wholesale buyers (agent self-buy + sub-agents) always pay flat tier
       // cost - no volume/bulk discount and no retail markup. Dynamic pricing
       // applies to researchers only.
       const isWholesalePurchase = isAgentSelfBuy || isSubAgent;
 
       if (agentProfile) {
-        if (superAgentProfile) {
-          // Fix 7: removed ?? 1.7 hardcoded fallback
-          const saMultiplier = superAgentOverrides[dbProduct.id] ?? tierMultipliers[superAgentProfile.tier || 'tier_3'];
+        if (isManufacturerStore) {
+          // The platform's take per vial is the commission slice of the
+          // manufacturer's own retail price. Recorded as unit_cost_price so
+          // order snapshots carry the split; the authoritative per-order split
+          // lives in manufacturer_ledger (written after the insert below).
+          costPrice = Math.round(retailPrice * (manufacturerCommissionPct / 100) * 100) / 100;
+        } else if (superAgentProfile) {
+          const saCostRaw = superAgentCosts.get(dbProduct.id);
+          if (saCostRaw === undefined || saCostRaw === null) {
+            return NextResponse.json({ error: 'Pricing Configuration Unavailable. Please Try Again.' }, { status: 500 });
+          }
           superAgentCost = isWholesalePurchase
-            ? (baseCost * (saMultiplier ?? 0) / 10)
+            ? saCostRaw
             : applyBulkPrice(
-                baseCost * (saMultiplier ?? 0) / 10,
+                saCostRaw,
                 itemQty,
-                dbProduct.admin_bulk_price != null ? dbProduct.admin_bulk_price / 10 : null,
+                dbProduct.admin_bulk_price != null ? dbProduct.admin_bulk_price : null,
                 dbProduct.admin_bulk_threshold
               );
 
+          // Fix 2 (2026-07-21): track whether an explicit admin/super-configured
+          // baseline_cost override applies to this product. That override is
+          // authoritative and must survive the Gamification Markup step below --
+          // previously the markup step unconditionally overwrote costPrice with
+          // the dynamic chain cost for every non-sub-agent, silently discarding
+          // any baseline_cost the super agent had explicitly set.
+          let baselineApplied = false;
           const saConfig = superAgentBaselines[dbProduct.id];
           if (saConfig) {
+             baselineApplied = true;
              // Sub-agents do not get the bulk_baseline_cost break; they always
              // pay the baseline tier their parent has set.
              if (!isWholesalePurchase && saConfig.bulk_baseline_cost !== null && itemQty >= saConfig.bulk_threshold) {
@@ -471,23 +769,50 @@ export async function POST(request: NextRequest) {
           // Gamification Markup (Super Agent -> Agent)
           // The Agent pays the Super Agent's cost + Markup.
           // Sub-agent wholesale orders are exempt -- they pay baseline_cost.
-          if (agentProfile && !agentProfile.is_sub_agent && !isSubAgent) {
-             costPrice = (superAgentCost ?? 0) * (1 + (agentEffectiveMarkupPct / 100));
+          // Skipped entirely when a super_agent_pricing baseline_cost override
+          // was applied above -- an explicit baseline is authoritative and must
+          // never be clobbered by the dynamic chain/ladder cost.
+          if (!baselineApplied && agentProfile && !agentProfile.is_sub_agent && !isSubAgent) {
+             if (isTierLadderV2()) {
+               const aCostRaw = agentCosts.get(dbProduct.id);
+               if (aCostRaw !== undefined && aCostRaw !== null) {
+                 costPrice = aCostRaw;
+               } else {
+                 costPrice = (superAgentCost ?? 0) * (1 + (agentEffectiveMarkupPct / 100));
+               }
+             } else {
+               costPrice = (superAgentCost ?? 0) * (1 + (agentEffectiveMarkupPct / 100));
+             }
           }
 
         } else {
-          // Fix 7: removed ?? 1.7 hardcoded fallback
-          const agentMultiplier = agentOverrides[dbProduct.id] ?? tierMultipliers[agentTier];
+          const aCostRaw = agentCosts.get(dbProduct.id);
+          if (aCostRaw === undefined || aCostRaw === null) {
+            return NextResponse.json({ error: 'Pricing Configuration Unavailable. Please Try Again.' }, { status: 500 });
+          }
           // Agent self-buy at a regular agent's storefront: skip bulk pricing.
           // Researcher buying through the agent: keep bulk pricing.
           costPrice = isWholesalePurchase
-            ? (baseCost * (agentMultiplier ?? 0) / 10)
+            ? aCostRaw
             : applyBulkPrice(
-                baseCost * (agentMultiplier ?? 0) / 10,
+                aCostRaw,
                 itemQty,
-                dbProduct.admin_bulk_price != null ? dbProduct.admin_bulk_price / 10 : null,
+                dbProduct.admin_bulk_price != null ? dbProduct.admin_bulk_price : null,
                 dbProduct.admin_bulk_threshold
               );
+        }
+      }
+
+      // Minimum-margin fail-safe (platform rule): a researcher-facing sale
+      // may never price below cost + 10%. Wholesale restocks are an agent
+      // buying stock (margin 0 by design) and manufacturer stores compute
+      // cost FROM retail, so both are exempt. The same floor exists in the
+      // price editor and as a DB clamp trigger; this is the authoritative
+      // last line because only checkout knows the agent's true chain cost.
+      if (!isWholesalePurchase && !isManufacturerStore) {
+        const minMarginRetail = Math.round(costPrice * 1.10 * 100) / 100;
+        if (retailPrice < minMarginRetail) {
+          retailPrice = minMarginRetail;
         }
       }
 
@@ -498,33 +823,52 @@ export async function POST(request: NextRequest) {
         retailPrice = costPrice;
       }
 
-      // fix-57 #2: Flash sale discount applies to retail buyers, not wholesale or sub-agents.
-      // Guard matches the eligibility check at line 290 (!isSubAgent).
-      if (flashSaleDiscountPct > 0 && !isAgentSelfBuy && !isSubAgent) {
-        retailPrice = retailPrice * flashMultiplier;
+      // Stack discount: each bundle's own discount_percent for stack/bundle line
+      // items (or a flat custom price if set). This is intrinsic to how a stack
+      // product is sold, NOT a stackable promotional offer, so it always applies.
+      // Floors prevent an upstream bug from driving prices negative.
+      if (isBundleLine) {
+        const key = (cartItem.bundleName ?? '').trim().toLowerCase();
+        const customBundlePrice = bundleCustomPriceByName.get(key);
+        if (customBundlePrice != null && customBundlePrice > 0) {
+          const totalUnitRetail = cartBundleUnitRetailSum.get(key) || 1;
+          const bundleFactor = customBundlePrice / Math.max(totalUnitRetail, 0.01);
+          
+          // Apply the exact proportional factor derived from server-computed retail sums.
+          // Because retailPrice collapses to costPrice for wholesale buyers above,
+          // this correctly applies the equivalent % discount to their wholesale cost.
+          retailPrice = Math.max(0, retailPrice * bundleFactor);
+          costPrice = Math.max(0, costPrice * bundleFactor);
+          
+          // If the frontend supplied a bundleCustomPrice, we can trust it if it is 
+          // essentially equal to what we just computed (avoiding tiny penny rounding mismatches).
+          const clientCustomPrice = typeof (cartItem as any).bundleCustomPrice === 'number'
+            ? Number((cartItem as any).bundleCustomPrice)
+            : null;
+          if (clientCustomPrice != null && Math.abs(clientCustomPrice - retailPrice) <= 0.02) {
+            retailPrice = Math.max(0, clientCustomPrice);
+          }
+        } else {
+          const bundleFactor = bundleDiscountFactor(cartItem.bundleName);
+          retailPrice = Math.max(0, retailPrice * bundleFactor);
+          costPrice = Math.max(0, costPrice * bundleFactor);
+        }
       }
 
-      // Stack discount: 10% off for items purchased as part of an individually packaged stack.
-      // Floors ensure a pricing bug upstream can't drive prices negative.
-      if (cartItem.bundleName) {
-        retailPrice = Math.max(0, retailPrice * 0.9);
-        costPrice = Math.max(0, costPrice * 0.9);
-      }
-
-      // Quantity Discount: 3-4 Vials 10% Off, 5-6 Vials 15% Off, 7+ Vials 20%
-      // Off -- Per Specific Peptide (Line Quantity), Never Across Peptides.
-      // Researcher Retail Only; Stack Bundle Items Keep Their Own 10% Deal;
-      // Diluents (BAC Water, Acetic Acid) Are Excluded. Replaces The Old
-      // Small-Order Surcharge ("Dynamic Pricing") Scheme.
-      if (
-        volumeDiscountsEnabled &&
-        !isWholesalePurchase &&
-        !cartItem.bundleName &&
-        !isVolumeDiscountExcluded(dbProduct.name)
-      ) {
-        const qtyPct = quantityDiscountPct(itemQty);
-        if (qtyPct > 0) {
-          retailPrice = Math.max(0, retailPrice * (1 - qtyPct / 100));
+      // "One offer at a time" (2026-07-12 audit): flash sale, quantity discount, and coupon
+      // NEVER stack. Keep unit_retail_price at the BASE (stack) price and tally each candidate
+      // discount at the order level; only the single largest ("best deal for the customer") is
+      // applied as the order discount below -- and every discount type becomes attributable via
+      // orders.discount_amount + discount_source (not just coupons).
+      if (!isWholesalePurchase) {
+        if (flashSaleDiscountPct > 0 && !isAgentSelfBuy && !isSubAgent) {
+          flashDiscTotal = Math.round((flashDiscTotal + retailPrice * itemQty * (flashSaleDiscountPct / 100)) * 100) / 100;
+        }
+        if (volumeDiscountsEnabled && !isBundleLine && !isVolumeDiscountExcluded(dbProduct.name)) {
+          const qtyPct = quantityDiscountPct(itemQty, dbProduct.name);
+          if (qtyPct > 0) {
+            qtyDiscTotal = Math.round((qtyDiscTotal + retailPrice * itemQty * (qtyPct / 100)) * 100) / 100;
+          }
         }
       }
 
@@ -535,12 +879,18 @@ export async function POST(request: NextRequest) {
         superAgentCost = isFinite(superAgentCost) ? Math.round(superAgentCost * 100) / 100 : null;
       }
 
-      const finalProductName = cartItem.bundleName ? `${dbProduct.name} [Part of: ${cartItem.bundleName}]` : dbProduct.name;
+      // The true house cost (what Pep Nation pays the manufacturer)
+      houseCost = dbProduct.house_cost != null ? Number(dbProduct.house_cost) : Number(dbProduct.base_cost);
+      houseCost = isFinite(houseCost) ? Math.round(houseCost * 100) / 100 : null;
+
+      const finalProductName = isBundleLine ? `${dbProduct.name} [Part of: ${cartItem.bundleName}]` : dbProduct.name;
 
       const split = itemSplits[idx];
 
       if (split && split.localQty > 0) {
-        subtotal += retailPrice * split.localQty;
+        // Keep subtotal at exact cents so FP dust cannot flow into coupon math
+        // or the stored order total.
+        subtotal = Math.round((subtotal + retailPrice * split.localQty) * 100) / 100;
         totalWeightOz += (Number(dbProduct.weight_oz) || 0.5) * split.localQty;
         computedItems.push({
           product_id: dbProduct.id,
@@ -549,12 +899,13 @@ export async function POST(request: NextRequest) {
           unit_retail_price: retailPrice,
           unit_cost_price: costPrice,                                           // use real cost, not 0 -- zero corrupts COGS reporting
           unit_super_agent_cost: superAgentCost,                               // use real super-agent cost, not 0
+          unit_house_cost: houseCost,                                          // top-of-chain house cost basis (Fix 3)
           isLocalFulfillment: true
         } as any);
       }
 
       if (split && split.chinaQty > 0) {
-        subtotal += retailPrice * split.chinaQty;
+        subtotal = Math.round((subtotal + retailPrice * split.chinaQty) * 100) / 100;
         totalWeightOz += (Number(dbProduct.weight_oz) || 0.5) * split.chinaQty;
         computedItems.push({
           product_id: dbProduct.id,
@@ -563,12 +914,13 @@ export async function POST(request: NextRequest) {
           unit_retail_price: retailPrice,
           unit_cost_price: costPrice,
           unit_super_agent_cost: superAgentCost,
+          unit_house_cost: houseCost,
           isLocalFulfillment: false
         } as any);
       }
 
       if (!split || (split.localQty === 0 && split.chinaQty === 0)) {
-        subtotal += retailPrice * itemQty;
+        subtotal = Math.round((subtotal + retailPrice * itemQty) * 100) / 100;
         totalWeightOz += (Number(dbProduct.weight_oz) || 0.5) * itemQty;
         computedItems.push({
           product_id: dbProduct.id,
@@ -577,6 +929,7 @@ export async function POST(request: NextRequest) {
           unit_retail_price: retailPrice,
           unit_cost_price: costPrice,
           unit_super_agent_cost: superAgentCost,
+          unit_house_cost: houseCost,
           isLocalFulfillment: false
         } as any);
       }
@@ -590,19 +943,42 @@ export async function POST(request: NextRequest) {
     let chinaReserved = false;
 
     const releaseReservedInventory = async () => {
+      // A failed release is silent stock corruption (reserved units never
+      // return to the pool) -- it must be loud even though the caller is on
+      // an error path already.
       if (localReserved && localItems.length > 0) {
-        await serviceSupabase.rpc('release_inventory', { p_items: localItems, p_agent_id: agentProfile?.id, p_is_agent_ship: true });
+        const { error: relErr } = await serviceSupabase.rpc('release_inventory', { p_items: localItems, p_agent_id: agentProfile?.id, p_is_agent_ship: true });
+        if (relErr) {
+          logError('orders.POST.compensation.release_inventory_local', { userId: user.id }, relErr);
+          captureError(relErr, { context: 'orders.POST.compensation.release_inventory_local', userId: user.id, items: localItems });
+        } else {
+          localReserved = false;
+        }
       }
       if (chinaReserved && chinaItems.length > 0) {
-        await serviceSupabase.rpc('release_inventory', { p_items: chinaItems, p_agent_id: null, p_is_agent_ship: false });
+        const { error: relErr } = await serviceSupabase.rpc('release_inventory', { p_items: chinaItems, p_agent_id: null, p_is_agent_ship: false });
+        if (relErr) {
+          logError('orders.POST.compensation.release_inventory_china', { userId: user.id }, relErr);
+          captureError(relErr, { context: 'orders.POST.compensation.release_inventory_china', userId: user.id, items: chinaItems });
+        } else {
+          chinaReserved = false;
+        }
       }
     };
+    compensateOnThrow = releaseReservedInventory;
 
     if (fulfillmentMethod !== 'agent_pickup') {
       if (localItems.length > 0) {
         const { error: reserveErr } = await serviceSupabase.rpc('reserve_inventory', { p_items: localItems, p_agent_id: agentProfile?.id, p_is_agent_ship: true });
         if (reserveErr) {
-          return NextResponse.json({ error: /Insufficient inventory/i.test(reserveErr.message) ? reserveErr.message : 'Failed To Reserve Local Inventory. Please Try Again.' }, { status: 422 });
+          // Log every failure (an unexpected RPC regression previously
+          // produced zero server-side evidence), and NEVER echo raw Postgres
+          // RAISE text to the buyer -- it can carry product UUIDs and stock
+          // internals.
+          const isStock = /Insufficient inventory/i.test(reserveErr.message);
+          logError('orders.POST.reserve_inventory_local', { userId: user.id, isStock, code: (reserveErr as { code?: string }).code }, reserveErr);
+          if (!isStock) captureError(reserveErr, { context: 'orders.POST.reserve_inventory_local', userId: user.id });
+          return NextResponse.json({ error: isStock ? 'Insufficient Local Inventory For One Or More Items. Please Reduce Quantities And Try Again.' : 'Failed To Reserve Local Inventory. Please Try Again.' }, { status: 422 });
         }
         localReserved = true;
       }
@@ -610,14 +986,21 @@ export async function POST(request: NextRequest) {
         const { error: reserveErr } = await serviceSupabase.rpc('reserve_inventory', { p_items: chinaItems, p_agent_id: null, p_is_agent_ship: false });
         if (reserveErr) {
           await releaseReservedInventory();
-          return NextResponse.json({ error: /Insufficient inventory/i.test(reserveErr.message) ? reserveErr.message : 'Failed To Reserve Global Inventory. Please Try Again.' }, { status: 422 });
+          const isStock = /Insufficient inventory/i.test(reserveErr.message);
+          logError('orders.POST.reserve_inventory_china', { userId: user.id, isStock, code: (reserveErr as { code?: string }).code }, reserveErr);
+          if (!isStock) captureError(reserveErr, { context: 'orders.POST.reserve_inventory_china', userId: user.id });
+          return NextResponse.json({ error: isStock ? 'Insufficient Inventory For One Or More Items. Please Reduce Quantities And Try Again.' : 'Failed To Reserve Global Inventory. Please Try Again.' }, { status: 422 });
         }
         chinaReserved = true;
       }
     }
 
-    // STEP B: COUPON REDEMPTION
+    // STEP B: BEST-DEAL DISCOUNT SELECTION ("one offer at a time")
+    // flash / quantity / coupon never stack -- the single largest discount applies. An entered
+    // coupon is validated (and, if it wins, redeemed atomically); a valid-but-smaller coupon is
+    // left unburned so the customer keeps their code and still gets the better automatic deal.
     let discountAmount = 0;
+    let discountSource: 'coupon' | 'flash' | 'quantity' | null = null;
     let appliedCouponCode: string | null = null;
     let appliedCouponId: string | null = null;
     const trimmedCouponCode = couponCode ? String(couponCode).trim().toUpperCase() : '';
@@ -630,8 +1013,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Manufacturer stores: prices are the manufacturer's own -- no coupons or
+    // promo codes ever apply (a discount would come out of their split).
+    if (isManufacturerStore && trimmedCouponCode) {
+      await releaseReservedInventory();
+      return NextResponse.json(
+        { error: 'Coupons And Promo Codes Are Not Available On This Store.' },
+        { status: 403 }
+      );
+    }
+
+    const autoDisc = Math.max(flashDiscTotal, qtyDiscTotal);
+    const autoSource: 'flash' | 'quantity' | null =
+      autoDisc <= 0 ? null : (flashDiscTotal >= qtyDiscTotal ? 'flash' : 'quantity');
+
     if (trimmedCouponCode) {
-      const couponAgentId = profile.referring_agent_id ?? agentProfile?.id ?? null;
+      // Buyers with no referring agent (the admin's own account, legacy
+      // accounts) fall back to the house storefront so house coupons work.
+      const couponAgentId = profile.referring_agent_id ?? agentProfile?.id
+        ?? (await getHouseAgentId(serviceSupabase));
       if (!couponAgentId) {
         await releaseReservedInventory();
         return NextResponse.json(
@@ -639,81 +1039,62 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-      // Try the atomic 4-param RPC first (includes per-user limit in the DB).
-      // If the updated function hasn't been deployed yet, fall back to the
-      // 3-param call with an application-level per-user check.
-      let redeem: any;
-      let redeemError: any;
+      // Validate WITHOUT burning a coupon use, so the coupon can compete with the
+      // automatic discounts. Also translates platform signup promo codes (e.g.
+      // FIRST20) into the buyer's personal first-order coupon; `check.code` is
+      // the coupon actually applied and MUST be used for redeem + order rows.
+      // An invalid / expired / limit-reached code still fails loudly (unchanged behavior).
+      const check = await resolveCheckoutCoupon(serviceSupabase, {
+        code: trimmedCouponCode, agentId: couponAgentId, subtotal, userId: user.id,
+      });
+      if (!check.valid) {
+        await releaseReservedInventory();
+        return NextResponse.json({ error: check.error || 'Coupon Invalid Or Limit Reached' }, { status: 422 });
+      }
+      const resolvedCouponCode = check.code || trimmedCouponCode;
+      const couponDisc = Number(check.discount) || 0;
 
-      ({ data: redeem, error: redeemError } = await serviceSupabase
-        .rpc('redeem_coupon', {
-          p_code: trimmedCouponCode,
-          p_agent_id: couponAgentId,
-          p_order_subtotal: subtotal,
-          p_user_id: user.id
-        }));
-
-      // PostgREST returns PGRST202 / 42883 when the function signature is unknown
-      if (redeemError && /PGRST202|42883|could not find/i.test(
-        `${redeemError.code ?? ''} ${redeemError.message ?? ''}`
-      )) {
-        console.warn('redeem_coupon 4-param not available, falling back to 3-param + app-level per-user check');
-
-        // Application-level per-user limit check (non-atomic but functional)
-        const { data: couponRow } = await serviceSupabase
-          .from('coupons')
-          .select('max_uses_per_user')
-          .eq('code', trimmedCouponCode)
-          .eq('agent_id', couponAgentId)
-          .eq('is_active', true)
-          .maybeSingle();
-
-        if (couponRow?.max_uses_per_user != null) {
-          const { count } = await serviceSupabase
-            .from('orders')
-            .select('id', { count: 'exact', head: true })
-            .eq('coupon_code', trimmedCouponCode)
-            .eq('buyer_id', user.id)
-            .neq('status', 'cancelled');
-          if (count != null && count >= Number(couponRow.max_uses_per_user)) {
-            await releaseReservedInventory();
-            return NextResponse.json(
-              { error: 'You Have Already Used This Coupon The Maximum Number Of Times.' },
-              { status: 422 }
-            );
-          }
-        }
-
-        // Now call the 3-param version
-        ({ data: redeem, error: redeemError } = await serviceSupabase
+      // Coupon applies only if it is the best deal. Redeem atomically (full server-side
+      // re-validation incl. starts_at / new_customers_only + per-user cap) to burn the use.
+      if (couponDisc > 0 && couponDisc >= autoDisc) {
+        const { data: redeem, error: redeemError } = await serviceSupabase
           .rpc('redeem_coupon', {
-            p_code: trimmedCouponCode,
+            p_code: resolvedCouponCode,
             p_agent_id: couponAgentId,
             p_order_subtotal: subtotal,
-          }));
+            p_user_id: user.id,
+          });
+        const row = Array.isArray(redeem) ? redeem[0] : redeem;
+        if (redeemError || !row?.coupon_id) {
+          await releaseReservedInventory();
+          return NextResponse.json({ error: 'Coupon Invalid Or Limit Reached' }, { status: 422 });
+        }
+        appliedCouponId = row.coupon_id;
+        appliedCouponCode = resolvedCouponCode;
+        discountAmount = Number(row.discount_amount) || 0;
+        discountSource = 'coupon';
       }
+    }
 
-      if (redeemError) {
-        console.error('Coupon RPC Failed:', redeemError);
-        await releaseReservedInventory();
-        return NextResponse.json(
-          { error: 'Coupon Invalid Or Limit Reached' },
-          { status: 422 }
-        );
+    // If no coupon won, apply the single best automatic discount (flash or quantity), if any.
+    if (discountSource === null && autoDisc > 0) {
+      discountAmount = autoDisc;
+      discountSource = autoSource;
+    }
+
+    // Minimum-margin fail-safe, discount leg: promotional discounts (coupon /
+    // flash sale / quantity) are order-level and invisible to the per-unit
+    // floor above. Cap the applied discount so the blended order margin can
+    // never drop below 10% over the agent's cost.
+    if (!(isAgentSelfBuy || isSubAgent) && !isManufacturerStore && discountAmount > 0) {
+      const orderCostBasis = computedItems.reduce(
+        (sum, i: any) => sum + (Number(i.unit_cost_price) || 0) * (Number(i.quantity) || 0),
+        0
+      );
+      const maxDiscount = Math.max(0, Math.round((subtotal - orderCostBasis * 1.10) * 100) / 100);
+      if (discountAmount > maxDiscount) {
+        discountAmount = maxDiscount;
       }
-
-      const row = Array.isArray(redeem) ? redeem[0] : redeem;
-      if (!row?.coupon_id) {
-        await releaseReservedInventory();
-        return NextResponse.json(
-          { error: 'Coupon Invalid Or Limit Reached' },
-          { status: 422 }
-        );
-      }
-
-      appliedCouponId = row.coupon_id;
-      appliedCouponCode = trimmedCouponCode;
-      discountAmount = Number(row.discount_amount) || 0;
     }
 
     // Roll back everything committed before the order row exists - reserved
@@ -723,22 +1104,47 @@ export async function POST(request: NextRequest) {
     const rollbackPreOrder = async () => {
       await releaseReservedInventory();
       if (appliedCouponId) {
-        await serviceSupabase.rpc('unredeem_coupon', { p_coupon_id: appliedCouponId });
+        const { error: unredeemErr } = await serviceSupabase.rpc('unredeem_coupon', { p_coupon_id: appliedCouponId });
+        if (unredeemErr) {
+          logError('orders.POST.compensation.unredeem_coupon', { userId: user.id, couponId: appliedCouponId }, unredeemErr);
+          captureError(unredeemErr, { context: 'orders.POST.compensation.unredeem_coupon', userId: user.id, couponId: appliedCouponId });
+        }
         appliedCouponId = null;
       }
     };
+    compensateOnThrow = rollbackPreOrder;
 
-    // Calculate shipping costs.
-    // IMPORTANT: if fulfillmentMethod is 'agent_pickup', always use 'agent_pickup' as
-    // the shipping option regardless of what the client sent. A client could send
-    // fulfillmentMethod='agent_pickup' with shippingOption='fedex', causing a shipping
-    // charge on a pickup order. Server-side enforcement prevents this.
-    const actualShippingOption = fulfillmentMethod === 'agent_pickup'
-      ? 'agent_pickup'
-      : (shippingOption || 'usps');
-    const shippingCost = calculateShippingCost(actualShippingOption, totalWeightOz);
+    // Calculate shipping costs. Shipping option is derived STRICTLY from
+    // fulfillmentMethod, never trusted from the client's shippingOption field:
+    //   - agent_pickup fulfillment  -> always 'agent_pickup' (free), even if the
+    //     client sent a carrier (prevents a bogus shipping charge on pickup).
+    //   - ship fulfillment          -> a real carrier only. A client sending
+    //     shippingOption='agent_pickup' (or anything non-carrier) with a shipped
+    //     order previously collapsed shipping to $0 -- free shipping exploit.
+    //     Coerce any non-carrier value to the default paid carrier.
+    // Pep Nation fulfills every shipped order, so there is exactly one paid
+    // option ('standard'). Legacy 'fedex'/'usps' values from an older client
+    // are accepted and priced identically rather than rejected.
+    const actualShippingOption: import('@/lib/shipping-cost').ShippingOption =
+      fulfillmentMethod === 'agent_pickup' ? 'agent_pickup' : 'standard';
+    // Shipping charge is a FLAT rate keyed on the destination state -- $20
+    // midwest/inland, $25 coastal, $40 non-contiguous. Live carrier quoting
+    // (EasyPost) was removed from the pricing path: it overrode these rates and
+    // charged the buyer a decoupled amount. Labels are still purchased through
+    // the provider downstream; that cost is Pep Nation's, not the buyer's.
+    const destinationState = (shippingAddress as { state?: string | null } | null)?.state ?? null;
+    let shippingCost = calculateShippingCost(actualShippingOption, destinationState);
 
-    const grossTotal = Math.max(0, subtotal - discountAmount) + shippingCost;
+    // Round the final money total to exact cents so accumulated FP dust never
+    // reaches the stored order total or credit/velocity comparisons.
+    // House-store free shipping: $100+ orders on the admin/house storefront
+    // (researchstore) ship free. Placed before grossTotal so total, stored
+    // shipping_cost, and downstream COGS agree. Pickup is already $0.
+    if (agentSlug === DEFAULT_STORE_SLUG && actualShippingOption !== 'agent_pickup' && subtotal >= 100) {
+      shippingCost = 0;
+    }
+
+    const grossTotal = Math.round((Math.max(0, subtotal - discountAmount) + shippingCost) * 100) / 100;
     const total = Math.max(0, grossTotal);
 
     // Velocity caps (flag-gated, additive). A researcher order placed through a
@@ -825,6 +1231,27 @@ export async function POST(request: NextRequest) {
     let prepaidDeductedAmount = 0;
     let prepaidDeductedAgentId: string | null = null;
 
+    // A failed prepaid refund is silent money loss for the agent -- report it
+    // as loudly as anything in this file. Sets prepaidDeducted=false on
+    // success so a later compensation pass never double-refunds.
+    const refundPrepaidIfNeeded = async () => {
+      if (!(prepaidDeducted && prepaidDeductedAmount > 0 && prepaidDeductedAgentId)) return;
+      const { error: refundErr } = await serviceSupabase.rpc('refund_prepaid_balance', { p_agent_id: prepaidDeductedAgentId, p_amount: prepaidDeductedAmount });
+      if (refundErr) {
+        logError('orders.POST.compensation.refund_prepaid_balance', { userId: user.id, agentId: prepaidDeductedAgentId, amount: prepaidDeductedAmount }, refundErr);
+        captureError(refundErr, { context: 'orders.POST.compensation.refund_prepaid_balance', severity: 'critical', userId: user.id, agentId: prepaidDeductedAgentId, amount: prepaidDeductedAmount, idempotencyKey: idempotencyKey ?? null });
+      } else {
+        prepaidDeducted = false;
+      }
+    };
+
+    // Full compensation for a failed attempt: inventory, coupon, prepaid.
+    const compensateFailedAttempt = async () => {
+      await rollbackPreOrder();
+      await refundPrepaidIfNeeded();
+    };
+    compensateOnThrow = compensateFailedAttempt;
+
     const checkSuperAgentCredit = async (saProfile: any, amount: number) => {
       if (saProfile.account_type === 'prepaid') {
         const bal = Number(saProfile.prepaid_balance) || 0;
@@ -847,18 +1274,26 @@ export async function POST(request: NextRequest) {
         const { data: subAgents } = await serviceSupabase.from('profiles').select('id').eq('parent_agent_id', saProfile.id);
         const agentIds = [saProfile.id, ...(subAgents?.map((s: { id: string }) => s.id) || [])];
 
+        // Unbilled = no statement_orders link. statement_orders.statement_id is
+        // NOT NULL, so "embedded resource is empty" is exactly the set the old
+        // in-memory filter kept; push it server-side via .is(..., null) and
+        // select only the columns the in-flight sum reads (id dropped).
         const { data: approvedOrders } = await serviceSupabase
           .from('orders')
-          .select('id, shipping_cost, statement_orders(statement_id), order_items(quantity, unit_cost_price, unit_super_agent_cost), agent_id')
+          .select('shipping_cost, statement_orders(statement_id), order_items(quantity, unit_cost_price, unit_super_agent_cost), agent_id')
           .in('agent_id', agentIds)
           .eq('is_wholesale_restock', false)
-          .in('status', ['approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered']);
+          .in('status', ['approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered'])
+          .is('statement_orders', null);
 
         let inFlight = 0;
         for (const o of approvedOrders ?? []) {
+          // Belt-and-braces: the server-side .is() filter above already excludes
+          // billed orders; this guard keeps the computed sum exact regardless.
           const links = (o.statement_orders as unknown) as Array<{ statement_id: string | null }> | null;
           if (Array.isArray(links) && links.some((l) => l?.statement_id)) continue;
-          const ship = Number((o as { shipping_cost?: unknown }).shipping_cost) || 0;
+          // Shipping is agent-owned (labels bought by the shipping party, fee
+          // paid direct); it never enters platform credit math.
           const its = ((o as { order_items?: unknown }).order_items ?? []) as Array<{ quantity: number; unit_cost_price: number | null; unit_super_agent_cost: number | null; }>;
           let orderCogs = 0;
           for (const it of its) {
@@ -869,7 +1304,7 @@ export async function POST(request: NextRequest) {
             const cost = isSubOrder ? (Number.isFinite(superCost) && superCost > 0 ? superCost : agentCost) : agentCost;
             orderCogs += (Number.isFinite(cost) && cost > 0 ? cost : 0) * qty;
           }
-          inFlight += orderCogs + ship;
+          inFlight += orderCogs;
         }
 
         const creditLimit = Number(saProfile.credit_limit) || 0;
@@ -885,11 +1320,23 @@ export async function POST(request: NextRequest) {
 
 
 
-    const limit = profile.max_auto_approve_limit !== undefined && profile.max_auto_approve_limit !== null ? Number(profile.max_auto_approve_limit) : Infinity;
+    // A NULL max_auto_approve_limit must NOT mean "auto-approve any amount".
+    // Fall back to a conservative cap so unbounded totals are never silently
+    // auto-approved; anything above it drops to manual approval.
+    const DEFAULT_AUTO_APPROVE_LIMIT = 1000;
+    const limit = profile.max_auto_approve_limit !== undefined && profile.max_auto_approve_limit !== null ? Number(profile.max_auto_approve_limit) : DEFAULT_AUTO_APPROVE_LIMIT;
     const isUserCredit = (profile.account_type === 'credit' || profile.auto_approve_orders === true) && (total <= limit);
     const autoApproveStatus = fulfillmentMethod === 'agent_pickup' ? 'approved_pickup' : 'approved_ship';
 
-    if (isWholesaleRestock) {
+    // Manufacturer stores: the factory fulfils every order by hand (China-shipped
+    // with its own carrier tracking) and is NEVER billed COGS, so its orders always
+    // wait for the manufacturer's explicit approval. Never auto-approve and never
+    // route through the super-agent credit/prepaid billing below -- that path would
+    // wrongly bill the manufacturer their own commission and skip their review.
+    // Mirrors the manufacturer bypass in /api/agent/orders/approve.
+    if (isManufacturerStore) {
+      initialStatus = 'agent_approval_pending';
+    } else if (isWholesaleRestock) {
       if (profile.role === 'super_agent') {
         if (isUserCredit) {
           const res = await checkSuperAgentCredit(profile, total);
@@ -909,7 +1356,7 @@ export async function POST(request: NextRequest) {
           for (const item of computedItems) {
             wholesaleCogs += (item.unit_super_agent_cost !== null ? item.unit_super_agent_cost : item.unit_cost_price) * item.quantity;
           }
-          wholesaleCogs += shippingCost;
+          // Shipping is agent-owned; platform credit math bills COGS only.
 
           const res = await checkSuperAgentCredit(superAgentProfile, wholesaleCogs);
           if (res.error) { await rollbackPreOrder(); return NextResponse.json({ error: res.error }, { status: res.status }); }
@@ -932,7 +1379,7 @@ export async function POST(request: NextRequest) {
               const cost = item.unit_super_agent_cost !== null ? item.unit_super_agent_cost : item.unit_cost_price;
               retailCogs += cost * item.quantity;
             }
-            retailCogs += shippingCost;
+            // Shipping is agent-owned; platform credit math bills COGS only.
 
             const res = await checkSuperAgentCredit(superAgentProfile, retailCogs);
             if (res.error) { await rollbackPreOrder(); return NextResponse.json({ error: res.error }, { status: res.status }); }
@@ -950,7 +1397,7 @@ export async function POST(request: NextRequest) {
           for (const item of computedItems) {
              retailCogs += item.unit_cost_price * item.quantity;
           }
-          retailCogs += shippingCost;
+          // Shipping is agent-owned; platform credit math bills COGS only.
 
           const res = await checkSuperAgentCredit(agentProfile, retailCogs);
           if (res.error) { await rollbackPreOrder(); return NextResponse.json({ error: res.error }, { status: res.status }); }
@@ -976,120 +1423,176 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Cart Items Could Not Be Processed. Please Try Again.' }, { status: 400 });
     }
 
-    // Create checkout order
-    const { data: order, error: orderError } = await serviceSupabase
-      .from('orders')
-      .insert({
-        buyer_id: user.id,
-        buyer_name: (profile as any).full_name || null,
-        buyer_email: user.email || null,
-        agent_id: isAgentSelfBuy ? (superAgentProfile ? superAgentProfile.id : null) : (agentProfile ? agentProfile.id : null),
-        is_wholesale_restock: isWholesaleRestock,
-        status: initialStatus,
-        fulfillment_method: fulfillmentMethod,
-        payment_method: paymentMethod,
-        shipping_address: shippingAddress ?? null,
-        shipping_cost: shippingCost,
-        carrier: getCarrierName(actualShippingOption),
-        subtotal: subtotal,
-        discount_amount: discountAmount,
-        coupon_code: appliedCouponCode,
-        total: total,
-        // Route owns this order's inventory (reserve_inventory ran above with a
-        // precise local/China split). The approval trigger skips reserved orders
-        // so stock is never deducted a second time on approval.
-        inventory_reserved: localReserved || chinaReserved,
-        idempotency_key: idempotencyKey ?? null,
-      })
-      .select('id, total')
-      .maybeSingle();
+    // Create the order header AND all line items atomically in one
+    // transaction (create_order_with_items_atomic). Previously these were two
+    // separate inserts; a crash between them could leave a headerless order
+    // row. The RPC also resolves the idempotency-key race inside the same
+    // transaction, returning replayed=true when a concurrent request with the
+    // same key won the insert -- so nothing partial can ever persist.
+    const orderPayload = {
+      buyer_id: user.id,
+      buyer_name: (profile as any).full_name || null,
+      buyer_email: user.email || null,
+      // agent_id = the storefront owner whose sales this order credits.
+      // For an agent self-buy, that IS the buyer (agentProfile.id == profile.id).
+      // superAgentProfile is used only for pricing/billing-chain -- it does NOT
+      // own the sale.
+      agent_id: agentProfile?.id || null,
+      is_wholesale_restock: isWholesaleRestock,
+      status: initialStatus,
+      fulfillment_method: fulfillmentMethod,
+      payment_method: paymentMethod,
+      shipping_address: shippingAddress ?? null,
+      shipping_cost: shippingCost,
+      carrier: getCarrierName(actualShippingOption),
+      subtotal: subtotal,
+      discount_amount: discountAmount,
+      discount_source: discountSource,
+      coupon_code: appliedCouponCode,
+      total: total,
+      // Route owns this order's inventory (reserve_inventory ran above with a
+      // precise local/China split). The approval trigger skips reserved orders
+      // so stock is never deducted a second time on approval.
+      inventory_reserved: localReserved || chinaReserved,
+      idempotency_key: idempotencyKey ?? null,
+    };
 
-    if (orderError || !order) {
-      // Handle unique constraint violation on idempotency_key (race between two
-      // concurrent requests with the same key -- the loser returns the winner's order)
-      if (orderError && (orderError as any).code === '23505' && idempotencyKey) {
-        const { data: existing } = await serviceSupabase
-          .from('orders')
-          .select('id, total')
-          .eq('idempotency_key', idempotencyKey)
-          .eq('buyer_id', user.id)
-          .maybeSingle();
-        if (existing) {
-          // This duplicate (same idempotency_key) request lost the INSERT race
-          // but already re-ran reserve / redeem / prepaid-deduct above. Undo ALL
-          // of THIS attempt's side effects before returning the original order.
-          await releaseReservedInventory();
-          if (appliedCouponId) await serviceSupabase.rpc('unredeem_coupon', { p_coupon_id: appliedCouponId });
-          if (prepaidDeducted && prepaidDeductedAmount > 0 && prepaidDeductedAgentId) {
-            await serviceSupabase.rpc('refund_prepaid_balance', { p_agent_id: prepaidDeductedAgentId, p_amount: prepaidDeductedAmount });
-          }
-          return NextResponse.json({
-            success: true,
-            orderId: existing.id,
-            total: Number(existing.total) || 0,
-            replayed: true,
-          });
-        }
-      }
-      await releaseReservedInventory();
-      if (appliedCouponId) await serviceSupabase.rpc('unredeem_coupon', { p_coupon_id: appliedCouponId });
-      if (prepaidDeducted && prepaidDeductedAmount > 0 && prepaidDeductedAgentId) {
-        await serviceSupabase.rpc('refund_prepaid_balance', { p_agent_id: prepaidDeductedAgentId, p_amount: prepaidDeductedAmount });
-      }
-      console.error('Database Order Write Error:', orderError);
-      return NextResponse.json({ error: 'Failed To Save Order Transaction.' }, { status: 500 });
-    }
-
-    // Back-fill order_id on the disclaimer acceptance row for compliance audit joins.
-    // Must not block the response -- wrap in non-throwing promise chain.
-    serviceSupabase
-      .from('disclaimer_acceptances')
-      .update({ order_id: order.id })
-      .eq('id', disclaimerRow.id)
-      .then(({ error: dErr }) => {
-        if (dErr) console.error('[orders] disclaimer order_id backfill failed:', dErr.message);
-      });
-
-    const itemsToInsert = computedItems.map(item => ({
-      order_id: order.id,
+    const itemsPayload = computedItems.map(item => ({
       product_id: item.product_id,
       product_name: item.product_name ?? 'Unknown Product',
       quantity: item.quantity,
       unit_retail_price: item.unit_retail_price,
       unit_cost_price: item.unit_cost_price,
       unit_super_agent_cost: item.unit_super_agent_cost,
+      unit_house_cost: (item as any).unit_house_cost ?? null,
       // Tag agent-local lines so a later cancel restores exactly what
       // reserve_inventory took from agent_inventory (China is never tracked).
       fulfilled_locally: (item as any).isLocalFulfillment === true,
     }));
 
-    const { error: itemsError } = await serviceSupabase
-      .from('order_items')
-      .insert(itemsToInsert);
+    const { data: atomicResult, error: atomicError } = await serviceSupabase
+      .rpc('create_order_with_items_atomic', { p_order: orderPayload, p_items: itemsPayload });
 
-    if (itemsError) {
-      console.error('Database Order Items Write Error:', JSON.stringify(itemsError));
-      await serviceSupabase.from('orders').delete().eq('id', order.id);
-      await releaseReservedInventory();
-      if (appliedCouponId) await serviceSupabase.rpc('unredeem_coupon', { p_coupon_id: appliedCouponId });
-      if (prepaidDeducted && prepaidDeductedAmount > 0 && prepaidDeductedAgentId) {
-        await serviceSupabase.rpc('refund_prepaid_balance', { p_agent_id: prepaidDeductedAgentId, p_amount: prepaidDeductedAmount });
+    if (atomicError || !atomicResult) {
+      // The whole transaction rolled back -- nothing partial persisted. Undo
+      // this attempt's inventory/coupon/prepaid side effects and fail.
+      await compensateFailedAttempt();
+      logError('orders.POST.order_atomic_insert', { userId: user.id, idempotencyKey: idempotencyKey ?? null }, atomicError);
+      captureError(atomicError, { context: 'orders.POST.order_atomic_insert', userId: user.id, idempotencyKey: idempotencyKey ?? null });
+      return NextResponse.json({ error: 'Failed To Save Order Transaction.' }, { status: 500 });
+    }
+
+    // The RPC returns { order_id, total, replayed }.
+    if ((atomicResult as any).replayed === true) {
+      // A concurrent request with the same idempotency_key won the insert race.
+      // This attempt already re-ran reserve / redeem / prepaid-deduct above --
+      // undo ALL of its side effects before returning the original order.
+      await compensateFailedAttempt();
+      return NextResponse.json({
+        success: true,
+        orderId: (atomicResult as any).order_id,
+        total: Number((atomicResult as any).total) || 0,
+        replayed: true,
+      });
+    }
+
+    const order = { id: (atomicResult as any).order_id as string, total: Number((atomicResult as any).total) || 0 };
+
+    // Back-fill order_id on the disclaimer acceptance row for compliance audit joins.
+    // Must not block the response -- wrap in non-throwing promise chain.
+    Promise.resolve(
+      serviceSupabase
+        .from('disclaimer_acceptances')
+        .update({ order_id: order.id })
+        .eq('id', disclaimerRow.id)
+    ).then(({ error: dErr }) => {
+      if (dErr) console.error('[orders] disclaimer order_id backfill failed:', dErr.message);
+    }).catch((e: unknown) => {
+      // Transport-level rejection has no resolved error object; must not surface
+      // as an unhandled rejection in the serverless runtime.
+      console.error('[orders] disclaimer order_id backfill threw:', e instanceof Error ? e.message : String(e));
+    });
+
+    // The order + items now exist atomically: the outer catch must no longer
+    // roll back inventory/coupon/prepaid -- those belong to this order.
+    orderCommitted = true;
+    compensateOnThrow = null;
+
+    // MANUFACTURER LEDGER: one row per order on a manufacturer store. The
+    // commission base is the PRODUCT subtotal minus discounts -- shipping is
+    // excluded and passes through to the manufacturer in full.
+    if (isManufacturerStore && agentProfile) {
+      try {
+        const commissionBase = Math.max(0, Math.round((subtotal - discountAmount) * 100) / 100);
+        const platformCommission = Math.round(commissionBase * (manufacturerCommissionPct / 100) * 100) / 100;
+        const manufacturerNet = Math.round((commissionBase - platformCommission) * 100) / 100;
+        const { error: ledgerErr } = await serviceSupabase
+          .from('manufacturer_ledger')
+          .insert({
+            order_id: order.id,
+            manufacturer_id: agentProfile.id,
+            product_subtotal: subtotal,
+            discount_amount: discountAmount,
+            commission_base: commissionBase,
+            commission_pct: manufacturerCommissionPct,
+            platform_commission: platformCommission,
+            manufacturer_net: manufacturerNet,
+            shipping_collected: shippingCost,
+          });
+        if (ledgerErr) {
+          logError('orders.POST.manufacturer_ledger_insert', { orderId: order.id, agentId: agentProfile.id }, ledgerErr);
+          captureError(ledgerErr, { context: 'orders.POST.manufacturer_ledger_insert', severity: 'critical', orderId: order.id, agentId: agentProfile.id });
+        }
+      } catch (ledgerCatch) {
+        captureError(ledgerCatch, { context: 'orders.POST.manufacturer_ledger_insert_threw', severity: 'critical', orderId: order.id });
       }
-
-      return NextResponse.json({ error: 'An Unexpected Error Occurred While Saving Order Items.' }, { status: 500 });
     }
 
     if (initialStatus === 'approved_ship' || initialStatus === 'approved_pickup') {
       const { error: creditErr } = await serviceSupabase.rpc('charge_order_credit_line', { p_order_id: order.id, p_created_by: user.id });
       if (creditErr) {
-        console.error('[CRITICAL] charge_order_credit_line Failed For Order', order.id, creditErr);
-      }
-      if (initialStatus === 'approved_ship') {
-        const { error: labelErr } = await serviceSupabase.rpc('shippo_enqueue_label_job', { p_order_id: order.id });
-        if (labelErr) {
-          console.error('[WARNING] shippo_enqueue_label_job Failed For Order', order.id, labelErr);
+        // The credit charge failed. Do NOT leave the order in an approved /
+        // shippable state -- that would ship goods that were never billed.
+        // Demote it to the manual-approval status used elsewhere in this file
+        // and skip the shipping-label enqueue so nothing goes out the door until
+        // a human reconciles the billing.
+        logError('orders.POST.charge_order_credit_line', { orderId: order.id, userId: user.id }, creditErr);
+        captureError(creditErr, { context: 'orders.POST.charge_order_credit_line', severity: 'critical', orderId: order.id, userId: user.id });
+        const { error: demoteErr } = await serviceSupabase
+          .from('orders')
+          .update({ status: 'agent_approval_pending' })
+          .eq('id', order.id);
+        if (demoteErr) {
+          // Double failure: the order is still approved_ship with no billing
+          // row -- unbilled goods will ship unless a human intervenes. Retry
+          // once, then escalate via Sentry + admin notification.
+          const { error: demoteRetryErr } = await serviceSupabase
+            .from('orders')
+            .update({ status: 'agent_approval_pending' })
+            .eq('id', order.id);
+          if (demoteRetryErr) {
+            captureError(demoteRetryErr, { context: 'orders.POST.charge_credit_demotion_failed', severity: 'critical', orderId: order.id });
+            try {
+              const { data: admins } = await serviceSupabase.from('profiles').select('id').eq('role', 'admin');
+              for (const a of admins ?? []) {
+                await notify(serviceSupabase, {
+                  userId: a.id,
+                  type: 'system',
+                  title: 'Billing Reconciliation Required',
+                  body: `Order ${shortOrderId(order.id)} Is Approved But Its Credit Charge Failed And Demotion Also Failed. Manual Review Required.`,
+                  url: `/admin/orders?highlight=${order.id}`,
+                });
+              }
+            } catch (notifyErr) {
+              captureError(notifyErr, { context: 'orders.POST.charge_credit_admin_notify', orderId: order.id });
+            }
+          }
         }
       }
+      // NOTE: no label job is enqueued here. Shipping labels are purchased
+      // MANUALLY (on-demand) via the admin/agent label flows; the label-jobs
+      // cron is retired, so enqueuing rows here only filled a queue nothing
+      // drains (removed 2026-07-19).
     }
 
     // SACA Phase 4: Sub-Agent Commission Accrual
@@ -1114,6 +1617,28 @@ export async function POST(request: NextRequest) {
           .rpc('accrue_sub_agent_commission', { p_order_id: order.id });
         if (accrueErr) {
           console.error('[orders] accrue_sub_agent_commission failed:', accrueErr.message);
+        } else {
+          // Commission accrued silently before - tell the earning sub-agent.
+          // Amount is read back from the order row the RPC just stamped.
+          const subAgentToNotify = effectiveReferringSubAgentId;
+          after(async () => {
+            try {
+              const { data: commRow } = await serviceSupabase
+                .from('orders')
+                .select('sub_agent_commission_amount')
+                .eq('id', order.id)
+                .maybeSingle();
+              const amt = Number(commRow?.sub_agent_commission_amount) || 0;
+              if (amt > 0 && subAgentToNotify && subAgentToNotify !== user.id) {
+                await notifyCommissionEarned(
+                  serviceSupabase,
+                  subAgentToNotify,
+                  `$${amt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                  order.id,
+                );
+              }
+            } catch { /* commission notify is best-effort */ }
+          });
         }
       }
     } catch (e) {
@@ -1142,71 +1667,169 @@ export async function POST(request: NextRequest) {
       // Best-effort attribution
     }
 
-    // In-app + push notifications for new order
-    try {
+    // ── Post-commit fan-out (after the response flushes) ────────────────────
+    // Everything below is a best-effort side effect of an already-committed
+    // order: timeline events, in-app + push notifications for every party
+    // (buyer, agent, super-agent upline, admins), the agent's sale email, and
+    // the buyer's confirmation email. Deferring the whole block with after()
+    // keeps checkout latency flat while Vercel guarantees the work completes.
+    {
       const short = shortOrderId(order.id);
-      if (agentProfile && !isAgentSelfBuy) {
-        const { data: buyerProfile } = await serviceSupabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', user.id)
-          .maybeSingle();
-        const buyerName = buyerProfile?.full_name || 'A Researcher';
-        await notifyOrderPlaced(serviceSupabase, agentProfile.id, order.id, short, buyerName);
-        if (appliedCouponCode && discountAmount > 0) {
-          await notifyCouponRedeemed(
-            serviceSupabase,
-            agentProfile.id,
-            appliedCouponCode,
-            discountAmount,
-            Number(order.total) || 0,
-            order.id,
-            short,
-          );
-        }
-        await enqueuePush(serviceSupabase, {
-          userId: agentProfile.id,
-          title: `New Order #${short}`,
-          body: `${buyerName} Placed A New Order. Tap To Review.`,
-          url: '/dashboard?tab=Orders',
-          event: 'order_new',
-          relatedOrderId: order.id,
-          tag: `new-order-${order.id}`,
-        });
+      const buyerName = (profile as { full_name?: string | null }).full_name || 'A Researcher';
+      const orderTotal = Number(order.total) || 0;
+      const totalFmt = `$${orderTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      const storeSlug = agentConfig?.slug ? `/${agentConfig.slug}` : 'A Storefront';
+      const autoApproved = initialStatus === 'approved_ship' || initialStatus === 'approved_pickup';
+      // Aggregate quantities by product name: computedItems carries a separate
+      // row per local/China warehouse split, which would otherwise render the
+      // same product twice in emailed summaries.
+      const qtyByName = new Map<string, number>();
+      for (const i of computedItems as Array<{ product_name: string; quantity: number }>) {
+        qtyByName.set(i.product_name, (qtyByName.get(i.product_name) ?? 0) + (Number(i.quantity) || 0));
       }
-      await notify(serviceSupabase, {
-        userId: user.id,
-        type: 'order_placed',
-        title: `Order #${short} Placed`,
-        body: 'Your Order Has Been Placed. You Will Be Notified When It Is Approved.',
-        url: `/orders/${order.id}`,
-      });
-      await enqueuePush(serviceSupabase, {
-        userId: user.id,
-        title: `Order #${short} Placed`,
-        body: 'Your Order Has Been Placed. You Will Be Notified When It Is Approved.',
-        url: `/orders/${order.id}`,
-        event: 'order_placed',
-        relatedOrderId: order.id,
-        tag: `order-placed-${order.id}`,
-      });
-    } catch {
-      // Never propagate - notifications are best-effort
-    }
+      const itemsSummary = [...qtyByName.entries()].map(([n, q]) => `${q}x ${n}`).join(', ');
+      const paymentHandle = initialStatus === 'pending_customer_payment'
+        ? ((agentConfig?.payment_handles as Record<string, string> | null | undefined)?.[paymentMethod] ?? null)
+        : null;
 
-    // Send order confirmation email (best-effort, non-blocking). Only to a
-    // VERIFIED contact email, to protect sender reputation / deliverability.
-    if (profile?.contact_email && (profile as { email_verified?: boolean }).email_verified) {
-      try {
-        const itemsSummary = computedItems.map((i: any) => `${i.quantity}x ${i.product_name}`).join(', ');
-        sendOrderConfirmationEmail({
-          to: profile.contact_email,
-          fullName: profile.full_name,
-          orderId: order.id,
-          total: Number(order.total) || 0,
-          itemsSummary,
-        }).catch(() => { /* ignore */ });
-      } catch { /* ignore */ }
+      after(async () => {
+        try {
+          const tasks: Promise<unknown>[] = [];
+
+          // Order timeline events.
+          tasks.push(logOrderEvent(serviceSupabase, {
+            orderId: order.id,
+            event: 'placed',
+            actorId: user.id,
+            actorRole: profile.role ?? null,
+            payload: { status: initialStatus, total: orderTotal, agent_id: agentProfile?.id ?? null, payment_method: paymentMethod },
+          }));
+          if (autoApproved) {
+            tasks.push(logOrderEvent(serviceSupabase, {
+              orderId: order.id,
+              event: 'auto_approved',
+              payload: { status: initialStatus },
+            }));
+          }
+
+          // Agent of record: sale alert (in-app + push + email).
+          if (agentProfile && !isAgentSelfBuy) {
+            tasks.push(notifyOrderPlaced(serviceSupabase, agentProfile.id, order.id, short, buyerName));
+            if (appliedCouponCode && discountAmount > 0) {
+              tasks.push(notifyCouponRedeemed(
+                serviceSupabase,
+                agentProfile.id,
+                appliedCouponCode,
+                discountAmount,
+                orderTotal,
+                order.id,
+                short,
+              ));
+            }
+            tasks.push(enqueuePush(serviceSupabase, {
+              userId: agentProfile.id,
+              title: `New Order #${short}`,
+              body: `${buyerName} Placed A ${totalFmt} Order. Tap To Review.`,
+              url: `/dashboard/agent?tab=Orders&order=${short}`,
+              event: 'order_new',
+              relatedOrderId: order.id,
+              tag: `new-order-${order.id}`,
+            }));
+            // Sale email: verified contact email first, auth email as the
+            // fallback (auth emails are verified by the login flow itself).
+            tasks.push((async () => {
+              try {
+                const { data: agentContact } = await serviceSupabase
+                  .from('profiles')
+                  .select('contact_email, email_verified, full_name')
+                  .eq('id', agentProfile.id)
+                  .maybeSingle();
+                let to: string | null = (agentContact?.contact_email && agentContact.email_verified)
+                  ? agentContact.contact_email
+                  : null;
+                if (!to) {
+                  const { data: authUser } = await serviceSupabase.auth.admin.getUserById(agentProfile.id);
+                  to = authUser?.user?.email ?? null;
+                }
+                if (to) {
+                  await sendAgentSaleEmail({
+                    to,
+                    agentName: agentContact?.full_name,
+                    orderId: order.id,
+                    buyerName,
+                    total: orderTotal,
+                    itemsSummary,
+                    awaitingPayment: initialStatus === 'pending_customer_payment',
+                  });
+                }
+              } catch { /* sale email is best-effort */ }
+            })());
+          }
+
+          // Super-agent upline: downline sale visibility.
+          if (superAgentProfile && superAgentProfile.id !== user.id && (!agentProfile || superAgentProfile.id !== agentProfile.id)) {
+            tasks.push(notifyDownlineOrderPlaced(
+              serviceSupabase,
+              superAgentProfile.id,
+              order.id,
+              short,
+              totalFmt,
+              storeSlug,
+            ));
+          }
+
+          // Admins: platform-wide new-order visibility (skip when the store
+          // owner IS an admin - they already got the store-owner alert).
+          tasks.push(notifyAdmins(serviceSupabase, {
+            type: 'order_placed',
+            title: `New Order #${short} (${totalFmt})`,
+            body: `${buyerName} Placed A ${totalFmt} Order On ${storeSlug}. Status: ${initialStatus.replace(/_/g, ' ')}.`,
+            url: `/admin/orders?highlight=${order.id}`,
+            skipUserIds: agentProfile ? [agentProfile.id] : [],
+          }));
+
+          // Buyer: placement confirmation (in-app + push).
+          tasks.push(notify(serviceSupabase, {
+            userId: user.id,
+            type: 'order_placed',
+            title: `Order #${short} Placed`,
+            body: initialStatus === 'pending_customer_payment'
+              ? 'Your Order Has Been Placed. Send Your Payment To Keep It Moving - Instructions Are On Your Order Page.'
+              : 'Your Order Has Been Placed. You Will Be Notified When It Is Approved.',
+            url: `/orders/${order.id}`,
+          }));
+
+          await Promise.allSettled(tasks);
+        } catch (notifErr) {
+          // Never propagate - notifications are best-effort. But a silent
+          // swallow here previously meant a broken notify()/enqueuePush()
+          // migration could stop ALL new-order alerts with zero evidence.
+          logError('orders.POST.notifications', { orderId: order.id }, notifErr);
+          captureError(notifErr, { context: 'orders.POST.notifications', orderId: order.id });
+        }
+
+        // Buyer order-confirmation email. Only to a VERIFIED contact email, to
+        // protect sender reputation / deliverability. Now carries the seller's
+        // actual payment handle so the buyer can pay straight from the inbox.
+        if (profile?.contact_email && (profile as { email_verified?: boolean }).email_verified) {
+          try {
+            await sendOrderConfirmationEmail({
+              to: profile.contact_email,
+              fullName: profile.full_name,
+              orderId: order.id,
+              total: orderTotal,
+              itemsSummary,
+              subtotal: Number(subtotal) || null,
+              discount: Number(discountAmount) || null,
+              shippingCost: Number(shippingCost) || null,
+              paymentMethod: initialStatus === 'pending_customer_payment'
+                ? ((PAYMENT_METHOD_LABELS as Record<string, string>)[paymentMethod] ?? paymentMethod)
+                : null,
+              paymentHandle,
+            });
+          } catch { /* ignore */ }
+        }
+      });
     }
 
     return NextResponse.json({
@@ -1216,7 +1839,18 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Order API Route Caught Exception:', error);
+    logError('orders.POST.unhandled', { orderCommitted }, error);
+    captureError(error, { context: 'orders.POST.unhandled', orderCommitted });
+    // Best-effort compensation: if the throw happened after inventory was
+    // reserved / a coupon redeemed / prepaid deducted but BEFORE the order
+    // committed, undo those side effects instead of leaking them.
+    if (!orderCommitted && compensateOnThrow) {
+      try {
+        await compensateOnThrow();
+      } catch (compErr) {
+        captureError(compErr, { context: 'orders.POST.unhandled.compensation_failed', severity: 'critical' });
+      }
+    }
     return NextResponse.json({ error: 'Internal Server Error Occurred.' }, { status: 500 });
   }
 }

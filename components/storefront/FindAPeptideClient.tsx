@@ -76,6 +76,13 @@ export default function FindAPeptideClient({
     setCurrentPath(window.location.pathname + window.location.search);
   }, []);
 
+  // Funnel step: pageview for the guided discovery surface (once per session
+  // per path; dedupe lives in lib/track.ts).
+  useEffect(() => {
+    trackStorefrontEvent(agentSlug, 'pageview');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agentSlug]);
+
   // Load cart on mount
   useEffect(() => {
     try {
@@ -105,6 +112,8 @@ export default function FindAPeptideClient({
             item.custom_image_url ?? item.products?.image_url ?? null,
             item.products?.category || 'Other',
             name,
+            !!item.custom_image_url,
+            agentSlug
           ),
           variants: [],
           lowestPrice: item.retail_price || 0,
@@ -143,9 +152,9 @@ export default function FindAPeptideClient({
         .map(([vId, qty]) => {
           const item = products.find(p => p.id === vId);
           if (!item) return null;
-          const perVial = item.retail_price / 10;
+          const perVial = item.retail_price;
           const costPerVial = isStorefrontOwner && (item as any).cost_price != null
-            ? Number((item as any).cost_price) / 10
+            ? Number((item as any).cost_price)
             : perVial;
           const sizeLabel = item.products?.unit_size
             ? `(${item.products.unit_size}${item.products.unit_measure || ''})`
@@ -193,7 +202,11 @@ export default function FindAPeptideClient({
 
     // Funnel step: the add_to_cart event the agent analytics view counts.
     if (!wasCapped) {
-      trackStorefrontEvent(agentSlug, 'add_to_cart', { product_id: item.product_id });
+      trackStorefrontEvent(agentSlug, 'add_to_cart', {
+        product_id: item.product_id,
+        quantity: 1,
+        amount_cents: Number.isFinite(Number(item.retail_price)) ? Math.round(Number(item.retail_price) * 100) : undefined,
+      });
     }
   }, [products, agentSlug]);
 

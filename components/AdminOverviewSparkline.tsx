@@ -40,6 +40,7 @@ export default function AdminOverviewSparkline({ data }: Props) {
           </div>
         </div>
       </div>
+      <div role="img" aria-label={`Line Chart Of Daily Revenue Over The Last 30 Days, Totaling $${total.toFixed(2)} With A Peak Day Of $${peak.toFixed(2)}`}>
       <ResponsiveContainer width="100%" height={180}>
         <LineChart data={data} margin={{ top: 5, right: 8, bottom: 0, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
@@ -71,6 +72,7 @@ export default function AdminOverviewSparkline({ data }: Props) {
           />
         </LineChart>
       </ResponsiveContainer>
+      </div>
     </div>
   );
 }

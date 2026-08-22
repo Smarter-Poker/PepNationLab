@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { sanitizeUsername, validateUsername } from '@/lib/usernames';
+import { useModalA11y } from '@/lib/useModalA11y';
 
 interface Props {
   open: boolean;
@@ -43,6 +44,9 @@ export default function UsernameChangeModal({
 
   const cleaned = sanitizeUsername(value);
   const validation = validateUsername(cleaned);
+
+  // A11y: initial focus, Tab trap, Escape-to-close, focus restore
+  const dialogRef = useModalA11y<HTMLDivElement>(open, { onClose });
 
   if (!open) return null;
 
@@ -87,6 +91,7 @@ export default function UsernameChangeModal({
 
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-labelledby="username-modal-title"

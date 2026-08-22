@@ -1,8 +1,10 @@
+
 // R24 hotfix - Super-agent rollup of sub-agent sales.
 // Aggregates directly on the orders table (service client) instead of looping
 // through the auth-checked agent_sales_kpis RPC (which rejects service-role).
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { getEffectiveUser } from '@/lib/impersonation';
 import { parseRange } from '@/lib/sales-range';
 
 export const dynamic = 'force-dynamic';
@@ -10,7 +12,7 @@ export const runtime = 'nodejs';
 
 export async function GET(req: Request) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getEffectiveUser(supabase);
   if (!user) return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
 
   const svc = await createServiceClient();
@@ -39,16 +41,19 @@ export async function GET(req: Request) {
   const COLLECTED = ['approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered'];
   const { data: orders } = await svc
     .from('orders')
-    .select('agent_id, total, discount_amount, shipping_cost, is_wholesale_restock, order_items(unit_retail_price, unit_cost_price, quantity)')
+    .select('agent_id, buyer_id, total, discount_amount, shipping_cost, is_wholesale_restock, order_items(unit_retail_price, unit_cost_price, quantity)')
     .in('agent_id', subIds)
     .gte('created_at', start.toISOString())
     .lt('created_at', end.toISOString())
-    .in('status', COLLECTED);
+    .in('status', COLLECTED); // @ts-ignore
 
   const agg: Record<string, { revenue: number; profit: number; orders: number }> = {};
   for (const id of subIds) agg[id] = { revenue: 0, profit: 0, orders: 0 };
   (orders ?? []).forEach((o: any) => {
     if (o.is_wholesale_restock) return;
+    // Skip agent self-buys (buyer is the sub-agent themselves) -- zero-margin
+    // stock purchases, not researcher sales.
+    if (o.buyer_id === o.agent_id) return;
     const a = agg[o.agent_id];
     if (!a) return;
     const total = Number(o.total || 0);

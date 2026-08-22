@@ -8,22 +8,23 @@ import {
   type BulkAction,
   type OrderStatus,
 } from '@/lib/order-states';
-import { enqueueOrderPush, shortOrderId } from '@/lib/push-enqueue';
+import { shortOrderId } from '@/lib/push-enqueue';
 import { enqueueWebhook, fetchOrderForWebhook, type WebhookEventType } from '@/lib/webhook-dispatch';
 import { notifyAdminOrderStatusChange, notifyOrderShipped } from '@/lib/notify';
 import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
-import { purchaseLabelForOrder } from '@/lib/shippo';
-import { emailConfigured, sendOrderShippedEmail, sendOrderDeliveredEmail } from '@/lib/email';
+import { purchaseLabelForOrder } from '@/lib/shipping';
+import { emailConfigured, sendOrderShippedEmail, sendOrderDeliveredEmail, sendOrderCancelledEmail } from '@/lib/email';
+import { logOrderEvent } from '@/lib/order-events';
+import { recomputeBillingForCancelledOrder } from '@/lib/statement-recompute';
 
-// Labels are purchased synchronously from Shippo in this request (manual, on
+// Labels are purchased synchronously from EasyPost in this request (manual, on
 // admin click) - never via a background cron - so allow extra wall-clock time.
 export const maxDuration = 60;
-
-type BulkPushEvent = 'order_approved' | 'order_shipped' | 'order_delivered';
 
 interface BulkBody {
   ids?: unknown;
   action?: unknown;
+  reason?: unknown;
 }
 
 const VALID_ACTIONS: BulkAction[] = [
@@ -48,6 +49,10 @@ export async function POST(req: NextRequest) {
     ? body.ids.filter((x): x is string => typeof x === 'string' && UUID_REGEX.test(x))
     : [];
   const action = body.action as BulkAction;
+  const bulkReason =
+    typeof body.reason === 'string' && body.reason.trim()
+      ? body.reason.trim().slice(0, 300)
+      : 'Bulk admin cancellation';
 
   if (ids.length === 0) {
     return NextResponse.json({ error: 'At Least One Order ID Is Required.' }, { status: 400 });
@@ -108,11 +113,15 @@ export async function POST(req: NextRequest) {
         // and local stock reserved on every bulk-cancelled order.
         const { error } = await supabase.rpc('cancel_order', {
           p_order_id: id,
-          p_reason: 'Bulk admin cancellation',
+          p_reason: bulkReason,
           p_refund_type: 'none',
           p_actor_id: gate.userId,
         });
         upErr = error ? { message: error.message } : null;
+        if (!error) {
+          // Re-settle any weekly bill this order was already rolled into.
+          await recomputeBillingForCancelledOrder(supabase, id, gate.userId).catch(() => { /* best-effort */ });
+        }
       } else {
         const updates: Record<string, string | boolean> = {
           status: target,
@@ -121,14 +130,52 @@ export async function POST(req: NextRequest) {
         if (target === 'approved_ship' || target === 'approved_pickup') {
           (updates as Record<string, string>).agent_approved_at = new Date().toISOString();
         }
-        const { error } = await supabase.from('orders').update(updates).eq('id', id);
+        // Optimistic lock: condition on the status we validated so a concurrent
+        // transition on the same order fails this row cleanly instead of
+        // overwriting it (mirrors the single-order route).
+        const { data: updatedRows, error } = await supabase
+          .from('orders')
+          .update(updates)
+          .eq('id', id)
+          .eq('status', current)
+          .select('id');
         upErr = error ? { message: error.message } : null;
+        if (!error && (!updatedRows || updatedRows.length === 0)) {
+          failed.push({ id, reason: 'Order Status Changed Concurrently.' });
+          continue;
+        }
       }
       if (upErr) {
         failed.push({ id, reason: 'An Unexpected Error Occurred While Updating This Order.' });
         continue;
       }
       succeeded.push(id);
+
+      // Order timeline event for every bulk-driven transition.
+      try {
+        await logOrderEvent(supabase, {
+          orderId: id,
+          event: target === 'cancelled' ? 'cancelled'
+            : target === 'shipped' ? 'shipped'
+            : target === 'delivered' ? 'delivered'
+            : 'approved',
+          actorId: gate.userId ?? undefined,
+          actorRole: 'admin',
+          payload: { from: current, to: target, bulk: true },
+        });
+      } catch { /* timeline must not break the bulk response */ }
+
+      // Credit-line agents: debit their running credit balance for this order's
+      // COGS + shipping on approval. The single-order route does this (see
+      // app/api/admin/orders/route.ts approve branch); the bulk path previously
+      // skipped it, so any order approved via the bulk action never consumed the
+      // agent's credit headroom - a path-dependent under-billing / revenue leak.
+      // charge_order_credit_line is idempotent (skips if a charge row exists).
+      if (target === 'approved_ship' || target === 'approved_pickup') {
+        try {
+          await supabase.rpc('charge_order_credit_line', { p_order_id: id, p_created_by: gate.userId });
+        } catch { /* credit-line ledger must not break the bulk release */ }
+      }
 
       // In-app + push notifications (awaited) for bulk transitions.
       try {
@@ -138,19 +185,11 @@ export async function POST(req: NextRequest) {
           const short = shortOrderId(id);
           // In-app notification - shows in bell immediately via Realtime
           await notifyAdminOrderStatusChange(supabase, buyerId, id, short, target, trackingNum);
-          // Web push
-          let event: BulkPushEvent | null = null;
-          if (target === 'approved_ship' || target === 'approved_pickup') event = 'order_approved';
-          else if (target === 'shipped') event = 'order_shipped';
-          else if (target === 'delivered') event = 'order_delivered';
-          if (event) {
-            await enqueueOrderPush(supabase, { userId: buyerId, orderId: id, event, tracking: trackingNum });
-          }
-
-          // Transactional email for shipped/delivered. Best-effort, non-blocking,
-          // verified email only. canTransition already blocks no-op transitions,
-          // and current !== target is asserted again so no duplicate sends.
-          if ((target === 'shipped' || target === 'delivered') && current !== target && emailConfigured()) {
+          // Transactional email for shipped/delivered/cancelled. Best-effort,
+          // non-blocking, verified email only. canTransition already blocks
+          // no-op transitions, and current !== target is asserted again so no
+          // duplicate sends.
+          if ((target === 'shipped' || target === 'delivered' || target === 'cancelled') && current !== target && emailConfigured()) {
             const { data: buyer } = await supabase
               .from('profiles')
               .select('contact_email, email_verified, full_name')
@@ -159,8 +198,10 @@ export async function POST(req: NextRequest) {
             if (buyer?.contact_email && buyer.email_verified) {
               if (target === 'shipped') {
                 void sendOrderShippedEmail({ to: buyer.contact_email, fullName: buyer.full_name, orderId: id, trackingNumber: trackingNum }).catch(() => {});
-              } else {
+              } else if (target === 'delivered') {
                 void sendOrderDeliveredEmail({ to: buyer.contact_email, fullName: buyer.full_name, orderId: id }).catch(() => {});
+              } else {
+                void sendOrderCancelledEmail({ to: buyer.contact_email, fullName: buyer.full_name, orderId: id }).catch(() => {});
               }
             }
           }
@@ -196,7 +237,12 @@ export async function POST(req: NextRequest) {
           action: 'bulk_order_status_change',
           entity_type: 'orders',
           entity_id: succeeded.join(','),
-          changes: { target_status: target, count: succeeded.length, order_ids: succeeded },
+          changes: {
+            target_status: target,
+            count: succeeded.length,
+            order_ids: succeeded,
+            ...(target === 'cancelled' ? { reason: bulkReason } : {}),
+          },
         });
       } catch { /* audit failures must not block response */ }
     }
@@ -213,8 +259,8 @@ export async function POST(req: NextRequest) {
   // ---- generate_labels (SYNCHRONOUS / MANUAL) ----------------------------
   // Labels are purchased on-demand right here, the moment the admin clicks
   // "Generate Labels" - never queued for a background cron. Each label is
-  // bought from Shippo synchronously and its URL returned in this response.
-  // Capped per request so the synchronous Shippo calls stay within the
+  // bought from EasyPost synchronously and its URL returned in this response.
+  // Capped per request so the synchronous EasyPost calls stay within the
   // function timeout; the admin runs another batch for more.
   if (ids.length > 30) {
     return NextResponse.json(
@@ -241,8 +287,16 @@ export async function POST(req: NextRequest) {
       failed.push({ id, reason: 'Order Is Not A Shipping Order.' });
       continue;
     }
+    // Never buy postage for an order that is not approved for shipping. Without
+    // this, a mixed batch that included a cancelled or unpaid order would spend
+    // real money on a label AND fire a bogus "shipped" push to that buyer.
+    const labelStatus = order.status as OrderStatus;
+    if (!(['approved_ship', 'in_fulfillment', 'shipped'] as OrderStatus[]).includes(labelStatus)) {
+      failed.push({ id, reason: 'Order Is Not Approved For Shipping.' });
+      continue;
+    }
 
-    // Purchase the label NOW (manual, synchronous) via the platform Shippo
+    // Purchase the label NOW (manual, synchronous) via the platform EasyPost
     // account. purchaseLabelForOrder is idempotent per order_id, so a repeat
     // click returns the existing label instead of double-buying.
     const result = await purchaseLabelForOrder(supabase, {
@@ -265,9 +319,17 @@ export async function POST(req: NextRequest) {
       const buyerId = typeof order.buyer_id === 'string' ? order.buyer_id : null;
       if (buyerId) {
         await notifyOrderShipped(supabase, buyerId, id, shortOrderId(id), result.trackingNumber ?? undefined);
-        await enqueueOrderPush(supabase, { userId: buyerId, orderId: id, event: 'order_shipped', tracking: result.trackingNumber });
       }
     } catch { /* notifications must not block the label response */ }
+
+    try {
+      await logOrderEvent(supabase, {
+        orderId: id,
+        event: 'shipped',
+        actorRole: 'admin',
+        payload: { tracking_number: result.trackingNumber ?? null, via: 'bulk_label_purchase' },
+      });
+    } catch { /* timeline must not block the label response */ }
 
     try {
       const orderPayload = await fetchOrderForWebhook(supabase, id);

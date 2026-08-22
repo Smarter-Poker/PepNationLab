@@ -4,26 +4,40 @@
  */
 import type { MetadataRoute } from 'next';
 import { createServiceClient } from '@/lib/supabase/server';
-import { CITIES, getStatesSlugs, CITY_CONTENT_UPDATED } from '@/lib/cities/cities-data';
-import { CITY_COMPOUND_SLUGS } from '@/lib/cities/city-compounds';
+import { getStatesSlugs, CITY_CONTENT_UPDATED } from '@/lib/cities/cities-data';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 import { GUIDES, GUIDES_UPDATED } from '@/lib/research/guides';
 import { COMPARISON_PAIRS, matchupSlug } from '@/lib/research/comparisons';
 import { RESEARCH_AREAS } from '@/lib/compounds';
+import { getSeoIndexableCities } from '@/lib/cities/seo-tier';
+
+// Regenerate at most hourly - each hit builds thousands of URLs and runs up to
+// three 2000-row Supabase queries, which crawlers should not trigger per-request.
+export const revalidate = 3600;
+
 const BASE = 'https://pepnationlab.com';
+
+// Real content-edit date for hand-authored static/hub/list pages. Bump this
+// when their content meaningfully changes. Using a fixed date (instead of
+// `new Date()` at build time) keeps <lastmod> honest - emitting "now" on every
+// deploy tells crawlers everything changed constantly, which dilutes the
+// signal and slows recrawl of pages that DID change.
+const STATIC_CONTENT_UPDATED = new Date('2026-07-11');
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
   const staticPaths: MetadataRoute.Sitemap = [
     // Core
-    { url: `${BASE}/`, lastModified: now, changeFrequency: 'weekly', priority: 1.0 },
-    { url: `${BASE}/about`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${BASE}/become-agent`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${BASE}/contact`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${BASE}/find-a-peptide`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
-    { url: `${BASE}/peptide-101`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${BASE}/${DEFAULT_STORE_SLUG}`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${BASE}/`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 1.0 },
+    { url: `${BASE}/about`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.8 },
+    { url: `${BASE}/become-agent`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE}/contact`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE}/find-a-peptide`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${BASE}/coa`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE}/help`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${BASE}/peptide-101`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.8 },
+    { url: `${BASE}/${DEFAULT_STORE_SLUG}`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.9 },
 
     // Local SEO - Peptides by City (hub + states; city URLs are emitted once
     // below with tier-scored priority - do NOT list them twice)
@@ -36,52 +50,55 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
 
     // Legal / Compliance
-    { url: `${BASE}/compliance`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
-    { url: `${BASE}/disclaimer`, lastModified: now, changeFrequency: 'monthly', priority: 0.4 },
-    { url: `${BASE}/privacy`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
-    { url: `${BASE}/terms`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${BASE}/compliance`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${BASE}/disclaimer`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.4 },
+    { url: `${BASE}/privacy`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${BASE}/terms`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.5 },
 
     // Research Library - Hub Pages
-    { url: `${BASE}/research`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
-    { url: `${BASE}/research/areas`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${BASE}/research/about-areas`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${BASE}/research/catalog`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
-    { url: `${BASE}/research/a-z`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
-    { url: `${BASE}/research/glossary`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${BASE}/research/faq`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${BASE}/research/learn`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${BASE}/research/evidence`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
+    { url: `${BASE}/research`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'daily', priority: 0.9 },
+    { url: `${BASE}/research/areas`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.8 },
+    { url: `${BASE}/research/about-areas`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE}/research/catalog`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${BASE}/research/a-z`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.7 },
+    { url: `${BASE}/research/glossary`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE}/research/faq`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE}/research/learn`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE}/research/evidence`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.6 },
 
     // Research Library - Tools
-    { url: `${BASE}/research/calculators`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${BASE}/research/compare`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
-    { url: `${BASE}/research/stacks`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
-    { url: `${BASE}/research/match`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE}/research/calculators`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE}/research/compare`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${BASE}/research/stacks`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${BASE}/research/match`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.7 },
 
     // Research Library - Browse Filters
-    { url: `${BASE}/research/by-class`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
-    { url: `${BASE}/research/by-target`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
-    { url: `${BASE}/research/by-mechanism`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
-    { url: `${BASE}/research/by-route`, lastModified: now, changeFrequency: 'weekly', priority: 0.5 },
-    { url: `${BASE}/research/by-half-life`, lastModified: now, changeFrequency: 'weekly', priority: 0.5 },
-    { url: `${BASE}/research/by-mw`, lastModified: now, changeFrequency: 'weekly', priority: 0.5 },
+    { url: `${BASE}/research/by-class`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.6 },
+    { url: `${BASE}/research/by-target`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.6 },
+    { url: `${BASE}/research/by-mechanism`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.6 },
+    { url: `${BASE}/research/by-route`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.5 },
+    { url: `${BASE}/research/by-half-life`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.5 },
+    { url: `${BASE}/research/by-mw`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.5 },
 
     // Research Library - Curated Lists
-    { url: `${BASE}/research/most-cited`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
-    { url: `${BASE}/research/most-studied-2026`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
-    { url: `${BASE}/research/new-additions`, lastModified: now, changeFrequency: 'daily', priority: 0.7 },
-    { url: `${BASE}/research/approved-drugs`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
-    { url: `${BASE}/research/intranasal-peptides`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
-    { url: `${BASE}/research/timeline`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
+    { url: `${BASE}/research/most-cited`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.7 },
+    { url: `${BASE}/research/most-studied-2026`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.6 },
+    { url: `${BASE}/research/new-additions`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'daily', priority: 0.7 },
+    { url: `${BASE}/research/approved-drugs`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.6 },
+    { url: `${BASE}/research/intranasal-peptides`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${BASE}/research/timeline`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.6 },
 
     // Research Library - Pipeline / Status
-    { url: `${BASE}/research/in-pipeline`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
-    { url: `${BASE}/research/discontinued`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
-    { url: `${BASE}/research/orphan-drugs`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
-    { url: `${BASE}/research/correlated`, lastModified: now, changeFrequency: 'weekly', priority: 0.5 },
+    { url: `${BASE}/research/in-pipeline`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.6 },
+    { url: `${BASE}/research/discontinued`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${BASE}/research/orphan-drugs`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${BASE}/research/correlated`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.5 },
 
     // Research Library - API Docs
-    { url: `${BASE}/research/api-docs`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${BASE}/research/api-docs`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.5 },
+
+    // Research Library - References Hub (aggregates all citations)
+    { url: `${BASE}/research/references`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'weekly', priority: 0.7 },
 
     // Research Library - Editorial Guides
     { url: `${BASE}/research/guides`, lastModified: new Date(GUIDES_UPDATED), changeFrequency: 'monthly', priority: 0.7 },
@@ -93,10 +110,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
 
     // Research Library - Editorial Standards + Compound Comparisons
-    { url: `${BASE}/research/methodology`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${BASE}/research/methodology`, lastModified: STATIC_CONTENT_UPDATED, changeFrequency: 'monthly', priority: 0.6 },
     ...COMPARISON_PAIRS.map((p) => ({
       url: `${BASE}/research/compare/${matchupSlug(p.a, p.b)}`,
-      lastModified: now,
+      lastModified: STATIC_CONTENT_UPDATED,
       changeFrequency: 'monthly' as const,
       priority: 0.6,
     })),
@@ -105,7 +122,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // category landing pages (weight management, tissue repair, cognitive, etc).
     ...Object.keys(RESEARCH_AREAS).map((area) => ({
       url: `${BASE}/research/area/${area}`,
-      lastModified: now,
+      lastModified: STATIC_CONTENT_UPDATED,
       changeFrequency: 'weekly' as const,
       priority: 0.8,
     })),
@@ -140,9 +157,35 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     for (const t of ((targetData ?? []) as Array<{ receptors: string[] | null }>)) {
       if (Array.isArray(t.receptors)) for (const r of t.receptors) targets.add(r);
     }
-    // NOTE: /research/area/ hubs are now indexable and emitted above (in
-    // staticPaths). /research/by-target/ pages remain noindexed (thin filter
-    // pages) and are intentionally excluded to avoid Search Console warnings.
+
+    // Per-compound sub-pages: /references and /regulatory are now indexed.
+    // /spec and /structure remain noindexed (print tool / 3D viewer).
+    for (const r of rows) {
+      compounds.push(
+        {
+          url: `${BASE}/research/${r.slug}/references`,
+          lastModified: r.updated_at ? new Date(r.updated_at) : now,
+          changeFrequency: 'monthly' as const,
+          priority: 0.5,
+        },
+        {
+          url: `${BASE}/research/${r.slug}/regulatory`,
+          lastModified: r.updated_at ? new Date(r.updated_at) : now,
+          changeFrequency: 'monthly' as const,
+          priority: 0.5,
+        },
+      );
+    }
+
+    // /research/by-target/[target] pages are now indexed — emit them.
+    for (const target of targets) {
+      compounds.push({
+        url: `${BASE}/research/by-target/${encodeURIComponent(target)}`,
+        lastModified: STATIC_CONTENT_UPDATED,
+        changeFrequency: 'monthly' as const,
+        priority: 0.5,
+      });
+    }
   } catch {
     // best-effort: fall back to static paths only
   }
@@ -154,30 +197,28 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     2: 'weekly',
     3: 'monthly',
   };
-  const cityPages: MetadataRoute.Sitemap = CITIES.map((city) => ({
+  // 2026-08-14 SEO audit: only the retained major-metro set is sitemapped
+  // (lib/cities/seo-tier.ts — ~190 cities with population >= 150k plus the
+  // one page Google had already indexed). The long tail is noindex,follow
+  // and deliberately absent here: advertising 2,445 URLs Google refused to
+  // index made the sitemap read as low-quality inventory and burned the
+  // crawl budget the retained set needs.
+  const cityPages: MetadataRoute.Sitemap = getSeoIndexableCities().map((city) => ({
     url: `${BASE}/peptides/${city.stateSlug}/${city.slug}`,
     lastModified: CITY_CONTENT_UPDATED,
     changeFrequency: cityChangeFreq[city.tier] ?? 'monthly',
     priority: cityPriority[city.tier] ?? 0.6,
   }));
 
-  // Compound-city landing pages - buying-intent long-tail (e.g.
-  // "BPC-157 Oak Lawn"). One URL per city x curated compound. These are
-  // rendered on demand via ISR (no generateStaticParams) so they do not affect
-  // build time. Flat 0.5 priority so they never outrank the city hubs above.
-  // NOTE: intentionally NOT added to the bulk IndexNow submission - the full
-  // set would approach the IndexNow cap and drown priority URLs.
-  const compoundCityPages: MetadataRoute.Sitemap = [];
-  for (const city of CITIES) {
-    for (const compoundSlug of CITY_COMPOUND_SLUGS) {
-      compoundCityPages.push({
-        url: `${BASE}/peptides/${city.stateSlug}/${city.slug}/${compoundSlug}`,
-        lastModified: CITY_CONTENT_UPDATED,
-        changeFrequency: 'monthly' as const,
-        priority: 0.5,
-      });
-    }
-  }
+  // Compound-city pages (/peptides/*/*/*) are intentionally excluded from the
+  // sitemap: at current domain authority they were crawl-budget sinks (Google
+  // "Discovered/Crawled - not indexed"). The routes stay live and tier-1/2
+  // remain indexable via internal links.
+  
+  // Tier-3 compound-city pilot URLs removed 2026-08-14: the whole
+  // compound-city layer is now noindex (treatment-intent SERPs owned by
+  // clinics — unwinnable for a mail-order research supplier), so
+  // sitemapping the pilots would advertise URLs that ask not to be indexed.
 
-  return [...staticPaths, ...compounds, ...cityPages, ...compoundCityPages];
+  return [...staticPaths, ...compounds, ...cityPages];
 }

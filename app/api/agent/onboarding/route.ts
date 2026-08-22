@@ -1,3 +1,4 @@
+
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { createAdminClient } from '@/lib/supabase/server';
@@ -23,9 +24,12 @@ export const dynamic = 'force-dynamic';
  * into protected columns (role, tier, commission_pct, balances, etc.). Every
  * write is scoped to the authenticated caller's own id.
  *
- * The notifications step is VERIFIED, not acknowledged: it is only "done" when
- * an active push_subscriptions row exists for the user (enablePush persists one
- * via /api/push/subscribe). There is no "I have done this" bypass.
+ * The notifications step is best-effort: it is "done" when an active
+ * push_subscriptions row exists for the user (enablePush persists one via
+ * /api/push/subscribe) OR the user acknowledged enabling them later. Web push
+ * cannot be created on some surfaces (iOS Safari/Brave tabs, in-app browsers),
+ * so it must never hard-gate onboarding -- doing so trapped those users on
+ * step 1 forever. They can still enable push afterward from the dashboard.
  */
 
 // Default super-agent markup (percent; stored as a decimal fraction).
@@ -84,8 +88,11 @@ function buildSteps(args: {
     steps.push({ key: 'password', label: 'Secure Your Password', done: false });
   }
 
-  // 2. Install + notifications (all roles). Verified by a real subscription.
-  steps.push({ key: 'notifications', label: 'Install The App And Turn On Notifications', done: notificationsDone });
+  // 2. Install + notifications (all roles). Done when a real subscription
+  // exists OR the user acknowledged enabling them later -- web push is
+  // impossible on iOS Safari/Brave tabs and in-app browsers, so a hard
+  // subscription requirement would trap those users on this step forever.
+  steps.push({ key: 'notifications', label: 'Install The App And Turn On Notifications', done: notificationsDone || ack('notifications_ack') });
 
   // 3. Verify profile (all roles).
   steps.push({ key: 'profile', label: 'Confirm Your Contact Details', done: profileComplete });
@@ -278,7 +285,7 @@ const WarehouseSchema = z.object({
 });
 
 const PostSchema = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('ack'), key: z.enum(['storefront', 'product_tutorial', 'downstream_tutorial', 'billing', 'share', 'compliance']) }),
+  z.object({ action: z.literal('ack'), key: z.enum(['notifications', 'storefront', 'product_tutorial', 'downstream_tutorial', 'billing', 'share', 'compliance']) }),
   z.object({ action: z.literal('profile'), data: ProfileSchema }),
   z.object({ action: z.literal('warehouse'), data: WarehouseSchema }),
   z.object({ action: z.literal('markup'), markup_pct: z.number().min(0).max(500) }),
@@ -288,6 +295,7 @@ const PostSchema = z.discriminatedUnion('action', [
 ]);
 
 const ACK_COLUMN: Record<string, string> = {
+  notifications: 'notifications_ack',
   storefront: 'storefront_ack',
   product_tutorial: 'product_tutorial_ack',
   downstream_tutorial: 'downstream_tutorial_ack',
@@ -312,7 +320,7 @@ export async function POST(req: NextRequest) {
   const service = createAdminClient();
   const { data: profile } = await service
     .from('profiles')
-    .select('id, role, is_super_agent, is_sub_agent, onboarding_progress, must_change_password, first_name, last_name, email, phone, custom_markup_override')
+    .select('id, role, is_super_agent, is_sub_agent, parent_agent_id, onboarding_progress, must_change_password, first_name, last_name, email, phone, custom_markup_override')
     .eq('id', gate.user.id)
     .maybeSingle();
   if (!profile) return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
@@ -325,6 +333,7 @@ export async function POST(req: NextRequest) {
   // Helper to merge an acknowledgment flag into onboarding_progress.
   const setAck = async (col: string) => {
     const progress = { ...((profile.onboarding_progress as Record<string, unknown>) ?? {}), [col]: true };
+    //  Database schema mismatch from generated types
     return service.from('profiles').update({ onboarding_progress: progress }).eq('id', gate.user.id);
   };
 
@@ -382,17 +391,24 @@ export async function POST(req: NextRequest) {
     if (role !== 'super_agent') {
       return NextResponse.json({ error: 'only_super_agents_set_markup' }, { status: 403 });
     }
-    // Store as a decimal fraction (50% -> 0.50) in the uncapped override column.
-    const fraction = Math.round((parsed.data.markup_pct / 100) * 10000) / 10000;
     // Atomically also mark the product tutorial acknowledged. The super-agent
     // markup step IS the product-pricing tutorial; the client previously sent a
     // separate ack POST after this one, so a failure of that second call left the
     // markup saved but the step incomplete. Persisting both here closes that
     // partial-write window (the client's follow-up ack is then idempotent).
     const mergedProgress = { ...((profile.onboarding_progress as Record<string, unknown>) ?? {}), product_tutorial_ack: true };
+    const update: Record<string, unknown> = { onboarding_progress: mergedProgress };
+    // Parented accounts are chain-priced via commission_pct on their upline
+    // chain, so custom_markup_override only applies to top-level accounts --
+    // lib/pricing ignores it for a parented (non-sub-agent) profile. Skip the
+    // dead write here for a nested Super Agent and just complete the step.
+    if (!profile.parent_agent_id) {
+      // Store as a decimal fraction (50% -> 0.50) in the uncapped override column.
+      update.custom_markup_override = Math.round((parsed.data.markup_pct / 100) * 10000) / 10000;
+    }
     const { error } = await service
       .from('profiles')
-      .update({ custom_markup_override: fraction, onboarding_progress: mergedProgress })
+      .update(update)
       .eq('id', gate.user.id);
     if (error) return NextResponse.json({ error: 'markup_update_failed' }, { status: 500 });
     return NextResponse.json({ ok: true, markup_pct: parsed.data.markup_pct });
@@ -447,8 +463,11 @@ export async function POST(req: NextRequest) {
 
     const missing: string[] = [];
     if (profile.must_change_password === true) missing.push('password');
-    // Notifications must be VERIFIED by a real subscription, not acknowledged.
-    if (!(await hasActivePushSubscription(service, gate.user.id))) missing.push('notifications');
+    // Notifications: done when a real subscription exists OR the user
+    // acknowledged enabling them later. Push cannot be created on some surfaces
+    // (iOS Safari/Brave tabs, in-app browsers); a hard requirement would make
+    // onboarding impossible to finish there. Still available from the dashboard.
+    if (!(await hasActivePushSubscription(service, gate.user.id)) && !ack('notifications_ack')) missing.push('notifications');
     const profileComplete = Boolean(
       (profile.first_name && String(profile.first_name).trim()) &&
       (profile.last_name && String(profile.last_name).trim()) &&

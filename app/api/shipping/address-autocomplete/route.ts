@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic';
  *   - If MAPBOX_TOKEN is set, use Mapbox geocoding (one call, structured parts).
  *   - Otherwise fall back to Photon (komoot) -- a free, key-less OpenStreetMap
  *     geocoder suitable for low-volume type-ahead.
- * Either way the final address is still validated/standardized by Shippo when
+ * Either way the final address is still validated/standardized by EasyPost when
  * the user saves the step, so this layer only needs to speed up entry.
  *
  * This is a best-effort helper: any upstream failure returns an empty list so
@@ -25,7 +25,7 @@ export const dynamic = 'force-dynamic';
 
 type Suggestion = { label: string; street1: string; city: string; state: string; zip: string };
 
-// Photon returns full state names; the form + Shippo expect 2-letter codes.
+// Photon returns full state names; the form + EasyPost expect 2-letter codes.
 const STATE_ABBR: Record<string, string> = {
   alabama: 'AL', alaska: 'AK', arizona: 'AZ', arkansas: 'AR', california: 'CA',
   colorado: 'CO', connecticut: 'CT', delaware: 'DE', 'district of columbia': 'DC',

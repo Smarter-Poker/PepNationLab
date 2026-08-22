@@ -1,4 +1,5 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { isEffectiveAdmin } from '@/lib/platform-admins';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import ReparentControl from '@/components/admin/ReparentControl';
@@ -21,7 +22,7 @@ interface TreeRow {
 }
 
 function fmtMoney(n: number): string {
-  return `$${Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `$${(Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function roleBadge(row: TreeRow): { label: string; color: string } {
@@ -36,8 +37,8 @@ export default async function AdminNetworkPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
-  const { data: profile } = await supabase.from('profiles').select('role, is_active').eq('id', user.id).maybeSingle();
-  if (profile?.role !== 'admin' || profile?.is_active === false) redirect('/dashboard');
+  const { data: profile } = await supabase.from('profiles').select('role, is_active, is_admin_account').eq('id', user.id).maybeSingle();
+  if (!isEffectiveAdmin(user.id, profile?.role) && profile?.is_admin_account !== true || profile?.is_active === false) redirect('/dashboard');
 
   const svc = await createServiceClient();
   const { data, error } = await svc.rpc('fn_admin_downline_tree', { p_days: 30 });

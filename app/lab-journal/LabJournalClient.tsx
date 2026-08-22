@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useTransition, useEffect, useMemo } from 'react';
+import { useState, useTransition, useEffect, useMemo, useRef, useCallback } from 'react';
 import SmartStackBuilder from '@/components/researcher/SmartStackBuilder';
-import { Heart, Trash2, ExternalLink, PackageOpen, History, LayoutGrid, List as ListIcon, Search, X, Check, ShoppingCart, Info, TrendingUp, TrendingDown, XCircle, Layers, FlaskConical, Zap, Target, Activity, Calendar, Syringe, Flame, Clock, Droplet, MapPin, Repeat, ChevronRight, Beaker, Gauge, Camera } from 'lucide-react';
+import { Heart, Trash2, ExternalLink, PackageOpen, History, LayoutGrid, List as ListIcon, Search, X, Check, ShoppingCart, Info, TrendingUp, TrendingDown, XCircle, Layers, FlaskConical, Zap, Target, Activity, Calendar, Syringe, Flame, Clock, Droplet, MapPin, Repeat, ChevronRight, Beaker, Gauge, Camera, Bell, BellOff, DollarSign } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import Image from 'next/image';
 import { toast } from 'sonner';
 import { getProductImage } from '@/lib/categoryImage';
 import DynamicAddToCartButton from '@/components/storefront/DynamicAddToCartButton';
+import { reportClientError } from '@/lib/report-client-error';
 
 // recharts (~400KB) is code-split: the default 'bundles' tab renders no charts,
 // so most Lab Journal visits never download it.
@@ -44,6 +45,10 @@ interface Props {
   trending: Item[];
   categories: string[];
   storefrontSlug: string | null;
+  /** Server-resolved: this journal shops a Savage-network catalog. */
+  brandNetworkIsSavage?: boolean;
+  /** When true the viewer is an agent using the lab journal to add from their own storefront. */
+  isAgentSelfBuy?: boolean;
 }
 
 const GOAL_MAPPINGS: Record<string, string[]> = {
@@ -116,7 +121,32 @@ function dayKey(d: Date | string | number): string {
   return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
 }
 
-export default function LabJournalClient({ favorites: initialFavorites, pastOrders, recentlyViewed: initialRecentlyViewed, bundles, catalog, trending, categories, storefrontSlug }: Props) {
+function CycleEditor({ id, cycleStartDates, cycleLengthWeeks, cycleOffWeeks, reminderTimes, onSave }: {
+  id: string;
+  cycleStartDates: Record<string, string>;
+  cycleLengthWeeks: Record<string, number>;
+  cycleOffWeeks: Record<string, number>;
+  reminderTimes: Record<string, string>;
+  onSave: (id: string, start: string, len: number, off: number, rem: string) => void;
+}) {
+  const [localStart, setLocalStart] = useState(cycleStartDates[id] || '');
+  const [localLen, setLocalLen] = useState(cycleLengthWeeks[id] || 8);
+  const [localOff, setLocalOff] = useState(cycleOffWeeks[id] || 4);
+  const [localRem, setLocalRem] = useState(reminderTimes[id] || '08:00');
+  return (
+    <div style={{ marginTop: 6, padding: 10, background: 'rgba(0,0,0,0.2)', borderRadius: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+        <div><div style={{ color: 'var(--silver)', fontSize: '0.68rem', marginBottom: 2 }}>Cycle Start</div><input type="date" value={localStart} onChange={e => setLocalStart(e.target.value)} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', borderRadius: 6, color: 'var(--white)', fontSize: '0.8rem' }} /></div>
+        <div><div style={{ color: 'var(--silver)', fontSize: '0.68rem', marginBottom: 2 }}>Daily Reminder</div><input type="time" value={localRem} onChange={e => setLocalRem(e.target.value)} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', borderRadius: 6, color: 'var(--white)', fontSize: '0.8rem' }} /></div>
+        <div><div style={{ color: 'var(--silver)', fontSize: '0.68rem', marginBottom: 2 }}>On-cycle (wks)</div><input type="number" min={1} max={52} value={localLen} onChange={e => setLocalLen(parseInt(e.target.value) || 8)} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', borderRadius: 6, color: 'var(--white)', fontSize: '0.8rem' }} /></div>
+        <div><div style={{ color: 'var(--silver)', fontSize: '0.68rem', marginBottom: 2 }}>Off-cycle (wks)</div><input type="number" min={0} max={52} value={localOff} onChange={e => setLocalOff(parseInt(e.target.value) || 4)} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', borderRadius: 6, color: 'var(--white)', fontSize: '0.8rem' }} /></div>
+      </div>
+      <button onClick={() => onSave(id, localStart, localLen, localOff, localRem)} style={{ background: 'rgba(0,196,188,0.15)', border: '1px solid rgba(0,196,188,0.3)', color: 'var(--teal)', borderRadius: 6, padding: '6px 12px', fontSize: '0.78rem', cursor: 'pointer' }}>Save Cycle Settings</button>
+    </div>
+  );
+}
+
+export default function LabJournalClient({ favorites: initialFavorites, pastOrders, recentlyViewed: initialRecentlyViewed, bundles, catalog, trending, categories, storefrontSlug, isAgentSelfBuy = false, brandNetworkIsSavage = false }: Props) {
   const [favorites, setFavorites] = useState<Item[]>(initialFavorites);
   const [recentlyViewed, setRecentlyViewed] = useState<Item[]>(initialRecentlyViewed);
   const [, startTransition] = useTransition();
@@ -180,7 +210,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   };
   
   // UX Features State
-  const [activeTab, setActiveTab] = useState<'bundles' | 'favorites' | 'recentlyViewed' | 'inventory' | 'compareHistory' | 'notes' | 'doses' | 'biometrics' | 'goals' | 'progress'>('bundles');
+  const [activeTab, setActiveTab] = useState<'bundles' | 'favorites' | 'recentlyViewed' | 'inventory' | 'compareHistory' | 'notes' | 'doses' | 'biometrics' | 'goals' | 'progress'>('doses');
 
   // Progress Photos state
   const [progressPhotos, setProgressPhotos] = useState<any[]>([]);
@@ -226,6 +256,100 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   const [scheduleUnit, setScheduleUnit] = useState('mcg');
   const [scheduleFrequency, setScheduleFrequency] = useState('Every Day');
   const [selectedSite, setSelectedSite] = useState<string>('');
+
+  // Cycle Tracker State
+  const [cycleStartDates, setCycleStartDates] = useState<Record<string, string>>({});
+  const [cycleLengthWeeks, setCycleLengthWeeks] = useState<Record<string, number>>({});
+  const [cycleOffWeeks, setCycleOffWeeks] = useState<Record<string, number>>({});
+  const [reminderTimes, setReminderTimes] = useState<Record<string, string>>({});
+  const [showCycleEditor, setShowCycleEditor] = useState<string | null>(null);
+
+  // Quick-Log FAB State
+  const [quickLogOpen, setQuickLogOpen] = useState(false);
+  const [quickCompound, setQuickCompound] = useState('');
+  const [quickAmount, setQuickAmount] = useState('');
+  const [quickUnit, setQuickUnit] = useState('mcg');
+  const [quickSaving, setQuickSaving] = useState(false);
+
+  // Symptom Log State
+  const [symptoms, setSymptoms] = useState<any[]>([]);
+  const [symptomName, setSymptomName] = useState('');
+  const [symptomSeverity, setSymptomSeverity] = useState(5);
+  const [symptomNote, setSymptomNote] = useState('');
+  const [symptomSaving, setSymptomSaving] = useState(false);
+
+  // Protocol Cost Tracking State
+  const [protocolCosts, setProtocolCosts] = useState<Record<string, number>>({});
+
+  // Photo Compare State
+  const [comparePhotoA, setComparePhotoA] = useState<any>(null);
+  const [comparePhotoB, setComparePhotoB] = useState<any>(null);
+  const [sliderPos, setSliderPos] = useState(50);
+  const [showPhotoCompare, setShowPhotoCompare] = useState(false);
+
+  // Expiry banner state
+  const [expBannerDismissed, setExpBannerDismissed] = useState(false);
+
+  // Push Notifications State
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission | 'unsupported'>('default');
+  const notifTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Frequency label helper
+  const freqLabel = (f: string): string => {
+    const s = (f || '').toLowerCase();
+    if (s.includes('every day') || s.includes('daily')) return 'Take Daily';
+    if (s.includes('every other')) return 'Every Other Day';
+    if (s.includes('5 days')) return '5 Days On · 2 Off';
+    if (s.includes('twice')) return 'Twice Weekly';
+    if (s.includes('once') || s.includes('weekly')) return 'Once Weekly';
+    return f;
+  };
+
+  // Push Notification helpers
+  const requestNotifPermission = useCallback(async () => {
+    if (!('Notification' in window)) { setNotifPermission('unsupported'); return; }
+    const result = await Notification.requestPermission();
+    setNotifPermission(result);
+    if (result === 'granted') {
+      new Notification('PepNationLab Dose Alerts Enabled', {
+        body: 'You will be reminded when a protocol dose is due.',
+        icon: '/icon-192.png',
+      });
+      // Also register a SW push subscription so alerts work when tab is closed
+      try {
+        if ('serviceWorker' in navigator && 'PushManager' in window) {
+          const reg = await navigator.serviceWorker.ready;
+          const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+          if (vapidKey) {
+            const sub = await reg.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: vapidKey,
+            });
+            const subJson = sub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };
+            await fetch('/api/push/subscribe', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                endpoint: subJson.endpoint,
+                keys: subJson.keys,
+                deviceLabel: 'Lab Journal',
+              }),
+            }).catch(() => {});
+          }
+        }
+      } catch (_) { /* PushManager may be blocked in some browsers — local Notification is sufficient fallback */ }
+    }
+  }, []);
+
+  const sendDoseReminder = useCallback((compoundName: string) => {
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+      new Notification(`Dose Due: ${compoundName}`, {
+        body: `Your protocol schedule shows ${compoundName} is due today. Log your dose in the Lab Journal.`,
+        icon: '/icon-192.png',
+        tag: `dose-${compoundName}`,
+      });
+    }
+  }, []);
 
   // Check cart status
 
@@ -497,14 +621,67 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     syncLegacyData();
   }, []);
 
+  // Initialize notification permission from browser on mount + schedule daily dose reminders
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setNotifPermission(Notification.permission);
+    } else {
+      setNotifPermission('unsupported');
+    }
+  }, []);
+
+  // Auto-fire reminders once per page load if permission already granted and doses are due
+  useEffect(() => {
+    if (notifPermission !== 'granted' || scheduledDoses.length === 0) return;
+    const due = scheduledDoses.filter(s => scheduleDueStatus(s).status === 'due');
+    if (due.length === 0) return;
+    // Small delay to not immediately fire on page load — gives the user a moment first
+    const t = setTimeout(() => {
+      due.forEach(s => sendDoseReminder(s.compound_slug || s.compound));
+    }, 8000);
+    notifTimerRef.current = t;
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notifPermission, scheduledDoses]);
+
+  // Schedule per-protocol timed reminders based on saved reminderTimes
+  // Fires a local Notification at the user's chosen HH:MM each day.
+  useEffect(() => {
+    if (notifPermission !== 'granted') return;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    Object.entries(reminderTimes).forEach(([protocolId, timeStr]) => {
+      if (!timeStr) return;
+      const protocol = scheduledDoses.find(s => s.id === protocolId);
+      if (!protocol) return;
+      const [hh, mm] = timeStr.split(':').map(Number);
+      if (isNaN(hh) || isNaN(mm)) return;
+      const now = new Date();
+      const fire = new Date();
+      fire.setHours(hh, mm, 0, 0);
+      // If the time has already passed today, schedule for tomorrow
+      if (fire.getTime() <= now.getTime()) fire.setDate(fire.getDate() + 1);
+      const msUntilFire = fire.getTime() - now.getTime();
+      const t = setTimeout(() => {
+        sendDoseReminder(protocol.compound_slug || protocol.compound);
+      }, msUntilFire);
+      timers.push(t);
+    });
+    return () => timers.forEach(clearTimeout);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notifPermission, reminderTimes, scheduledDoses]);
+
   const updateInventory = async (productId: string, field: string, value: any) => {
+    // Optimistic write with rollback: recon_mg/recon_ml/recon_dose feed the
+    // per-vial dose display, so silently keeping unsaved values on screen is
+    // a dosing-data integrity problem, not just a UX one.
+    const previous = inventoryData;
     const updated = { ...inventoryData };
     if (!updated[productId]) updated[productId] = { on_hand: 1, lot: '', expiration: '' };
     updated[productId] = { ...updated[productId], [field]: value };
     setInventoryData(updated);
-    
+
     try {
-      await fetch('/api/researcher/inventory', {
+      const res = await fetch('/api/researcher/inventory', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -517,7 +694,16 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
           recon_dose: updated[productId].recon_dose
         })
       });
-    } catch {}
+      if (!res.ok) {
+        setInventoryData(previous);
+        toast.error('Could Not Save Inventory Changes. Please Try Again.');
+        reportClientError('lab-journal.update-inventory', new Error(`HTTP ${res.status}`));
+      }
+    } catch (e) {
+      setInventoryData(previous);
+      toast.error('Could Not Save Inventory Changes. Please Try Again.');
+      reportClientError('lab-journal.update-inventory', e);
+    }
   };
 
   const addScheduledDose = async () => {
@@ -530,12 +716,17 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      const data = await res.json();
-      if (res.ok && data.protocol) {
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.protocol) {
         setScheduledDoses(prev => [data.protocol, ...prev]);
         setScheduleCompound(''); setScheduleAmount('');
+      } else {
+        toast.error('Could Not Save Scheduled Dose. Please Try Again.');
       }
-    } catch {}
+    } catch (e) {
+      toast.error('Could Not Save Scheduled Dose. Please Try Again.');
+      reportClientError('lab-journal.add-scheduled-dose', e);
+    }
   };
 
   const deleteScheduledDose = async (id: string) => {
@@ -544,9 +735,14 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id })
+      }).then(res => {
+        if (res.ok) setScheduledDoses(prev => prev.filter(s => s.id !== id));
+        else toast.error('Could Not Delete Scheduled Dose. Please Try Again.');
       });
-      setScheduledDoses(prev => prev.filter(s => s.id !== id));
-    } catch {}
+    } catch (e) {
+      toast.error('Could Not Delete Scheduled Dose. Please Try Again.');
+      reportClientError('lab-journal.delete-scheduled-dose', e);
+    }
   };
 
   // Compute whether a scheduled protocol is due today, based on its frequency and the
@@ -624,6 +820,11 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
       .then(res => res.json())
       .then(data => { if (data.photos) setProgressPhotos(data.photos); })
       .catch(console.error);
+
+    // Symptoms (may 404 if API not yet created — gracefully ignore)
+    fetch('/api/researcher/symptoms').then(res => {
+      if (res.ok) return res.json().then(sd => setSymptoms(sd.symptoms || []));
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -640,6 +841,119 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
       })
       .catch(() => setIntelligenceData(null));
   }, [intelligenceCompound]);
+
+  // Load cycle/reminder state from localStorage
+  useEffect(() => {
+    try {
+      const c = localStorage.getItem('pnl_cycle_data');
+      if (c) {
+        const parsed = JSON.parse(c);
+        setCycleStartDates(parsed.startDates || {});
+        setCycleLengthWeeks(parsed.lengthWeeks || {});
+        setCycleOffWeeks(parsed.offWeeks || {});
+        setReminderTimes(parsed.reminderTimes || {});
+      }
+    } catch {}
+  }, []);
+
+  // Load protocol costs from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('pnl_protocol_costs');
+      if (saved) setProtocolCosts(JSON.parse(saved));
+    } catch {}
+  }, []);
+
+  const saveCycleData = (id: string, startDate: string, lengthWks: number, offWks: number, remTime: string) => {
+    const newStarts = { ...cycleStartDates, [id]: startDate };
+    const newLength = { ...cycleLengthWeeks, [id]: lengthWks };
+    const newOff = { ...cycleOffWeeks, [id]: offWks };
+    const newRem = { ...reminderTimes, [id]: remTime };
+    setCycleStartDates(newStarts);
+    setCycleLengthWeeks(newLength);
+    setCycleOffWeeks(newOff);
+    setReminderTimes(newRem);
+    setShowCycleEditor(null);
+    try {
+      localStorage.setItem('pnl_cycle_data', JSON.stringify({ startDates: newStarts, lengthWeeks: newLength, offWeeks: newOff, reminderTimes: newRem }));
+    } catch {}
+  };
+
+  const getCycleStatus = (id: string): { phase: 'active' | 'off' | 'none'; daysLeft: number; label: string } => {
+    const start = cycleStartDates[id];
+    const len = cycleLengthWeeks[id] || 8;
+    const off = cycleOffWeeks[id] || 4;
+    if (!start) return { phase: 'none', daysLeft: 0, label: '' };
+    const startMs = new Date(start).getTime();
+    const now = Date.now();
+    const daysSinceStart = Math.floor((now - startMs) / 86400000);
+    const cycleDays = len * 7;
+    const offDays = off * 7;
+    const totalCycle = cycleDays + offDays;
+    const posInCycle = daysSinceStart % totalCycle;
+    if (posInCycle < cycleDays) {
+      const daysLeft = cycleDays - posInCycle;
+      return { phase: 'active', daysLeft, label: `On-cycle \u00b7 ${daysLeft}d left` };
+    } else {
+      const daysLeft = totalCycle - posInCycle;
+      return { phase: 'off', daysLeft, label: `Off-cycle \u00b7 ${daysLeft}d left` };
+    }
+  };
+
+  const setProtocolCost = (id: string, cost: number) => {
+    const updated = { ...protocolCosts, [id]: cost };
+    setProtocolCosts(updated);
+    try { localStorage.setItem('pnl_protocol_costs', JSON.stringify(updated)); } catch {}
+  };
+
+  const saveSymptom = async () => {
+    if (!symptomName) return;
+    setSymptomSaving(true);
+    const prevName = symptomName, prevSeverity = symptomSeverity, prevNote = symptomNote;
+    const newSymptom = { id: Date.now().toString(), symptom_name: prevName, severity: prevSeverity, notes: prevNote, logged_at: new Date().toISOString() };
+    setSymptoms(prev => [newSymptom, ...prev]);
+    setSymptomName('');
+    setSymptomSeverity(5);
+    setSymptomNote('');
+    try {
+      const res = await fetch('/api/researcher/symptoms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symptom_name: prevName, severity: prevSeverity, notes: prevNote }),
+      });
+      if (!res.ok) throw new Error('save failed');
+    } catch {
+      // Roll back the optimistic insert and restore the inputs so the researcher
+      // is not misled into thinking a symptom was saved when it was not.
+      setSymptoms(prev => prev.filter(s => s.id !== newSymptom.id));
+      setSymptomName(prevName);
+      setSymptomSeverity(prevSeverity);
+      setSymptomNote(prevNote);
+      alert('Could Not Save Your Symptom. Please Try Again.');
+    } finally {
+      setSymptomSaving(false);
+    }
+  };
+
+  const quickLog = async () => {
+    if (!quickCompound || !quickAmount) return;
+    setQuickSaving(true);
+    try {
+      const res = await fetch('/api/researcher/doses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ compound_slug: quickCompound, dose_amount: parseFloat(quickAmount), unit: quickUnit, injection_site: selectedSite || null, notes: '' }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setDoses(prev => [data.dose, ...prev]);
+        setQuickAmount('');
+        setQuickLogOpen(false);
+      }
+    } catch {} finally {
+      setQuickSaving(false);
+    }
+  };
 
   const saveGoal = async () => {
     if (!goalName) return;
@@ -668,26 +982,40 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
 
   const activateGoal = async (id: string) => {
     try {
-      await fetch('/api/researcher/goals', {
+      const res = await fetch('/api/researcher/goals', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, is_active: true })
       });
-      setGoals(prev => prev.map(g => ({ ...g, is_active: g.id === id })));
-      toast.success('Active goal updated');
-    } catch {}
+      if (res.ok) {
+        setGoals(prev => prev.map(g => ({ ...g, is_active: g.id === id })));
+        toast.success('Active Goal Updated');
+      } else {
+        toast.error('Could Not Update Goal. Please Try Again.');
+      }
+    } catch (e) {
+      toast.error('Could Not Update Goal. Please Try Again.');
+      reportClientError('lab-journal.activate-goal', e);
+    }
   };
 
   const deleteGoal = async (id: string) => {
     try {
-      await fetch('/api/researcher/goals', {
+      const res = await fetch('/api/researcher/goals', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id })
       });
-      setGoals(prev => prev.filter(g => g.id !== id));
-      toast.success('Goal deleted');
-    } catch {}
+      if (res.ok) {
+        setGoals(prev => prev.filter(g => g.id !== id));
+        toast.success('Goal Deleted');
+      } else {
+        toast.error('Could Not Delete Goal. Please Try Again.');
+      }
+    } catch (e) {
+      toast.error('Could Not Delete Goal. Please Try Again.');
+      reportClientError('lab-journal.delete-goal', e);
+    }
   };
 
   const saveComparison = async (ids: string[]) => {
@@ -1228,6 +1556,20 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     [biometrics]
   );
 
+  const expiringVials = useMemo(() => {
+    const now = Date.now();
+    return Object.entries(inventoryData)
+      .filter(([, v]) => {
+        if (!v.expiration) return false;
+        const exp = new Date(v.expiration).getTime();
+        return exp > now && exp - now < 7 * 86400000;
+      })
+      .map(([pid, v]) => {
+        const item = [...catalog, ...pastOrders].find(i => i.product_id === pid);
+        return { name: item?.name || pid, expiration: v.expiration };
+      });
+  }, [inventoryData, catalog, pastOrders]);
+
   // Dose-day vs non-dose-day associational comparison (Bearable-style "Impacts")
   const doseImpacts = useMemo(() => {
     const doseDaySet = new Set(doses.map(d => dayKey(d.dosed_at)));
@@ -1539,7 +1881,11 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
       if (existing) {
         existing.quantity += qty;
       } else {
-        const perVial = item.retail_price ?? item.base_cost ?? 0;
+        // Agent self-buy: use base_cost (cost price) so the cart reflects the
+        // wholesale price, not the storefront retail price shown to researchers.
+        const perVial = isAgentSelfBuy
+          ? (item.base_cost ?? item.retail_price ?? 0)
+          : (item.retail_price ?? item.base_cost ?? 0);
         pnlCart.items.push({
           id: item.product_id,
           name: `${item.name} ${item.unit_size ? `(${item.unit_size}${item.unit_measure || ''})` : ''}`.trim(),
@@ -1548,7 +1894,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
           retailPrice: perVial,
           costPrice: perVial,
           weightOz: 0.5,
-          agentSelfBuy: false,
+          agentSelfBuy: isAgentSelfBuy,
         });
       }
 
@@ -1696,14 +2042,14 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
           }}
         >
           <Image
-            src={item.image_url || getProductImage(null, item.category || 'Other', item.name)}
+            src={getProductImage(item.image_url ?? null, item.category || 'Other', item.name, true, storefrontSlug ?? undefined, brandNetworkIsSavage)}
             alt={item.name}
             fill
             unoptimized
             style={{ objectFit: 'cover', transition: 'transform 0.4s' }}
             onError={(e) => {
               const target = e.target as HTMLImageElement;
-              const fallback = getProductImage(null, item.category || 'Other', item.name);
+              const fallback = getProductImage(null, item.category || 'Other', item.name, false, storefrontSlug ?? undefined, brandNetworkIsSavage);
               if (target.src !== fallback) target.src = fallback;
             }}
           />
@@ -1777,6 +2123,30 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                   </button>
                 </div>
               )}
+              {/* Doses Remaining */}
+              {(() => {
+                const inv = inventoryData[item.product_id];
+                if (!inv?.recon_mg || !inv?.recon_ml || !inv?.recon_dose) return null;
+                const mg = parseFloat(inv.recon_mg); const ml = parseFloat(inv.recon_ml); const dose = parseFloat(inv.recon_dose);
+                if (!mg || !ml || !dose) return null;
+                const doseVol = (dose * ml * 100) / (mg * 1000); // in units/IU (0.01ml per unit)
+                const totalVol = ml * 100; // total units in vial
+                const onHand = inv.on_hand ?? 1;
+                const dosesPerVial = Math.floor(totalVol / doseVol);
+                const daysLeft = dosesPerVial * onHand;
+                const pct = Math.min(100, (daysLeft / (dosesPerVial * 2)) * 100);
+                return (
+                  <div style={{ marginTop: 4 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                      <span style={{ color: 'var(--silver)', fontSize: '0.72rem' }}>Doses Remaining</span>
+                      <span style={{ color: daysLeft < 10 ? '#F6AD55' : 'var(--teal)', fontWeight: 700, fontSize: '0.75rem' }}>{dosesPerVial * onHand}</span>
+                    </div>
+                    <div style={{ height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${pct}%`, background: daysLeft < 10 ? '#F6AD55' : 'var(--teal)', borderRadius: 4, transition: 'width 0.4s' }} />
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
@@ -1807,16 +2177,26 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
 
   return (
     <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 'var(--space-6)', paddingBottom: '100px', alignItems: 'flex-start' }}>
+      {/* Expiry banner */}
+      {!expBannerDismissed && expiringVials.length > 0 && (
+        <div style={{ gridColumn: '1/-1', width: '100%', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 12, padding: '14px 20px', marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div style={{ color: '#fc8181', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Info size={16} />
+            <strong>Vials Expiring Soon:</strong> {expiringVials.map(v => `${v.name} (exp. ${new Date(v.expiration).toLocaleDateString()})`).join(' · ')}
+          </div>
+          <button onClick={() => setExpBannerDismissed(true)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}><X size={16} /></button>
+        </div>
+      )}
       {/* Left Sidebar Menu */}
       <div style={{ flex: '0 0 240px', display: 'flex', flexDirection: 'column', position: 'sticky', top: '100px', gap: 'var(--space-2)' }}>
         {[
           { id: 'notes', label: 'My Notes', icon: Info },
-          { id: 'goals', label: 'Research Goals', icon: Target },
-          { id: 'bundles', label: 'Bundles & Stacks', icon: Layers },
-          { id: 'favorites', label: 'Saved Compounds', icon: Heart },
           { id: 'doses', label: 'Dose Tracker', icon: Syringe },
           { id: 'biometrics', label: 'Biometrics', icon: Activity },
           { id: 'progress', label: 'Progress Photos', icon: Camera },
+          { id: 'goals', label: 'Research Goals', icon: Target },
+          { id: 'bundles', label: 'Bundles & Stacks', icon: Layers },
+          { id: 'favorites', label: 'Saved Compounds', icon: Heart },
           { id: 'recentlyViewed', label: 'Recently Viewed', icon: History },
           { id: 'compareHistory', label: 'Compare History', icon: Search }
         ].map(t => (
@@ -1878,8 +2258,10 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
 
       {/* Main Content */}
       {activeTab === 'bundles' && showBuilder ? (
-        <SmartStackBuilder 
+        <SmartStackBuilder
+          brandNetworkIsSavage={brandNetworkIsSavage} 
           catalog={catalog} 
+          agentSlug={storefrontSlug ?? undefined}
           onAddStackToCart={(items, name) => {
             items.forEach(i => handleQuickAdd(i, 1, true));
             toast.success(`Custom Stack "${name}" Added To Cart!`);
@@ -1944,7 +2326,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                           {recommendedItems.map(item => (
                             <div key={item.product_id} style={{ minWidth: 200, flexShrink: 0, background: 'rgba(0,0,0,0.3)', borderRadius: 8, padding: 'var(--space-3)', position: 'relative' }}>
                                <div style={{ position: 'relative', width: '100%', aspectRatio: '1', borderRadius: 8, overflow: 'hidden', marginBottom: 'var(--space-3)', background: '#111' }}>
-                                  <Image src={item.image_url || getProductImage(null, item.category || 'Other', item.name)} alt={item.name} fill style={{ objectFit: 'cover', mixBlendMode: 'screen' }} />
+                                  <Image src={getProductImage(item.image_url ?? null, item.category || 'Other', item.name, true, storefrontSlug ?? undefined, brandNetworkIsSavage)} alt={item.name} fill style={{ objectFit: 'cover', mixBlendMode: 'screen' }} />
                                   <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIntelligenceCompound(item.name); }} style={{ position: 'absolute', top: 8, left: 8, background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.2)', color: 'var(--white)', padding: '4px 8px', borderRadius: 12, fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, backdropFilter: 'blur(4px)' }}><FlaskConical size={12}/> Intel</button>
                                </div>
                                <h4 style={{ margin: 0, fontSize: '1rem', color: 'var(--white)' }}>{item.name}</h4>
@@ -2340,6 +2722,22 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                         onChange={e => setDoseNote(e.target.value)}
                         style={{ width: '100%', marginTop: 'var(--space-3)', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '10px 12px', borderRadius: 8, color: 'var(--white)', fontSize: '0.9rem' }}
                       />
+                      {/* Change 10: Recon units hint */}
+                      {(() => {
+                        if (!doseCompound || !doseAmount) return null;
+                        const matchedItem = [...catalog, ...favorites, ...pastOrders, ...recentlyViewed].find(i => i.name === doseCompound);
+                        const inv = matchedItem ? inventoryData[matchedItem.product_id] : null;
+                        if (!inv?.recon_mg || !inv?.recon_ml) return null;
+                        const mg = parseFloat(inv.recon_mg); const ml = parseFloat(inv.recon_ml); const dose = parseFloat(doseAmount);
+                        if (!mg || !ml || !dose) return null;
+                        const units = ((dose * ml * 100) / (mg * 1000)).toFixed(1);
+                        return (
+                          <div style={{ marginTop: 8, padding: '8px 12px', borderRadius: 8, background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.2)', color: 'var(--teal)', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <Beaker size={13} />
+                            Pull syringe to <strong>{units} units (IU)</strong> for {doseAmount}{doseUnit} from your reconstituted vial ({inv.recon_mg}mg in {inv.recon_ml}ml)
+                          </div>
+                        );
+                      })()}
                       <button onClick={saveDose} disabled={!doseCompound || !doseAmount || doseSaving || !selectedSite} className="btn btn-primary" style={{ width: '100%', marginTop: 'var(--space-3)', padding: '12px 24px', borderRadius: 8 }}>
                         {doseSaving ? 'Saving...' : selectedSite ? `Log Dose To ${selectedSite.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}` : 'Log Dose'}
                       </button>
@@ -2349,11 +2747,15 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                     <div className="glass-panel" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)' }}>
                       <h3 style={{ color: 'var(--white)', marginBottom: 'var(--space-3)', textAlign: 'center', fontSize: '1rem' }}>Injection Site Rotation</h3>
                       {(() => {
+                        // Sites mapped to % coords on the real body image (2:3 ratio, 840×1260 intrinsic)
+                        // Image: shoulders ~22% from top, triceps ~35%, abdomen ~52%
                         const SITES = [
-                          { id: 'left_arm', x: 25, y: 33, label: 'L Arm' }, { id: 'right_arm', x: 75, y: 33, label: 'R Arm' },
-                          { id: 'left_abdomen', x: 41, y: 50, label: 'L Abdomen' }, { id: 'right_abdomen', x: 59, y: 50, label: 'R Abdomen' },
-                          { id: 'left_glute', x: 41, y: 63, label: 'L Glute' }, { id: 'right_glute', x: 59, y: 63, label: 'R Glute' },
-                          { id: 'left_thigh', x: 43, y: 78, label: 'L Thigh' }, { id: 'right_thigh', x: 57, y: 78, label: 'R Thigh' },
+                          { id: 'left_deltoid',  x: 26,  y: 22,  label: 'L Shoulder' },
+                          { id: 'right_deltoid', x: 74,  y: 22,  label: 'R Shoulder' },
+                          { id: 'left_tricep',   x: 18,  y: 36,  label: 'L Tricep'   },
+                          { id: 'right_tricep',  x: 82,  y: 36,  label: 'R Tricep'   },
+                          { id: 'left_abdomen',  x: 43,  y: 52,  label: 'L Abdomen'  },
+                          { id: 'right_abdomen', x: 57,  y: 52,  label: 'R Abdomen'  },
                         ];
                         const suggestion = [...SITES].sort((a, b) => {
                           const la = computedInjectionSites[a.id] || 0;
@@ -2362,35 +2764,99 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                         })[0];
                         return (
                           <>
-                            <div style={{ position: 'relative', width: 190, height: 340, background: 'radial-gradient(circle at 50% 30%, rgba(0,196,188,0.04), transparent)', borderRadius: 12, margin: '0 auto', border: '1px solid rgba(255,255,255,0.05)' }}>
-                              <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-                                <path d="M50 5 a8 8 0 1 0 0 16 a8 8 0 1 0 0 -16 z M30 25 q20 -10 40 0 l10 30 l-10 -5 l-10 45 l-10 0 l0 -30 l0 30 l-10 0 l-10 -45 l-10 5 z" fill="rgba(0,196,188,0.05)" stroke="rgba(0,196,188,0.3)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-                              </svg>
+                            {/* Real anatomical image with dot overlay */}
+                            <div style={{ position: 'relative', width: '100%', maxWidth: 240, margin: '0 auto', borderRadius: 12, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }}>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src="/images/injection-site-body.jpg"
+                                alt="Injection site body map"
+                                style={{ width: '100%', display: 'block', borderRadius: 12 }}
+                              />
+                              {/* Interactive dot overlay */}
+                              <div style={{ position: 'absolute', inset: 0 }}>
+                                {SITES.map(site => {
+                                  const lastUsed = computedInjectionSites[site.id];
+                                  const daysSince = lastUsed ? (Date.now() - lastUsed) / 86400000 : Infinity;
+                                  let color = '#00c4bc';
+                                  let glow = '0 0 0 3px rgba(0,196,188,0.3), 0 0 12px rgba(0,196,188,0.5)';
+                                  if (daysSince < 2) { color = '#ef4444'; glow = '0 0 0 3px rgba(239,68,68,0.3), 0 0 12px rgba(239,68,68,0.6)'; }
+                                  else if (daysSince < 5) { color = '#eab308'; glow = '0 0 0 3px rgba(234,179,8,0.3), 0 0 12px rgba(234,179,8,0.5)'; }
+                                  const isSel = selectedSite === site.id;
+                                  const isSuggested = suggestion && site.id === suggestion.id && daysSince >= 5;
+                                  const dotSize = isSel ? 22 : 16;
+                                  return (
+                                    <button
+                                      key={site.id}
+                                      onClick={() => setSelectedSite(site.id === selectedSite ? '' : site.id)}
+                                      title={`${site.label}${lastUsed ? ` — ${Math.round(daysSince)}d ago` : ' — Never Used'}`}
+                                      style={{
+                                        position: 'absolute',
+                                        left: `${site.x}%`,
+                                        top: `${site.y}%`,
+                                        transform: 'translate(-50%, -50%)',
+                                        width: dotSize,
+                                        height: dotSize,
+                                        borderRadius: '50%',
+                                        background: color,
+                                        border: isSel ? '2.5px solid #fff' : `1.5px solid ${color}`,
+                                        cursor: 'pointer',
+                                        boxShadow: isSuggested ? `${glow}, 0 0 0 6px rgba(0,196,188,0.15)` : glow,
+                                        transition: 'all 0.18s ease',
+                                        animation: isSuggested ? 'pulse-site 1.8s ease-in-out infinite' : 'none',
+                                        padding: 0,
+                                      }}
+                                    />
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            {/* Labels row */}
+                            <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 12, fontSize: '0.72rem', color: 'var(--silver)', flexWrap: 'wrap' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--red)' }} /> &lt;2d (rest)</div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 8, height: 8, borderRadius: '50%', background: '#eab308' }} /> 2-5d</div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 8, height: 8, borderRadius: '50%', background: '#00c4bc' }} /> Ready</div>
+                            </div>
+
+                            {/* Site legend */}
+                            <div style={{ marginTop: 10, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 8px' }}>
                               {SITES.map(site => {
                                 const lastUsed = computedInjectionSites[site.id];
-                                const daysSince = lastUsed ? (Date.now() - lastUsed) / 86400000 : Infinity;
-                                let color = 'rgba(0,196,188,0.9)';
-                                if (daysSince < 2) color = 'var(--red)';
-                                else if (daysSince < 5) color = '#eab308';
+                                const daysSince = lastUsed ? Math.round((Date.now() - lastUsed) / 86400000) : null;
                                 const isSel = selectedSite === site.id;
-                                const isSuggested = suggestion && site.id === suggestion.id && daysSince >= 5;
                                 return (
-                                  <div key={site.id} onClick={() => setSelectedSite(site.id)} style={{ position: 'absolute', left: `${site.x}%`, top: `${site.y}%`, transform: 'translate(-50%, -50%)', width: isSel ? 20 : 15, height: isSel ? 20 : 15, borderRadius: '50%', background: color, border: isSel ? '2px solid white' : '1px solid rgba(0,0,0,0.5)', cursor: 'pointer', boxShadow: isSuggested ? '0 0 0 4px rgba(0,196,188,0.25)' : '0 0 8px rgba(0,0,0,0.5)', transition: 'all 0.2s' }} title={`${site.label} ${lastUsed ? `(${Math.round(daysSince)}d ago)` : '(Never Used)'}`} />
+                                  <button
+                                    key={site.id}
+                                    onClick={() => setSelectedSite(site.id === selectedSite ? '' : site.id)}
+                                    style={{
+                                      background: isSel ? 'rgba(0,196,188,0.12)' : 'rgba(255,255,255,0.03)',
+                                      border: `1px solid ${isSel ? 'rgba(0,196,188,0.4)' : 'rgba(255,255,255,0.07)'}`,
+                                      borderRadius: 6,
+                                      padding: '4px 8px',
+                                      color: isSel ? 'var(--teal)' : 'var(--silver)',
+                                      fontSize: '0.72rem',
+                                      cursor: 'pointer',
+                                      textAlign: 'left',
+                                      fontWeight: isSel ? 700 : 400,
+                                    }}
+                                  >
+                                    {site.label}{daysSince !== null ? <span style={{ opacity: 0.6 }}> · {daysSince}d</span> : ''}
+                                  </button>
                                 );
                               })}
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 12, fontSize: '0.72rem', color: 'var(--silver)' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--red)' }} /> &lt;2d</div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 8, height: 8, borderRadius: '50%', background: '#eab308' }} /> 2-5d</div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--teal)' }} /> Ready</div>
-                            </div>
+
                             {suggestion && (
                               <div style={{ textAlign: 'center', marginTop: 10, color: 'var(--teal)', fontSize: '0.8rem' }}>
                                 Suggested Next: <strong>{suggestion.label}</strong>
                                 {computedInjectionSites[suggestion.id] ? ` (${Math.round((Date.now() - computedInjectionSites[suggestion.id]) / 86400000)}d Rest)` : ' (Never Used)'}
                               </div>
                             )}
-                            {selectedSite && <div style={{ textAlign: 'center', marginTop: 8, color: 'var(--white)', fontWeight: 700, fontSize: '0.85rem' }}>Selected: {selectedSite.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</div>}
+                            {selectedSite && (
+                              <div style={{ textAlign: 'center', marginTop: 8, color: 'var(--white)', fontWeight: 700, fontSize: '0.85rem' }}>
+                                ✓ Selected: {selectedSite.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                              </div>
+                            )}
                           </>
                         );
                       })()}
@@ -2441,15 +2907,43 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
 
                   {/* Protocol Scheduler */}
                   <div className="glass-panel" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-6)' }}>
-                    <h3 style={{ color: 'var(--white)', marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 8 }}><Clock size={18} style={{ color: 'var(--teal)' }} /> Protocol Scheduler</h3>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 'var(--space-4)' }}>
+                      <h3 style={{ color: 'var(--white)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><Clock size={18} style={{ color: 'var(--teal)' }} /> Protocol Scheduler</h3>
+                      {/* Push Notification toggle */}
+                      <button
+                        onClick={requestNotifPermission}
+                        disabled={notifPermission === 'granted' || notifPermission === 'unsupported'}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 6,
+                          background: notifPermission === 'granted' ? 'rgba(0,196,188,0.1)' : 'rgba(255,255,255,0.06)',
+                          border: `1px solid ${notifPermission === 'granted' ? 'rgba(0,196,188,0.35)' : 'rgba(255,255,255,0.12)'}`,
+                          color: notifPermission === 'granted' ? 'var(--teal)' : 'var(--silver)',
+                          padding: '6px 14px', borderRadius: 999, fontSize: '0.8rem', cursor: notifPermission === 'granted' ? 'default' : 'pointer',
+                        }}
+                      >
+                        {notifPermission === 'granted' ? <Bell size={14} /> : <BellOff size={14} />}
+                        {notifPermission === 'granted' ? 'Alerts On' : notifPermission === 'unsupported' ? 'Unsupported' : 'Enable Dose Alerts'}
+                      </button>
+                    </div>
+
                     {scheduledDoses.length > 0 && (() => {
                       const due = scheduledDoses.filter(s => scheduleDueStatus(s).status === 'due');
                       return (
-                        <div style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-3) var(--space-4)', borderRadius: 8, background: due.length ? 'rgba(0,196,188,0.08)' : 'rgba(255,255,255,0.03)', border: `1px solid ${due.length ? 'rgba(0,196,188,0.25)' : 'rgba(255,255,255,0.06)'}`, display: 'flex', alignItems: 'center', gap: 8 }}>
-                          {due.length > 0 ? <Zap size={16} style={{ color: 'var(--teal)' }} /> : <Check size={16} style={{ color: 'var(--silver)' }} />}
-                          <span style={{ color: 'var(--white)', fontSize: '0.9rem' }}>
-                            {due.length > 0 ? `${due.length} Protocol${due.length === 1 ? '' : 's'} Due Today: ${due.map(s => s.compound_slug || s.compound).join(', ')}` : 'Nothing Due Today. You Are On Track.'}
-                          </span>
+                        <div style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-3) var(--space-4)', borderRadius: 8, background: due.length ? 'rgba(0,196,188,0.08)' : 'rgba(255,255,255,0.03)', border: `1px solid ${due.length ? 'rgba(0,196,188,0.25)' : 'rgba(255,255,255,0.06)'}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            {due.length > 0 ? <Zap size={16} style={{ color: 'var(--teal)' }} /> : <Check size={16} style={{ color: 'var(--silver)' }} />}
+                            <span style={{ color: 'var(--white)', fontSize: '0.9rem' }}>
+                              {due.length > 0 ? `${due.length} Protocol${due.length === 1 ? '' : 's'} Due Today: ${due.map(s => s.compound_slug || s.compound).join(', ')}` : 'Nothing Due Today. You Are On Track.'}
+                            </span>
+                          </div>
+                          {due.length > 0 && notifPermission === 'granted' && (
+                            <button
+                              onClick={() => due.forEach(s => sendDoseReminder(s.compound_slug || s.compound))}
+                              style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(0,196,188,0.12)', border: '1px solid rgba(0,196,188,0.3)', color: 'var(--teal)', padding: '4px 12px', borderRadius: 999, fontSize: '0.78rem', cursor: 'pointer' }}
+                            >
+                              <Bell size={12} /> Send Reminder
+                            </button>
+                          )}
                         </div>
                       );
                     })()}
@@ -2482,29 +2976,65 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                       <select value={scheduleUnit} onChange={e => setScheduleUnit(e.target.value)} style={{ width: 90, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)' }}>
                         <option value="mcg">mcg</option><option value="mg">mg</option><option value="iu">IU</option><option value="ml">ml</option>
                       </select>
-                      <select value={scheduleFrequency} onChange={e => setScheduleFrequency(e.target.value)} style={{ width: 150, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)' }}>
-                        <option value="Every Day">Every Day</option><option value="Every Other Day">Every Other Day</option><option value="5 Days On, 2 Off">5 Days On, 2 Off</option><option value="Once Weekly">Once Weekly</option><option value="Twice Weekly">Twice Weekly</option>
+                      <select value={scheduleFrequency} onChange={e => setScheduleFrequency(e.target.value)} style={{ width: 160, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)' }}>
+                        <option value="Every Day">Every Day</option>
+                        <option value="Every Other Day">Every Other Day</option>
+                        <option value="5 Days On, 2 Off">5 Days On, 2 Off</option>
+                        <option value="Once Weekly">Once Weekly</option>
+                        <option value="Twice Weekly">Twice Weekly</option>
+                        <option value="Every 5 Days">Every 5 Days</option>
+                        <option value="Every 10 Days">Every 10 Days</option>
+                        <option value="Cycle Off">Cycle Off (Paused)</option>
                       </select>
                       <button onClick={addScheduledDose} disabled={!scheduleCompound || !scheduleAmount} className="btn btn-secondary" style={{ padding: '12px 24px', borderRadius: 8 }}>Add Schedule</button>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: 'var(--space-3)' }}>
-                      {scheduledDoses.map(s => (
-                        <div key={s.id} style={{ background: 'rgba(255,255,255,0.05)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', position: 'relative' }}>
-                          <button onClick={() => deleteScheduledDose(s.id)} style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer' }}><X size={16} /></button>
-                          <div style={{ color: 'var(--teal)', fontWeight: 700 }}>{s.compound_slug || s.compound}</div>
-                          <div style={{ color: 'var(--white)' }}>{s.amount} {s.unit}</div>
-                          <div style={{ color: 'var(--silver)', fontSize: '0.85rem', marginTop: 4 }}><Clock size={12} style={{ display: 'inline', marginRight: 4 }} />{s.frequency}</div>
-                          {(() => {
-                            const st = scheduleDueStatus(s);
-                            if (!st.label) return null;
-                            const isDue = st.status === 'due';
-                            const color = isDue ? 'var(--black)' : st.status === 'logged' ? '#68D391' : 'var(--silver)';
-                            const bg = isDue ? 'var(--teal)' : 'rgba(255,255,255,0.06)';
-                            return <div style={{ marginTop: 8, display: 'inline-block', fontSize: '0.68rem', fontWeight: 700, color, background: bg, padding: '2px 8px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{st.label}</div>;
-                          })()}
-                        </div>
-                      ))}
-                      {scheduledDoses.length === 0 && <div style={{ color: 'var(--silver)' }}>No Scheduled Protocols Yet. Add One To Track Adherence.</div>}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 'var(--space-3)' }}>
+                      {scheduledDoses.map(s => {
+                        const st = scheduleDueStatus(s);
+                        const isDue = st.status === 'due';
+                        const isCycleOff = (s.frequency || '').toLowerCase().includes('cycle off') || (s.frequency || '').toLowerCase().includes('paused');
+                        return (
+                          <div key={s.id} style={{ background: isDue ? 'rgba(0,196,188,0.06)' : 'rgba(255,255,255,0.04)', padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', position: 'relative', border: `1px solid ${isDue ? 'rgba(0,196,188,0.2)' : 'rgba(255,255,255,0.06)'}`, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            <button onClick={() => deleteScheduledDose(s.id)} style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: 'rgba(255,255,255,0.25)', cursor: 'pointer' }} title="Remove protocol"><X size={14} /></button>
+                            <div style={{ color: 'var(--teal)', fontWeight: 700, fontSize: '0.95rem', paddingRight: 20 }}>{s.compound_slug || s.compound}</div>
+                            <div style={{ color: 'var(--white)', fontSize: '0.88rem' }}>{s.amount} {s.unit}</div>
+                            {/* Frequency badge */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: isCycleOff ? 'rgba(239,68,68,0.1)' : 'rgba(0,196,188,0.08)', border: `1px solid ${isCycleOff ? 'rgba(239,68,68,0.25)' : 'rgba(0,196,188,0.2)'}`, borderRadius: 6, padding: '3px 8px', width: 'fit-content' }}>
+                              <Clock size={11} style={{ color: isCycleOff ? '#ef4444' : 'var(--teal)', flexShrink: 0 }} />
+                              <span style={{ color: isCycleOff ? '#ef4444' : 'var(--teal)', fontSize: '0.72rem', fontWeight: 600 }}>{freqLabel(s.frequency)}</span>
+                            </div>
+                            {/* Cycle status badge */}
+                            {(() => { const cs = getCycleStatus(s.id); return cs.phase !== 'none' ? (<div style={{ fontSize: '0.68rem', fontWeight: 700, color: cs.phase === 'active' ? 'var(--teal)' : '#ef4444', background: cs.phase === 'active' ? 'rgba(0,196,188,0.1)' : 'rgba(239,68,68,0.1)', border: `1px solid ${cs.phase === 'active' ? 'rgba(0,196,188,0.25)' : 'rgba(239,68,68,0.25)'}`, padding: '2px 8px', borderRadius: 999, width: 'fit-content' }}>{cs.label}</div>) : null; })()}
+                            {/* Cost tracking */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                              <DollarSign size={10} style={{ color: 'var(--silver)', flexShrink: 0 }} />
+                              <input type="number" min={0} step={0.01} placeholder="$/dose" value={protocolCosts[s.id] || ''} onChange={e => setProtocolCost(s.id, parseFloat(e.target.value))} style={{ width: 70, background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 5, padding: '2px 6px', color: 'var(--silver)', fontSize: '0.72rem' }} />
+                              {protocolCosts[s.id] > 0 && (() => { const freq = (s.frequency || '').toLowerCase(); const perMonth = freq.includes('every day') || freq.includes('daily') ? protocolCosts[s.id] * 30 : freq.includes('every other') ? protocolCosts[s.id] * 15 : freq.includes('twice') ? protocolCosts[s.id] * 8 : freq.includes('once') || freq.includes('weekly') ? protocolCosts[s.id] * 4 : protocolCosts[s.id]; return <span style={{ color: 'var(--silver)', fontSize: '0.68rem' }}>≈ ${perMonth.toFixed(0)}/mo</span>; })()}
+                            </div>
+                            {/* Cycle editor toggle */}
+                            <button onClick={() => setShowCycleEditor(showCycleEditor === s.id ? null : s.id)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '0.68rem', textAlign: 'left', padding: 0, marginTop: 2 }}>{showCycleEditor === s.id ? '▾ Hide Cycle' : '▸ Cycle Settings'}</button>
+                            {showCycleEditor === s.id && <CycleEditor id={s.id} cycleStartDates={cycleStartDates} cycleLengthWeeks={cycleLengthWeeks} cycleOffWeeks={cycleOffWeeks} reminderTimes={reminderTimes} onSave={saveCycleData} />}
+                            {/* Due status + notification bell */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                              {st.label && (() => {
+                                const color = isDue ? 'var(--black)' : st.status === 'logged' ? '#68D391' : 'var(--silver)';
+                                const bg = isDue ? 'var(--teal)' : 'rgba(255,255,255,0.06)';
+                                return <div style={{ fontSize: '0.68rem', fontWeight: 700, color, background: bg, padding: '2px 8px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{st.label}</div>;
+                              })()}
+                              {isDue && notifPermission === 'granted' && (
+                                <button
+                                  onClick={() => sendDoseReminder(s.compound_slug || s.compound)}
+                                  title="Send push reminder"
+                                  style={{ background: 'none', border: 'none', color: 'var(--teal)', cursor: 'pointer', padding: 2 }}
+                                >
+                                  <Bell size={13} />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {scheduledDoses.length === 0 && <div style={{ color: 'var(--silver)', gridColumn: '1/-1' }}>No Scheduled Protocols Yet. Add One To Track Adherence.</div>}
                     </div>
                   </div>
 
@@ -2612,8 +3142,9 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                         type="text"
                         placeholder="Metric Name"
                         value={bioName}
+                        readOnly={BIOMETRIC_PRESETS.some(p => p.name === bioName)}
                         onChange={e => setBioName(e.target.value)}
-                        style={{ flex: 1, minWidth: 160, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem' }}
+                        style={{ flex: 1, minWidth: 160, background: BIOMETRIC_PRESETS.some(p => p.name === bioName) ? 'rgba(0,196,188,0.08)' : 'rgba(0,0,0,0.3)', border: `1px solid ${BIOMETRIC_PRESETS.some(p => p.name === bioName) ? 'rgba(0,196,188,0.3)' : 'rgba(255,255,255,0.1)'}`, padding: '12px', borderRadius: 8, color: BIOMETRIC_PRESETS.some(p => p.name === bioName) ? 'var(--teal)' : 'var(--white)', fontSize: '1rem', cursor: BIOMETRIC_PRESETS.some(p => p.name === bioName) ? 'default' : 'text' }}
                       />
                       <input
                         type="number"
@@ -2767,6 +3298,41 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                       {biometrics.length === 0 && <div style={{ color: 'var(--silver)' }}>No Biometrics Logged Yet.</div>}
                     </div>
                   </div>
+
+                  {/* Symptom / Side Effect Log */}
+                  <div className="glass-panel" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', marginTop: 'var(--space-6)' }}>
+                    <h3 style={{ color: 'var(--white)', marginBottom: 'var(--space-2)', display: 'flex', alignItems: 'center', gap: 8 }}><Zap size={18} style={{ color: '#F6AD55' }} /> Symptom &amp; Side Effect Log</h3>
+                    <p style={{ color: 'var(--silver)', fontSize: '0.82rem', marginTop: 0, marginBottom: 'var(--space-4)' }}>Track side effects tied to your protocol timeline. Severity 1–10.</p>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 'var(--space-3)' }}>
+                      {['Headache', 'Fatigue', 'Water Retention', 'Joint Pain', 'Mood Shift', 'Insomnia', 'Nausea', 'Appetite Change'].map(s => (
+                        <button key={s} onClick={() => setSymptomName(s)} style={{ background: symptomName === s ? 'rgba(246,173,85,0.15)' : 'rgba(255,255,255,0.04)', color: symptomName === s ? '#F6AD55' : 'var(--silver)', border: `1px solid ${symptomName === s ? 'rgba(246,173,85,0.3)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 999, padding: '5px 10px', fontSize: '0.78rem', cursor: 'pointer' }}>{s}</button>
+                      ))}
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                      <input type="text" placeholder="Symptom name" value={symptomName} onChange={e => setSymptomName(e.target.value)} style={{ flex: 1, minWidth: 160, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '10px 12px', borderRadius: 8, color: 'var(--white)', fontSize: '0.9rem' }} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ color: 'var(--silver)', fontSize: '0.8rem' }}>Severity</span>
+                        <input type="range" min={1} max={10} value={symptomSeverity} onChange={e => setSymptomSeverity(parseInt(e.target.value))} style={{ width: 100, accentColor: 'var(--teal)' }} />
+                        <span style={{ color: 'var(--white)', fontWeight: 700, minWidth: 16 }}>{symptomSeverity}</span>
+                      </div>
+                      <input type="text" placeholder="Note (optional)" value={symptomNote} onChange={e => setSymptomNote(e.target.value)} style={{ flex: 1, minWidth: 160, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '10px 12px', borderRadius: 8, color: 'var(--white)', fontSize: '0.9rem' }} />
+                      <button onClick={saveSymptom} disabled={!symptomName || symptomSaving} className="btn btn-primary" style={{ padding: '10px 20px', borderRadius: 8, background: 'rgba(246,173,85,0.15)', color: '#F6AD55', border: '1px solid rgba(246,173,85,0.3)' }}>{symptomSaving ? 'Saving...' : 'Log'}</button>
+                    </div>
+                    {symptoms.length > 0 && (
+                      <div style={{ marginTop: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {symptoms.slice(0, 20).map((s: any) => (
+                          <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', borderRadius: 8, padding: '8px 12px' }}>
+                            <div>
+                              <span style={{ color: '#F6AD55', fontWeight: 700 }}>{s.symptom_name}</span>
+                              <span style={{ color: 'var(--silver)', fontSize: '0.8rem' }}> &middot; Severity {s.severity}/10</span>
+                              {s.notes && <span style={{ color: 'var(--silver)', fontSize: '0.78rem', fontStyle: 'italic' }}> &middot; {s.notes}</span>}
+                            </div>
+                            <span style={{ color: 'var(--silver)', fontSize: '0.75rem', flexShrink: 0 }}>{new Date(s.logged_at).toLocaleDateString()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
               ) : activeTab === 'progress' ? (
@@ -2789,6 +3355,52 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                       </label>
                     </div>
                   </div>
+
+                  {/* Before/After Photo Slider */}
+                  {progressPhotos.length >= 2 && (
+                    <div className="glass-panel" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-6)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-3)' }}>
+                        <h3 style={{ color: 'var(--white)', margin: 0, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: 8 }}><Camera size={16} style={{ color: 'var(--teal)' }} /> Before / After Compare</h3>
+                        <button onClick={() => setShowPhotoCompare(s => !s)} style={{ background: 'rgba(0,196,188,0.1)', border: '1px solid rgba(0,196,188,0.25)', color: 'var(--teal)', borderRadius: 999, padding: '4px 12px', fontSize: '0.8rem', cursor: 'pointer' }}>{showPhotoCompare ? 'Hide' : 'Compare Photos'}</button>
+                      </div>
+                      {showPhotoCompare && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                            <div style={{ flex: 1, minWidth: 160 }}>
+                              <div style={{ color: 'var(--silver)', fontSize: '0.72rem', marginBottom: 4 }}>Before Photo</div>
+                              <select value={comparePhotoA?.id || ''} onChange={e => setComparePhotoA(progressPhotos.find((p: any) => p.id === e.target.value) || null)} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 10px', borderRadius: 8, color: 'var(--white)', fontSize: '0.85rem' }}>
+                                <option value="">Select photo...</option>
+                                {[...progressPhotos].sort((a: any, b: any) => a.taken_at > b.taken_at ? 1 : -1).map((p: any) => <option key={p.id} value={p.id}>{p.caption || new Date(p.taken_at + 'T00:00:00').toLocaleDateString()}</option>)}
+                              </select>
+                            </div>
+                            <div style={{ flex: 1, minWidth: 160 }}>
+                              <div style={{ color: 'var(--silver)', fontSize: '0.72rem', marginBottom: 4 }}>After Photo</div>
+                              <select value={comparePhotoB?.id || ''} onChange={e => setComparePhotoB(progressPhotos.find((p: any) => p.id === e.target.value) || null)} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 10px', borderRadius: 8, color: 'var(--white)', fontSize: '0.85rem' }}>
+                                <option value="">Select photo...</option>
+                                {[...progressPhotos].sort((a: any, b: any) => a.taken_at > b.taken_at ? 1 : -1).map((p: any) => <option key={p.id} value={p.id}>{p.caption || new Date(p.taken_at + 'T00:00:00').toLocaleDateString()}</option>)}
+                              </select>
+                            </div>
+                          </div>
+                          {comparePhotoA?.url && comparePhotoB?.url && (
+                            <div style={{ position: 'relative', width: '100%', maxWidth: 500, margin: '0 auto', overflow: 'hidden', borderRadius: 12, userSelect: 'none' }}>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={comparePhotoA.url} alt="Before" style={{ width: '100%', display: 'block', borderRadius: 12 }} />
+                              <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', width: `${sliderPos}%`, borderRadius: 12 }}>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={comparePhotoB.url} alt="After" style={{ width: `${10000 / sliderPos}%`, maxWidth: 'none', display: 'block', borderRadius: 12 }} />
+                              </div>
+                              <div style={{ position: 'absolute', top: 0, bottom: 0, left: `${sliderPos}%`, width: 3, background: 'var(--teal)', transform: 'translateX(-50%)', cursor: 'ew-resize' }}>
+                                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 28, height: 28, borderRadius: '50%', background: 'var(--teal)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', color: 'var(--black)', fontWeight: 900 }}>⟺</div>
+                              </div>
+                              <input type="range" min={5} max={95} value={sliderPos} onChange={e => setSliderPos(parseInt(e.target.value))} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'ew-resize', margin: 0 }} />
+                              <div style={{ position: 'absolute', bottom: 8, left: 8, color: '#fff', fontSize: '0.7rem', background: 'rgba(0,0,0,0.5)', padding: '2px 8px', borderRadius: 999 }}>Before</div>
+                              <div style={{ position: 'absolute', bottom: 8, right: 8, color: '#fff', fontSize: '0.7rem', background: 'rgba(0,0,0,0.5)', padding: '2px 8px', borderRadius: 999 }}>After</div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {progressPhotos.length === 0 ? (
                     <div className="glass-panel" style={{ padding: 'var(--space-8)', borderRadius: 'var(--radius-lg)', textAlign: 'center' }}>
@@ -2858,7 +3470,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                             if (!item) return <div key={pid} style={{ color: 'var(--silver)' }}>Unknown Item</div>;
                             return (
                               <div key={pid} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', background: 'rgba(255,255,255,0.05)', padding: 'var(--space-2) var(--space-3)', borderRadius: 20, whiteSpace: 'nowrap' }}>
-                                <Image src={item.image_url || getProductImage(null, item.category || 'Other', item.name)} width={24} height={24} unoptimized style={{ objectFit: 'contain', borderRadius: 4 }} alt={item.name} />
+                                <Image src={getProductImage(item.image_url ?? null, item.category || 'Other', item.name, true, storefrontSlug ?? undefined, brandNetworkIsSavage)} width={24} height={24} unoptimized style={{ objectFit: 'contain', borderRadius: 4 }} alt={item.name} />
                                 <div style={{ color: 'var(--white)', fontSize: '0.9rem', fontWeight: 600 }}>{item.name}</div>
                               </div>
                             );
@@ -2918,7 +3530,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
               const inner = (
                 <div key={idx} style={{ flex: '1 1 200px', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', position: 'relative' }}>
                     <div style={{ height: 100, background: 'radial-gradient(circle at 50% 50%, rgba(192,184,168,0.10) 0%, var(--black) 100%)', borderRadius: 8, marginBottom: 12, position: 'relative' }}>
-                    <Image src={t.image_url || getProductImage(null, t.category || 'Other', t.name)} alt={t.name} fill unoptimized style={{ objectFit: 'contain', padding: 8 }} />
+                    <Image src={getProductImage(t.image_url ?? null, t.category || 'Other', t.name, true, storefrontSlug ?? undefined, brandNetworkIsSavage)} alt={t.name} fill unoptimized style={{ objectFit: 'contain', padding: 8 }} />
                     </div>
                     <div style={{ color: 'var(--white)', fontWeight: 600, fontSize: '0.95rem' }}>{t.name}</div>  
                 </div>
@@ -2972,7 +3584,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
             <button onClick={() => setQuickViewItem(null)} style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(0,0,0,0.5)', border: 'none', color: 'var(--white)', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10 }}><X size={16} /></button>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
               <div style={{ flex: '0 0 300px', background: 'radial-gradient(circle at 50% 50%, rgba(192,184,168,0.10) 0%, var(--black) 100%)', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-4)', position: 'relative' }}>
-                <Image src={quickViewItem.image_url || getProductImage(null, quickViewItem.category || 'Other', quickViewItem.name)} fill unoptimized style={{ objectFit: 'contain' }} alt={quickViewItem.name} />
+                <Image src={getProductImage(quickViewItem.image_url ?? null, quickViewItem.category || 'Other', quickViewItem.name, true, storefrontSlug ?? undefined, brandNetworkIsSavage)} fill unoptimized style={{ objectFit: 'contain' }} alt={quickViewItem.name} />
               </div>
               <div style={{ flex: 1, padding: 'var(--space-6)', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ color: 'var(--teal)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 'bold', marginBottom: 8 }}>{quickViewItem.category || 'Compound'}</div>
@@ -3021,7 +3633,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                 return (
                   <div key={id} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', background: 'rgba(255,255,255,0.03)', padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)' }}>
                     <div style={{ width: '100%', height: 120, background: 'var(--black-2)', borderRadius: 8, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                      <Image src={item.image_url || getProductImage(null, item.category || 'Other', item.name)} fill unoptimized style={{ objectFit: 'contain', padding: 8 }} alt={item.name} />
+                      <Image src={getProductImage(item.image_url ?? null, item.category || 'Other', item.name, true, storefrontSlug ?? undefined, brandNetworkIsSavage)} fill unoptimized style={{ objectFit: 'contain', padding: 8 }} alt={item.name} />
                     </div>
                     <div style={{ color: 'var(--teal)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{item.category || 'N/A'}</div>
                     <div style={{ color: 'var(--white)', fontWeight: 700, fontSize: '1.1rem' }}>{item.name}</div>
@@ -3130,6 +3742,40 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
           </div>
         </div>
       )}
+
+      {/* Quick-Log FAB */}
+      <div style={{ position: 'fixed', bottom: 100, right: 24, zIndex: 9998, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 12 }}>
+        {quickLogOpen && (
+          <div className="glass-panel" style={{ padding: 'var(--space-4)', borderRadius: 16, minWidth: 260, boxShadow: '0 12px 40px rgba(0,0,0,0.6)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ color: 'var(--white)', fontWeight: 700, fontSize: '0.9rem', marginBottom: 2 }}>Quick-Log Dose</div>
+            <select value={quickCompound} onChange={e => setQuickCompound(e.target.value)} style={{ width: '100%', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.15)', padding: '8px 10px', borderRadius: 8, color: 'var(--white)', fontSize: '0.9rem' }}>
+              <option value="">Select Compound</option>
+              {Array.from(new Set([...favorites, ...pastOrders, ...recentlyViewed].filter(i => i.name).map(i => i.name))).map(n => (
+                <option key={n as string} value={n as string}>{n}</option>
+              ))}
+            </select>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input type="number" placeholder="Amount" value={quickAmount} onChange={e => setQuickAmount(e.target.value)} style={{ flex: 1, background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.15)', padding: '8px 10px', borderRadius: 8, color: 'var(--white)', fontSize: '0.9rem' }} />
+              <select value={quickUnit} onChange={e => setQuickUnit(e.target.value)} style={{ width: 72, background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.15)', padding: '8px 6px', borderRadius: 8, color: 'var(--white)', fontSize: '0.9rem' }}>
+                <option value="mcg">mcg</option>
+                <option value="mg">mg</option>
+                <option value="iu">IU</option>
+                <option value="ml">ml</option>
+              </select>
+            </div>
+            <button onClick={quickLog} disabled={!quickCompound || !quickAmount || quickSaving} className="btn btn-primary" style={{ width: '100%', padding: '10px', borderRadius: 8 }}>
+              {quickSaving ? 'Logging...' : 'Log Now'}
+            </button>
+          </div>
+        )}
+        <button
+          onClick={() => setQuickLogOpen(o => !o)}
+          style={{ width: 56, height: 56, borderRadius: '50%', background: quickLogOpen ? '#ef4444' : 'var(--teal)', border: 'none', color: quickLogOpen ? '#fff' : 'var(--black)', fontSize: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 6px 24px rgba(0,196,188,0.5)', transition: 'all 0.2s ease' }}
+          title={quickLogOpen ? 'Close' : 'Quick Log Dose'}
+        >
+          {quickLogOpen ? <X size={22} /> : <Syringe size={22} />}
+        </button>
+      </div>
 
       {/* CSS for animations */}
       <style dangerouslySetInnerHTML={{__html: `

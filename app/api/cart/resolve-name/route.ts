@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getEffectiveUser } from '@/lib/impersonation';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await getEffectiveUser(supabase);
 
     let agentId = null;
 
@@ -50,7 +51,11 @@ export async function POST(req: NextRequest) {
         if (profile.role === 'researcher' && profile.referring_agent_id) {
           agentId = profile.referring_agent_id;
         } else if (profile.role === 'agent' || profile.role === 'super_agent') {
-          agentId = profile.parent_agent_id || profile.id;
+          // Agents always resolve against their OWN storefront catalog, not the
+          // parent's. parent_agent_id is used for the billing chain, not catalog
+          // ownership. Using parent_agent_id here would send agents to the wrong
+          // product catalog at the wrong prices.
+          agentId = profile.id;
         }
       }
     }
@@ -93,7 +98,7 @@ export async function POST(req: NextRequest) {
         is_visible,
         product_id,
         products!inner (
-          id, name, is_banned, is_active, admin_bulk_price, admin_bulk_threshold, sku, compound_slug, unit_size, inventory_count
+          id, name, is_banned, is_active, admin_bulk_price, admin_bulk_threshold, sku, compound_slug, unit_size, inventory_count, base_cost
         )
       `)
       .eq('agent_id', agentId)
@@ -129,21 +134,30 @@ export async function POST(req: NextRequest) {
     // The order route handles out-of-stock checks correctly via agent_inventory.
     // Blocking here would incorrectly reject orderable products for agents with local stock.
 
+    // Is this an agent buying from their own storefront?
+    const agentSelfBuy = !!user && user.id === agentId;
+
+    // Agent self-buys use base_cost (wholesale cost price), not retail.
+    // This mirrors the server-side pricing enforced in POST /api/orders.
+    const retailPerVial = (Number(pick.retail_price) || 0);
+    const costPerVial = agentSelfBuy && product.base_cost != null
+      ? (Number(product.base_cost) || 0)
+      : retailPerVial;
+
     const item = {
       id: pick.id,
       productId: product.id,
       name: product.name,
       sku: product.sku || product.id,
-      retailPrice: (Number(pick.retail_price) || 0) / 10,
-      costPrice: (Number(pick.retail_price) || 0) / 10,
-      bulkCostPrice: product.admin_bulk_price != null ? Number(product.admin_bulk_price) / 10 : null,
+      retailPrice: agentSelfBuy ? costPerVial : retailPerVial,
+      costPrice: costPerVial,
+      bulkCostPrice: product.admin_bulk_price != null ? Number(product.admin_bulk_price) : null,
       bulkThreshold: product.admin_bulk_threshold != null ? Number(product.admin_bulk_threshold) : null,
       weightOz: 0, // Not strictly needed for UI Add to Cart, resolved at checkout
-      agentSelfBuy: !!user && user.id === agentId
+      agentSelfBuy,
     };
 
-    const isBacWater = (product.name || '').toLowerCase().includes('bac') || (product.compound_slug || '') === 'bacteriostatic-water';
-    const quantity = isBacWater ? 10 : 1;
+    const quantity = 1;
 
     return NextResponse.json({ item, quantity });
 

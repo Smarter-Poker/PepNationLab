@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { getEffectiveUser } from '@/lib/impersonation';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit } from '@/lib/rate-limit';
 
@@ -29,7 +30,7 @@ export async function POST(
   }
 
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getEffectiveUser(supabase);
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
   }
@@ -123,6 +124,11 @@ export async function POST(
     agentSlug = ap?.slug ?? null;
   }
 
+  // Detect agent self-buy: the buyer is the storefront owner.
+  // When true, use base_cost pricing (same as the checkout server-side path)
+  // instead of the retail storefront price.
+  const isAgentSelfBuy = !!source.agent_id && source.agent_id === user.id;
+
   const skipped: Array<{ product_name: string; reason: string }> = [];
   // Storefront-cart shape consumed by app/checkout/CheckoutForm.tsx.
   const items: Array<{
@@ -145,8 +151,11 @@ export async function POST(
     if (apMatch && !apMatch.is_visible) { skipped.push({ product_name: product.name, reason: 'Hidden From Storefront' }); continue; }
 
     const baseCost = Number(product.base_cost) || 0;
-    // retail_price / base_cost are per-10-vial packs; order quantity is per vial.
-    const perVial = apMatch ? apMatch.price / 10 : baseCost / 10;
+    const retailPerVial = apMatch ? apMatch.price : baseCost;
+    // Agent self-buys use cost pricing (base_cost), not the storefront retail
+    // price. This mirrors the server-side pricing in POST /api/orders.
+    const costPerVial = baseCost;
+    const perVial = isAgentSelfBuy ? costPerVial : retailPerVial;
     const sizeLabel = product.unit_size ? ` (${product.unit_size}${product.unit_measure || ''})` : '';
 
     const bundleMatch = it.product_name && typeof it.product_name === 'string' ? it.product_name.match(/^(.*?)\s+\[Part of:\s+(.*?)\]$/) : null;
@@ -156,11 +165,10 @@ export async function POST(
       name: `${product.name}${sizeLabel}`.trim(),
       sku: it.product_id,
       quantity: it.quantity,
-      // Researcher (non-self-buy): retail == cost == the per-vial retail price.
-      retailPrice: Math.round(perVial * 100) / 100,
-      costPrice: Math.round(perVial * 100) / 100,
+      retailPrice: Math.round((isAgentSelfBuy ? costPerVial : retailPerVial) * 100) / 100,
+      costPrice: Math.round(costPerVial * 100) / 100,
       weightOz: Number(product.weight_oz) || 0.5,
-      agentSelfBuy: false,
+      agentSelfBuy: isAgentSelfBuy,
       ...(bundleMatch ? { bundleName: bundleMatch[2] } : {}),
     });
 

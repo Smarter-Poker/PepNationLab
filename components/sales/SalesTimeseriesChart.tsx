@@ -12,7 +12,7 @@ export default function SalesTimeseriesChart({ points }: { points: any[] }) {
     <div className="glass-panel">
       <div className="" style={{ padding: 12 }}>
         <h3 style={{ color: 'var(--white)', fontSize: '0.95rem', margin: '0 0 8px' }}>Performance Trend</h3>
-        <div style={{ width: '100%', height: 240 }}>
+        <div style={{ width: '100%', height: 240 }} role="img" aria-label="Area Chart Of Daily Revenue And Profit Over The Selected Period">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data}>
               <CartesianGrid stroke="rgba(255,255,255,0.06)" />

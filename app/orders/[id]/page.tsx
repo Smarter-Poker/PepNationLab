@@ -3,18 +3,25 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import IframeLink from '@/components/ui/IframeLink';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { isSavageNetworkAgent } from '@/lib/brand-network';
 import PageShell from '@/components/PageShell';
 import PaymentProofUpload from '@/components/PaymentProofUpload';
 import RecommendationStrip, { type RecommendationItem } from '@/components/RecommendationStrip';
 import ReceiptButton from './ReceiptButton';
 import OrderTrackingTimeline, { type TrackingEvent } from '@/components/OrderTrackingTimeline';
 import OrderStageTimeline from '@/components/OrderStageTimeline';
+import OrderActivityFeed, { type OrderActivityEvent } from '@/components/OrderActivityFeed';
 import ReorderOrderButton from './ReorderOrderButton';
+import CancelOrderButton from './CancelOrderButton';
 import ReorderStackButton from './ReorderStackButton';
 import ChangePaymentMethod from '@/components/ChangePaymentMethod';
+import ConfirmPaymentSentButton from './ConfirmPaymentSentButton';
 import { paymentMethodLabel } from '@/lib/payment-method-labels';
 import HelpHint from '@/components/help/HelpHint';
 import { getPopularName } from '@/lib/peptide-popular-names';
+import { carrierInfo } from '@/lib/carrier';
+import { computeOwnOrderLedger, computeUplineLedger } from '@/lib/agent-ledger';
+import LedgerBreakdown from '@/components/LedgerBreakdown';
 
 // R28: map order status → matching FAQ id so the contextual help pill lands
 // the buyer on the exact answer for their state (not the FAQ root). Every id
@@ -69,6 +76,7 @@ interface OrderItem {
   quantity: number;
   unit_retail_price: number | string;
   unit_cost_price: number | string;
+  unit_super_agent_cost: number | string | null;
   lot_number: string | null;
   coa_url: string | null;
 }
@@ -92,6 +100,8 @@ interface Order {
   shipping_address: any;
   agent_id: string | null;
   buyer_id: string;
+  buyer_payment_sent_at: string | null;
+  payment_confirmed_at: string | null;
   order_items: OrderItem[];
   profiles: { full_name: string | null; email: string } | null;
 }
@@ -107,6 +117,15 @@ export default async function OrderDetailPage(
     redirect(`/login?redirect=/orders/${id}`);
   }
 
+  // Determine viewer role to conditionally show admin/agent controls.
+  const { data: viewerProfile } = await supabase
+    .from('profiles')
+    .select('role, is_sub_agent, is_super_agent')
+    .eq('id', user.id)
+    .maybeSingle();
+  const viewerRole = viewerProfile?.role ?? 'researcher';
+  const canCancelOrder = viewerRole === 'admin' || viewerRole === 'agent' || viewerRole === 'super_agent';
+
   // RLS enforces buyer_id = auth.uid() for researchers; admins/agents may also pass.
   const { data: orderData, error } = await supabase
     .from('orders')
@@ -114,7 +133,8 @@ export default async function OrderDetailPage(
       id, status, created_at, payment_method, fulfillment_method,
       subtotal, discount_amount, coupon_code, shipping_cost, total,
       tracking_number, label_url, shipped_at, delivered_at, updated_at, shipping_address, agent_id, buyer_id,
-      order_items (id, agent_product_id, product_id, product_name, quantity, unit_retail_price, unit_cost_price, lot_number, coa_url, products(compound_slug)),
+      buyer_payment_sent_at, payment_confirmed_at,
+      order_items (id, agent_product_id, product_id, product_name, quantity, unit_retail_price, unit_cost_price, unit_super_agent_cost, lot_number, coa_url, products(compound_slug)),
       profiles:buyer_id (full_name, email)
     `)
     .eq('id', id)
@@ -158,7 +178,7 @@ export default async function OrderDetailPage(
 
   const order = orderData as unknown as Order;
 
-  // Carrier tracking history (Shippo webhook -> shipping_tracking_events).
+  // Carrier tracking history (EasyPost webhook -> shipping_tracking_events).
   // RLS-scoped to this buyer/agent/admin and fully best-effort: any failure
   // leaves the timeline empty and never breaks the order page.
   let trackingEvents: TrackingEvent[] = [];
@@ -174,24 +194,47 @@ export default async function OrderDetailPage(
     trackingEvents = [];
   }
 
+  // Order activity timeline (order_events). RLS grants the buyer (and the
+  // order's agent / upline / admins) read access; best-effort so a failure
+  // never breaks the order page. The component filters to buyer-safe events.
+  let activityEvents: OrderActivityEvent[] = [];
+  try {
+    const { data: oe } = await supabase
+      .from('order_events')
+      .select('event, actor_role, payload, created_at')
+      .eq('order_id', order.id)
+      .order('created_at', { ascending: true })
+      .limit(100);
+    if (Array.isArray(oe)) activityEvents = oe as unknown as OrderActivityEvent[];
+  } catch {
+    activityEvents = [];
+  }
+
   // Resolve seller payment handles if order has an agent
   let paymentHandles: Record<string, string> = {};
   let sellerName = 'Pep Nation Lab';
   let agentSlug: string | null = null;
+  let sellerLogoUrl: string | null = null;
+  let brandNetworkIsSavage = false;
   if (order.agent_id) {
+    try {
+      const svcBrand = await createServiceClient();
+      brandNetworkIsSavage = await isSavageNetworkAgent(svcBrand, order.agent_id);
+    } catch { /* non-fatal: strip falls back to its heuristics */ }
     const { data: agentProfile } = await supabase
       .from('agent_profiles')
-      .select('display_name, payment_handles, slug')
+      .select('display_name, payment_handles, slug, logo_url')
       .eq('id', order.agent_id)
       .maybeSingle();
     if (agentProfile) {
       sellerName = agentProfile.display_name || sellerName;
       paymentHandles = (agentProfile.payment_handles as any) || {};
       agentSlug = (agentProfile.slug as string | null) ?? null;
+      sellerLogoUrl = (agentProfile.logo_url as string | null) ?? null;
     }
   }
 
-  // ─── Recommendations ("You May Also Like") ───────────────
+  // ─── Recommendations ("You May Also Like") ───────
   // Seed from the FIRST eligible order_item.product_id. Service client used
   // so the SECURITY DEFINER RPC + materialized view reads work regardless
   // of the researcher's row-level role. We intersect the candidate ids
@@ -398,12 +441,20 @@ export default async function OrderDetailPage(
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
                 <ReorderOrderButton orderId={order.id} />
+                {canCancelOrder && (
+                  <CancelOrderButton
+                    orderId={order.id}
+                    currentStatus={order.status}
+                    viewerRole={viewerRole === 'admin' ? 'admin' : 'agent'}
+                  />
+                )}
                 <ReceiptButton
                   orderId={order.id}
                   createdAt={order.created_at}
                   buyerName={buyer?.full_name || 'Researcher'}
                   buyerEmail={buyer?.email || ''}
                   sellerName={sellerName}
+                  sellerLogoUrl={sellerLogoUrl}
                   paymentMethodLabel={paymentMethodLabel(order.payment_method)}
                   paymentHandle={handleForMethod}
                   trackingNumber={order.tracking_number}
@@ -630,27 +681,72 @@ export default async function OrderDetailPage(
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 'var(--space-3)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--grey-400)' }}>
                   <span>Subtotal</span>
-                  <span>${num(order.subtotal).toFixed(2)}</span>
+                  <span style={{ whiteSpace: 'nowrap' }}>${num(order.subtotal).toFixed(2)}</span>
                 </div>
                 {num(order.discount_amount) > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#68D391' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--red)' }}>
                     <span>Coupon Discount{order.coupon_code ? ` (${order.coupon_code})` : ''}</span>
-                    <span>-${num(order.discount_amount).toFixed(2)}</span>
+                    <span style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>-${num(order.discount_amount).toFixed(2)}</span>
                   </div>
                 )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--grey-400)' }}>
                   <span>Shipping</span>
-                  <span>${num(order.shipping_cost).toFixed(2)}</span>
+                  <span style={{ whiteSpace: 'nowrap' }}>${num(order.shipping_cost).toFixed(2)}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 700, color: 'var(--teal)', marginTop: 4, paddingTop: 'var(--space-2)', }}>
                   <span>Total</span>
-                  <span style={{ fontFamily: 'var(--font-brand)' }}>${num(order.total).toFixed(2)}</span>
+                  <span style={{ fontFamily: 'var(--font-brand)', whiteSpace: 'nowrap' }}>${num(order.total).toFixed(2)}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* You May Also Like */}
+          {/* Agent Settlement Ledger — visible to agents/super_agents/admins only.
+              Uses the same math as lib/agent-ledger.ts / components/AgentOrders.tsx.
+              unit_cost_price   = what this agent owes their upline (Savage Brands)
+              unit_super_agent_cost = what upline owes Pep Nation (their COG) */}
+          {(viewerRole === 'agent' || viewerRole === 'super_agent' || viewerRole === 'admin') && order.agent_id && (() => {
+            const ownLedger = computeOwnOrderLedger(order, order.order_items);
+            const uplineLedger = computeUplineLedger(order, order.order_items);
+            
+            const {
+              grossCustomerPmt,
+              netYouCollect,
+              discount,
+              shippingCost,
+              ownProfit,
+              hasSbCost,
+              sbCostTotal,
+              markupSpread
+            } = ownLedger;
+
+            const {
+              dlOwesYou,
+              youOwePepNation,
+              uplProfit
+            } = uplineLedger;
+
+            const isOwnOrder = user?.id === order.agent_id;
+
+            return (
+              <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-5)', animationDelay: '0.25s' }}>
+                <div style={{ padding: '16px 18px', borderRadius: 12, background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.2)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 800 }}>
+                    Settlement Ledger
+                  </div>
+                  <LedgerBreakdown
+                    ownLedger={ownLedger}
+                    uplineLedger={uplineLedger}
+                    viewerRole={viewerRole}
+                    isOwnOrder={!!isOwnOrder}
+                    agentName={'Agent'}
+                    uplineName={'Upline'}
+                    couponCode={order.coupon_code}
+                  />
+                </div>
+              </div>
+            );
+          })()}
           {recommendations.length > 0 && (
             <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-5)', animationDelay: '0.3s' }}>
               <RecommendationStrip
@@ -663,6 +759,8 @@ export default async function OrderDetailPage(
                   ...r,
                   href: agentSlug ? `/${agentSlug}?product=${encodeURIComponent(r.id)}` : '/orders',
                 }))}
+                agentSlug={agentSlug ?? undefined}
+                isSavageBrandsNetwork={brandNetworkIsSavage}
               />
             </div>
           )}
@@ -729,10 +827,34 @@ export default async function OrderDetailPage(
             </div>
           )}
 
-          {/* Payment Proof Upload (buyer only - RLS enforces) */}
+          {/* Buyer payment-sent confirmation: one tap tells the agent the
+              money is on its way and stops the buyer's 12-hour reminders.
+              Shown to the buyer at every active pre-delivery stage. */}
+          {order.buyer_id === user.id
+            && !['cancelled', 'shipped', 'delivered'].includes(order.status) && (
+            <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-5)', marginBottom: 'var(--space-5)', animationDelay: '0.42s' }}>
+              <h2 style={{ fontSize: '0.95rem', color: 'var(--white)', marginBottom: 'var(--space-3)' }}>
+                Payment Confirmation
+              </h2>
+              <ConfirmPaymentSentButton
+                orderId={order.id}
+                buyerPaymentSentAt={order.buyer_payment_sent_at}
+                paymentConfirmedAt={order.payment_confirmed_at}
+              />
+            </div>
+          )}
+
+          {/* Payment Proof Upload (buyer only - the POST route rejects
+              non-buyers and shipped/cancelled/delivered orders, so mirror
+              both gates here instead of showing a button that can only 403).
+              Agents/uplines still see the uploaded proofs listed above the
+              (hidden) upload control. */}
           <PaymentProofUpload
             orderId={order.id}
-            uploadDisabled={order.status === 'cancelled' || order.status === 'delivered'}
+            uploadDisabled={
+              ['cancelled', 'delivered', 'shipped'].includes(order.status) ||
+              order.buyer_id !== user.id
+            }
           />
 
           {/* Tracking */}
@@ -747,6 +869,19 @@ export default async function OrderDetailPage(
                   <div style={{ fontSize: '0.92rem', color: 'var(--silver)', fontWeight: 600, fontFamily: 'var(--font-brand)', wordBreak: 'break-all' }}>
                     {order.tracking_number}
                   </div>
+                  {(() => {
+                    const ti = carrierInfo(order.tracking_number);
+                    return ti.trackingUrl ? (
+                      <IframeLink
+                        href={ti.trackingUrl}
+                        title={`Track With ${ti.carrier}`}
+                        className="btn btn-secondary"
+                        style={{ display: 'inline-flex', fontSize: '0.85rem', marginTop: 'var(--space-2)' }}
+                      >
+                        Track Package
+                      </IframeLink>
+                    ) : null;
+                  })()}
                 </div>
               )}
               {order.label_url && (
@@ -761,9 +896,14 @@ export default async function OrderDetailPage(
             </div>
           )}
 
-          {/* Carrier tracking history from the Shippo webhook. Renders nothing
+          {/* Carrier tracking history from the EasyPost webhook. Renders nothing
               until tracking events arrive, so it is safe to mount always. */}
           <OrderTrackingTimeline events={trackingEvents} />
+
+          {/* Order activity history from order_events - the authoritative
+              timeline of everything that happened to this order. Renders
+              nothing when no buyer-visible events exist. */}
+          <OrderActivityFeed events={activityEvents} />
 
           {/* Lot Numbers & COA (R26 placeholder - wired to order_items.lot_number / coa_url;
               real values are stamped at fulfillment time. Until then, each line item

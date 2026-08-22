@@ -5,36 +5,59 @@
 // same column. At read time we re-sign the stored value into a short-lived
 // signed URL so the media renders without exposing the bucket publicly.
 //
+// Bucket-aware: payment-proof receipts are auto-sent into the buyer<->agent
+// thread by /api/researcher/payment-proof with a media_url pointing at the
+// private `payment-proofs` bucket. Those stored values are SIGNED URLs whose
+// token expires (24h) -- without re-signing here the proof image in the chat
+// would permanently 403 the next day. deriveBucketAndPath therefore extracts
+// BOTH the bucket and the object path from any of our storage URL forms
+// (public/sign/authenticated) and re-signs against the correct bucket.
+//
 // This does NOT change what the DB stores or the upload flow -- it only
 // rewrites the URL on outgoing rows right before the JSON response/broadcast.
 import { createServiceClient } from '@/lib/supabase/server';
 
-const BUCKET = 'messenger_media';
+const DEFAULT_BUCKET = 'messenger_media';
+// Buckets whose objects may legitimately appear in a messenger media_url.
+// Anything else (external hosts, unknown buckets) is passed through unchanged.
+const SIGNABLE_BUCKETS = new Set<string>([DEFAULT_BUCKET, 'payment-proofs']);
 const SIGNED_URL_TTL_SECONDS = 3600;
 
 /**
- * Derive the storage object path for the `messenger_media` bucket from a stored
- * media_url. Returns null when the value is not a signable messenger object
- * (e.g. an external Tenor GIF or an unknown host) -- callers treat null as
- * "return the value unchanged".
+ * Derive the storage bucket + object path from a stored media_url. Returns
+ * null when the value is not a signable storage object (e.g. an external
+ * Tenor GIF or an unknown host/bucket) -- callers treat null as "return the
+ * value unchanged".
  */
-function deriveObjectPath(stored: string): string | null {
-  const marker = '/messenger_media/';
+function deriveBucketAndPath(stored: string): { bucket: string; path: string } | null {
+  // Canonical storage URL forms:
+  //   .../storage/v1/object/public/<bucket>/<path>
+  //   .../storage/v1/object/sign/<bucket>/<path>?token=...
+  //   .../storage/v1/object/authenticated/<bucket>/<path>
+  const m = stored.match(/\/storage\/v1\/object\/(?:public|sign|authenticated)\/([^/?#]+)\/([^?#]+)/);
+  if (m && SIGNABLE_BUCKETS.has(m[1])) {
+    return { bucket: m[1], path: m[2] };
+  }
+
+  // Legacy fallback: any value containing the messenger_media marker.
+  const marker = `/${DEFAULT_BUCKET}/`;
   const markerIdx = stored.indexOf(marker);
   if (markerIdx !== -1) {
     let path = stored.slice(markerIdx + marker.length);
     const q = path.indexOf('?');
     if (q !== -1) path = path.slice(0, q);
-    return path || null;
+    return path ? { bucket: DEFAULT_BUCKET, path } : null;
   }
-  // Bare relative path (no scheme) -- treat as an object path as-is.
+
+  // Bare relative path (no scheme) -- treat as a messenger_media object path.
   if (!stored.includes('://')) {
     let path = stored;
     const q = path.indexOf('?');
     if (q !== -1) path = path.slice(0, q);
-    return path || null;
+    return path ? { bucket: DEFAULT_BUCKET, path } : null;
   }
-  // Unknown absolute host -- not a messenger object, leave unchanged.
+
+  // Unknown absolute host / bucket -- not ours to sign, leave unchanged.
   return null;
 }
 
@@ -42,7 +65,7 @@ function deriveObjectPath(stored: string): string | null {
  * Re-sign a single stored media_url into a short-lived signed URL.
  * - Falsy input returns the input (null-normalized).
  * - Tenor GIF URLs are returned unchanged.
- * - Non-messenger absolute URLs are returned unchanged.
+ * - Non-signable absolute URLs are returned unchanged.
  * - On any error the function returns null (never throws).
  */
 export async function signMessengerMediaUrl(
@@ -61,16 +84,16 @@ export async function signMessengerMediaUrl(
       // Not an absolute URL -- fall through to path derivation.
     }
 
-    const path = deriveObjectPath(stored);
-    if (path === null) {
+    const found = deriveBucketAndPath(stored);
+    if (found === null) {
       // Unknown host / unsignable -- leave it unchanged rather than break it.
       return stored;
     }
 
     const svc = await createServiceClient();
     const { data, error } = await svc.storage
-      .from(BUCKET)
-      .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
+      .from(found.bucket)
+      .createSignedUrl(found.path, SIGNED_URL_TTL_SECONDS);
     if (error || !data?.signedUrl) return null;
     return data.signedUrl;
   } catch {

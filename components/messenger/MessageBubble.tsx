@@ -102,7 +102,7 @@ export default function MessageBubble({
   onLabelToggle, onThread, onReport, onSetReminder,
   activeMenuId, onMenuToggle, readBy = [],
 }: Props) {
-  // ── All hooks must be declared unconditionally before any early return ────
+  // ──── All hooks must be declared unconditionally before any early return ────
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(message.text ?? '');
@@ -111,6 +111,7 @@ export default function MessageBubble({
   const [labelsOpen, setLabelsOpen] = useState(false);
   const [expiryTick, setExpiryTick] = useState(0);
   const [hovered, setHovered] = useState(false);
+  const [markPaidState, setMarkPaidState] = useState<'idle' | 'busy' | 'done'>('idle');
   const touchTimerRef = useRef<NodeJS.Timeout | null>(null);
   const openedViaTouchRef = useRef<number>(0);
   const lastTapRef = useRef<number>(0);
@@ -129,7 +130,7 @@ export default function MessageBubble({
     return () => clearInterval(id);
   }, [message.expires_at]);
 
-  // ── Early return for system messages (after all hooks) ──────────────────
+  // ──── Early return for system messages (after all hooks) ────
   if (message.message_type === 'system') {
     return (
       <div
@@ -159,7 +160,7 @@ export default function MessageBubble({
     const now = Date.now();
     if (now - lastTapRef.current < 300) {
       vibrateLight();
-      onReact(message, '\u2764\uFE0F', 'add');
+      onReact(message, '❤️', 'add');
       lastTapRef.current = 0;
     } else {
       lastTapRef.current = now;
@@ -171,7 +172,7 @@ export default function MessageBubble({
     if (now - lastTapRef.current < 300) {
       // Double tap detected
       if (touchTimerRef.current) clearTimeout(touchTimerRef.current);
-      onReact(message, '\u2764\uFE0F', 'add');
+      onReact(message, '❤️', 'add');
       if (navigator.vibrate) navigator.vibrate(50);
       lastTapRef.current = 0;
       return;
@@ -196,9 +197,46 @@ export default function MessageBubble({
 
   const failed = (message.metadata as { failed?: boolean })?.failed === true;
   const pending = message.id.startsWith('temp-');
-  const meta = (message.media_metadata ?? {}) as { filename?: string; size?: number; durationSec?: number; contentType?: string };
+  const meta = (message.media_metadata ?? {}) as { filename?: string; size?: number; durationSec?: number; contentType?: string; orderId?: string };
   const url = extractFirstUrl(message.text);
   const isMediaBubble = ['image', 'gif', 'video'].includes(message.message_type);
+
+  // Payment-proof affordances: the server-generated proof text or the
+  // Proof of Payment label marks this bubble as a payment receipt. The
+  // receiving side (the agent) gets a one-tap Mark As Paid that drives the
+  // same /api/agent/orders/mark-paid endpoint as the dashboard.
+  const isProofMessage =
+    Boolean(message.text?.includes('Payment proof submitted for Order #')) ||
+    (Array.isArray(currentLabels) && (currentLabels as unknown as string[]).some(
+      (l) => typeof l === 'string' && l.toLowerCase() === 'proof of payment'
+    ));
+
+  const handleMarkPaid = async () => {
+    if (typeof meta.orderId !== 'string' || !meta.orderId || markPaidState !== 'idle') return;
+    setMarkPaidState('busy');
+    try {
+      const res = await fetch('/api/agent/orders/mark-paid', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ orderId: meta.orderId }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setMarkPaidState('done');
+        toast.success('Payment Confirmed. The Order Has Moved To Approval.');
+      } else if (res.status === 400 || res.status === 409) {
+        // Already processed elsewhere - treat as settled so the button hides.
+        setMarkPaidState('done');
+        toast.info(json.error || 'This Order Was Already Processed.');
+      } else {
+        setMarkPaidState('idle');
+        toast.error(json.error || 'Could Not Mark As Paid.');
+      }
+    } catch {
+      setMarkPaidState('idle');
+      toast.error('Network Error. Please Try Again.');
+    }
+  };
 
   // expiryTick is intentionally read to ensure React re-renders when the timer fires.
   void expiryTick;
@@ -297,7 +335,7 @@ export default function MessageBubble({
                overflow: 'hidden',
                width: '100%',
             }}>
-              <Image src={message.media_url} alt="Image" loading="lazy" width={320} height={240} className="media-edge-to-edge"
+              <Image src={message.media_url} alt={meta.filename ? `Image Attachment: ${meta.filename}` : 'Image Attachment'} loading="lazy" width={320} height={240} className="media-edge-to-edge"
                 unoptimized
                 onLoad={() => {
                   if (isLast) {
@@ -332,7 +370,7 @@ export default function MessageBubble({
             }} 
             style={{ background: 'transparent', border: 0, padding: 0, cursor: isOptimistic ? 'default' : 'zoom-in' }}
           >
-            <Image src={message.media_url} alt="Gif" loading="lazy" width={320} height={240} className="media-edge-to-edge"
+            <Image src={message.media_url} alt="Animated GIF Attachment" loading="lazy" width={320} height={240} className="media-edge-to-edge"
               unoptimized
               onLoad={() => {
                 if (isLast) {
@@ -437,7 +475,7 @@ export default function MessageBubble({
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2, position: 'relative', flex: 1, minWidth: 0, maxWidth: '100%' }}>
-      {/* ── Visible action trigger button ── */}
+      {/* ──── Visible action trigger button ──── */}
       {(isPinned || currentLabels.length > 0) && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignSelf: isOwn ? 'flex-end' : 'flex-start', padding: '0 4px' }}>
           {isPinned && (
@@ -560,6 +598,68 @@ export default function MessageBubble({
       )}
 
       {url && message.message_type === 'text' && !message.is_deleted && <LinkPreview url={url} />}
+
+      {/* Order deep link: any message carrying media_metadata.orderId (payment
+          proofs sent from checkout, payment confirmations from mark-paid) gets
+          a tappable chip straight to the full order. /orders/<id> is RLS-scoped
+          to the buyer, the order's agent, and the upline super agent, so one
+          link serves every participant in the thread. */}
+      {typeof meta.orderId === 'string' && meta.orderId.length > 0 && !message.is_deleted && (
+        <a
+          href={`/orders/${encodeURIComponent(meta.orderId)}`}
+          aria-label={`View Full Order ${meta.orderId.slice(0, 8).toUpperCase()}`}
+          style={{
+            alignSelf: isOwn ? 'flex-end' : 'flex-start',
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            marginTop: 4, padding: '5px 12px', borderRadius: 999,
+            background: 'rgba(0,196,188,0.12)',
+            border: '1px solid rgba(0,196,188,0.45)',
+            color: 'var(--teal, #00C4BC)',
+            fontSize: '0.78rem', fontWeight: 700,
+            textDecoration: 'none', letterSpacing: '0.02em',
+          }}
+        >
+          View Full Order #{meta.orderId.slice(0, 8).toUpperCase()}
+          <span aria-hidden="true">→</span>
+        </a>
+      )}
+
+      {/* One-tap payment confirmation for the receiving agent on proof
+          messages. Drives the same mark-paid endpoint as the dashboard, so
+          all downstream effects (status move, proof verification stamp,
+          buyer notifications, Payment Verified chat message) fire as usual. */}
+      {isProofMessage && !isOwn && !message.is_deleted &&
+        typeof meta.orderId === 'string' && meta.orderId.length > 0 && markPaidState !== 'done' && (
+        <button
+          type="button"
+          onClick={handleMarkPaid}
+          disabled={markPaidState === 'busy'}
+          style={{
+            alignSelf: 'flex-start',
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            marginTop: 4, padding: '6px 14px', borderRadius: 999,
+            background: markPaidState === 'busy' ? 'rgba(104,211,145,0.25)' : '#22C55E',
+            border: '1px solid rgba(104,211,145,0.6)',
+            color: markPaidState === 'busy' ? 'var(--silver, #C8D2DC)' : '#04220F',
+            fontSize: '0.78rem', fontWeight: 800,
+            cursor: markPaidState === 'busy' ? 'wait' : 'pointer',
+            letterSpacing: '0.02em',
+          }}
+          aria-label="Mark This Order As Paid"
+        >
+          {markPaidState === 'busy' ? 'Confirming...' : 'Mark As Paid'}
+        </button>
+      )}
+      {isProofMessage && !isOwn && markPaidState === 'done' && (
+        <span style={{
+          alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 6,
+          marginTop: 4, padding: '5px 12px', borderRadius: 999,
+          background: 'rgba(104,211,145,0.12)', border: '1px solid rgba(104,211,145,0.45)',
+          color: '#68D391', fontSize: '0.78rem', fontWeight: 700,
+        }}>
+          Payment Confirmed
+        </span>
+      )}
 
       {Object.keys(grouped).length > 0 && !message.is_deleted && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignSelf: isOwn ? 'flex-end' : 'flex-start', padding: '2px 4px' }}>

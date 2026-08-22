@@ -11,14 +11,17 @@ import { resolveCartIdsToProductIds } from '@/lib/cart-ids';
  * many vials of Bacteriostatic Water are needed for reconstitution.
  *
  * Reconstitution logic:
- *   Each lyophilized peptide vial typically requires 2 mL of BAC water
- *   (industry-standard starting volume for most research peptides).
- *   Products whose compound_slug maps to evidence_tier = 'supply' are excluded
- *   (they don't need reconstitution).
- *   BAC water products themselves are excluded (obviously).
- *   Acetic acid reconstituted peptides (GLP-1 class) need acetic acid, not BAC
- *   water, and are excluded from the BAC water calculation.
- *   Vials needed = ceil(totalMl / 10) since each BAC water vial is 10 mL.
+ *   Each lyophilized peptide vial's BAC water need is derived from its labeled
+ *   strength (~5 mg/mL convention, 1-5 mL/vial) rather than a flat per-vial
+ *   amount, then summed across the cart (see reconstitutionMlPerVial /
+ *   lineReconstitutionMl below).
+ *   Products whose compound_slug maps to evidence_tier = 'supply', or whose
+ *   form is pre-mixed/implant, are excluded (they don't need reconstitution).
+ *   Cosmetic-tier lyophilized peptides (GHK-Cu, AHK-Cu, SNAP-8) DO need BAC
+ *   water and are counted. BAC water products themselves are excluded.
+ *   Acetic-acid peptides (IGF class) need acetic acid, not BAC water, and are
+ *   excluded from this calculation.
+ *   Vials needed = ceil(totalMlNeeded / actualBacVialSizeMl).
  *
  * Returns:
  *   {
@@ -42,10 +45,39 @@ const BAC_WATER_RE = /bacteriostatic\s*water|bac\.?\s*water/i;
 const SUPPLY_CATEGORY_RE = /supply|supplies|equipment|lab\s*supply/i;
 const ACETIC_ACID_RE = /acetic\s*acid/i;
 
-// Standard reconstitution volume per vial (mL)
-const ML_PER_VIAL = 2;
-// Volume per BAC water vial (mL)
-const ML_PER_BAC_VIAL = 10;
+// Default volume per BAC water vial (mL) when the product size can't be parsed.
+const DEFAULT_BAC_VIAL_ML = 10;
+
+// Smart reconstitution volume (mL) for ONE physical research vial, derived from
+// its labeled strength. There is no single universally "correct" volume (it
+// depends on the researcher's target concentration), so we apply the widely
+// used ~5 mg/mL convention for lyophilized peptides: minimum 1 mL, capped at
+// 5 mL per vial, rounded up to the nearest 0.5 mL. IU products (HCG/HMG)
+// reconstitute in ~1-3 mL; pre-mixed liquids (measured in ml) need none.
+function reconstitutionMlPerVial(size: number, measure: string | null): number {
+  const m = (measure || 'mg').toLowerCase();
+  if (m.includes('ml')) return 0;
+  if (m.includes('iu')) return Math.min(3, Math.max(1, Math.ceil(size / 5000)));
+  if (!Number.isFinite(size) || size <= 0) return 2;
+  return Math.min(5, Math.max(1, Math.ceil((size / 5) * 2) / 2));
+}
+
+// BAC water (mL) to reconstitute one whole cart LINE, accounting for multi-vial
+// stacks whose name contains '+' (e.g. "BPC 10mg + TB 10mg" ships as separate
+// vials, so the labeled total mg is split across the component vials).
+function lineReconstitutionMl(
+  name: string,
+  unitSize: string | null,
+  unitMeasure: string | null,
+  qty: number,
+): number {
+  const totalMg = parseFloat(String(unitSize ?? ''));
+  const componentCount = name && name.includes('+') ? name.split('+').length : 1;
+  const perVialSize =
+    Number.isFinite(totalMg) && totalMg > 0 ? totalMg / componentCount : totalMg;
+  const perVialMl = reconstitutionMlPerVial(perVialSize, unitMeasure);
+  return perVialMl * componentCount * qty;
+}
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -127,7 +159,22 @@ export async function POST(req: NextRequest) {
         .in('slug', compoundSlugsToCheck);
 
       for (const c of compounds ?? []) {
-        if (c.evidence_tier === 'supply' || c.evidence_tier === 'cosmetic') {
+        // Only 'supply' compounds (BAC water, acetic acid, lab supplies) are
+        // categorically non-reconstitutable. 'cosmetic' tier is NOT excluded
+        // here: GHK-Cu / AHK-Cu / SNAP-8 are lyophilized mg powders whose
+        // diluent is bacteriostatic/sterile water, so they genuinely need BAC
+        // water. Pre-mixed cosmetic liquids (Lemon Bottle) are still excluded
+        // below via their form, and any 'ml' product contributes 0 mL anyway.
+        if (c.evidence_tier === 'supply') {
+          supplyCompoundSlugs.add(c.slug);
+        }
+        // Pre-mixed aqueous products (Lemon Bottle, Lipo-C, ...) ship as ready
+        // liquids, and implants need no diluent. Both must not inflate the
+        // suggestion. NOTE: do NOT match bare 'solution' -- forms like PT-141's
+        // "solution (autoinjector) or lyophilized" still need BAC water for the
+        // lyophilized form.
+        const form = String((c.handling as { form?: unknown } | null)?.form ?? '');
+        if (/pre-?mixed|\bimplant\b/i.test(form)) {
           supplyCompoundSlugs.add(c.slug);
         }
       }
@@ -139,10 +186,14 @@ export async function POST(req: NextRequest) {
 
     let peptideCount = 0;
     let totalPeptideVials = 0;
+    let totalMlRaw = 0;
 
     for (const p of products ?? []) {
       if (!p.id) continue;
-      if (p.is_active === false || p.is_banned === true) continue;
+      // Banned products are excluded. DEACTIVATED ones are NOT: a product that
+      // is in a live cart is being sold, and skipping it here silently zeroed
+      // the whole estimate and made both checkout panels disappear.
+      if (p.is_banned === true) continue;
 
       const isBacWater = BAC_WATER_RE.test(p.name);
       const isAceticAcid = ACETIC_ACID_RE.test(p.name);
@@ -158,14 +209,33 @@ export async function POST(req: NextRequest) {
       // Skip non-peptide products
       if (isAceticAcid || isSupplyCategory || isSupplyCompound) continue;
 
-      // Count as a peptide vial
+      // Count as a peptide vial and add its strength-based reconstitution volume.
       const qty = productQuantities[p.id] ?? 1;
       peptideCount += 1;
       totalPeptideVials += qty;
+      totalMlRaw += lineReconstitutionMl(p.name, p.unit_size, p.unit_measure, qty);
     }
 
-    const totalMlNeeded = totalPeptideVials * ML_PER_VIAL;
-    const vialsNeeded = Math.ceil(totalMlNeeded / ML_PER_BAC_VIAL);
+    // SILENT-VANISH FLOOR.
+    // Both checkout panels render only when vialsNeeded > 0, so any cart whose
+    // items all resolve to 0 mL made the entire BAC water recommendation
+    // disappear with no explanation -- indistinguishable from the feature being
+    // broken, and the exact symptom reported repeatedly. A cart holding real
+    // research vials always gets a recommendation: when the strength-based sum
+    // comes to nothing (mislabelled unit_measure, a stale duplicate SKU, a
+    // missing strength), fall back to the same conservative ~2 mL per vial the
+    // client uses before this endpoint answers. Carts that legitimately contain
+    // only diluents or supplies never reach here -- those are filtered above and
+    // leave totalPeptideVials at 0.
+    if (totalMlRaw <= 0 && totalPeptideVials > 0) {
+      totalMlRaw = totalPeptideVials * 2;
+    }
+
+    // Aggregate mL needed for the WHOLE order, rounded up to a clean 0.5 mL.
+    const totalMlNeeded = Math.ceil(totalMlRaw * 2) / 2;
+    // Provisional vial count against the default 10 mL vial; refined below once
+    // the actual BAC water product (and its real size) is resolved.
+    let vialsNeeded = totalMlNeeded > 0 ? Math.ceil(totalMlNeeded / DEFAULT_BAC_VIAL_ML) : 0;
 
     // -- Fetch the BAC water product to add ------------------------------------
     let bacWaterProduct: {
@@ -208,6 +278,12 @@ export async function POST(req: NextRequest) {
           p.name.toLowerCase().includes('10ml')
         ) ?? bacProducts[0];
 
+        // Refine the vial count using the resolved BAC water product's real
+        // size, so the recommendation matches the exact product being added.
+        const preferredBacSizeMl =
+          parseFloat(String(preferredBac.unit_size ?? '')) || DEFAULT_BAC_VIAL_ML;
+        vialsNeeded = totalMlNeeded > 0 ? Math.ceil(totalMlNeeded / preferredBacSizeMl) : 0;
+
         bacWaterProduct = {
           id: preferredBac.id,
           name: preferredBac.name,
@@ -230,7 +306,7 @@ export async function POST(req: NextRequest) {
             const raw = apRow.is_on_sale && apRow.sale_price != null
               ? Number(apRow.sale_price)
               : Number(apRow.retail_price);
-            const perVial = Number.isFinite(raw) && raw > 0 ? raw / 10 : 0;
+            const perVial = Number.isFinite(raw) && raw > 0 ? raw : 0;
             if (perVial > 0) bacWaterProduct.retail_price = perVial;
           }
         } else {
@@ -250,7 +326,7 @@ export async function POST(req: NextRequest) {
               .eq('product_id', preferredBac.id)
               .maybeSingle();
             if (pubRow?.retail_price) {
-              bacWaterProduct.retail_price = Number(pubRow.retail_price) / 10;
+              bacWaterProduct.retail_price = Number(pubRow.retail_price);
             }
           }
         }

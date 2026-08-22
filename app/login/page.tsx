@@ -1,11 +1,15 @@
 'use client';
 
+import { AuthResolveResponseSchema } from '@/lib/schemas/auth';
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Key } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { safeRelativePath } from '@/lib/safe-redirect';
+import { LanguageProvider, useI18n } from '@/lib/i18n';
 
 function LoginPageInner() {
+  const { t } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [identifier, setIdentifier] = useState('');
@@ -16,6 +20,7 @@ function LoginPageInner() {
     const err = searchParams.get('error');
     if (err === 'oauth_failed') return 'Google Sign-In Failed. Please Try Again Or Use Your Username.';
     if (err === 'account_disabled') return 'Your Account Has Been Disabled. Contact Your Administrator.';
+    if (err === 'account_exists') return 'An Account Already Exists For This Email. Please Log In With Your Username And Password Instead Of Google.';
     return '';
   });
   const [showForgotPopup, setShowForgotPopup] = useState(false);
@@ -26,9 +31,8 @@ function LoginPageInner() {
     setError('');
     try {
       const supabase = createClient();
-      const rawRedirect = searchParams.get('redirect') ?? '/dashboard';
-      const redirectTo = /^\/(?!\/|\\)/.test(rawRedirect) ? rawRedirect : '/dashboard';
-      
+      const redirectTo = safeRelativePath(searchParams.get('redirect'));
+
       const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -41,18 +45,18 @@ function LoginPageInner() {
       
       if (oauthError) {
         console.error('[Google Login] OAuth Error:', oauthError);
-        setError('Google Sign-In Is Not Available Right Now. Please Use Your Username.');
+        setError(t('login_google_unavailable'));
         setGoogleLoading(false);
       } else if (!data?.url) {
         // Fallback in case the provider URL wasn't returned
         console.error('[Google Login] No provider URL returned.');
-        setError('Google Sign-In Is Not Available Right Now. Please Use Your Username.');
+        setError(t('login_google_unavailable'));
         setGoogleLoading(false);
       }
       // If successful, the page will redirect automatically.
     } catch (err) {
       console.error('[Google Login] Unexpected Error:', err);
-      setError('Google Sign-In Is Not Available Right Now. Please Use Your Username.');
+      setError(t('login_google_unavailable'));
       setGoogleLoading(false);
     }
   }
@@ -77,13 +81,16 @@ function LoginPageInner() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username: raw }),
         });
-        const data = await res.json();
-        if (!res.ok || !data.email) {
-          setError('Invalid Username Or Password');
+        const rawData: unknown = await res.json();
+        // Schema-locked: this email is fed straight into
+        // supabase.auth.signInWithPassword, so it must be a real string.
+        const parsed = AuthResolveResponseSchema.safeParse(rawData);
+        if (!res.ok || !parsed.success) {
+          setError(t('login_invalid'));
           setLoading(false);
           return;
         }
-        authEmail = data.email;
+        authEmail = parsed.data.email;
       }
 
       const { error: authError } = await supabase.auth.signInWithPassword({
@@ -92,10 +99,28 @@ function LoginPageInner() {
       });
 
       if (authError) {
-        setError('Invalid Username Or Password');
+        // Auth analytics (best-effort): failed login. The attempted identifier
+        // is hashed server-side; nothing raw is stored. Also feeds brute-force
+        // velocity monitoring.
+        fetch('/api/auth/events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ event_type: 'login_failed', identifier: raw }),
+          keepalive: true,
+        }).catch(() => {});
+        setError(t('login_invalid'));
         setLoading(false);
         return;
       }
+
+      // Auth analytics (best-effort): successful login. user_id is stamped
+      // server-side from the freshly-established session.
+      fetch('/api/auth/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event_type: 'login' }),
+        keepalive: true,
+      }).catch(() => {});
 
       // Single-session enforcement - deferred to avoid a race condition in
       // incognito mode where the signOut RPC can race against the new session
@@ -105,10 +130,10 @@ function LoginPageInner() {
       // Record session
       fetch('/api/agent/sessions', { method: 'POST' }).catch(() => {});
 
-      const rawRedirect = searchParams.get('redirect') ?? '/dashboard';
-      // Prevent open redirect: only allow relative paths starting with /
-      // Reject anything with a protocol, double-slash, or backslash.
-      const redirectTo = /^\/(?!\/|\\)/.test(rawRedirect) ? rawRedirect : '/dashboard';
+      // Prevent open redirect: only allow same-origin relative paths. Also strips
+      // embedded control characters that browsers would collapse into a
+      // scheme-relative "//host" navigation (see lib/safe-redirect).
+      const redirectTo = safeRelativePath(searchParams.get('redirect'));
 
       // Wait until Supabase confirms the session is readable locally (max 3s).
       // On mobile incognito the cookie write is async - navigating too soon
@@ -121,10 +146,13 @@ function LoginPageInner() {
 
       // Hard navigation ensures that the browser sends the new session cookie to the server
       // and completely bypasses any Next.js client-side router cache that might be stale.
-      // Using .replace() keeps the login page out of the history stack, so the back button works perfectly.
-      window.location.replace(redirectTo);
+      // We use setTimeout and window.location.href to bypass a WebKit bug where
+      // setting document.cookie immediately before location.replace drops the cookie.
+      setTimeout(() => {
+        window.location.href = redirectTo;
+      }, 150);
     } catch (err) {
-      setError('Something Went Wrong. Please Try Again.');
+      setError(t('login_generic_error'));
     } finally {
       setLoading(false);
     }
@@ -183,18 +211,18 @@ function LoginPageInner() {
             }}>
               <Key size={22} aria-hidden="true" />
             </div>
-            <h3 style={{ fontSize: '1.1rem', marginBottom: 'var(--space-3)', color: 'var(--white)' }}>
-              Password Reset
-            </h3>
+            <h2 style={{ fontSize: '1.1rem', marginBottom: 'var(--space-3)', color: 'var(--white)' }}>
+              {t('login_reset_title')}
+            </h2>
             <p style={{ fontSize: '0.9rem', color: 'var(--grey-300)', lineHeight: 1.6 }}>
-              Contact Your Research Agent If You Forgot Your Password Or Need It Reset
+              {t('login_reset_body')}
             </p>
             <button
               onClick={() => setShowForgotPopup(false)}
               className="btn btn-primary"
               style={{ marginTop: 'var(--space-6)', width: '100%', justifyContent: 'center' }}
             >
-              Got It
+              {t('got_it')}
             </button>
           </div>
         </div>
@@ -202,13 +230,14 @@ function LoginPageInner() {
 
       <div style={{ width: '100%', maxWidth: 420, position: 'relative' }}>
         <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-8)', boxShadow: '0 0 40px rgba(104,211,145,0.05)' }}>
-          <h2 className="animated-gradient-text" style={{ marginBottom: 'var(--space-2)', fontSize: '1.4rem', textAlign: 'center' }}>Sign In</h2>
+
+          <h1 className="animated-gradient-text" style={{ marginBottom: 'var(--space-2)', fontSize: '1.4rem', textAlign: 'center' }}>{t('login_button')}</h1>
           <p style={{ marginBottom: 'var(--space-6)', fontSize: '0.85rem', color: 'var(--grey-400)', textAlign: 'center' }}>
-            Access Your Account
+            {t('login_subtitle')}
           </p>
 
           {error && (
-            <div className="disclaimer-warning" style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-3) var(--space-4)' }}>
+            <div role="alert" className="disclaimer-warning" style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-3) var(--space-4)' }}>
               <p style={{ fontSize: '0.85rem', color: 'var(--red)' }}>{error}</p>
             </div>
           )}
@@ -227,24 +256,24 @@ function LoginPageInner() {
                 <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
                 <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
               </svg>
-              {googleLoading ? 'Redirecting To Google...' : 'Continue With Google'}
+              {googleLoading ? `${t('login_google_redirect')}...` : t('login_google')}
             </button>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-5)' }}>
             <div style={{ flex: 1, height: 1, background: 'rgba(168,180,192,0.2)' }} />
-            <span style={{ fontSize: '0.75rem', color: 'var(--grey-500)' }}>Or Sign In With A Username</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--grey-500)' }}>{t('login_or_username')}</span>
             <div style={{ flex: 1, height: 1, background: 'rgba(168,180,192,0.2)' }} />
           </div>
 
           <form onSubmit={handleLogin}>
             <div className="form-group stagger-fade-in stagger-1">
-              <label className="form-label" htmlFor="identifier">Username</label>
+              <label className="form-label" htmlFor="identifier">{t('login_username_label')}</label>
               <input
                 id="identifier"
                 type="text"
                 className="form-input"
-                placeholder="Enter Your Username"
+                placeholder={t('login_username_placeholder')}
                 value={identifier}
                 onChange={e => setIdentifier(e.target.value)}
                 required
@@ -255,7 +284,7 @@ function LoginPageInner() {
             </div>
 
             <div className="form-group stagger-fade-in stagger-2">
-              <label className="form-label" htmlFor="password">Password</label>
+              <label className="form-label" htmlFor="password">{t('login_password')}</label>
               <input
                 id="password"
                 type="password"
@@ -273,7 +302,7 @@ function LoginPageInner() {
                 href="/forgot-password"
                 style={{ fontSize: '0.8rem', color: 'var(--teal)', textDecoration: 'none' }}
               >
-                Forgot Password?
+                {t('login_forgot')}
               </a>
             </div>
 
@@ -284,7 +313,7 @@ function LoginPageInner() {
                 style={{ width: '100%', maxWidth: 300, justifyContent: 'center' }}
                 disabled={loading || !identifier || !password}
               >
-                {loading ? 'Authenticating...' : 'Sign In To Laboratory'}
+                {loading ? `${t('login_authenticating')}...` : t('login_button_lab')}
               </button>
             </div>
           </form>
@@ -295,14 +324,14 @@ function LoginPageInner() {
             textAlign: 'center'
           }}>
             <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>
-              Don&apos;t Have An Account?{' '}
-              <a href="/signup" style={{ color: 'var(--teal)' }}>Create Account</a>
+              {t('login_no_account')}{' '}
+              <a href="/signup" style={{ color: 'var(--teal)' }}>{t('login_create_account')}</a>
             </p>
           </div>
         </div>
 
         <p style={{ marginTop: 'var(--space-4)', textAlign: 'center', fontSize: '0.75rem', color: 'var(--grey-600)' }}>
-          For Qualified Researchers Only. Research Use Only.
+          {t('login_ruo_footer')}
         </p>
       </div>
     </div>
@@ -311,13 +340,16 @@ function LoginPageInner() {
 
 export default function LoginPage() {
   return (
+    <LanguageProvider>
     <Suspense fallback={
-      <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--black)' }}>
-        <div style={{ width: 40, height: 40, borderRadius: '50%', border: '2px solid var(--teal)', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
+      <div role="status" style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--black)' }}>
+        <div aria-hidden="true" style={{ width: 40, height: 40, borderRadius: '50%', border: '2px solid var(--teal)', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
+        <span className="sr-only">Loading</span>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     }>
       <LoginPageInner />
     </Suspense>
+    </LanguageProvider>
   );
 }

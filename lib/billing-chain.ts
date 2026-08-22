@@ -1,4 +1,6 @@
 import type { createServiceClient } from '@/lib/supabase/server';
+import { captureError } from '@/lib/sentry';
+import { logError } from '@/lib/log';
 
 type ServiceClient = Awaited<ReturnType<typeof createServiceClient>>;
 
@@ -46,6 +48,8 @@ export async function assertChainCanTransact(
     p_agent_id: freezeRoot,
   });
   if (frozenErr) {
+    logError('billing-chain.is_chain_frozen', { agentId: freezeRoot }, frozenErr);
+    captureError(frozenErr, { context: 'billing-chain.is_chain_frozen', agentId: freezeRoot });
     return { ok: false, status: 500, error: 'Chain-freeze check failed.' };
   }
   const frozen = Array.isArray(frozenRows) ? frozenRows[0] : (frozenRows as any);
@@ -68,6 +72,8 @@ export async function assertChainCanTransact(
     p_additional_owed: additionalOwed,
   });
   if (chainErr) {
+    logError('billing-chain.check_credit_chain', { billedAgentId, additionalOwed }, chainErr);
+    captureError(chainErr, { context: 'billing-chain.check_credit_chain', billedAgentId, additionalOwed });
     return { ok: false, status: 500, error: 'Credit-chain check failed.' };
   }
   const chain = Array.isArray(chainRows) ? chainRows[0] : (chainRows as any);

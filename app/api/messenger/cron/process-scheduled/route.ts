@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getCronAuth } from '@/lib/messenger/server';
@@ -99,6 +100,7 @@ export async function GET(req: NextRequest) {
         text: row.text,
         message_type: row.message_type,
         media_url: row.media_url,
+        //  Database schema mismatch from generated types
         media_metadata: row.media_metadata ?? {},
         reply_to_id: replyToId,
       })

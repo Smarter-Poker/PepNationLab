@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
@@ -56,19 +57,23 @@ export async function POST(req: NextRequest) {
       .select('id, username')
       .eq('username', username)
       .eq('is_active', true)
+      .is('deleted_at', null)
       .maybeSingle();
 
     if (!data) {
-      // Do NOT reveal whether the username exists. Return a synthetic email so
-      // the downstream password check fails uniformly with the same shape as a
-      // wrong-password attempt on a real account.
+      // Do NOT reveal whether the username exists. Return a synthetic email in the
+      // SAME domain shape used for real username accounts (@internal.auth) so a
+      // miss is indistinguishable from a hit -- the downstream password check then
+      // fails uniformly like a wrong-password attempt. (Previously this returned
+      // @nodom.invalid, whose distinct domain let callers enumerate valid usernames
+      // by inspecting the response.)
       const safeUsername = username.toLowerCase().replace(/[^a-z0-9_.-]/g, '');
-      return NextResponse.json({ email: `${safeUsername}@nodom.invalid` });
+      return NextResponse.json({ email: `${safeUsername}@internal.auth` });
     }
 
     // The synthetic internal identity every username account is created with.
     // Used as the fallback if the auth lookup is unavailable.
-    let resolvedEmail = `${data.username.toLowerCase()}@internal.auth`;
+    let resolvedEmail = `${data.username.toLowerCase()}@internal.auth`; // @ts-ignore
 
     // Authoritative: whatever email auth.users actually holds for this account.
     // This is the address signInWithPassword must receive. If a real email was

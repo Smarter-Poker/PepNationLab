@@ -16,6 +16,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { reportClientError } from '@/lib/report-client-error';
 import { getProductImage } from '@/lib/categoryImage';
+import { getBrandNetworkIsSavage } from '@/lib/brand-network-client';
+import { useModalA11y } from '@/lib/useModalA11y';
+import {
+  sanitizeStoredCart,
+  storedCartItemToClient,
+  ResolvedCartItemSchema,
+  CartRefreshItemSchema,
+} from '@/lib/schemas/cart';
 import DynamicAddToCartButton from '@/components/storefront/DynamicAddToCartButton';
 import DynamicCartButton from '@/components/storefront/DynamicCartButton';
 
@@ -70,6 +78,8 @@ interface CartContextType {
   removeFromCart: (productId: string, bundleName?: string) => void;
   updateQuantity: (productId: string, quantity: number, bundleName?: string) => void;
   clearCart: () => void;
+  /** Restore a previously snapshotted cart (Undo after Clear). */
+  restoreCart: (items: CartItem[]) => void;
   cartCount: number;
   cartSubtotal: number;
   isCartOpen: boolean;
@@ -84,6 +94,32 @@ const ADD_TO_CART_ACK_KEY = `pnl_addtocart_${DISCLAIMER_VERSION}`;
 interface PendingAddition {
   product: Omit<CartItem, 'quantity'>;
   quantity: number;
+}
+
+// Returns true when two cart snapshots differ in membership OR in any pricing
+// field that refreshCartPricing may update (retail, cost, bulk pricing). Callers
+// previously compared only membership (length + id), so an in-place reprice --
+// sale start/end, admin reprice -- was computed by refreshCartPricing and then
+// thrown away. Comparing the pricing fields applies those updates, while the
+// field-level (not reference) comparison still no-ops when nothing changed, so
+// this never triggers an update loop.
+function cartPricingDiffers(a: CartItem[], b: CartItem[]): boolean {
+  if (a.length !== b.length) return true;
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i];
+    const y = b[i];
+    if (
+      x.id !== y.id ||
+      x.quantity !== y.quantity ||
+      x.retailPrice !== y.retailPrice ||
+      x.costPrice !== y.costPrice ||
+      (x.bulkCostPrice ?? null) !== (y.bulkCostPrice ?? null) ||
+      (x.bulkThreshold ?? null) !== (y.bulkThreshold ?? null)
+    ) {
+      return true;
+    }
+  }
+  return false;
 }
 
 // CartProvider
@@ -176,7 +212,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           if (prev.length !== initial.length || prev.some((p, i) => p.id !== initial[i]?.id)) {
             return prev; // Trust the live cart over the stale hydrated data
           }
-          if (next.length !== initial.length || next.some((n, i) => n.id !== initial[i]?.id)) {
+          if (cartPricingDiffers(initial, next)) {
             return next;
           }
           return prev;
@@ -192,7 +228,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       setCart(prev => {
         if (prev.length === 0) return prev;
         refreshCartPricing(prev).then(next => {
-          if (next.length !== prev.length || next.some((n, i) => n.id !== prev[i]?.id)) setCart(next);
+          if (cartPricingDiffers(prev, next)) setCart(next);
         }).catch(() => { /* ignore */ });
         return prev;
       });
@@ -221,7 +257,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         const res = await fetch('/api/cart/sync', { credentials: 'same-origin' });
         if (!res.ok) return; // 401 for guests: nothing to restore
         const json = await res.json();
-        const serverCart: CartItem[] = Array.isArray(json?.cart) ? json.cart : [];
+        // Fail-closed restore: the payload is a JSONB round-trip of
+        // client-authored data. Run it through the SAME sanitizer the sync
+        // route uses on write (lib/schemas/cart.ts) instead of a blind
+        // `CartItem[]` annotation -- malformed or NaN-priced lines are
+        // dropped, never adopted.
+        const serverCart: CartItem[] = sanitizeStoredCart(json?.cart).map(storedCartItemToClient);
         if (cancelled || serverCart.length === 0) return;
 
         let adopted = false;
@@ -276,7 +317,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         ? prev.map(item => sameLine(item, product.id, product.productId, product.bundleName) ? { ...item, quantity: item.quantity + quantity } : item)
         : [...prev, { ...product, quantity }];
       refreshCartPricing(next, true).then(updated => {
-        if (updated.length !== next.length || updated.some((u, i) => u.id !== next[i]?.id)) setCart(updated);
+        if (cartPricingDiffers(next, updated)) setCart(updated);
       }).catch(() => { /* ignore */ });
       return next;
     });
@@ -295,7 +336,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }
       }
       refreshCartPricing(next, true).then(updated => {
-        if (updated.length !== next.length || updated.some((u, i) => u.id !== next[i]?.id)) setCart(updated);
+        if (cartPricingDiffers(next, updated)) setCart(updated);
       }).catch(() => { /* ignore */ });
       return next;
     });
@@ -346,9 +387,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             return;
           }
 
-          if (data.item) {
-            addMultipleToCart([{ product: data.item, quantity: data.quantity || 1 }], detail.name);
-            toast.success(`${data.item.name} Added To Cart.`);
+          // Schema-locked: the resolved item carries retailPrice/costPrice
+          // into the cart, so it must parse cleanly or be refused.
+          const parsedItem = ResolvedCartItemSchema.safeParse(data?.item);
+          if (parsedItem.success) {
+            const qty = Number(data.quantity);
+            const safeQty = Number.isFinite(qty) && qty >= 1 ? Math.min(9999, Math.floor(qty)) : 1;
+            const product = {
+              ...parsedItem.data,
+              sku: parsedItem.data.sku ?? '',
+              bulkThreshold: parsedItem.data.bulkThreshold ?? undefined,
+            };
+            addMultipleToCart([{ product, quantity: safeQty }], detail.name);
+            toast.success(`${parsedItem.data.name} Added To Cart.`);
           } else {
             toast.error(`${detail.name} Is Not Available.`);
           }
@@ -401,6 +452,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const clearCart = () => setCart([]);
+  const restoreCart = (items: CartItem[]) => setCart(items);
 
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
   const cartSubtotal = cart.reduce((acc, item) => {
@@ -414,7 +466,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <CartContext.Provider
-      value={{ cart, addToCart, addMultipleToCart, removeFromCart, updateQuantity, clearCart, cartCount, cartSubtotal, isCartOpen, setIsCartOpen }}
+      value={{ cart, addToCart, addMultipleToCart, removeFromCart, updateQuantity, clearCart, restoreCart, cartCount, cartSubtotal, isCartOpen, setIsCartOpen }}
     >
       {children}
       <AnimatePresence>
@@ -444,6 +496,9 @@ function AddToCartAcknowledgment({
   onAccept: () => void;
   onCancel: () => void;
 }) {
+  // A11y: focus trap + Escape-to-cancel + focus restore (WCAG 2.1.2, 2.4.3).
+  const ackDialogRef = useModalA11y<HTMLDivElement>(true, { onClose: onCancel });
+
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -451,6 +506,7 @@ function AddToCartAcknowledgment({
       role="dialog" aria-modal="true" aria-labelledby="add-to-cart-ack-title"
     >
       <motion.div
+        ref={ackDialogRef}
         initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }}
         className="glass-panel"
         style={{ maxWidth: 520, width: '100%', padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(192, 184, 168, 0.4)', boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(192, 184, 168, 0.2)' }}
@@ -639,9 +695,9 @@ function BacWaterCalculator({
             alignItems: 'center',
           }}
         >
-          <span>{totalPeptideVials} Vials x 2 mL/Vial</span>
+          <span>~{totalMlNeeded} mL Total (By Strength)</span>
           <span style={{ color: 'rgba(255,255,255,0.2)' }}>/</span>
-          <span>10 mL/Bottle</span>
+          <span>{bacWaterProduct?.unit_size || '10'} mL/Bottle</span>
           <span style={{ color: 'rgba(255,255,255,0.2)' }}>=</span>
           <span style={{ color: 'var(--teal)', fontWeight: 700 }}>
             {stillNeeded} Bottle{stillNeeded !== 1 ? 's' : ''} Needed (Rounded Up)
@@ -707,11 +763,14 @@ function BacWaterCalculator({
 function SmartRecommendationStrip({
   cart,
   onQuickAdd,
+  agentSlug,
 }: {
   cart: CartItem[];
   onQuickAdd: (rec: SmartRec) => void;
+  agentSlug?: string;
 }) {
   const [recs, setRecs] = useState<SmartRec[]>([]);
+  const [apiSavageNetwork, setApiSavageNetwork] = useState(false);
   const [loading, setLoading] = useState(true);
   const abortRef = useRef<AbortController | null>(null);
   const prevKeyRef = useRef<string>('');
@@ -739,12 +798,15 @@ function SmartRecommendationStrip({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       signal: ctrl.signal,
-      body: JSON.stringify({ productIds: cart.map(i => i.id) }),
+      // agentSlug lets the API resolve store-scoped prices, agent custom
+      // imagery, and the Savage-network verdict for this cart's storefront.
+      body: JSON.stringify({ productIds: cart.map(i => i.id), ...(agentSlug ? { agentSlug } : {}) }),
     })
       .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
-      .then((data: { recommendations?: SmartRec[] }) => {
+      .then((data: { recommendations?: SmartRec[]; brand_network_savage?: boolean }) => {
         const filtered = (data.recommendations ?? []).filter(r => !cartIdSet.has(r.id));
         setRecs(filtered.slice(0, 6));
+        setApiSavageNetwork(data.brand_network_savage === true);
         setLoading(false);
       })
       .catch(() => {
@@ -790,7 +852,7 @@ function SmartRecommendationStrip({
       <div
         style={{
           display: 'flex', gap: 8, overflowX: 'auto',
-          overscrollBehaviorX: 'none', touchAction: 'pan-x',
+          overscrollBehaviorX: 'none', touchAction: 'pan-x pan-y',
           WebkitOverflowScrolling: 'touch' as React.CSSProperties['WebkitOverflowScrolling'],
           paddingBottom: 6,
           scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'],
@@ -812,7 +874,7 @@ function SmartRecommendationStrip({
               />
             ))
           : recs.map(rec => (
-              <SmartRecCard key={rec.id} rec={rec} onQuickAdd={onQuickAdd} />
+              <SmartRecCard key={rec.id} rec={rec} onQuickAdd={onQuickAdd} agentSlug={agentSlug} brandNetworkIsSavage={apiSavageNetwork} />
             ))}
       </div>
     </div>
@@ -822,12 +884,20 @@ function SmartRecommendationStrip({
 function SmartRecCard({
   rec,
   onQuickAdd,
+  agentSlug,
+  brandNetworkIsSavage = false,
 }: {
   rec: SmartRec;
   onQuickAdd: (rec: SmartRec) => void;
+  agentSlug?: string;
+  brandNetworkIsSavage?: boolean;
 }) {
   const [added, setAdded] = useState(false);
-  const imgSrc = getProductImage(rec.image_url, rec.category || 'Other', rec.name);
+  // Persisted server verdict first (covers Savage downlines like /eddierazz
+  // whose rec images come straight from the shared products table), then
+  // the slug/path heuristics.
+  const isSavageBrandsNetwork = brandNetworkIsSavage || getBrandNetworkIsSavage(agentSlug) || agentSlug === 'savagebrands' || (rec.image_url || '').includes('/images/savage-brands/');
+  const imgSrc = getProductImage(rec.image_url, rec.category || 'Other', rec.name, false, agentSlug, isSavageBrandsNetwork);
   const displayName = rec.unit_size
     ? `${rec.name} ${rec.unit_size}${rec.unit_measure || ''}`
     : rec.name;
@@ -880,7 +950,7 @@ function SmartRecCard({
             unoptimized
             onError={(e) => {
               const t = e.target as HTMLImageElement;
-              const fallback = getProductImage(null, rec.category || 'Other', rec.name);
+              const fallback = getProductImage(null, rec.category || 'Other', rec.name, false, agentSlug, isSavageBrandsNetwork);
               if (t.src !== fallback) t.src = fallback;
             }}
           />
@@ -928,11 +998,20 @@ function SmartRecCard({
 
 function CartDrawer() {
   const router = useRouter();
+  // Derive the current agent slug from localStorage so image calls use the correct brand vials.
+  const agentSlug = (() => {
+    if (typeof window === 'undefined') return undefined;
+    try {
+      const key = Object.keys(localStorage).find(k => k.startsWith('pnl_storefront_cart_'));
+      return key ? key.replace('pnl_storefront_cart_', '') : undefined;
+    } catch { return undefined; }
+  })();
   const {
     cart,
     removeFromCart,
     updateQuantity,
     clearCart,
+    restoreCart,
     cartSubtotal,
     setIsCartOpen,
     addToCart,
@@ -948,11 +1027,14 @@ function CartDrawer() {
         body: JSON.stringify({ productIds: [rec.id] }),
       });
       const data = await res.json();
-      const item = data?.items?.[0];
-      if (!item || !item.available) {
+      // Schema-locked: the refreshed line carries a server-authoritative
+      // price into the cart; a malformed line is treated as unavailable.
+      const parsedLine = CartRefreshItemSchema.safeParse(data?.items?.[0]);
+      if (!parsedLine.success || !parsedLine.data.available) {
         toast.error(`${rec.name} Is Not Currently Available`);
         return;
       }
+      const item = parsedLine.data;
       addToCart({
         id: rec.id,
         productId: item.productId ?? rec.id,
@@ -978,11 +1060,13 @@ function CartDrawer() {
         body: JSON.stringify({ productIds: [product.id] }),
       });
       const data = await res.json();
-      const item = data?.items?.[0];
-      if (!item || !item.available) {
+      // Schema-locked: same rule as handleQuickAdd -- malformed = unavailable.
+      const parsedLine = CartRefreshItemSchema.safeParse(data?.items?.[0]);
+      if (!parsedLine.success || !parsedLine.data.available) {
         toast.error(`BAC Water Is Not Currently Available`);
         return;
       }
+      const item = parsedLine.data;
       addToCart(
         {
           id: product.id,
@@ -1004,6 +1088,10 @@ function CartDrawer() {
     }
   }, [addToCart]);
 
+  // A11y: focus trap + Escape close + focus restore for the cart dialog
+  // (WCAG 2.1.2, 2.4.3). The drawer only renders while open, so active=true.
+  const cartDialogRef = useModalA11y<HTMLDivElement>(true, { onClose: () => setIsCartOpen(false) });
+
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -1016,6 +1104,7 @@ function CartDrawer() {
       <div onClick={() => setIsCartOpen(false)} style={{ flexGrow: 1, cursor: 'pointer' }} aria-hidden="true" />
 
       <motion.div
+        ref={cartDialogRef}
         initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
         role="dialog"
@@ -1053,7 +1142,7 @@ function CartDrawer() {
               </h3>
               {cart.length > 0 && (
                 <div style={{ fontSize: '0.66rem', color: 'var(--grey-400)', marginTop: 1 }}>
-                  {cart.reduce((a, i) => a + i.quantity, 0)} item{cart.reduce((a, i) => a + i.quantity, 0) !== 1 ? 's' : ''} - ${cartSubtotal.toFixed(2)}
+                  {cart.reduce((a, i) => a + i.quantity, 0)} Item{cart.reduce((a, i) => a + i.quantity, 0) !== 1 ? 's' : ''} - ${cartSubtotal.toFixed(2)}
                 </div>
               )}
             </div>
@@ -1197,6 +1286,7 @@ function CartDrawer() {
 
               <SmartRecommendationStrip
                 cart={cart}
+                agentSlug={agentSlug}
                 onQuickAdd={(rec) => {
                   if (cartIds.has(rec.id)) return;
                   handleQuickAdd(rec);
@@ -1215,6 +1305,26 @@ function CartDrawer() {
                 <h4 style={{ color: 'var(--silver)', margin: '0 0 4px', fontSize: '0.92rem' }}>Your Cart Is Empty</h4>
                 <p style={{ fontSize: '0.76rem', color: 'var(--grey-400)', margin: 0 }}>Add Compounds To Get Started</p>
               </div>
+              {/* CRO: the empty state was a dead end - recovered-cart emails and
+                  reorder visits land here with no next step. Route back to the
+                  saved storefront when one is known, else just resume browsing. */}
+              <button
+                type="button"
+                className="btn-primary"
+                style={{ marginTop: 4, minWidth: 180 }}
+                onClick={() => {
+                  setIsCartOpen(false);
+                  try {
+                    const key = Object.keys(localStorage).find(k => k.startsWith('pnl_storefront_cart_'));
+                    const slug = key ? key.replace('pnl_storefront_cart_', '') : null;
+                    if (slug && !window.location.pathname.startsWith(`/${slug}`)) {
+                      router.push(`/${slug}`);
+                    }
+                  } catch { /* no storage - just close */ }
+                }}
+              >
+                Browse The Catalog
+              </button>
             </div>
           )}
         </div>
@@ -1223,7 +1333,7 @@ function CartDrawer() {
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '14px 20px', paddingBottom: 'calc(18px + env(safe-area-inset-bottom, 0px))', flexShrink: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, padding: '10px 14px', background: 'rgba(0,229,255,0.04)', borderRadius: 8, border: '1px solid rgba(0,229,255,0.1)' }}>
               <span style={{ fontSize: '0.86rem', color: 'var(--grey-400)', fontWeight: 600 }}>Subtotal</span>
-              <strong style={{ color: 'var(--teal)', fontFamily: 'var(--font-brand)', fontSize: '1.15rem', fontWeight: 800, letterSpacing: '0.02em' }}>
+              <strong style={{ color: 'var(--teal)', fontFamily: 'var(--font-brand)', fontSize: '1.15rem', fontWeight: 800, letterSpacing: '0.02em', whiteSpace: 'nowrap', flexShrink: 0 }}>
                 ${cartSubtotal.toFixed(2)}
               </strong>
             </div>
@@ -1241,7 +1351,18 @@ function CartDrawer() {
               />
               <DynamicCartButton
                 type="clear"
-                onClick={clearCart}
+                onClick={() => {
+                  // CRO: one irreversible tap destroyed a fully built cart.
+                  // Snapshot + Undo toast makes clearing recoverable.
+                  const snapshot = [...cart];
+                  clearCart();
+                  if (snapshot.length > 0) {
+                    toast('Cart Cleared', {
+                      action: { label: 'Undo', onClick: () => restoreCart(snapshot) },
+                      duration: 6000,
+                    });
+                  }
+                }}
               />
             </div>
           </div>

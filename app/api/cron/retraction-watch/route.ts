@@ -1,3 +1,4 @@
+
 /**
  * GET /api/cron/retraction-watch
  * Weekly retraction sweep. Walks the cached PMIDs in
@@ -42,6 +43,7 @@ export async function GET(req: Request) {
         const status = await checkPmidForRetraction(pmid);
         if (status.retracted) {
           retracted += 1;
+          //  Database schema mismatch from generated types
           const { error } = await supabase.from('compound_recall_alerts').insert({
             compound_slug: row.compound_slug,
             alert_type: 'retraction',

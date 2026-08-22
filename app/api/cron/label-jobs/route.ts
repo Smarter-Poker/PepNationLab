@@ -2,10 +2,12 @@
  * GET /api/cron/label-jobs - DISABLED
  *
  * Shipping labels are now created MANUALLY (on-demand) only: an admin or agent
- * purchases each label explicitly via the synchronous Shippo flow
+ * purchases each label explicitly via the synchronous EasyPost flow
  * (single-order "Purchase Label", or the admin Orders bulk "Generate Labels"
  * action). There is no background label generation, so this cron no longer
  * runs - it was removed from vercel.json and this handler is a disabled stub.
+ * When re-enabled, label_jobs rows key their ledger link via
+ * label_jobs.provider_transaction_id.
  *
  * Kept as a stub (rather than deleted) so any stray scheduled invocation or
  * external hit returns a clear 410 instead of 404, and never drains the queue.
