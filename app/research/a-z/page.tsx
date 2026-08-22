@@ -46,7 +46,7 @@ export default async function ResearchAZPage() {
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
           { '@type': 'ListItem', position: 2, name: 'Research Library', item: 'https://pepnationlab.com/research' },
-          { '@type': 'ListItem', position: 3, name: 'a z', item: 'https://pepnationlab.com/research/a-z' }
+          { '@type': 'ListItem', position: 3, name: 'A-Z Index', item: 'https://pepnationlab.com/research/a-z' }
         ]
       }
     ]

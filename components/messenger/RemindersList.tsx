@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { X, Bell, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useModalA11y } from '@/lib/useModalA11y';
 
 interface ReminderRow {
   id: string;
@@ -162,8 +163,12 @@ export default function RemindersList({ onClose, seed = null }: Props) {
     }
   };
 
+  // A11y: initial focus, Tab trap, Escape-to-close, focus restore (WCAG 2.1.2, 2.4.3).
+  const dialogRef = useModalA11y<HTMLDivElement>(true, { onClose });
+
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-label="Reminders"
       style={{

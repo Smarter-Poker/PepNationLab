@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import {
   drawVolumeMl,
   arrheniusStability,
@@ -16,7 +17,9 @@ import {
   type ConcentrationUnit,
   RESIDUE_MASS,
 } from '@/lib/research/calculators';
+import { shelfLife } from '@/lib/compounds';
 import { toast } from 'sonner';
+import { Plus, Trash2, Clock, RotateCw } from 'lucide-react';
 
 const RESEARCH_NOTE = 'Research Use Only. Not Intended As Medical Advice Or Human Dosing.';
 
@@ -290,7 +293,7 @@ function VisualSyringe({ ml, size, type = 'u100', onDrawMlChange }: VisualSyring
     const rect = barrelRef.current.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const width = rect.width;
-    const relativeX = Math.min(width, Math.max(0, clickX));
+    const relativeX = Math.min(width, Math.max(0, width - clickX));
     const pct = relativeX / width;
     const newMl = pct * size;
     onDrawMlChange(newMl);
@@ -353,18 +356,19 @@ function VisualSyringe({ ml, size, type = 'u100', onDrawMlChange }: VisualSyring
                 position: 'relative', 
                 display: 'flex', 
                 alignItems: 'center', 
+                justifyContent: 'flex-end',
                 overflow: 'hidden',
                 cursor: onDrawMlChange ? 'ew-resize' : 'default',
                 touchAction: 'none',
               }}
             >
               {/* Liquid / Plunger fill */}
-              <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg, rgba(0, 229, 255, 0.3) 0%, rgba(0, 229, 255, 0.15) 100%)', borderRight: '4px solid #00E5FF', transition: isDragging ? 'none' : 'width 0.4s ease-out' }} />
+              <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg, rgba(0, 229, 255, 0.15) 0%, rgba(0, 229, 255, 0.3) 100%)', borderLeft: '4px solid #00E5FF', transition: isDragging ? 'none' : 'width 0.4s ease-out' }} />
               
               {/* Major Ticks */}
               <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'space-between', pointerEvents: 'none', padding: '0 2px' }}>
                 {Array.from({ length: tickCount + 1 }).map((_, i) => {
-                  const val = Math.round(i * (maxUnits / tickCount));
+                  const val = Math.round((tickCount - i) * (maxUnits / tickCount));
                   return (
                     <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'space-between' }}>
                       <div style={{ width: 2, height: 8, background: 'rgba(255,255,255,0.4)' }} />
@@ -635,7 +639,7 @@ function Reconstitution({ compounds }: { compounds: CompoundListItem[] }) {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 16 }}>
           <label style={{ display: "block" }}>
-            <div style={labelStyle}>Step 2: Vial Mass (<span className="calc-no-capitalize">mg</span>)</div>
+            <div style={labelStyle}>Step 2: Vial Mass (<span className="calc-no-capitalize">MG</span>)</div>
             <StyledInput type="number" step="any" min={0} value={vialMass} placeholder="e.g. 5" onChange={(e) => setVialMass(e.target.value)} />
           </label>
           <label style={{ display: "block" }}>
@@ -729,7 +733,7 @@ function Reconstitution({ compounds }: { compounds: CompoundListItem[] }) {
             <div style={{ ...resultStyle, marginTop: 20 }}>
               To Draw A Dose Of <strong>{dMassNumeric} <span className="calc-no-capitalize">{unit}</span></strong>, Pull Liquid To:
               <span style={{ fontSize: 28, color: '#68D391', fontWeight: 800, display: 'block', margin: '8px 0' }}>
-                {Math.round(drawMl * syringeMultiplier)} Units (${syringeType.toUpperCase()})
+                {Math.round(drawMl * syringeMultiplier)} Units ({syringeType.toUpperCase()})
               </span>
               <span style={{ fontSize: 13, color: '#A8B4C0' }}>
                 (<span className="calc-no-capitalize">{drawMl.toFixed(3)} mL</span> Of Working Solution)
@@ -745,6 +749,12 @@ function Reconstitution({ compounds }: { compounds: CompoundListItem[] }) {
             {showExhaustionWarning && (
               <div style={{ color: '#FF6B6B', fontSize: 13, padding: '12px', border: '1px dashed rgba(255,107,107,0.3)', borderRadius: 6, background: 'rgba(255,107,107,0.05)', marginTop: 12, textAlign: 'center' }}>
                 Warning: Desired Target Dose <span className="calc-no-capitalize">({dMassNumeric} {unit})</span> Exceeds Total Vial Capacity <span className="calc-no-capitalize">({vMass} mg)</span>. Please Adjust Vial Mass Or Desired Target Dose.
+              </div>
+            )}
+
+            {drawMl !== null && isFinite(drawMl) && drawMl > syringeSize && (
+              <div style={{ color: '#FF6B6B', fontSize: 13, padding: '12px', border: '1px dashed rgba(255,107,107,0.3)', borderRadius: 6, background: 'rgba(255,107,107,0.05)', marginTop: 12, textAlign: 'center' }}>
+                Warning: This Draw <span className="calc-no-capitalize">({drawMl.toFixed(2)} mL)</span> Exceeds Your Selected <span className="calc-no-capitalize">{syringeSize} mL</span> Syringe. Use A Larger Syringe, Split The Dose Across Multiple Draws, Or Increase The Concentration By Using Less Diluent.
               </div>
             )}
             
@@ -1259,6 +1269,7 @@ function StabilitySection() {
   const [tTo, setTTo] = useState('');
   const [ea, setEa] = useState('');
   const [profile, setProfile] = useState('83');
+  const [showExplainer, setShowExplainer] = useState(false);
 
   // Inputs are entered in Fahrenheit; the Arrhenius math works in Celsius/Kelvin,
   // so convert F -> C before computing. (F - 32) * 5/9.
@@ -1283,8 +1294,71 @@ function StabilitySection() {
       <div style={chromeInnerStyle}>
         <CalculatorHeader
           title="Arrhenius Stability & Thermal Degradation Predictor"
-          why="Model Temperature-Dependent Shelf Life. Activation Energy (Ea) Governs Degradation Rates; Select Preset Peptide Categories Or Customize Ea."
+          why="If you know how long a peptide lasts at one temperature, this calculator tells you how long it will last at any other temperature — using the same kinetics equation pharmaceutical companies use for accelerated stability testing."
         />
+
+        {/* Plain-English Explainer Toggle */}
+        <div style={{ marginBottom: 20 }}>
+          <button
+            type="button"
+            onClick={() => setShowExplainer(s => !s)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              background: 'rgba(0, 229, 255, 0.05)',
+              border: '1px solid rgba(0, 229, 255, 0.25)',
+              borderRadius: 8, padding: '8px 14px',
+              color: '#00E5FF', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+              transition: 'background 0.2s',
+            }}
+          >
+            <svg style={{ width: 16, height: 16, transform: showExplainer ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+            How Does This Work? (Plain-English Explainer)
+          </button>
+
+          {showExplainer && (
+            <div style={{
+              marginTop: 10, padding: 18, borderRadius: 10,
+              background: 'rgba(0, 229, 255, 0.03)',
+              border: '1px solid rgba(0, 229, 255, 0.15)',
+              fontSize: 13, color: '#A8B4C0', lineHeight: 1.65,
+            }}>
+              <h4 style={{ margin: '0 0 10px', color: '#FFFFFF', fontSize: 15 }}>The Short Version</h4>
+              <p style={{ margin: '0 0 12px' }}>
+                Chemical reactions — including the breakdown of peptides — speed up dramatically as temperature rises. The <strong style={{ color: '#00E5FF' }}>Arrhenius equation</strong> quantifies this relationship so you can predict, for example, that a vial stable for 180 days at 39°F will only last ~14 days left out at room temperature (77°F).
+              </p>
+
+              <h4 style={{ margin: '0 0 8px', color: '#FFFFFF', fontSize: 14 }}>The Three Inputs Explained</h4>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginBottom: 12 }}>
+                <div style={{ padding: 12, background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div style={{ color: '#00E5FF', fontWeight: 700, marginBottom: 4 }}>Known Shelf Days</div>
+                  <div>How long the manufacturer (or literature) says the peptide stays stable at the <em>known</em> temperature. Example: reconstituted BPC-157 is stable for 30 days at 39°F.</div>
+                </div>
+                <div style={{ padding: 12, background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div style={{ color: '#00E5FF', fontWeight: 700, marginBottom: 4 }}>Known Temperature</div>
+                  <div>The temperature the shelf-life figure was measured at — usually refrigerator temp (39°F) or freezer temp (4°F for long-term lyophilized storage).</div>
+                </div>
+                <div style={{ padding: 12, background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div style={{ color: '#00E5FF', fontWeight: 700, marginBottom: 4 }}>Target Temperature</div>
+                  <div>The temperature you actually plan to store (or temporarily leave) the vial at. Even a few hours at room temp eats into shelf life — this makes it visible.</div>
+                </div>
+              </div>
+
+              <h4 style={{ margin: '0 0 8px', color: '#FFFFFF', fontSize: 14 }}>What Is Activation Energy (Ea)?</h4>
+              <p style={{ margin: '0 0 12px' }}>
+                Ea is a number (in kJ/mol) that describes <em>how sensitive</em> a peptide is to temperature changes. A higher Ea means the peptide degrades much faster with even a small temperature rise. Most peptides fall between 65–100 kJ/mol:
+              </p>
+              <ul style={{ margin: '0 0 12px', paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <li><strong style={{ color: '#68D391' }}>65 kJ/mol (Stable)</strong> — e.g., BPC-157. Relatively forgiving to mild temperature excursions.</li>
+                <li><strong style={{ color: '#F6AD55' }}>83 kJ/mol (Standard)</strong> — most research peptides. A common default when Ea is unknown.</li>
+                <li><strong style={{ color: '#FC8181' }}>100 kJ/mol (Fragile)</strong> — e.g., GH, IGF-1 analogues. Highly sensitive; even 30 min at room temp causes measurable loss.</li>
+              </ul>
+              <p style={{ margin: 0, fontSize: 12, color: '#6B7280', fontStyle: 'italic' }}>
+                If you don&apos;t know your peptide&apos;s Ea, use the 83 kJ/mol preset — it gives a conservative, real-world estimate. The result is a <em>prediction</em>, not a guarantee.
+              </p>
+            </div>
+          )}
+        </div>
+
         <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
           <button
             onClick={() => { setTFrom('-4'); setTTo('39'); }}
@@ -1298,19 +1372,25 @@ function StabilitySection() {
           >
             Preset: Fridge To Room Temp
           </button>
+          <button
+            onClick={() => { setTFrom('39'); setTTo('98.6'); }}
+            style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #FC8181', background: 'transparent', color: '#FC8181', cursor: 'pointer', fontSize: 13 }}
+          >
+            Preset: Fridge To Body Temp
+          </button>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
           <label style={{ display: "block" }}>
             <div style={labelStyle}>Known Shelf Days</div>
-            <StyledInput type="number" step="any" value={shelf} onChange={(e) => setShelf(e.target.value)} />
+            <StyledInput type="number" step="any" value={shelf} onChange={(e) => setShelf(e.target.value)} placeholder="e.g. 30" />
           </label>
           <label style={{ display: "block" }}>
-            <div style={labelStyle}>Known Temperature (F)</div>
-            <StyledInput type="number" step="any" value={tFrom} onChange={(e) => setTFrom(e.target.value)} />
+            <div style={labelStyle}>Known Temperature (°F)</div>
+            <StyledInput type="number" step="any" value={tFrom} onChange={(e) => setTFrom(e.target.value)} placeholder="e.g. 39" />
           </label>
           <label style={{ display: "block" }}>
-            <div style={labelStyle}>Target Temperature (F)</div>
-            <StyledInput type="number" step="any" value={tTo} onChange={(e) => setTTo(e.target.value)} />
+            <div style={labelStyle}>Target Temperature (°F)</div>
+            <StyledInput type="number" step="any" value={tTo} onChange={(e) => setTTo(e.target.value)} placeholder="e.g. 77" />
           </label>
           <label style={{ display: "block" }}>
             <div style={labelStyle}>Degradation Profile</div>
@@ -1322,7 +1402,7 @@ function StabilitySection() {
           {profile === 'custom' && (
             <label style={{ display: "block" }}>
               <div style={labelStyle}>Activation Energy (Ea, kJ/mol)</div>
-              <StyledInput type="number" step="any" value={ea} onChange={(e) => setEa(e.target.value)} />
+              <StyledInput type="number" step="any" value={ea} onChange={(e) => setEa(e.target.value)} placeholder="e.g. 83" />
             </label>
           )}
         </div>
@@ -1331,17 +1411,21 @@ function StabilitySection() {
             ? 'Enter Valid Inputs (Temperatures Must Be Above −459.67°F).'
             : ea.trim() !== '' && Number(ea) === 0
             ? 'Activation Energy Cannot Be Zero - Temperature Has No Effect At Ea=0.'
-            : <>Predicted Shelf: <strong>{days.toFixed(1)} Days</strong> At {tTo}°F</>
+            : <><strong style={{ fontSize: 22, color: '#00E5FF' }}>{days.toFixed(1)} Days</strong> <span style={{ fontSize: 13, color: '#A8B4C0' }}>predicted shelf life at {tTo}°F</span>
+              {days < 1 && <div style={{ color: '#FC8181', fontSize: 13, marginTop: 6 }}>Less than 1 day — this compound degrades rapidly at this temperature.</div>}
+              {days >= 1 && days < 7 && <div style={{ color: '#F6AD55', fontSize: 13, marginTop: 6 }}>Short window — use promptly and return to proper storage immediately.</div>}
+              {days >= 7 && <div style={{ color: '#68D391', fontSize: 13, marginTop: 6 }}>Reasonable stability window at this temperature.</div>}
+            </>
           }
         </div>
 
         {days !== null && (
           <SaveToJournalButton
             title="Arrhenius Stability Prediction"
-            noteText={`Initial Shelf Life: ${shelf} Days At ${tFrom} F
-Target Temperature: ${tTo} F
-Activation Energy (Ea): ${ea} kJ/mol
-Predicted Shelf Life At ${tTo} F: ${days.toFixed(1)} Days`}
+            noteText={`Initial Shelf Life: ${shelf} Days At ${tFrom}°F
+Target Temperature: ${tTo}°F
+Activation Energy (Ea): ${ea || '83 (default)'} kJ/mol
+Predicted Shelf Life At ${tTo}°F: ${days.toFixed(1)} Days`}
           />
         )}
 
@@ -1351,42 +1435,115 @@ Predicted Shelf Life At ${tTo} F: ${days.toFixed(1)} Days`}
   );
 }
 
+// Popular peptide quick-fills for cost calculator
+const COST_PRESETS = [
+  { name: 'Custom', price: '', mass: '', dose: '', unit: 'MCG' as const },
+  { name: 'BPC-157', price: '45', mass: '5', dose: '250', unit: 'MCG' as const },
+  { name: 'TB-500', price: '55', mass: '5', dose: '1000', unit: 'MCG' as const },
+  { name: 'Tirzepatide', price: '150', mass: '10', dose: '2500', unit: 'MCG' as const },
+  { name: 'Semaglutide', price: '90', mass: '5', dose: '250', unit: 'MCG' as const },
+  { name: 'CJC-1295', price: '60', mass: '5', dose: '300', unit: 'MCG' as const },
+  { name: 'GHK-Cu', price: '40', mass: '50', dose: '2000', unit: 'MCG' as const },
+  { name: 'PT-141', price: '80', mass: '10', dose: '1500', unit: 'MCG' as const },
+];
+
+type DoseUnit = 'MCG' | 'MG' | 'mL';
+
 function CostSection() {
   const [comparisonMode, setComparisonMode] = useState(false);
   const [priceA, setPriceA] = useState('');
   const [massA, setMassA] = useState('');
   const [doseA, setDoseA] = useState('');
+  const [unitA, setUnitA] = useState<DoseUnit>('MCG');
   const [frequency, setFrequency] = useState('1');
+  const [preset, setPreset] = useState('Custom');
 
   // Option B states
   const [priceB, setPriceB] = useState('');
   const [massB, setMassB] = useState('');
   const [doseB, setDoseB] = useState('');
+  const [unitB, setUnitB] = useState<DoseUnit>('MCG');
+
+  // Convert the user's dose input to MCG for the calculation engine
+  const toMcg = (val: string, unit: DoseUnit): number => {
+    const n = Number(val);
+    if (unit === 'MG') return n * 1000;
+    if (unit === 'mL') return n * 1000; // Treat 1 mL = 1 mg equivalent for cost purposes
+    return n; // Already MCG
+  };
+
+  const handlePreset = (name: string) => {
+    setPreset(name);
+    const p = COST_PRESETS.find(c => c.name === name);
+    if (p && p.name !== 'Custom') {
+      setPriceA(p.price);
+      setMassA(p.mass);
+      setDoseA(p.dose);
+      setUnitA(p.unit);
+    }
+  };
 
   const outA = costPerDose({
     vialPriceUsd: Number(priceA),
     vialMassMg: Number(massA),
-    dosageMcg: Number(doseA),
+    dosageMcg: toMcg(doseA, unitA),
     dosesPerWeek: Number(frequency),
   });
 
   const outB = costPerDose({
     vialPriceUsd: Number(priceB),
     vialMassMg: Number(massB),
-    dosageMcg: Number(doseB),
+    dosageMcg: toMcg(doseB, unitB),
     dosesPerWeek: Number(frequency),
   });
 
   const dosesPerWeek = Number(frequency);
   const daysPerVialA = (outA && dosesPerWeek > 0) ? (outA.dosesPerVial / dosesPerWeek) * 7 : null;
 
+  const unitToggleStyle = (active: boolean): React.CSSProperties => ({
+    padding: '10px 12px',
+    borderRadius: 6,
+    border: active ? '1px solid #00E5FF' : '1px solid rgba(255,255,255,0.1)',
+    background: active ? 'rgba(0,229,255,0.12)' : 'rgba(255,255,255,0.04)',
+    color: active ? '#00E5FF' : '#A8B4C0',
+    fontSize: 13,
+    fontWeight: 700,
+    cursor: 'pointer',
+    transition: 'all 0.18s',
+    flex: 1,
+    textAlign: 'center' as const,
+  });
+
   return (
     <section id="cost" style={chromeOuterStyle}>
       <div style={chromeInnerStyle}>
         <CalculatorHeader
           title="Study Budget & Economics Calculator"
-          why="Determine Unit Dose Economics And Analyze Monthly/Annual Cohort Expenditures. Compare Vendor Pricing Tiers Side-By-Side."
+          why="Determine unit dose economics and analyze monthly/annual cohort expenditures. Compare vendor pricing tiers side-by-side. Switch dose units between MCG, MG, or mL instantly."
         />
+
+        {/* Quick-fill presets */}
+        <div style={{ marginBottom: 16 }}>
+          <div style={labelStyle}>Quick-Fill Preset</div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {COST_PRESETS.map(p => (
+              <button
+                key={p.name}
+                type="button"
+                onClick={() => handlePreset(p.name)}
+                style={{
+                  padding: '6px 12px', borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                  border: preset === p.name ? '1px solid #00E5FF' : '1px solid rgba(255,255,255,0.1)',
+                  background: preset === p.name ? 'rgba(0,229,255,0.1)' : 'rgba(255,255,255,0.04)',
+                  color: preset === p.name ? '#00E5FF' : '#A8B4C0',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {p.name}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div style={{ marginBottom: 16 }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
@@ -1402,16 +1559,33 @@ function CostSection() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <label style={{ display: "block" }}>
                 <div style={labelStyle}>Vial Price (USD)</div>
-                <StyledInput type="number" step="any" value={priceA} onChange={(e) => setPriceA(e.target.value)} />
+                <StyledInput type="number" step="any" value={priceA} onChange={(e) => setPriceA(e.target.value)} placeholder="e.g. 45" />
               </label>
               <label style={{ display: "block" }}>
-                <div style={labelStyle}>Vial Mass (Mg)</div>
-                <StyledInput type="number" step="any" value={massA} onChange={(e) => setMassA(e.target.value)} />
+                <div style={labelStyle}>Vial Mass (MG)</div>
+                <StyledInput type="number" step="any" value={massA} onChange={(e) => setMassA(e.target.value)} placeholder="e.g. 5" />
               </label>
-              <label style={{ display: "block" }}>
-                <div style={labelStyle}>Per-Dose Amount (Mcg)</div>
-                <StyledInput type="number" step="any" value={doseA} onChange={(e) => setDoseA(e.target.value)} />
-              </label>
+              <div>
+                <div style={labelStyle}>Per-Dose Amount</div>
+                <div style={{ display: 'flex', gap: 0 }}>
+                  <StyledInput
+                    type="number" step="any" value={doseA}
+                    onChange={(e) => setDoseA(e.target.value)}
+                    placeholder={unitA === 'MCG' ? 'e.g. 250' : unitA === 'MG' ? 'e.g. 0.25' : 'e.g. 0.50'}
+                    style={{ borderRadius: '8px 0 0 8px', borderRight: 'none', flex: 1 }}
+                  />
+                  <div style={{ display: 'flex', borderRadius: '0 8px 8px 0', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    {(['MCG', 'MG', 'mL'] as DoseUnit[]).map(u => (
+                      <button key={u} type="button" onClick={() => setUnitA(u)} style={unitToggleStyle(unitA === u)}>{u}</button>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ fontSize: 11, color: '#6B7280', marginTop: 5, fontStyle: 'italic' }}>
+                  {unitA === 'MCG' && `${doseA ? (Number(doseA) / 1000).toFixed(4) : '0.0000'} MG per dose`}
+                  {unitA === 'MG' && `${doseA ? (Number(doseA) * 1000).toFixed(0) : '0'} MCG per dose`}
+                  {unitA === 'mL' && 'Volume-based dosing (1 mL treated as 1,000 MCG equivalent)'}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1422,16 +1596,28 @@ function CostSection() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <label style={{ display: "block" }}>
                   <div style={labelStyle}>Vial Price (USD)</div>
-                  <StyledInput type="number" step="any" value={priceB} onChange={(e) => setPriceB(e.target.value)} />
+                  <StyledInput type="number" step="any" value={priceB} onChange={(e) => setPriceB(e.target.value)} placeholder="e.g. 60" />
                 </label>
                 <label style={{ display: "block" }}>
-                  <div style={labelStyle}>Vial Mass (Mg)</div>
-                  <StyledInput type="number" step="any" value={massB} onChange={(e) => setMassB(e.target.value)} />
+                  <div style={labelStyle}>Vial Mass (MG)</div>
+                  <StyledInput type="number" step="any" value={massB} onChange={(e) => setMassB(e.target.value)} placeholder="e.g. 5" />
                 </label>
-                <label style={{ display: "block" }}>
-                  <div style={labelStyle}>Per-Dose Amount (Mcg)</div>
-                  <StyledInput type="number" step="any" value={doseB} onChange={(e) => setDoseB(e.target.value)} />
-                </label>
+                <div>
+                  <div style={labelStyle}>Per-Dose Amount</div>
+                  <div style={{ display: 'flex', gap: 0 }}>
+                    <StyledInput
+                      type="number" step="any" value={doseB}
+                      onChange={(e) => setDoseB(e.target.value)}
+                      placeholder={unitB === 'MCG' ? 'e.g. 250' : unitB === 'MG' ? 'e.g. 0.25' : 'e.g. 0.50'}
+                      style={{ borderRadius: '8px 0 0 8px', borderRight: 'none', flex: 1 }}
+                    />
+                    <div style={{ display: 'flex', borderRadius: '0 8px 8px 0', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      {(['MCG', 'MG', 'mL'] as DoseUnit[]).map(u => (
+                        <button key={u} type="button" onClick={() => setUnitB(u)} style={unitToggleStyle(unitB === u)}>{u}</button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -1442,9 +1628,12 @@ function CostSection() {
             <div style={labelStyle}>Dosing Frequency (Doses Per Week)</div>
             <StyledSelect value={frequency} onChange={(e) => setFrequency(e.target.value)}>
               <option value="7">Daily (7x / Week)</option>
+              <option value="5">5 Days On / 2 Off (5x / Week)</option>
+              <option value="3">3x Per Week</option>
               <option value="2">Twice Weekly (2x / Week)</option>
               <option value="1">Weekly (1x / Week)</option>
               <option value="0.5">Bi-Weekly (0.5x / Week)</option>
+              <option value="0.25">Monthly (0.25x / Week)</option>
             </StyledSelect>
           </label>
         </div>
@@ -1454,15 +1643,34 @@ function CostSection() {
             {!outA
               ? 'Enter Valid Inputs.'
               : <>
-                  <div>Doses Per Vial: <strong className="calc-no-capitalize">{outA.dosesPerVial.toFixed(1)}</strong>{'  '}|{'  '}Cost Per Dose: <strong className="calc-no-capitalize">${outA.dollarsPerDose.toFixed(2)}</strong></div>
-                  {daysPerVialA !== null && daysPerVialA > 0 && (
-                    <div style={{ marginTop: 8, color: '#00E5FF' }}>Vial Lasts Approximately: <strong className="calc-no-capitalize">{daysPerVialA.toFixed(1)} Days</strong></div>
-                  )}
-                  {outA.monthlyCostUsd && (
-                    <div style={{ marginTop: 8, fontSize: 13, color: '#A8B4C0' }}>
-                      Est. Monthly Cost: <strong className="calc-no-capitalize">${outA.monthlyCostUsd.toFixed(2)}</strong> | Annual Cost: <strong className="calc-no-capitalize">${outA.annualCostUsd?.toFixed(2)}</strong>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12, marginBottom: 12 }}>
+                    <div style={{ padding: 12, background: 'rgba(0,229,255,0.05)', borderRadius: 8, border: '1px solid rgba(0,229,255,0.15)' }}>
+                      <div style={{ color: '#9CA3AF', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Cost / Dose</div>
+                      <div style={{ color: '#00E5FF', fontSize: 22, fontWeight: 800 }}>${outA.dollarsPerDose.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
                     </div>
-                  )}
+                    <div style={{ padding: 12, background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div style={{ color: '#9CA3AF', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Doses / Vial</div>
+                      <div style={{ color: '#F3F4F6', fontSize: 22, fontWeight: 800 }}>{outA.dosesPerVial.toFixed(1)}</div>
+                    </div>
+                    {daysPerVialA !== null && daysPerVialA > 0 && (
+                      <div style={{ padding: 12, background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)' }}>
+                        <div style={{ color: '#9CA3AF', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Vial Lasts</div>
+                        <div style={{ color: '#F3F4F6', fontSize: 22, fontWeight: 800 }}>{daysPerVialA.toFixed(0)}d</div>
+                      </div>
+                    )}
+                    {outA.monthlyCostUsd && (
+                      <div style={{ padding: 12, background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)' }}>
+                        <div style={{ color: '#9CA3AF', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Est. Monthly</div>
+                        <div style={{ color: '#68D391', fontSize: 22, fontWeight: 800 }}>${outA.monthlyCostUsd.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                      </div>
+                    )}
+                    {outA.annualCostUsd && (
+                      <div style={{ padding: 12, background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)' }}>
+                        <div style={{ color: '#9CA3AF', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Est. Annual</div>
+                        <div style={{ color: '#68D391', fontSize: 22, fontWeight: 800 }}>${outA.annualCostUsd.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                      </div>
+                    )}
+                  </div>
                 </>
             }
           </div>
@@ -1474,10 +1682,10 @@ function CostSection() {
                 <div style={{ color: '#00E5FF', fontWeight: 'bold', fontSize: 13, marginBottom: 8 }}>OPTION A RESULTS</div>
                 {outA ? (
                   <div style={{ fontSize: 13, textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <div>Cost/Dose: <strong className="calc-no-capitalize">${outA.dollarsPerDose.toFixed(2)}</strong></div>
+                    <div>Cost/Dose: <strong className="calc-no-capitalize">${outA.dollarsPerDose.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></div>
                     <div>Doses/Vial: <strong className="calc-no-capitalize">{outA.dosesPerVial.toFixed(1)}</strong></div>
-                    <div>Monthly: <strong className="calc-no-capitalize">${outA.monthlyCostUsd?.toFixed(2)}</strong></div>
-                    <div>Annual: <strong className="calc-no-capitalize">${outA.annualCostUsd?.toFixed(2)}</strong></div>
+                    <div>Monthly: <strong className="calc-no-capitalize">${outA.monthlyCostUsd?.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></div>
+                    <div>Annual: <strong className="calc-no-capitalize">${outA.annualCostUsd?.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></div>
                   </div>
                 ) : 'Invalid Inputs'}
               </div>
@@ -1487,10 +1695,10 @@ function CostSection() {
                 <div style={{ color: '#F6AD55', fontWeight: 'bold', fontSize: 13, marginBottom: 8 }}>OPTION B RESULTS</div>
                 {outB ? (
                   <div style={{ fontSize: 13, textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <div>Cost/Dose: <strong className="calc-no-capitalize">${outB.dollarsPerDose.toFixed(2)}</strong></div>
+                    <div>Cost/Dose: <strong className="calc-no-capitalize">${outB.dollarsPerDose.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></div>
                     <div>Doses/Vial: <strong className="calc-no-capitalize">{outB.dosesPerVial.toFixed(1)}</strong></div>
-                    <div>Monthly: <strong className="calc-no-capitalize">${outB.monthlyCostUsd?.toFixed(2)}</strong></div>
-                    <div>Annual: <strong className="calc-no-capitalize">${outB.annualCostUsd?.toFixed(2)}</strong></div>
+                    <div>Monthly: <strong className="calc-no-capitalize">${outB.monthlyCostUsd?.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></div>
+                    <div>Annual: <strong className="calc-no-capitalize">${outB.annualCostUsd?.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></div>
                   </div>
                 ) : 'Invalid Inputs'}
               </div>
@@ -1500,11 +1708,11 @@ function CostSection() {
               <div style={{ ...resultStyle, background: 'rgba(104,211,145,0.05)', border: '1px solid #68D391', color: '#E2E8F0', fontSize: 14 }}>
                 {outA.dollarsPerDose < outB.dollarsPerDose ? (
                   <span>
-                    Success: <strong>Option A</strong> Is More Cost-Effective. It Saves You <strong style={{ color: '#68D391' }} className="calc-no-capitalize">${(outB.dollarsPerDose - outA.dollarsPerDose).toFixed(2)}</strong> Per Dose (<strong style={{ color: '#68D391' }} className="calc-no-capitalize">{((1 - outA.dollarsPerDose / outB.dollarsPerDose) * 100).toFixed(1)}%</strong> Savings).
+                    <strong>Option A</strong> Is More Cost-Effective. Saves <strong style={{ color: '#68D391' }} className="calc-no-capitalize">${(outB.dollarsPerDose - outA.dollarsPerDose).toFixed(2)}</strong> Per Dose (<strong style={{ color: '#68D391' }} className="calc-no-capitalize">{((1 - outA.dollarsPerDose / outB.dollarsPerDose) * 100).toFixed(1)}%</strong> Savings).
                   </span>
                 ) : outB.dollarsPerDose < outA.dollarsPerDose ? (
                   <span>
-                    Success: <strong>Option B</strong> Is More Cost-Effective. It Saves You <strong style={{ color: '#68D391' }} className="calc-no-capitalize">${(outA.dollarsPerDose - outB.dollarsPerDose).toFixed(2)}</strong> Per Dose (<strong style={{ color: '#68D391' }} className="calc-no-capitalize">{((1 - outB.dollarsPerDose / outA.dollarsPerDose) * 100).toFixed(1)}%</strong> Savings).
+                    <strong>Option B</strong> Is More Cost-Effective. Saves <strong style={{ color: '#68D391' }} className="calc-no-capitalize">${(outA.dollarsPerDose - outB.dollarsPerDose).toFixed(2)}</strong> Per Dose (<strong style={{ color: '#68D391' }} className="calc-no-capitalize">{((1 - outB.dollarsPerDose / outA.dollarsPerDose) * 100).toFixed(1)}%</strong> Savings).
                   </span>
                 ) : (
                   <span>Both Options Yield Identical Cost-Per-Dose Metrics.</span>
@@ -1519,16 +1727,16 @@ function CostSection() {
             title={comparisonMode ? "Vendor Cost Comparison" : "Cost Per Dose Economics"}
             noteText={!comparisonMode
               ? `Option A Price: $${priceA}
-Vial Mass: ${massA} mg
-Dose Amount: ${doseA} mcg
+Vial Mass: ${massA} MG
+Dose Amount: ${doseA} ${unitA}
 Dosing Frequency: ${frequency} doses/week
-Cost Per Dose: $${outA.dollarsPerDose.toFixed(2)}
-Monthly Projected Cost: $${outA.monthlyCostUsd?.toFixed(2) ?? 'N/A'}
-Annual Projected Cost: $${outA.annualCostUsd?.toFixed(2) ?? 'N/A'}`
-              : `Option A: Price $${priceA}, Mass ${massA} mg, Dose ${doseA} mcg
-Option B: Price $${priceB}, Mass ${massB} mg, Dose ${doseB} mcg
-Option A Cost Per Dose: $${outA.dollarsPerDose.toFixed(2)}
-Option B Cost Per Dose: $${outB?.dollarsPerDose.toFixed(2) ?? 'N/A'}
+Cost Per Dose: $${outA.dollarsPerDose.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+Monthly Projected Cost: $${outA.monthlyCostUsd?.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) ?? 'N/A'}
+Annual Projected Cost: $${outA.annualCostUsd?.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) ?? 'N/A'}`
+              : `Option A: Price $${priceA}, Mass ${massA} MG, Dose ${doseA} ${unitA}
+Option B: Price $${priceB}, Mass ${massB} MG, Dose ${doseB} ${unitB}
+Option A Cost Per Dose: $${outA.dollarsPerDose.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+Option B Cost Per Dose: $${outB?.dollarsPerDose.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) ?? 'N/A'}
 Projected Winner: ${outB ? (outA.dollarsPerDose < outB.dollarsPerDose ? 'Option A' : 'Option B') : 'Option A'}`}
           />
         )}
@@ -2490,9 +2698,9 @@ function SppsSection() {
         <div style={resultStyle}>
           {!out ? 'Enter A Valid Sequence.' : (
             <>
-              <div>Total Synthesizer Cost: <strong className="calc-no-capitalize">${out.totalUsd.toFixed(2)}</strong></div>
+              <div>Total Synthesizer Cost: <strong className="calc-no-capitalize">${out.totalUsd.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></div>
               <div style={{ color: '#00E5FF', marginTop: 6, fontSize: 18 }}>
-                Cost Per Recovered Mg: <strong className="calc-no-capitalize">${out.costPerRecoveredMg.toFixed(2)}</strong>
+                Cost Per Recovered Mg: <strong className="calc-no-capitalize">${out.costPerRecoveredMg.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>
                 <span style={{ display: 'block', fontSize: 12, color: '#A8B4C0', marginTop: 4, fontWeight: 'normal' }}>
                   Assuming ~<span className="calc-no-capitalize">{out.recoveredMg.toFixed(1)} mg</span> Final Pure Peptide Recovered.
                 </span>
@@ -2505,7 +2713,7 @@ function SppsSection() {
                   return (
                     <div 
                       key={b.label} 
-                      title={`${b.label}: $${b.costUsd.toFixed(2)}`} 
+                      title={`${b.label}: $${b.costUsd.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`} 
                       style={{ width: `${pct}%`, height: '100%', background: costColors[idx % costColors.length] }} 
                     />
                   );
@@ -2519,7 +2727,7 @@ function SppsSection() {
                       <span style={{ width: 8, height: 8, borderRadius: '50%', background: costColors[idx % costColors.length] }} />
                       <span className="calc-no-capitalize">{b.label}</span>
                     </span>
-                    <span className="calc-no-capitalize">${b.costUsd.toFixed(2)}</span>
+                    <span className="calc-no-capitalize">${b.costUsd.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                   </div>
                 ))}
               </div>
@@ -2533,9 +2741,9 @@ function SppsSection() {
             noteText={`Scale: ${scale} mmol
 Sequence Length: ${cleanSppsSeq.length} AA
 Coupling Chemistry: ${chemistry === 'DIC/Oxyma' ? 'DIC/Oxyma (Standard)' : chemistry === 'HATU/DIEA' ? 'HATU/DIEA (Premium)' : 'HBTU/DIEA'}
-Total Estimated Cost: $${out.totalUsd.toFixed(2)}
+Total Estimated Cost: $${out.totalUsd.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
 Cost Breakdown:
-${out.breakdown.map(b => `- ${b.label}: $${b.costUsd.toFixed(2)}`).join('\n')}`}
+${out.breakdown.map(b => `- ${b.label}: $${b.costUsd.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`).join('\n')}`}
           />
         )}
 
@@ -2809,6 +3017,207 @@ Total Mass Needed: ${Number(out.totalMg).toFixed(2)} mg`}
   );
 }
 
+// ---------------------------------------------------------------------------
+// SHELF LIFE SECTION  — merged from /shelf-life page
+// ---------------------------------------------------------------------------
+
+interface SLCompound {
+  slug: string;
+  display_name: string;
+  reconstitution_shelf_days: number | null;
+}
+
+interface SLLog {
+  id: string;
+  compound_slug: string;
+  label: string | null;
+  reconstituted_on: string;
+  shelf_days: number;
+}
+
+const SL_DEFAULT_DAYS = 28;
+
+function todaySL(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function ShelfLifeSection() {
+  const [slCompounds, setSlCompounds] = useState<SLCompound[]>([]);
+  const [logs, setLogs] = useState<SLLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [slug, setSlug] = useState('');
+  const [slDays, setSlDays] = useState<number>(SL_DEFAULT_DAYS);
+  const [slDate, setSlDate] = useState<string>(todaySL());
+  const [slLabel, setSlLabel] = useState('');
+
+  const bySlug = useMemo(() => new Map(slCompounds.map((c) => [c.slug, c])), [slCompounds]);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [cRes, lRes] = await Promise.all([
+        fetch('/api/research/compounds-list'),
+        fetch('/api/research/shelf-life'),
+      ]);
+      const cData = cRes.ok ? await cRes.json() : {};
+      const lData = lRes.ok ? await lRes.json() : {};
+      setSlCompounds((cData.compounds ?? []).map((c: Record<string, unknown>) => ({
+        slug: c.slug as string,
+        display_name: c.display_name as string,
+        reconstitution_shelf_days: typeof c.reconstitution_shelf_days === 'number' ? c.reconstitution_shelf_days : null,
+      })));
+      setLogs(lData.logs ?? []);
+    } catch {
+      /* network error — leave empty */
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { loadData(); }, []);
+
+  function onPickCompound(value: string) {
+    setSlug(value);
+    const c = bySlug.get(value);
+    setSlDays(c?.reconstitution_shelf_days ?? SL_DEFAULT_DAYS);
+  }
+
+  async function addLog() {
+    if (!slug) { toast.error('Select A Compound First'); return; }
+    setSaving(true);
+    try {
+      const res = await fetch('/api/research/shelf-life', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ compound_slug: slug, label: slLabel.trim() || undefined, reconstituted_on: slDate, shelf_days: slDays }),
+      });
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as { error?: string };
+        toast.error(err.error ?? 'Failed To Save');
+        return;
+      }
+      toast.success('Reconstitution Logged');
+      setSlLabel('');
+      await loadData();
+    } catch { toast.error('Failed To Save'); } finally { setSaving(false); }
+  }
+
+  async function deleteLog(id: string) {
+    try {
+      const res = await fetch(`/api/research/shelf-life?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      if (!res.ok) { toast.error('Failed To Delete'); return; }
+      setLogs((prev) => prev.filter((l) => l.id !== id));
+      toast.success('Log Removed');
+    } catch { toast.error('Failed To Delete'); }
+  }
+
+  const slInput: React.CSSProperties = {
+    width: '100%', height: '46px', boxSizing: 'border-box',
+    background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(12px)',
+    border: '1px solid rgba(255,255,255,0.08)', color: '#F3F4F6',
+    padding: '0 16px', borderRadius: 8, fontSize: 15, outline: 'none',
+  };
+
+  return (
+    <section id="shelf-life" style={{ ...chromeOuterStyle }}>
+      <div style={chromeInnerStyle}>
+        <CalculatorHeader
+          title="Reconstitution Shelf Life Tracker"
+          why="Track When Each Vial Was Reconstituted And See Exactly How Many Days Of Usable Shelf Life Remain. Logs Are Saved To Your Account."
+        />
+        <p style={{ fontSize: 12, color: '#6B7280', marginBottom: 24, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          {RESEARCH_NOTE}
+        </p>
+
+        {/* Add Form */}
+        <div style={{ display: 'grid', gap: 16, padding: 20, borderRadius: 16, background: 'rgba(0,196,188,0.04)', border: '1px solid rgba(0,196,188,0.12)', marginBottom: 28 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Plus size={18} color="#00C4BC" />
+            <span style={{ color: '#fff', fontWeight: 700 }}>Add Reconstitution</span>
+          </div>
+          <div>
+            <label style={{ ...labelStyle }}>Compound</label>
+            <select value={slug} onChange={e => onPickCompound(e.target.value)} style={selectStyleBase}>
+              <option value="">Select A Compound</option>
+              {slCompounds.map(c => <option key={c.slug} value={c.slug}>{c.display_name}</option>)}
+            </select>
+          </div>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <div style={{ flex: '1 1 160px' }}>
+              <label style={{ ...labelStyle }}>Reconstitution Date</label>
+              <input type="date" value={slDate} onChange={e => setSlDate(e.target.value)} style={slInput} />
+            </div>
+            <div style={{ flex: '1 1 120px' }}>
+              <label style={{ ...labelStyle }}>Shelf Days</label>
+              <input type="number" min={1} max={365} value={slDays} onChange={e => setSlDays(Number(e.target.value) || SL_DEFAULT_DAYS)} style={slInput} />
+            </div>
+          </div>
+          <div>
+            <label style={{ ...labelStyle }}>Label (Optional)</label>
+            <input type="text" value={slLabel} onChange={e => setSlLabel(e.target.value)} placeholder="E.g. Vial A, Shelf 2" style={slInput} />
+          </div>
+          <button
+            type="button"
+            onClick={addLog}
+            disabled={saving || !slug}
+            style={{ alignSelf: 'flex-start', padding: '10px 24px', borderRadius: 10, background: slug ? 'linear-gradient(135deg,#00C4BC,#00a8a0)' : 'rgba(255,255,255,0.06)', color: slug ? '#000' : '#6B7280', fontWeight: 700, fontSize: 14, border: 'none', cursor: slug ? 'pointer' : 'not-allowed', transition: 'all 0.2s' }}
+          >
+            {saving ? 'Saving...' : 'Add Reconstitution'}
+          </button>
+        </div>
+
+        {/* Log list */}
+        <div style={{ display: 'grid', gap: 12 }}>
+          <h3 style={{ margin: 0, color: '#fff', fontWeight: 700, fontSize: '1rem' }}>Your Reconstituted Vials</h3>
+          {loading ? (
+            <p style={{ color: '#6B7280', margin: 0 }}>Loading Logs...</p>
+          ) : logs.length === 0 ? (
+            <p style={{ color: '#6B7280', margin: 0 }}>No Reconstitutions Logged Yet.</p>
+          ) : logs.map(log => {
+            const comp = bySlug.get(log.compound_slug);
+            const name = comp?.display_name ?? log.compound_slug;
+            const life = shelfLife(log.reconstituted_on, log.shelf_days);
+            const remaining = life?.remainingDays ?? 0;
+            const expired = life?.expired ?? false;
+            const pct = life ? Math.round(life.pct * 100) : 0;
+            const lowStock = !expired && remaining <= 5;
+            const barColor = expired ? '#FF6B6B' : lowStock ? '#F6AD55' : '#00C4BC';
+            return (
+              <div key={log.id} style={{ padding: 16, borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', display: 'grid', gap: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                  <div>
+                    <Link href={`/research/${log.compound_slug}`} style={{ color: '#00C4BC', fontWeight: 700, fontSize: '1rem', textDecoration: 'none' }}>
+                      {name}
+                    </Link>
+                    {log.label && <span style={{ color: '#6B7280', fontSize: '0.82rem', marginLeft: 8 }}>{log.label}</span>}
+                    <p style={{ margin: '4px 0 0', color: '#6B7280', fontSize: '0.78rem' }}>Reconstituted {log.reconstituted_on} &middot; {log.shelf_days} Day Shelf Life</p>
+                  </div>
+                  <button type="button" onClick={() => deleteLog(log.id)} title="Delete" style={{ background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.8rem' }}>
+                    <Trash2 size={14} /> Delete
+                  </button>
+                </div>
+                <div style={{ height: 6, borderRadius: 999, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+                  <div style={{ width: `${pct}%`, height: '100%', background: barColor, transition: 'width 0.3s ease' }} />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: expired ? '#FF6B6B' : '#D0DAE4', fontSize: '0.9rem', fontWeight: 700 }}>
+                  <Clock size={14} />
+                  {expired ? 'Expired' : `${remaining} ${remaining === 1 ? 'Day' : 'Days'} Remaining`}
+                </div>
+                {lowStock && (
+                  <Link href={`/research/${log.compound_slug}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#F6AD55', fontWeight: 700, textDecoration: 'none', fontSize: '0.88rem' }}>
+                    <RotateCw size={14} /> Time To Re-Order
+                  </Link>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function CalculatorSuite({ activeId }: { activeId?: string | null }) {
   const [compounds, setCompounds] = useState<CompoundListItem[]>([]);
 
@@ -2847,6 +3256,7 @@ export default function CalculatorSuite({ activeId }: { activeId?: string | null
         }
       ` }} />
       {activeId === 'reconstitution' && <Reconstitution compounds={compounds} />}
+      {activeId === 'shelf-life' && <ShelfLifeSection />}
       {activeId === 'dilution' && <DilutionSection />}
       {activeId === 'concentration' && <ConcentrationSection compounds={compounds} />}
       {activeId === 'stability' && <StabilitySection />}

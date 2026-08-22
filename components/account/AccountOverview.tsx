@@ -125,6 +125,15 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
     timezone:   profile?.timezone ?? 'America/New_York',
   });
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  /** Wrapper that also clears the inline error banner on any field change. */
+  const updateDraft = useCallback(<K extends keyof typeof draft>(key: K, value: string) => {
+    setSaveError(null);
+    setDraft((d) => ({ ...d, [key]: value }));
+  }, []);
+
+
   const [usernameModalOpen, setUsernameModalOpen] = useState(false);
   const [missingTasksModalOpen, setMissingTasksModalOpen] = useState(false);
   const router = useRouter();
@@ -262,21 +271,26 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
     };
     const key = keyMap[t.id] || t.id;
     try {
-      await fetch('/api/agent/profile', { 
+      const res = await fetch('/api/agent/profile', { 
         method: 'PATCH', 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [key]: inputValue }) 
       });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed To Save. Please Try Again.');
+      
       if (profile) onProfileChange({ ...profile, [key]: inputValue } as AccountProfile);
+      setExpandedTask(null);
     } catch(err) {
       toast.error(err instanceof Error ? err.message : 'Failed To Save. Please Try Again.');
+    } finally {
+      setSavingTask(false);
     }
-    setSavingTask(false);
-    setExpandedTask(null);
   };
 
   const handleSave = useCallback(async () => {
     setSaving(true);
+    setSaveError(null);
     try {
       const body: Record<string, unknown> = {};
       const map: Array<[keyof typeof draft, keyof AccountProfile]> = [
@@ -296,6 +310,7 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
       }
       if (Object.keys(body).length === 0) {
         toast.info('No Changes To Save.');
+        setSaving(false);
         return;
       }
 
@@ -306,19 +321,21 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
       });
       const json = await res.json();
       if (!res.ok) {
-        throw new Error(json.error || 'Failed To Save Profile.');
+        throw new Error(json.error || 'Failed to save your profile. Please try again.');
       }
       toast.success('Profile Updated.');
       if (json.profile && profile) {
         onProfileChange({ ...profile, ...json.profile });
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed To Save Profile.';
-      toast.error(msg);
+      const msg = err instanceof Error ? err.message : 'Failed to save your profile. Please try again.';
+      setSaveError(msg);
     } finally {
       setSaving(false);
     }
   }, [draft, profile, onProfileChange]);
+
+
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
@@ -393,7 +410,7 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
               type="text"
               className="form-input"
               value={draft.first_name}
-              onChange={(e) => setDraft((d) => ({ ...d, first_name: e.target.value }))}
+              onChange={(e) => updateDraft('first_name', e.target.value)}
               maxLength={60}
               autoComplete="given-name"
             />
@@ -406,7 +423,7 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
               type="text"
               className="form-input"
               value={draft.last_name}
-              onChange={(e) => setDraft((d) => ({ ...d, last_name: e.target.value }))}
+              onChange={(e) => updateDraft('last_name', e.target.value)}
               maxLength={60}
               autoComplete="family-name"
             />
@@ -425,7 +442,7 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
                 let formatted = digits;
                 if (digits.length > 3 && digits.length <= 6) formatted = `${digits.slice(0, 3)}-${digits.slice(3)}`;
                 else if (digits.length > 6) formatted = `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
-                setDraft((d) => ({ ...d, phone: formatted }));
+                updateDraft('phone', formatted);
               }}
               maxLength={12}
               autoComplete="tel"
@@ -439,7 +456,7 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
               type="email"
               className="form-input"
               value={draft.email}
-              onChange={(e) => setDraft((d) => ({ ...d, email: e.target.value }))}
+              onChange={(e) => updateDraft('email', e.target.value)}
               placeholder="Your Real Email"
               maxLength={120}
               autoComplete="email"
@@ -452,7 +469,7 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
               id="timezone"
               className="form-input"
               value={draft.timezone}
-              onChange={(e) => setDraft((d) => ({ ...d, timezone: e.target.value }))}
+              onChange={(e) => updateDraft('timezone', e.target.value)}
             >
               <option value="" disabled>Select Timezone</option>
               {COMMON_TIMEZONES.map((tz) => (
@@ -462,12 +479,41 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
           </div>
         </div>
 
-        <div style={{ marginTop: 'var(--space-5)', display: 'flex', justifyContent: 'flex-end' }}>
-          <button type="button" className="btn btn-primary" disabled={saving} onClick={handleSave}>
-            {saving ? 'Saving...' : 'Save Changes'}
-          </button>
+
+        <div style={{ marginTop: 'var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+          {/* Inline error banner — stays visible until user retries */}
+          {saveError && (
+            <div
+              role="alert"
+              style={{
+                padding: '12px 16px',
+                borderRadius: 10,
+                background: 'rgba(229,62,62,0.10)',
+                border: '1px solid rgba(229,62,62,0.40)',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 10,
+              }}
+            >
+              <span style={{ fontSize: '1.1rem', flexShrink: 0 }} aria-hidden="true">⚠️</span>
+              <div>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: '0.85rem', color: '#FC8181' }}>
+                  Couldn&apos;t save your profile
+                </p>
+                <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: 'var(--silver)', lineHeight: 1.5 }}>
+                  {saveError}
+                </p>
+              </div>
+            </div>
+          )}
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button type="button" className="btn btn-primary" disabled={saving} onClick={handleSave}>
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
         </div>
       </div>
+
 
       <UsernameChangeModal
         open={usernameModalOpen}

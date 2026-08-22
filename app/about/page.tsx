@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 
 export const metadata: Metadata = {
   title: 'About Pep Nation Lab | Research Peptide Distribution Platform',
@@ -214,9 +215,19 @@ export default function AboutPage() {
 
       <div style={{ backgroundColor: '#020617', minHeight: '100dvh', display: 'flex', justifyContent: 'center' }}>
       <div style={{ position: 'relative', width: '100%', maxWidth: '1024px', margin: '0 auto' }}>
-        <img
+        {/* Mobile LCP: the artwork is a 1.97MB source PNG (1024x1536, verified
+            against the live asset). next/image serves a right-sized AVIF/WebP
+            through the optimizer instead, with priority preload, and the
+            intrinsic dimensions reserve the layout box (no CLS). */}
+        <Image
           src="https://ydsaqnnuwyvtyxgvrnys.supabase.co/storage/v1/object/public/storefront-assets/about/pep-nation-about.png"
           alt="About Pep Nation Lab -- Science, Transparency, Trust. Our Mission, What We Do, And Our Research-Only Commitment"
+          width={1024}
+          height={1536}
+          priority
+          fetchPriority="high"
+          quality={45}
+          sizes="(max-width: 480px) 250px, (max-width: 1024px) 100vw, 1024px"
           style={{ width: '100%', height: 'auto', display: 'block' }}
         />
         {/* Invisible Scroll Target For The Our Mission Button (Mission Panel Region Of The Artwork) */}

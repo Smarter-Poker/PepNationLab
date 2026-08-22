@@ -27,11 +27,12 @@ export const metadata: Metadata = {
     creator: '@PepNationLab',
     title: 'Browse Peptides By Mechanism Of Action | Research Library | Pep Nation Lab',
     description: 'Browse research-grade peptides organized by their mechanism of action - receptor agonists, antagonists, signal modulators, and more. Research use only.',
-    images: ['https://pepnationlab.com/images/og-card.jpg'],
+    images: ['https://pepnationlab.com/og-card.png'],
   },
 };
 
-export const dynamic = 'force-dynamic';
+// ISR: data comes from unstable_cache'd helpers (60s); render once, revalidate hourly.
+export const revalidate = 3600;
 
 function toTitleCase(str: string) {
   return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase());
@@ -61,7 +62,7 @@ export default async function ResearchByMechanismPage() {
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://pepnationlab.com' },
           { '@type': 'ListItem', position: 2, name: 'Research Library', item: 'https://pepnationlab.com/research' },
-          { '@type': 'ListItem', position: 3, name: 'by mechanism', item: 'https://pepnationlab.com/research/by-mechanism' }
+          { '@type': 'ListItem', position: 3, name: 'By Mechanism', item: 'https://pepnationlab.com/research/by-mechanism' }
         ]
       }
     ]

@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     description: 'Public Research API V1 - Endpoints, Authentication, And Rate Limits.',
     url: 'https://pepnationlab.com/research/api-docs',
     siteName: 'Pep Nation Lab',
-    images: [{ url: 'https://pepnationlab.com/images/og-card.jpg', width: 1200, height: 630 }],
+    images: [{ url: 'https://pepnationlab.com/og-card.png', width: 1200, height: 630 }],
     type: 'article',
   },
   twitter: {
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     creator: '@PepNationLab',
     title: 'Research API Documentation - Pep Nation Lab',
     description: 'Public Research API V1 - Endpoints, Authentication, And Rate Limits.',
-    images: ['https://pepnationlab.com/images/og-card.jpg'],
+    images: ['https://pepnationlab.com/og-card.png'],
   },
 };
 

@@ -10,6 +10,7 @@ import SiteDisclaimerGate from "@/components/SiteDisclaimerGate";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from "sonner";
 import FlashSaleBanner from "@/components/FlashSaleBanner";
+import FreeShippingBanner from "@/components/FreeShippingBanner";
 import GlobalErrorReporter from "@/components/GlobalErrorReporter";
 import UtmCapture from "@/components/UtmCapture";
 // Non-critical global widgets (PWA/notification prompts, stale-browser + OAuth
@@ -18,6 +19,18 @@ import UtmCapture from "@/components/UtmCapture";
 // page's initial JS bundle. Each renders null until an event/condition fires,
 // so deferring them causes no layout shift. See components/DeferredGlobals.tsx.
 import DeferredGlobals from "@/components/DeferredGlobals";
+// Trilingual runtime layer: swaps recognized static UI text to zh-CN/zh-TW
+// when the user picked Chinese (manufacturer accounts). Renders null; dynamic
+// data and images pass through untouched. See components/UiTranslator.tsx.
+import UiTranslator from "@/components/UiTranslator";
+// A11y: app-wide reduced-motion support for framer-motion (WCAG 2.2.2/2.3.3).
+import MotionProvider from "@/components/MotionProvider";
+// Real-user measurement: Vercel Speed Insights (Core Web Vitals field data)
+// and Web Analytics (privacy-friendly page views). Both render null and
+// inject a lightweight script after hydration; they no-op harmlessly until
+// the matching tabs are enabled on the Vercel project dashboard.
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/next";
 
 import { Inter } from "next/font/google";
 
@@ -59,7 +72,8 @@ export const metadata: Metadata = {
   icons: {
     icon: "/logo-mark.svg",
     shortcut: "/logo-mark.svg",
-    apple: "/logo-mark.svg",
+    // iOS ignores SVG apple-touch-icons; serve a 180x180 PNG.
+    apple: "/apple-touch-icon.png",
   },
   openGraph: {
     title: "Pep Nation Lab | Premium Research Peptide Distribution",
@@ -120,6 +134,11 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className={inter.variable}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: NO_FLASH_SCRIPT }} />
+        {/* Early connection to the Supabase origin. Product/storefront imagery,
+            auth, and client data reads all hit this host on first navigation;
+            preconnecting saves a DNS+TLS round trip on the critical path. */}
+        <link rel="preconnect" href="https://ydsaqnnuwyvtyxgvrnys.supabase.co" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://ydsaqnnuwyvtyxgvrnys.supabase.co" />
         {/* RSS feed auto-discovery — enables feed readers and AI crawlers to
             locate the research-updates feed without visiting /feed.xml directly. */}
         <link rel="alternate" type="application/rss+xml" title="Pep Nation Lab Research Updates" href="/feed.xml" />
@@ -189,12 +208,42 @@ export default function RootLayout({
                     'https://www.pinterest.com/PepNationLab/',
                   ],
                 },
+                {
+                  // Distinct author/reviewer entity for YMYL E-E-A-T. Monographs
+                  // and guides previously pointed reviewedBy/author at the
+                  // publisher Organization itself (the org reviewing its own
+                  // work carries near-zero trust signal). This editorial-team
+                  // entity separates author from publisher and declares the
+                  // subject-matter expertise (knowsAbout) that answer engines
+                  // and Google's quality systems read. Modeled as an
+                  // Organization sub-team - an honest collective, not a
+                  // fabricated named individual.
+                  '@type': 'Organization',
+                  '@id': 'https://pepnationlab.com/#research-team',
+                  name: 'Pep Nation Lab Research Desk',
+                  description:
+                    'The editorial and scientific review team responsible for sourcing, evidence-tiering, and maintaining the Pep Nation Lab research library. All references are compiled from peer-reviewed literature and regulatory records under a strict Research-Use-Only editorial policy.',
+                  url: 'https://pepnationlab.com/research/methodology',
+                  parentOrganization: { '@id': 'https://pepnationlab.com/#organization' },
+                  knowsAbout: [
+                    'Research peptides',
+                    'Peptide pharmacology',
+                    'Peptide pharmacokinetics',
+                    'Mechanism of action',
+                    'Structure-activity relationships',
+                    'Regulatory status of research compounds',
+                    'Evidence grading of preclinical research',
+                  ],
+                },
               ],
             }),
           }}
         />
       </head>
       <body>
+        {/* A11y: skip link — first focusable element on every page (WCAG 2.4.1).
+            Revealed on keyboard focus via .skip-link styles in globals.css. */}
+        <a href="#main-content" className="skip-link">Skip To Main Content</a>
         <ThemeProvider>
           {/* App-wide capture of uncaught errors + unhandled promise rejections.
               Kept eager so it captures from first paint. */}
@@ -207,20 +256,33 @@ export default function RootLayout({
               Kept eager (server-rendered) so an active sale banner does not pop in
               after hydration and shift layout. */}
           <FlashSaleBanner />
+          <FreeShippingBanner />
           <SiteDisclaimerGate>
             <CartProvider>
               <InAppBrowserProvider>
-                <div className="page-container">
-                  {children}
-                </div>
+                <MotionProvider>
+                  {/* A11y: skip-link target (WCAG 2.4.1). tabIndex={-1} allows
+                      programmatic focus without joining the tab order. */}
+                  <main className="page-container" id="main-content" tabIndex={-1}>
+                    {children}
+                  </main>
+                </MotionProvider>
               </InAppBrowserProvider>
             </CartProvider>
           </SiteDisclaimerGate>
-          <Toaster theme="dark" position="bottom-right" richColors />
+          <Toaster theme="dark" position="bottom-right" richColors style={{ zIndex: 9999999 }} />
           {/* All non-critical global widgets, loaded in their own async chunks
               after hydration instead of in every page's initial bundle. */}
           <DeferredGlobals />
+          {/* Trilingual runtime layer (manufacturer accounts): translates
+              recognized static UI text when Chinese is selected. Dynamic data
+              and images pass through untouched. */}
+          <UiTranslator />
           <Script src="/sw-register.js" strategy="afterInteractive" />
+          {/* Real-user field measurement. Render null; scripts load after
+              hydration, so no layout or LCP impact. */}
+          <SpeedInsights />
+          <Analytics />
         </ThemeProvider>
       </body>
     </html>

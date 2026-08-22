@@ -1,4 +1,5 @@
 import 'server-only';
+import { cache } from 'react';
 import { createServerClient } from '@supabase/ssr';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
@@ -45,6 +46,24 @@ export async function createClient() {
 
   return client;
 }
+
+/**
+ * getCachedUser - React cache()-deduped per-request auth lookup.
+ *
+ * supabase.auth.getUser() is a NETWORK round-trip to Supabase Auth, and in a
+ * single request the layout and the page under it each call it. cache()
+ * memoizes the result for the lifetime of one server render pass, so the
+ * network call happens at most once per request. Uses the same SSR client
+ * factory above (including its getUser error guard), so the returned user is
+ * shape-identical to `(await supabase.auth.getUser()).data.user`. The client
+ * that performed the lookup is returned for convenience; call sites that run
+ * additional queries may keep creating their own client via createClient().
+ */
+export const getCachedUser = cache(async () => {
+  const supabase = await createClient();
+  const { data: { user }, error } = await supabase.auth.getUser();
+  return { user, error, supabase };
+});
 
 export async function createServiceClient() {
   return createServerClient(

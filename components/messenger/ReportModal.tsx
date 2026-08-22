@@ -1,8 +1,9 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { X } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Message } from '@/lib/messenger/types';
+import { useModalA11y } from '@/lib/useModalA11y';
 
 type Reason = 'spam' | 'harassment' | 'inappropriate' | 'scam' | 'other';
 
@@ -24,14 +25,8 @@ export default function ReportModal({ message, onClose }: Props) {
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
 
-  // Audit2 fix: support Escape to close, matching standard modal behavior.
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [onClose]);
+  // A11y: initial focus, Tab trap, Escape-to-close, focus restore
+  const dialogRef = useModalA11y<HTMLDivElement>(true, { onClose });
 
   const handleSubmit = async () => {
     if (busy) return;
@@ -72,6 +67,7 @@ export default function ReportModal({ message, onClose }: Props) {
 
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-label="Report Message"

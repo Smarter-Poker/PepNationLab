@@ -1,0 +1,36 @@
+name: Lighthouse CI
+
+# Perf/SEO/a11y regression monitor. The lighthouserc.js config existed but was
+# never wired to a workflow, so the home-page mobile LCP regressed to ~16s
+# unnoticed. This runs the audit against production on a daily schedule and on
+# demand, asserting the budget in lighthouserc.js. It does NOT gate deploys
+# (it runs post-deploy against the live site); a failing run surfaces a real
+# Core Web Vitals regression to act on.
+
+on:
+  schedule:
+    - cron: '0 8 * * *'   # daily at 08:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Lighthouse CI
+        run: npm install -g @lhci/cli@0.13.x
+
+      - name: Run Lighthouse CI
+        run: lhci autorun --config=./lighthouserc.js
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}

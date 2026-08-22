@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
+import BackButton from '@/components/ui/BackButton';
 
 interface TopResearcher {
   name: string;
@@ -12,6 +13,7 @@ interface TopResearcher {
 
 interface ReferralData {
   referral_url: string | null;
+  referral_code?: string | null;
   total_referred: number;
   total_orders: number;
   total_revenue: number;
@@ -56,7 +58,7 @@ export default function AgentReferralsClient({ agentSlug }: AgentReferralsClient
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const referralUrl = data?.referral_url ?? (agentSlug ? `https://pepnationlab.com?ref=${agentSlug}` : null);
+  const referralUrl = data?.referral_url ?? (agentSlug ? `https://pepnationlab.com/signup?ref=${agentSlug}` : null);
 
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--black)' }}>
@@ -68,23 +70,7 @@ export default function AgentReferralsClient({ agentSlug }: AgentReferralsClient
       >
         {/* Back Link */}
         <div style={{ marginBottom: 'var(--space-6)' }}>
-          <Link
-            href="/dashboard/agent"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              color: 'var(--teal)',
-              fontSize: '0.88rem',
-              textDecoration: 'none',
-              fontWeight: 500,
-            }}
-          >
-            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-            Back To Dashboard
-          </Link>
+          <BackButton label="Back To Dashboard" />
         </div>
 
         {/* Page Header */}
@@ -225,7 +211,7 @@ export default function AgentReferralsClient({ agentSlug }: AgentReferralsClient
                         QR Code
                       </p>
                       <img
-                        src={`/api/agent/referral-qr?slug=${encodeURIComponent(agentSlug ?? '')}`}
+                        src={`/api/agent/referral-qr?ref=${encodeURIComponent(data?.referral_code ?? agentSlug ?? '')}`}
                         alt="Referral QR Code"
                         width={140}
                         height={140}

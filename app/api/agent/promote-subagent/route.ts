@@ -4,10 +4,87 @@ import { requireAgent } from '@/lib/admin-auth';
 import { isAgentAncestorOf } from '@/lib/agent-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { notifyPromotedToAgent, notifyPromotionSuccess } from '@/lib/notify';
-import { generateQrDataUrl } from '@/lib/qr';
+import { generateStorefrontQr } from '@/lib/qr-storefront';
 import { verifyCommissionSafeguard } from '@/lib/pricing';
+import { seedStorefrontFromHousePrices } from '@/lib/seed-storefront';
+import { isValidStoreSlug } from '@/lib/store-slug';
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://pepnationlab.com';
+/**
+ * Derives a routable storefront slug from a person's username / display name.
+ *
+ * The naive version of this (lowercase, non-alphanumerics to hyphens, trim,
+ * slice) produced slugs the platform cannot actually serve:
+ *
+ *   - Reserved app routes. A researcher called "Admin", "Orders", "Wallet" or
+ *     "Checkout" yields exactly that slug, which the
+ *     agent_profiles_slug_not_reserved trigger rejects with 23514 -- and even
+ *     if it were stored, proxy.ts would route /admin to the admin app, never
+ *     to the storefront.
+ *   - Too short. A one-character username ("J") yields "j", below the two-char
+ *     floor in agent_profiles_slug_shape / STORE_SLUG_RE.
+ *   - Empty after stripping. A name of only punctuation or non-Latin script
+ *     collapses to "".
+ *
+ * So: sanitize, then hold the result against the single source of truth
+ * (lib/store-slug.ts) and fall back through `<base>-store` to an id-derived
+ * slug that cannot collide with an app route.
+ */
+function deriveStoreSlugBase(
+  username: string | null,
+  fullName: string | null,
+  agentId: string,
+): string {
+  const cleaned = ((username || fullName || '') as string)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40)
+    .replace(/-+$/g, '');
+
+  if (isValidStoreSlug(cleaned)) return cleaned;
+
+  // Reserved or too short -- `admin` becomes `admin-store`, `j` becomes
+  // `j-store`. Both are legal shapes and neither can be an app route.
+  if (cleaned) {
+    const suffixed = `${cleaned}-store`;
+    if (isValidStoreSlug(suffixed)) return suffixed;
+  }
+
+  // Nothing usable came out of the name (empty, all punctuation, non-Latin).
+  // The agent id is guaranteed present and yields a legal slug.
+  const fromId = `agent-${(agentId || '').replace(/[^a-z0-9]/gi, '').toLowerCase().slice(0, 12)}`;
+  return isValidStoreSlug(fromId) ? fromId : 'agent-store';
+}
+
+/**
+ * Picks the code that gets embedded as ?ref= in a storefront QR.
+ *
+ * The precedence here is not arbitrary -- it mirrors exactly how proxy.ts
+ * resolves an inbound ?ref= on a scan: `referral_code` is the canonical
+ * referral namespace whenever the profile has one, `username` is the historical
+ * fallback resolveRefCode() still honours, and the storefront slug resolves as
+ * well. Both referral_code and username are nullable (and can be an empty
+ * string), and a QR that carries no usable ref mints NO first-scan-wins lock at
+ * all -- the scan is attributed to nobody and the agent silently loses every
+ * customer who walks in off that code. The slug is guaranteed present and
+ * routable, so this chain always terminates in something that resolves.
+ *
+ * Deliberately absent from the chain: the raw user id. It is a UUID, no row is
+ * keyed by it in the referral lookup, so shipping it as ?ref= fails exactly the
+ * same way an absent ref does -- only harder to spot, because the QR looks
+ * correctly formed.
+ */
+function resolveQrRefCode(
+  referralCode: string | null,
+  username: string | null,
+  slug: string,
+): string {
+  const code = (referralCode || '').trim();
+  if (code) return code;
+  const name = (username || '').trim();
+  if (name) return name;
+  return slug;
+}
 
 /**
  * Provisions a full storefront + product catalog for a newly minted full Agent.
@@ -15,53 +92,116 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://pepnationlab.com';
  * visible storefront rather than an invisible profile-only shell. Idempotent:
  * skips storefront/product creation if rows already exist. Best-effort and
  * non-fatal -- the profile is already a full agent regardless of outcome.
+ *
+ * Returns the slug that actually exists in agent_profiles, or null. It used to
+ * return the slug it INTENDED to insert without ever reading the insert's
+ * error, so a rejected insert still reported success to the caller and left
+ * the promoted agent with no storefront row -- silently reintroducing the
+ * profile-only shell this function exists to prevent.
  */
 async function provisionAgentStorefront(
   admin: ReturnType<typeof createAdminClient>,
   agentId: string,
   username: string | null,
   fullName: string | null,
+  referralCode: string | null,
+  callerId: string,
 ): Promise<string | null> {
   let slug: string | null = null;
   try {
     const { data: existingStore } = await admin
       .from('agent_profiles')
-      .select('id, slug')
+      .select('id, slug, qr_code_data')
       .eq('id', agentId)
       .maybeSingle();
 
     if (existingStore) {
       slug = (existingStore as { slug?: string | null }).slug ?? null;
+
+      // This branch used to return the slug and nothing else, which meant a
+      // researcher who ALREADY had an agent_profiles row (left behind by an
+      // earlier partial promotion, or created by one of the routes that
+      // predates QR generation) skipped the generateStorefrontQr call below
+      // entirely and kept qr_code_data NULL forever. Nothing in the product
+      // ever retries it, so that agent owns a live storefront with no code to
+      // hand out and no error surfaced anywhere -- the promotion "succeeded".
+      // Backfill it here so the repaired path is the same path.
+      //
+      // Two guards, both load-bearing: we regenerate ONLY when the column is
+      // actually empty (regenerating unconditionally would churn a working
+      // code on every re-promotion), and we write ONLY a truthy render, because
+      // generateStorefrontQr returns null on failure and persisting that null
+      // would erase a good code -- strictly worse than the NULL we came to fix.
+      const existingQr = (existingStore as { qr_code_data?: string | null }).qr_code_data ?? null;
+      if (!existingQr && slug) {
+        const backfillQr: string | null = await generateStorefrontQr(
+          slug,
+          resolveQrRefCode(referralCode, username, slug),
+        );
+        if (backfillQr) {
+          const { error: backfillError } = await admin
+            .from('agent_profiles')
+            .update({ qr_code_data: backfillQr })
+            .eq('id', agentId);
+          if (backfillError) {
+            // Non-fatal: the agent is still a full agent with a storefront.
+            // supabase-js returns errors rather than throwing, so without this
+            // read the failure would be invisible.
+            console.error('[promote-subagent] qr_code_data backfill failed:', backfillError);
+          }
+        }
+      }
     } else {
-      const base =
-        ((username || fullName || 'agent') as string)
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-+|-+$/g, '')
-          .slice(0, 40) || 'agent';
-      slug = base;
+      const base = deriveStoreSlugBase(username, fullName, agentId);
+      let candidate = base;
+      let free = false;
       for (let i = 2; i < 100; i++) {
         const { data: clash } = await admin
           .from('agent_profiles')
           .select('id')
-          .eq('slug', slug)
+          .eq('slug', candidate)
           .maybeSingle();
-        if (!clash) break;
-        slug = `${base}-${i}`;
+        if (!clash) { free = true; break; }
+        candidate = `${base}-${i}`;
       }
-      let qr: string | null = null;
-      try {
-        qr = await generateQrDataUrl(`${APP_URL}/${slug}`);
-      } catch {
-        /* QR is non-essential; storefront works without it */
+      if (!free) {
+        // 99 variants taken. Fall back to the agent id, which is unique by
+        // construction. Previously the loop simply fell out still holding an
+        // unverified `base-99`, which then collided on insert.
+        candidate = `agent-${(agentId || '').replace(/[^a-z0-9]/gi, '').toLowerCase().slice(0, 12)}`;
+        if (!isValidStoreSlug(candidate)) {
+          console.error('[promote-subagent] could not derive a free storefront slug for', agentId);
+          return null;
+        }
       }
-      await admin.from('agent_profiles').insert({
+
+      // utm params make QR scans attributable as offline traffic; ?ref= makes
+      // the scan mint a HARD first-scan-wins referral lock. The ref itself
+      // comes from resolveQrRefCode(), which honours the profile's
+      // referral_code first: passing `username` alone (as this line did) burned
+      // the wrong namespace into the code for every agent who has a
+      // referral_code, so scans resolved against a username that resolveRefCode()
+      // may not map back to that agent at all.
+      // Never throws; a null result just means no cached code.
+      const qr: string | null = await generateStorefrontQr(
+        candidate,
+        resolveQrRefCode(referralCode, username, candidate),
+      );
+      const { error: storeError } = await admin.from('agent_profiles').insert({
         id: agentId,
-        slug,
+        slug: candidate,
         display_name: (fullName || username || 'Agent') as string,
         qr_code_data: qr,
         is_active: true,
       });
+      if (storeError) {
+        // supabase-js returns errors rather than throwing, so the surrounding
+        // catch never saw these. Report null instead of a slug that does not
+        // exist.
+        console.error('[promote-subagent] agent_profiles insert failed:', storeError);
+        return null;
+      }
+      slug = candidate;
     }
 
     // Provision the agent's product catalog only if none exists yet.
@@ -71,28 +211,10 @@ async function provisionAgentStorefront(
       .eq('agent_id', agentId);
 
     if (!prodCount) {
-      const { data: rookieTier } = await admin
-        .from('house_tiers')
-        .select('markup')
-        .eq('level', 3)
-        .maybeSingle();
-      const { data: products } = await admin
-        .from('products')
-        .select('id, base_cost')
-        .eq('is_active', true);
-
-      if (rookieTier && products && products.length > 0) {
-        const rookieMultiplier = 1 + Number(rookieTier.markup);
-        const rows = products.map((p) => ({
-          agent_id: agentId,
-          product_id: p.id,
-          retail_price: Math.round(Number(p.base_cost) * rookieMultiplier * 100) / 100,
-          margin_percent: 50,
-          is_visible: true,
-          sort_order: 0,
-        }));
-        await admin.from('agent_products').insert(rows);
-      }
+      // Seed the promoted agent's catalog from the HOUSE (admin) store's retail
+      // prices (default "set price"); falls back to rookie pricing per product.
+      // We pass callerId as the parent agent to inherit custom images/branding.
+      await seedStorefrontFromHousePrices(admin, agentId, callerId);
     }
   } catch (provErr) {
     console.error('[promote-subagent] storefront provisioning failed:', provErr);
@@ -103,30 +225,19 @@ async function provisionAgentStorefront(
 /**
  * POST /api/agent/promote-subagent
  *
- * SACA Phase 2: Promotes a researcher in the caller's downline into a sub-agent.
- *
- * New model (2026-05-30):
- *  - Sub-agents do NOT get their own storefront. They sell on the parent's
- *    storefront at the parent's prices. No agent_profiles row is created.
- *  - Sub-agent has a commission_pct (0-40), set at promote time, changeable
- *    later via PATCH /api/agent/sub-agents/[id]/commission-rate.
- *  - Sub-agent has a payment model (credit or prepaid) and credit_limit set
- *    by the parent - virtual cap, parent's own admin credit is the real ceiling.
- *  - Sub-agent's referring_agent_id is preserved (storefront access tag).
- *  - parent_agent_id is set to the caller so the sub-agent appears in the
- *    caller's downline.
- *  - Sub-agents cannot have sub-agents (DB trigger enforces, route checks too).
+ * Promotes a researcher in the caller's downline into an Agent or Super Agent.
  *
  * Body:
  *   {
  *     researcherId: UUID,
- *     commissionPct: number (0..40 inclusive),
+ *     markupPct: number (10..200 inclusive) — markup on base cost, NOT commission on gross sales,
+ *     isSuperAgent: boolean — true = Super Agent, false = regular Agent,
  *     paymentModel: 'credit' | 'prepaid',
  *     creditLimit?: number (required when paymentModel='credit', >= 0)
  *   }
  *
  * Response on success also includes parent_slug + share_link so the UI can
- * render a copyable invite URL the parent gives the sub-agent.
+ * render a copyable invite URL the parent gives the new agent.
  */
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -164,44 +275,38 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json().catch(() => ({}));
     const researcherId: unknown = body?.researcherId;
-    const commissionPctRaw: unknown = body?.commissionPct;
+    // Accept both new markupPct and legacy commissionPct for backwards compat
+    const markupPctRaw: unknown = body?.markupPct ?? body?.commissionPct;
+    const isSuperAgentRequest: boolean = body?.isSuperAgent === true;
     const paymentModel: unknown = body?.paymentModel;
     const creditLimitRaw: unknown = body?.creditLimit;
 
     if (typeof researcherId !== 'string' || researcherId.length === 0) {
       return NextResponse.json({ error: 'researcherId Is Required.' }, { status: 400 });
     }
-    // When the caller does not specify a rate, fall back to the parent's
-    // onboarding default commission (default_sub_commission_pct) so new
-    // sub-agents inherit the rate the parent configured during setup.
-    let commissionPct: number;
-    if (commissionPctRaw === undefined || commissionPctRaw === null || commissionPctRaw === '') {
-      commissionPct = Number((callerProfile as { default_sub_commission_pct?: number | null }).default_sub_commission_pct ?? 0);
+
+    // markupPct: the margin the new agent earns above YOUR base cost (10-200%).
+    // Falls back to caller's default_agent_markup_pct if not specified.
+    let markupPct: number;
+    if (markupPctRaw === undefined || markupPctRaw === null || markupPctRaw === '') {
+      const cp = callerProfile as { default_agent_markup_pct?: number | null; default_sub_commission_pct?: number | null };
+      markupPct = Number(cp.default_agent_markup_pct ?? cp.default_sub_commission_pct ?? 50);
     } else {
-      commissionPct = Number(commissionPctRaw);
+      markupPct = Number(markupPctRaw);
     }
-    if (!Number.isFinite(commissionPct) || commissionPct < 0 || commissionPct > 40) {
+    if (!Number.isFinite(markupPct) || markupPct < 10 || markupPct > 200) {
       return NextResponse.json(
-        { error: 'commissionPct Must Be Between 0 And 40 Inclusive.' },
+        { error: 'markupPct Must Be Between 10 And 200 Inclusive.' },
         { status: 400 },
       );
     }
 
-    const isPromotingToFullAgent = callerProfile.is_super_agent === true || callerProfile.role === 'super_agent';
-    if (!isPromotingToFullAgent) {
-      const safeguard = await verifyCommissionSafeguard(admin, callerId, commissionPct);
-      if (!safeguard.safe) {
-        return NextResponse.json({ error: safeguard.error }, { status: 400 });
-      }
-      if (safeguard.warning) {
-        // Fire notification asynchronously, don't await it
-        import('@/lib/notify').then(({ notifyMarginWarning }) => {
-          notifyMarginWarning(admin, callerId).catch(err => {
-            console.error('[promote-subagent] Failed to fire margin warning:', err);
-          });
-        });
-      }
-    }
+    const callerIsSuperAgent = callerProfile.is_super_agent === true || callerProfile.role === 'super_agent' || callerProfile.role === 'admin';
+    // isPromotingToFullAgent: true for both Agent and Super Agent (both get storefronts)
+    const isPromotingToSubAgent = !callerIsSuperAgent;
+    const isPromotingToFullAgent = callerIsSuperAgent;
+    // Determine if the new account should have super_agent privileges
+    const newIsSuperAgent = isSuperAgentRequest && callerIsSuperAgent;
 
     if (paymentModel !== 'credit' && paymentModel !== 'prepaid') {
       return NextResponse.json(
@@ -223,7 +328,7 @@ export async function POST(req: NextRequest) {
     // P0: maybeSingle() so a missing researcher returns null instead of throwing.
     const { data: researcherProfile } = await admin
       .from('profiles')
-      .select('role, referring_agent_id, full_name, username, email, is_sub_agent')
+      .select('role, referring_agent_id, full_name, username, email, is_sub_agent, referral_code')
       .eq('id', researcherId)
       .maybeSingle();
 
@@ -261,53 +366,38 @@ export async function POST(req: NextRequest) {
     // role='agent', so disambiguate via is_super_agent for the dashboard.
     const createdByRole = callerProfile.is_super_agent === true ? 'super_agent' : 'agent';
 
-    // is_sub_agent flag is derived from isPromotingToFullAgent (declared above):
-    // super-agent caller promotes to a full Agent (is_sub_agent: false);
-    // a regular agent caller promotes to a Sub-Agent (is_sub_agent: true).
     const now = new Date().toISOString();
+    let newRole = isPromotingToSubAgent ? 'sub_agent' : 'agent';
+    if (newIsSuperAgent) newRole = 'super_agent';
+
     const updatePayload: Record<string, unknown> = {
-      role: 'agent',
-      is_sub_agent: !isPromotingToFullAgent,
-      // P1: Explicitly clear is_super_agent so a promoted user cannot
-      // inherit or retain super-agent privileges from a previous state.
-      is_super_agent: false,
-      // P1: Bind the promoted user to the calling agent's downline.
+      role: newRole,
+      is_sub_agent: isPromotingToSubAgent,
+      is_super_agent: newIsSuperAgent,
       parent_agent_id: callerId,
       created_by_agent_id: callerId,
       created_by_role: createdByRole,
-      commission_pct: commissionPct,
+      // markupPct stored as a decimal fraction in custom_markup_override
+      // e.g. 50% markup = 0.50 override on top of base cost
+      custom_markup_override: Math.round((markupPct / 100) * 10000) / 10000,
+      // commission_pct kept for backwards compat with existing queries
+      commission_pct: 0,
       commission_active_since: now,
       account_type: paymentModel,
-      // SACA 2026-05-31: clear any prior referring_sub_agent_id tag on the
-      // researcher being promoted. A sub-agent cannot itself be tagged to
-      // another sub-agent (no nested sub-agents), and an existing tag from
-      // when they were a researcher would now be inconsistent.
       referring_sub_agent_id: null,
-      // Promotion re-triggers the role-tailored onboarding wizard: the newly
-      // promoted account must complete setup for its new role before reaching
-      // any dashboard. Also clear the prior step acknowledgments so a once-
-      // onboarded account does not skip role-specific steps with stale flags.
-      // See app/dashboard/layout.tsx + /onboarding.
+      // Re-trigger onboarding wizard for the new role
       onboarding_completed_at: null,
       onboarding_progress: {},
       updated_at: now,
     };
-    // Super agent promoting to a FULL agent: seed the new agent's pricing from
-    // the super's onboarding default (overridable per-agent later). 'gamified'
-    // -> NULL custom_markup_override so the agent rides the platform volume
-    // ladder. 'flat' -> fixed override fraction from default_agent_markup_pct.
-    if (isPromotingToFullAgent) {
-      const cp = callerProfile as { default_agent_markup_pct?: number | null; default_agent_pricing_mode?: string | null };
-      if (cp.default_agent_pricing_mode === 'gamified') {
-        updatePayload.custom_markup_override = null;
-      } else if (cp.default_agent_markup_pct != null && Number.isFinite(Number(cp.default_agent_markup_pct))) {
-        updatePayload.custom_markup_override = Math.round((Number(cp.default_agent_markup_pct) / 100) * 10000) / 10000;
-      }
-    }
     if (paymentModel === 'credit') {
       updatePayload.credit_limit = creditLimit;
+      updatePayload.auto_approve_orders = true;
+      updatePayload.max_auto_approve_limit = creditLimit;
     } else {
-      updatePayload.credit_limit = 0;
+      updatePayload.credit_limit = null;
+      updatePayload.auto_approve_orders = false;
+      updatePayload.max_auto_approve_limit = null;
     }
 
     const { error: updateError } = await admin
@@ -328,6 +418,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // CRITICAL: Sync the role to auth.users app_metadata so the JWT reflects the new agent role.
+    const { data: userData } = await admin.auth.admin.getUserById(researcherId);
+    if (userData?.user) {
+      // The literal 'agent' that used to sit here desynced the JWT claim from
+      // profiles.role in BOTH directions: a promotion to 'sub_agent' minted a
+      // token claiming full agent (a privilege ESCALATION -- every
+      // role === 'agent' check in the app reads the claim, not the row), and a
+      // promotion to 'super_agent' minted a token claiming plain agent, locking
+      // the new super-agent out of its own surfaces. `newRole` is the exact
+      // value written to profiles above, so the claim and the row cannot drift.
+      const newMeta = { ...userData.user.app_metadata, role: newRole };
+      await admin.auth.admin.updateUserById(researcherId, { app_metadata: newMeta });
+    }
+
     await admin.from('admin_audit_log').insert({
       actor_id: callerId,
       action: 'sub_agent_promote',
@@ -335,10 +439,16 @@ export async function POST(req: NextRequest) {
       entity_id: researcherId,
       changes: {
         previous_role: researcherProfile.role,
-        new_role: 'agent',
-        is_sub_agent: !isPromotingToFullAgent,
-        is_super_agent: false,
-        commission_pct: commissionPct,
+        // Logged from the computed values, not the literals 'agent'/false that
+        // were here before. Those two fields disagreed with updatePayload for
+        // every sub_agent and super_agent promotion, so the audit trail -- the
+        // only forensic record of who was granted what -- asserted a plain
+        // agent promotion that never happened.
+        new_role: newRole,
+        is_sub_agent: isPromotingToSubAgent,
+        is_super_agent: newIsSuperAgent,
+        markup_pct: markupPct,
+        custom_markup_override: Math.round((markupPct / 100) * 10000) / 10000,
         commission_active_since: now,
         parent_agent_id: callerId,
         account_type: paymentModel,
@@ -378,6 +488,8 @@ export async function POST(req: NextRequest) {
         researcherId,
         researcherProfile.username ?? null,
         researcherProfile.full_name ?? null,
+        (researcherProfile as { referral_code?: string | null }).referral_code ?? null,
+        callerId
       );
     }
 
@@ -389,14 +501,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       sub_agent_id: researcherId,
-      commission_pct: commissionPct,
+      markup_pct: markupPct,
       account_type: paymentModel,
       credit_limit: paymentModel === 'credit' ? creditLimit : 0,
       parent_slug: parentSlug,
       share_link: shareLink,
       created_by_role: createdByRole,
       new_agent_slug: newAgentSlug,
-      message: `${researcherProfile.full_name || 'Researcher'} Has Been Promoted To ${isPromotingToFullAgent ? 'Agent' : 'Sub-Agent'} At ${commissionPct}% Commission.`,
+      message: `${researcherProfile.full_name || 'Researcher'} Has Been Promoted To ${newIsSuperAgent ? 'Super Agent' : 'Agent'} At ${markupPct}% Markup On Base Cost.`,
     });
 
   } catch (error) {

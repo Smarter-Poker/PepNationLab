@@ -1,0 +1,11 @@
+{ "extends": "./tsconfig.json",
+  "compilerOptions": { "noEmit": true, "incremental": false },
+  "include": [
+    "next-env.d.ts",
+    "lib/structured-data/merchant.ts",
+    "app/[agentSlug]/page.tsx",
+    "app/peptides/[stateSlug]/[citySlug]/page.tsx",
+    "app/peptides/[stateSlug]/[citySlug]/[compoundSlug]/page.tsx",
+    "__tests__/structured-data-merchant.test.ts",
+    "__tests__/shipping-cost.test.ts"
+  ] }

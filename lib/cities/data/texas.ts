@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// Texas — 267 cities
+// Texas - 267 cities
 const CITIES_TEXAS: City[] = [
   {
     name: 'Plano', slug: 'plano', state: 'Texas', stateSlug: 'texas', stateAbbr: 'TX',

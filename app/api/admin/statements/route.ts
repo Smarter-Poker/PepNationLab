@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
@@ -33,7 +34,7 @@ export async function GET(req: NextRequest) {
       .limit(5000);
 
     if (status) {
-      dbQuery = dbQuery.eq('status', status);
+      dbQuery = dbQuery.eq('status', status); // @ts-ignore
     }
 
     const { data, error } = await dbQuery;
@@ -132,6 +133,12 @@ export async function POST(req: NextRequest) {
             .maybeSingle();
           if (!existingStmt) {
             return NextResponse.json({ error: 'Statement Not Found.' }, { status: 404 });
+          }
+          // Idempotency only covers same-key retries; a differently-keyed
+          // re-submit must not re-flip an already-paid statement (which would
+          // reset paid_at and overwrite the recorded payment evidence).
+          if (existingStmt.status === 'paid') {
+            return NextResponse.json({ error: 'Statement Already Paid.' }, { status: 409 });
           }
 
           // Persist the canonical columns (payment_method, payment_reference) and

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Navbar from '@/components/Navbar';
+import BackButton from '@/components/ui/BackButton';
 
 /**
  * SACA Phase 8: Parent landing page for sub-agent management.
@@ -30,8 +32,7 @@ type Row = {
 };
 
 function fmtMoney(v: number | null | undefined): string {
-  if (v == null) return '$0.00';
-  return `$${Number(v).toFixed(2)}`;
+  return `$${(Number(v) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function fmtDate(s: string | null | undefined): string {
@@ -69,6 +70,7 @@ export default function SubAgentsPage() {
 
   return (
     <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+      <Navbar />
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
         <h1 style={{ fontSize: '28px', margin: 0 }}>Your Sub-Agents</h1>
         <Link href="/dashboard/agent/sub-agents/promote" className="btn-primary" style={{ padding: '8px 16px' }}>

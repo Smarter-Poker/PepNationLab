@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
-import { computeAgentCostForAgent } from '@/lib/pricing';
+import { computeAgentCostForAgent, computeAgentCostsForAgent } from '@/lib/pricing';
 import type { AgentTier } from '@/lib/pricing';
+import { SubAgentPricingSchema } from '@/lib/schemas/product';
 
 export async function GET(req: NextRequest) {
   try {
@@ -56,14 +57,18 @@ export async function GET(req: NextRequest) {
 
     // Merge pricing with products, calculating EXACT super agent cost
     const pricingMap = new Map(pricing?.map(p => [p.product_id, p]) || []);
-    
-    const mergedDataPromises = products?.map(async prod => {
+
+    // Resolve the super agent's pricing context once and price the whole
+    // catalog in memory - previously this issued 2-3 queries per product.
+    const pricedProducts = (products ?? [])
+      .filter(prod => Number(prod.base_cost) > 0)
+      .map(prod => ({ id: prod.id, base_cost: Number(prod.base_cost) }));
+    const costMap = await computeAgentCostsForAgent(supabase, superAgentId, tier, pricedProducts);
+
+    const mergedData = (products ?? []).map(prod => {
       const base = Number(prod.base_cost);
-      let exactCost = 0;
-      if (base > 0) {
-        exactCost = await computeAgentCostForAgent(supabase, prod.id, superAgentId, tier);
-      }
-      
+      const exactCost = base > 0 ? (costMap.get(prod.id) ?? 0) : 0;
+
       const priceRow = pricingMap.get(prod.id);
       return {
         id: prod.id,
@@ -74,8 +79,6 @@ export async function GET(req: NextRequest) {
         bulk_threshold: priceRow?.bulk_threshold ?? 100,
       };
     });
-
-    const mergedData = mergedDataPromises ? await Promise.all(mergedDataPromises) : [];
 
     return NextResponse.json({ data: mergedData });
   } catch (error) {
@@ -94,15 +97,20 @@ export async function POST(req: NextRequest) {
     const supabase = createAdminClient();
     const superAgentId = gate.user.id;
 
-    const body = await req.json();
-    const { product_id, baseline_cost, bulk_baseline_cost, bulk_threshold } = body;
+    const rawBody: unknown = await req.json();
 
-    if (!product_id || typeof baseline_cost !== 'number' || baseline_cost < 0) {
+    // Schema-locked body (shared with the AgentSubAgents form). The previous
+    // `typeof baseline_cost !== 'number'` check passed NaN (typeof NaN is
+    // 'number') and NaN sails through every cost-floor comparison below --
+    // a money-critical billing baseline. finite() rejects it at the boundary.
+    const parsed = SubAgentPricingSchema.safeParse(rawBody);
+    if (!parsed.success) {
       return NextResponse.json(
         { error: 'product_id is required and baseline_cost must be a positive number or zero.' },
         { status: 400 }
       );
     }
+    const { product_id, baseline_cost, bulk_baseline_cost, bulk_threshold } = parsed.data;
 
     // Verify caller is a Super Agent
     const { data: superAgentProfile } = await supabase
@@ -117,21 +125,26 @@ export async function POST(req: NextRequest) {
 
     // Server-side baseline_cost floor
     // A super-agent cannot price sub-agents below their own wholesale cost
-    // (which would mean selling at a loss). computeAgentCost returns the
-    // per-10-vial-pack cost; baseline_cost is also per-10-vial-pack.
-    const ownCostPer10 = await computeAgentCostForAgent(supabase as any, product_id, superAgentId, (superAgentProfile.tier as 'tier_1' | 'tier_2' | 'tier_3') ?? 'tier_3');
+    // (which would mean selling at a loss). Both sides are PER VIAL:
+    // computeAgentCostForAgent returns base_cost x markup with base_cost
+    // per-vial, and super_agent_pricing.baseline_cost is per-vial. Nothing is
+    // sold or billed in 10-packs.
+    const ownCostPerVial = await computeAgentCostForAgent(supabase as any, product_id, superAgentId, (superAgentProfile.tier as 'tier_1' | 'tier_2' | 'tier_3') ?? 'tier_3');
     // Allow zero-cost items as explicitly requested.
-    // Ensure that if ownCostPer10 is exactly 0, they can set baseline_cost >= 0.
-    if (ownCostPer10 === undefined || ownCostPer10 === null) {
+    // Ensure that if ownCostPerVial is exactly 0, they can set baseline_cost >= 0.
+    if (ownCostPerVial === undefined || ownCostPerVial === null) {
       return NextResponse.json(
         { error: 'Product wholesale cost could not be determined. Contact admin.' },
         { status: 422 }
       );
     }
-    if (baseline_cost < ownCostPer10) {
+    if (baseline_cost < ownCostPerVial) {
+      // The comparison was already per-vial on both sides, but the message
+      // divided both figures by 10 and still labelled them "/vial", so the
+      // error quoted a tenth of the real numbers.
       return NextResponse.json(
         {
-          error: `Baseline cost ($${(baseline_cost / 10).toFixed(2)}/vial) cannot be below your own wholesale cost ($${(ownCostPer10 / 10).toFixed(2)}/vial).`,
+          error: `Baseline cost ($${baseline_cost.toFixed(2)}/vial) cannot be below your own wholesale cost ($${ownCostPerVial.toFixed(2)}/vial).`,
         },
         { status: 422 }
       );
@@ -142,10 +155,12 @@ export async function POST(req: NextRequest) {
       if (bulk_baseline_cost < 0) {
         return NextResponse.json({ error: 'bulk_baseline_cost must be greater than or equal to zero.' }, { status: 400 });
       }
-      if (bulk_baseline_cost < ownCostPer10) {
+      if (bulk_baseline_cost < ownCostPerVial) {
+        // Same as the non-bulk floor above: both sides are already per-vial,
+        // but the message divided both by 10 while labelling them "/vial".
         return NextResponse.json(
           {
-            error: `Bulk baseline cost ($${(bulk_baseline_cost / 10).toFixed(2)}/vial) cannot be below your own wholesale cost ($${(ownCostPer10 / 10).toFixed(2)}/vial).`,
+            error: `Bulk baseline cost ($${bulk_baseline_cost.toFixed(2)}/vial) cannot be below your own wholesale cost ($${ownCostPerVial.toFixed(2)}/vial).`,
           },
           { status: 422 }
         );

@@ -1,5 +1,7 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { getEffectiveUser } from '@/lib/impersonation';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -15,7 +17,7 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getEffectiveUser(supabase);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const svc = await createServiceClient();
@@ -47,7 +49,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
   // from this flag rather than relying on the enum.
   const { data: prof } = await svc
     .from('profiles')
-    .select('id, email, full_name, username, role, is_super_agent, is_sub_agent, created_at, referring_agent_id, parent_agent_id, last_sign_in_at, tier, account_type')
+    .select('id, email, contact_email, full_name, username, role, is_super_agent, is_sub_agent, created_at, referring_agent_id, parent_agent_id, last_sign_in_at, tier, account_type')
     .eq('id', researcherId)
     .maybeSingle();
 
@@ -142,7 +144,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
         id: lo.id,
         status: lo.status,
         total: Number(lo.total) || 0,
-        created_at: lo.created_at,
+        created_at: lo.created_at, // @ts-ignore
         tracking_number: tn,
         tracking_url: tn && labelUrl ? labelUrl : null,
       };

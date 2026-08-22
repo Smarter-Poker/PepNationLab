@@ -1,4 +1,5 @@
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { isEffectiveAdmin } from '@/lib/platform-admins';
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
@@ -16,11 +17,11 @@ export default async function AdminProductsPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select('role, is_admin_account')
     .eq("id", user.id)
     .maybeSingle();
 
-  if (!profile || (profile.role !== "admin" && profile.role !== "shipping")) {
+  if (!profile || (!isEffectiveAdmin(user.id, profile.role) && profile?.is_admin_account !== true && profile.role !== "shipping")) {
     return redirect("/dashboard");
   }
 
@@ -31,7 +32,7 @@ export default async function AdminProductsPage() {
   const { data: products } = await supabase
     .from("products")
     .select(
-      "id, name, category, base_cost, is_active, is_banned, created_at, sku, unit_size, unit_measure, inventory_count",
+      "id, name, category, base_cost, house_cost, is_active, is_banned, created_at, sku, unit_size, unit_measure, inventory_count, image_url",
     )
     .order("created_at", { ascending: false });
 

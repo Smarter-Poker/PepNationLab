@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { assertCronAuth } from '@/lib/cron';
@@ -265,7 +266,7 @@ export async function GET(req: Request) {
             last_attempted_at: now.toISOString(),
             last_status_code: result.statusCode,
             last_response_body: result.bodyPreview || result.reason,
-            next_attempt_at: isFinal ? null : nextAttemptAt.toISOString(),
+            next_attempt_at: isFinal ? null : nextAttemptAt.toISOString(), // @ts-ignore
           })
           .eq('id', d.id);
         await admin

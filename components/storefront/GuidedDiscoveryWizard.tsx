@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ArrowRight, Compass } from 'lucide-react';
-import type { Compound } from '@/lib/compounds';
 import { labelForArea, DEFAULT_WIZARD, type WizardState } from './discovery-shared';
+import { useModalA11y } from '@/lib/useModalA11y';
 
 export function GuidedDiscoveryWizard({
   open,
@@ -22,40 +22,48 @@ export function GuidedDiscoveryWizard({
   const [step, setStep] = useState(0);
   const [state, setState] = useState<WizardState>(DEFAULT_WIZARD);
 
+  // Reset the wizard ONLY when it opens. `availableAreas` must NOT be a dep:
+  // it loads empty then populates async (e.g. on /find-a-peptide), and having it
+  // here re-ran this effect mid-flow, resetting step to 0 and clobbering the
+  // user's selected area — which made card-tap auto-advance silently fail and
+  // could bounce a user back to step 0. Seed the default area from whatever
+  // availableAreas holds at open; if still empty, keep the current/fallback area.
   useEffect(() => {
     if (open) {
       const timer = window.setTimeout(() => {
         setStep(0);
-        setState(s => ({ ...s, area: availableAreas[0] || 'healing' }));
+        setState(s => ({ ...s, area: availableAreas[0] || s.area || 'healing' }));
       }, 0);
       return () => window.clearTimeout(timer);
     }
-  }, [open, availableAreas]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', onKey);
     return () => {
       document.body.style.overflow = prev;
-      window.removeEventListener('keydown', onKey);
     };
-  }, [open, onClose]);
+  }, [open]);
+
+  // A11y: initial focus, Tab trap, Escape-to-close, focus restore
+  const dialogRef = useModalA11y<HTMLDivElement>(open, { onClose });
 
   const TOTAL_STEPS = 4;
 
-  const variants = {
+  const variants = useMemo(() => ({
     initial: { x: 20, opacity: 0 },
     animate: { x: 0, opacity: 1 },
     exit: { x: -20, opacity: 0 }
-  };
+  }), []);
 
   return (
     <AnimatePresence>
       {open && (
         <motion.div
+          ref={dialogRef}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -127,7 +135,10 @@ export function GuidedDiscoveryWizard({
             </div>
 
             <div style={{ padding: '14px 18px 18px', flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
-              <AnimatePresence mode="wait">
+              {/* Plain conditional rendering: mode="wait" could leave the exiting
+                  step mounted (exit never completing), freezing the modal on step 0
+                  even as `step` advanced. Each motion.div keeps its enter animation. */}
+              <>
                 {step === 0 && (
                   <motion.div key="step0" variants={variants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.2 }}>
                     <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>What Research Area Are You Focused On?</h3>
@@ -135,27 +146,33 @@ export function GuidedDiscoveryWizard({
                       Pick The Area Closest To Your Goal. We Will Match Compounds Studied For That Area.
                     </p>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
-                      {availableAreas.map((area) => {
-                        const active = state.area === area;
-                        return (
-                          <button
-                            key={area}
-                            type="button"
-                            onClick={() => setState(s => ({ ...s, area }))}
-                            style={{
-                              padding: '10px 14px',
-                              borderRadius: 12,
-                              background: active ? 'rgba(192,197,206,0.2)' : 'rgba(255,255,255,0.05)',
-                              border: active ? '1px solid #C0C5CE' : '1px solid rgba(255,255,255,0.14)',
-                              color: active ? '#C0C5CE' : '#FFFFFF',
-                              fontWeight: 700, fontSize: '0.86rem',
-                              cursor: 'pointer', minHeight: 44, transition: 'all 0.2s ease',
-                            }}
-                          >
-                            {labelForArea(area)}
-                          </button>
-                        );
-                      })}
+                      {availableAreas.length === 0 ? (
+                        <div style={{ padding: '20px', textAlign: 'center', width: '100%', color: '#A8B4C0', background: 'rgba(255,255,255,0.05)', borderRadius: 12 }}>
+                          Loading research areas...
+                        </div>
+                      ) : (
+                        availableAreas.map((area) => {
+                          const active = state.area === area;
+                          return (
+                            <button
+                              key={area}
+                              type="button"
+                              onClick={() => { setState(s => ({ ...s, area })); setStep(1); }}
+                              style={{
+                                padding: '10px 14px',
+                                borderRadius: 12,
+                                background: active ? 'rgba(192,197,206,0.2)' : 'rgba(255,255,255,0.05)',
+                                border: active ? '1px solid #C0C5CE' : '1px solid rgba(255,255,255,0.14)',
+                                color: active ? '#C0C5CE' : '#FFFFFF',
+                                fontWeight: 700, fontSize: '0.86rem',
+                                cursor: 'pointer', minHeight: 44, transition: 'all 0.2s ease',
+                              }}
+                            >
+                              {labelForArea(area)}
+                            </button>
+                          );
+                        })
+                      )}
                     </div>
                   </motion.div>
                 )}
@@ -177,7 +194,7 @@ export function GuidedDiscoveryWizard({
                           <button
                             key={o.v}
                             type="button"
-                            onClick={() => setState(s => ({ ...s, preference: o.v }))}
+                            onClick={() => { setState(s => ({ ...s, preference: o.v })); setStep(2); }}
                             style={{
                               textAlign: 'left',
                               padding: '14px 16px',
@@ -215,7 +232,7 @@ export function GuidedDiscoveryWizard({
                           <button
                             key={o.v}
                             type="button"
-                            onClick={() => setState(s => ({ ...s, comfort: o.v }))}
+                            onClick={() => { setState(s => ({ ...s, comfort: o.v })); setStep(3); }}
                             style={{
                               textAlign: 'left',
                               padding: '14px 16px',
@@ -271,7 +288,7 @@ export function GuidedDiscoveryWizard({
                     </div>
                   </motion.div>
                 )}
-              </AnimatePresence>
+              </>
             </div>
 
             <div
@@ -297,12 +314,16 @@ export function GuidedDiscoveryWizard({
               {step < TOTAL_STEPS - 1 ? (
                 <button
                   type="button"
+                  disabled={step === 0 && availableAreas.length === 0}
                   onClick={() => setStep(step + 1)}
                   style={{
                     flex: 1,
-                    background: '#C0C5CE', color: '#0A1018', border: 0,
+                    background: (step === 0 && availableAreas.length === 0) ? 'rgba(255,255,255,0.1)' : '#C0C5CE', 
+                    color: (step === 0 && availableAreas.length === 0) ? 'rgba(255,255,255,0.4)' : '#0A1018',
+                    border: 0,
                     fontWeight: 900, fontSize: '0.92rem',
-                    padding: '12px 16px', borderRadius: 12, cursor: 'pointer',
+                    padding: '12px 16px', borderRadius: 12, 
+                    cursor: (step === 0 && availableAreas.length === 0) ? 'not-allowed' : 'pointer',
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                     minHeight: 48,
                     boxShadow: '0 4px 12px rgba(192,197,206,0.3)',

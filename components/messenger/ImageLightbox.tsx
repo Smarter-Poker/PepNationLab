@@ -1,18 +1,16 @@
 'use client';
-import { useEffect } from 'react';
 import { X } from 'lucide-react';
 import Image from 'next/image';
+import { useModalA11y } from '@/lib/useModalA11y';
 
 interface Props { src: string; onClose: () => void }
 
 export default function ImageLightbox({ src, onClose }: Props) {
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [onClose]);
+  // A11y: initial focus, Tab trap, Escape-to-close, focus restore
+  const dialogRef = useModalA11y<HTMLDivElement>(true, { onClose });
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-label="Image Preview"
@@ -52,7 +50,7 @@ export default function ImageLightbox({ src, onClose }: Props) {
         maxWidth: 'calc(100vw - max(16px, env(safe-area-inset-left, 0px)) - max(16px, env(safe-area-inset-right, 0px)))',
         maxHeight: 'calc(100dvh - max(16px, env(safe-area-inset-top, 0px)) - max(16px, env(safe-area-inset-bottom, 0px)))',
       }}>
-        <Image src={src} alt="Preview" fill unoptimized style={{ objectFit: 'contain' }} />
+        <Image src={src} alt="Enlarged Image Attachment" fill unoptimized style={{ objectFit: 'contain' }} />
       </div>
     </div>
   );

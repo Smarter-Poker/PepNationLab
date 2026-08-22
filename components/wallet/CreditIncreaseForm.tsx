@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { walletErrorMessage } from './error-messages';
 
 export default function CreditIncreaseForm({
   currentLimit, onClose, onSubmitted,
@@ -26,7 +27,7 @@ export default function CreditIncreaseForm({
       if (!res.ok) throw new Error(j.error || 'failed');
       onSubmitted();
     } catch (e: any) {
-      toast.error('Request Failed: ' + (e.message || 'Unknown'));
+      toast.error(walletErrorMessage(e, 'Could Not Send That Request. Please Try Again.'));
     } finally {
       setSubmitting(false);
     }
@@ -43,7 +44,7 @@ export default function CreditIncreaseForm({
       }}>
         <h2 style={{ color: 'var(--white)', fontSize: '1.2rem', margin: '0 0 6px' }}>Request Credit Increase</h2>
         <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem', margin: '0 0 14px' }}>
-          Current Limit: ${currentLimit.toFixed(2)}
+          Current Limit: ${currentLimit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </p>
         <label style={{ display: 'block', marginBottom: 12 }}>
           <span style={{ color: 'var(--grey-400)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Requested Limit</span>

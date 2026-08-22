@@ -52,7 +52,7 @@ export default function PrivacyPage() {
       <PageShell>
       <LegalDocument
         title="Privacy Policy"
-        lastUpdated="May 21, 2026"
+        lastUpdated="July 11, 2026"
         intro={[
           'This Privacy Policy explains how Pep Nation Lab LLC ("Pep Nation Lab", "we", "us") collects, uses, discloses, and protects information in connection with PepNationLab.com (the "Platform").',
           'By using the Platform, you consent to the practices described in this Policy.',
@@ -93,6 +93,16 @@ export default function PrivacyPage() {
             heading: 'Cookies And Local Storage',
             body: [
               'We use browser cookies and local storage to keep you signed in, remember your disclaimer acceptance, and maintain your shopping cart. Disabling these technologies may prevent parts of the Platform from functioning.',
+              'We also store two first-party analytics identifiers in local storage: a rolling session identifier that resets after roughly thirty minutes of inactivity, and a durable anonymous visitor identifier used to attribute how visitors first arrived at the Platform (for example, from a referral link or a QR code). These identifiers do not contain your name or contact details.',
+            ],
+          },
+          {
+            heading: 'Analytics And Telemetry',
+            body: [
+              'We operate first-party analytics only. We do not use third-party analytics services, advertising pixels, or cross-site trackers, and we do not sell or share information for advertising purposes.',
+              'The analytics data we collect includes page views, product views, search terms, cart and checkout events, referral and campaign parameters, browser performance metrics, error diagnostics, and clicks on help articles. Performance metrics and help-article clicks are recorded without any account identifier.',
+              'Storefront agents see only aggregated statistics for their own storefront, such as total views, searches, and sales over the last thirty days. Agents cannot access raw browsing records.',
+              'Analytics records are retained for limited periods: storefront and research engagement events for ninety days, browser performance metrics for thirty days, error diagnostics for ninety days, help-article clicks and unmatched searches for one hundred eighty days, and search analytics for up to one year. The Platform is intended for users in the United States.',
             ],
           },
           {

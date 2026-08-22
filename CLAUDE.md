@@ -198,7 +198,12 @@ any older note or assumption.
 ## Research-Only Compliance -- 4-Layer Disclaimer
 
 The 4-layer disclaimer gate is mandatory and must never be removed:
-1. **Site Entry** -- DisclaimerGate overlay (records `layer = 'site_entry'`)
+1. **Site Entry** -- `HomeClient.tsx` "Continue As Guest" button shows a `DisclaimerGate`
+   modal BEFORE entering the store (records `layer = 'site_entry'`). The old on-arrival
+   full-screen overlay (`SiteDisclaimerGate`) was intentionally removed 2026-07-12 (commit
+   `b516fb8`) because it presented a wall of legal text over a half-loaded store on QR scans.
+   `SiteDisclaimerGate.tsx` is now a transparent passthrough -- **do NOT reinstate the
+   on-arrival overlay**. The gate still fires; only its trigger point moved.
 2. **Registration** -- 3-checkbox acknowledgment (records `layer = 'registration'`)
 3. **Add-to-Cart** -- inline warning, recorded once per session via the cart
    provider (records `layer = 'add_to_cart'`); this was previously a gap and is

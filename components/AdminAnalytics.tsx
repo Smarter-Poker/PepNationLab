@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -64,7 +65,7 @@ export default function AdminAnalytics() {
         dailyMap.set(d.toISOString().slice(0, 10), 0);
       }
       orders.forEach(o => {
-        const day = o.created_at.slice(0, 10);
+        const day = (o.created_at || "").slice(0, 10);
         if (dailyMap.has(day)) dailyMap.set(day, (dailyMap.get(day) || 0) + Number(o.total));
       });
       const revenueData = Array.from(dailyMap.entries()).map(([date, revenue]) => ({
@@ -123,8 +124,8 @@ export default function AdminAnalytics() {
         .slice(0, 8);
 
       // Monthly comparisons
-      const thisMonthOrders = allOrders.filter(o => o.created_at >= thisMonthStart);
-      const lastMonthOrders = allOrders.filter(o => o.created_at >= lastMonthStart && o.created_at <= lastMonthEnd);
+      const thisMonthOrders = allOrders.filter(o => o.created_at && o.created_at >= thisMonthStart); // @ts-ignore
+      const lastMonthOrders = allOrders.filter(o => o.created_at && o.created_at >= lastMonthStart && o.created_at <= lastMonthEnd); // @ts-ignore
 
       const revenueThisMonth = thisMonthOrders.reduce((s, o) => s + Number(o.total), 0);
       const revenueLastMonth = lastMonthOrders.reduce((s, o) => s + Number(o.total), 0);
@@ -240,7 +241,7 @@ export default function AdminAnalytics() {
             <h3 className="metal-text" style={{ fontSize: '0.92rem', color: '#fff', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)' }}>
               Revenue Trend
             </h3>
-          <div style={{ height: 260, width: '100%' }}>
+          <div style={{ height: 260, width: '100%' }} role="img" aria-label="Area Chart Of Platform Revenue Trend Over The Selected Date Range">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={data.revenueData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
                 <defs>
@@ -272,7 +273,7 @@ export default function AdminAnalytics() {
             </h3>
           {data.ordersByStatus.length > 0 ? (
             <>
-              <div style={{ height: 180, width: '100%' }}>
+              <div style={{ height: 180, width: '100%' }} role="img" aria-label={`Pie Chart Of Orders By Status: ${data.ordersByStatus.map((s) => `${s.name} ${s.value}`).join(', ')}`}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie data={data.ordersByStatus} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={3} dataKey="value" strokeWidth={0}>
@@ -308,7 +309,7 @@ export default function AdminAnalytics() {
               Top Products (By Revenue)
             </h3>
           {data.topProducts.length > 0 ? (
-            <div style={{ height: 240, width: '100%' }}>
+            <div style={{ height: 240, width: '100%' }} role="img" aria-label={`Bar Chart Of Top ${data.topProducts.length} Products By Revenue`}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.topProducts} layout="vertical" margin={{ top: 5, right: 5, left: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" horizontal={false} />

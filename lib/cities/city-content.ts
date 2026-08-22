@@ -3,18 +3,19 @@
  * Template engine for generating unique, city-specific copy.
  *
  * Uniqueness strategy (doorway-page mitigation):
- * - 5 intro variants selected by a per-city hash, several of which weave in
+ * - 10 intro variants selected by a per-city hash, several of which weave in
  *   real data points (population, region) so pages differ in substance, not
  *   just the city token.
- * - A pool of 12 FAQs from which 6 are deterministically selected per city;
+ * - A pool of 18 FAQs from which 6 are deterministically selected per city;
  *   two compliance-critical FAQs (shipping + RUO distinction) always appear.
  * - All copy uses "research-grade" (never "pharmaceutical-grade") to stay
  *   consistent with the platform's RUO compliance posture.
  */
 
 import type { City } from './cities-data';
+import { getResearchAnchors } from './research-anchors';
 
-// ─── Regional flavor labels ───────────────────────────────────────────────
+// --- Regional flavor labels --------------------------------
 const REGION_FALLBACKS: Record<string, string> = {
   illinois: 'Midwest',
   texas: 'Lone Star State',
@@ -67,7 +68,7 @@ export function getRegionArea(region: string): string {
   return /area$/i.test(region.trim()) ? region : `${region} area`;
 }
 
-// ─── Deterministic per-city hash ──────────────────────────────────────────
+// --- Deterministic per-city hash --------------------------
 function cityHash(city: City): number {
   let h = city.tier;
   for (let i = 0; i < city.slug.length; i++) h = (h * 31 + city.slug.charCodeAt(i)) >>> 0;
@@ -80,7 +81,7 @@ function formatPopulation(population: number): string {
   return `${population}`;
 }
 
-// ─── Intro variants (selected by per-city hash) ───────────────────────────
+// --- Intro variants (selected by per-city hash) -------------------
 const INTRO_VARIANTS = [
   (city: City) =>
     `Pep Nation Lab is the trusted wholesale source for research-grade peptides serving researchers in ${city.name}, ${city.stateAbbr} and across the ${getRegionLabel(city)}. Our curated catalog of 100+ research-grade compounds is backed by rigorous QA and full documentation, available exclusively to qualified scientific institutions and verified researchers.`,
@@ -92,21 +93,31 @@ const INTRO_VARIANTS = [
     `Home to roughly ${formatPopulation(city.population)} residents, ${city.name}, ${city.stateAbbr} sits within the ${getRegionLabel(city)} - a region with an active independent research community. Pep Nation Lab supplies that community with batch-tested, research-grade peptides at wholesale pricing, shipped directly to verified labs with full documentation.`,
   (city: City) =>
     `From ${city.name} to the wider ${getRegionLabel(city)}, verified researchers turn to Pep Nation Lab for dependable access to research-grade peptides. Same-day fulfillment on qualifying orders, full COA documentation on every batch, and a 100+ compound catalog built for in vitro laboratory work.`,
+  (city: City) =>
+    `${city.name} anchors ${city.county ? `${city.county} County` : `the ${getRegionLabel(city)}`} and its independent research base. Pep Nation Lab ships research-grade peptides - BPC-157, TB-500, GHK-Cu and 100+ more - to verified labs here with same-day processing and full batch COAs.`,
+  (city: City) =>
+    `Verified accounts in ${city.name}, ${city.stateAbbr} draw from a 100+ compound catalog spanning metabolic, recovery, longevity, and cognitive research. Pep Nation Lab fulfills every ${getRegionArea(getRegionLabel(city))} order at wholesale pricing with independent third-party purity testing.`,
+  (city: City) =>
+    `Private and institutional labs across ${city.name} and the ${getRegionLabel(city)} rely on Pep Nation Lab for direct wholesale peptides. Each lot is HPLC- and mass-spec-verified and ships with a certificate of analysis for in vitro laboratory work.`,
+  (city: City) =>
+    `Research teams in ${city.name}, ${city.stateAbbr} choose Pep Nation Lab for lot-to-lot consistency: transparent COAs, identical purity specs, and a 100+ peptide catalog. Orders ship nationwide from one verified account with priority handling across the ${getRegionLabel(city)}.`,
+  (city: City) =>
+    `Serving ${formatPopulation(city.population)}-resident ${city.name} and the wider ${getRegionLabel(city)}, Pep Nation Lab keeps ${city.state} research teams supplied with cold-chain-handled, research-grade peptides, wholesale pricing tiers, and full lot documentation on every order.`,
 ];
 
 export function getCityIntro(city: City): string {
   return INTRO_VARIANTS[cityHash(city) % INTRO_VARIANTS.length](city);
 }
 
-// ─── FAQ generators ──────────────────────────────────────────────────────
-export interface FAQ {
+// --- FAQ generators ----------------------------------
+interface FAQ {
   question: string;
   answer: string;
 }
 
 /**
  * Full FAQ pool. Two compliance-critical entries (shipping, RUO distinction)
- * are always included; four more rotate in deterministically per city so
+ * are always included; four more rotate in deterministically per city so (16 in the rotating pool)
  * neighboring pages do not carry identical FAQ sets.
  */
 function faqPool(city: City): { core: FAQ[]; rotating: FAQ[] } {
@@ -155,10 +166,67 @@ function faqPool(city: City): { core: FAQ[]; rotating: FAQ[] } {
         question: `Which research areas does the Pep Nation Lab catalog cover for ${region} researchers?`,
         answer: `The catalog spans metabolic health, tissue repair and recovery, growth and longevity, cognitive research, and skin and cosmetic science - including BPC-157, Semaglutide, Tirzepatide, TB-500, GHK-Cu, and Epithalon. Researchers in ${city.name} can browse the full research library at PepNationLab.com/research.`,
       },
+      {
+        question: `Do you provide HPLC and Mass Spectrometry reports with orders shipped to ${city.name}?`,
+        answer: `Yes. Every peptide lot is subjected to rigorous third-party analytical testing, including High-Performance Liquid Chromatography (HPLC) and Mass Spectrometry (MS). Verified researchers in ${city.stateAbbr} can review these detailed reports to guarantee purity and molecular weight before beginning their assays.`,
+      },
+      {
+        question: `How are temperature-sensitive peptides shipped to ${city.state}?`,
+        answer: `Most of our lyophilized peptides are stable at ambient temperatures during transit. However, for specific temperature-sensitive compounds, we utilize advanced cold-chain logistics and insulated packaging to ensure the integrity of the product upon arrival at your ${city.name} laboratory.`,
+      },
+
+      {
+        question: `Are your peptides tested in US-based analytical laboratories?`,
+        answer: `Absolutely. While we source high-quality raw materials globally, all analytical testing, verification, and lot certification are performed by independent, accredited third-party laboratories within the United States. This guarantees that researchers in ${city.state} receive compounds meeting stringent domestic quality standards.`,
+      },
+      {
+        question: `What payment methods are accepted for verified accounts in ${city.state}?`,
+        answer: `Verified research institutions and independent investigators in ${city.name} utilize secure peer-to-peer payment methods including Zelle, Cash App, Venmo, and Apple Pay / Apple Cash. Specific payment instructions are provided after account verification. All payments are processed per the platform's Research Use Only purchase agreement.`,
+      },
+      {
+        question: `What is the standard shelf life of lyophilized peptides upon arrival in ${city.name}?`,
+        answer: `When properly stored in a frozen state (-20°C or below) away from light and moisture, lyophilized peptides maintain their stability and purity for several years. We recommend ${city.state} researchers strictly follow the handling guidelines provided with each batch.`,
+      },
+
+      {
+        question: `Do you offer bulk or institutional discounts for research facilities in ${city.name}?`,
+        answer: `Yes. Our agent-based wholesale distribution model inherently provides significant savings. For large-scale studies or high-volume institutional procurement in ${city.state}, we offer specialized pricing tiers and dedicated account management to ensure a consistent, cost-effective supply chain.`,
+      },
     ],
   };
 }
 
+// Tier-1 markets get several additional, genuinely city-specific FAQs on top
+// of the shared pool - deeper visible content plus a richer FAQPage surface.
+// Distinct from the rotating pool (no HPLC/COA/storage overlap): research
+// ecosystem, regional coverage, onboarding, and long-study supply continuity.
+function tier1ExtraFAQs(city: City): FAQ[] {
+  const region = getRegionLabel(city);
+  const area = getRegionArea(region);
+  const anchors = getResearchAnchors(city.region);
+  const anchorPhrase =
+    anchors && anchors.length > 0
+      ? ` such as ${anchors.slice(0, 3).map((a) => a.name).join(', ')}`
+      : '';
+  return [
+    {
+      question: `What makes ${city.name} a strong hub for peptide research?`,
+      answer: `${city.name} pairs a research base of roughly ${formatPopulation(city.population)} residents in the ${area} with proximity to established institutions${anchorPhrase}. Pep Nation Lab supplies verified researchers across this ecosystem as an independent distributor, not as an affiliate of any named institution.`,
+    },
+    {
+      question: `Does Pep Nation Lab serve labs across the ${area}, not just ${city.name}?`,
+      answer: `Yes. ${city.name} accounts anchor coverage that extends across the surrounding ${area}. Verified researchers in nearby ${city.state} cities order from the same 100+ compound catalog at the same wholesale tiers, with nationwide shipping and identical batch documentation on every lot.`,
+    },
+    {
+      question: `How does a new ${city.name} research institution open a verified account?`,
+      answer: `Institutions and independent investigators in ${city.name} create an account at PepNationLab.com and complete identity and credential verification. Once approved, the account unlocks the full catalog at wholesale pricing with fast shipping to ${city.stateAbbr}, without a lengthy onboarding delay.`,
+    },
+    {
+      question: `Can Pep Nation Lab support long-running studies in ${city.name} with consistent supply?`,
+      answer: `Yes. For longitudinal or repeat research in ${city.name}, Pep Nation Lab maintains lot-to-lot consistency and continuously restocks the core catalog, so ${city.state} researchers can source the same compounds at the same specifications across a multi-phase study, each shipment backed by its own certificate of analysis.`,
+    },
+  ];
+}
 export function getCityFAQs(city: City): FAQ[] {
   const { core, rotating } = faqPool(city);
   const h = cityHash(city);
@@ -175,10 +243,11 @@ export function getCityFAQs(city: City): FAQ[] {
     }
     i += step;
   }
-  return [...core.slice(0, 1), ...picks.slice(0, 2), core[1], ...picks.slice(2)];
+  const base = [...core.slice(0, 1), ...picks.slice(0, 2), core[1], ...picks.slice(2)];
+  return city.tier === 1 ? [...base, ...tier1ExtraFAQs(city)] : base;
 }
 
-// ─── At-a-glance facts (AEO: dense, quotable, self-contained) ─────────────
+// --- At-a-glance facts (AEO: dense, quotable, self-contained) ---------
 export interface CityFact {
   label: string;
   value: string;
@@ -195,6 +264,11 @@ export function getCityFacts(city: City): CityFact[] {
   if (city.zips && city.zips.length > 0) {
     facts.push({ label: 'ZIP Codes Served', value: city.zips.join(', ') });
   }
+  const anchors = getResearchAnchors(city.region);
+  if (anchors && anchors.length > 0) {
+    facts.push({ label: 'Regional Research Hubs', value: anchors.slice(0, 4).map((a) => a.name).join(', ') });
+  }
+  facts.push({ label: 'Median Household Income', value: `~$${city.medianIncome.toLocaleString()}` });
   facts.push(
     { label: 'Shipping', value: `Nationwide To All 50 States, Including ${city.state}` },
     { label: 'Catalog', value: '100+ Research-Grade Peptides And Compounds' },
@@ -205,8 +279,8 @@ export function getCityFacts(city: City): CityFact[] {
   return facts;
 }
 
-// ─── Value props ──────────────────────────────────────────────────────────
-export interface ValueProp {
+// --- Value props -------------------------------------
+interface ValueProp {
   icon: string;  // icon key for SVG lookup map in CityPage
   title: string;
   body: string;

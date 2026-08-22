@@ -42,8 +42,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid Adjustment Type' }, { status: 400 });
   }
   if (newValue === null) return NextResponse.json({ error: 'Invalid New Value' }, { status: 400 });
-  if (adjustmentType === 'set' && newValue < 0) {
-    return NextResponse.json({ error: 'New Value Cannot Be Negative' }, { status: 400 });
+  // Bound every adjustment type so a negative/absurd delta cannot drive agent
+  // retail prices to zero or negative across the selection (see the master
+  // bulk-price route for the same guard).
+  if (adjustmentType === 'set' && (newValue < 0 || newValue > 99999.99)) {
+    return NextResponse.json({ error: 'New Value Must Be Between 0 And 99999.99' }, { status: 400 });
+  }
+  if (adjustmentType === 'flat_delta' && (newValue < -99999.99 || newValue > 99999.99)) {
+    return NextResponse.json({ error: 'Flat Adjustment Must Be Between -99999.99 And 99999.99' }, { status: 400 });
+  }
+  if (adjustmentType === 'percent_delta' && (newValue < -90 || newValue > 500)) {
+    return NextResponse.json({ error: 'Percent Adjustment Must Be Between -90% And 500%' }, { status: 400 });
   }
 
   const effectiveAt = effectiveAtRaw ? new Date(effectiveAtRaw) : new Date();

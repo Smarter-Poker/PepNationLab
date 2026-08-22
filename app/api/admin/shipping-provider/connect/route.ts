@@ -11,6 +11,7 @@ import { NextResponse } from 'next/server';
 import { requireAdmin, assertMfaRecent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { encryptSecret, lastFour } from '@/lib/shipping-crypto';
+import { invalidateActiveKeyCache } from '@/lib/shipping';
 import { createServiceClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
@@ -76,6 +77,7 @@ export async function POST(req: NextRequest) {
   if (insertErr || !inserted) { console.error('Shipping provider connect insert failed:', insertErr?.message); return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 }); }
 
   await supabase.from('shipping_provider_credentials').update({ is_active: false }).eq('is_active', true).neq('id', inserted.id);
+  invalidateActiveKeyCache();
   await supabase.from('admin_audit_log').insert({ actor_id: gate.userId, action: 'shipping_provider_connect', entity_type: 'shipping_provider_credentials', entity_id: inserted.id, changes: { provider: 'easypost', mode, last4: lastFour(apiKey), webhook_secret_set: !!webhookSecret, key_verified: keyValid === true } });
 
   return NextResponse.json({ ok: true, id: inserted.id, mode: inserted.mode, last4: inserted.api_key_last4, connected_at: inserted.connected_at });

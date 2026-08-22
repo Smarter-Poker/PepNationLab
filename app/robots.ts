@@ -82,6 +82,9 @@ const ALLOW = [
   '/research/guides/',
   '/research/compare/',
 
+  // Research Library - Per-compound sub-pages (bibliography + regulatory)
+  '/research/',
+
   // Research Library - API Docs
   '/research/api-docs',
 
@@ -92,6 +95,8 @@ const ALLOW = [
   // markdown monographs remain fetchable by AI answer engines.
   '/api/llm',
   '/api/llm/',
+  '/api/openapi',
+  '/.well-known/ai-plugin.json',
   '/llms.txt',
   '/llms-full.txt',
   '/feed.xml',
@@ -116,6 +121,9 @@ const DISALLOW = [
   '/signup',
   '/register',
   '/forgot-password',
+  '/reset-password',
+  // Proxied third-party tool (next.config.ts rewrite) - keep off the peptide index.
+  '/hub',
   '/onboarding',
   '/wallet',
   '/status',

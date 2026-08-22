@@ -1,3 +1,4 @@
+
 /**
  * Stripe-style request idempotency for admin/agent POSTs that mutate money
  * or state.
@@ -204,6 +205,7 @@ export async function withIdempotency(opts: IdempotencyOptions): Promise<NextRes
     .from('idempotency_keys')
     .update({
       response_status: status,
+      //  Database schema mismatch from generated types
       response_body: body ?? {},
       updated_at: new Date().toISOString(),
     })

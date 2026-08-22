@@ -24,6 +24,7 @@ export interface DashboardMetrics {
   unreadAdminMessages: number;
   newResearchers24h: number;
   activeAgents: number;
+  totalOrdersLast7d: number;
   sparkline: Array<{ date: string; revenue: number }>;
   topSkus: Array<{ name: string; quantity: number; revenue: number }>;
   // fix-55 #5: top-agent leaderboard
@@ -70,6 +71,7 @@ export async function fetchAdminMetrics(adminUserId: string): Promise<DashboardM
     auditLogRes,
     // fix-55 #5: 30d order rows for top-agent aggregation
     topAgentOrdersRes,
+    totalOrdersLast7dRes,
   ] = await Promise.all([
     supabase
       .from('orders')
@@ -147,6 +149,10 @@ export async function fetchAdminMetrics(adminUserId: string): Promise<DashboardM
       .eq('is_wholesale_restock', false)
       .not('status', 'in', `(${NON_GMV_STATUSES.join(',')})`)
       .not('agent_id', 'is', null),
+    supabase
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .gte('created_at', days7Ago),
   ]);
 
   // Two-step topSkus query
@@ -279,6 +285,7 @@ export async function fetchAdminMetrics(adminUserId: string): Promise<DashboardM
     unreadAdminMessages: unreadMsgsRes.count ?? 0,
     newResearchers24h: newResearchersRes.count ?? 0,
     activeAgents: activeAgentsRes.count ?? 0,
+    totalOrdersLast7d: totalOrdersLast7dRes.count ?? 0,
     sparkline,
     topSkus,
     topAgents,

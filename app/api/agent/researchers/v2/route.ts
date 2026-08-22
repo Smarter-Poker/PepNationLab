@@ -508,11 +508,12 @@ export async function GET() {
     };
 
     // 12. SOURCE BREAKDOWN ----------------------------------------------
-    const sourceCounts: Record<string, number> = {};
+    const sourceCountsMap: Record<string, number> = {};
     for (const r of rows) {
       const src = r.acquisition_source ?? 'unknown';
-      sourceCounts[src] = (sourceCounts[src] ?? 0) + 1;
+      sourceCountsMap[src] = (sourceCountsMap[src] ?? 0) + 1;
     }
+    const sourceCounts = Object.entries(sourceCountsMap).map(([source, count]) => ({ source, count }));
 
     return NextResponse.json({
       researchers: rows,
@@ -623,6 +624,6 @@ function emptyPayload() {
     activity: [],
     goal: { period_start: null, target_count: null, achieved_count: 0, progress_pct: null, streak_months: 0 },
     kanban_counts: { lead: 0, first_order: 0, active: 0, vip: 0, at_risk: 0, churned: 0 },
-    source_counts: {},
+    source_counts: [],
   };
 }

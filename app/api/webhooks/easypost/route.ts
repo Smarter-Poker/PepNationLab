@@ -1,3 +1,4 @@
+
 /**
  * POST /api/webhooks/easypost  (also GET for portal liveness checks)
  *
@@ -53,6 +54,8 @@ import { NextResponse } from 'next/server';
 import crypto from 'node:crypto';
 import { createAdminClient } from '@/lib/supabase/server';
 import { safeCompare } from '@/lib/shipping-crypto';
+import { captureError } from '@/lib/sentry';
+import { logError } from '@/lib/log';
 import {
   resolveWebhookSecret,
   processShippingEvent,
@@ -119,9 +122,12 @@ export async function POST(req: NextRequest) {
   const signatureValid = authorised; // true only when a secret matched
 
   // If no secret is configured at all, reject in production to prevent forged
-  // tracking events from being accepted (fail-closed). The only exception is
-  // during initial setup when NEXT_PUBLIC_VERCEL_ENV is not set or is 'development'.
-  const isDev = !process.env.NEXT_PUBLIC_VERCEL_ENV || process.env.NEXT_PUBLIC_VERCEL_ENV === 'development';
+  // tracking events from being accepted (fail-closed). The environment comes
+  // from the server-populated VERCEL_ENV (NEXT_PUBLIC_VERCEL_ENV as a fallback)
+  // so this guard fails closed in production. The only exception is during
+  // initial setup when neither is set or is 'development'.
+  const vercelEnv = process.env.VERCEL_ENV || process.env.NEXT_PUBLIC_VERCEL_ENV;
+  const isDev = !vercelEnv || vercelEnv === 'development';
   if (!secret) {
     if (!isDev) {
       // No secret configured in a live environment -> refuse; forces operator to configure the webhook secret.
@@ -138,6 +144,7 @@ export async function POST(req: NextRequest) {
       .insert({
         event_id: `rejected:${asString(parsed.id) || fallbackEventId(rawBody)}:${Date.now()}`,
         event_type: description,
+        //  Database schema mismatch from generated types
         payload: parsed,
         provider: 'easypost',
         processing_error: 'signature_invalid',
@@ -151,12 +158,19 @@ export async function POST(req: NextRequest) {
   const eventId = asString(parsed.id) || fallbackEventId(rawBody);
   const { error: claimErr } = await supabase
     .from('shipping_webhook_events')
+    //  Database schema mismatch from generated types
     .insert({ event_id: eventId, event_type: description, payload: parsed, provider: 'easypost' });
   if (claimErr) {
-    // Unique violation => already processed. Any other error => still 200 so
-    // EasyPost does not hammer us with retries for a transient DB blip; the
-    // miss is recoverable via the shipping-webhook-retry cron.
-    return NextResponse.json({ ok: true, duplicate: true });
+    // Unique violation => already processed; anything else is a genuine DB
+    // failure. Returning 200 on a genuine failure permanently loses the
+    // event (the retry cron only replays events that were RECORDED), so
+    // return 500 to make EasyPost redeliver, and log/capture the failure.
+    if ((claimErr as { code?: string }).code === '23505') {
+      return NextResponse.json({ ok: true, duplicate: true });
+    }
+    logError('webhooks.easypost.claim_insert', { eventId, description }, claimErr);
+    captureError(claimErr, { context: 'webhooks.easypost.claim_insert', eventId });
+    return NextResponse.json({ error: 'Event Could Not Be Recorded. Please Retry.' }, { status: 500 });
   }
 
   let processingError: string | null = null;
@@ -179,12 +193,12 @@ export async function POST(req: NextRequest) {
   // Always 2XX for an accepted event so EasyPost does not retry a payload we
   // have already durably recorded. Internal processing failures are captured
   // in shipping_webhook_events.processing_error and retried by the cron.
-  return NextResponse.json({
-    ok: true,
-    event: description,
-    secret_source: source,
-    signature_valid: signatureValid,
-    order: orderTouched,
-    processing_error: processingError,
-  });
+  // Response is intentionally minimal: EasyPost only needs a 2XX, and the
+  // previous body leaked internal error text (processing_error) and secret
+  // provenance (secret_source) to any caller who could reach the endpoint.
+  // Full forensic detail is durably recorded in shipping_webhook_events.
+  if (processingError) {
+    captureError(new Error(processingError), { context: 'webhooks.easypost.processing', eventId, event: description, order: orderTouched });
+  }
+  return NextResponse.json({ ok: true, event: description });
 }

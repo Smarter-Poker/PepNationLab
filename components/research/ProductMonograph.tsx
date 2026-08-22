@@ -20,6 +20,7 @@ interface Props {
   compound: Compound;
   primaryColor?: string;
   coaUrl?: string | null;
+  buttonLabel?: string;
 }
 
 const PANEL_BUTTONS: { key: ResearchSection; label: string }[] = [
@@ -51,7 +52,7 @@ const premiumMetalButton: React.CSSProperties = {
   lineHeight: 1,
 };
 
-export default function ProductMonograph({ compound, primaryColor = '#00C4BC', coaUrl = null }: Props) {
+export default function ProductMonograph({ compound, primaryColor = '#00C4BC', coaUrl = null, buttonLabel }: Props) {
   const [panelSection, setPanelSection] = useState<ResearchSection | null>(null);
   if (!compound) return null;
 
@@ -77,7 +78,7 @@ export default function ProductMonograph({ compound, primaryColor = '#00C4BC', c
             width: '100%',
           }}
         >
-          Research & Spec Profile
+          {buttonLabel || 'Research & Spec Profile'}
         </button>
       </div>
 

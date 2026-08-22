@@ -8,6 +8,7 @@ import type { ThemeValue } from '@/lib/messenger/schemas';
 import ParticipantList from './ParticipantList';
 import ContactPicker, { type Contact } from './ContactPicker';
 import ThemePicker from './ThemePicker';
+import { useModalA11y } from '@/lib/useModalA11y';
 
 interface Props {
   conversation: ConversationListItem;
@@ -149,6 +150,27 @@ export default function GroupInfoDrawer({
     }
   };
 
+  const handleDeleteConversation = async () => {
+    if (!window.confirm('Delete This Conversation? It will be removed from your inbox.')) return;
+    try {
+      const res = await fetch('/api/messenger/delete-conversation', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ conversationId: conversation.conversation_id }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        toast(json.error ?? 'Could Not Delete Conversation');
+        return;
+      }
+      setConversations(conversations.filter((c) => c.conversation_id !== conversation.conversation_id));
+      setActive(null);
+      onClose();
+    } catch {
+      toast('Network Error');
+    }
+  };
+
   const openAddPeople = async () => {
     setAdding(true);
     if (contacts.length > 0) return;
@@ -196,8 +218,18 @@ export default function GroupInfoDrawer({
   const canManage = selfRole === 'owner' || selfRole === 'admin';
   const isDirect = conversation.type === 'direct';
 
+  // A11y: initial focus, Tab trap, Escape-to-close, focus restore. While the
+  // nested Add People dialog is open, Escape closes only that dialog.
+  const drawerRef = useModalA11y<HTMLDivElement>(true, {
+    onClose: () => { if (adding) setAdding(false); else onClose(); },
+  });
+  const addPeopleRef = useModalA11y<HTMLDivElement>(adding, {
+    onClose: () => setAdding(false),
+  });
+
   return (
     <div
+      ref={drawerRef}
       role="dialog"
       aria-modal="true"
       aria-label="Conversation Info"
@@ -410,10 +442,31 @@ export default function GroupInfoDrawer({
               </button>
             </section>
           )}
+
+          <section>
+            <button
+              type="button"
+              onClick={handleDeleteConversation}
+              style={{
+                padding: '8px 12px',
+                borderRadius: 8,
+                border: '1px solid var(--danger, #E53E3E)',
+                background: 'transparent',
+                color: 'var(--danger, #E53E3E)',
+                cursor: 'pointer',
+                fontWeight: 700,
+                fontSize: '0.86rem',
+                width: '100%',
+              }}
+            >
+              Delete Conversation
+            </button>
+          </section>
         </div>
 
         {adding && (
           <div
+            ref={addPeopleRef}
             role="dialog"
             aria-modal="true"
             aria-label="Add People"

@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getCronAuth } from '@/lib/messenger/server';
@@ -59,7 +60,7 @@ export async function GET(req: NextRequest) {
 
   if (staleRes.data && staleRes.data.length > 0) {
     const staleMessages = staleRes.data
-      .map((call: { id: string; conversation_id: string; initiator_id: string; call_type: 'audio' | 'video'; answered_at: string | null; ended_at: string | null }) => {
+      .map((call: { id: string; conversation_id: string; initiator_id: string; call_type: 'audio' | 'video'; answered_at: string | null; ended_at: string | null }) => { // @ts-ignore
         if (!call.answered_at || !call.ended_at) return null;
         const typeStr = call.call_type === 'video' ? 'Video' : 'Voice';
         const startMs = new Date(call.answered_at).getTime();

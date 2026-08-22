@@ -4,6 +4,7 @@ import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { runComplianceGate } from '@/lib/social';
 import type { Platform, MediaType } from '@/lib/social/types';
+import { safeError } from '@/lib/api-error';
 
 /**
  * Admin-only: enqueue a social post into public.social_posts.
@@ -83,7 +84,7 @@ export async function POST(req: NextRequest) {
     if (error.code === '23505') {
       return NextResponse.json({ ok: true, deduped: true }, { status: 200 });
     }
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return safeError('admin.social.enqueue.upsert', error, 500, 'Failed To Enqueue Posts.');
   }
 
   return NextResponse.json({ ok: true, post: data }, { status: 201 });

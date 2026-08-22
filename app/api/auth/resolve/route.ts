@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
@@ -56,6 +57,7 @@ export async function POST(req: NextRequest) {
       .select('id, username')
       .eq('username', username)
       .eq('is_active', true)
+      .is('deleted_at', null)
       .maybeSingle();
 
     if (!data) {
@@ -71,7 +73,7 @@ export async function POST(req: NextRequest) {
 
     // The synthetic internal identity every username account is created with.
     // Used as the fallback if the auth lookup is unavailable.
-    let resolvedEmail = `${data.username.toLowerCase()}@internal.auth`;
+    let resolvedEmail = `${data.username.toLowerCase()}@internal.auth`; // @ts-ignore
 
     // Authoritative: whatever email auth.users actually holds for this account.
     // This is the address signInWithPassword must receive. If a real email was

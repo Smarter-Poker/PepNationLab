@@ -41,12 +41,12 @@ export default function AgentPaymentProofs({ orderId }: { orderId: string }) {
 
   if (loading) {
     return (
-      <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)', padding: '12px' }}>Loading Payment Proofs...</div>
+      <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', padding: '12px' }}>Loading Payment Proofs...</div>
     );
   }
   if (proofs.length === 0) {
     return (
-      <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '6px' }}>No Payment Proofs Yet.</div>
+      <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '6px' }}>No Payment Proofs Yet.</div>
     );
   }
 
@@ -61,7 +61,7 @@ export default function AgentPaymentProofs({ orderId }: { orderId: string }) {
           <span style={{ color: 'rgba(255,255,255,0.8)' }}>
             {new Date(p.uploaded_at).toLocaleString()}
           </span>
-          <span style={{ color: 'rgba(255,255,255,0.4)' }}>{(p.size_bytes / 1024).toFixed(1)} KB</span>
+          <span style={{ color: 'var(--grey-400)' }}>{(p.size_bytes / 1024).toFixed(1)} KB</span>
           {p.signed_url && (
             <IframeLink
               href={p.signed_url}

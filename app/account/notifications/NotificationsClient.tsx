@@ -29,58 +29,7 @@ const SILVER  = 'rgba(192,184,168,0.65)';
 const SURFACE = 'rgba(255,255,255,0.03)';
 const BORDER  = '1px solid rgba(255,255,255,0.08)';
 
-/* iOS-style on/off switch for per-type push toggles. */
-function PushSwitch({
-  checked,
-  disabled,
-  busy,
-  onChange,
-  label,
-}: {
-  checked: boolean;
-  disabled?: boolean;
-  busy?: boolean;
-  onChange: () => void;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      disabled={disabled || busy}
-      onClick={onChange}
-      style={{
-        position: 'relative',
-        width: 46,
-        height: 28,
-        flexShrink: 0,
-        borderRadius: 999,
-        border: 'none',
-        cursor: disabled || busy ? 'not-allowed' : 'pointer',
-        background: checked ? TEAL : 'rgba(255,255,255,0.14)',
-        opacity: disabled ? 0.4 : busy ? 0.7 : 1,
-        transition: 'background 0.2s ease, opacity 0.2s ease',
-        padding: 0,
-      }}
-    >
-      <span
-        style={{
-          position: 'absolute',
-          top: 3,
-          left: checked ? 21 : 3,
-          width: 22,
-          height: 22,
-          borderRadius: '50%',
-          background: checked ? '#0A1018' : '#FFFFFF',
-          transition: 'left 0.2s ease, background 0.2s ease',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.4)',
-        }}
-      />
-    </button>
-  );
-}
+
 
 /* ==============================================================================
    Notification Center Page
@@ -256,195 +205,143 @@ export default function NotificationCenterClient({
               />
             </section>
 
-            {/* Browser push master toggle */}
+            {/* Unified Notifications Section */}
             <section style={{ background: SURFACE, border: BORDER, borderRadius: 14, padding: '20px 22px' }}>
-              <h2 style={{ fontSize: '1rem', color: 'var(--white)', fontWeight: 700, margin: '0 0 4px' }}>
-                Push Notifications
+              <h2 style={{ fontSize: '1rem', color: 'var(--white)', fontWeight: 700, margin: '0 0 16px' }}>
+                Alert Preferences
               </h2>
-              <p style={{ color: SILVER, fontSize: '0.78rem', marginBottom: 16, marginTop: 4 }}>
-                Receive Alerts Even When The Browser Tab Is Closed Or Minimized. Turn This On, Then Choose Exactly Which Alerts You Want Below.
-              </p>
 
-              {/* Status */}
-              <div style={{ marginBottom: 14, fontSize: '0.8rem' }}>
-                <span style={{ color: 'var(--white)', fontWeight: 600 }}>Status: </span>
-                {!pushSupported && <span style={{ color: '#00E5FF' }}>Not Supported In This Browser</span>}
-                {pushSupported && pushPermission === 'default' && <span style={{ color: SILVER }}>Not Yet Enabled</span>}
-                {pushSupported && pushPermission === 'denied' && <span style={{ color: '#E53E3E' }}>Blocked - Check Browser Settings</span>}
-                {pushSupported && pushPermission === 'granted' && prefs.push_enabled && <span style={{ color: TEAL }}>Active</span>}
-                {pushSupported && pushPermission === 'granted' && !prefs.push_enabled && <span style={{ color: SILVER }}>Granted But Disabled</span>}
-              </div>
-
-              {/* Enable/disable buttons */}
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
-                {pushSupported && !prefs.push_enabled && (
+              {/* Master Toggle */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, paddingBottom: 20, borderBottom: BORDER }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer', flex: 1, margin: 0 }}>
+                  <input
+                    type="checkbox"
+                    checked={pushSupported && pushPermission === 'granted' && prefs.push_enabled}
+                    disabled={pushBusy || (pushSupported && pushPermission === 'denied')}
+                    onChange={(e) => {
+                      if (e.target.checked) handleEnablePush();
+                      else handleDisablePush();
+                    }}
+                    style={{ width: 18, height: 18, accentColor: TEAL, cursor: 'pointer' }}
+                  />
+                  <div>
+                    <div style={{ color: 'var(--white)', fontSize: '0.9rem', fontWeight: 700 }}>Enable Push Notifications</div>
+                    <div style={{ color: SILVER, fontSize: '0.78rem', marginTop: 2 }}>
+                      Receive alerts on your device even when the browser is closed. Turn this on to enable the alerts below.
+                      {pushSupported && pushPermission === 'denied' && (
+                        <span style={{ color: '#E53E3E', marginLeft: 6 }}>(Blocked - Check Browser Settings)</span>
+                      )}
+                    </div>
+                  </div>
+                </label>
+                {pushSupported && pushPermission === 'granted' && prefs.push_enabled && (
                   <button
-                    onClick={handleEnablePush}
-                    disabled={pushBusy || pushPermission === 'denied'}
+                    onClick={handleTestPush}
+                    disabled={pushBusy}
                     style={{
-                      background: TEAL, color: 'var(--black)', border: 'none',
-                      borderRadius: 8, padding: '9px 18px', fontWeight: 700,
-                      fontSize: '0.82rem', cursor: pushBusy ? 'wait' : 'pointer',
-                      opacity: (pushBusy || pushPermission === 'denied') ? 0.5 : 1,
+                      background: 'transparent', color: TEAL, border: `1px solid ${TEAL}`,
+                      borderRadius: 6, padding: '6px 12px', fontSize: '0.75rem', fontWeight: 600,
+                      cursor: pushBusy ? 'wait' : 'pointer', opacity: pushBusy ? 0.5 : 1,
+                      marginLeft: 'auto'
                     }}
                   >
-                    {pushBusy ? 'Working...' : 'Enable Push Notifications'}
+                    Test
                   </button>
                 )}
-                {pushSupported && prefs.push_enabled && (
-                  <>
-                    <button
-                      onClick={handleDisablePush}
-                      disabled={pushBusy}
-                      style={{
-                        background: 'transparent', color: 'var(--white)',
-                        border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8,
-                        padding: '9px 18px', fontWeight: 600, fontSize: '0.82rem',
-                        cursor: pushBusy ? 'wait' : 'pointer', opacity: pushBusy ? 0.5 : 1,
-                      }}
-                    >
-                      {pushBusy ? 'Working...' : 'Disable Push'}
-                    </button>
-                    <button
-                      onClick={handleTestPush}
-                      disabled={pushBusy}
-                      style={{
-                        background: 'transparent', color: TEAL,
-                        border: `1px solid ${TEAL}`, borderRadius: 8,
-                        padding: '9px 18px', fontWeight: 600, fontSize: '0.82rem',
-                        cursor: pushBusy ? 'wait' : 'pointer', opacity: pushBusy ? 0.5 : 1,
-                      }}
-                    >
-                      Send Test Push
-                    </button>
-                  </>
-                )}
               </div>
+
               {pushMsg && (
-                <div style={{ fontSize: '0.78rem', color: pushMsg.ok ? TEAL : '#E53E3E' }}>
+                <div style={{ fontSize: '0.78rem', color: pushMsg.ok ? TEAL : '#E53E3E', marginTop: 12, marginBottom: 4 }}>
                   {pushMsg.text}
                 </div>
               )}
-            </section>
 
-            {/* Per-type push controls - every notification, by category */}
-            <section style={{ background: SURFACE, border: BORDER, borderRadius: 14, padding: '20px 22px' }}>
-              <h2 style={{ fontSize: '1rem', color: 'var(--white)', fontWeight: 700, margin: '0 0 4px' }}>
-                Choose Which Alerts You Receive
-              </h2>
-              <p style={{ color: SILVER, fontSize: '0.78rem', marginBottom: 4, marginTop: 4 }}>
-                Turn Any Notification On Or Off. Organized By Category. Changes Save Automatically.
-              </p>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 14, opacity: typesDisabled ? 0.55 : 1, transition: 'opacity 0.2s' }}>
-                {PUSH_GROUPS.map((group) => {
-                  const rows = PUSH_TYPES.filter((t) => t.group === group);
-                  if (rows.length === 0) return null;
-                  return (
-                    <div key={group}>
-                      <h3 style={{ fontSize: '0.72rem', fontWeight: 700, color: TEAL, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 2px' }}>
-                        {group}
-                      </h3>
-                      {rows.map((row, i) => (
-                        <div
-                          key={row.key}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: 14,
-                            padding: '12px 0',
-                            borderTop: i === 0 ? 'none' : '1px solid rgba(255,255,255,0.05)',
-                          }}
-                        >
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ color: 'var(--white)', fontSize: '0.87rem', fontWeight: 500 }}>{row.label}</div>
-                            <div style={{ color: SILVER, fontSize: '0.73rem', marginTop: 2 }}>{row.desc}</div>
-                          </div>
-                          <PushSwitch
-                            label={row.label}
-                            checked={isTypeOn(row.key)}
-                            busy={busyTypeKey === row.key}
-                            disabled={typesDisabled}
-                            onChange={() => toggleType(row.key)}
-                          />
+              {/* Push Category Toggles (dependent on master toggle) */}
+              <div style={{ marginLeft: 32, marginTop: 20, opacity: typesDisabled ? 0.55 : 1, transition: 'opacity 0.2s' }}>
+                <h3 style={{ fontSize: '0.85rem', color: 'var(--white)', fontWeight: 600, marginBottom: 12 }}>
+                  Push Alert Categories
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {PUSH_GROUPS.map((group) => {
+                    const rows = PUSH_TYPES.filter((t) => t.group === group);
+                    if (rows.length === 0) return null;
+                    return (
+                      <div key={group} style={{ marginBottom: 10 }}>
+                        <h4 style={{ fontSize: '0.72rem', fontWeight: 700, color: TEAL, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>
+                          {group}
+                        </h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                          {rows.map((row) => (
+                            <label key={row.key} style={{ display: 'flex', alignItems: 'center', gap: 14, cursor: typesDisabled ? 'not-allowed' : 'pointer' }}>
+                              <input
+                                type="checkbox"
+                                checked={isTypeOn(row.key)}
+                                disabled={typesDisabled || busyTypeKey === row.key}
+                                onChange={() => toggleType(row.key)}
+                                style={{ width: 16, height: 16, accentColor: TEAL, cursor: typesDisabled ? 'not-allowed' : 'pointer' }}
+                              />
+                              <div>
+                                <div style={{ color: 'var(--white)', fontSize: '0.82rem', fontWeight: 500 }}>{row.label}</div>
+                                <div style={{ color: SILVER, fontSize: '0.7rem' }}>{row.desc}</div>
+                              </div>
+                            </label>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  );
-                })}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
-              {typesDisabled && pushSupported && pushPermission !== 'denied' && (
-                <p style={{ color: SILVER, fontSize: '0.76rem', marginTop: 14 }}>
-                  Turn On Push Notifications Above To Customize These Individual Alerts.
+              {/* In-App Toggles (independent of push) */}
+              <div style={{ marginTop: 30, paddingTop: 20, borderTop: BORDER }}>
+                <h3 style={{ fontSize: '0.85rem', color: 'var(--white)', fontWeight: 600, marginBottom: 12 }}>
+                  In-App Notification Bell
+                </h3>
+                <p style={{ color: SILVER, fontSize: '0.75rem', marginBottom: 16 }}>
+                  Control which events appear in the notification bell at the top of the screen.
                 </p>
-              )}
-            </section>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {([
+                    { key: 'events_order_approved', label: 'Order Approved', desc: 'When Your Order Gets Approved' },
+                    { key: 'events_order_shipped',  label: 'Order Shipped',  desc: 'When Your Order Ships With Tracking' },
+                    { key: 'events_order_delivered',label: 'Order Delivered',desc: 'When Your Order Is Delivered' },
+                    { key: 'events_payment_reminder',label: 'Payment Reminders', desc: 'Outstanding Balance Reminders' },
+                  ] as const).map(row => (
+                    <label key={row.key} style={{ display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={prefs[row.key]}
+                        onChange={e => setPrefs(p => ({ ...p, [row.key]: e.target.checked }))}
+                        style={{ width: 16, height: 16, accentColor: TEAL, cursor: 'pointer' }}
+                      />
+                      <div>
+                        <div style={{ color: 'var(--white)', fontSize: '0.82rem', fontWeight: 500 }}>{row.label}</div>
+                        <div style={{ color: SILVER, fontSize: '0.7rem' }}>{row.desc}</div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
 
-            {/* In-app event prefs */}
-            <section style={{ background: SURFACE, border: BORDER, borderRadius: 14, padding: '20px 22px' }}>
-              <h2 style={{ fontSize: '1rem', color: 'var(--white)', fontWeight: 700, margin: '0 0 4px' }}>
-                In-App Notifications
-              </h2>
-              <p style={{ color: SILVER, fontSize: '0.78rem', marginBottom: 18, marginTop: 4 }}>
-                Control Which Events Appear In Your Notification Bell.
-              </p>
-              {([
-                { key: 'events_order_approved', label: 'Order Approved', desc: 'When Your Order Gets Approved' },
-                { key: 'events_order_shipped',  label: 'Order Shipped',  desc: 'When Your Order Ships With Tracking' },
-                { key: 'events_order_delivered',label: 'Order Delivered',desc: 'When Your Order Is Delivered' },
-                { key: 'events_payment_reminder',label: 'Payment Reminders', desc: 'Outstanding Balance Reminders' },
-              ] as const).map(row => (
-                <label
-                  key={row.key}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 14,
-                    padding: '10px 0',
-                    cursor: 'pointer',
-                  }}
-                >
+              {/* Privacy Prefs */}
+              <div style={{ marginTop: 30, paddingTop: 20, borderTop: BORDER }}>
+                <h3 style={{ fontSize: '0.85rem', color: 'var(--white)', fontWeight: 600, marginBottom: 12 }}>
+                  Privacy
+                </h3>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer' }}>
                   <input
                     type="checkbox"
-                    checked={prefs[row.key]}
-                    onChange={e => setPrefs(p => ({ ...p, [row.key]: e.target.checked }))}
-                    style={{ width: 17, height: 17, accentColor: TEAL, cursor: 'pointer' }}
+                    checked={prefs.send_read_receipts}
+                    onChange={e => setPrefs(p => ({ ...p, send_read_receipts: e.target.checked }))}
+                    style={{ width: 16, height: 16, accentColor: TEAL, cursor: 'pointer' }}
                   />
                   <div>
-                    <div style={{ color: 'var(--white)', fontSize: '0.85rem', fontWeight: 500 }}>{row.label}</div>
-                    <div style={{ color: SILVER, fontSize: '0.72rem' }}>{row.desc}</div>
+                    <div style={{ color: 'var(--white)', fontSize: '0.82rem', fontWeight: 500 }}>Send Read Receipts</div>
+                    <div style={{ color: SILVER, fontSize: '0.7rem' }}>Allow Others To See When You Have Read Their Messages.</div>
                   </div>
                 </label>
-              ))}
-            </section>
-
-            {/* Privacy Prefs */}
-            <section style={{ background: SURFACE, border: BORDER, borderRadius: 14, padding: '20px 22px' }}>
-              <h2 style={{ fontSize: '1rem', color: 'var(--white)', fontWeight: 700, margin: '0 0 4px' }}>
-                Privacy
-              </h2>
-              <p style={{ color: SILVER, fontSize: '0.78rem', marginBottom: 18, marginTop: 4 }}>
-                Manage Your Privacy Settings For Messaging.
-              </p>
-              <label
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 14,
-                  padding: '10px 0',
-                  cursor: 'pointer',
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={prefs.send_read_receipts}
-                  onChange={e => setPrefs(p => ({ ...p, send_read_receipts: e.target.checked }))}
-                  style={{ width: 17, height: 17, accentColor: TEAL, cursor: 'pointer' }}
-                />
-                <div>
-                  <div style={{ color: 'var(--white)', fontSize: '0.85rem', fontWeight: 500 }}>Send Read Receipts</div>
-                  <div style={{ color: SILVER, fontSize: '0.72rem' }}>Allow Others To See When You Have Read Their Messages.</div>
-                </div>
-              </label>
+              </div>
             </section>
 
             {/* Save button (in-app + privacy prefs; per-type push saves instantly) */}

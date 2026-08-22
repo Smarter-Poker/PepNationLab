@@ -13,6 +13,7 @@ import { NextResponse } from 'next/server';
 import { requireAdmin, assertMfaRecent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { encryptSecret, lastFour } from '@/lib/shipping-crypto';
+import { invalidateActiveKeyCache } from '@/lib/shipping';
 import { createServiceClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
@@ -127,6 +128,8 @@ export async function POST(req: NextRequest) {
     .update({ is_active: false })
     .eq('is_active', true)
     .neq('id', inserted.id);
+
+  invalidateActiveKeyCache();
 
   await supabase.from('admin_audit_log').insert({
     actor_id: gate.userId,

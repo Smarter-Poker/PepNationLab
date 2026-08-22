@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgentOrAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
@@ -20,6 +21,11 @@ export async function PUT(req: NextRequest) {
       supabase.from('agent_products').update({ sort_order, updated_at: new Date().toISOString() }).eq('id', id).eq('agent_id', gate.user.id)
     );
     await Promise.all(updates);
+    // sort_order drives the public catalog's product ordering - purge the
+    // storefront catalog cache so the new arrangement shows immediately.
+    try {
+      revalidateTag('storefront-catalog', { expire: 0 });
+    } catch { /* best-effort cache refresh */ }
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('[products/reorder] PUT error:', err);

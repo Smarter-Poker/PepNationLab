@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// Idaho — 9 cities
+// Idaho - 9 cities
 const CITIES_IDAHO: City[] = [
   { name: 'Boise', slug: 'boise', state: 'Idaho', stateSlug: 'idaho', stateAbbr: 'ID', population: 236000, medianIncome: 70000, tier: 2, region: 'Treasure Valley', county: 'Ada', zips: ['83702', '83706', '83712'], localBlurb: 'Boise is anchored by St. Luke\'s Boise Medical Center, Idaho\'s largest hospital, and Boise State University.' },
   { name: 'Meridian', slug: 'meridian', state: 'Idaho', stateSlug: 'idaho', stateAbbr: 'ID', population: 118000, medianIncome: 80000, tier: 2, region: 'Treasure Valley', county: 'Ada', zips: ['83642', '83646'], localBlurb: 'Meridian hosts St. Luke\'s Meridian Medical Center in the fastest-growing city in Idaho.' },
@@ -11,6 +11,13 @@ const CITIES_IDAHO: City[] = [
   { name: 'Pocatello', slug: 'pocatello', state: 'Idaho', stateSlug: 'idaho', stateAbbr: 'ID', population: 57000, medianIncome: 52000, tier: 3, region: 'Eastern Idaho', county: 'Bannock', zips: ['83201', '83204'], localBlurb: 'Pocatello hosts Idaho State University and its Kasiska Division of Health Sciences.' },
   { name: 'Twin Falls', slug: 'twin-falls', state: 'Idaho', stateSlug: 'idaho', stateAbbr: 'ID', population: 52000, medianIncome: 55000, tier: 3, region: 'Magic Valley', county: 'Twin Falls', zips: ['83301'], localBlurb: 'Twin Falls is anchored by St. Luke\'s Magic Valley Medical Center above the Snake River Canyon.' },
   { name: 'Moscow', slug: 'moscow', state: 'Idaho', stateSlug: 'idaho', stateAbbr: 'ID', population: 26000, medianIncome: 50000, tier: 3, region: 'North Idaho', county: 'Latah', zips: ['83843'], localBlurb: 'Moscow is home to the University of Idaho, the state\'s land-grant research university.' },
+  { name: 'Caldwell', slug: 'caldwell', state: 'Idaho', stateSlug: 'idaho', stateAbbr: 'ID', population: 62000, medianIncome: 52000, tier: 3, region: 'Treasure Valley', county: 'Canyon', zips: ['83605'], localBlurb: 'Caldwell is a Treasure Valley city home to the College of Idaho in Canyon County west of Boise.' },
+  { name: 'Post Falls', slug: 'post-falls', state: 'Idaho', stateSlug: 'idaho', stateAbbr: 'ID', population: 42000, medianIncome: 62000, tier: 2, region: 'North Idaho', county: 'Kootenai', zips: ['83854'], localBlurb: 'Post Falls is a North Idaho city on the Spokane River between Coeur d\'Alene and Spokane.' },
+  { name: 'Rexburg', slug: 'rexburg', state: 'Idaho', stateSlug: 'idaho', stateAbbr: 'ID', population: 40000, medianIncome: 40000, tier: 3, region: 'Eastern Idaho', county: 'Madison', zips: ['83440'], localBlurb: 'Rexburg is home to Brigham Young University-Idaho in the upper Snake River Valley of eastern Idaho.' },
+  { name: 'Kuna', slug: 'kuna', state: 'Idaho', stateSlug: 'idaho', stateAbbr: 'ID', population: 27000, medianIncome: 72000, tier: 2, region: 'Treasure Valley', county: 'Ada', zips: ['83634'], localBlurb: 'Kuna is a fast-growing Treasure Valley city southwest of Boise in Ada County.' },
+  { name: 'Lewiston', slug: 'lewiston', state: 'Idaho', stateSlug: 'idaho', stateAbbr: 'ID', population: 34000, medianIncome: 52000, tier: 3, region: 'North Central Idaho', county: 'Nez Perce', zips: ['83501'], localBlurb: 'Lewiston is a North Central Idaho port city at the confluence of the Snake and Clearwater rivers.' },
+  { name: 'Star', slug: 'star', state: 'Idaho', stateSlug: 'idaho', stateAbbr: 'ID', population: 15000, medianIncome: 88000, tier: 2, region: 'Treasure Valley', county: 'Ada', zips: ['83669'], localBlurb: 'Star is one of Idaho\'s fastest-growing cities in the western Treasure Valley near Boise.' },
+  { name: 'Hailey', slug: 'hailey', state: 'Idaho', stateSlug: 'idaho', stateAbbr: 'ID', population: 9000, medianIncome: 68000, tier: 2, region: 'Wood River Valley', county: 'Blaine', zips: ['83333'], localBlurb: 'Hailey is a Wood River Valley town near the Sun Valley resort in south-central Idaho.' },
 ];
 
 export default CITIES_IDAHO;

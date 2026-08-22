@@ -5,6 +5,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { emailConfigured, sendPasswordChangedEmail } from '@/lib/email';
+import { recordAuthEvent } from '@/lib/auth-events';
+import { validatePassword } from '@/lib/password-policy';
 import {
   normalizeEmail,
   isValidEmail,
@@ -46,8 +49,9 @@ export async function POST(req: NextRequest) {
   if (!code || !/^\d{6}$/.test(String(code))) {
     return NextResponse.json({ error: 'Please Enter The 6-Digit Reset Code.' }, { status: 400 });
   }
-  if (newPassword.length < 8 || newPassword.length > 128) {
-    return NextResponse.json({ error: 'Password Must Be Between 8 And 128 Characters.' }, { status: 400 });
+  const pwError = validatePassword(newPassword);
+  if (pwError) {
+    return NextResponse.json({ error: pwError }, { status: 400 });
   }
 
   try {
@@ -102,6 +106,22 @@ export async function POST(req: NextRequest) {
 
     // Consume the code so it cannot be reused.
     await admin.from('email_verification_codes').update({ consumed: true }).eq('id', codeRow.id);
+
+    // Auth analytics (best-effort): a code-based password reset completed.
+    await recordAuthEvent({
+      event_type: 'password_reset_completed',
+      user_id: profile.id,
+      ip: getClientIp(req),
+      user_agent: req.headers.get('user-agent'),
+    });
+
+    // Security alert: confirm the change to the same verified inbox that
+    // received the reset code. Best-effort; never breaks the reset.
+    try {
+      if (emailConfigured()) {
+        await sendPasswordChangedEmail({ to: email }).catch(() => { /* best-effort */ });
+      }
+    } catch { /* best-effort */ }
 
     return NextResponse.json({ success: true });
   } catch (err) {

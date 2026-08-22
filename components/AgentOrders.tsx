@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
+import { ClipboardCopy, Download, Ship, Upload, Zap, Undo2 } from 'lucide-react';
 import AgentManualOrder from './AgentManualOrder';
 import { carrierInfo } from '@/lib/carrier';
 import AgentPaymentProofs from './AgentPaymentProofs';
@@ -9,6 +11,8 @@ import { paymentMethodLabel } from '@/lib/payment-method-labels';
 import IframeLink from '@/components/ui/IframeLink';
 import IframeModal from '@/components/ui/IframeModal';
 import OrderStageTimeline from '@/components/OrderStageTimeline';
+import { computeOwnOrderLedger, computeUplineLedger } from '@/lib/agent-ledger';
+import LedgerBreakdown from '@/components/LedgerBreakdown';
 
 export interface ShippingAddress {
   line1?: string;
@@ -38,7 +42,16 @@ interface Order {
   tracking_number?: string | null;
   label_url?: string | null;
   agent_id?: string;
+  payment_confirmed_at?: string | null;
+  buyer_payment_sent_at?: string | null;
+  upline_payment_confirmed_at?: string | null;
+  downline_prepaid?: boolean;
   is_sub_agent_order?: boolean;
+  profit?: number;
+  is_downline_order?: boolean;
+  downline_agent_id?: string | null;
+  downline_agent_name?: string | null;
+  super_agent_name?: string | null;
 }
 
 interface OrderItem {
@@ -46,7 +59,11 @@ interface OrderItem {
   product_name: string;
   quantity: number;
   unit_retail_price: number;
-  unit_cost_price: number | null;
+  unit_cost_price: number | null;       // what agent owes Savage Brands (COG + markup)
+  unit_base_cost?: number | null;       // Pep Nation's raw COG (what Savage Brands owes Pep Nation)
+  unit_super_agent_cost?: number | null;
+  unit_size?: number | null;
+  unit_measure?: string | null;
   stackData?: {
     isPreBlended: boolean;
     components: string[];
@@ -56,6 +73,19 @@ interface OrderItem {
 interface AgentOrdersProps {
   orders: Order[];
   setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
+  initialOpenShortId?: string | null;
+  timeFilterOverride?: string;
+  hideDropdown?: boolean;
+}
+
+/** Rate option returned by GET /api/agent/shipping/rates (EasyPost Forge). */
+interface ForgeRateOption {
+  rateId: string;
+  carrier: string;
+  serviceLevelToken: string;
+  serviceLevelName: string;
+  amountCents: number;
+  estimatedDays: number | null;
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -83,26 +113,102 @@ function formatAddress(address: ShippingAddress | null): string {
   return parts.length > 0 ? parts.join(', ') : 'No Shipping Address Provided';
 }
 
-export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
+export default function AgentOrders({ orders, setOrders, initialOpenShortId, timeFilterOverride, hideDropdown }: AgentOrdersProps) {
   const [loadingOrderId, setLoadingOrderId] = useState<string | null>(null);
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
-  const [buyingLabelId, setBuyingLabelId] = useState<string | null>(null);
+  // Stores the typed cancellation reason per order before submitting.
+  const [cancelReasonMap, setCancelReasonMap] = useState<Record<string, string>>({});
+
+  // labelModalUrl is still used to view historical label PDFs on old orders.
   const [labelModalUrl, setLabelModalUrl] = useState<string | null>(null);
   const [trackingNumbers, setTrackingNumbers] = useState<Record<string, string>>({});
+  const [shipCarriers, setShipCarriers] = useState<Record<string, string>>({});
+  const [shippingOrderId, setShippingOrderId] = useState<string | null>(null);
+  const [importingCsv, setImportingCsv] = useState(false);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
   const [showManualOrder, setShowManualOrder] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [internalTimeFilter, setTimeFilter] = useState('all');
+  const timeFilter = timeFilterOverride || internalTimeFilter;
+  
+  const filteredOrders = React.useMemo(() => {
+    if (timeFilter === 'all') return orders;
+    const now = Date.now();
+    let cutoff = 0;
+    if (timeFilter === '7d') cutoff = now - 7 * 24 * 60 * 60 * 1000;
+    else if (timeFilter === '30d') cutoff = now - 30 * 24 * 60 * 60 * 1000;
+    else if (timeFilter === '90d') cutoff = now - 90 * 24 * 60 * 60 * 1000;
+    else if (timeFilter === '1y') cutoff = now - 365 * 24 * 60 * 60 * 1000;
+    return orders.filter(o => new Date(o.created_at).getTime() >= cutoff);
+  }, [orders, timeFilter]);
 
   // Pagination Logic
   const PAGE_SIZE = 25;
-  const totalPages = Math.ceil(orders.length / PAGE_SIZE);
+  const totalPages = Math.ceil(filteredOrders.length / PAGE_SIZE);
   const safeCurrentPage = Math.max(1, Math.min(currentPage, totalPages || 1));
-  const paginatedOrders = orders.slice((safeCurrentPage - 1) * PAGE_SIZE, safeCurrentPage * PAGE_SIZE);
+  const paginatedOrders = filteredOrders.slice((safeCurrentPage - 1) * PAGE_SIZE, safeCurrentPage * PAGE_SIZE);
 
   // Detail modal state
   const [detailOrder, setDetailOrder] = useState<Order | null>(null);
   const [detailItems, setDetailItems] = useState<OrderItem[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState('');
+
+  // Auto-open the detail modal when initialOpenShortId is provided (deep-link from notification).
+  // We wait until orders are available and match by the short_id substring that
+  // appears in the notification title (the last 8-char hex segment of the UUID).
+  // Track WHICH short id was consumed, not merely THAT one was. A plain
+  // boolean latched on the first deep link and never reset, so tapping a
+  // second notification (or the same one again after closing the modal)
+  // changed the URL but opened nothing - the notification looked broken.
+  // Held in refs so consuming the URL param cannot re-trigger the deep-link
+  // effect (router/searchParams identities change on every navigation).
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const routerRef = useRef(router);
+  routerRef.current = router;
+  const searchParamsRef = useRef(searchParams);
+  searchParamsRef.current = searchParams;
+
+  const deepLinkConsumedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!initialOpenShortId || orders.length === 0) return;
+    if (deepLinkConsumedRef.current === initialOpenShortId) return;
+    const upper = initialOpenShortId.toUpperCase();
+    const match = orders.find(
+      (o) => o.id.replace(/-/g, '').toUpperCase().includes(upper)
+        || o.id.toUpperCase().includes(upper)
+    );
+    if (match) {
+      deepLinkConsumedRef.current = initialOpenShortId;
+      setDetailOrder(match);
+      // Scroll to top so the modal is fully visible on mobile
+      try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {}
+      // CONSUME the ?order= param now that the modal is open.
+      //
+      // Without this the URL stays pinned at ?order=<id>, so tapping the SAME
+      // notification again pushes a URL identical to the current one: Next
+      // does not change searchParams, this effect never re-runs, and the tap
+      // appears to do nothing. Stripping the param puts the URL back to a
+      // plain ?tab=Orders, so the next tap is a real navigation that opens
+      // the order again. It also stops a refresh from silently reopening a
+      // modal the user already dismissed.
+      try {
+        const params = new URLSearchParams(searchParamsRef.current?.toString() ?? '');
+        if (params.has('order')) {
+          params.delete('order');
+          const qs = params.toString();
+          routerRef.current?.replace(qs ? `?${qs}` : '?tab=Orders', { scroll: false });
+        }
+      } catch { /* URL cleanup is best-effort - never block the modal */ }
+    }
+  }, [initialOpenShortId, orders]);
+
+  // Closing the modal releases the deep link, so tapping the SAME notification
+  // again reopens the order instead of doing nothing.
+  useEffect(() => {
+    if (detailOrder === null) deepLinkConsumedRef.current = null;
+  }, [detailOrder]);
 
   // Keep detailOrder synchronized with the parent orders array so the modal updates optimistically
   // or when WebSockets push new status changes (e.g. customer pays while modal is open).
@@ -147,28 +253,70 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
   }, [detailOrder]);
 
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
+    let cancelReason = '';
+    if (newStatus === 'cancelled') {
+      // Reason is collected via inline textarea (cancelReasonMap), not window.prompt().
+      cancelReason = (cancelReasonMap[orderId] || '').trim();
+      if (!cancelReason) {
+        toast.error('Cancellation Reason Is Required.');
+        return;
+      }
+    }
+
     setLoadingOrderId(orderId);
     try {
+      if (newStatus === 'cancelled') {
+        const res = await fetch('/api/agent/orders/cancel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId, reason: cancelReason }),
+        });
+        const data = await res.json().catch(() => ({} as { error?: string }));
+        if (!res.ok) throw new Error(data.error || 'Failed To Cancel Order.');
+        
+        // Clear the drafted reason and update local state.
+        setCancelReasonMap((prev) => { const next = { ...prev }; delete next[orderId]; return next; });
+        setOrders((prev) =>
+          prev.map((o) =>
+            o.id === orderId ? { ...o, status: 'cancelled' } : o
+          )
+        );
+        toast.success('Order Cancelled Successfully.');
+        return;
+      }
+
       const tracking = trackingNumbers[orderId] || null;
+
+      const idemKey = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
       const res = await fetch('/api/agent/orders/approve', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          // Lets the server's withIdempotency guard dedupe a double-click or
+          // network retry of the same approval.
+          'Idempotency-Key': idemKey,
+        },
         body: JSON.stringify({ orderId, newStatus, tracking_number: tracking }),
       });
 
+      const data = await res.json().catch(() => ({} as { error?: string; status?: string }));
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed To Transition Order.');
+        throw new Error(data.error || 'Failed To Transition Order.');
       }
 
+      // The server frequently lands on a DIFFERENT terminal status than the
+      // one requested (sub-agent approvals demote to agent_approval_pending,
+      // prepaid accounts to admin_approval_pending, failed credit charges
+      // back to admin review). Reflect the ACTUAL status, not the wish.
+      const serverStatus = (data as { status?: string }).status || newStatus;
       setOrders((prev) =>
         prev.map((o) =>
           o.id === orderId
-            ? { ...o, status: newStatus, tracking_number: tracking || o.tracking_number }
+            ? { ...o, status: serverStatus, tracking_number: tracking || o.tracking_number }
             : o
         )
       );
-      toast.success(`Order Status Shifted To ${STATUS_LABEL[newStatus] ?? newStatus.replace(/_/g, ' ').split(' ').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}`);
+      toast.success(`Order Status Shifted To ${STATUS_LABEL[serverStatus] ?? serverStatus.replace(/_/g, ' ').split(' ').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}`);
     } catch (err: any) {
       toast.error(err.message ?? 'An Error Occurred Updating Order Status.');
     } finally {
@@ -176,41 +324,131 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
     }
   };
 
-  const handleBuyShippingLabel = async (orderId: string) => {
-    setBuyingLabelId(orderId);
+  // Agents ship with their own carrier account (Pirate Ship) and paste
+  // tracking here. This copies the recipient block for pasting into Pirate
+  // Ship's ship form.
+  const handleCopyAddress = async (order: Order) => {
+    const addr = order.shipping_address;
+    const cityLine = [
+      addr?.city,
+      [addr?.state, addr?.zip || addr?.postal_code].filter(Boolean).join(' '),
+    ].filter(Boolean).join(', ');
+    const lines = [
+      order.buyer_name,
+      addr?.street || addr?.line1,
+      addr?.line2,
+      cityLine,
+    ].filter((l) => l && String(l).trim().length > 0);
     try {
-      const res = await fetch('/api/agent/shipping/purchase', {
+      await navigator.clipboard.writeText(lines.join('\n'));
+      toast.success('Address Copied. Paste It Into Pirate Ship.');
+    } catch {
+      toast.error('Could Not Copy The Address. Please Copy It Manually.');
+    }
+  };
+
+  const handleMarkShipped = async (orderId: string) => {
+    const tracking = (trackingNumbers[orderId] || '').trim();
+    if (!tracking) {
+      toast.error('Paste The Tracking Number First.');
+      return;
+    }
+    setShippingOrderId(orderId);
+    try {
+      const idemKey = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const carrier = shipCarriers[orderId] || '';
+      const res = await fetch('/api/agent/orders/ship', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Idempotency-Key': idemKey,
+        },
+        body: JSON.stringify({
+          orderId,
+          trackingNumber: tracking,
+          ...(carrier ? { carrier } : {}),
+        }),
+      });
+      const data = await res.json().catch(() => ({} as { error?: string; trackingNumber?: string; carrier?: string }));
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed To Mark Order Shipped.');
+      }
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === orderId
+            ? { ...o, status: 'shipped', tracking_number: data.trackingNumber || tracking }
+            : o
+        )
+      );
+      toast.success(`Order Marked Shipped Via ${data.carrier || 'Carrier'}. The Buyer Has Been Notified.`);
+    } catch (err: any) {
+      toast.error(err.message ?? 'An Error Occurred Marking The Order Shipped.');
+    } finally {
+      setShippingOrderId(null);
+    }
+  };
+
+  const handleImportTrackingFile = async (file: File) => {
+    setImportingCsv(true);
+    try {
+      const csv = await file.text();
+      const res = await fetch('/api/agent/shipping/import-tracking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ csv }),
+      });
+      const data = await res.json().catch(() => ({} as { error?: string }));
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed To Import Tracking CSV.');
+      }
+      const results: Array<{ orderId: string; ok: boolean; trackingNumber?: string }> = data.results ?? [];
+      const okById = new Map(results.filter((r) => r.ok).map((r) => [r.orderId, r]));
+      if (okById.size > 0) {
+        setOrders((prev) =>
+          prev.map((o) => {
+            const hit = okById.get(o.id);
+            return hit
+              ? { ...o, status: 'shipped', tracking_number: hit.trackingNumber || o.tracking_number }
+              : o;
+          })
+        );
+      }
+      toast.success(`${data.shipped ?? okById.size} Orders Marked Shipped, ${data.skipped ?? 0} Skipped`);
+    } catch (err: any) {
+      toast.error(err.message ?? 'An Error Occurred Importing The Tracking CSV.');
+    } finally {
+      setImportingCsv(false);
+      if (importInputRef.current) importInputRef.current.value = '';
+    }
+  };
+
+  // Upline settlement acknowledgment for PREPAID downline orders: "Did You
+  // Receive Payment From <downline>?" Confirming stamps
+  // orders.upline_payment_confirmed_at via confirm-downline-payment and stops
+  // the upline's 12-hour reminders. Distinct from handleMarkPaid, which is the
+  // DIRECT agent confirming the buyer's payment.
+  const handleConfirmDownlinePayment = async (orderId: string) => {
+    setLoadingOrderId(orderId);
+    try {
+      const res = await fetch('/api/agent/orders/confirm-downline-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderId }),
       });
-
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'Failed To Purchase Shipping Label.');
+        throw new Error(data.error || 'Failed To Confirm The Downline Payment.');
       }
-
-      toast.success('Shipping Label Purchased Successfully');
-      if (data.labelUrl) {
-        setLabelModalUrl(data.labelUrl);
-      }
-
+      const nowIso = new Date().toISOString();
       setOrders((prev) =>
-        prev.map((o) =>
-          o.id === orderId
-            ? {
-                ...o,
-                status: 'shipped',
-                tracking_number: data.trackingNumber,
-                label_url: data.labelUrl,
-              }
-            : o
-        )
+        prev.map((o) => (o.id === orderId ? { ...o, upline_payment_confirmed_at: nowIso } : o))
       );
+      setDetailOrder((prev) => (prev && prev.id === orderId ? { ...prev, upline_payment_confirmed_at: nowIso } : prev));
+      toast.success('Downline Payment Confirmed!');
     } catch (err: any) {
-      toast.error(err.message ?? 'An Error Occurred Purchasing Shipping Label.');
+      toast.error(err.message ?? 'An Error Occurred Confirming The Payment.');
     } finally {
-      setBuyingLabelId(null);
+      setLoadingOrderId(null);
     }
   };
 
@@ -231,11 +469,16 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
       setOrders((prev) =>
         prev.map((o) =>
           o.id === orderId
-            ? { ...o, status: data.newStatus }
+            ? { ...o, status: data.newStatus, payment_confirmed_at: new Date().toISOString() }
             : o
         )
       );
-      toast.success('Order Marked As Paid!');
+      setDetailOrder((prev) =>
+        prev && prev.id === orderId
+          ? { ...prev, status: data.newStatus, payment_confirmed_at: new Date().toISOString() }
+          : prev
+      );
+      toast.success('Payment Receipt Confirmed!');
     } catch (err: any) {
       toast.error(err.message ?? 'An Error Occurred Marking Order As Paid.');
     } finally {
@@ -248,22 +491,340 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
     0
   );
 
+  const isShipReady = (order: Order) =>
+    order.fulfillment_method === 'ship' &&
+    (order.status === 'approved_ship' || order.status === 'in_fulfillment');
+
+  // -------------------------------------------------------------------------
+  // EasyPost Forge: one-click label buying from the agent's own shipping
+  // account. Checked once per mount, and only when an order could use it -
+  // with the admin toggle off (available:false) or no active card, nothing
+  // in this panel changes.
+  // -------------------------------------------------------------------------
+  const [forgeActive, setForgeActive] = useState(false);
+  const forgeCheckedRef = useRef(false);
+  const [forgeRates, setForgeRates] = useState<Record<string, ForgeRateOption[]>>({});
+  const [ratesLoadingId, setRatesLoadingId] = useState<string | null>(null);
+  const [buyingRateKey, setBuyingRateKey] = useState<string | null>(null);
+  const [refundingOrderId, setRefundingOrderId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (forgeCheckedRef.current) return;
+    const relevant = orders.some(
+      (o) => isShipReady(o) || (o.status === 'shipped' && !!o.label_url)
+    );
+    if (!relevant) return;
+    forgeCheckedRef.current = true;
+    (async () => {
+      try {
+        const res = await fetch('/api/agent/shipping/account');
+        if (!res.ok) return;
+        const data = await res.json();
+        setForgeActive(!!data.available && data.billingStatus === 'active');
+      } catch {
+        /* forge stays hidden on failure */
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orders]);
+
+  const handleGetRates = async (orderId: string) => {
+    setRatesLoadingId(orderId);
+    try {
+      const res = await fetch(`/api/agent/shipping/rates?orderId=${encodeURIComponent(orderId)}`);
+      const data = await res.json().catch(() => ({} as { error?: string; rates?: ForgeRateOption[] }));
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed To Fetch Shipping Rates.');
+      }
+      setForgeRates((prev) => ({ ...prev, [orderId]: data.rates ?? [] }));
+      if ((data.rates ?? []).length === 0) {
+        toast.error('No Carriers Returned A Rate For This Address.');
+      }
+    } catch (err: any) {
+      toast.error(err.message ?? 'An Error Occurred Fetching Shipping Rates.');
+    } finally {
+      setRatesLoadingId(null);
+    }
+  };
+
+  const handleBuyLabel = async (orderId: string, rate: ForgeRateOption) => {
+    const rateKey = `${orderId}:${rate.rateId}`;
+    setBuyingRateKey(rateKey);
+    try {
+      const idemKey = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const res = await fetch('/api/agent/shipping/buy-label', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Idempotency-Key': idemKey,
+        },
+        body: JSON.stringify({ orderId, serviceLevel: rate.serviceLevelToken }),
+      });
+      const data = await res.json().catch(() => ({} as { error?: string; trackingNumber?: string; labelUrl?: string; carrier?: string }));
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed To Buy The Label.');
+      }
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === orderId
+            ? {
+                ...o,
+                status: 'shipped',
+                tracking_number: data.trackingNumber || o.tracking_number,
+                label_url: data.labelUrl || o.label_url,
+              }
+            : o
+        )
+      );
+      setForgeRates((prev) => {
+        const next = { ...prev };
+        delete next[orderId];
+        return next;
+      });
+      if (data.labelUrl) setLabelModalUrl(data.labelUrl);
+      toast.success(`Label Purchased Via ${data.carrier || rate.carrier}. The Buyer Has Been Notified.`);
+    } catch (err: any) {
+      toast.error(err.message ?? 'An Error Occurred Buying The Label.');
+    } finally {
+      setBuyingRateKey(null);
+    }
+  };
+
+  const handleRefundLabel = async (orderId: string) => {
+    if (!confirm('Request A Refund For This Label? The Label Becomes Void Once The Carrier Approves The Refund.')) return;
+    setRefundingOrderId(orderId);
+    try {
+      const res = await fetch('/api/agent/shipping/refund-label', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId }),
+      });
+      const data = await res.json().catch(() => ({} as { error?: string }));
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed To Request The Label Refund.');
+      }
+      toast.success('Label Refund Requested. EasyPost Credits Your Wallet Once The Carrier Approves It.');
+    } catch (err: any) {
+      toast.error(err.message ?? 'An Error Occurred Requesting The Refund.');
+    } finally {
+      setRefundingOrderId(null);
+    }
+  };
+
+  // Ship It panel: shown on ship-ready orders in the row and mirrored in the
+  // detail modal. With an active Forge shipping account the agent buys the
+  // label in one click; the Pirate Ship paste-back remains as the fallback.
+  const renderShipPanel = (order: Order) => {
+    const orderRates = forgeRates[order.id];
+
+    // Existing paste-back flow (Pirate Ship). Primary when Forge is off;
+    // collapsed secondary fallback when the agent has one-click labels.
+    const pasteBackSection = (
+      <>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'flex-start' }}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => handleCopyAddress(order)}
+            style={{ padding: '8px 14px', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'flex-start', gap: '6px' }}
+          >
+            <ClipboardCopy size={14} />
+            Copy Address
+          </button>
+          <IframeLink
+            href="https://ship.pirateship.com/ship"
+            className="btn btn-secondary"
+            style={{
+              padding: '8px 14px',
+              fontSize: '0.85rem',
+              fontWeight: 600,
+              textDecoration: 'none',
+              background: 'rgba(0,196,188,0.15)',
+              border: '1px solid var(--teal)',
+              color: 'var(--teal)',
+              borderRadius: '8px',
+              display: 'inline-flex',
+              alignItems: 'flex-start',
+              gap: '6px',
+            }}
+          >
+            Open Pirate Ship
+          </IframeLink>
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'flex-start' }}>
+          <input
+            type="text"
+            placeholder="Paste Tracking Number"
+            className="form-input"
+            value={trackingNumbers[order.id] || ''}
+            onChange={(e) =>
+              setTrackingNumbers((prev) => ({ ...prev, [order.id]: e.target.value }))
+            }
+            style={{ padding: '10px 16px', fontSize: '0.95rem', height: 44, flex: '1 1 220px', minWidth: 180, borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)' }}
+          />
+          <select
+            className="form-input"
+            value={shipCarriers[order.id] || ''}
+            onChange={(e) =>
+              setShipCarriers((prev) => ({ ...prev, [order.id]: e.target.value }))
+            }
+            style={{ padding: '10px 12px', fontSize: '0.9rem', height: 44, borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--white)' }}
+          >
+            <option value="">Auto Detect</option>
+            <option value="USPS">USPS</option>
+            <option value="UPS">UPS</option>
+            <option value="FedEx">FedEx</option>
+            <option value="DHLExpress">DHL Express</option>
+          </select>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => handleMarkShipped(order.id)}
+            disabled={shippingOrderId === order.id || !(trackingNumbers[order.id] || '').trim()}
+            style={{ padding: '10px 20px', fontSize: '0.9rem', fontWeight: 700, borderRadius: '8px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}
+          >
+            {shippingOrderId === order.id ? 'Marking Shipped...' : 'Mark Shipped'}
+          </button>
+        </div>
+        <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)' }}>
+          Buy The Label With Your Own Carrier Account (We Recommend Pirate Ship), Then Paste The Tracking Number Here. The Buyer Gets Live Tracking Automatically.
+        </div>
+      </>
+    );
+
+    return (
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          marginTop: '8px',
+          padding: '16px 20px',
+          borderRadius: '12px',
+          background: 'rgba(0,196,188,0.06)',
+          border: '1px solid rgba(0,196,188,0.25)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', color: 'var(--teal)', fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          <Ship size={16} />
+          Ship It
+        </div>
+        <div style={{ fontSize: '0.9rem', color: 'var(--silver)', lineHeight: 1.5 }}>
+          {order.buyer_name && <div style={{ color: 'var(--white)', fontWeight: 600 }}>{order.buyer_name}</div>}
+          {formatAddress(order.shipping_address)}
+        </div>
+
+        {forgeActive && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {!orderRates && (
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => handleGetRates(order.id)}
+                disabled={ratesLoadingId === order.id}
+                style={{ alignSelf: 'flex-start', padding: '10px 20px', fontSize: '0.9rem', fontWeight: 700, borderRadius: '8px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}
+              >
+                <Zap size={15} />
+                {ratesLoadingId === order.id ? 'Fetching Rates...' : 'Buy Label'}
+              </button>
+            )}
+            {orderRates && orderRates.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ fontSize: '0.78rem', color: 'var(--teal)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  Pick A Rate
+                </div>
+                {orderRates.map((rate) => {
+                  const rateKey = `${order.id}:${rate.rateId}`;
+                  return (
+                    <div
+                      key={rate.rateId}
+                      style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        alignItems: 'flex-start',
+                        gap: '10px',
+                        padding: '10px 14px',
+                        borderRadius: '10px',
+                        background: 'rgba(0,0,0,0.25)',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                      }}
+                    >
+                      <div style={{ flex: '1 1 200px', minWidth: 160 }}>
+                        <div style={{ color: 'var(--white)', fontWeight: 700, fontSize: '0.9rem' }}>
+                          {rate.serviceLevelName || `${rate.carrier} ${rate.serviceLevelToken}`}
+                        </div>
+                        <div style={{ color: 'var(--grey-400)', fontSize: '0.78rem' }}>
+                          {rate.estimatedDays
+                            ? `Estimated ${rate.estimatedDays} Day${rate.estimatedDays === 1 ? '' : 's'}`
+                            : 'Delivery Estimate Unavailable'}
+                        </div>
+                      </div>
+                      <div style={{ color: 'var(--teal)', fontWeight: 800, fontSize: '1rem' }}>
+                        {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(rate.amountCents / 100)}
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={() => handleBuyLabel(order.id, rate)}
+                        disabled={buyingRateKey !== null}
+                        style={{ padding: '8px 18px', fontSize: '0.85rem', fontWeight: 700, borderRadius: '8px' }}
+                      >
+                        {buyingRateKey === rateKey ? 'Buying...' : 'Buy'}
+                      </button>
+                    </div>
+                  );
+                })}
+                <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)' }}>
+                  The Label Is Charged To Your Card By EasyPost And The Order Is Marked Shipped Automatically.
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {forgeActive ? (
+          <details style={{ marginTop: '2px' }}>
+            <summary style={{ cursor: 'pointer', color: 'var(--grey-400)', fontSize: '0.82rem', fontWeight: 600 }}>
+              Or Paste A Tracking Number From Another Service
+            </summary>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
+              {pasteBackSection}
+            </div>
+          </details>
+        ) : (
+          pasteBackSection
+        )}
+      </div>
+    );
+  };
+
   return (
+    <>
+      {!hideDropdown && (<div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--space-4)' }}>
+        <select 
+          className="sa-month-select" 
+          style={{ padding: '8px 16px', borderRadius: '8px', background: 'var(--grey-900)', border: '1px solid rgba(255,255,255,0.2)', color: 'var(--white)', fontSize: '0.95rem', fontWeight: 800 }}
+          value={timeFilter} 
+          onChange={(e) => { setTimeFilter(e.target.value); setCurrentPage(1); }}
+        >
+          <option value="all">All Time</option>
+          <option value="7d">Last 7 Days</option>
+          <option value="30d">Last 30 Days</option>
+          <option value="90d">Last 90 Days</option>
+          <option value="1y">Last Year</option>
+        </select>
+      </div>)}
     <div className="glass-panel" style={{ marginBottom: 'var(--space-6)' }}>
       {labelModalUrl && (
         <IframeModal url={labelModalUrl} title="Shipping Label" onClose={() => setLabelModalUrl(null)} />
       )}
       <div className="">
-      <h3
-        className="metal-text"
-        style={{
-          fontSize: '1.25rem',
-          marginBottom: 'var(--space-6)',
-          fontFamily: 'var(--font-brand)',
-        }}
-      >
-        Completed Sales & Profit
-      </h3>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)', flexWrap: 'wrap', gap: '16px' }}>
+        <h3 className="metal-text" style={{ fontSize: '1.25rem', fontFamily: 'var(--font-brand)', margin: 0 }}>
+          All Sales
+        </h3>
+      </div>
       <div
         style={{
           display: 'flex',
@@ -276,12 +837,42 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
           Manage Orders Registered By Your Clients. Click A Row To Open The Detail View. Coordinate
           Cash Settlements Offline And Release For System Fulfillment.
         </p>
-        <button
-          className="btn btn-primary btn-sm"
-          onClick={() => setShowManualOrder(!showManualOrder)}
-        >
-          {showManualOrder ? 'View Order Ledger' : 'Create Manual Order'}
-        </button>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'flex-end' }}>
+          {/* Same-origin API download, not an external link - a plain anchor is fine here. */}
+          <a
+            href="/api/agent/shipping/export"
+            className="btn btn-secondary btn-sm"
+            style={{ display: 'inline-flex', alignItems: 'flex-start', gap: '6px', textDecoration: 'none' }}
+          >
+            <Download size={14} />
+            Export To Pirate Ship
+          </a>
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={() => importInputRef.current?.click()}
+            disabled={importingCsv}
+            style={{ display: 'inline-flex', alignItems: 'flex-start', gap: '6px' }}
+          >
+            <Upload size={14} />
+            {importingCsv ? 'Importing...' : 'Import Tracking CSV'}
+          </button>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            style={{ display: 'none' }}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleImportTrackingFile(file);
+            }}
+          />
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => setShowManualOrder(!showManualOrder)}
+          >
+            {showManualOrder ? 'View Order Ledger' : 'Create Manual Order'}
+          </button>
+        </div>
       </div>
 
       {showManualOrder ? (
@@ -294,12 +885,14 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
             }
           }}
         />
-      ) : orders.length > 0 ? (
+      ) : filteredOrders.length > 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
           {paginatedOrders.map((order) => {
             const isPendingPayment = order.status === 'pending_customer_payment';
             const isPendingApproval = order.status === 'agent_approval_pending';
-            
+            const isTerminal = ['shipped', 'delivered', 'cancelled'].includes(order.status);
+
+            // canApprove: approve/payment-confirmation buttons
             let canApprove = false;
             let approveText = 'Approve Order';
 
@@ -313,6 +906,21 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                 canApprove = true;
               }
             }
+
+            // canCancel: any non-terminal order visible to this agent/super-agent
+            // (super-agents see downline orders via is_sub_agent_order, which the API
+            // now accepts because it checks the parent_agent_id chain)
+            const canCancel = !isTerminal;
+
+            // Upline settlement acknowledgment: PREPAID downline orders settle
+            // per order, so the upline answers "Did You Receive Payment From
+            // <downline>?" right here. Only once the order is approved (that
+            // is when the settlement actually happens) and until confirmed.
+            const canConfirmDownline = !!order.is_sub_agent_order
+              && !!order.downline_prepaid
+              && !order.upline_payment_confirmed_at
+              && ['approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered'].includes(order.status);
+
 
             return (
               <div
@@ -343,7 +951,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                 {/* Header row: Order ID, Date, and Status */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', flexWrap: 'wrap' }}>
                       <span style={{ 
                         fontSize: '1.2rem', 
                         fontWeight: 800,
@@ -352,7 +960,9 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                         WebkitTextFillColor: 'transparent',
                         textShadow: '0 2px 10px rgba(255,255,255,0.1)'
                       }}>
-                        {order.is_sub_agent_order ? `Sub-Agent Order #${order.id.slice(0, 8).toUpperCase()}` : `Order #${order.id.slice(0, 8).toUpperCase()}`}
+                        {order.is_sub_agent_order || order.is_downline_order
+                          ? (order.downline_agent_name ? `Downline Order - ${order.downline_agent_name}` : `Sub-Agent Order #${order.id.slice(0, 8).toUpperCase()}`)
+                          : `Order #${order.id.slice(0, 8).toUpperCase()}`}
                       </span>
                       <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)', fontWeight: 600 }}>
                         &bull;
@@ -365,7 +975,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                         })}
                       </span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
                       <span style={{ 
                         fontSize: '0.8rem', 
                         color: 'var(--teal)', 
@@ -437,7 +1047,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                     <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px', fontWeight: 600 }}>Details</div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                       <span style={{ fontSize: '0.9rem', color: 'var(--silver)' }}>Method</span>
-                      <span style={{ fontSize: '0.9rem', color: 'var(--white)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '0.9rem', color: 'var(--white)', fontWeight: 600, display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
                         {order.fulfillment_method === 'agent_pickup' ? (
                           <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> Agent Pickup</>
                         ) : (
@@ -447,7 +1057,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                       <span style={{ fontSize: '0.9rem', color: 'var(--silver)' }}>Payment</span>
-                      <span style={{ fontSize: '0.9rem', color: 'var(--white)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '0.9rem', color: 'var(--white)', fontWeight: 600, display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
                         {paymentMethodLabel(order.payment_method)}
                       </span>
@@ -458,6 +1068,14 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                         {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(order.total) || 0)}
                       </strong>
                     </div>
+                    {typeof order.profit === 'number' && (
+                      <div style={{ marginTop: '8px', fontSize: '0.8rem', color: 'var(--grey-400)', fontWeight: 600 }}>
+                        {order.is_downline_order ? 'Your Profit On This Sale' : 'Your Profit'}:{' '}
+                        <span style={{ color: '#22C55E', fontWeight: 700 }}>
+                          ${order.profit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   
                   {/* Tracking / Fulfillment */}
@@ -495,7 +1113,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                 </div>
 
                 {/* Actions row */}
-                {canApprove && (
+                {(canApprove || canCancel || canConfirmDownline) && (
                   <div
                     onClick={(e) => e.stopPropagation()}
                     style={{
@@ -505,11 +1123,11 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                       display: 'flex',
                       flexWrap: 'wrap',
                       gap: '12px',
-                      alignItems: 'center',
+                      alignItems: 'flex-start',
                       justifyContent: 'flex-end',
                     }}
                   >
-                    {order.fulfillment_method === 'ship' && isPendingApproval && (
+                    {canApprove && order.fulfillment_method === 'ship' && isPendingApproval && (
                       <input
                         type="text"
                         placeholder="Tracking Number (USPS/UPS)"
@@ -525,80 +1143,153 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                       />
                     )}
                     
-                      {confirmCancelId === order.id ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '0.85rem', color: '#FFAAAA', fontWeight: 600 }}>Confirm Cancel?</span>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleUpdateOrderStatus(order.id, 'cancelled'); setConfirmCancelId(null); }}
-                            className="btn btn-secondary"
+                    {/* Cancel section — available for all non-terminal orders */}
+                    {canCancel && (
+                      confirmCancelId === order.id ? (
+                        <div style={{
+                          display: 'flex', flexDirection: 'column', gap: '10px',
+                          background: 'rgba(92,30,30,0.25)', border: '1px solid rgba(252,129,129,0.25)',
+                          borderRadius: '12px', padding: '14px 16px', width: '100%',
+                        }}>
+                          <span style={{ fontSize: '0.85rem', color: '#FFAAAA', fontWeight: 700 }}>
+                            {order.is_sub_agent_order ? '⚠️ Cancel Downline Order — Enter Reason' : '⚠️ Confirm Cancellation — Enter Reason'}
+                          </span>
+                          <textarea
+                            placeholder="Required: Why are you cancelling this order?"
+                            value={cancelReasonMap[order.id] || ''}
+                            onChange={(e) => setCancelReasonMap((prev) => ({ ...prev, [order.id]: e.target.value }))}
+                            rows={2}
                             style={{
-                              border: 'none',
-                              color: '#FFAAAA',
-                              background: 'linear-gradient(180deg, #5C1E1E 0%, #3B1111 100%)',
-                              fontSize: '0.85rem',
-                              padding: '8px 16px',
-                              fontWeight: 700,
-                              borderRadius: '8px',
+                              width: '100%', resize: 'vertical',
+                              background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(252,129,129,0.35)',
+                              borderRadius: '8px', color: '#fff', fontSize: '0.9rem', padding: '10px 12px',
+                              outline: 'none',
                             }}
-                            disabled={loadingOrderId === order.id}
-                          >
-                            Yes, Cancel
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setConfirmCancelId(null); }}
-                            className="btn btn-ghost"
-                            style={{ fontSize: '0.85rem', padding: '8px 14px', borderRadius: '8px' }}
-                          >
-                            Keep
-                          </button>
+                          />
+                          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleUpdateOrderStatus(order.id, 'cancelled');
+                                setConfirmCancelId(null);
+                              }}
+                              className="btn btn-secondary"
+                              style={{
+                                border: 'none', color: '#FFAAAA',
+                                background: 'linear-gradient(180deg, #5C1E1E 0%, #3B1111 100%)',
+                                fontSize: '0.85rem', padding: '8px 18px', fontWeight: 700, borderRadius: '8px',
+                              }}
+                              disabled={loadingOrderId === order.id || !(cancelReasonMap[order.id] || '').trim()}
+                            >
+                              {loadingOrderId === order.id ? 'Cancelling…' : 'Yes, Cancel'}
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setConfirmCancelId(null);
+                                setCancelReasonMap((prev) => { const next = { ...prev }; delete next[order.id]; return next; });
+                              }}
+                              className="btn btn-ghost"
+                              style={{ fontSize: '0.85rem', padding: '8px 14px', borderRadius: '8px' }}
+                            >
+                              Keep Order
+                            </button>
+                          </div>
                         </div>
                       ) : (
                         <button
-                        onClick={(e) => { e.stopPropagation(); setConfirmCancelId(order.id); }}
-                        className="btn btn-secondary"
-                        style={{
-                          border: 'none',
-                          color: '#FFAAAA',
-                          background: 'linear-gradient(180deg, #5C1E1E 0%, #3B1111 100%)',
-                          fontSize: '0.9rem',
-                          padding: '10px 20px',
-                          fontWeight: 700,
-                          borderRadius: '10px',
-                          boxShadow: '0 4px 15px rgba(252, 129, 129, 0.2), inset 0 1px 0 rgba(255,160,160,0.2), inset 0 -2px 0 rgba(0,0,0,0.4)',
-                          textShadow: '0 1px 2px rgba(0,0,0,0.6)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px'
-                        }}
-                        disabled={loadingOrderId === order.id}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                        Cancel
-                      </button>
-                      )}
+                          onClick={(e) => { e.stopPropagation(); setConfirmCancelId(order.id); }}
+                          className="btn btn-secondary"
+                          style={{
+                            border: 'none', color: '#FFAAAA',
+                            background: 'linear-gradient(180deg, #5C1E1E 0%, #3B1111 100%)',
+                            fontSize: '0.9rem', padding: '10px 20px', fontWeight: 700, borderRadius: '10px',
+                            boxShadow: '0 4px 15px rgba(252,129,129,0.2), inset 0 1px 0 rgba(255,160,160,0.2), inset 0 -2px 0 rgba(0,0,0,0.4)',
+                            textShadow: '0 1px 2px rgba(0,0,0,0.6)',
+                            display: 'flex', alignItems: 'center', gap: '8px',
+                          }}
+                          disabled={loadingOrderId === order.id}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                          {order.is_sub_agent_order ? 'Cancel Downline Order' : 'Cancel'}
+                        </button>
+                      )
+                    )}
                     
-                    {isPendingPayment && !order.is_sub_agent_order && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleMarkPaid(order.id); }}
-                        className="btn btn-primary pulse-primary"
-                        style={{ 
-                          fontSize: '0.9rem', 
-                          padding: '10px 24px', 
-                          fontWeight: 700,
-                          background: 'linear-gradient(180deg, #DCD3C3 0%, #B3A992 100%)',
-                          color: '#0A1018',
-                          border: 'none',
-                          borderRadius: '10px',
-                          textShadow: '0 1px 2px rgba(0,0,0,0.3)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px'
-                        }}
-                        disabled={loadingOrderId === order.id || buyingLabelId === order.id}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                        {loadingOrderId === order.id ? 'Processing...' : 'Mark As Paid'}
-                      </button>
+
+                    {/* Payment-receipt confirmation: shown until the agent
+                        answers it, at every active pre-delivery stage (many
+                        storefront orders skip pending_customer_payment
+                        entirely). Ship orders cannot be approved until this
+                        is confirmed. */}
+                    {!order.payment_confirmed_at
+                      && !order.is_sub_agent_order
+                      && ['pending_customer_payment', 'agent_approval_pending', 'admin_approval_pending', 'approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered'].includes(order.status) && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        {order.buyer_payment_sent_at && (
+                          <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#2DD4BF', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            Buyer Confirmed Payment Sent
+                          </span>
+                        )}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleMarkPaid(order.id); }}
+                          className="btn btn-primary pulse-primary"
+                          style={{
+                            fontSize: '0.9rem',
+                            padding: '10px 24px',
+                            fontWeight: 700,
+                            background: 'linear-gradient(180deg, #DCD3C3 0%, #B3A992 100%)',
+                            color: '#0A1018',
+                            border: 'none',
+                            borderRadius: '10px',
+                            textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '8px'
+                          }}
+                          disabled={loadingOrderId === order.id}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                          {loadingOrderId === order.id ? 'Confirming...' : 'Did You Receive Payment? Confirm'}
+                        </button>
+                      </div>
+                    )}
+                    {order.payment_confirmed_at && !order.is_sub_agent_order && (
+                      <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#2DD4BF', textTransform: 'uppercase', letterSpacing: '0.04em', alignSelf: 'center' }}>
+                        Payment Received ✓
+                      </span>
+                    )}
+
+                    {/* Upline: prepaid downline settlement Yes / No */}
+                    {canConfirmDownline && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, background: 'rgba(0,196,188,0.05)', border: '1px solid rgba(0,196,188,0.3)', borderRadius: 10, padding: '10px 14px' }}>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--white)' }}>
+                          Did You Receive Payment From {order.downline_agent_name || 'Your Downline Agent'}?
+                        </span>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleConfirmDownlinePayment(order.id); }}
+                            className="btn btn-primary"
+                            style={{ fontSize: '0.84rem', padding: '9px 18px', fontWeight: 700, background: 'linear-gradient(180deg, #2DD4BF 0%, #14B8A6 100%)', color: '#04211D', border: 'none', borderRadius: '8px' }}
+                            disabled={loadingOrderId === order.id}
+                          >
+                            {loadingOrderId === order.id ? 'Confirming...' : 'Yes, Payment Received'}
+                          </button>
+                          <button
+                            onClick={(e) => e.stopPropagation()}
+                            className="btn btn-secondary"
+                            style={{ fontSize: '0.84rem', padding: '9px 18px', fontWeight: 600, background: 'transparent', border: '1px solid rgba(255,255,255,0.18)', color: 'var(--silver)', borderRadius: '8px' }}
+                            title="You Will Be Reminded Again In 12 Hours"
+                          >
+                            Not Yet
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {order.is_sub_agent_order && order.upline_payment_confirmed_at && (
+                      <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#2DD4BF', textTransform: 'uppercase', letterSpacing: '0.04em', alignSelf: 'center' }}>
+                        Downline Payment Received ✓
+                      </span>
                     )}
                     
                     {canApprove && (
@@ -618,7 +1309,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                           borderRadius: '10px',
                           textShadow: '0 1px 2px rgba(0,0,0,0.3)',
                           display: 'flex',
-                          alignItems: 'center',
+                          alignItems: 'flex-start',
                           gap: '8px'
                         }}
                         disabled={loadingOrderId === order.id}
@@ -628,12 +1319,16 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                       </button>
                     )}
 
-                    {/* Buy-label removed: agents no longer purchase labels before
-                        the admin-approval gate. After an admin releases the order to
-                        approved_ship, the label is auto-enqueued (shipping_enqueue_label_job)
-                        and drained by the label-jobs cron, or bought by admin/shipping. */}
+                    {/* Agents ship with their own carrier account (Pirate Ship)
+                        and paste tracking here. The platform no longer buys
+                        labels; once an admin releases the order to approved_ship,
+                        the Ship It panel below collects the tracking number and
+                        marks the order shipped. */}
                   </div>
                 )}
+
+                {/* Ship It panel: agent-owned shipping for admin-released orders */}
+                {isShipReady(order) && renderShipPanel(order)}
               </div>
             </div>
             );
@@ -643,7 +1338,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center',
+              alignItems: 'flex-start',
               marginTop: 'var(--space-4)',
               padding: '12px 24px',
               borderRadius: '16px',
@@ -657,7 +1352,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                 width: '100%',
                 display: 'flex',
                 justifyContent: 'space-between',
-                alignItems: 'center',
+                alignItems: 'flex-start',
                 boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.6)'
               }}>
                 <button
@@ -739,7 +1434,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
             inset: 0,
             background: 'rgba(0,0,0,0.85)',
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'flex-start',
             justifyContent: 'center',
             zIndex: 1000,
             padding: 'max(var(--space-6), env(safe-area-inset-top, 0px)) var(--space-6) max(var(--space-6), env(safe-area-inset-bottom, 0px))',
@@ -964,10 +1659,11 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                           borderBottom: '1px solid rgba(255,255,255,0.06)',
                         }}
                       >
-                        <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 600 }}>Product</th>
-                        <th style={{ textAlign: 'center', padding: '12px 16px', fontWeight: 600 }}>Quantity</th>
-                        <th style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 600 }}>Unit Price</th>
-                        <th style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 600 }}>Line Total</th>
+                        <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 600, textTransform: 'uppercase' }}>Product Name</th>
+                        <th style={{ textAlign: 'center', padding: '12px 16px', fontWeight: 600, textTransform: 'uppercase' }}>Weight</th>
+                        <th style={{ textAlign: 'center', padding: '12px 16px', fontWeight: 600, textTransform: 'uppercase' }}>Quantity</th>
+                        <th style={{ textAlign: 'center', padding: '12px 16px', fontWeight: 600, textTransform: 'uppercase' }}>Unit Price</th>
+                        <th style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 600, textTransform: 'uppercase' }}>Total</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -993,8 +1689,11 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                                 </div>
                               )}
                             </td>
+                            <td style={{ textAlign: 'center', padding: '12px 16px', color: 'var(--silver)' }}>
+                              {item.unit_size ? `${item.unit_size} ${item.unit_measure || 'mg'}` : '-'}
+                            </td>
                             <td style={{ textAlign: 'center', padding: '12px 16px' }}>{qty}</td>
-                            <td style={{ textAlign: 'right', padding: '12px 16px' }}>
+                            <td style={{ textAlign: 'center', padding: '12px 16px' }}>
                               {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(unit) || 0)}
                             </td>
                             <td
@@ -1072,7 +1771,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                           fontSize: '1rem',
                           wordBreak: 'break-all',
                           display: 'flex',
-                          alignItems: 'center',
+                          alignItems: 'flex-start',
                           gap: 'var(--space-3)',
                           flexWrap: 'wrap',
                         }}
@@ -1127,6 +1826,34 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                   >
                     View Shipping Label
                   </IframeLink>
+                )}
+
+                {/* EasyPost Forge: refund an agent-paid label while the order
+                    is shipped but not yet delivered. The server verifies the
+                    label was actually bought on this agent's account. */}
+                {forgeActive && detailOrder.status === 'shipped' && detailOrder.label_url && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => handleRefundLabel(detailOrder.id)}
+                    disabled={refundingOrderId === detailOrder.id}
+                    style={{
+                      marginTop: 'var(--space-3)',
+                      display: 'inline-flex',
+                      alignItems: 'flex-start',
+                      gap: '6px',
+                      fontSize: '0.85rem',
+                      padding: '8px 16px',
+                      fontWeight: 600,
+                      color: '#FFAAAA',
+                      border: '1px solid rgba(252,129,129,0.4)',
+                      background: 'rgba(229,62,62,0.08)',
+                      borderRadius: '8px',
+                    }}
+                  >
+                    <Undo2 size={14} />
+                    {refundingOrderId === detailOrder.id ? 'Requesting Refund...' : 'Refund Label'}
+                  </button>
                 )}
 
                 <div
@@ -1209,12 +1936,39 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                     </span>
                   </div>
                 )}
-                <div style={{ flex: 1 }} />
+                {detailItems && detailItems.length > 0 && (() => {
+                  const isDownline = !!(detailOrder.is_downline_order || detailOrder.is_sub_agent_order);
+                  const ownLedger = computeOwnOrderLedger(detailOrder, detailItems);
+                  const uplineLedger = computeUplineLedger(detailOrder, detailItems);
+
+                  return (
+                    <>
+                      <div style={{ flex: 1 }} />
+                      <div style={{ marginBottom: 12, padding: '16px 18px', borderRadius: 12, background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.2)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+                        <div style={{ fontSize: '0.72rem', color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 800 }}>
+                          {isDownline ? 'Upline Ledger — Your Settlement' : 'Your Settlement'}
+                        </div>
+
+                        <LedgerBreakdown
+                          ownLedger={ownLedger}
+                          uplineLedger={uplineLedger}
+                          viewerRole={isDownline ? 'super_agent' : 'agent'}
+                          isOwnOrder={!isDownline}
+                          agentName={detailOrder.downline_agent_name || 'Agent'}
+                          uplineName={detailOrder.super_agent_name || 'Upline'}
+                          couponCode={detailOrder.coupon_code}
+                        />
+                      </div>
+                    </>
+                  );
+                })()}
+
                 <div
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
-                    alignItems: 'center',
+                    alignItems: 'flex-start',
                     fontSize: '1.2rem',
                     color: 'var(--white)',
                     fontWeight: 800,
@@ -1228,6 +1982,82 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                 </div>
               </div>
             </div>
+
+            {/* Ship It panel mirror: agent-owned shipping from the detail view */}
+            {isShipReady(detailOrder) && (
+              <div style={{ marginBottom: 'var(--space-6)' }}>
+                {renderShipPanel(detailOrder)}
+              </div>
+            )}
+
+            {/* Payment-confirmation actions INSIDE the modal: notification
+                deep-links (?order=<shortId>) open this modal directly, so the
+                person the push asked "Did You Receive Payment?" must be able
+                to answer right here without hunting through the list. */}
+            {!detailOrder.is_sub_agent_order
+              && !detailOrder.payment_confirmed_at
+              && ['pending_customer_payment', 'agent_approval_pending', 'admin_approval_pending', 'approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered'].includes(detailOrder.status) && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: 'rgba(0,196,188,0.05)', border: '1px solid rgba(0,196,188,0.3)', borderRadius: 10, padding: '12px 16px', marginTop: 'var(--space-4)' }}>
+                <span style={{ fontSize: '0.86rem', fontWeight: 700, color: 'var(--white)' }}>
+                  Did You Receive Payment For This Order?
+                </span>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => handleMarkPaid(detailOrder.id)}
+                    className="btn btn-primary"
+                    style={{ fontSize: '0.86rem', padding: '10px 20px', fontWeight: 700, background: 'linear-gradient(180deg, #2DD4BF 0%, #14B8A6 100%)', color: '#04211D', border: 'none', borderRadius: '8px' }}
+                    disabled={loadingOrderId === detailOrder.id}
+                  >
+                    {loadingOrderId === detailOrder.id ? 'Confirming...' : 'Yes, Payment Received'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDetailOrder(null)}
+                    className="btn btn-secondary"
+                    style={{ fontSize: '0.86rem', padding: '10px 20px', fontWeight: 600, background: 'transparent', border: '1px solid rgba(255,255,255,0.18)', color: 'var(--silver)', borderRadius: '8px' }}
+                    title="You Will Be Reminded Again In 12 Hours"
+                  >
+                    Not Yet
+                  </button>
+                </div>
+              </div>
+            )}
+            {detailOrder.is_sub_agent_order
+              && detailOrder.downline_prepaid
+              && !detailOrder.upline_payment_confirmed_at
+              && ['approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered'].includes(detailOrder.status) && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: 'rgba(0,196,188,0.05)', border: '1px solid rgba(0,196,188,0.3)', borderRadius: 10, padding: '12px 16px', marginTop: 'var(--space-4)' }}>
+                <span style={{ fontSize: '0.86rem', fontWeight: 700, color: 'var(--white)' }}>
+                  Did You Receive Payment From {detailOrder.downline_agent_name || 'Your Downline Agent'}?
+                </span>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => handleConfirmDownlinePayment(detailOrder.id)}
+                    className="btn btn-primary"
+                    style={{ fontSize: '0.86rem', padding: '10px 20px', fontWeight: 700, background: 'linear-gradient(180deg, #2DD4BF 0%, #14B8A6 100%)', color: '#04211D', border: 'none', borderRadius: '8px' }}
+                    disabled={loadingOrderId === detailOrder.id}
+                  >
+                    {loadingOrderId === detailOrder.id ? 'Confirming...' : 'Yes, Payment Received'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDetailOrder(null)}
+                    className="btn btn-secondary"
+                    style={{ fontSize: '0.86rem', padding: '10px 20px', fontWeight: 600, background: 'transparent', border: '1px solid rgba(255,255,255,0.18)', color: 'var(--silver)', borderRadius: '8px' }}
+                    title="You Will Be Reminded Again In 12 Hours"
+                  >
+                    Not Yet
+                  </button>
+                </div>
+              </div>
+            )}
+            {((detailOrder.payment_confirmed_at && !detailOrder.is_sub_agent_order) || (detailOrder.is_sub_agent_order && detailOrder.upline_payment_confirmed_at)) && (
+              <div style={{ marginTop: 'var(--space-4)', color: '#2DD4BF', fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Payment Received ✓
+              </div>
+            )}
 
             <div
               className="agent-order-modal-actions"
@@ -1290,5 +2120,6 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
       )}
       </div>
     </div>
+    </>
   );
 }

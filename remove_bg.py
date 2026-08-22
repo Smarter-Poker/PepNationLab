@@ -1,39 +1,38 @@
-from PIL import Image, ImageDraw
-import sys
+from PIL import Image
+import PIL.ImageChops as chops
 
-def remove_background(input_path, output_path):
-    img = Image.open(input_path).convert("RGBA")
-    data = img.load()
-    width, height = img.size
+def main():
+    path = '/Users/smarter.poker/Documents/pepnationlab/public/images/coa-button.png'
+    img = Image.open(path).convert("RGBA")
     
-    # We will do a simple flood fill from the 4 corners.
-    # We treat anything close to black as background.
-    threshold = 20
+    newData = []
+    corners = [img.getpixel((0,0)), img.getpixel((img.width-1, 0)), img.getpixel((0, img.height-1))]
+    bg_color = corners[0] 
     
-    def is_bg(r, g, b, a):
-        return r < threshold and g < threshold and b < threshold
-    
-    visited = set()
-    stack = [(0,0), (width-1, 0), (0, height-1), (width-1, height-1)]
-    
-    while stack:
-        x, y = stack.pop()
-        if (x, y) in visited:
-            continue
-        if x < 0 or x >= width or y < 0 or y >= height:
-            continue
-            
-        visited.add((x, y))
-        r, g, b, a = data[x, y]
+    if bg_color[3] == 0:
+        print("Image is already transparent.")
+        return
         
-        if is_bg(r, g, b, a):
-            data[x, y] = (0, 0, 0, 0)
-            stack.append((x+1, y))
-            stack.append((x-1, y))
-            stack.append((x, y+1))
-            stack.append((x, y-1))
+    width, height = img.size
+    for y in range(height):
+        for x in range(width):
+            item = img.getpixel((x,y))
+            if abs(item[0] - bg_color[0]) < 20 and abs(item[1] - bg_color[1]) < 20 and abs(item[2] - bg_color[2]) < 20:
+                newData.append((255, 255, 255, 0))
+            else:
+                newData.append(item)
+                
+    img.putdata(newData)
+    
+    bg = Image.new(img.mode, img.size, img.getpixel((0,0)))
+    diff = chops.difference(img, bg)
+    diff = chops.add(diff, diff, 2.0, -100)
+    bbox = diff.getbbox()
+    if bbox:
+        img = img.crop(bbox)
+        
+    img.save(path)
+    print(f"Saved transparent cropped image to {path}, size: {img.size}")
 
-    img.save(output_path, "PNG")
-    print(f"Saved to {output_path}")
-
-remove_background(sys.argv[1], sys.argv[2])
+if __name__ == '__main__':
+    main()

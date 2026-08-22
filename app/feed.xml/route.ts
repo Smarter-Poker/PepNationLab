@@ -1,9 +1,13 @@
 /**
  * GET /feed.xml
- * RSS feed of the 50 most recent compounds and the 50 most recent
- * compound_references rows.
+ * RSS feed of the editorial research guides plus the 50 most recent compounds
+ * and the 50 most recent compound_references rows. Guides are the most
+ * editorially valuable, most citation-worthy content on the site, so they lead
+ * the feed - feed readers and AI freshness crawlers (which poll RSS) never saw
+ * them before.
  */
 import { createServiceClient } from '@/lib/supabase/server';
+import { GUIDES } from '@/lib/research/guides';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,6 +32,17 @@ function toRfc822(iso: string | null): string {
 export async function GET() {
   const supabase = await createServiceClient();
   const items: Array<{ title: string; link: string; pubDate: string; description: string; guid: string }> = [];
+
+  // Editorial research guides - static content, always available (no DB call).
+  for (const g of GUIDES) {
+    items.push({
+      title: `Research Guide: ${g.title}`,
+      link: `${BASE}/research/guides/${g.slug}`,
+      pubDate: toRfc822(g.dateModified || g.datePublished),
+      description: g.description,
+      guid: `${BASE}/research/guides/${g.slug}`,
+    });
+  }
 
   try {
     const { data: compounds } = await supabase
@@ -67,6 +82,9 @@ export async function GET() {
     // best-effort
   }
 
+  // Newest first so feed readers and freshness crawlers surface recent updates.
+  items.sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
+
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
   <channel>
@@ -89,7 +107,7 @@ ${items.map((it) => `    <item>
     status: 200,
     headers: {
       'Content-Type': 'application/rss+xml; charset=utf-8',
-      'Cache-Control': 'public, max-age=900',
+      'Cache-Control': 'public, max-age=900, s-maxage=900, stale-while-revalidate=3600',
     },
   });
 }

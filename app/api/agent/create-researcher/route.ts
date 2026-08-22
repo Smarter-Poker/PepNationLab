@@ -1,8 +1,10 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { sanitizeUsername } from '@/lib/usernames';
 import { assertSameOrigin } from '@/lib/csrf';
 import { notifyNewResearcher } from '@/lib/notify';
+import { validatePassword } from '@/lib/password-policy';
 
 /**
  * POST /api/agent/create-researcher
@@ -83,14 +85,15 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const { username, password, firstName, lastName, phone } = body || {};
+  const { username, password, firstName, lastName, contactEmail } = body || {};
 
   if (!username || !password || !firstName || !lastName) {
     return NextResponse.json({ error: 'Username, Password, First Name, And Last Name Are Required.' }, { status: 400 });
   }
 
-  if (password.length < 8) {
-    return NextResponse.json({ error: 'Password Must Be At Least 8 Characters' }, { status: 400 });
+  const pwError = validatePassword(password);
+  if (pwError) {
+    return NextResponse.json({ error: pwError }, { status: 400 });
   }
 
   const usernameClean = sanitizeUsername(username);
@@ -109,6 +112,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'That Username Is Already Taken' }, { status: 400 });
   }
 
+  // One email = one account: reject if this email already belongs to another
+  // account (authoritatively enforced by the DB trigger; checked here for a
+  // clear message before creating an auth user).
+  if (contactEmail && String(contactEmail).trim()) {
+    const { data: emailTaken } = await admin.rpc('account_email_exists', { p_email: String(contactEmail).trim() });
+    if (emailTaken === true) {
+      return NextResponse.json(
+        { error: 'An Account Already Exists For This Email.' },
+        { status: 409 }
+      );
+    }
+  }
+
   const internalEmail = `${usernameClean}@internal.auth`;
 
   const fullName = `${String(firstName).trim()} ${String(lastName).trim()}`;
@@ -118,6 +134,7 @@ export async function POST(req: NextRequest) {
     password,
     email_confirm: true,
     user_metadata: { username: usernameClean, full_name: fullName },
+    app_metadata: { role: 'researcher' }
   });
 
   if (authError || !authData?.user) {
@@ -133,12 +150,15 @@ export async function POST(req: NextRequest) {
   const profilePayload: Record<string, unknown> = {
     id: newUserId,
     email: null,
+    contact_email: contactEmail ? String(contactEmail).trim() : null,
+    email_verified: !!contactEmail,
     username: usernameClean,
     full_name: fullName,
     first_name: String(firstName).trim(),
     last_name: String(lastName).trim(),
     role: 'researcher',
     referring_agent_id: referringAgentId,
+    acquisition_source: 'agent_created',
     created_by_agent_id: user.id,
     created_by_role: createdByRole,
     disclaimer_v1_accepted: false,
@@ -152,6 +172,7 @@ export async function POST(req: NextRequest) {
 
   const { data: upsertedRows, error: profileError } = await admin
     .from('profiles')
+    //  Database schema mismatch from generated types
     .upsert(profilePayload, { onConflict: 'id' })
     .select('id, referring_agent_id, referring_sub_agent_id, created_by_agent_id');
 

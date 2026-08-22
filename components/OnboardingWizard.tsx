@@ -24,6 +24,12 @@ import {
 } from 'lucide-react';
 import { isWebPushSupported, enablePush, notificationPermission } from '@/lib/push-client';
 import QRCodeGenerator from '@/components/QRCodeGenerator';
+import {
+  MIN_PASSWORD_LENGTH,
+  MAX_PASSWORD_LENGTH,
+  PASSWORD_RULE_TEXT,
+  PASSWORD_TOO_SHORT_ERROR,
+} from '@/lib/password-policy';
 
 type WizardRole = 'super_agent' | 'agent' | 'sub_agent';
 
@@ -268,8 +274,15 @@ function Shell({ children, pct, role, stepNumber, totalSteps }: {
           </div>
         </div>
 
-        <div className="glass-panel" style={{ padding: 'var(--space-6, 24px)', borderRadius: 16 }}>
-          {children}
+        <div style={{
+          padding: 4,
+          borderRadius: 20,
+          background: 'linear-gradient(145deg, #8a8a8a 0%, #c8c8c8 20%, #5a5a5a 40%, #b0b0b0 55%, #787878 70%, #d0d0d0 85%, #6e6e6e 100%)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -1px 0 rgba(0,0,0,0.4), 0 4px 24px rgba(0,0,0,0.6), 0 1px 3px rgba(0,0,0,0.8)'
+        }}>
+          <div className="glass-panel" style={{ padding: 'var(--space-6, 24px)', borderRadius: 16 }}>
+            {children}
+          </div>
         </div>
       </div>
       <style>{`@keyframes pnlspin{to{transform:rotate(360deg)}}.spin{animation:pnlspin 0.9s linear infinite}`}</style>
@@ -303,7 +316,7 @@ function PasswordStep({ onDone }: { onDone: () => void }) {
 
   const submit = async () => {
     setErr(null);
-    if (pw.length < 8) { setErr('Password Must Be At Least 8 Characters.'); return; }
+    if (pw.length < MIN_PASSWORD_LENGTH) { setErr(PASSWORD_TOO_SHORT_ERROR); return; }
     if (pw !== confirm) { setErr('Passwords Do Not Match.'); return; }
     setBusy(true);
     try {
@@ -321,15 +334,15 @@ function PasswordStep({ onDone }: { onDone: () => void }) {
       <StepIntro icon={Lock} title="Secure Your Password"
         blurb="Your Account Was Created With A Temporary Password. Choose Your Own Private Password To Continue." />
       <GuidePanel steps={[
-        'Type A New Password - At Least 8 Characters.',
+        `Type A New Password - ${PASSWORD_RULE_TEXT}.`,
         'Type It A Second Time To Confirm It Matches.',
         'Click "Set Password And Continue".',
       ]} />
       <Field label="New Password">
-        <input type="password" style={inputStyle} value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" placeholder="At Least 8 Characters" />
+        <input type="password" style={inputStyle} value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" placeholder={PASSWORD_RULE_TEXT} minLength={MIN_PASSWORD_LENGTH} maxLength={MAX_PASSWORD_LENGTH} />
       </Field>
       <Field label="Confirm New Password">
-        <input type="password" style={inputStyle} value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" />
+        <input type="password" style={inputStyle} value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" minLength={MIN_PASSWORD_LENGTH} maxLength={MAX_PASSWORD_LENGTH} />
       </Field>
       <ErrorLine msg={err} />
       <PrimaryButton onClick={submit} busy={busy}>Set Password And Continue</PrimaryButton>
@@ -490,39 +503,86 @@ function NotificationsStep({ onDone }: { onDone: () => void }) {
     setBusy(false);
   };
 
+  const skipStep = async () => {
+    // Let the agent proceed without web push. Some surfaces (iOS Safari/Brave
+    // tabs, in-app browsers) can never subscribe, so acknowledge the step
+    // server-side -- which both advances the wizard and lets final completion
+    // succeed -- instead of trapping them here. Push can be enabled later from
+    // the dashboard.
+    setBusy(true); setErr(null);
+    try {
+      await postOnboarding({ action: 'ack', key: 'notifications' });
+      await onDone();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Could Not Continue. Please Try Again.');
+      setBusy(false);
+    }
+  };
+
   return (
     <div>
       <StepIntro icon={BellRing} title="Turn On Notifications"
         blurb="Notifications Let You Know The Moment You Get A New Order Or Payment. Follow The Steps For Your Device Below. This Step Finishes Only Once Notifications Are Actually On." />
 
       {blocked ? (
-        <GuidePanel heading="Notifications Are Blocked -- How To Unblock" icon={RotateCw} steps={unblockSteps} />
-      ) : (
-        <GuidePanel heading={heading} icon={Smartphone} steps={steps} />
-      )}
-
-      <KeyCallout>
-        The Most Important Part: When Your Device Asks For Permission, You Must Choose <strong style={{ color: 'var(--white)' }}>Allow</strong>. If You Pick Block Or Don&apos;t Allow, Notifications Stay Off.
-      </KeyCallout>
-
-      {supported === false ? (
         <>
-          <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', lineHeight: 1.5 }}>
-            This Browser Tab Cannot Receive Notifications Yet. Add Pep Nation To Your Home Screen Using The Steps Above, Open It From The Icon, Then Tap Re-Check.
-          </p>
-          <button type="button" className="btn btn-secondary" onClick={recheck} disabled={busy}
-            style={{ width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 'var(--space-3, 12px)' }}>
-            {busy ? <Loader2 size={16} className="spin" /> : <RotateCw size={16} />} I Have Done This, Re-Check
+          <GuidePanel heading="Notifications Are Blocked -- How To Unblock" icon={RotateCw} steps={unblockSteps} />
+          <KeyCallout>
+            The Most Important Part: When Your Device Asks For Permission, You Must Choose <strong style={{ color: 'var(--white)' }}>Allow</strong>. If You Pick Block Or Don&apos;t Allow, Notifications Stay Off.
+          </KeyCallout>
+          <ErrorLine msg={err} />
+          <PrimaryButton onClick={enableAndContinue} busy={busy}>Try Again. Turn On Notifications</PrimaryButton>
+          <button type="button" onClick={recheck} disabled={busy}
+            style={{ width: '100%', marginTop: 10, background: 'transparent', border: 'none', color: 'var(--grey-400)', cursor: 'pointer', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            <RotateCw size={13} /> I Unblocked It In Settings — Re-Check
+          </button>
+          <button type="button" onClick={skipStep} disabled={busy}
+            style={{
+              width: '100%', marginTop: 10, borderRadius: 10, cursor: 'pointer',
+              fontSize: '0.82rem', fontWeight: 700, padding: '11px 0',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+              background: 'linear-gradient(145deg, #5a5a5a 0%, #8c8c8c 30%, #4a4a4a 55%, #787878 80%, #525252 100%)',
+              border: '1px solid rgba(180,180,180,0.25)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(0,0,0,0.3), 0 2px 6px rgba(0,0,0,0.4)',
+              color: '#d8d8d8',
+              letterSpacing: '0.02em',
+              opacity: busy ? 0.5 : 1,
+            }}>
+            Skip For Now — I&apos;ll Enable Notifications Later
           </button>
         </>
       ) : (
         <>
-          <ErrorLine msg={err} />
-          <PrimaryButton onClick={enableAndContinue} busy={busy}>Turn On Notifications</PrimaryButton>
-          <button type="button" onClick={recheck} disabled={busy}
-            style={{ width: '100%', marginTop: 10, background: 'transparent', border: 'none', color: 'var(--grey-400)', cursor: 'pointer', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-            <RotateCw size={13} /> Already Turned Them On? Re-Check
-          </button>
+          <KeyCallout>
+            The Most Important Part: When Your Device Asks For Permission, You Must Choose <strong style={{ color: 'var(--white)' }}>Allow</strong>. If You Pick Block Or Don&apos;t Allow, Notifications Stay Off.
+          </KeyCallout>
+          <GuidePanel heading={heading} icon={Smartphone} steps={steps} />
+          {supported === false ? (
+            <>
+              <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', lineHeight: 1.5 }}>
+                This Browser Cannot Receive Notifications In A Tab. To Get Order Alerts, Add Pep Nation To Your Home Screen Using The Steps Above And Open It From The Icon. You Can Also Continue Now And Turn Notifications On Later From Your Dashboard.
+              </p>
+              <ErrorLine msg={err} />
+              <PrimaryButton onClick={skipStep} busy={busy}>Continue</PrimaryButton>
+              <button type="button" className="btn btn-secondary" onClick={recheck} disabled={busy}
+                style={{ width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 'var(--space-3, 12px)' }}>
+                {busy ? <Loader2 size={16} className="spin" /> : <RotateCw size={16} />} I Added It To My Home Screen, Re-Check
+              </button>
+            </>
+          ) : (
+            <>
+              <ErrorLine msg={err} />
+              <PrimaryButton onClick={enableAndContinue} busy={busy}>Turn On Notifications</PrimaryButton>
+              <button type="button" onClick={recheck} disabled={busy}
+                style={{ width: '100%', marginTop: 10, background: 'transparent', border: 'none', color: 'var(--grey-400)', cursor: 'pointer', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <RotateCw size={13} /> Already Turned Them On? Re-Check
+              </button>
+              <button type="button" onClick={skipStep} disabled={busy}
+                style={{ width: '100%', marginTop: 10, background: 'transparent', border: 'none', color: 'var(--grey-500, #6B7785)', cursor: 'pointer', fontSize: '0.78rem' }}>
+                Skip For Now — I&apos;ll Enable Notifications Later
+              </button>
+            </>
+          )}
         </>
       )}
     </div>
@@ -560,11 +620,11 @@ function ProfileStep({ state, onDone }: { state: OnboardingState; onDone: () => 
         'Click "Save And Continue" Below.',
       ]} />
       <div style={{ display: 'flex', gap: 'var(--space-3, 12px)', flexWrap: 'wrap' }}>
-        <div style={{ flex: '1 1 180px' }}><Field label="First Name"><input style={inputStyle} value={first} onChange={(e) => setFirst(e.target.value)} /></Field></div>
-        <div style={{ flex: '1 1 180px' }}><Field label="Last Name"><input style={inputStyle} value={last} onChange={(e) => setLast(e.target.value)} /></Field></div>
+        <div style={{ flex: '1 1 180px' }}><Field label="First Name"><input style={inputStyle} autoComplete="given-name" autoCapitalize="words" value={first} onChange={(e) => setFirst(e.target.value)} /></Field></div>
+        <div style={{ flex: '1 1 180px' }}><Field label="Last Name"><input style={inputStyle} autoComplete="family-name" autoCapitalize="words" value={last} onChange={(e) => setLast(e.target.value)} /></Field></div>
       </div>
-      <Field label="Email Address"><input type="email" style={inputStyle} value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
-      <Field label="Phone Number"><input type="tel" style={inputStyle} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 555-5555" /></Field>
+      <Field label="Email Address"><input type="email" style={inputStyle} autoComplete="email" autoCapitalize="none" spellCheck={false} value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
+      <Field label="Phone Number"><input type="tel" style={inputStyle} autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 555-5555" /></Field>
       <ErrorLine msg={err} />
       <PrimaryButton onClick={submit} busy={busy}>Save And Continue</PrimaryButton>
     </div>
@@ -727,11 +787,11 @@ function WarehouseStep({ state, onDone }: { state: OnboardingState; onDone: () =
         </div>
         {acLoading && <div style={{ fontSize: '0.74rem', color: 'var(--grey-400)', marginTop: 4 }}>Searching Addresses...</div>}
       </Field>
-      <Field label="Suite / Unit (Optional)"><input style={inputStyle} value={street2} onChange={(e) => setStreet2(e.target.value)} /></Field>
+      <Field label="Suite / Unit (Optional)"><input style={inputStyle} autoComplete="address-line2" value={street2} onChange={(e) => setStreet2(e.target.value)} /></Field>
       <div style={{ display: 'flex', gap: 'var(--space-3, 12px)', flexWrap: 'wrap' }}>
-        <div style={{ flex: '2 1 160px' }}><Field label="City"><input style={inputStyle} value={city} onChange={(e) => setCity(e.target.value)} /></Field></div>
-        <div style={{ flex: '1 1 80px' }}><Field label="State"><input style={inputStyle} value={statev} onChange={(e) => setStatev(e.target.value)} placeholder="TX" /></Field></div>
-        <div style={{ flex: '1 1 100px' }}><Field label="Zip"><input style={inputStyle} value={zip} onChange={(e) => setZip(e.target.value)} /></Field></div>
+        <div style={{ flex: '2 1 160px' }}><Field label="City"><input style={inputStyle} autoComplete="address-level2" autoCapitalize="words" value={city} onChange={(e) => setCity(e.target.value)} /></Field></div>
+        <div style={{ flex: '1 1 80px' }}><Field label="State"><input style={inputStyle} autoComplete="address-level1" autoCapitalize="characters" value={statev} onChange={(e) => setStatev(e.target.value)} placeholder="TX" /></Field></div>
+        <div style={{ flex: '1 1 100px' }}><Field label="Zip"><input style={inputStyle} inputMode="numeric" pattern="[0-9]*" autoComplete="postal-code" value={zip} onChange={(e) => setZip(e.target.value)} /></Field></div>
       </div>
 
       {suggestion && (
@@ -828,7 +888,7 @@ function StorefrontStep({ state, onDone }: { state: OnboardingState; onDone: () 
       <Field label="Storefront Web Address">
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)', whiteSpace: 'nowrap' }}>pepnationlab.com/</span>
-          <input style={inputStyle} value={slug} onChange={(e) => setSlug(e.target.value.toLowerCase())} placeholder="your-store" />
+          <input style={inputStyle} autoCapitalize="none" autoCorrect="off" spellCheck={false} value={slug} onChange={(e) => setSlug(e.target.value.toLowerCase())} placeholder="your-store" />
         </div>
       </Field>
 
@@ -971,7 +1031,7 @@ function ProductsTutorialStep({ state, onDone }: { state: OnboardingState; onDon
       </div>
 
       <Field label="Your Default Markup % (Recommended: 50%)">
-        <input type="number" style={inputStyle} value={markup} onChange={(e) => setMarkup(e.target.value)} min="0" max="500" step="1" />
+        <input type="number" inputMode="decimal" style={inputStyle} value={markup} onChange={(e) => setMarkup(e.target.value)} min="0" max="500" step="1" />
       </Field>
       <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', lineHeight: 1.5 }}>
         We Have Set Your Default Markup To 50% To Get You Started. You Can Change This Anytime, And You Can Override The Price On Individual Products From The Products Page.
@@ -1051,7 +1111,7 @@ function DownstreamStep({ state, onDone }: { state: OnboardingState; onDone: () 
               </div>
             </div>
             <Field label="Default Agent Markup %">
-              <input type="number" style={inputStyle} value={pct} onChange={(e) => setPct(e.target.value)} min="0" max="500" step="1" />
+              <input type="number" inputMode="decimal" style={inputStyle} value={pct} onChange={(e) => setPct(e.target.value)} min="0" max="500" step="1" />
             </Field>
           </>
         ) : (
@@ -1086,7 +1146,7 @@ function DownstreamStep({ state, onDone }: { state: OnboardingState; onDone: () 
         <InfoRow icon={Users} title="Up To 40%" body="You Can Set Any Default Between 0 And 40 Percent, And Override It Per Sub-Agent From The Sub-Agents Section." />
       </div>
       <Field label="Default Sub-Agent Commission %">
-        <input type="number" style={inputStyle} value={pct} onChange={(e) => setPct(e.target.value)} min="0" max="40" step="1" />
+        <input type="number" inputMode="decimal" style={inputStyle} value={pct} onChange={(e) => setPct(e.target.value)} min="0" max="40" step="1" />
       </Field>
       <ErrorLine msg={err} />
       <PrimaryButton onClick={submit} busy={busy}>Save Default And Continue</PrimaryButton>

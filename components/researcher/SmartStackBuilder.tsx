@@ -21,9 +21,12 @@ interface Item {
 interface Props {
   catalog: Item[];
   onAddStackToCart: (items: Item[], stackName: string) => void;
+  agentSlug?: string;
+  /** Savage-network catalog: never fall back to Pep Nation vial imagery. */
+  brandNetworkIsSavage?: boolean;
 }
 
-export default function SmartStackBuilder({ catalog, onAddStackToCart }: Props) {
+export default function SmartStackBuilder({ catalog, onAddStackToCart, agentSlug, brandNetworkIsSavage = false }: Props) {
   const [selectedItems, setSelectedItems] = useState<Item[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [stackName, setStackName] = useState('My Custom Stack');
@@ -112,7 +115,7 @@ export default function SmartStackBuilder({ catalog, onAddStackToCart }: Props) 
                   className="hover-lift"
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                    <Image src={item.image_url || getProductImage(null, item.category || '', item.name)} alt={item.name} width={200} height={200} unoptimized style={{ width: 32, height: 32, borderRadius: 4, objectFit: 'cover' }} />
+                    <Image src={getProductImage(item.image_url ?? null, item.category || '', item.name, true, agentSlug, brandNetworkIsSavage)} alt={item.name} width={200} height={200} unoptimized style={{ width: 32, height: 32, borderRadius: 4, objectFit: 'cover' }} />
                     <div>
                       <div style={{ color: 'var(--white)', fontSize: '0.9rem', fontWeight: 600 }}>{item.name}</div>
                       <div style={{ color: 'var(--silver)', fontSize: '0.75rem' }}>{item.category || 'Compound'}</div>
@@ -219,7 +222,7 @@ export default function SmartStackBuilder({ catalog, onAddStackToCart }: Props) 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 'var(--space-4)', marginTop: 'auto' }}>
             <div>
               <div style={{ color: 'var(--silver)', fontSize: '0.85rem' }}>Total Stack Price</div>
-              <div style={{ color: 'var(--white)', fontSize: '1.25rem', fontWeight: 600 }}>${totalPrice.toFixed(2)}</div>
+              <div style={{ color: 'var(--white)', fontSize: '1.25rem', fontWeight: 600 }}>${totalPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
             </div>
             <button 
               disabled={selectedItems.length < 2 || (aiAnalysis && aiAnalysis.synergyScore < 50)}

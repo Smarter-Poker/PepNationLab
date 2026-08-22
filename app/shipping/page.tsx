@@ -252,7 +252,7 @@ export default function ShippingDashboard() {
           <div key={i} className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-4)', textAlign: 'center', animationDelay: `${0.1 + i * 0.1}s` }}>
             <div style={{ color: s.color, display: 'flex', justifyContent: 'center', marginBottom: 4 }}>{s.icon}</div>
             <div style={{ fontSize: '1.6rem', fontWeight: 800, color: s.color, fontFamily: 'var(--font-brand)' }}>{s.value}</div>
-            <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 2 }}>{s.label}</div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 2 }}>{s.label}</div>
           </div>
         ))}
       </div>
@@ -263,7 +263,7 @@ export default function ShippingDashboard() {
         <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 10, animationDelay: '0.5s' }}>
           <Scan size={20} style={{ color: 'var(--teal)', flexShrink: 0 }} />
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', marginBottom: 4, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Quick Scan</div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--grey-400)', marginBottom: 4, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Quick Scan</div>
             <div style={{ display: 'flex', gap: 6 }}>
               <input
                 ref={quickScanRef}
@@ -281,7 +281,7 @@ export default function ShippingDashboard() {
                 Assign <ArrowRight size={12} />
               </button>
             </div>
-            <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.2)', marginTop: 4 }}>
+            <div style={{ fontSize: '0.62rem', color: 'var(--grey-400)', marginTop: 4 }}>
               Auto-Assigns To Next Pending Order And Dispatches
             </div>
           </div>
@@ -291,9 +291,9 @@ export default function ShippingDashboard() {
         <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 10, animationDelay: '0.6s' }}>
           <Zap size={20} style={{ color: '#00E5FF', flexShrink: 0 }} />
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', marginBottom: 4, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Batch Actions</div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--grey-400)', marginBottom: 4, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Batch Actions</div>
             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-              <span style={{ fontSize: '0.78rem', color: selectedIds.size > 0 ? 'var(--teal)' : 'rgba(255,255,255,0.3)', fontWeight: 600 }}>
+              <span style={{ fontSize: '0.78rem', color: selectedIds.size > 0 ? 'var(--teal)' : 'var(--grey-400)', fontWeight: 600 }}>
                 {selectedIds.size} Selected
               </span>
               <button
@@ -308,7 +308,7 @@ export default function ShippingDashboard() {
                 <button onClick={() => setSelectedIds(new Set())} className="btn btn-secondary btn-sm">Clear</button>
               )}
             </div>
-            <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.2)', marginTop: 4 }}>
+            <div style={{ fontSize: '0.62rem', color: 'var(--grey-400)', marginTop: 4 }}>
               Select Orders Below, Enter Tracking, Then Batch Dispatch
             </div>
           </div>
@@ -394,7 +394,7 @@ export default function ShippingDashboard() {
                         <div style={{ fontFamily: 'monospace', fontSize: '0.78rem', color: 'var(--silver)', fontWeight: 600 }}>
                           #{order.id.split('-')[0]}
                         </div>
-                        <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.2)' }}>
+                        <div style={{ fontSize: '0.65rem', color: 'var(--grey-400)' }}>
                           {order.items?.length || 0} items &bull; ${Number(order.total || 0).toFixed(2)}
                         </div>
                       </td>

@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
+import { writeAuditLog } from '@/lib/admin-audit';
 
 const VALID_TIERS = ['tier_1', 'tier_2', 'tier_3'] as const;
 type AgentTier = (typeof VALID_TIERS)[number];
@@ -39,7 +40,7 @@ export async function PATCH(req: NextRequest) {
   // Confirm target is actually an agent (not another admin)
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, role')
+    .select('id, role, tier')
     .eq('id', agentId)
     .maybeSingle();
 
@@ -78,6 +79,14 @@ export async function PATCH(req: NextRequest) {
   // cost, so an upgraded agent simply earns more profit per sale. Do NOT call
   // recalculate_agent_product_prices here -- that would recompute retail from
   // the rounded margin and could drift prices by cents.
+
+  await writeAuditLog(supabase, {
+    actorId: gate.userId,
+    action: 'agent_tier_changed',
+    entityType: 'profile',
+    entityId: agentId,
+    changes: { from: profile.tier ?? null, to: tier, locked_tier_level },
+  });
 
   return NextResponse.json({ success: true, tier });
     },

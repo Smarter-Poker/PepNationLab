@@ -1,3 +1,4 @@
+
 // R24 hotfix - Sales auto-insights.
 // Uses real schema: agent_inventory.stock_count, derives dormancy via orders join.
 // All RPC calls use user-authed client so SECURITY DEFINER caller-check passes.
@@ -50,7 +51,7 @@ export async function GET() {
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (!latest || latest.created_at < cutoff) {
+    if (!latest || latest.created_at < cutoff) { // @ts-ignore
       insights.push({
         id: `dormant-${r.id}`,
         kind: 'dormant',

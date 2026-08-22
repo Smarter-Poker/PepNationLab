@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { getEffectiveUser } from '@/lib/impersonation';
 import { assertSameOrigin } from '@/lib/csrf';
 import { z } from 'zod';
 
@@ -8,7 +9,7 @@ export const dynamic = 'force-dynamic';
 
 async function gateAdmin() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getEffectiveUser(supabase);
   if (!user) return { ok: false as const, response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
   const svc = await createServiceClient();
   const { data: profile } = await svc.from('profiles').select('role').eq('id', user.id).maybeSingle();

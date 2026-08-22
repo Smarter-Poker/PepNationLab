@@ -80,6 +80,12 @@ export interface DiscoveryHeroProps {
   autoSearchQuery?: string;
   /** Callback to clear the automated search query after consumption */
   onAutoSearchConsumed?: () => void;
+  /** Override for Match Me button click */
+  onMatchMeClick?: () => void;
+  /** Override for Let Us Guide You button click */
+  onLetUsGuideYouClick?: () => void;
+  /** Override for search submission */
+  onSearchSubmit?: (query: string) => void;
 }
 
 // --------------------------------------------------------------------------
@@ -97,6 +103,9 @@ export default function DiscoveryHero({
   onAlreadyKnowClicked,
   autoSearchQuery,
   onAutoSearchConsumed,
+  onMatchMeClick,
+  onLetUsGuideYouClick,
+  onSearchSubmit,
 }: DiscoveryHeroProps) {
   const router = useRouter();
   const [query, setQuery] = useState('');
@@ -109,6 +118,7 @@ export default function DiscoveryHero({
   const [goalSummary, setGoalSummary] = useState('');
   const [followUp, setFollowUp] = useState<{ question: string; originalGoal: string } | null>(null);
   const [matchError, setMatchError] = useState(false);
+  const [relaxed, setRelaxed] = useState(false);
   const [drawerMounted, setDrawerMounted] = useState(false);
   const [wizardMounted, setWizardMounted] = useState(false);
   useEffect(() => { if (drawerOpen) setDrawerMounted(true); }, [drawerOpen]);
@@ -201,6 +211,11 @@ export default function DiscoveryHero({
     if (onSearchStarted) onSearchStarted(s.display_name);
   }
 
+  // Remember the exact structured input of the last match run so "Try Again"
+  // replays it verbatim -- re-parsing the human-readable goalSummary would drop
+  // the wizard's evidence / preference / budget selections.
+  const lastRunRef = useRef<{ input: Parameters<typeof runMatch>[0]; summary: string } | null>(null);
+
   const runMatch = useCallback(async (input: {
     goal: string;
     goals?: string[];
@@ -213,6 +228,7 @@ export default function DiscoveryHero({
     /** When set, /match parses this raw goal server-side (single round trip). */
     prompt?: string;
   }, summary: string) => {
+    lastRunRef.current = { input, summary };
     setLoading(true);
     setResults([]);
     setExcluded([]);
@@ -220,6 +236,7 @@ export default function DiscoveryHero({
     setDrawerOpen(true);
     setFollowUp(null);
     setMatchError(false);
+    setRelaxed(false);
     try {
       const res = await fetch('/api/research/match', {
         method: 'POST',
@@ -247,38 +264,93 @@ export default function DiscoveryHero({
         return;
       }
       const json = await res.json().catch(() => null) as {
-        results?: Array<{ 
-          slug: string; 
-          rationale?: string; 
+        results?: Array<{
+          slug: string;
+          displayName?: string;
+          rationale?: string;
           isStackPartner?: boolean;
           score?: number;
+          evidenceTier?: string | null;
           riskLevel?: string;
           halfLife?: string;
-          molecularWeight?: number;
+          molecularWeight?: number | null;
         }>;
         excluded?: ExcludedCompound[];
+        relaxed?: boolean;
       } | null;
-      const slugs = (json?.results || []).map(r => r.slug).filter(Boolean);
-      
-      const detailsMap = new Map((json?.results || []).map(r => [r.slug, r]));
-      
-      const products = resolveProducts(slugs);
-      
-      // Attach rationale and stack data by slug when available.
-      const stitched = products.map(p => {
-        const details = p.compound_slug ? detailsMap.get(p.compound_slug) : null;
-        return {
-          ...p,
-          rationale: details?.rationale || p.rationale,
-          isStackPartner: details?.isStackPartner || false,
-          score: details?.score,
-          riskLevel: details?.riskLevel,
-          halfLife: details?.halfLife,
-          molecularWeight: details?.molecularWeight,
-        };
-      });
-      setResults(stitched);
+
+      // The API response is the source of truth for WHICH compounds matched.
+      // The engine always returns real matches for a valid goal, so we build one
+      // result card per API match and NEVER let an empty product catalog swallow
+      // the recommendation. When the caller's storefront actually stocks a matched
+      // compound we enrich that card with the purchasable product (price, image,
+      // add-to-cart); otherwise we render a recommendation-only card built from the
+      // engine's own compound data. This is what makes the guided wizard, the
+      // Match Me button, and the typed search all recommend 100% of the time --
+      // including on the global Find A Peptide page, which sells nothing. Before
+      // this, results were built ONLY from resolveProducts(), so a page with no
+      // catalog (resolveProducts -> []) silently showed "0 Matches Found".
+      const apiResults = json?.results || [];
+      const slugs = apiResults.map(r => r.slug).filter(Boolean);
+
+      // Resolve any matched slugs the caller can turn into real products, keyed by
+      // compound slug for O(1) enrichment lookup. On the global page this is empty.
+      const resolved = resolveProducts(slugs);
+      const productBySlug = new Map(
+        resolved
+          .filter(p => p.compound_slug && p.product_id)
+          .map(p => [p.compound_slug as string, p]),
+      );
+
+      const prettify = (slug: string) =>
+        slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+      const built: MatchedProduct[] = apiResults
+        .filter(r => !!r.slug)
+        .map(r => {
+          const prod = productBySlug.get(r.slug);
+          const compound = compoundsBySlug?.[r.slug];
+          const shared = {
+            rationale: r.rationale || prod?.rationale || '',
+            isStackPartner: r.isStackPartner || false,
+            score: typeof r.score === 'number' ? r.score : undefined,
+            riskLevel: r.riskLevel,
+            halfLife: r.halfLife,
+            molecularWeight: typeof r.molecularWeight === 'number' ? r.molecularWeight : undefined,
+          };
+          if (prod) {
+            // Storefront stocks this compound -> real purchasable card.
+            return {
+              ...prod,
+              ...shared,
+              evidence_tier: prod.evidence_tier ?? r.evidenceTier ?? compound?.evidence_tier ?? null,
+            };
+          }
+          // Recommendation-only card (no purchasable product on this page).
+          return {
+            product_id: '',
+            display_name: r.displayName || compound?.display_name || prettify(r.slug),
+            compound_slug: r.slug,
+            price_cents: 0,
+            evidence_tier: r.evidenceTier ?? compound?.evidence_tier ?? null,
+            image_url: null,
+            in_stock: false,
+            ...shared,
+          };
+        });
+
+      // A 200 that produced nothing (parse failure or a genuinely empty engine
+      // response) must not read as a blank drawer -- surface the error panel so the
+      // user gets a Try Again path instead of a silent dead end.
+      if (built.length === 0) {
+        setMatchError(true);
+        reportClientError('find-a-peptide.match', new Error('match returned zero results'), { meta: { goal: input.goal } });
+        return;
+      }
+
+      setResults(built);
       setExcluded(json?.excluded || []);
+      setRelaxed(!!json?.relaxed);
     } catch (e) {
       setResults([]);
       setMatchError(true);
@@ -286,7 +358,7 @@ export default function DiscoveryHero({
     } finally {
       setLoading(false);
     }
-  }, [resolveProducts]);
+  }, [resolveProducts, compoundsBySlug]);
 
   const submitTypedGoal = useCallback(async (overrideGoal?: string) => {
     const g = (overrideGoal || query).trim();
@@ -323,6 +395,9 @@ export default function DiscoveryHero({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: combined })
       });
+      if (!res.ok) {
+        throw new Error('Failed to submit follow-up match');
+      }
       const data = await res.json().catch(() => null);
       if (data?.result) {
         // If it asks ANOTHER follow-up, just force the match without it to prevent loops
@@ -360,15 +435,19 @@ export default function DiscoveryHero({
         <button
           type="button"
           onClick={() => {
+            if (onMatchMeClick) {
+              onMatchMeClick();
+              return;
+            }
             if (query.trim()) {
               void submitTypedGoal();
             } else {
-              const el = document.getElementById('discovery-search-input') as HTMLInputElement | null;
-              if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                el.focus();
-                setSuggestOpen(true);
-              }
+              // No goal typed yet. The search box sits at the very top of this
+              // tall hero and programmatic scrolling is unreliable on this page,
+              // so focusing it did nothing the user could see -- the button
+              // looked dead. Open the guided wizard instead: it collects the
+              // research goal in-place and funnels into the same match engine.
+              setWizardOpen(true);
             }
           }}
           title="Match Me"
@@ -383,7 +462,13 @@ export default function DiscoveryHero({
             that funnels answers into the match engine. */}
         <button
           type="button"
-          onClick={() => setWizardOpen(true)}
+          onClick={() => {
+            if (onLetUsGuideYouClick) {
+              onLetUsGuideYouClick();
+            } else {
+              setWizardOpen(true);
+            }
+          }}
           title="Let Us Guide You"
           style={{
             position: 'absolute', top: '85%', left: '52%', width: '33%', height: '8%',
@@ -418,11 +503,15 @@ export default function DiscoveryHero({
               if (e.key === 'Enter' && query.trim()) {
                 e.preventDefault();
                 addHistory(query.trim());
-                // Run the in-page AI match engine (opens the results drawer) rather
-                // than navigating away to the store grid. This makes the "Ask Us
-                // Anything" box, the Match Me button, and the guided wizard all funnel
-                // into the same match experience.
-                void submitTypedGoal();
+                if (onSearchSubmit) {
+                  onSearchSubmit(query.trim());
+                } else {
+                  // Run the in-page AI match engine (opens the results drawer) rather
+                  // than navigating away to the store grid. This makes the "Ask Us
+                  // Anything" box, the Match Me button, and the guided wizard all funnel
+                  // into the same match experience.
+                  void submitTypedGoal();
+                }
               }
             }}
             placeholder="Ask Us Anything..."
@@ -571,7 +660,13 @@ export default function DiscoveryHero({
         onClose={() => setWizardOpen(false)}
         onSubmit={(s) => {
           setWizardOpen(false);
-          const goal = `${labelForArea(s.area)} Research`;
+          // The match engine keys goal relevance on the research_area KEY
+          // (c.research_areas.includes(goal) / GOAL_KEYWORDS[goal]). Passing a
+          // display label like "Healing & Recovery Research" matched no key and
+          // every compound failed the relevance gate -> "zero peptides match".
+          // s.area IS the research_area key; the human-readable summary is the
+          // second arg (buildGoalFromWizard), so the drawer copy is unaffected.
+          const goal = s.area;
           void runMatch(
             { goal, evidenceComfort: s.comfort, preference: s.preference, budget: s.budget },
             buildGoalFromWizard(s),
@@ -590,21 +685,28 @@ export default function DiscoveryHero({
         followUp={followUp}
         submitFollowUp={submitFollowUp}
         matchError={matchError}
-        onRetry={() => { if (goalSummary) submitTypedGoal(goalSummary); }}
+        relaxed={relaxed}
+        onRetry={() => {
+          if (lastRunRef.current) {
+            void runMatch(lastRunRef.current.input, lastRunRef.current.summary);
+          } else if (goalSummary) {
+            void submitTypedGoal(goalSummary);
+          }
+        }}
         primaryColor={primaryColor}
         onClose={() => setDrawerOpen(false)}
         onAddToCart={(id) => { setDrawerOpen(false); onAddToCart(id); }}
         onOpenProduct={(id) => { setDrawerOpen(false); onOpenProduct(id); }}
       />
       )}
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style>{`
         @media (min-width: 769px) {
           #discovery-search-input {
             font-size: calc(max(16px, 1.86vw) * 1.5) !important;
             padding: 14px 10px 0 96px !important;
           }
         }
-      ` }} />
+      `}</style>
     </>
   );
 }

@@ -27,12 +27,13 @@ export default function SubAgentRollupTable({ preset }: { preset: string }) {
     <div className="glass-panel" style={{ padding: 14, borderRadius: 12 }}>
       <h3 style={{ color: 'var(--white)', fontSize: '0.95rem', margin: '0 0 8px' }}>Sub-Agent Rollup</h3>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+        <caption className="sr-only">Sub-Agent Rollup</caption>
         <thead>
           <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-            <th style={{ textAlign: 'left', padding: 8, color: 'var(--silver)' }}>Sub Agent</th>
-            <th style={{ textAlign: 'right', padding: 8, color: 'var(--silver)' }}>Orders</th>
-            <th style={{ textAlign: 'right', padding: 8, color: 'var(--silver)' }}>Revenue</th>
-            <th style={{ textAlign: 'right', padding: 8, color: 'var(--teal)' }}>Profit</th>
+            <th scope="col" style={{ textAlign: 'left', padding: 8, color: 'var(--silver)' }}>Sub Agent</th>
+            <th scope="col" style={{ textAlign: 'right', padding: 8, color: 'var(--silver)' }}>Orders</th>
+            <th scope="col" style={{ textAlign: 'right', padding: 8, color: 'var(--silver)' }}>Revenue</th>
+            <th scope="col" style={{ textAlign: 'right', padding: 8, color: 'var(--teal)' }}>Profit</th>
           </tr>
         </thead>
         <tbody>

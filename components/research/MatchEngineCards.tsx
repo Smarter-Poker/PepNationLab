@@ -81,7 +81,7 @@ export default function MatchEngineCards() {
               transition: 'all 0.3s ease'
             }}
           >
-            <img src={obj.iconSrc} alt={obj.label} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '16px' }} />
+            <img src={obj.iconSrc} alt={obj.label} width={120} height={120} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '16px' }} />
           </motion.button>
         ))}
       </div>

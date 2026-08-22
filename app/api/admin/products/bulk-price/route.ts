@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { createServiceClient } from '@/lib/supabase/server';
@@ -48,8 +49,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid Adjustment Type' }, { status: 400 });
   }
   if (newValue === null) return NextResponse.json({ error: 'Invalid New Value' }, { status: 400 });
-  if (adjustmentType === 'set' && newValue < 0) {
-    return NextResponse.json({ error: 'New Value Cannot Be Negative' }, { status: 400 });
+  // Bound every adjustment type. Previously only 'set' was floored at 0, so a
+  // percent_delta of -200 or a flat_delta of -999999 drove base_cost / bulk
+  // price to zero or negative catalog-wide (agents/researchers then charged $0
+  // since computeAgentCost floors a non-positive base to 0). Clamp per type.
+  if (adjustmentType === 'set' && (newValue < 0 || newValue > 99999.99)) {
+    return NextResponse.json({ error: 'New Value Must Be Between 0 And 99999.99' }, { status: 400 });
+  }
+  if (adjustmentType === 'flat_delta' && (newValue < -99999.99 || newValue > 99999.99)) {
+    return NextResponse.json({ error: 'Flat Adjustment Must Be Between -99999.99 And 99999.99' }, { status: 400 });
+  }
+  if (adjustmentType === 'percent_delta' && (newValue < -90 || newValue > 500)) {
+    return NextResponse.json({ error: 'Percent Adjustment Must Be Between -90% And 500%' }, { status: 400 });
   }
 
   const effectiveAt = effectiveAtRaw ? new Date(effectiveAtRaw) : new Date();
@@ -91,6 +102,14 @@ export async function POST(req: NextRequest) {
       console.error('apply_due_price_changes failed (products bulk-price):', applyErr.message);
     } else {
       appliedCount = typeof applied === 'number' ? applied : 0;
+      // Prices actually changed right now (not just scheduled) - purge the
+      // public storefront catalog cache so the new retail prices show
+      // immediately. Scheduled-only changes are applied later by the cron.
+      if (appliedCount > 0) {
+        try {
+          revalidateTag('storefront-catalog', { expire: 0 });
+        } catch { /* best-effort cache refresh */ }
+      }
     }
   }
 

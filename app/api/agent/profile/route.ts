@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
+import { getEffectiveUser } from '@/lib/impersonation';
 import { assertSameOrigin } from '@/lib/csrf';
 
 export const dynamic = 'force-dynamic';
@@ -22,7 +23,7 @@ const PROFILE_COLUMNS =
 
 export async function GET() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getEffectiveUser(supabase);
   if (!user) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
@@ -45,7 +46,7 @@ export async function PATCH(req: NextRequest) {
   if (csrf) return csrf;
 
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getEffectiveUser(supabase);
   if (!user) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
@@ -97,7 +98,38 @@ export async function PATCH(req: NextRequest) {
     .maybeSingle();
 
   if (error) {
-    return NextResponse.json({ error: 'profile_update_failed' }, { status: 500 });
+    // Log full details server-side for debugging — never expose raw DB errors to users.
+    console.error('[PATCH /api/agent/profile] DB error:', {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      userId: user.id,
+      changedKeys,
+    });
+
+    // Map known error codes / messages to friendly, actionable UI copy.
+    const msg = error.message ?? '';
+    let userMessage = 'Could not save your profile. Please try again.';
+
+    let statusCode = 500;
+    if (msg.includes('already exists for this email') || error.code === '23505') {
+      userMessage = 'That email address is already linked to another account. Please use a different email.';
+      statusCode = 409;
+    } else if (msg.includes('does not point to a valid agent profile') || msg.includes('must have referring_agent_id') || error.code === '23503') {
+      // 23503 is FK violation
+      userMessage = 'Your account setup is incomplete. Please contact support.';
+      statusCode = 409;
+    } else if (error.code === '23514') {
+      // CHECK constraint violation (e.g. invalid phone format, enum value)
+      userMessage = 'One of the values you entered is not valid. Please check your information and try again.';
+      statusCode = 422;
+    } else if (error.code === '42501') {
+      userMessage = 'You do not have permission to update this profile.';
+      statusCode = 403;
+    }
+
+    return NextResponse.json({ error: userMessage }, { status: statusCode });
   }
 
   await supabase

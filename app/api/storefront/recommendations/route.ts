@@ -159,7 +159,9 @@ export async function GET(req: NextRequest) {
     const candidateArray = Array.from(candidateIds);
 
     if (candidateArray.length === 0) {
-      return NextResponse.json({ recommendations: [] });
+      return NextResponse.json({ recommendations: [] }, {
+        headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' },
+      });
     }
 
     // 6) Get the names of the candidate products
@@ -222,7 +224,8 @@ export async function GET(req: NextRequest) {
         const raw = ap.is_on_sale && ap.sale_price != null
           ? Number(ap.sale_price)
           : Number(ap.retail_price);
-        const perVial = Number.isFinite(raw) && raw > 0 ? raw / 10 : 0;
+        // retail_price / sale_price are stored PER VIAL; no 10-pack divisor.
+        const perVial = Number.isFinite(raw) && raw > 0 ? raw : 0;
         if (perVial > 0) agentPriceMap.set(ap.product_id, perVial);
       }
     }
@@ -283,9 +286,11 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({ recommendations: out });
-  } catch (err) {
-    console.error('[storefront/recommendations] GET error:', err);
+    return NextResponse.json({ recommendations: out }, {
+      headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' },
+    });
+  } catch (error) {
+    console.error('[Recommendations] Error:', error);
     return NextResponse.json({ recommendations: [] });
   }
 }

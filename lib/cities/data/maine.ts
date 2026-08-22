@@ -1,6 +1,6 @@
 import type { City } from '../cities-data';
 
-// Maine — 8 cities
+// Maine - 8 cities
 const CITIES_MAINE: City[] = [
   { name: 'Portland', slug: 'portland', state: 'Maine', stateSlug: 'maine', stateAbbr: 'ME', population: 68000, medianIncome: 66000, tier: 2, region: 'Greater Portland', county: 'Cumberland', zips: ['04101', '04102', '04103'], localBlurb: 'Portland is home to Maine Medical Center, the state\'s largest hospital and a major teaching campus.' },
   { name: 'Falmouth', slug: 'falmouth', state: 'Maine', stateSlug: 'maine', stateAbbr: 'ME', population: 12500, medianIncome: 120000, tier: 1, region: 'Greater Portland', county: 'Cumberland', zips: ['04105'], localBlurb: 'Falmouth\'s Foreside neighborhoods make it one of Maine\'s wealthiest coastal towns, just north of Portland\'s medical district.' },
@@ -10,6 +10,14 @@ const CITIES_MAINE: City[] = [
   { name: 'Bangor', slug: 'bangor', state: 'Maine', stateSlug: 'maine', stateAbbr: 'ME', population: 32000, medianIncome: 50000, tier: 3, region: 'Greater Bangor', county: 'Penobscot', zips: ['04401'], localBlurb: 'Bangor is anchored by Northern Light Eastern Maine Medical Center, the referral hub for northern Maine.' },
   { name: 'Orono', slug: 'orono', state: 'Maine', stateSlug: 'maine', stateAbbr: 'ME', population: 11000, medianIncome: 48000, tier: 3, region: 'Greater Bangor', county: 'Penobscot', zips: ['04473'], localBlurb: 'Orono is home to the University of Maine, the state\'s flagship research university.' },
   { name: 'Augusta', slug: 'augusta', state: 'Maine', stateSlug: 'maine', stateAbbr: 'ME', population: 19000, medianIncome: 50000, tier: 3, region: 'Central Maine', county: 'Kennebec', zips: ['04330'], localBlurb: 'Augusta, the state capital, is served by MaineGeneral\'s Alfond Center for Health.' },
+  { name: 'Lewiston', slug: 'lewiston', state: 'Maine', stateSlug: 'maine', stateAbbr: 'ME', population: 37000, medianIncome: 45000, tier: 3, region: 'Androscoggin Valley', county: 'Androscoggin', zips: ['04240'], localBlurb: 'Lewiston is Maine\'s second-largest city on the Androscoggin River, home to Bates College.' },
+  { name: 'Auburn', slug: 'auburn', state: 'Maine', stateSlug: 'maine', stateAbbr: 'ME', population: 24000, medianIncome: 50000, tier: 3, region: 'Androscoggin Valley', county: 'Androscoggin', zips: ['04210'], localBlurb: 'Auburn is an Androscoggin County city across the river from Lewiston in central Maine.' },
+  { name: 'Biddeford', slug: 'biddeford', state: 'Maine', stateSlug: 'maine', stateAbbr: 'ME', population: 22000, medianIncome: 55000, tier: 3, region: 'Southern Maine', county: 'York', zips: ['04005'], localBlurb: 'Biddeford is a Southern Maine mill city on the Saco River, home to the University of New England.' },
+  { name: 'Saco', slug: 'saco', state: 'Maine', stateSlug: 'maine', stateAbbr: 'ME', population: 20000, medianIncome: 62000, tier: 2, region: 'Southern Maine', county: 'York', zips: ['04072'], localBlurb: 'Saco is a Southern Maine city on the Saco River adjacent to Biddeford in York County.' },
+  { name: 'Westbrook', slug: 'westbrook', state: 'Maine', stateSlug: 'maine', stateAbbr: 'ME', population: 20000, medianIncome: 60000, tier: 2, region: 'Greater Portland', county: 'Cumberland', zips: ['04092'], localBlurb: 'Westbrook is a Greater Portland city on the Presumpscot River in Cumberland County.' },
+  { name: 'Brunswick', slug: 'brunswick', state: 'Maine', stateSlug: 'maine', stateAbbr: 'ME', population: 21000, medianIncome: 62000, tier: 2, region: 'Midcoast Maine', county: 'Cumberland', zips: ['04011'], localBlurb: 'Brunswick is a Midcoast Maine town home to Bowdoin College and the former Brunswick Naval Air Station.' },
+  { name: 'Waterville', slug: 'waterville', state: 'Maine', stateSlug: 'maine', stateAbbr: 'ME', population: 16000, medianIncome: 42000, tier: 3, region: 'Central Maine', county: 'Kennebec', zips: ['04901'], localBlurb: 'Waterville is a central Maine city on the Kennebec River, home to Colby College.' },
+  { name: 'Yarmouth', slug: 'yarmouth', state: 'Maine', stateSlug: 'maine', stateAbbr: 'ME', population: 9000, medianIncome: 95000, tier: 1, region: 'Greater Portland', county: 'Cumberland', zips: ['04096'], localBlurb: 'Yarmouth is an affluent Greater Portland coastal town in Cumberland County.' },
 ];
 
 export default CITIES_MAINE;

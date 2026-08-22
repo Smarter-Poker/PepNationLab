@@ -45,7 +45,7 @@ export default function PKChart({ tmaxHours, halfLifeHours, cmaxNgMl, hoursToPlo
     <div>
       <h3 style={{ margin: 0, color: '#FFFFFF', fontSize: 16, fontWeight: 800 }}>Predicted Pharmacokinetic Profile</h3>
       <p style={{ margin: '4px 0 12px', color: '#A8B4C0', fontSize: 12 }}>Modeled From Published Parameters. Two-Compartment Approximation.</p>
-      <div style={{ width: '100%', height: 280 }}>
+      <div style={{ width: '100%', height: 280 }} role="img" aria-label={`Line Chart Of Predicted Plasma Concentration In Nanograms Per Milliliter Over ${hoursToPlot} Hours`}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 10, right: 16, left: 0, bottom: 10 }}>
             <CartesianGrid stroke="rgba(168,180,192,0.15)" />

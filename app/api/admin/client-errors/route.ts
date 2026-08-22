@@ -4,6 +4,7 @@ export const revalidate = 0;
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
+import { unwrap } from '@/lib/supabase/unwrap';
 
 // Admin-only read of the client-error observability sink (client_error_events).
 export async function GET(req: NextRequest) {
@@ -24,8 +25,7 @@ export async function GET(req: NextRequest) {
       .limit(limit);
     if (context) query = query.eq('context', context);
 
-    const { data, error } = await query;
-    if (error) return NextResponse.json({ error: 'An Unexpected Error Occurred' }, { status: 500 });
+    const data = await unwrap('client-errors.list', query);
     return NextResponse.json({ data });
   } catch (err) {
     console.error('[admin/client-errors] GET error:', err);

@@ -27,11 +27,12 @@ export const metadata: Metadata = {
     creator: '@PepNationLab',
     title: 'Browse Peptides By Half-Life | Short vs Long Acting | Pep Nation Lab',
     description: 'Compare research peptides by pharmacokinetic half-life. Filter from short-acting compounds (minutes) to long-acting variants (days). Research use only.',
-    images: ['https://pepnationlab.com/images/og-card.jpg'],
+    images: ['https://pepnationlab.com/og-card.png'],
   },
 };
 
-export const dynamic = 'force-dynamic';
+// ISR: data comes from unstable_cache'd helpers (60s); render once, revalidate hourly.
+export const revalidate = 3600;
 
 interface HalfLifeRow {
   slug: string;

@@ -12,11 +12,11 @@ const expansions: Record<string, { aliases: string[], studied_for: string[] }> =
     studied_for: ["muscle recovery", "cardiac repair", "wound healing", "equine recovery", "tissue regeneration", "anti-inflammatory", "flexibility", "hair growth", "stem cell migration"]
   },
   "semaglutide": {
-    aliases: ["Ozempic", "Wegovy", "Rybelsus", "GLP-1", "GLP1", "sema"],
+    aliases: ["GLP-1", "GLP1", "sema"],
     studied_for: ["weight loss", "fat loss", "appetite suppressant", "incretin", "anti-obesity", "diabetes", "blood sugar control", "cardiovascular health", "binge eating", "craving reduction"]
   },
   "tirzepatide": {
-    aliases: ["Mounjaro", "Zepbound", "GIP/GLP-1", "twincretin", "tirz", "tzp"],
+    aliases: ["GIP/GLP-1", "twincretin", "tirz", "tzp"],
     studied_for: ["weight loss", "diabetes", "fat loss", "appetite suppression", "obesity", "metabolic syndrome", "insulin sensitivity", "A1C reduction"]
   },
   "retatrutide": {

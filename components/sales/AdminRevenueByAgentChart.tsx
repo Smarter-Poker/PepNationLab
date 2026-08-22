@@ -14,6 +14,7 @@ interface AgentRevenueRow {
 
 export default function AdminRevenueByAgentChart({ agents }: { agents: AgentRevenueRow[] }) {
   return (
+    <div role="img" aria-label={`Bar Chart Of Total Revenue For ${agents.length} Agents`}>
     <ResponsiveContainer width="100%" height={250}>
       <BarChart data={agents.map((a) => ({ ...a, total_revenue: Number(a.total_revenue) || 0 }))}>
         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -30,5 +31,6 @@ export default function AdminRevenueByAgentChart({ agents }: { agents: AgentReve
         <Bar dataKey="total_revenue" fill="#C0B8A8" radius={[4, 4, 0, 0]} maxBarSize={72} isAnimationActive={false} />
       </BarChart>
     </ResponsiveContainer>
+    </div>
   );
 }

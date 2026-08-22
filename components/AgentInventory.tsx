@@ -349,7 +349,7 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
                   <>
                     <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>Your Cost:</span>
                     <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>
-                      ${(item.agent_cost / 10).toFixed(2)} / Vial
+                      ${(item.agent_cost).toFixed(2)} / Vial
                     </span>
                     <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.2)' }}>&rarr;</span>
                   </>

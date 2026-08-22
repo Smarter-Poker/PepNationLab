@@ -9,9 +9,16 @@ const AnimatedCounter = ({ end, duration = 2, suffix = '' }: { end: number, dura
   const [count, setCount] = useState(0);
 
   useEffect(() => {
+    // A11y: honor prefers-reduced-motion — show the final value immediately
+    // instead of ticking up. Guarded for SSR where window is undefined.
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setCount(end);
+      return;
+    }
+
     let start = 0;
     const incrementTime = (duration / end) * 1000;
-    
+
     const timer = setInterval(() => {
       start += Math.ceil(end / (duration * 60)); // smooth increment
       if (start >= end) {
@@ -65,7 +72,7 @@ export default function ResearchHero() {
             letterSpacing: '-0.02em',
             textShadow: '0 4px 20px rgba(0,0,0,0.5)'
           }}>
-            Research Intelligence Center
+            Research Peptide Catalog
           </h1>
           <p style={{ 
             color: '#A8B4C0', 
@@ -135,11 +142,13 @@ export default function ResearchHero() {
           {/* Subtle grid pattern inside */}
           <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '40px 40px', opacity: 0.5 }} />
           
-          <Image 
-            src="/images/redesign/hero_molecule.png" 
-            alt="3D Molecular Research" 
-            fill 
-            style={{ objectFit: 'cover', mixBlendMode: 'screen', opacity: 0.9 }} 
+          <Image
+            src="/images/redesign/hero_molecule.png"
+            alt="3D Molecular Research"
+            fill
+            priority
+            sizes="(max-width: 968px) 100vw, 50vw"
+            style={{ objectFit: 'cover', mixBlendMode: 'screen', opacity: 0.9 }}
           />
           
           <div style={{ position: 'absolute', top: '24px', right: '24px', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '8px 16px' }}>

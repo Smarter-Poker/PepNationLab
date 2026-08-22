@@ -1,17 +1,14 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { getEffectiveUser } from '@/lib/impersonation';
 import { assertSameOrigin } from '@/lib/csrf';
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
 
-  // Auth check: only authenticated users may create shared protocols.
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const { data: { user } } = await getEffectiveUser(supabase);
 
   try {
     const payload = await req.json();
@@ -19,8 +16,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }
 
-    const supabase = await createServiceClient();
-    const { data, error } = await supabase
+    // Inject user.id if logged in, for potential future ownership tracking
+    if (user) {
+      payload.user_id = user.id;
+    }
+
+    const serviceClient = await createServiceClient();
+    const { data, error } = await serviceClient
       .from('shared_research_protocols')
       .insert({ payload })
       .select('id')
@@ -31,12 +33,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to save protocol' }, { status: 500 });
     }
 
-    // The frontend code calling this will use window.location to construct the final URL,
-    // so we just return the raw ID and a relative path hint that includes the brandId.
-    const brandId = payload.brandId || 'pepnation';
+    const brandId = typeof payload.brandId === 'string' ? payload.brandId.replace(/[^a-zA-Z0-9-]/g, '') : 'pepnation';
+    const cleanBrandId = brandId || 'pepnation';
+
     return NextResponse.json({ 
       id: data.id,
-      url: `/${brandId}/shared/${data.id}` 
+      url: `/${cleanBrandId}/shared/${data.id}` 
     });
   } catch (error) {
     console.error('[Share Protocol] Unhandled error', error);

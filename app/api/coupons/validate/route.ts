@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
-import { validateCoupon } from '@/lib/coupons';
+import { getEffectiveUser } from '@/lib/impersonation';
+import { resolveCheckoutCoupon, getHouseAgentId } from '@/lib/coupons';
 import { assertSameOrigin } from '@/lib/csrf';
 
 /**
@@ -12,7 +13,7 @@ export async function POST(request: NextRequest) {
   const csrf = assertSameOrigin(request);
   if (csrf) return csrf;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getEffectiveUser(supabase);
 
   if (!user) {
     return NextResponse.json(
@@ -42,9 +43,15 @@ export async function POST(request: NextRequest) {
     .eq('id', user.id)
     .maybeSingle();
 
-  const result = await validateCoupon(service, {
+  // Buyers with no referring agent (the admin's own account, legacy accounts)
+  // fall back to the house storefront so house coupons still apply for them.
+  const agentId = profile?.referring_agent_id ?? (await getHouseAgentId(service));
+
+  // Resolves regular agent coupons AND platform signup promos (e.g. FIRST20),
+  // which are translated into the buyer's personal first-order coupon.
+  const result = await resolveCheckoutCoupon(service, {
     code,
-    agentId: profile?.referring_agent_id ?? null,
+    agentId,
     subtotal,
     userId: user.id,
   });

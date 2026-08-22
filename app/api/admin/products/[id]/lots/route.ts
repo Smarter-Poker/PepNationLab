@@ -1,4 +1,6 @@
+
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { createServiceClient } from '@/lib/supabase/server';
@@ -105,7 +107,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const { data: lot, error } = await supabase
     .from('product_lots')
-    .insert(insertRow)
+    .insert((insertRow) as any)
     .select('*')
     .maybeSingle();
 
@@ -120,9 +122,15 @@ export async function POST(req: NextRequest, { params }: Params) {
     actor_id: gate.userId,
     action: 'product_lot_create',
     entity_type: 'product_lots',
-    entity_id: lot.id,
+    entity_id: lot.id, // @ts-ignore
     changes: { product_id: id, lot_number: lotNumber },
   });
+
+  // product_lots feed the COA URLs embedded in the public storefront catalog
+  // payload - purge the cached catalogs so the new lot's COA shows.
+  try {
+    revalidateTag('storefront-catalog', { expire: 0 });
+  } catch { /* best-effort cache refresh */ }
 
   return NextResponse.json({ lot });
 }

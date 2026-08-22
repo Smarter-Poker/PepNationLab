@@ -27,11 +27,12 @@ export const metadata: Metadata = {
     creator: '@PepNationLab',
     title: 'Peptide Research Timeline | Historical Discovery Decades | Pep Nation Lab',
     description: 'Explore the historical timeline of peptide research discoveries from the 1960s to today. Compounds plotted by decade with evidence tiers and mechanism data. Research use only.',
-    images: ['https://pepnationlab.com/images/og-card.jpg'],
+    images: ['https://pepnationlab.com/og-card.png'],
   },
 };
 
-export const dynamic = 'force-dynamic';
+// ISR: data comes from unstable_cache'd helpers (60s); render once, revalidate hourly.
+export const revalidate = 3600;
 
 const ORDER = [
   '1960s',

@@ -1,3 +1,4 @@
+
 /**
  * audit15 fix-19 (B6): centralized telemetry writer for messenger calls.
  *
@@ -15,6 +16,9 @@ import { createServiceClient } from '@/lib/supabase/server';
 export type CallTelemetryAction =
   | 'messenger_call.start'
   | 'messenger_call.accept'
+  /** A LATER participant joining an already-active call (group calls). The
+   *  first answer is an 'accept'; everyone after that is a 'join'. */
+  | 'messenger_call.join'
   | 'messenger_call.decline'
   | 'messenger_call.hangup'
   | 'messenger_call.missed_timeout'
@@ -58,6 +62,7 @@ export async function recordCallTelemetry(
       action,
       entity_type: 'messenger_call',
       entity_id: payload.call_id,
+      //  Database schema mismatch from generated types
       changes: payload,
       ip_address: ipAddress ?? null,
       user_agent: userAgent ?? null,

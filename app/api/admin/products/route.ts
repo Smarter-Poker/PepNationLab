@@ -1,7 +1,11 @@
+
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { AdminProductCreateSchema, AdminProductPatchSchema } from '@/lib/schemas/product';
+import { parseJsonBody } from '@/lib/schemas/http';
 
 export async function GET(req: NextRequest) {
   const gate = await requireAdmin();
@@ -20,7 +24,7 @@ export async function GET(req: NextRequest) {
     if (!id) {
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, slug, category, base_cost, is_active, is_banned')
+        .select('id, name, slug, category, base_cost, house_cost, is_active, is_banned')
         .eq('is_banned', false)
         .eq('is_active', true)
         .order('name', { ascending: true });
@@ -62,30 +66,27 @@ export async function POST(req: NextRequest) {
 
   try {
     const supabase = createAdminClient();
-    const body = await req.json();
 
+    // Schema-locked body: every money and inventory field
+    // (base_cost, admin_bulk_price, admin_bulk_threshold, inventory_count,
+    // low_stock_threshold, backorder_days) is type- and range-validated.
+    // These feed ALL downstream tier pricing, so no raw client value may
+    // reach the products table.
+    const parsed = await parseJsonBody(req, AdminProductCreateSchema, 'Invalid Product Data.');
+    if (!parsed.ok) return parsed.response;
     const {
       name, sku, category, description, image_url, base_cost,
       unit_size, unit_measure, is_active,
       inventory_count, low_stock_threshold, backorder_days,
       admin_bulk_price, admin_bulk_threshold,
-    } = body;
-
-    const parsedBaseCost = Number(base_cost);
-    if (!name || isNaN(parsedBaseCost) || parsedBaseCost <= 0) {
-      return NextResponse.json({ error: 'Name And A Positive Base Cost Are Required' }, { status: 400 });
-    }
-    if (typeof name !== 'string' || name.length > 200) return NextResponse.json({ error: 'Product Name Too Long (Max 200)' }, { status: 400 });
-    if (sku && (typeof sku !== 'string' || sku.length > 100)) return NextResponse.json({ error: 'SKU Too Long (Max 100)' }, { status: 400 });
-    if (description && (typeof description !== 'string' || description.length > 5000)) return NextResponse.json({ error: 'Description Too Long (Max 5,000)' }, { status: 400 });
-    if (image_url && (typeof image_url !== 'string' || image_url.length > 500)) return NextResponse.json({ error: 'Image URL Too Long (Max 500)' }, { status: 400 });
-    if (category && (typeof category !== 'string' || category.length > 80)) return NextResponse.json({ error: 'Category Too Long (Max 80)' }, { status: 400 });
-    if (unit_size && (typeof unit_size !== 'string' || unit_size.length > 50)) return NextResponse.json({ error: 'Unit Size Too Long (Max 50)' }, { status: 400 });
+    } = parsed.data;
+    const parsedBaseCost = base_cost;
 
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
     const { data, error } = await supabase
       .from('products')
+      //  Database schema mismatch from generated types
       .insert({
         name,
         slug,
@@ -94,6 +95,7 @@ export async function POST(req: NextRequest) {
         description: description || null,
         image_url: image_url || null,
         base_cost: parsedBaseCost,
+        house_cost: parsedBaseCost,
         unit_size: unit_size || null,
         unit_measure: unit_measure || 'mg',
         inventory_count: inventory_count ?? 0,
@@ -114,6 +116,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Product Was Created But ID Could Not Be Retrieved' }, { status: 500 });
     }
 
+    // New master product - purge every storefront catalog so any auto-created
+    // agent_products rows (and the house store) surface it immediately.
+    try {
+      revalidateTag('storefront-catalog', { expire: 0 });
+    } catch { /* best-effort cache refresh */ }
+
     return NextResponse.json({ id: data.id }, { status: 201 });
   } catch (err) {
     console.error('[admin/products] POST error:', err);
@@ -130,29 +138,25 @@ export async function PATCH(req: NextRequest) {
 
   try {
     const supabase = createAdminClient();
-    const body = await req.json();
-    const { id, ...raw } = body;
 
-    if (!id) {
-      return NextResponse.json({ error: 'Product ID Required' }, { status: 400 });
-    }
+    // Schema-locked partial update: previously only base_cost had a numeric
+    // check and every other field (admin_bulk_price, inventory_count,
+    // low_stock_threshold, backorder_days...) was copied raw into the
+    // products table. Now every present field is type- and range-validated.
+    const parsed = await parseJsonBody(req, AdminProductPatchSchema, 'Invalid Product Data.');
+    if (!parsed.ok) return parsed.response;
+    const { id, ...raw } = parsed.data;
 
     const ALLOWED_FIELDS = [
       'name', 'sku', 'category', 'description', 'image_url',
-      'base_cost', 'unit_size', 'unit_measure',
+      'base_cost', 'house_cost', 'unit_size', 'unit_measure',
       'inventory_count', 'low_stock_threshold', 'backorder_days',
       'is_active', 'admin_bulk_price', 'admin_bulk_threshold'
     ] as const;
 
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
     for (const field of ALLOWED_FIELDS) {
-      if (field in raw) {
-        if (field === 'base_cost') {
-          const cost = Number(raw[field]);
-          if (isNaN(cost) || cost <= 0) {
-            return NextResponse.json({ error: 'base_cost Must Be A Positive Number' }, { status: 400 });
-          }
-        }
+      if (field in raw && raw[field] !== undefined) {
         updates[field] = raw[field];
       }
     }
@@ -175,6 +179,13 @@ export async function PATCH(req: NextRequest) {
         await supabase.rpc('recalculate_agent_product_prices', { p_product_id: id });
       } catch { /* non-critical: triggers handle recomputation */ }
     }
+
+    // Master product fields (name, image, category, base_cost-driven retail
+    // recompute, is_active, backorder_days) all feed the public storefront
+    // catalog - purge every store's cached copy.
+    try {
+      revalidateTag('storefront-catalog', { expire: 0 });
+    } catch { /* best-effort cache refresh */ }
 
     return NextResponse.json({ success: true });
   } catch (err) {

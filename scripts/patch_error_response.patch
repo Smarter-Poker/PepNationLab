@@ -1,0 +1,11 @@
+--- app/api/agent/profile/route.ts
++++ app/api/agent/profile/route.ts
+@@ -99,7 +99,7 @@
+ 
+   if (error) {
+     console.error("Profile update error:", error);
+-    return NextResponse.json({ error: 'profile_update_failed' }, { status: 500 });
++    return NextResponse.json({ error: 'profile_update_failed: ' + error.message, details: error }, { status: 500 });
+   }
+ 
+   await supabase

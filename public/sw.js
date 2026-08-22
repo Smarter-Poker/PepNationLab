@@ -1,3 +1,20 @@
+// v13: PUSH RELIABILITY (2026-08-04). Root-cause work for "no pushes on my
+//      phone in days": subscriptions rot silently (browser rotates the
+//      endpoint, PWA reinstall, endpoint reassigned to another account) and
+//      nothing ever repaired or even detected it. This version adds:
+//        1. pushsubscriptionchange -> silently re-subscribe + re-register
+//           with the server, so a rotated endpoint no longer orphans the device.
+//        2. A delivery-receipt beacon: every displayed push POSTs
+//           /api/push/receipt, giving the server actual proof-of-display per
+//           device (push services return 2xx for dead-but-not-expired
+//           subscriptions, so "accepted" never proved "delivered").
+//        3. showNotification hardening: renotify is only set when a tag is
+//           present (renotify+no-tag throws TypeError in Chrome and the push
+//           displays NOTHING), plus a minimal-options retry fallback.
+//      Cache-name bump forces every device to adopt this worker promptly.
+// v11: Cache-version bump -- evict the stale-while-revalidate /research* HTML so
+//      returning visitors immediately pick up the removal of the on-arrival
+//      site-entry disclaimer overlay (SiteDisclaimerGate is now a passthrough).
 // v9: Cache-version bump to deliver Peptide 101 v14 paginated Modules 2-13
 //     (m2-m13 module files + updated v14 engine with nextLabel support).
 // Pep Nation Lab service worker - web push receiver, offline caching, and IndexedDB replication.
@@ -17,11 +34,16 @@
 // v10: Cache-version bump to deliver Module 1 + 2 quiz gate enforcement,
 //      data-v14 protection for #s2, route.ts no-store header, and markdown
 //      rendering fix for the Ask AI assistant modal.
-const CACHE_VERSION = 'pnl-sw-v10';
-const STATIC_CACHE_NAME = 'pnl-static-cache-v10';
-const DYNAMIC_CACHE_NAME = 'pnl-dynamic-cache-v10';
-const CATALOG_CACHE_NAME = 'pnl-catalog-cache-v10';
-const IMAGE_CACHE_NAME = 'pnl-image-cache-v10';
+// v15: Cache-version bump for the mobile blank-vial fix. The storefront product
+//      detail view now requests right-sized /_next/image thumbnails instead of
+//      the 1024px vial originals, so every previously cached full-resolution
+//      /images/products/ and /images/savage-brands/ entry is dead weight and is
+//      evicted here. See lib/imageOptimize.ts.
+const CACHE_VERSION = 'pnl-sw-v15';
+const STATIC_CACHE_NAME = 'pnl-static-cache-v15';
+const DYNAMIC_CACHE_NAME = 'pnl-dynamic-cache-v15';
+const CATALOG_CACHE_NAME = 'pnl-catalog-cache-v15';
+const IMAGE_CACHE_NAME = 'pnl-image-cache-v15';
 
 // Catalog cache TTL in the service worker (5 min = 300,000 ms)
 // Matches the s-maxage set on the API route's Cache-Control header.
@@ -71,14 +93,104 @@ self.addEventListener('push', (event) => {
     badge: data.badge || '/logo-mark.svg',
     data: { url: data.url || '/' },
     tag: data.tag,
-    renotify: data.renotify === undefined ? true : !!data.renotify,
+    // Chrome throws a TypeError from showNotification when renotify is true
+    // and no tag is set -- and a thrown showNotification means the push
+    // displays NOTHING. Only re-alert when there is a tag to re-alert on.
+    renotify: data.tag ? (data.renotify === undefined ? true : !!data.renotify) : false,
     silent: false,
     vibrate: Array.isArray(data.vibrate) && data.vibrate.length ? data.vibrate : [120, 60, 120],
     requireInteraction: !!data.requireInteraction,
     actions: Array.isArray(data.actions) ? data.actions.slice(0, 2) : undefined,
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
+  event.waitUntil((async () => {
+    // Display, with a minimal-options fallback: a single unsupported or
+    // malformed option must never be able to suppress the notification.
+    try {
+      await self.registration.showNotification(title, options);
+    } catch (_) {
+      try {
+        await self.registration.showNotification(title, {
+          body: options.body,
+          icon: options.icon,
+          data: options.data,
+        });
+      } catch (_) { /* nothing more we can do */ }
+    }
+    // Delivery receipt: proof-of-display for this device. Push services
+    // return 2xx for subscriptions whose browser/PWA is gone (FCM keeps
+    // accepting for dead-but-unexpired tokens), so the server can only
+    // distinguish a live device from a zombie by hearing back from the
+    // service worker itself. Best-effort; never blocks display.
+    try {
+      const sub = await self.registration.pushManager.getSubscription();
+      if (sub && sub.endpoint) {
+        await fetch('/api/push/receipt', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ endpoint: sub.endpoint }),
+        });
+      }
+    } catch (_) { /* best-effort */ }
+  })());
+});
+
+// ---------------------------------------------------------------------
+// SUBSCRIPTION SELF-HEAL
+// Browsers rotate push subscriptions (endpoint + keys) whenever they like.
+// Before v13 this event was unhandled, so a rotation orphaned the device:
+// the server kept sending to the OLD endpoint (often still accepted with a
+// 2xx by the push service) while the device listened on a new one it never
+// told the server about. Re-subscribe and re-register immediately.
+// ---------------------------------------------------------------------
+
+function swUrlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  const buffer = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; i++) buffer[i] = rawData.charCodeAt(i);
+  return buffer;
+}
+
+self.addEventListener('pushsubscriptionchange', (event) => {
+  event.waitUntil((async () => {
+    try {
+      let appKey =
+        (event.oldSubscription && event.oldSubscription.options &&
+         event.oldSubscription.options.applicationServerKey) || null;
+      if (!appKey) {
+        const res = await fetch('/api/push/vapid-public-key', { credentials: 'same-origin' });
+        if (!res.ok) return;
+        const j = await res.json();
+        if (!j || !j.key) return;
+        appKey = swUrlBase64ToUint8Array(j.key);
+      }
+      const sub =
+        event.newSubscription ||
+        (await self.registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: appKey,
+        }));
+      const json = sub.toJSON();
+      if (!json.endpoint || !json.keys || !json.keys.p256dh || !json.keys.auth) return;
+      // Requires the site auth cookie (same-origin credentials ride along).
+      // If the device is logged out this 401s harmlessly; the in-app
+      // PushSubscriptionSync repairs the registration on next sign-in.
+      await fetch('/api/push/subscribe', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          endpoint: json.endpoint,
+          keys: { p256dh: json.keys.p256dh, auth: json.keys.auth },
+          userAgent: (typeof navigator !== 'undefined' && navigator.userAgent) || 'service-worker',
+          deviceLabel: 'sw-auto-resubscribe',
+        }),
+      });
+    } catch (_) { /* best-effort; the client-side sync is the durable repair */ }
+  })());
 });
 
 self.addEventListener('notificationclick', (event) => {
@@ -427,9 +539,34 @@ self.addEventListener('fetch', (event) => {
   const isResearchPage = url.pathname.startsWith('/research');
 
   if (event.request.method === 'GET' && (isStaticAsset || isResearchPage)) {
+    // Brand vial images must ALWAYS be network-first — never serve a stale or
+    // error-cached response for these, as that causes the blank-vial bug on iOS.
+    const isBrandImage = url.pathname.startsWith('/images/savage-brands/');
+
+    if (isBrandImage) {
+      event.respondWith(
+        fetch(event.request).then((networkResponse) => {
+          if (networkResponse.ok) {
+            caches.open(STATIC_CACHE_NAME).then((cache) => {
+              cache.put(event.request, networkResponse.clone());
+            });
+          }
+          return networkResponse;
+        }).catch(() => {
+          // Network failed — serve cache as last resort (but only if ok)
+          return caches.match(event.request).then((cached) => {
+            if (cached && cached.ok) return cached;
+            return new Response('', { status: 503 });
+          });
+        })
+      );
+      return;
+    }
+
     event.respondWith(
       caches.match(event.request).then((cachedResponse) => {
-        if (cachedResponse) {
+        // Never serve a cached error response — go to network instead.
+        if (cachedResponse && cachedResponse.ok) {
           // Update cache in the background
           event.waitUntil(
             fetch(event.request).then((networkResponse) => {
@@ -443,7 +580,7 @@ self.addEventListener('fetch', (event) => {
           return cachedResponse;
         }
 
-        // No cache — wait for network
+        // No cache (or cached error) — wait for network
         return fetch(event.request).then((networkResponse) => {
           if (networkResponse.ok) {
             caches.open(STATIC_CACHE_NAME).then((cache) => {

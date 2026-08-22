@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     creator: '@PepNationLab',
     title: 'Browse By Receptor Target | Research Library | Pep Nation Lab',
     description: 'Browse research compounds by receptor target. An alphabetized index of every annotated receptor in the Pep Nation Lab research library.',
-    images: ['https://pepnationlab.com/images/og-card.jpg'],
+    images: ['https://pepnationlab.com/og-card.png'],
   },
   robots: {
     index: true,
@@ -34,7 +34,8 @@ export const metadata: Metadata = {
   },
 };
 
-export const dynamic = 'force-dynamic';
+// ISR: data comes from unstable_cache'd helpers (60s); render once, revalidate hourly.
+export const revalidate = 3600;
 
 interface CompoundReceptorRow {
   slug: string;

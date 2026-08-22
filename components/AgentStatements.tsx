@@ -81,21 +81,22 @@ export default function AgentStatements() {
 
         <div style={{ overflowX: 'auto' }}>
           <table className="table" style={{ minWidth: 600 }}>
+          <caption className="sr-only">Weekly Statements</caption>
           <thead>
             <tr>
-              <th style={{ textAlign: 'center' }}>Week</th>
-              <th style={{ textAlign: 'center' }}>Orders</th>
-              <th style={{ textAlign: 'center' }}>COGS</th>
-              <th style={{ textAlign: 'center' }}>Shipping</th>
-              <th style={{ textAlign: 'center' }}>Total Owed</th>
-              <th style={{ textAlign: 'center' }}>Status</th>
+              <th scope="col" style={{ textAlign: 'center' }}>Week</th>
+              <th scope="col" style={{ textAlign: 'center' }}>Orders</th>
+              <th scope="col" style={{ textAlign: 'center' }}>COGS</th>
+              <th scope="col" style={{ textAlign: 'center' }}>Shipping</th>
+              <th scope="col" style={{ textAlign: 'center' }}>Total Owed</th>
+              <th scope="col" style={{ textAlign: 'center' }}>Status</th>
             </tr>
           </thead>
           <tbody>
             {statements.map(stmt => {
               const orderCount = stmt.statement_orders?.[0]?.count || 0;
               return (
-                <tr key={stmt.id}>
+                <tr key={stmt.id} onClick={() => window.location.href = `/wallet/print?type=statement&id=${stmt.id}`} style={{ cursor: 'pointer' }} className="table-row-hover">
                   <td style={{ textAlign: 'center' }}>
                     <div style={{ fontWeight: 600, color: 'var(--white)' }}>
                       {new Date(stmt.week_start).toLocaleDateString()}

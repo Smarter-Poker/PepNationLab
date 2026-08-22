@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseUrl } from '@/lib/supabase/url';
 import { createServiceClient } from '@/lib/supabase/server';
@@ -115,6 +116,7 @@ export async function POST(req: NextRequest) {
       text: cleanText,
       message_type: parsed.data.messageType,
       media_url: parsed.data.mediaUrl ?? null,
+      //  Database schema mismatch from generated types
       media_metadata: parsed.data.mediaMetadata ?? {},
       reply_to_id: parsed.data.replyToId ?? null,
       scheduled_at: new Date(t).toISOString(),

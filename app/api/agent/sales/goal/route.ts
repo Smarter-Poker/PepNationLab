@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { safeError } from '@/lib/api-error';
 import { z } from 'zod';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { getEffectiveUser } from '@/lib/impersonation';
 import { assertSameOrigin } from '@/lib/csrf';
 
 export const dynamic = 'force-dynamic';
@@ -16,7 +17,7 @@ function currentMonthBoundary() {
 
 export async function GET() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getEffectiveUser(supabase);
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   const svc = await createServiceClient();
   const { start } = currentMonthBoundary();
@@ -35,7 +36,7 @@ export async function POST(req: Request) {
   const csrf = assertSameOrigin(req as any);
   if (csrf) return csrf;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getEffectiveUser(supabase);
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   let body: z.infer<typeof PostBody>;
   try { body = PostBody.parse(await req.json()); }
