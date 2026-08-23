@@ -3,6 +3,19 @@
 # This prevents the .push-asg.js script (and similar tools) from accidentally
 # committing binary/base64-encoded .tsx/.ts/.js files that break the build.
 
+# A COMMIT VERCEL CANNOT ATTRIBUTE NEVER BUILDS.
+#
+# CLAUDE.md opens with this rule - "MANDATORY: Git Commit Identity, zero
+# exceptions" - because Vercel BLOCKS a production deployment whose commit
+# author it cannot resolve to a GitHub user, and blocks it silently: no build,
+# no logs, just a red row in the dashboard.
+#
+# On 2026-08-23 the pepnationlab project was one of five sitting BLOCKED, all
+# of them authored 'Agent <agent@smarter.poker>'. The rule was written down and
+# nothing enforced it. This does, at the only moment where the answer is still
+# "that commit was never made".
+"$(git rev-parse --show-toplevel)/scripts/guard-commit-identity.sh" || exit 1
+
 ERRORS=0
 
 # Get list of staged .tsx/.ts/.js files
