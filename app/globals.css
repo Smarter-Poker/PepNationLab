@@ -3811,7 +3811,23 @@ body > div.pnl-page:not(.pnl-page-with-navbar) {
   label[style*="font-size:10px"],
   label[style*="font-size: 10px"],
   label[style*="font-size:11px"],
-  label[style*="font-size: 11px"] {
+  label[style*="font-size: 11px"],
+  /* Definition lists: research monograph spec panels render every dt label at
+     an inline 10px. dt/dd were only covered from 11px down in the block below,
+     so 9px and 10px fell through the floor on every /research/<compound> page.
+     Both serializations required. */
+  dt[style*="font-size:9px"],
+  dt[style*="font-size: 9px"],
+  dt[style*="font-size:10px"],
+  dt[style*="font-size: 10px"],
+  dd[style*="font-size:9px"],
+  dd[style*="font-size: 9px"],
+  dd[style*="font-size:10px"],
+  dd[style*="font-size: 10px"],
+  button[style*="font-size:9px"],
+  button[style*="font-size: 9px"],
+  button[style*="font-size:10px"],
+  button[style*="font-size: 10px"] {
     font-size: 0.82rem !important;
   }
 
@@ -4081,7 +4097,11 @@ body:has(.sf-nav) .flash-sale-banner {
 @media (max-width: 768px) {
   [style*="position: 'sticky'"][style*="top: 0"],
   [style*="position: \"sticky\""][style*="top: 0"],
-  [style*="position: sticky"][style*="top: 0"] {
+  [style*="position: sticky"][style*="top: 0"],
+  /* No-space serialization (server-rendered markup) was missing here. */
+  [style*="position:sticky"][style*="top:0"],
+  [style*="position:sticky"][style*="top: 0"],
+  [style*="position: sticky"][style*="top:0"] {
     top: var(--nav-offset, 60px) !important;
   }
 }
@@ -4205,7 +4225,9 @@ body:has(.sf-nav) .flash-sale-banner {
 
 @media (max-width: 600px) {
   [data-monograph-spec] p[style*="maxWidth: 92"],
-  [data-monograph-spec] p[style*="max-width: 92"] {
+  [data-monograph-spec] p[style*="max-width: 92"],
+  /* No-space serialization (server-rendered markup) was missing here. */
+  [data-monograph-spec] p[style*="max-width:92"] {
     max-width: 100% !important;
   }
 }
