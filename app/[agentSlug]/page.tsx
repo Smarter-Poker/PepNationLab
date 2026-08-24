@@ -290,6 +290,7 @@ async function AgentStorefrontDataLoader({
         '@type': 'Product',
         name,
         brand: { '@type': 'Brand', name: 'Pep Nation Lab' },
+        sku: String(pp.product_id),
       };
       const description = String(pp.custom_description || pp.products?.description || '').trim();
       node.description = (description ? description + ' ' : '') + 'For In Vitro Laboratory Research Use Only. Not For Human Or Animal Consumption.';

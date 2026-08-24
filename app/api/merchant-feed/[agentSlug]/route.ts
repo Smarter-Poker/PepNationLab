@@ -91,6 +91,8 @@ export async function GET(
       <g:availability>${inStock ? 'in_stock' : 'out_of_stock'}</g:availability>
       <g:price>${price.toFixed(2)} USD</g:price>
       <g:brand>Pep Nation Lab</g:brand>
+      <g:google_product_category>3320</g:google_product_category>
+      <g:identifier_exists>no</g:identifier_exists>
     </item>`;
   }).filter(Boolean);
 
