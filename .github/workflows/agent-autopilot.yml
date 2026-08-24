@@ -122,7 +122,7 @@ jobs:
         # WITHOUT THIS the job has no working tree and
         # `.github/scripts/queue-pr.sh` exits 127. That is how this workflow
         # failed on its own first run.
-        uses: actions/checkout@v4.3.1
+        uses: actions/checkout@v7.0.1
 
       - name: Mint a GitHub App installation token
         # Skipped entirely when the App is not configured, in which case the
@@ -167,7 +167,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v4.3.1
+        uses: actions/checkout@v7.0.1
 
       - name: Mint a GitHub App installation token
         # Skipped entirely when the App is not configured, in which case the
