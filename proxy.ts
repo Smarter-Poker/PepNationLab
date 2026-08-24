@@ -290,6 +290,7 @@ const PUBLIC_ROUTES = [
   // and the research article iframe proxy working. They are fetched with
   // credentials:'omit' and are edge-cacheable public product data.
   '/api/storefront/catalog',
+  '/api/merchant-feed',
   '/api/storefront/semantic',
   '/api/storefront/recommendations',
   '/api/storefront/search',
