@@ -26,7 +26,7 @@
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "file-saver": "^2.0.5",
-    "framer-motion": "^12.43.0",
+    "framer-motion": "^13.1.1",
     "html-to-image": "^1.11.13",
     "jszip": "^3.10.1",
     "livekit-client": "^2.22.0",
