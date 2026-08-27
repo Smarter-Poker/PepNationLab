@@ -135,3 +135,7 @@ If you need a toggle switch or checkbox with an associated secondary button:
 </div>
 ```
 <!-- END:ui-ux-event-bubbling-rule -->
+
+## Imported Claude Cowork project instructions
+
+This is a new project, PepNationLab.com
