@@ -869,7 +869,8 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
         if (item.bundleName || isVolumeDiscountExcluded(item.name)) return sum;
         const pct = quantityDiscountPct(item.quantity, item.name);
         if (pct <= 0) return sum;
-        const unit = (item as { retailPrice?: number }).retailPrice ?? item.costPrice;
+        let unit = (item as { retailPrice?: number }).retailPrice ?? item.costPrice;
+        if (flashSale && cartSubtotal > 0) { unit = unit * (1 - (flashSale.discount_pct / 100)); }
         const discountedUnit = Math.round(unit * (1 - pct / 100) * 100) / 100;
         return sum + Math.max(0, unit - discountedUnit) * item.quantity;
       }, 0)
