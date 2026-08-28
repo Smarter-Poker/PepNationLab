@@ -223,6 +223,7 @@ async function AgentStorefrontDataLoader({
     productsWithCost = (products ?? []).map((p) => ({
       ...(p as Record<string, unknown>),
       cost_price: costMap.get(p.product_id as string) ?? null,
+      agent_cost: costMap.get(p.product_id as string) ?? null,
     }));
   }
 
