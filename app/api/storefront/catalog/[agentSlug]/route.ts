@@ -123,6 +123,8 @@ async function buildCatalogPayload(agentSlug: string): Promise<CatalogResult> {
       `)
       .eq('agent_id', agent.id)
       .eq('is_visible', true)
+      .eq('products.is_active', true)
+      .eq('products.is_banned', false)
       .order('sort_order', { nullsFirst: false })
       .limit(250),
 
