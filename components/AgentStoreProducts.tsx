@@ -139,6 +139,10 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
   const [priceText, setPriceText] = useState('');
   const [saving, setSaving] = useState(false);
 
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [bulkMarginPct, setBulkMarginPct] = useState(50);
+  const [bulkApplying, setBulkApplying] = useState(false);
+
   const [reordering, setReordering] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState('');
@@ -264,6 +268,61 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
     });
     const isBacInit = /bac\.?\s*water/i.test(p.products?.name || '');
     setPriceText(p.retail_price > 0 ? (p.retail_price ).toFixed(2) : '');
+  }
+
+  async function applyBulkUpdate() {
+    setBulkApplying(true);
+    let updatedCount = 0;
+    
+    const updates = products.map(p => {
+      const cost = p.agent_cost != null && p.agent_cost > 0 ? p.agent_cost : (p.products?.base_cost || 0);
+      if (cost <= 0) return null;
+      
+      const rawPrice = cost * (1 + bulkMarginPct / 100);
+      const targetPrice = Math.floor(rawPrice) + 0.97;
+      
+      return { id: p.id, retail_price: targetPrice };
+    }).filter(Boolean) as {id: string, retail_price: number}[];
+
+    if (updates.length === 0) {
+      toast.error('No products found with a valid base cost to update.');
+      setBulkApplying(false);
+      return;
+    }
+
+    const chunked = [];
+    const chunkSize = 20;
+    for (let i = 0; i < updates.length; i += chunkSize) {
+      chunked.push(updates.slice(i, i + chunkSize));
+    }
+
+    let errorCount = 0;
+    for (const chunk of chunked) {
+      await Promise.all(chunk.map(async (u) => {
+        const res = await fetch('/api/agent/products', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: u.id, retail_price: u.retail_price, margin_percent: bulkMarginPct })
+        });
+        if (!res.ok) {
+          const json = await res.json().catch(() => ({}));
+          console.error('Bulk Update Error for product', u.id, json);
+          errorCount++;
+        } else {
+          updatedCount++;
+        }
+      }));
+    }
+
+    if (errorCount > 0) {
+      toast.error(`Updated ${updatedCount} products, but ${errorCount} failed.`);
+    } else {
+      toast.success(`Successfully bulk updated pricing for ${updatedCount} products.`);
+    }
+    
+    setBulkApplying(false);
+    setShowBulkModal(false);
+    fetchProducts();
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -422,7 +481,20 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
                 Toggle Products On/Off, Reorder Them, Set Custom Prices And Descriptions.
               </p>
             </div>
-            <div className="agentprod-filter-chips" style={{ display: 'flex', gap: 4, background: 'rgba(0,0,0,0.5)', borderRadius: '4px', padding: 3, border: '1px solid rgba(255,255,255,0.05)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+              <button 
+                onClick={() => setShowBulkModal(true)}
+                className="btn-glass"
+                style={{
+                  padding: '6px 14px', fontSize: '0.8rem',
+                  border: '1px solid rgba(0, 229, 255, 0.3)',
+                  color: '#00E5FF', background: 'rgba(0, 229, 255, 0.05)',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                Bulk Increase Pricing
+              </button>
+              <div className="agentprod-filter-chips" style={{ display: 'flex', gap: 4, background: 'rgba(0,0,0,0.5)', borderRadius: '4px', padding: 3, border: '1px solid rgba(255,255,255,0.05)' }}>
               {( [['all', `All (${products.length})`], ['active', `Active (${activeCount})`], ['hidden', `Hidden (${hiddenCount})`]] as [FilterMode, string][] ).map(([key, label]) => (
                 <button
                   key={key}
@@ -438,9 +510,51 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
                 </button>
               ))}
               </div>
+            </div>
           </div>
         </div>
       </div>
+
+      {showBulkModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 100000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}>
+          <div className="glass-panel" style={{ width: 420, maxWidth: '90vw', padding: 'var(--space-6)', background: '#111' }}>
+            <h3 style={{ color: '#00E5FF', margin: '0 0 var(--space-4) 0', fontSize: '1.25rem' }}>Bulk Increase Pricing</h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', marginBottom: 'var(--space-5)', lineHeight: 1.5 }}>
+              Apply a global markup margin to all products based on your wholesale cost. 
+              <strong> All prices will automatically be adjusted to end in <span style={{color:'#fff'}}>.97</span></strong> (e.g., $149.97).
+            </p>
+            
+            <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--grey-300)', marginBottom: 8 }}>Target Margin Percent</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 'var(--space-6)' }}>
+              <input 
+                type="number" 
+                className="form-input" 
+                value={bulkMarginPct} 
+                onChange={e => setBulkMarginPct(Number(e.target.value))}
+                style={{ width: 100 }}
+              />
+              <span style={{ fontSize: '0.9rem', color: 'var(--grey-500)' }}>%</span>
+            </div>
+            
+            <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
+              <button 
+                onClick={() => setShowBulkModal(false)}
+                className="btn-glass"
+                disabled={bulkApplying}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={applyBulkUpdate}
+                className="btn-neon-cyan"
+                disabled={bulkApplying}
+              >
+                {bulkApplying ? 'Applying...' : 'Apply To All Products'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Search Bar */}
       <input
