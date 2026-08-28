@@ -180,6 +180,8 @@ async function buildCatalogPayload(agentSlug: string): Promise<CatalogResult> {
         ...ap,
         retail_price: clampedRetail,
         sale_price: clampedSale,
+        agent_cost: costPrice,
+        cost_price: costPrice,
         products: safeProducts,
       };
     });
