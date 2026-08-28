@@ -609,7 +609,7 @@ export default function AgentDashboardClient({
 
         {activeTab === 'Store Products' && (
           <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <AgentStoreProducts agentId={userProfile.id} agentSlug={agentProfile.slug} brandNetworkIsSavage={brandNetworkIsSavage} />
+            <AgentStoreProducts agentId={userProfile.id} agentSlug={agentProfile.slug} brandNetworkIsSavage={brandNetworkIsSavage} unlimitedMargin={Boolean(userProfile.is_super_agent || userProfile.role === 'super_agent')} />
           </div>
         )}
 
