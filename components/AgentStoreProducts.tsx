@@ -40,7 +40,7 @@ interface AgentProduct {
   sale_price: number | null;
   sort_order: number;
   products: ProductInfo;
-  /** Your cost price from PNL (base_cost x tier multiplier, per 10 vials) */
+  /** Your cost price from PNL (base_cost x tier multiplier, per vial) */
   agent_cost: number | null;
   /** The agent's current tier key, e.g. 'tier_1' */
   agent_tier: string | null;
