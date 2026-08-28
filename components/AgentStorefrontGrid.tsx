@@ -214,7 +214,7 @@ function getEffectiveRetailPrice(item: any): number {
   if (item.is_on_sale && item.sale_price != null) {
     return Number(item.sale_price);
   }
-  return getEffectiveRetailPrice(item) || 0;
+  return Number(item.retail_price) || 0;
 }
 
 function formatPrice(price: number): string {
