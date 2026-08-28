@@ -39,6 +39,10 @@ interface ProductItem {
   custom_description: string | null;
   custom_image_url: string | null;
   retail_price: number;
+  cost_price?: number;
+  is_on_sale?: boolean;
+  sale_price?: number;
+  agent_cost?: number;
   products: {
     name: string;
     description: string;
@@ -51,6 +55,7 @@ interface ProductItem {
     inventory_count?: number | null;
     low_stock_threshold?: number | null;
     compound_slug?: string | null;
+    market_avg_price?: number | null;
   };
 }
 
@@ -115,7 +120,7 @@ interface Props {
   featuredProductIds?: string[];
   /** Accepted for compatibility with the storefront branding wiring; rendering
    *  of custom branding is owned by that feature, not the pricing/bundle grid. */
-  customBranding?: Record<string, unknown> | null;
+  customBranding?: { logo_url?: string; brand_name?: string; storefront_heading?: string; } | null;
   /** Server-resolved: this store is Savage Brands or one of its downlines
    *  (profiles.parent_agent_id chain). Drives brand-scoped card art + vial
    *  fallbacks so Pep Nation imagery never leaks onto Savage network stores. */
@@ -209,7 +214,7 @@ function fuzzyMatch(query: string, text: string): boolean {
   return qi === q.length;
 }
 
-function getEffectiveRetailPrice(item: any): number {
+function getEffectiveRetailPrice(item: ProductItem): number {
   if (!item) return 0;
   if (item.is_on_sale && item.sale_price != null) {
     return Number(item.sale_price);
@@ -648,7 +653,7 @@ export default function AgentStorefrontGrid({
     } catch {}
     try {
       const raw = window.localStorage.getItem('pnl:compare') || '[]';
-      const list = JSON.parse(raw) as Array<any>;
+      const list = JSON.parse(raw) as Array<{ productName: string } & Record<string, unknown>>;
       const filtered = list.filter((x) => x.productName !== group.name);
       window.localStorage.setItem('pnl:compare', JSON.stringify(filtered));
       window.dispatchEvent(new CustomEvent('pnl:compare-changed'));
@@ -1028,8 +1033,8 @@ export default function AgentStorefrontGrid({
           const item = products.find(p => p.id === vId);
           if (!item) return null;
           const perVial = getEffectiveRetailPrice(item);
-          const costPerVial = isStorefrontOwner && (item as any).cost_price != null
-            ? Number((item as any).cost_price)
+          const costPerVial = isStorefrontOwner && item.cost_price != null
+            ? Number(item.cost_price)
             : perVial;
           const sizeLabel = item.products?.unit_size
             ? `(${item.products.unit_size}${item.products.unit_measure || ''})`
@@ -1815,7 +1820,7 @@ export default function AgentStorefrontGrid({
   const matchesCategory = useCallback(
     (g: GroupedProduct) => {
       if (filterCategory === 'all') return true;
-      if (filterCategory === 'on_sale') return g.variants.some(v => (v as any).is_on_sale);
+      if (filterCategory === 'on_sale') return g.variants.some(v => v.is_on_sale);
       return g.category === filterCategory;
     },
     [filterCategory]
@@ -1997,7 +2002,7 @@ export default function AgentStorefrontGrid({
     let saleCount = 0;
     for (const g of base) {
       counts[g.category] = (counts[g.category] || 0) + 1;
-      if (g.variants.some(v => (v as any).is_on_sale)) saleCount += 1;
+      if (g.variants.some(v => v.is_on_sale)) saleCount += 1;
     }
     counts['on_sale'] = saleCount;
     return counts;
@@ -2132,8 +2137,8 @@ export default function AgentStorefrontGrid({
       const bundleFactor = resolved.fullPrice > 0 ? resolved.finalPrice / resolved.fullPrice : 1;
       const lines: StorefrontCartLine[] = resolved.members.map((m) => {
         const perVial = (getEffectiveRetailPrice(m) || 0);
-        const costPerVial = isStorefrontOwner && (m as any).cost_price != null
-          ? Number((m as any).cost_price)
+        const costPerVial = isStorefrontOwner && m.cost_price != null
+          ? Number(m.cost_price)
           : perVial;
         const sizeLabel = m.products?.unit_size ? `(${m.products.unit_size}${m.products.unit_measure || ''})` : '';
         return {
@@ -2443,10 +2448,10 @@ export default function AgentStorefrontGrid({
     const displaySizeText = isBW ? `10x ${size}${measure} Vials` : `${size}${measure} Vials`;
 
     const perVialBase = getEffectiveRetailPrice(defaultV);
-    const isOnSale = (defaultV as any).is_on_sale && (defaultV as any).sale_price;
-    const perVialDisplay = isOnSale ? (defaultV as any).sale_price : perVialBase;
+    const isOnSale = defaultV.is_on_sale && defaultV.sale_price;
+    const perVialDisplay = isOnSale ? (defaultV.sale_price ?? 0) : perVialBase;
     const displayPrice = isBW ? perVialDisplay * 10 : perVialDisplay;
-    const _marketAvgVial = Number((defaultV as any).products?.market_avg_price) || 0;
+    const _marketAvgVial = Number(defaultV.products?.market_avg_price) || 0;
     const _marketAvgDisplay = isBW ? _marketAvgVial * 10 : _marketAvgVial;
     const _showMarketAvg = _marketAvgDisplay > displayPrice;
     const _comparePrice = _showMarketAvg ? _marketAvgDisplay : (isOnSale ? (isBW ? perVialBase * 10 : perVialBase) : 0);
@@ -2457,7 +2462,7 @@ export default function AgentStorefrontGrid({
     // When showCostView is true and cost_price is available, swap the card's
     // main price to the owner's buy cost and use the retail price as the
     // strikethrough MSRP so the margin is immediately visible.
-    const rawCostPrice = (defaultV as any).cost_price;
+    const rawCostPrice = defaultV.cost_price;
     const hasCostData = isStorefrontOwner && showCostView && rawCostPrice != null;
     const costPerVialDisplay = hasCostData
       ? (isBW ? Number(rawCostPrice) : Number(rawCostPrice))
@@ -2751,7 +2756,7 @@ export default function AgentStorefrontGrid({
                 const v0 = grp.variants[0];
                 const priceDollars = grp.lowestPrice || 0;
                 const evTier = compoundsBySlug?.[slug]?.evidence_tier ?? null;
-                const inStock = grp.variants.some((v: any) => (v.inventory_count ?? 1) > 0);
+                const inStock = grp.variants.some((v: ProductItem) => (v.products?.inventory_count ?? 1) > 0);
                 out.push({
                   product_id: v0?.id || '',
                   display_name: grp.name,
@@ -2954,7 +2959,7 @@ export default function AgentStorefrontGrid({
         })}
 
         {/* ── Custom Branding Overlay ── covers baked-in 'PEP NATION'S RESEARCH STORE' title */}
-        {customBranding && (customBranding as any).logo_url && (
+        {customBranding && customBranding.logo_url && (
           <div style={{
             position: 'absolute',
             top: 0,
@@ -2975,8 +2980,8 @@ export default function AgentStorefrontGrid({
           }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={(customBranding as any).logo_url}
-              alt={(customBranding as any).brand_name ?? 'Store Logo'}
+              src={customBranding.logo_url}
+              alt={customBranding.brand_name ?? 'Store Logo'}
               style={{
                 height: '70%',
                 width: 'auto',
@@ -2998,7 +3003,7 @@ export default function AgentStorefrontGrid({
               overflow: 'hidden',
               textOverflow: 'ellipsis',
             }}>
-              {(customBranding as any).storefront_heading ?? (customBranding as any).brand_name}
+              {customBranding.storefront_heading ?? customBranding.brand_name}
             </span>
           </div>
         )}
@@ -3275,7 +3280,7 @@ export default function AgentStorefrontGrid({
                     { label: 'GLP-1 / Weight', q: 'glp1 semaglutide weightloss', icon: Syringe },
                     { label: 'Immune Support', q: 'immune antimicrobial tcell thymosin', icon: Shield },
                     { label: 'Sexual Health', q: 'sexual libido erectile fertility', icon: Heart },
-                  ] as { label: string; q: string; icon: any }[]).map(({ label, q, icon: Icon }) => (
+                  ] as { label: string; q: string; icon: React.ElementType }[]).map(({ label, q, icon: Icon }) => (
                     <button
                       key={label}
                       type="button"
@@ -3863,8 +3868,8 @@ export default function AgentStorefrontGrid({
                         const item = products.find(p => p.id === vId);
                         if (!item) return null;
                         const perVial = getEffectiveRetailPrice(item);
-                        const costPerVial = isStorefrontOwner && (item as any).cost_price != null
-                          ? Number((item as any).cost_price)
+                        const costPerVial = isStorefrontOwner && item.cost_price != null
+                          ? Number(item.cost_price)
                           : perVial;
                         const sizeLabel = item.products?.unit_size
                           ? `(${item.products.unit_size}${item.products.unit_measure || ''})`
@@ -3958,8 +3963,8 @@ export default function AgentStorefrontGrid({
               const stickyVId = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
               const stickyV = detailProduct.variants.find(v => v.id === stickyVId) || detailProduct.variants[0];
               if (!stickyV) return null;
-              const stickyRaw = (stickyV as any).is_on_sale && (stickyV as any).sale_price
-                ? (stickyV as any).sale_price
+              const stickyRaw = stickyV.is_on_sale && stickyV.sale_price
+                ? stickyV.sale_price
                 : getEffectiveRetailPrice(stickyV);
               const stickyPer = stickyRaw;
               const stickyQty = Math.max(1, pendingQty);
@@ -4192,12 +4197,12 @@ export default function AgentStorefrontGrid({
                   const isBW = packOf10(detailProduct.name, detailProduct.compoundSlug);
                   const step = isBW ? 10 : selfBuyStep;
                   const minQ = isBW ? 10 : selfBuyMin;
-                  const rawPrice = (activeV as any).is_on_sale && (activeV as any).sale_price
-                    ? (activeV as any).sale_price
+                  const rawPrice = activeV.is_on_sale && activeV.sale_price
+                    ? activeV.sale_price
                     : getEffectiveRetailPrice(activeV);
                   const basePrice = rawPrice;
 
-                  const agentCostPerVial = (activeV as any).agent_cost != null ? Number((activeV as any).agent_cost) : basePrice;
+                  const agentCostPerVial = activeV.agent_cost != null ? Number(activeV.agent_cost) : basePrice;
 
                   // Quantity Discounts: Buying More Of The SAME Peptide Saves
                   // 10/15/20%. Diluents (BAC Water) And Owner Restocks Stay Flat.
@@ -4432,7 +4437,7 @@ export default function AgentStorefrontGrid({
                         {(() => {
                           const selVId2 = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
                           const activeV2 = detailProduct.variants.find(v => v.id === selVId2) || detailProduct.variants[0];
-                          const rawP = (activeV2 as any).is_on_sale && (activeV2 as any).sale_price ? (activeV2 as any).sale_price : getEffectiveRetailPrice(activeV2);
+                          const rawP = activeV2.is_on_sale && activeV2.sale_price ? activeV2.sale_price : getEffectiveRetailPrice(activeV2);
                           const bp = rawP;
                           return [{ min: 100, pct: 5 }, { min: 300, pct: 10 }, { min: 500, pct: 15 }].map((tier, i) => {
                             const dp = parseFloat((bp * (1 - tier.pct / 100)).toFixed(2));
