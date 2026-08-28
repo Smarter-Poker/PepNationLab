@@ -151,7 +151,7 @@ export async function PATCH(req: NextRequest) {
 
     // Cost floor: base_cost (COGS) for the admin house store, tier-derived
     // cost for agents. All price/margin guardrails below key off this value.
-    let agentCostPer10 = 0;
+    let agentCostPerVial = 0;
     // Per-agent exemption from the retail margin ceiling (top sellers, e.g. Savage Brands).
     let marginCapExempt = false;
     // Manufacturer stores: zero pricing restrictions of any kind.
@@ -160,7 +160,7 @@ export async function PATCH(req: NextRequest) {
 
     if (gate.isAdmin) {
       const rawBase = (check.products as any)?.house_cost ?? (check.products as any)?.base_cost;
-      agentCostPer10 = rawBase != null ? Number(rawBase) : 0;
+      agentCostPerVial = rawBase != null ? Number(rawBase) : 0;
     } else {
       const { data: profData } = await supabase
         .from('profiles')
@@ -174,7 +174,7 @@ export async function PATCH(req: NextRequest) {
       marginCapExempt = Boolean((profData as { margin_cap_exempt?: boolean } | null)?.margin_cap_exempt);
       const tier = ((profData?.tier) ?? 'tier_3');
       if (!isManufacturer && tier) {
-        agentCostPer10 = await computeAgentCostForAgent(supabase, check.product_id, gate.user.id, tier as any);
+        agentCostPerVial = await computeAgentCostForAgent(supabase, check.product_id, gate.user.id, tier as any);
       }
 
       const prRole = (profData as any)?.role;
@@ -194,8 +194,8 @@ export async function PATCH(req: NextRequest) {
       resolvedRetailPrice = Number(retail_price);
     } else if (margin_percent !== undefined && Number.isFinite(Number(margin_percent))) {
       resolvedMarginPercent = Number(margin_percent);
-      if (agentCostPer10 > 0) {
-        resolvedRetailPrice = agentCostPer10 * (1 + resolvedMarginPercent / 100);
+      if (agentCostPerVial > 0) {
+        resolvedRetailPrice = agentCostPerVial * (1 + resolvedMarginPercent / 100);
       }
     }
 
@@ -211,7 +211,7 @@ export async function PATCH(req: NextRequest) {
     // Minimum-margin floor (platform rule): retail must be at least 10% above
     // the agent's cost - but never demand a price above the admin ceiling,
     // or an agent whose cost sits near the ceiling could not price at all.
-    const minMarginFloor = Math.round(agentCostPer10 * 1.10 * 100) / 100;
+    const minMarginFloor = Math.round(agentCostPerVial * 1.10 * 100) / 100;
     const effectiveFloor = maxRetailPrice != null ? Math.min(minMarginFloor, maxRetailPrice) : minMarginFloor;
 
     const minRetailPrice = Number((check.products as any)?.min_retail_price || effectiveFloor);
@@ -224,7 +224,7 @@ export async function PATCH(req: NextRequest) {
       if (resolvedRetailPrice !== undefined && resolvedRetailPrice < minRetailPrice) {
         return NextResponse.json(
           {
-            error: `Listed price ($${(resolvedRetailPrice / 10).toFixed(2)}/vial) cannot be below the Minimum Advertised Price ($${(minRetailPrice / 10).toFixed(2)}/vial).`,
+            error: `Listed price ($${(resolvedRetailPrice).toFixed(2)}/vial) cannot be below the Minimum Advertised Price ($${(minRetailPrice).toFixed(2)}/vial).`,
           },
           { status: 422 }
         );
@@ -233,7 +233,7 @@ export async function PATCH(req: NextRequest) {
       if (resolvedRetailPrice !== undefined && resolvedRetailPrice < effectiveFloor) {
         return NextResponse.json(
           {
-            error: `Retail Price Must Be At Least 10% Above Your Cost ($${(effectiveFloor / 10).toFixed(2)} Minimum).`,
+            error: `Retail Price Must Be At Least 10% Above Your Cost ($${(effectiveFloor).toFixed(2)} Minimum).`,
           },
           { status: 422 }
         );
@@ -244,7 +244,7 @@ export async function PATCH(req: NextRequest) {
       if (!gate.isAdmin && maxRetailPrice !== null && resolvedRetailPrice !== undefined && resolvedRetailPrice > maxRetailPrice) {
         return NextResponse.json(
           {
-            error: `Listed price ($${(resolvedRetailPrice / 10).toFixed(2)}/vial) exceeds the maximum allowed price ($${(maxRetailPrice / 10).toFixed(2)}/vial). Agents may not price above the admin store rate.`,
+            error: `Listed price ($${(resolvedRetailPrice).toFixed(2)}/vial) exceeds the maximum allowed price ($${(maxRetailPrice).toFixed(2)}/vial). Agents may not price above the admin store rate.`,
           },
           { status: 422 }
         );
@@ -264,8 +264,8 @@ export async function PATCH(req: NextRequest) {
       }
     }
 
-    if (!isManufacturer && retail_price !== undefined && Number.isFinite(Number(retail_price)) && agentCostPer10 > 0) {
-      resolvedMarginPercent = Math.round((resolvedRetailPrice! / agentCostPer10 - 1) * 100 * 100) / 100;
+    if (!isManufacturer && retail_price !== undefined && Number.isFinite(Number(retail_price)) && agentCostPerVial > 0) {
+      resolvedMarginPercent = Math.round((resolvedRetailPrice! / agentCostPerVial - 1) * 100 * 100) / 100;
     }
 
     const activeSalePrice = sale_price !== undefined && sale_price !== null ? sale_price : Number(check.sale_price);
@@ -286,7 +286,7 @@ export async function PATCH(req: NextRequest) {
       if (!(activeSalePrice >= minRetailPrice)) {
         return NextResponse.json(
           {
-            error: `Sale price ($${(activeSalePrice / 10).toFixed(2)}/vial) cannot be below the Minimum Advertised Price ($${(minRetailPrice / 10).toFixed(2)}/vial).`,
+            error: `Sale price ($${(activeSalePrice).toFixed(2)}/vial) cannot be below the Minimum Advertised Price ($${(minRetailPrice).toFixed(2)}/vial).`,
           },
           { status: 422 }
         );
@@ -295,7 +295,7 @@ export async function PATCH(req: NextRequest) {
       if (!(activeSalePrice >= effectiveFloor)) {
         return NextResponse.json(
           {
-            error: `Retail Price Must Be At Least 10% Above Your Cost ($${(effectiveFloor / 10).toFixed(2)} Minimum).`,
+            error: `Retail Price Must Be At Least 10% Above Your Cost ($${(effectiveFloor).toFixed(2)} Minimum).`,
           },
           { status: 422 }
         );
@@ -305,7 +305,7 @@ export async function PATCH(req: NextRequest) {
       if (!gate.isAdmin && maxRetailPrice !== null && activeSalePrice > maxRetailPrice) {
         return NextResponse.json(
           {
-            error: `Sale price ($${(activeSalePrice / 10).toFixed(2)}/vial) exceeds the maximum allowed price ($${(maxRetailPrice / 10).toFixed(2)}/vial).`,
+            error: `Sale price ($${(activeSalePrice).toFixed(2)}/vial) exceeds the maximum allowed price ($${(maxRetailPrice).toFixed(2)}/vial).`,
           },
           { status: 422 }
         );
@@ -313,8 +313,8 @@ export async function PATCH(req: NextRequest) {
     }
 
     const checkRetailPrice = activeIsOnSale ? activeSalePrice : (resolvedRetailPrice !== undefined ? resolvedRetailPrice : Number(check.retail_price));
-    if (!isManufacturer && checkRetailPrice > 0 && agentCostPer10 > 0) {
-      const newMarginPct = ((checkRetailPrice - agentCostPer10) / checkRetailPrice) * 100;
+    if (!isManufacturer && checkRetailPrice > 0 && agentCostPerVial > 0) {
+      const newMarginPct = ((checkRetailPrice - agentCostPerVial) / checkRetailPrice) * 100;
 
       const { data: subAgents } = await supabase
         .from('profiles')
@@ -335,7 +335,7 @@ export async function PATCH(req: NextRequest) {
           if (netMarginPct < 10) {
             const minRequiredGross = maxExisting + 10;
             return NextResponse.json(
-              { error: `Cannot lower price to $${((checkRetailPrice / 10).toFixed(2))}/vial. You have sub-agents earning up to ${maxExisting}% commission, which requires this product's margin to be at least ${minRequiredGross}% to maintain a 10% Net Profit.` },
+              { error: `Cannot lower price to $${((checkRetailPrice).toFixed(2))}/vial. You have sub-agents earning up to ${maxExisting}% commission, which requires this product's margin to be at least ${minRequiredGross}% to maintain a 10% Net Profit.` },
               { status: 422 }
             );
           }
@@ -374,7 +374,7 @@ export async function PATCH(req: NextRequest) {
     };
 
     // manufacturer_cost is the manufacturer's own private production cost per
-    // 10-pack (profit display input). Only a manufacturer may write it.
+    // vial (profit display input). Only a manufacturer may write it.
     if (manufacturer_cost !== undefined) {
       if (!isManufacturer) {
         return NextResponse.json(
