@@ -172,8 +172,9 @@ export async function PATCH(req: NextRequest) {
         .maybeSingle();
       isManufacturer = Boolean((profData as { is_manufacturer?: boolean | null } | null)?.is_manufacturer);
       marginCapExempt = Boolean((profData as { margin_cap_exempt?: boolean } | null)?.margin_cap_exempt);
-      if (!isManufacturer && profData?.tier) {
-        agentCostPer10 = await computeAgentCostForAgent(supabase, check.product_id, gate.user.id, profData.tier as AgentTier);
+      const tier = ((profData?.tier) ?? 'tier_3');
+      if (!isManufacturer && tier) {
+        agentCostPer10 = await computeAgentCostForAgent(supabase, check.product_id, gate.user.id, tier as any);
       }
 
       const prRole = (profData as any)?.role;
