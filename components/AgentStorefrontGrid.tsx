@@ -4197,7 +4197,7 @@ export default function AgentStorefrontGrid({
                     : getEffectiveRetailPrice(activeV);
                   const basePrice = rawPrice;
 
-                  const agentCostPerVial = (activeV as any).cost_price != null ? Number((activeV as any).cost_price) : basePrice;
+                  const agentCostPerVial = (activeV as any).agent_cost != null ? Number((activeV as any).agent_cost) : basePrice;
 
                   // Quantity Discounts: Buying More Of The SAME Peptide Saves
                   // 10/15/20%. Diluents (BAC Water) And Owner Restocks Stay Flat.
