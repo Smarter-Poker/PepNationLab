@@ -157,6 +157,8 @@ export async function PATCH(req: NextRequest) {
     // Manufacturer stores: zero pricing restrictions of any kind.
     let isManufacturer = false;
     let ceilingMultiplier = 1.0;
+    let prRole: string | undefined;
+    let prIsSuper: boolean | undefined;
 
     if (gate.isAdmin) {
       const rawBase = (check.products as any)?.house_cost ?? (check.products as any)?.base_cost;
@@ -177,8 +179,8 @@ export async function PATCH(req: NextRequest) {
         agentCostPerVial = await computeAgentCostForAgent(supabase, check.product_id, gate.user.id, tier as any);
       }
 
-      const prRole = (profData as any)?.role;
-      const prIsSuper = (profData as any)?.is_super_agent;
+      prRole = (profData as any)?.role;
+      prIsSuper = (profData as any)?.is_super_agent;
       const parRole = (profData as any)?.parent?.role;
       const parIsSuper = (profData as any)?.parent?.is_super_agent;
 
@@ -206,7 +208,11 @@ export async function PATCH(req: NextRequest) {
       ? Number((check.products as any).max_retail_price)
       : null;
 
-    const maxRetailPrice: number | null = rawMaxRetailPrice !== null ? rawMaxRetailPrice * ceilingMultiplier : null;
+    let maxRetailPrice: number | null = rawMaxRetailPrice !== null ? rawMaxRetailPrice * ceilingMultiplier : null;
+    if (prRole === "super_agent" || prIsSuper) {
+      maxRetailPrice = null;
+      marginCapExempt = true;
+    }
 
     // Minimum-margin floor (platform rule): retail must be at least 10% above
     // the agent's cost - but never demand a price above the admin ceiling,
