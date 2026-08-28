@@ -72,7 +72,7 @@ async function buildCatalogPayload(agentSlug: string): Promise<CatalogResult> {
   // URL param allows underscore-wildcard matching to wrong storefronts.
   const { data: agent, error: agentError } = await supabase
     .from('agent_profiles')
-    .select('id, slug, primary_color, is_active, profiles!inner(tier, is_manufacturer)')
+    .select('id, slug, primary_color, is_active, profiles!inner(tier, is_manufacturer, role, is_super_agent, margin_cap_exempt)')
     .eq('slug', agentSlug)
     .maybeSingle();
 
@@ -143,6 +143,9 @@ async function buildCatalogPayload(agentSlug: string): Promise<CatalogResult> {
 
   // ── 2.5 Clamp Prices to Margin Floor ─────────────────────────────────────────
   const isManufacturer = Boolean((agent as any).profiles?.is_manufacturer);
+  const prRole = (agent as any).profiles?.role;
+  const prIsSuper = (agent as any).profiles?.is_super_agent;
+  const isExempt = Boolean((agent as any).profiles?.margin_cap_exempt) || prRole === 'super_agent' || prIsSuper;
   if (!isManufacturer && products.length > 0) {
     const pricedProducts = products
       .filter(ap => ap.product_id && (ap.products as any)?.base_cost != null && Number((ap.products as any).base_cost) > 0)
@@ -154,7 +157,10 @@ async function buildCatalogPayload(agentSlug: string): Promise<CatalogResult> {
     products = products.map(ap => {
       const pId = ap.product_id as string;
       const costPrice = costMap.get(pId) ?? 0;
-      const minMarginRetail = Math.round(costPrice * 1.10 * 100) / 100;
+      let minMarginRetail = Math.round(costPrice * 1.10 * 100) / 100;
+      if (isExempt) {
+        minMarginRetail = costPrice; // Super Agents can sell at their exact cost
+      }
       
       let clampedRetail = Number(ap.retail_price);
       if (clampedRetail < minMarginRetail) {
@@ -167,7 +173,7 @@ async function buildCatalogPayload(agentSlug: string): Promise<CatalogResult> {
       }
       
       // We purposefully strip out base_cost and max_retail_price so they aren't leaked to the public frontend
-      const { base_cost, max_retail_price, ...safeProducts } = ap.products as any;
+      const { base_cost, max_retail_price, ...safeProducts } = (ap.products || {}) as any;
       void base_cost; void max_retail_price;
       
       return {
@@ -179,7 +185,7 @@ async function buildCatalogPayload(agentSlug: string): Promise<CatalogResult> {
     });
   } else if (isManufacturer && products.length > 0) {
     products = products.map(ap => {
-      const { base_cost, max_retail_price, ...safeProducts } = ap.products as any;
+      const { base_cost, max_retail_price, ...safeProducts } = (ap.products || {}) as any;
       void base_cost; void max_retail_price;
       return { ...ap, products: safeProducts };
     });

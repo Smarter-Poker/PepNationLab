@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
         superAgentProfile = sap;
       }
     } else if (profile.referring_agent_id) {
-      const { data: ap } = await serviceSupabase.from('profiles').select('id, role, tier, parent_agent_id, auto_approve_orders, account_type, max_auto_approve_limit, is_sub_agent, referring_sub_agent_id, is_manufacturer, manufacturer_commission_pct').eq('id', profile.referring_agent_id).maybeSingle();
+      const { data: ap } = await serviceSupabase.from('profiles').select('id, role, tier, parent_agent_id, auto_approve_orders, account_type, max_auto_approve_limit, is_sub_agent, referring_sub_agent_id, is_manufacturer, manufacturer_commission_pct, is_super_agent, margin_cap_exempt').eq('id', profile.referring_agent_id).maybeSingle();
       agentProfile = ap;
       if (ap && ap.parent_agent_id) {
         const { data: sap } = await serviceSupabase.from('profiles').select('id, tier, account_type, prepaid_balance, credit_limit, max_auto_approve_limit, auto_approve_orders').eq('id', ap.parent_agent_id).maybeSingle();
@@ -228,6 +228,7 @@ export async function POST(request: NextRequest) {
     const isManufacturerStore = Boolean(
       (agentProfile as { is_manufacturer?: boolean | null } | null)?.is_manufacturer
     );
+    const isStoreExempt = Boolean((agentProfile as any)?.margin_cap_exempt) || (agentProfile as any)?.role === 'super_agent' || Boolean((agentProfile as any)?.is_super_agent);
     const manufacturerCommissionPct = isManufacturerStore
       ? Math.min(Math.max(Number((agentProfile as { manufacturer_commission_pct?: unknown } | null)?.manufacturer_commission_pct ?? 10) || 10, 0), 100)
       : 0;
@@ -810,7 +811,10 @@ export async function POST(request: NextRequest) {
       // price editor and as a DB clamp trigger; this is the authoritative
       // last line because only checkout knows the agent's true chain cost.
       if (!isWholesalePurchase && !isManufacturerStore) {
-        const minMarginRetail = Math.round(costPrice * 1.10 * 100) / 100;
+        let minMarginRetail = Math.round(costPrice * 1.10 * 100) / 100;
+        if (isStoreExempt) {
+          minMarginRetail = costPrice;
+        }
         if (retailPrice < minMarginRetail) {
           retailPrice = minMarginRetail;
         }
