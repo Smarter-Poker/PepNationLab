@@ -3608,6 +3608,7 @@ export default function AgentStorefrontGrid({
                             setCartItems(prev => {
                               const next = { ...prev };
                               if (isNaN(val)) {
+                                delete next[variantId];
                                 return next;
                               }
                               const prodItem = products.find(p => p.id === variantId);
