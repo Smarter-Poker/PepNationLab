@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { unstable_cache } from 'next/cache';
 import { createServiceClient } from '@/lib/supabase/server';
+import { computeAgentCostsForAgent } from '@/lib/pricing';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { getCompoundsBySlugs } from '@/lib/compounds-server';
 import type { StorefrontCatalogPayload } from '@/lib/storefront-cache';
@@ -71,7 +72,7 @@ async function buildCatalogPayload(agentSlug: string): Promise<CatalogResult> {
   // URL param allows underscore-wildcard matching to wrong storefronts.
   const { data: agent, error: agentError } = await supabase
     .from('agent_profiles')
-    .select('id, slug, primary_color, is_active')
+    .select('id, slug, primary_color, is_active, profiles!inner(tier, is_manufacturer)')
     .eq('slug', agentSlug)
     .maybeSingle();
 
@@ -100,6 +101,7 @@ async function buildCatalogPayload(agentSlug: string): Promise<CatalogResult> {
         custom_description,
         custom_image_url,
         retail_price,
+        manufacturer_cost,
         is_on_sale,
         sale_price,
         products (
@@ -113,6 +115,8 @@ async function buildCatalogPayload(agentSlug: string): Promise<CatalogResult> {
           unit_size,
           unit_measure,
           weight_oz,
+          base_cost,
+          max_retail_price,
           compound_slug,
           market_avg_price
         )
@@ -134,8 +138,52 @@ async function buildCatalogPayload(agentSlug: string): Promise<CatalogResult> {
     throw new Error(`[catalog api] Error fetching inventory: ${inventoryResult.error.message}`);
   }
 
-  const products = productsResult.data ?? [];
+  let products = productsResult.data ?? [];
   const inventory = inventoryResult.data as Array<{ product_id: string; stock_count: number }> | null;
+
+  // ── 2.5 Clamp Prices to Margin Floor ─────────────────────────────────────────
+  const isManufacturer = Boolean((agent as any).profiles?.is_manufacturer);
+  if (!isManufacturer && products.length > 0) {
+    const pricedProducts = products
+      .filter(ap => ap.product_id && (ap.products as any)?.base_cost != null && Number((ap.products as any).base_cost) > 0)
+      .map(ap => ({ id: ap.product_id as string, base_cost: Number((ap.products as any).base_cost) }));
+      
+    const tier = ((agent as any).profiles?.tier ?? 'tier_3') as any;
+    const costMap = await computeAgentCostsForAgent(supabase, agent.id, tier, pricedProducts);
+    
+    products = products.map(ap => {
+      const pId = ap.product_id as string;
+      const costPrice = costMap.get(pId) ?? 0;
+      const minMarginRetail = Math.round(costPrice * 1.10 * 100) / 100;
+      
+      let clampedRetail = Number(ap.retail_price);
+      if (clampedRetail < minMarginRetail) {
+        clampedRetail = minMarginRetail;
+      }
+      
+      let clampedSale = ap.sale_price !== null ? Number(ap.sale_price) : null;
+      if (ap.is_on_sale && clampedSale !== null && clampedSale < minMarginRetail) {
+        clampedSale = minMarginRetail;
+      }
+      
+      // We purposefully strip out base_cost and max_retail_price so they aren't leaked to the public frontend
+      const { base_cost, max_retail_price, ...safeProducts } = ap.products as any;
+      void base_cost; void max_retail_price;
+      
+      return {
+        ...ap,
+        retail_price: clampedRetail,
+        sale_price: clampedSale,
+        products: safeProducts,
+      };
+    });
+  } else if (isManufacturer && products.length > 0) {
+    products = products.map(ap => {
+      const { base_cost, max_retail_price, ...safeProducts } = ap.products as any;
+      void base_cost; void max_retail_price;
+      return { ...ap, products: safeProducts };
+    });
+  }
 
   // ── 3. COA URLs - only if we have product IDs ───────────────────────────────
   const productIds = products
