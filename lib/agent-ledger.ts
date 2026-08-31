@@ -42,6 +42,7 @@ export function computeOwnOrderLedger(order: LedgerOrder, items: LedgerItem[]): 
   let agentOwesTotal = 0;
   let sbCostTotal    = 0;
   let retailTotal    = 0;
+  const isDownline = !!(order.is_sub_agent_order || order.is_downline_order);
 
   items.forEach(item => {
     const qty = Number(item.quantity) || 0;
@@ -50,11 +51,16 @@ export function computeOwnOrderLedger(order: LedgerOrder, items: LedgerItem[]): 
     const usc = Number(item.unit_super_agent_cost || 0);
     const urp = Number(item.unit_retail_price     || 0);
     agentOwesTotal += ucp * qty;
-    if (usc > 0) sbCostTotal += usc * qty;
+    
+    if (isDownline) {
+      if (usc > 0) sbCostTotal += usc * qty;
+      else sbCostTotal += ucp * qty;
+    }
+    
     retailTotal += urp * qty;
   });
 
-  const hasSbCost      = sbCostTotal > 0;
+  const hasSbCost      = isDownline;
   const markupSpread   = hasSbCost ? agentOwesTotal - sbCostTotal : null;
   const grossCustomerPmt = retailTotal + shippingCost;
   const netYouCollect    = Number(order.total) || 0;
@@ -89,7 +95,13 @@ export function computeUplineLedger(order: LedgerOrder, items: LedgerItem[]): Up
     const usc = Number(item.unit_super_agent_cost || 0);
     const urp = Number(item.unit_retail_price     || 0);
     agentOwesTotal += ucp * qty;
-    if (usc > 0) sbCostTotal += usc * qty;
+    
+    if (usc > 0) {
+      sbCostTotal += usc * qty;
+    } else {
+      sbCostTotal += ucp * qty;
+    }
+    
     retailTotal += urp * qty;
   });
 

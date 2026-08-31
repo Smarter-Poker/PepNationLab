@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { computeOwnOrderLedger, computeUplineLedger } from '../lib/agent-ledger';
 
-const REAL_ORDER = { total: 199.85, shipping_cost: 0, discount_amount: 22.21 };
+const REAL_ORDER = { total: 199.85, shipping_cost: 0, discount_amount: 22.21, is_sub_agent_order: true };
 const REAL_ITEMS = [{ quantity: 3, unit_retail_price: 74.02, unit_cost_price: 27.42, unit_super_agent_cost: 13.71 }];
 
 describe('agent ledger logic', () => {
@@ -30,7 +30,7 @@ describe('agent ledger logic', () => {
   });
 
   it('3. No upline cost', () => {
-    const order = { ...REAL_ORDER, shipping_cost: 10 };
+    const order = { ...REAL_ORDER, shipping_cost: 10, is_sub_agent_order: false };
     const items = [{ quantity: 3, unit_retail_price: 74.02, unit_cost_price: 27.42, unit_super_agent_cost: 0 }];
     const resOwn = computeOwnOrderLedger(order, items);
     const resUpline = computeUplineLedger(order, items);
@@ -38,8 +38,8 @@ describe('agent ledger logic', () => {
     expect(resOwn.hasSbCost).toBe(false);
     expect(resOwn.markupSpread).toBeNull();
     
-    expect(resUpline.youOwePepNation).toBeCloseTo(10, 2); // just shipping
-    expect(resUpline.uplProfit).toBeCloseTo(82.26, 2); // 27.42 * 3 - 0
+    expect(resUpline.youOwePepNation).toBeCloseTo(92.26, 2); // 27.42 * 3 + 10 shipping
+    expect(resUpline.uplProfit).toBeCloseTo(0, 2); // 27.42 * 3 - 27.42 * 3
   });
 
   it('4. Multi-item order sums correctly', () => {
@@ -47,7 +47,7 @@ describe('agent ledger logic', () => {
       { quantity: 1, unit_retail_price: 10, unit_cost_price: 5, unit_super_agent_cost: 2 },
       { quantity: 2, unit_retail_price: 20, unit_cost_price: 10, unit_super_agent_cost: 4 } // 40, 20, 8
     ];
-    const order = { total: 50, shipping_cost: 0, discount_amount: 0 };
+    const order = { total: 50, shipping_cost: 0, discount_amount: 0, is_sub_agent_order: true };
     const res = computeOwnOrderLedger(order, items);
     expect(res.grossCustomerPmt).toBeCloseTo(50, 2);
     expect(res.youOweSB).toBeCloseTo(25, 2);
@@ -109,7 +109,7 @@ describe('agent ledger logic', () => {
 
   it('10. Profit can go negative', () => {
     // netYouCollect = 10, youOweSB = 25
-    const order = { total: 10, shipping_cost: 0, discount_amount: 0 };
+    const order = { total: 10, shipping_cost: 0, discount_amount: 0, is_sub_agent_order: true };
     const items = [{ quantity: 1, unit_retail_price: 10, unit_cost_price: 25, unit_super_agent_cost: 10 }];
     const res = computeOwnOrderLedger(order, items);
     expect(res.ownProfit).toBeCloseTo(-15, 2);
