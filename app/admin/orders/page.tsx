@@ -1419,14 +1419,32 @@ function AdminOrdersPageInner() {
                         if (userRole === "admin" || userRole === "super_agent") {
                           const qty = item.quantity || 0;
                           const retail = Number(item.unit_retail_price || 0);
+                          const isDownline = !!((selectedOrder as any).is_sub_agent_order || (selectedOrder as any).is_downline_order || selectedOrder.agent?.parent);
+                          
                           if (selectedOrder.agent_id) {
                             const cost = Number(item.unit_cost_price || 0);
                             const scost = Number(item.unit_super_agent_cost || 0);
-                            const profit = (cost - scost) * qty;
-                            profitLabel = `PN Margin: $${profit.toFixed(2)}`;
+                            
+                            let uplineMargin = 0;
+                            let pnCollects = cost;
+                            if (isDownline) {
+                              if (scost > 0) {
+                                uplineMargin = cost - scost;
+                                pnCollects = scost;
+                              } else {
+                                uplineMargin = 0;
+                                pnCollects = cost;
+                              }
+                            }
+                            
+                            if (isDownline) {
+                                profitLabel = `Upline Margin: $${(uplineMargin * qty).toFixed(2)}`;
+                            } else {
+                                profitLabel = `PN Collects: $${(pnCollects * qty).toFixed(2)}`;
+                            }
                           } else {
-                            const scost = Number(item.unit_super_agent_cost || 0);
-                            const profit = (retail - scost) * qty;
+                            const cost = Number(item.unit_cost_price || 0);
+                            const profit = (retail - cost) * qty;
                             profitLabel = `Profit: $${profit.toFixed(2)}`;
                           }
                         }
@@ -1598,6 +1616,7 @@ function AdminOrdersPageInner() {
                                 let sbCostTotal = 0;
                                 let retailTotal = 0;
 
+                                const isDownline = !!((selectedOrder as any).is_sub_agent_order || (selectedOrder as any).is_downline_order || selectedOrder.agent?.parent);
                                 items.forEach(item => {
                                   const qty = Number(item.quantity) || 0;
                                   if (qty <= 0) return;
@@ -1607,14 +1626,17 @@ function AdminOrdersPageInner() {
                                   const urp = Number(item.unit_retail_price || 0);
                                   
                                   agentOwesTotal += ucp * qty;
-                                  if (usc > 0) sbCostTotal += usc * qty;
+                                  if (isDownline) {
+                                    if (usc > 0) sbCostTotal += usc * qty;
+                                    else sbCostTotal += ucp * qty;
+                                  }
                                   houseCostTotal += uhc * qty;
                                   retailTotal += urp * qty;
                                 });
 
                                 let houseCollects = 0;
                                 let collectSource = "";
-                                if (sbCostTotal > 0) {
+                                if (isDownline && sbCostTotal > 0) {
                                   houseCollects = sbCostTotal + shippingCost;
                                   collectSource = uplineName || "Savage Brands";
                                 } else if (selectedOrder.agent_id) {
