@@ -1,4 +1,11 @@
 {
+  "git": {
+    "deploymentEnabled": {
+      "ci-marker/**": false,
+      "backup/**": false,
+      "build/**": false
+    }
+  },
   "functions": {
     "app/api/cron/**/*": {
       "maxDuration": 300
