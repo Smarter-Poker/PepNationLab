@@ -95,10 +95,6 @@ const nextConfig = {
   async rewrites() {
     return [
       {
-        source: "/hub/MLB-ANALYTICS-ENGINE/:path*",
-        destination: "https://mlb-analytics-engine.vercel.app/:path*",
-      },
-      {
         // Sixteen research pages set twitter.images to /images/og-card.jpg,
         // which has never existed (the real asset is /og-card.png). Twitter
         // only falls back to og:image when twitter:image is ABSENT -- a present
