@@ -40,7 +40,22 @@ jobs:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-node@v7
         with:
-          node-version: "20"
+          # 22, not 20. @supabase/supabase-js ^2.112 builds a RealtimeClient
+          # inside createClient() and asks for a native `WebSocket` global,
+          # which Node did not ship until 22. On 20 all three suites in this
+          # job died in their own import with
+          #   Error: Node.js detected but native WebSocket not found.
+          #     at getWebSocketConstructor (realtime-js/lib/websocket-factory)
+          # before a single assertion ran, and the SDK printed the reason on
+          # its way past: "Node.js 20 and below are deprecated ... upgrade to
+          # Node.js 22 or later."
+          #
+          # This job had been failing that way on `main` for thirteen days,
+          # found 2026-09-06 by the estate-wide green-on-main sweep. It is in
+          # no ruleset, so a red run blocked no merge and coloured nothing
+          # anybody reads. pr-gate.yml and promote-to-production.yml were
+          # already on 22 and green, which is why the repo looked fine.
+          node-version: "22"
           cache: "npm"
       - name: Install
         run: npm ci
