@@ -139,7 +139,7 @@ jobs:
         # so the sweep has to rescue the PR on its next pass).
         id: app-token
         if: vars.AUTOPILOT_APP_ID != ''
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ vars.AUTOPILOT_APP_ID }}
           private-key: ${{ secrets.AUTOPILOT_APP_PRIVATE_KEY }}
