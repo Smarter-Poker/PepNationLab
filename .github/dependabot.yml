@@ -24,6 +24,34 @@ updates:
       include: "scope"
 
   # GitHub Actions used by the CI workflows in .github/workflows/.
+  #
+  # THIS REPO IS THE ONLY ONE IN THE ESTATE WITH A DEPENDABOT CONFIG, AND TWO
+  # OF ITS WORKFLOWS ARE NOT ITS OWN (2026-09-07).
+  #
+  # `.github/scripts/estate-integrity.sh` holds a SHARED_FILES list that must be
+  # byte-identical in all seven repos. Two entries on it live in
+  # `.github/workflows/`: `agent-autopilot.yml` and `agent-open-pr.yml`. Nothing
+  # in this directory tells Dependabot that, and Dependabot cannot be scoped to
+  # skip a single file inside an ecosystem's directory - so a bump here edits a
+  # file the other six repos are not editing, and the invariant breaks by
+  # construction on every action release.
+  #
+  # It is not theoretical. On 2026-09-07 at 17:58Z, PR #158 bumped
+  # actions/checkout 4 -> 7 and actions/create-github-app-token 1 -> 3 in both
+  # of those files, smarter-poker-autopilot[bot] auto-merged it, and the hourly
+  # estate-integrity run raised Club Arena issue #3498 two hours later: "2
+  # different versions across the estate" for each file. Neither bump had ever
+  # executed - both workflow runs after that merge were `skipped` - so the
+  # estate was drifted by versions nothing had proven.
+  #
+  # So the two actions that appear in the shared workflows are frozen HERE. They
+  # are not frozen forever: they are bumped deliberately, in all seven repos at
+  # once, by an estate-wide change that has actually watched the new version
+  # run. Every other action this repo uses (setup-node, upload-artifact,
+  # github-script, setup-python, supabase/setup-cli) still updates normally.
+  #
+  # IF YOU ADD AN ACTION TO EITHER SHARED WORKFLOW, ADD IT TO THIS LIST TOO -
+  # otherwise the next release of it drifts the estate exactly like #158 did.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -34,3 +62,9 @@ updates:
       - "security"
     commit-message:
       prefix: "ci"
+    ignore:
+      # Used by agent-autopilot.yml and agent-open-pr.yml, both estate-shared.
+      - dependency-name: "actions/checkout"
+      # Used by agent-open-pr.yml only; no workflow of this repo's own uses it,
+      # so this entry costs this repo nothing at all.
+      - dependency-name: "actions/create-github-app-token"
