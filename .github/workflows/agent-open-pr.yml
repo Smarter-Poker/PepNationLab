@@ -124,7 +124,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # Full history: `gh pr create --fill` computes its title/body from
           # `base...head`, and a depth-1 checkout has no base ref — the run
@@ -139,7 +139,7 @@ jobs:
         # so the sweep has to rescue the PR on its next pass).
         id: app-token
         if: vars.AUTOPILOT_APP_ID != ''
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ vars.AUTOPILOT_APP_ID }}
           private-key: ${{ secrets.AUTOPILOT_APP_PRIVATE_KEY }}
