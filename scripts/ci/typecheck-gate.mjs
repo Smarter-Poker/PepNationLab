@@ -31,9 +31,14 @@ function collectErrorSignatures() {
       maxBuffer: 64 * 1024 * 1024,
     });
   } catch (e) {
-    // tsc exits non-zero whenever errors exist; that is expected here. Use the
-    // captured stdout/stderr rather than treating the exit code as a failure.
+    // TypeScript exits 1 or 2 for diagnostics. Missing executables, crashes
+    // and other failures are not an empty diagnostic set or a passing check.
     out = `${e.stdout || ''}${e.stderr || ''}`;
+    if (![1, 2].includes(e.status) || e.signal || !/error TS\d+:/.test(out)) {
+      console.error(`Typecheck gate FAILED: compiler did not complete (exit ${e.status ?? 'unknown'}${e.signal ? `, signal ${e.signal}` : ''}).`);
+      console.error(out || e.message);
+      process.exit(1);
+    }
   }
   const seen = new Set();
   for (const raw of out.split('\n')) {
