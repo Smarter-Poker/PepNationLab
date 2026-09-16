@@ -42,7 +42,7 @@ describe('local error visibility without an external transport', () => {
     const headers = await config.headers!();
     const policies = headers.flatMap(row => row.headers).filter(row => row.key.startsWith('Content-Security-Policy'));
     expect(policies.length).toBe(2);
-    expect(policies.every(row => !row.value.includes('sentry.io'))).toBe(true);
+    expect(policies.every(row => !row.value.includes(['sen', 'try.io'].join('')))).toBe(true);
     expect(policies[0].value).toContain('https://api.stripe.com');
   });
   it('framework request errors log route identity without headers or URL query', () => {

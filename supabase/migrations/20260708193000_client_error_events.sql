@@ -1,7 +1,7 @@
 -- ============================================================================
 -- Client-side error observability sink.
 --
--- PepNationLab has the Sentry helper code but no DSN configured, so browser
+-- Existing browser error reporting has no configured external destination, so
 -- errors currently go nowhere (a caught error in a client flow -- e.g. the match
 -- drawer -- fails silently). This table is a lightweight, self-contained sink:
 -- the rate-limited /api/observability/client-error route inserts rows with the

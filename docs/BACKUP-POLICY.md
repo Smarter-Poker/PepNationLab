@@ -45,7 +45,7 @@ The following drill should be run in a Supabase preview branch every 90 days. Tr
 - Build artifacts (regenerated on every deploy from `main`).
 - Local migration files before they are pushed to `main`.
 
-If a sensitive value is rotated (Supabase service role key, Sentry DSN, CRON_SECRET, VAPID keys, Upstash tokens, Shippo API key), update the Vercel project env vars AND the team's secret store the same hour.
+If a sensitive value is rotated (Supabase service role key, CRON_SECRET, VAPID keys, Upstash tokens, Shippo API key), update the Vercel project env vars AND the team's secret store the same hour.
 
 ## Off-platform fallback
 

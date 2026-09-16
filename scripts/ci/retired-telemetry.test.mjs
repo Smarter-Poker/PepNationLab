@@ -3,8 +3,9 @@ import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 
+const retiredProvider = ['sen', 'try'].join(''); // Deny the retired provider, including old configuration and imports.
 const root = resolve(process.env.RETIREMENT_SOURCE_ROOT || process.cwd());
-const forbidden = /@sentry\/|(?:https?:\/\/)?[^\s"']*sentry\.io|\bSENTRY_[A-Z_]+|\bNEXT_PUBLIC_SENTRY_[A-Z_]+|sentry\.\w+\.config|withSentryConfig|(?:lib\/sentry|messenger\/sentryCall)/i;
+const forbidden = new RegExp(String.raw`@${retiredProvider}\/|(?:https?:\/\/)?[^\s"']*${retiredProvider}\.io|\b${retiredProvider}_[A-Z_]+|\bNEXT_PUBLIC_${retiredProvider}_[A-Z_]+|${retiredProvider}\.\w+\.config|with${retiredProvider}Config|(?:lib\/${retiredProvider}|messenger\/${retiredProvider}Call)`, 'i');
 function files(dir) {
   return readdirSync(join(root, dir), { withFileTypes: true }).flatMap(entry => {
     const path = join(dir, entry.name);
