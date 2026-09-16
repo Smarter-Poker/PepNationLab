@@ -11,16 +11,16 @@
     "build": "next build",
     "start": "next start",
     "lint": "echo 'Skipping lint on Vercel' && exit 0",
-    "test": "vitest run --exclude __tests__/db --exclude __tests__/e2e",
+    "test": "node --test scripts/ci/retired-telemetry.test.mjs && vitest run --exclude __tests__/db --exclude __tests__/e2e",
     "test:db": "vitest run __tests__/db",
     "test:e2e": "playwright test",
     "postinstall": "patch-package",
-    "prepare": "git config core.hooksPath .husky 2>/dev/null || true"
+    "prepare": "git config core.hooksPath .husky 2>/dev/null || true",
+    "test:telemetry": "node --test scripts/ci/retired-telemetry.test.mjs"
   },
   "dependencies": {
     "@livekit/components-react": "^2.9.24",
     "@livekit/components-styles": "^1.1.0",
-    "@sentry/nextjs": "^10.71.0",
     "@supabase/ssr": "^0.12.5",
     "@supabase/supabase-js": "^2.112.3",
     "@vercel/analytics": "^2.0.1",

@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { getSupabaseUrl } from '@/lib/supabase/url';
-import { captureError } from '@/lib/sentry';
+import { captureError } from '@/lib/errorReporting';
 import { isEffectiveAdmin } from '@/lib/platform-admins';
 import { DEFAULT_STORE_SLUG } from '@/lib/default-store';
 // Slug shape + reserved app routes live in ONE module shared by the middleware,

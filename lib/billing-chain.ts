@@ -1,5 +1,5 @@
 import type { createServiceClient } from '@/lib/supabase/server';
-import { captureError } from '@/lib/sentry';
+import { captureError } from '@/lib/errorReporting';
 import { logError } from '@/lib/log';
 
 type ServiceClient = Awaited<ReturnType<typeof createServiceClient>>;

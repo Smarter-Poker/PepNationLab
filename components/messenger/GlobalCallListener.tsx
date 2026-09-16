@@ -1,4 +1,5 @@
 'use client';
+import { captureCallError } from '@/lib/messenger/callDiagnostics';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
@@ -32,17 +33,10 @@ class CallOverlayErrorBoundary extends React.Component<
     };
   }
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('[CallOverlay] render crash caught by boundary:', error, errorInfo);
-    try {
-      import('@/lib/messenger/sentryCall').then(({ captureCallError }) => {
-        captureCallError(error, 'overlay', {
-          stage_detail: 'render_crash',
-          component_stack: errorInfo.componentStack ?? undefined,
-        });
-      }).catch(() => {});
-    } catch {
-      // Sentry helper missing - fall through silently.
-    }
+    captureCallError(error, 'overlay', {
+      stage_detail: 'render_crash',
+      component_stack: errorInfo.componentStack ?? undefined,
+    });
   }
   handleClose = () => {
     this.setState({ hasError: false, errorMessage: null });

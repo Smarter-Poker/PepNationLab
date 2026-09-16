@@ -417,8 +417,6 @@ PAYER_LEGAL_NAME=<SET in Vercel production 2026-07-11 - PIQ TRAINING INC>
 | | Sender Phone | `+16195361280` |
 | **SendGrid** | API Key | `${SENDGRID_API_KEY}` |
 | | From | `PepNationRX <hello@pepnationrx.com>` |
-| **Sentry** | Backend DSN | `${SENTRY_DSN_BACKEND}` |
-| | Browser DSN | `${NEXT_PUBLIC_SENTRY_DSN_FRONTEND}` |
 | **JWT** | Access Secret | `${JWT_ACCESS_SECRET}` |
 | | Refresh Secret | `${JWT_REFRESH_SECRET}` |
 | | Access TTL | 900s (15 min) |
@@ -465,7 +463,7 @@ PAYER_LEGAL_NAME=<SET in Vercel production 2026-07-11 - PIQ TRAINING INC>
 | Payments | Stripe Connect (tri-party split) |
 | SMS | Twilio |
 | Email | SendGrid |
-| Monitoring | Sentry |
+| Monitoring | See the separately maintained PepNationRX configuration |
 | Frontend hosting | Vercel |
 | Backend hosting | Hetzner VPS (5.161.252.33) |
 | DNS | Namecheap |
@@ -1003,3 +1001,7 @@ da087a8 CRITICAL: Fix storefront login auth, middleware signout, admin role gate
 ### Cron Jobs
 - `/api/cron/reminders` -- Daily at 12:00 UTC (abandoned cart reminders)
 - `/api/cron/invoices` -- Weekly Sunday at 23:59 UTC (generate weekly statements)
+
+## Error Diagnostics
+
+Browser and server errors use local structured logs and the existing client error database sink. No external error-reporting SDK or upload service is configured in PepNationLab. Do not add a paid monitoring integration without explicit owner authorization.

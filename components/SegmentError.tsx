@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { captureError } from '@/lib/sentry';
+import { captureError } from '@/lib/errorReporting';
 
 /**
  * Shared segment-level error boundary body. Unlike app/error.tsx (which

@@ -15,7 +15,7 @@ import type { CallSignalRow } from '@/lib/messenger/realtime';
 import { useMessengerStore } from '@/stores/messengerStore';
 import Image from 'next/image';
 import { createRingTone } from '@/lib/messenger/ringTone';
-import { captureCallError, captureCallEvent } from '@/lib/messenger/sentryCall';
+import { captureCallError, captureCallEvent } from '@/lib/messenger/callDiagnostics';
 import { createE2EESetup, asRoomOptions, type E2EESetup } from '@/lib/messenger/livekitE2EE';
 import { canShareScreen, listDeviceKinds } from '@/lib/messenger/mediaPreflight';
 import CallGridView from './CallGridView';
@@ -528,7 +528,7 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
       // Resync to whatever actually happened before deciding how loud to be.
       setIsScreenSharing(localParticipant.isScreenShareEnabled);
       // Dismissing the browser's screen picker is a deliberate user choice,
-      // not an error — no red toast, no Sentry noise.
+      // not an error — no red toast, no error-log noise.
       const name = (err as { name?: string } | null)?.name;
       if (name === 'NotAllowedError' || name === 'AbortError') return;
       captureCallError(err, 'overlay', { stage_detail: 'toggle_screen_share' });

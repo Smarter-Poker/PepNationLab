@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getCronAuth } from '@/lib/messenger/server';
-import { captureCallError, captureCallEvent, recordCallMetric } from '@/lib/messenger/sentryCall';
+import { captureCallError, captureCallEvent, recordCallMetric } from '@/lib/messenger/callDiagnostics';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -88,10 +88,8 @@ export async function GET(req: NextRequest) {
   const markedMissed = (missedRes.data ?? []).length;
   const closedStaleActive = (staleRes.data ?? []).length;
 
-  // audit15 fix-25 (B9): emit Sentry metrics so dashboards can graph
-  // these counts and alerts can fire on spikes. recordCallMetric
-  // emits one event per metric (info level) - even zero values are
-  // useful for confirming the cron is running.
+  // Retain counts in the existing server logs, including zero values,
+  // so the scheduled business job remains observable.
   recordCallMetric('mark_missed_calls.marked_missed', markedMissed);
   recordCallMetric('mark_missed_calls.closed_stale_active', closedStaleActive);
 
