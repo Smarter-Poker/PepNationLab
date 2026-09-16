@@ -13,10 +13,15 @@
 #     production build. Only if BOTH pass does it fast-forward `production` to the
 #     commit — which is what Vercel actually deploys.
 #
-# Result: every production deploy is green AND team-authored. A broken or
-# bot-authored commit simply is not promoted; production holds the last good
-# commit until a green, correctly-authored one lands. No Error, no Blocked in
-# production, and unlimited concurrent agents.
+# Result: every production deploy is green AND authored by an identity GitHub
+# can attribute. A broken commit, or one authored by a personal mailbox that
+# belongs to no GitHub account, simply is not promoted; production holds the
+# last good commit until a green, correctly-authored one lands. No Error, no
+# Blocked in production, and unlimited concurrent agents.
+#
+# "Bot-authored" is NOT the test, and reading it that way is what froze
+# production for three days on 2026-09-03. The estate's squash-merge app
+# authors every commit that reaches `main` here. See the author gate below.
 
 name: Promote to Production
 
@@ -35,20 +40,52 @@ jobs:
   gate-and-promote:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - name: Author gate — HEAD must be the approved team identity
+      # The gate's job is to keep out a commit Vercel CANNOT ATTRIBUTE to a
+      # GitHub account: that deployment goes straight to BLOCKED, with no build
+      # log at all, so nothing downstream can even see why. The address that
+      # caused it was `Claude (Cowork) <...@gmail.com>` - a plain mailbox
+      # belonging to no GitHub user. It was never "bots are unwelcome".
+      #
+      # CORRECTED 2026-09-06, after this gate froze production for three days.
+      # It compared against ONE literal address. On 2026-09-03 the estate moved
+      # squash merges onto its own GitHub App, so every commit reaching `main`
+      # since has been authored `smarter-poker-autopilot[bot]` - and this job
+      # refused all six of them. `production` sat 6 commits behind `main` from
+      # 2026-09-03T16:18 while the build stayed green and main marched on.
+      # Nothing raised a hand: the workflow is in no ruleset, so a red run
+      # blocks no merge and colours nothing anyone reads.
+      #
+      # The premise was falsified by the estate's own control group: the World
+      # Hub's `main` HEAD carries that same bot as its author, and Vercel had
+      # built and promoted it - smarter.poker /api/health served 5f6cf604 while
+      # this gate was calling that identity unbuildable.
+      #
+      # So the list holds every identity that legitimately lands on `main`
+      # here, and each one is a `<numeric account id>+<handle>@users.noreply`
+      # address, which is precisely what "GitHub can attribute this" means.
+      # Adding one is a deliberate line; a stray mailbox still cannot promote.
+      - name: Author gate — HEAD must be an approved, attributable identity
         env:
-          APPROVED_EMAIL: "254329056+Smarter-Poker@users.noreply.github.com"
+          APPROVED_EMAILS: |
+            254329056+Smarter-Poker@users.noreply.github.com
+            319745803+smarter-poker-autopilot[bot]@users.noreply.github.com
+            49699333+dependabot[bot]@users.noreply.github.com
+            41898282+github-actions[bot]@users.noreply.github.com
         run: |
           set -euo pipefail
           author="$(git log -1 --format='%ae')"
-          if [ "$author" != "$APPROVED_EMAIL" ]; then
-            echo "::error::HEAD author '$author' is not the approved Vercel-team identity."
-            echo "Not promoting to production (Vercel would Block it)."
-            echo "Re-commit under: git config user.email \"$APPROVED_EMAIL\" && git commit --amend --reset-author --no-edit && git push"
+          if ! printf '%s\n' "$APPROVED_EMAILS" | grep -Fxq -- "$author"; then
+            echo "::error::HEAD author '$author' is not an approved, attributable identity."
+            echo "Not promoting to production (Vercel would Block a commit it cannot attribute)."
+            echo "Approved identities:"
+            printf '%s\n' "$APPROVED_EMAILS" | sed '/^[[:space:]]*$/d;s/^/  - /'
+            echo "If this is a new estate actor, add it to APPROVED_EMAILS above."
+            echo "If it is a personal mailbox, re-commit under the team identity:"
+            echo "  git config user.email \"254329056+Smarter-Poker@users.noreply.github.com\" && git commit --amend --reset-author --no-edit && git push"
             exit 1
           fi
           echo "Author OK: $author"
