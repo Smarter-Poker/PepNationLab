@@ -54,7 +54,7 @@ import { NextResponse } from 'next/server';
 import crypto from 'node:crypto';
 import { createAdminClient } from '@/lib/supabase/server';
 import { safeCompare } from '@/lib/shipping-crypto';
-import { captureError } from '@/lib/sentry';
+import { captureError } from '@/lib/capture-error';
 import { logError } from '@/lib/log';
 import {
   resolveWebhookSecret,

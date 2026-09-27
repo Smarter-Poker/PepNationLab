@@ -162,8 +162,7 @@ const nextConfig = {
               "font-src 'self' data: https://fonts.gstatic.com; " +
               // api.stripe.com: Stripe.js tokenization calls for the Forge card form.
               "connect-src 'self' https://*.supabase.co https://easypost-files.s3.us-west-2.amazonaws.com https://easypost-files.s3-us-west-2.amazonaws.com wss://*.supabase.co " +
-                "wss://*.livekit.cloud https://*.livekit.cloud https://api.stripe.com " +
-                "https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.us.sentry.io; " +
+                "wss://*.livekit.cloud https://*.livekit.cloud https://api.stripe.com; " +
               // frame-src was previously governed by default-src 'self'; keep
               // 'self' (the /api/proxy iframes) and add Stripe Elements frames.
               "frame-src 'self' https://js.stripe.com; " +
@@ -207,8 +206,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
               "font-src 'self' data: https://fonts.gstatic.com; " +
               "connect-src 'self' https://*.supabase.co https://api.goshippo.com wss://*.supabase.co " +
-                "wss://*.livekit.cloud https://*.livekit.cloud " +
-                "https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.us.sentry.io; " +
+                "wss://*.livekit.cloud https://*.livekit.cloud; " +
               "worker-src 'self' blob:; " +
               "object-src 'none'; " +
               "base-uri 'self'; " +
@@ -265,30 +263,4 @@ const nextConfig = {
   },
 };
 
-// Wrap with Sentry only when @sentry/nextjs is resolvable. This keeps the
-// build green in environments that haven't installed Sentry yet (e.g. a fresh
-// clone before `npm install` has resolved the new dependency).
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let exported: any = nextConfig;
-try {
-  // Resolve via a variable so TS does not require the .d.ts to be present.
-  const mod = '@sentry/nextjs';
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { withSentryConfig } = require(mod);
-  exported = withSentryConfig(nextConfig, {
-    silent: true,
-    org: process.env.SENTRY_ORG,
-    project: process.env.SENTRY_PROJECT,
-    // Required for readable stack traces: uploads source maps when
-    // SENTRY_AUTH_TOKEN is provisioned (no-op otherwise).
-    authToken: process.env.SENTRY_AUTH_TOKEN,
-    widenClientFileUpload: true,
-    // First-party route for browser events so ad blockers do not eat
-    // client-side error reports.
-    tunnelRoute: '/monitoring',
-  });
-} catch {
-  // Sentry not installed yet; ship without it.
-}
-
-export default exported;
+export default nextConfig;

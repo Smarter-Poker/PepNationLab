@@ -59,7 +59,7 @@ CSP (per-request nonce injected in `proxy.ts` middleware + `'nonce-...'`
 This was deliberately NOT done from Cowork: on a live Next.js 16 app with many
 inline scripts (hydration, injected styles), a wrong nonce wiring breaks the
 entire site, and it cannot be fully validated headlessly. Do this in a branch
-with a real preview deploy and click-through QA. Verify Stripe/LiveKit/Sentry/
+with a real preview deploy and click-through QA. Verify Stripe/LiveKit/
 Supabase still load and that no console CSP violations appear.
 
 ---

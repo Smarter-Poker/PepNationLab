@@ -9,7 +9,7 @@
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { getEffectiveUser } from '@/lib/impersonation';
-import { captureError } from '@/lib/sentry';
+import { captureError } from '@/lib/capture-error';
 import { logError } from '@/lib/log';
 // ONE builder for storefront QR payloads. See lib/qr-storefront.ts: every
 // route that hand-rolled this string had drifted, and the drift is what

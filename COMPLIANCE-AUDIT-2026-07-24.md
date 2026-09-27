@@ -159,7 +159,7 @@ The 126 PNGs in `product-labels/` (mirrored to Supabase `print-labels` and `prin
 
 ### D2. Privacy (`app/privacy/page.tsx`)
 - Claims **"GDPR and CCPA aligned"** but provides **no CCPA/CPRA rights mechanism** (no right-to-know/delete, no "Do Not Sell or Share" link, no categories table) and separately says "intended for users in the United States" (contradicts GDPR). Either drop the alignment claims or add the actual rights + Do-Not-Sell link. **[HIGH]**
-- "We do not use third-party analytics" while the stack uses **Sentry** (telemetry) and **Resend** (email) — disclose subprocessors or reconcile. **[MED]**
+- "We do not use third-party analytics" while the stack uses **Resend** (email); the former third-party error tracker was removed on 2026-09-27 — disclose subprocessors or reconcile. **[MED]**
 - Disclosed payments (Zelle/Venmo/Cash App/Apple Pay) don't match Help's PayPal/Wise/Chime/Apple Cash instructions. Reconcile. **[MED]** Phone numbers collected but SMS use never addressed. **[LOW]**
 
 ### D3. Compliance (`app/compliance/page.tsx`)
