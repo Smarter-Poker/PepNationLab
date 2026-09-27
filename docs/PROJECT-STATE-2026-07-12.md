@@ -32,8 +32,8 @@ trigger (pins every financial/tier/attribution column); the arbitrary order
 INSERT/UPDATE RLS policies dropped; admin backdoor / MFA gate / audit trail hardened;
 homepage and compound monographs BOTH server-render crawlable prose
 (`HomeSeoContent`, `MonographSeoContent`) with full JSON-LD; `robots.ts` allows
-`/api/llm` and every named AI crawler; Sentry is fully wired (no-ops only until DSNs
-are provisioned); mobile Lighthouse Performance is 0.99.
+`/api/llm` and every named AI crawler; errors go to first-party logs (the
+third-party error tracker was removed 2026-09-27); mobile Lighthouse Performance is 0.99.
 
 ## Genuinely OPEN (verified 2026-07-12)
 
@@ -57,9 +57,6 @@ are provisioned); mobile Lighthouse Performance is 0.99.
 - CSP keeps `script-src 'unsafe-inline'` -- move to a nonce/hash-based policy.
 
 **Ops (owner -- env/dashboard, not code):**
-- Provision Sentry DSNs in Vercel (`NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_DSN`, `SENTRY_ORG`,
-  `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`) -- highest-leverage remaining action; all
-  capture paths are already wired.
 - Confirm Upstash Redis env in production (else rate limiting is per-instance).
 - Decide the storage-bucket listing policy (`product-coas`, `product-images`,
   `avatars`, `message-attachments` are public).

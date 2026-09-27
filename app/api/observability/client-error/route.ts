@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
-import { captureError } from '@/lib/sentry';
+import { captureError } from '@/lib/capture-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -68,8 +68,8 @@ export async function POST(req: NextRequest) {
       //  Database schema mismatch from generated types
       meta: clampMeta(body?.meta),
     });
-    // Forward to Sentry so client errors alert like server errors instead of
-    // rotting unseen in a Supabase table.
+    // Also log to the server function logs so client errors show up beside
+    // server errors instead of rotting unseen in a Supabase table.
     captureError(new Error(message), {
       source: 'client-error-sink',
       context: clamp(body?.context, 120),

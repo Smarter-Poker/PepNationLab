@@ -8,7 +8,7 @@
  *
  * safeError is the sanctioned choke point for route failures: it emits a
  * structured JSON log line (greppable, machine-parseable in Vercel logs) AND
- * forwards the exception to Sentry via captureError. Both are best-effort
+ * records the exception via captureError. Both are best-effort
  * and can never break the response path.
  *
  * Context string convention: `<area>.<route>.<method>.<step>` --
@@ -24,7 +24,7 @@
  *   }
  */
 import { NextResponse } from 'next/server';
-import { captureError } from '@/lib/sentry';
+import { captureError } from '@/lib/capture-error';
 import { logError } from '@/lib/log';
 
 export function safeError(
@@ -33,7 +33,7 @@ export function safeError(
   status = 500,
   clientMessage = 'Something Went Wrong. Please Try Again.',
 ): NextResponse {
-  // Full detail goes to the server logs (Vercel) + Sentry only -- never to
+  // Full detail goes to the server logs (Vercel) only -- never to
   // the client.
   logError(`api-error.${context}`, { status }, err);
   try {

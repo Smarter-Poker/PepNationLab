@@ -417,8 +417,6 @@ PAYER_LEGAL_NAME=<SET in Vercel production 2026-07-11 - PIQ TRAINING INC>
 | | Sender Phone | `+16195361280` |
 | **SendGrid** | API Key | `${SENDGRID_API_KEY}` |
 | | From | `PepNationRX <hello@pepnationrx.com>` |
-| **Sentry** | Backend DSN | `${SENTRY_DSN_BACKEND}` |
-| | Browser DSN | `${NEXT_PUBLIC_SENTRY_DSN_FRONTEND}` |
 | **JWT** | Access Secret | `${JWT_ACCESS_SECRET}` |
 | | Refresh Secret | `${JWT_REFRESH_SECRET}` |
 | | Access TTL | 900s (15 min) |
@@ -465,7 +463,7 @@ PAYER_LEGAL_NAME=<SET in Vercel production 2026-07-11 - PIQ TRAINING INC>
 | Payments | Stripe Connect (tri-party split) |
 | SMS | Twilio |
 | Email | SendGrid |
-| Monitoring | Sentry |
+| Monitoring | First-party logs (Vercel function logs, client_error_events table); no third-party error tracker |
 | Frontend hosting | Vercel |
 | Backend hosting | Hetzner VPS (5.161.252.33) |
 | DNS | Namecheap |

@@ -182,7 +182,7 @@ export function decryptSecret(input: {
   } catch {
     // Don't echo the underlying error to the caller - it may contain crypto
     // internals that look like leak vectors. Generic message; the caller's
-    // own logger picks up Sentry breadcrumb.
+    // own logger records the failure.
     throw new Error('decryptSecret: authentication failed (tampered ciphertext or wrong key)');
   }
 }

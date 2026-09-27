@@ -11,7 +11,7 @@ import { assertSameOrigin } from '@/lib/csrf';
 import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
 import { shortOrderId } from '@/lib/push-enqueue';
 import { assertChainCanTransact } from '@/lib/billing-chain';
-import { captureError } from '@/lib/sentry';
+import { captureError } from '@/lib/capture-error';
 import { logError } from '@/lib/log';
 import { notifyOrderApproved, notifyOrderCancelled, notifyOrderAwaitingApproval, notifyAdmins } from '@/lib/notify';
 import { emailConfigured, sendOrderApprovedEmail, sendOrderCancelledEmail } from '@/lib/email';
