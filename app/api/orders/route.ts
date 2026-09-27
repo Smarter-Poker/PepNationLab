@@ -17,7 +17,7 @@ import { notifyOrderPlaced, notify, notifyCouponRedeemed, notifyAdmins, notifyDo
 import { sendOrderConfirmationEmail, sendAgentSaleEmail } from '@/lib/email';
 import { logOrderEvent } from '@/lib/order-events';
 import { PAYMENT_METHOD_LABELS } from '@/lib/payment-method-labels';
-import { captureError } from '@/lib/sentry';
+import { captureError } from '@/lib/capture-error';
 import { logError } from '@/lib/log';
 // CheckoutSchema lives in lib/schemas/order.ts -- the shared client/server
 // single source of truth for the checkout contract. The client
@@ -1569,7 +1569,7 @@ export async function POST(request: NextRequest) {
         if (demoteErr) {
           // Double failure: the order is still approved_ship with no billing
           // row -- unbilled goods will ship unless a human intervenes. Retry
-          // once, then escalate via Sentry + admin notification.
+          // once, then escalate via error log + admin notification.
           const { error: demoteRetryErr } = await serviceSupabase
             .from('orders')
             .update({ status: 'agent_approval_pending' })

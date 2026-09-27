@@ -25,7 +25,7 @@ What actually remains is a **short, well-scoped tail**: a handful of money-path 
 | Admin panel: MFA gate broken, no edge role gate, no audit trail | **FIXED** | `getAuthenticatorAssuranceLevel` fix, `/admin` edge role gate (`proxy.ts:454`), `lib/admin-audit.ts` wired |
 | Missing tier row → $0 wholesale pricing | **FIXED** | Orders route now hard-fails on a missing multiplier instead of `?? 0` |
 | DST week permanently skipped in billing | **FIXED** | `lib/time-cst.ts` computes CDT/CST offset correctly |
-| Sentry structurally dormant (every capture path broken) | **CODE FIXED** | Static imports, `onRequestError`, `instrumentation-client.ts` all wired (no-ops only until DSNs are set — see R-1) |
+| Third-party error tracker | **RETIRED 2026-09-27** | Removed from the codebase entirely; errors go to first-party logs (Vercel function logs, `client_error_events`) |
 | Homepage LCP ~7.8s / 1.9MB raster | **FIXED** | Mobile Lighthouse **Performance 0.99**; image served via `next/image` optimizer as AVIF/WebP |
 | Homepage has zero crawlable text (SEO P0-1) | **FIXED** | Real `<h1>`, intro copy, primary `<nav>`, crawlable anchor text in all 8 click-zones, a server-rendered `<HomeSeoContent/>`, and full JSON-LD |
 | AI crawlers / `/api/llm` blocked by robots (SEO P0-3) | **FIXED** | `robots.ts` explicitly allows `/api/llm`, names every AI crawler, shares one allow/disallow list |
@@ -38,7 +38,7 @@ What actually remains is a **short, well-scoped tail**: a handful of money-path 
 |---|---|---|
 | Security posture | **A− (~90/100)** | RLS everywhere, CSRF + edge auth + role gates, atomic money RPCs, secrets clean, private repo. Residual: proxy same-origin content, plaintext password column, CSP `unsafe-inline`. |
 | Data integrity / money paths | **B+ (pre-launch)** | Compensation-on-throw, hard-fail on missing tiers, DST fixed. Open: credit TOCTOU, non-atomic saga, migration↔live drift. |
-| Reliability / observability | **B+ (code) / C (config)** | Sentry fully wired but **DSNs likely unprovisioned** → still no-op; 47 crons healthy; needs dead-man alerting + Upstash confirm. |
+| Reliability / observability | **B+ (code) / C (config)** | First-party logging only; 47 crons healthy; needs dead-man alerting + Upstash confirm. |
 | Performance | **A (homepage)** | Mobile LH Perf 0.99 / SEO 1.0 / Best-Practices 0.96 / A11y 0.94. Spot-check heavy pages. |
 | SEO / AI discoverability | **A−** | Excellent infra AND the big gaps are closed. One moderate lever left (monograph body prose is client-side). |
 | Conversion / growth | **C+ (large upside)** | Core machinery built; KPIs, referral hub, alerts now surfaced. Reviews, back-in-stock, cross-sell, subscribe&save still latent. |
@@ -88,7 +88,7 @@ Priority: **P0** close before launch / active risk · **P1** high value soon · 
 
 | ID | Finding | Evidence | Pri | Effort |
 |---|---|---|---|---|
-| R-1 | **Provision Sentry DSNs in Vercel** — the single highest-leverage remaining ops action. All capture paths are wired but **no-op until the env vars exist**: `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`. | `instrumentation-client.ts:25`, `next.config.ts`. | P1 | S |
+| R-1 | **Retired 2026-09-27** — the third-party error tracker was removed from the codebase; there is nothing to provision. | n/a | n/a | n/a |
 | R-2 | **Cron dead-man's-switch** — 47 crons; `cron_runs` + `/api/health/crons` exist but nothing **alerts** when a cron silently stops. | `vercel.json`. | P1 | M |
 | R-3 | **Adoption sweeps** — ~360 routes still hand-roll error JSON, ~520 raw `fetch` sites, ~200 routes validate ad hoc; stamp `x-request-id` at the edge. Mechanical, low-risk. | 07-12 hardening tails. | P2 | L |
 
@@ -137,7 +137,7 @@ Already shipped: agent **invitations**, live-KPI **Action Center**, **referral h
 
 ## 4. Operational Checklist (owner — env / dashboard, can't be shipped from code)
 
-1. [ ] **Provision Sentry DSNs** in Vercel (R-1) — do this first; everything else about error tracking is already wired.
+1. [x] R-1 retired 2026-09-27 (third-party error tracker removed; nothing to provision).
 2. [ ] **Confirm Upstash Redis** env in prod (S-5).
 3. [ ] **Confirm no edge WAF blocks GPTBot/ClaudeBot/Googlebot** (SEO-2).
 4. [ ] **Decide the storage-bucket listing policy** for COAs/images/avatars/message-attachments (S-4).
@@ -150,7 +150,7 @@ Already shipped: agent **invitations**, live-KPI **Action Center**, **referral h
 
 - **Shipped this session:** `store-hero` image optimized 525KB → 138KB WebP (−74%) on the storefront-discovery page (UX-3), with blob-sha-verified push.
 - **Best next move — a focused money-path pass on a quiet `main`** (M-1 credit lock → M-2 atomic saga → M-3 migration drift → M-4 cart/billing), each with a paired migration + tests. These were deliberately deferred by prior sessions for exactly this reason; they should not be hot-patched into an actively-deploying repo.
-- **In parallel, the owner** works the §4 checklist (Sentry DSN is the big one).
+- **In parallel, the owner** works the §4 checklist.
 - **Then growth** (§3.5): reviews → back-in-stock → checkout cross-sell, each as isolated routes/tables/components.
 
 *Verified production state as of 2026-07-12. "Re-verify" items had credible report findings whose exact line references have drifted under concurrent edits; confirm at fix time.*

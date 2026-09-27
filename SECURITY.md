@@ -66,6 +66,5 @@ These require Supabase dashboard interaction by a project owner:
       (they will be redirected to `/account/security?reason=mfa_required`
       on first login until enrolled)
 - [ ] Configure Vercel env vars:
-      `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`,
       `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`,
       `CRON_SECRET`, `NEXT_PUBLIC_DISCLAIMER_VERSION`

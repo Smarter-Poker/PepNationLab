@@ -40,7 +40,7 @@ So the highest-ROI work is **surface, connect, and instrument** — not net-new 
 
 ### Phase E — Platform quality (continuous)
 
-15. **Runtime feedback loop (do early, it's cheap):** wire `useReportWebVitals` (RUM), verify the Sentry DSN in prod, and connect the existing-but-never-run `lighthouserc.js` to a CI workflow with an LCP budget. You can't manage perf you can't see.
+15. **Runtime feedback loop (do early, it's cheap):** wire `useReportWebVitals` (RUM), and connect the existing-but-never-run `lighthouserc.js` to a CI workflow with an LCP budget. You can't manage perf you can't see.
 16. **Fix mobile LCP** — the homepage is a single 1.9 MB portrait raster; add `preconnect` + blur placeholder now (S), rebuild as real HTML/CSS later (L, also a big a11y/SEO win). Mobile LCP is ~7.8s vs 2.5s target.
 17. **Accessibility baseline** (Lighthouse never ran the a11y category; ESLint is disabled), **skeleton `loading.tsx`** for checkout/orders/account/products, **PWA raster icons**, and incremental **nonce-CSP** to drop `script-src 'unsafe-inline'`.
 
