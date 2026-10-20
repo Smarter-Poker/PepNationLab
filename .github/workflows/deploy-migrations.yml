@@ -58,6 +58,7 @@ jobs:
           python3 scripts/ci/test-browser-structural-privileges.py
           python3 scripts/ci/test-message-reaction-access.py
           python3 scripts/ci/test-order-item-cost-access.py
+          python3 scripts/ci/test-explicit-journal-access.py
       - name: Verify actual API handlers and fixture entry isolation
         run: |
           npm ci
