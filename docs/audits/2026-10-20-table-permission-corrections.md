@@ -10,4 +10,6 @@ Supabase will require explicit access declarations for new public tables. This c
 
 Regression enforcement: existing migration qualification executes declaration/isolation/parser tests, native PostgreSQL 17 permission tests, actual reaction API handlers and fixture entry tests. The column drift guard now bounds tagged function bodies correctly; intentional service-only RLS boundaries have exact evidence-backed guard entries. Two preexisting generated update-payload typing failures were corrected without runtime changes to permit the required build.
 
+Thirteen Lab Journal/saved-research tables also have caller-specific explicit grants qualified without defaults (eight journal and five saved-research tables). Native tests apply their original source schemas, verify actual own-user policies, deny unrelated/unneeded operations and preserve existing live grants. Service grants are limited to observed server reads.
+
 Local evidence: 348 unit/API tests pass, 27 Node declaration/isolation/authorization/parser tests pass, full TypeScript compilation passes, native structural (8), reaction (12) and cost (11) boundaries pass. No production test rows or auth fixtures were created. Full historical per-table least-privilege qualification continues; current broad ACLs are never treated as a safe manifest to copy.

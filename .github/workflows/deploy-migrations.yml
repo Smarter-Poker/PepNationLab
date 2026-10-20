@@ -1,6 +1,7 @@
 name: Supabase Migration Source Qualification
 
 on:
+  workflow_dispatch: {}
   pull_request:
     branches: [main]
   push:
@@ -26,7 +27,7 @@ jobs:
           node-version: '22'
       - name: Check explicit table boundaries and production fixture isolation
         env:
-          TABLE_ACCESS_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          TABLE_ACCESS_BASE: ${{ github.event.pull_request.base.sha || github.event.before || 'HEAD~1' }}
         run: |
           node --test tests/*.test.mjs tests/*.test.cjs
           node --test scripts/ci/test-message-reaction-access.mjs scripts/ci/test-order-item-cost-access.mjs
@@ -58,7 +59,9 @@ jobs:
           python3 scripts/ci/test-browser-structural-privileges.py
           python3 scripts/ci/test-message-reaction-access.py
           python3 scripts/ci/test-order-item-cost-access.py
-          python3 scripts/ci/test-explicit-journal-access.py
+          for access_test in scripts/ci/test-explicit-*-access.py; do
+            python3 "$access_test"
+          done
       - name: Verify actual API handlers and fixture entry isolation
         run: |
           npm ci

@@ -43,6 +43,13 @@ try:
  assert sql('BEGIN; SET ROLE anon; TRUNCATE admin_audit_log; RESET ROLE; SELECT count(*) FROM admin_audit_log; ROLLBACK;')=='0'
  assert sql('SELECT count(*) FROM admin_audit_log;')=='1'
  sql('BEGIN; SET ROLE anon; CREATE TRIGGER unauthorized BEFORE INSERT ON admin_audit_log FOR EACH ROW EXECUTE FUNCTION public.test_trigger_fn(); ROLLBACK;')
+ # Verify empty-default provisioning first, then reproduce observed old defaults.
+ sql('CREATE TABLE public.native_no_default(id int); ALTER TABLE public.native_no_default ENABLE ROW LEVEL SECURITY;')
+ assert sql("SELECT NOT has_table_privilege('anon','native_no_default','SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER,MAINTAIN');")=='t'
+ sql('CREATE ROLE native_other_owner; ALTER DEFAULT PRIVILEGES FOR ROLE native_other_owner IN SCHEMA public GRANT ALL ON TABLES TO anon; ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA native_fixture GRANT ALL ON TABLES TO authenticated; ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT SELECT,INSERT,UPDATE,DELETE,REFERENCES,TRIGGER,MAINTAIN,TRUNCATE ON TABLES TO anon,authenticated; ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON TABLES TO postgres,service_role; CREATE TABLE public.native_old_default(id int); ALTER TABLE public.native_old_default ENABLE ROW LEVEL SECURITY;')
+ default_other_before=sql("SELECT jsonb_agg(to_jsonb(d) ORDER BY d.oid) FROM pg_default_acl d WHERE NOT (defaclrole='postgres'::regrole::oid AND defaclnamespace='public'::regnamespace);")
+ default_dml_before=sql("SELECT jsonb_agg(jsonb_build_array(r.role,p.privilege,has_table_privilege(r.role,'native_old_default',p.privilege)) ORDER BY r.role,p.privilege) FROM (VALUES('anon'),('authenticated'),('service_role'))r(role) CROSS JOIN (VALUES('SELECT'),('INSERT'),('UPDATE'),('DELETE'))p(privilege);")
+ assert sql("SELECT has_table_privilege('anon','native_old_default','REFERENCES,TRIGGER,MAINTAIN');")=='t'
  before=matrix()
  policies=sql("SELECT jsonb_agg(jsonb_build_array(c.relname,c.relrowsecurity,p.polname,p.polqual::text,p.polwithcheck::text) ORDER BY c.relname) FROM pg_class c LEFT JOIN pg_policy p ON p.polrelid=c.oid WHERE c.relnamespace='public'::regnamespace AND c.relkind IN ('r','p');")
  migration=(root/'supabase/migrations/20261020164122_browser_roles_have_no_table_maintenance_rights.sql').read_text()
@@ -55,10 +62,13 @@ try:
   denied(f'SET ROLE {role}; CREATE TABLE native_fixture.unauthorized_fk(id integer REFERENCES admin_audit_log(id));')
  assert sql('SELECT count(*) FROM admin_audit_log;')=='1'
  assert policies==sql("SELECT jsonb_agg(jsonb_build_array(c.relname,c.relrowsecurity,p.polname,p.polqual::text,p.polwithcheck::text) ORDER BY c.relname) FROM pg_class c LEFT JOIN pg_policy p ON p.polrelid=c.oid WHERE c.relnamespace='public'::regnamespace AND c.relkind IN ('r','p');")
- # No automatic-grant fallback for a future table.
- sql('CREATE TABLE public.future_private(id int); ALTER TABLE public.future_private ENABLE ROW LEVEL SECURITY;')
- assert sql("SELECT NOT has_table_privilege('anon','future_private','SELECT,INSERT,UPDATE,DELETE,TRUNCATE');")=='t'
- print(json.dumps({'passed':True,'relations':len(relations),'base_tables':sum(c['kind'] in ['r','p'] for c in relations),'checks':['rls-does-not-stop-truncate-before','unauthorized-trigger-before','browser-structural-denial-after','all-browser-and-service-dml-unchanged','service-structural-privileges-preserved-by-migration','all-policy-and-rls-metadata-unchanged','fixture-row-preserved','future-table-no-defaults']}))
+ # Future postgres-owned tables retain original DML, but no SQL structure rights.
+ sql('CREATE TABLE public.native_new_default(id int); ALTER TABLE public.native_new_default ENABLE ROW LEVEL SECURITY;')
+ assert default_dml_before==sql("SELECT jsonb_agg(jsonb_build_array(r.role,p.privilege,has_table_privilege(r.role,'native_new_default',p.privilege)) ORDER BY r.role,p.privilege) FROM (VALUES('anon'),('authenticated'),('service_role'))r(role) CROSS JOIN (VALUES('SELECT'),('INSERT'),('UPDATE'),('DELETE'))p(privilege);")
+ assert sql("SELECT count(*) FROM (VALUES('anon'),('authenticated'))r(role) WHERE has_table_privilege(r.role,'native_new_default','TRUNCATE,REFERENCES,TRIGGER,MAINTAIN');")=='0'
+ assert sql("SELECT has_table_privilege('service_role','native_new_default','TRUNCATE') AND has_table_privilege('service_role','native_new_default','REFERENCES') AND has_table_privilege('service_role','native_new_default','TRIGGER') AND has_table_privilege('service_role','native_new_default','MAINTAIN');")=='t'
+ assert default_other_before==sql("SELECT jsonb_agg(to_jsonb(d) ORDER BY d.oid) FROM pg_default_acl d WHERE NOT (defaclrole='postgres'::regrole::oid AND defaclnamespace='public'::regnamespace);")
+ print(json.dumps({'passed':True,'relations':len(relations),'base_tables':sum(c['kind'] in ['r','p'] for c in relations),'checks':['rls-does-not-stop-truncate-before','unauthorized-trigger-before','browser-structural-denial-after','all-browser-and-service-dml-unchanged','service-structural-privileges-preserved-by-migration','all-policy-and-rls-metadata-unchanged','fixture-row-preserved','future-table-no-defaults','old-default-future-structural-denial-dml-service-unchanged','other-owner-and-schema-defaults-unchanged']}))
 finally:
  if (cluster/'data/postmaster.pid').exists():
   r=run([pg/'pg_ctl','-D',cluster/'data','-m','fast','-w','stop']);assert r.returncode==0,r.stderr
