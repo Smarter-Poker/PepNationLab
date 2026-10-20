@@ -2,14 +2,9 @@ name: DB Integration Tests
 
 # Runs the __tests__/db suite against a real Supabase project.
 #
-# Secrets required:
-#   SUPABASE_URL                 — point at a Supabase BRANCH database
-#                                   for isolation. Production is supported
-#                                   but every fixture is cleaned up.
-#   SUPABASE_SERVICE_ROLE_KEY    — service-role key for the project above.
-#
-# When secrets are NOT set, every test in __tests__/db/ skips cleanly
-# (env-guard at the top of `_helpers.ts`) and the job exits green.
+# The target must be an explicitly configured isolated Supabase database.
+# Production fixture writes are refused before Vitest imports any test helper.
+# Missing isolation evidence is a failed preflight, never a passing skipped suite.
 
 on:
   pull_request:
@@ -17,6 +12,7 @@ on:
       - '__tests__/db/**'
       - 'lib/**'
       - 'supabase/migrations/**'
+      - 'scripts/ci/check-db-test-target.mjs'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/tests-db.yml'
@@ -26,6 +22,7 @@ on:
       - '__tests__/db/**'
       - 'lib/**'
       - 'supabase/migrations/**'
+      - 'scripts/ci/check-db-test-target.mjs'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/tests-db.yml'
@@ -59,8 +56,15 @@ jobs:
           cache: "npm"
       - name: Install
         run: npm ci
+      - name: Refuse production fixtures or missing isolation configuration
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_TEST_PROJECT_REF: ${{ vars.SUPABASE_TEST_PROJECT_REF }}
+        run: node scripts/ci/check-db-test-target.mjs
       - name: Vitest (db suite)
         env:
+          SUPABASE_TEST_PROJECT_REF: ${{ vars.SUPABASE_TEST_PROJECT_REF }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: npm run test:db

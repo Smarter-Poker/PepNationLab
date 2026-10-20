@@ -4,6 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
+import type { TablesUpdate } from '@/types/database.types';
 import UniqueField from '@/components/UniqueField';
 import AddressAutocompleteInput from '@/components/AddressAutocompleteInput';
 import BundleManager from '@/components/BundleManager';
@@ -118,7 +119,7 @@ export default function AgentStorefrontConfig({
         throw new Error(nameJson?.error || 'Failed To Update User Name');
       }
 
-      const updatePayload: Record<string, any> = {
+      const updatePayload: Pick<TablesUpdate<'agent_profiles'>, 'slug' | 'logo_url' | 'warehouse_address' | 'featured_products'> = {
         slug: cleanSlug,
         logo_url: logoUrl.trim() || null,
         warehouse_address: {

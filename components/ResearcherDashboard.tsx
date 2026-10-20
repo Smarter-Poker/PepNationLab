@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import type { TablesUpdate } from '@/types/database.types';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import Messaging from '@/components/Messaging';
@@ -421,7 +422,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
     setSaving(true);
     try {
       const supabase = createClient();
-      const updates: Record<string, string> = {};
+      const updates: Pick<TablesUpdate<'profiles'>, 'full_name' | 'phone'> = {};
       const joined = `${firstName.trim()} ${lastName.trim()}`.trim();
       if (joined !== (profile.full_name || '').trim()) updates.full_name = joined;
       if (phone !== (profile.phone || '')) updates.phone = phone;

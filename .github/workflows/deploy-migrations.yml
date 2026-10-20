@@ -1,29 +1,70 @@
-name: Deploy Supabase Migrations
+name: Supabase Migration Source Qualification
 
 on:
+  workflow_dispatch: {}
+  pull_request:
+    branches: [main]
   push:
-    branches:
-      - main
-    paths:
-      - 'supabase/migrations/**'
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: migration-source-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  deploy:
+  qualify:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v7
-
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v3
+      - uses: actions/checkout@v7
         with:
-          version: latest
-
-      - name: Deploy Migrations
-        run: |
-          supabase migration repair --status reverted 20260706211113 20260706211502 20260706212224 || true
-          supabase db push
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Check explicit table boundaries and production fixture isolation
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+          TABLE_ACCESS_BASE: ${{ github.event.pull_request.base.sha || github.event.before || 'HEAD~1' }}
+        run: |
+          node --test tests/*.test.mjs tests/*.test.cjs
+          node --test scripts/ci/test-message-reaction-access.mjs scripts/ci/test-order-item-cost-access.mjs
+          node scripts/ci/check-explicit-table-access.mjs
+      - name: Install PostgreSQL 17 from the signed PGDG source only
+        run: |
+          set -euo pipefail
+          pg_sources="$(mktemp -d "$RUNNER_TEMP/ca-postgres-apt.XXXXXX")"
+          chmod 755 "$pg_sources"
+          test -f /etc/apt/sources.list.d/ubuntu.sources
+          cp /etc/apt/sources.list.d/ubuntu.sources "$pg_sources/ubuntu.sources"
+          pg_apt=(-o "Dir::Etc::sourcelist=/dev/null" -o "Dir::Etc::sourceparts=$pg_sources")
+          sudo apt-get "${pg_apt[@]}" update
+          sudo apt-get "${pg_apt[@]}" install -y --no-install-recommends postgresql-common curl ca-certificates
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl --fail --silent --show-error --location \
+            --output /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+            https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          codename="$(. /etc/os-release && printf '%s' "$VERSION_CODENAME")"
+          printf 'Types: deb\nURIs: https://apt.postgresql.org/pub/repos/apt\nSuites: %s-pgdg\nComponents: main\nSigned-By: /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc\n' \
+            "$codename" > "$pg_sources/pgdg.sources"
+          sudo apt-get "${pg_apt[@]}" update
+          printf 'create_main_cluster = false\n' | sudo tee /etc/postgresql-common/createcluster.conf >/dev/null
+          sudo apt-get "${pg_apt[@]}" install -y --no-install-recommends postgresql-17
+      - name: Verify browser structural revocation on isolated PostgreSQL
+        env:
+          PG_BIN: /usr/lib/postgresql/17/bin
+        run: |
+          python3 scripts/ci/test-browser-structural-privileges.py
+          python3 scripts/ci/test-message-reaction-access.py
+          python3 scripts/ci/test-order-item-cost-access.py
+          for access_test in scripts/ci/test-explicit-*-access.py; do
+            python3 "$access_test"
+          done
+      - name: Verify actual API handlers and fixture entry isolation
+        run: |
+          npm ci
+          npx vitest run __tests__/message-reaction-participant-access.test.ts __tests__/db-fixture-entry-isolation.test.ts
+      - name: State installation boundary
+        run: echo 'Source qualified only. Exact merged migrations require explicit installation and durable history/readback through the configured database interface.'
