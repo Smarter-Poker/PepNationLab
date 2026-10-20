@@ -12,7 +12,7 @@
     "start": "next start",
     "lint": "echo 'Skipping lint on Vercel' && exit 0",
     "test": "vitest run --exclude __tests__/db --exclude __tests__/e2e",
-    "test:db": "vitest run __tests__/db",
+    "test:db": "node scripts/ci/check-db-test-target.mjs && vitest run __tests__/db",
     "test:e2e": "playwright test",
     "postinstall": "patch-package",
     "prepare": "git config core.hooksPath .husky 2>/dev/null || true"

@@ -13,6 +13,50 @@
     {
       "table": "email_verification_codes",
       "reason": "Signup verification codes (20260707223000): issued and checked exclusively by service-client auth routes. Must never be readable by anon/authenticated."
+    },
+    {
+      "table": "social_accounts",
+      "reason": "20260707120001 explicitly revokes browser roles and enables RLS without policies: OAuth credentials are read/refreshed only by lib/social/tokens.ts service client; never expose tokens to browsers."
+    },
+    {
+      "table": "social_posts",
+      "reason": "20260707120001 explicitly uses service-role-only RLS deny-all; server social admin, ingest and existing publication routes own the queue. No browser row access."
+    },
+    {
+      "table": "lot_sequences",
+      "reason": "20260711235500 intentionally enables RLS with no policies for the COA counter; 20260711190000 next_lot_seq SECURITY DEFINER RPC grants EXECUTE only to service_role."
+    },
+    {
+      "table": "marketing_attribution",
+      "reason": "20260711340000 explicitly protects the visitor/user/UTM map with no browser policies; record_attribution SECURITY DEFINER and service reporting own access."
+    },
+    {
+      "table": "email_log",
+      "reason": "20260712020002 explicitly declares append-only service-role send telemetry; lib/email.ts writes via admin client. Browser access must remain denied."
+    },
+    {
+      "table": "lifecycle_sends",
+      "reason": "20260714171500 explicitly declares service-role-only deny-all tracking; lifecycle-nudges server route uses admin client to claim once-per-user sends."
+    },
+    {
+      "table": "email_blasts",
+      "reason": "20260714172000 explicitly declares service-role-only RLS deny-all; authenticated admin API app/api/admin/email-blast owns campaign records using server client."
+    },
+    {
+      "table": "email_template_overrides",
+      "reason": "20260714172500 explicitly declares service-role-only RLS deny-all; admin email-template API and server email-overrides module own access."
+    },
+    {
+      "table": "email_templates",
+      "reason": "20260714200000 explicitly states no policies is intentional: service-role admin API only, no authenticated-user or public access."
+    },
+    {
+      "table": "agent_shipping_accounts",
+      "reason": "20260723090000 explicitly denies all direct browser access because rows hold encrypted provider credentials; service-role shipping APIs return only safe fields."
+    },
+    {
+      "table": "referral_attribution_events",
+      "reason": "20260730125733 explicitly declares service-role-only append-only attribution audit, RLS with no policies and revoked browser table/sequence access; lib/attribution-log.ts owns writes."
     }
   ],
   "permissive_policies": [
@@ -100,6 +144,11 @@
       "table": "shared_research_protocols",
       "policy": "Anyone can view shared protocols",
       "reason": "Historical: dropped by 20260707205002 (service-client lockdown). Entry kept only because the policy still appears in older migration files' final-state reconstruction if the drop migration is edited; harmless either way."
+    },
+    {
+      "table": "reserved_slugs",
+      "policy": "reserved_slugs_public_read",
+      "reason": "20260710120000 explicitly defines public SELECT of reserved slug keys for availability; 20260712020000 intentionally retains this policy and removes its duplicate. Read-only non-secret namespace reservations; no public writes."
     }
   ]
 }

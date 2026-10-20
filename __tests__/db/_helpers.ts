@@ -5,36 +5,35 @@
  * SECURITY DEFINER RPCs that own platform money paths. They are
  * intentionally not part of the default `npm test` mental-model:
  *
- *   - If `SUPABASE_URL` or `SUPABASE_SERVICE_ROLE_KEY` is not set in
- *     env, every test in the suite skips. This lets the unit test
- *     suite stay fast and CI-green without surprise data writes.
- *
- *   - When the env IS set, every row created is prefixed with the
- *     run id (`test_<runid>_*`) so a half-finished run still leaves
- *     an obvious trail to clean up by hand if needed.
- *
- *   - Pointing this at the production Supabase project is supported
- *     — the test data lives in its own namespace and is cleaned up
- *     in `afterAll`. For full isolation, point it at a Supabase
- *     branch database via `SUPABASE_URL=...` in env.
+ * Every import refuses missing isolation evidence or a production target before
+ * any fixture can be created. Configure SUPABASE_URL, SUPABASE_TEST_PROJECT_REF
+ * and an isolated project's SUPABASE_SERVICE_ROLE_KEY. Production is forbidden.
+ * Fixture rows retain their run identifiers and existing cleanup behavior.
  */
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { randomUUID } from 'crypto';
+import { validateDatabaseTestTarget } from '../../scripts/ci/check-db-test-target.mjs';
 
-export const SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
+export const SUPABASE_URL = process.env.SUPABASE_URL ?? '';
 export const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 
-export const ENV_READY = Boolean(SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY);
+function assertIsolatedFixtureTarget(): void {
+  validateDatabaseTestTarget(SUPABASE_URL, process.env.SUPABASE_TEST_PROJECT_REF);
+  if (!SUPABASE_SERVICE_ROLE_KEY) throw new Error('The isolated database service credential is unavailable.');
+}
+
+// Fail during test discovery as well as client creation: a missing or unsafe
+// configuration must never become a passing skipped integration suite.
+assertIsolatedFixtureTarget();
+export const ENV_READY = true;
 
 /** Per-run id stamped into every email/code so test rows are obvious. */
 export const RUN_ID = randomUUID().slice(0, 8);
 
 let cachedClient: SupabaseClient | null = null;
 export function getServiceClient(): SupabaseClient {
-  if (!ENV_READY) {
-    throw new Error('DB tests require SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY');
-  }
+  assertIsolatedFixtureTarget();
   if (!cachedClient) {
     cachedClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },

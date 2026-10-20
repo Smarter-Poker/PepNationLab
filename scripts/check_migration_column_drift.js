@@ -161,19 +161,20 @@ function findTriggerColumnRefs(rawSql) {
     fnToTable.set(fn, table);
   }
 
-  // For each CREATE [OR REPLACE] FUNCTION <fn>, find NEW./OLD. references inside the body.
-  // We find function blocks by locating "create [or replace] function ... as $$ ... $$" or "... begin ... end;".
-  const fnHeadRe = /create\s+(?:or\s+replace\s+)?function\s+(?:public\.)?([a-z_][a-z0-9_]*)\s*\([\s\S]*?\)[\s\S]*?(?:as\s+\$\$|begin)/gi;
+  // Dollar quotes are paired by their exact, case-sensitive tag. Never scan
+  // into a later function or truncate the body at an arbitrary character count.
+  const fnHeadRe = /create\s+(?:or\s+replace\s+)?function\s+(?:public\.)?([a-z_][a-z0-9_]*)\s*\([\s\S]*?\)[^;]*?\bas\s+(\$(?:[a-z_][a-z0-9_]*)?\$)/gi;
   let fh;
   while ((fh = fnHeadRe.exec(sql)) !== null) {
     const fn = fh[1].toLowerCase();
+    const delimiter = fh[2];
+    const bodyStart = fnHeadRe.lastIndex;
+    const bodyEnd = sql.indexOf(delimiter, bodyStart);
+    if (bodyEnd === -1) throw new Error(`Unterminated function body for ${fn} (${delimiter})`);
+    fnHeadRe.lastIndex = bodyEnd + delimiter.length;
     const table = fnToTable.get(fn);
     if (!table) continue;
-    // Body extends until matching closing $$ or end of file
-    const bodyStart = fh.index + fh[0].length;
-    // Try $$ first
-    const dollarEnd = sql.indexOf('$$', bodyStart);
-    const body = dollarEnd > 0 ? sql.slice(bodyStart, dollarEnd) : sql.slice(bodyStart, bodyStart + 4000);
+    const body = sql.slice(bodyStart, bodyEnd);
 
     const colRe = /\b(NEW|OLD)\.([a-z_][a-z0-9_]*)/g;
     let cm;
@@ -251,4 +252,5 @@ function main() {
   process.exit(1);
 }
 
-main();
+if (require.main === module) main();
+module.exports = { findTriggerColumnRefs, buildSchemaFromMigrations };

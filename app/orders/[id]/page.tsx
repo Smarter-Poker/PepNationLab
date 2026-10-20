@@ -21,6 +21,7 @@ import HelpHint from '@/components/help/HelpHint';
 import { getPopularName } from '@/lib/peptide-popular-names';
 import { carrierInfo } from '@/lib/carrier';
 import { computeOwnOrderLedger, computeUplineLedger } from '@/lib/agent-ledger';
+import { canReadOrderItemCosts } from '@/lib/order-item-cost-access';
 import LedgerBreakdown from '@/components/LedgerBreakdown';
 
 // R28: map order status → matching FAQ id so the contextual help pill lands
@@ -134,7 +135,7 @@ export default async function OrderDetailPage(
       subtotal, discount_amount, coupon_code, shipping_cost, total,
       tracking_number, label_url, shipped_at, delivered_at, updated_at, shipping_address, agent_id, buyer_id,
       buyer_payment_sent_at, payment_confirmed_at,
-      order_items (id, agent_product_id, product_id, product_name, quantity, unit_retail_price, unit_cost_price, unit_super_agent_cost, lot_number, coa_url, products(compound_slug)),
+      order_items (id, agent_product_id, product_id, product_name, quantity, unit_retail_price, lot_number, coa_url, products(compound_slug)),
       profiles:buyer_id (full_name, email)
     `)
     .eq('id', id)
@@ -177,6 +178,17 @@ export default async function OrderDetailPage(
   }
 
   const order = orderData as unknown as Order;
+  // Read the order through session RLS first. Cost columns are available only
+  // through this server-side authorization, independently of buyer access.
+  const costService = await createServiceClient();
+  const canViewCosts = await canReadOrderItemCosts(costService, { id: user.id, role: viewerRole }, order.agent_id);
+  if (canViewCosts) {
+    const { data: costs, error: costsError } = await costService.from('order_items')
+      .select('id, unit_cost_price, unit_super_agent_cost').eq('order_id', order.id);
+    if (costsError) throw new Error('Unable To Load Order Costs');
+    const costsById = new Map((costs ?? []).map((item) => [item.id, item]));
+    order.order_items = order.order_items.map((item) => ({ ...item, ...costsById.get(item.id) }));
+  }
 
   // Carrier tracking history (EasyPost webhook -> shipping_tracking_events).
   // RLS-scoped to this buyer/agent/admin and fully best-effort: any failure
@@ -705,7 +717,7 @@ export default async function OrderDetailPage(
               Uses the same math as lib/agent-ledger.ts / components/AgentOrders.tsx.
               unit_cost_price   = what this agent owes their upline (Savage Brands)
               unit_super_agent_cost = what upline owes Pep Nation (their COG) */}
-          {(viewerRole === 'agent' || viewerRole === 'super_agent' || viewerRole === 'admin') && order.agent_id && (() => {
+          {canViewCosts && order.agent_id && (() => {
             const ownLedger = computeOwnOrderLedger(order, order.order_items);
             const uplineLedger = computeUplineLedger(order, order.order_items);
             

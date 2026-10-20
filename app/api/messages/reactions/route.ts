@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { getEffectiveUser } from '@/lib/impersonation';
 import { assertSameOrigin } from '@/lib/csrf';
+import { authorizeMessageReaction } from '@/lib/message-reaction-access';
 
 /** POST: Add reaction | DELETE: Remove reaction | GET: Get reactions for a message */
 export async function GET(req: NextRequest) {
@@ -13,6 +14,8 @@ export async function GET(req: NextRequest) {
   if (!messageId) return NextResponse.json({ error: 'Missing messageId' }, { status: 400 });
 
   const service = await createServiceClient();
+  const access = await authorizeMessageReaction(service, messageId, user.id);
+  if (access.error) return NextResponse.json({ error: access.error }, { status: access.status });
   const { data, error } = await service
     .from('message_reactions')
     .select('emoji, user_id, profiles:user_id(full_name)')
@@ -45,6 +48,8 @@ export async function POST(req: NextRequest) {
   if (!messageId || !emoji) return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
 
   const service = await createServiceClient();
+  const access = await authorizeMessageReaction(service, messageId, user.id);
+  if (access.error) return NextResponse.json({ error: access.error }, { status: access.status });
   const { error } = await service.from('message_reactions').insert({
     message_id: messageId, user_id: user.id, emoji,
   });
@@ -67,6 +72,8 @@ export async function DELETE(req: NextRequest) {
   if (!messageId || !emoji) return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
 
   const service = await createServiceClient();
+  const access = await authorizeMessageReaction(service, messageId, user.id);
+  if (access.error) return NextResponse.json({ error: access.error }, { status: access.status });
   const { error } = await service.from('message_reactions')
     .delete()
     .eq('message_id', messageId)
