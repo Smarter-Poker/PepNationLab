@@ -175,6 +175,7 @@ $function$;
 CREATE OR REPLACE FUNCTION snap_agent_product_to_97()
 RETURNS TRIGGER
 LANGUAGE plpgsql
+SECURITY DEFINER SET search_path=public,pg_temp
 AS $$
 DECLARE
   v_cost numeric;
@@ -253,3 +254,7 @@ FOR EACH ROW EXECUTE FUNCTION public.refresh_dependent_contract_margins();
 CREATE TRIGGER trg_refresh_contract_retail AFTER UPDATE OF retail_price ON public.agent_products
 FOR EACH ROW WHEN (NEW.retail_price IS DISTINCT FROM OLD.retail_price)
 EXECUTE FUNCTION public.refresh_dependent_contract_margins();
+
+REVOKE ALL ON FUNCTION public.fn_agent_chain_cost(uuid,uuid) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.fn_agent_chain_cost(uuid,uuid) TO service_role;
+REVOKE ALL ON FUNCTION public.snap_agent_product_to_97() FROM PUBLIC,anon,authenticated;
