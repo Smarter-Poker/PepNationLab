@@ -5,9 +5,9 @@ vi.mock('@/lib/supabase/server',()=>({createServiceClient:async()=>({rpc:mocks.r
 import { GET } from '@/app/api/agent/tier/route';
 describe('own account contract display',()=>{
  it('shows retail percentage instead of the old commission markup',async()=>{
-  mocks.rpc.mockResolvedValue({data:[{retail_factor:0.75,house_cogs_multiplier:1.5}],error:null});
+  mocks.rpc.mockResolvedValue({data:[{retail_factor:0.60,house_cogs_multiplier:1.5}],error:null});
   const r=await GET();const b=await r.json();
-  expect(b.contractPricing.percentage).toBe(75);expect(b.contractPricing.basis).toBe('Store Retail');expect(b.chainPriced).toBeUndefined();
+  expect(b.contractPricing.percentage).toBe(60);expect(b.contractPricing.basis).toBe('Store Retail');expect(b.chainPriced).toBeUndefined();expect(b.contractPricing.description).toContain('60%');
   expect(mocks.rpc).toHaveBeenCalledWith('fn_account_pricing_contract',{p_agent:'own-agent'});
  });
  it('shows the actual COG basis for the root account',async()=>{

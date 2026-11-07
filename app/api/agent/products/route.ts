@@ -6,6 +6,7 @@ import { assertSameOrigin } from '@/lib/csrf';
 import { computeAgentCostForAgent, computeAgentCostsForAgent } from '@/lib/pricing';
 import type { AgentTier } from '@/lib/pricing';
 import { AgentProductPatchSchema } from '@/lib/schemas/product';
+import { canEditStorePricing } from '@/lib/account-pricing';
 import { parseJsonBody } from '@/lib/schemas/http';
 
 // requireAgentOrAdmin is ownership-safe here: every query below is scoped to
@@ -98,7 +99,7 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    return NextResponse.json({ data: augmented });
+    return NextResponse.json({ data: augmented, permissions: { canEditPricing: await canEditStorePricing(supabase, agentId) } });
   } catch (err) {
     console.error('[agent/products] GET error:', err);
     return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
@@ -135,6 +136,10 @@ export async function PATCH(req: NextRequest) {
 
   try {
     const supabase = await createServiceClient();
+    const priceFields = ['retail_price', 'sale_price', 'is_on_sale', 'margin_percent', 'manufacturer_cost'];
+    if (priceFields.some(key => Object.prototype.hasOwnProperty.call(parsed.data, key)) && !await canEditStorePricing(supabase, gate.user.id)) {
+      return NextResponse.json({ error: 'Pricing Is Read Only For This Account.' }, { status: 403 });
+    }
 
     const { data: check } = await supabase
       .from('agent_products')

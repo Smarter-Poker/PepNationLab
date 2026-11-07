@@ -34,7 +34,7 @@ function escapeHtml(value: string): string {
     .replace(/'/g, '&#39;');
 }
 
-export default function AgentSubAgents({ agentId }: { agentId?: string }) {
+export default function AgentSubAgents({ agentId, canEditPricing = true }: { agentId?: string; canEditPricing?: boolean }) {
 
   const [subAgents, setSubAgents] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
@@ -399,7 +399,7 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                 Agents You Have Promoted. They Bill Their Downline Directly, And You Collect Their Balances.
               </p>
             </div>
-            <button
+            {canEditPricing && <button
               className="btn-neon-cyan"
               onClick={() => {
                 fetchPricing();
@@ -407,7 +407,7 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
               }}
             >
               Manage Baseline Pricing
-            </button>
+            </button>}
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
@@ -635,7 +635,7 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
       </div>
 
       <AnimatePresence>
-        {showPricingModal && (
+        {canEditPricing && showPricingModal && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

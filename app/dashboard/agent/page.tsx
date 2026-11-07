@@ -2,6 +2,7 @@
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { canEditStorePricing } from '@/lib/account-pricing';
 import { isSavageNetworkAgent } from '@/lib/brand-network';
 import AgentDashboardClient from './AgentDashboardClient';
 
@@ -171,9 +172,11 @@ export default async function AgentDashboardPage() {
   // Savage-network verdict for this agent's own store (multi-hop parent walk)
   // so the dashboard product editor previews the correct brand vials.
   let brandNetworkIsSavage = false;
+  let canEditPricing = false;
   try {
     const svcBrand = await createServiceClient();
     brandNetworkIsSavage = await isSavageNetworkAgent(svcBrand, user.id);
+    canEditPricing = await canEditStorePricing(svcBrand, user.id);
   } catch { /* non-fatal */ }
 
   return (
@@ -192,6 +195,7 @@ export default async function AgentDashboardPage() {
         initialOrders={orders}
         initialAgentsCount={activeAgentsCount}
         brandNetworkIsSavage={brandNetworkIsSavage}
+        canEditPricing={canEditPricing}
       />
     </Suspense>
   );

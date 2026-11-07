@@ -34,6 +34,7 @@ export default function AgentBundles({ agentId }: { agentId: string }) {
   const [products, setProducts] = useState<ProductOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const [canEditPricing, setCanEditPricing] = useState(false);
 
   // Create form state
   const [bundleName, setBundleName] = useState('');
@@ -69,6 +70,7 @@ export default function AgentBundles({ agentId }: { agentId: string }) {
       }
       if (bundlesRes.ok) {
         setBundles(bundlesJson.data || []);
+        setCanEditPricing(bundlesJson.permissions?.canEditPricing === true);
       }
     } catch {} finally {
       setLoading(false);
@@ -190,17 +192,17 @@ export default function AgentBundles({ agentId }: { agentId: string }) {
               Combine Products Into Discounted Bundles For Your Storefront.
             </p>
           </div>
-          <button
+          {canEditPricing && <button
             className="btn-neon-cyan"
             onClick={() => setShowCreate(!showCreate)}
             style={{ fontSize: '0.85rem' }}
           >
             {showCreate ? 'Cancel' : '+ Create Bundle'}
-          </button>
+          </button>}
         </div>
 
         {/* Create Bundle Form */}
-        {showCreate && (
+        {canEditPricing && showCreate && (
           <div className="glass-panel" style={{ padding: 'var(--space-6)' }}>
             <h4 style={{ color: '#00E5FF', fontSize: '0.95rem', marginBottom: 'var(--space-4)' }}>New Research Bundle</h4>
 
@@ -432,12 +434,12 @@ export default function AgentBundles({ agentId }: { agentId: string }) {
                       )}
                     </div>
                     <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                      <button onClick={() => toggleBundle(bundle.id)} className="btn-silver" style={{ padding: '4px 10px', fontSize: '0.72rem' }}>
+                      {canEditPricing && <><button onClick={() => toggleBundle(bundle.id)} className="btn-silver" style={{ padding: '4px 10px', fontSize: '0.72rem' }}>
                         {bundle.is_active ? 'Disable' : 'Enable'}
                       </button>
                       <button onClick={() => deleteBundle(bundle.id)} className="btn-neon-red" style={{ padding: '4px 10px', fontSize: '0.72rem' }}>
                         Delete
-                      </button>
+                      </button></>}
                     </div>
                   </div>
 

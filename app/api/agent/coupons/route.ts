@@ -1,3 +1,4 @@
+import { canEditStorePricing } from '@/lib/account-pricing';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient, createClient } from '@/lib/supabase/server';
 import { requireAgentOrAdmin } from '@/lib/admin-auth';
@@ -58,6 +59,7 @@ export async function POST(req: NextRequest) {
 
   const gate = await requireAgentOrAdmin();
   if (!gate.ok) return gate.response;
+  if (!await canEditStorePricing(await createServiceClient(), gate.user.id)) return bad('Pricing Is Read Only For This Account.', 403);
 
   let body: CouponBody;
   try {

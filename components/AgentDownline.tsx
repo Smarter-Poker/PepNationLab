@@ -6,7 +6,7 @@ import Link from 'next/link';
 import AgentAccountDetail from '@/components/AgentAccountDetail';
 import { MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH, PASSWORD_RULE_TEXT } from '@/lib/password-policy';
 
-export default function AgentDownline({ agentId }: { agentId?: string }) {
+export default function AgentDownline({ agentId, canEditPricing = true }: { agentId?: string; canEditPricing?: boolean }) {
   const [agents, setAgents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -88,7 +88,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
           // Agent sells or restocks. Sent as an explicit number (including 0)
           // so the API can tell "no markup" apart from "use the platform
           // default"; leaving the field at its 50 prefill sends 50.
-          commission_pct: caCommissionPct !== '' ? Number(caCommissionPct) : undefined,
+          commission_pct: canEditPricing && caCommissionPct !== '' ? Number(caCommissionPct) : undefined,
         })
       });
       const data = await res.json();
@@ -415,7 +415,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                   </div>
                 )}
 
-                <div>
+                {canEditPricing && <div>
                   <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Your Markup On This Agent (%)</label>
                   <input
                     type="number"
@@ -428,7 +428,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                     placeholder="50"
                   />
                   <p style={{ marginTop: '6px', color: 'var(--grey-400)', fontSize: '0.75rem' }}>You Earn This Percent On Top Of Your Cost On Every Order This Agent Sells Or Restocks. Leave At 50 For The Platform Default.</p>
-                </div>
+                </div>}
 
                 <button type="submit" className="btn-neon-cyan" disabled={caLoading} style={{ marginTop: 'var(--space-2)' }}>
                   {caLoading ? 'Creating...' : 'Create Agent Account'}
