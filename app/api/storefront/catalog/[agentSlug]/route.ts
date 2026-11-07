@@ -101,10 +101,9 @@ async function buildCatalogPayload(agentSlug: string): Promise<CatalogResult> {
         custom_description,
         custom_image_url,
         retail_price,
-        manufacturer_cost,
         is_on_sale,
         sale_price,
-        products (
+        products!inner (
           name,
           description,
           image_url,
@@ -144,6 +143,9 @@ async function buildCatalogPayload(agentSlug: string): Promise<CatalogResult> {
   const inventory = inventoryResult.data as Array<{ product_id: string; stock_count: number }> | null;
 
   // ── 2.5 Clamp Prices to Margin Floor ─────────────────────────────────────────
+  const { data: contract, error: contractError } = await supabase.rpc('fn_account_pricing_contract', { p_agent: agent.id });
+  if (contractError) throw new Error('Pricing Configuration Unavailable');
+  const fixedPricing = Array.isArray(contract) && contract.length > 0;
   const isManufacturer = Boolean((agent as any).profiles?.is_manufacturer);
   const prRole = (agent as any).profiles?.role;
   const prIsSuper = (agent as any).profiles?.is_super_agent;
@@ -165,12 +167,12 @@ async function buildCatalogPayload(agentSlug: string): Promise<CatalogResult> {
       }
       
       let clampedRetail = Number(ap.retail_price);
-      if (clampedRetail < minMarginRetail) {
+      if (!fixedPricing && clampedRetail < minMarginRetail) {
         clampedRetail = minMarginRetail;
       }
       
       let clampedSale = ap.sale_price !== null ? Number(ap.sale_price) : null;
-      if (ap.is_on_sale && clampedSale !== null && clampedSale < minMarginRetail) {
+      if (!fixedPricing && ap.is_on_sale && clampedSale !== null && clampedSale < minMarginRetail) {
         clampedSale = minMarginRetail;
       }
       
@@ -182,8 +184,6 @@ async function buildCatalogPayload(agentSlug: string): Promise<CatalogResult> {
         ...ap,
         retail_price: clampedRetail,
         sale_price: clampedSale,
-        agent_cost: costPrice,
-        cost_price: costPrice,
         products: safeProducts,
       };
     });
@@ -264,7 +264,7 @@ async function buildCatalogPayload(agentSlug: string): Promise<CatalogResult> {
 function getCachedCatalog(agentSlug: string): Promise<CatalogResult> {
   return unstable_cache(
     () => buildCatalogPayload(agentSlug),
-    ['storefront-catalog', agentSlug],
+    ['storefront-catalog-v4', agentSlug],
     {
       revalidate: 120,
       tags: ['storefront-catalog', 'catalog:' + agentSlug],

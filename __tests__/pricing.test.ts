@@ -57,7 +57,7 @@ function makeClient(opts: {
   };
   return {
     from,
-    rpc: () => Promise.resolve({ data: opts.level ?? 1, error: null }),
+    rpc: (name: string) => Promise.resolve({ data: name === 'fn_contract_costs' ? [] : opts.level ?? 1, error: null }),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any;
 }

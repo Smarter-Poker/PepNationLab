@@ -1,3 +1,4 @@
+import { contractCosts } from '@/lib/account-pricing';
 import type { createServiceClient } from '@/lib/supabase/server';
 
 type ServiceClient = Awaited<ReturnType<typeof createServiceClient>>;
@@ -75,6 +76,8 @@ export async function computeAgentCost(supabase: ServiceClient, productId: strin
 }
 
 export async function computeSubAgentBaselineCost(supabase: ServiceClient, productId: string, superAgentId: string): Promise<number> {
+  const contract = await contractCosts(supabase, superAgentId, [productId]);
+  if (contract.has(productId)) return contract.get(productId)!;
   const key = `superBaseline:${superAgentId}:${productId}`;
   const cached = getCached<number | null>(key);
   if (cached === undefined) {
@@ -334,6 +337,8 @@ async function resolveChainAwareV2Markup(supabase: ServiceClient, agentId: strin
 
 /** v2 wholesale cost for a House-facing agent: cost = base * (1 + markup(level)), chain-aware. */
 export async function computeAgentCostV2(supabase: ServiceClient, productId: string, agentId: string): Promise<number> {
+  const contract = await contractCosts(supabase, agentId, [productId]);
+  if (contract.has(productId)) return contract.get(productId)!;
   const [base, markup] = await Promise.all([
     getProductBaseCost(supabase, productId),
     resolveChainAwareV2Markup(supabase, agentId),
@@ -353,6 +358,8 @@ export async function computeAgentCostForAgent(
   legacyTier: AgentTier,
 ): Promise<number> {
   if (isTierLadderV2()) return computeAgentCostV2(supabase, productId, agentId);
+  const contract = await contractCosts(supabase, agentId, [productId]);
+  if (contract.has(productId)) return contract.get(productId)!;
   return computeAgentCost(supabase, productId, legacyTier);
 }
 
@@ -444,6 +451,8 @@ export async function computeAgentCostsForAgent(
 ): Promise<Map<string, number>> {
   const costs = new Map<string, number>();
   if (products.length === 0) return costs;
+  const contract = await contractCosts(supabase, agentId, products.map(p => p.id));
+  if (contract.size) return contract;
   const context = await resolveAgentPricingContext(supabase, agentId, legacyTier);
   if (context.ladderV2) {
     for (const p of products) {
@@ -566,12 +575,13 @@ export async function verifyCommissionSafeguard(
   // below, preserving the original sequential semantics (an earlier unsafe
   // product still short-circuits before a later product's error surfaces).
   const context = await resolveAgentPricingContext(supabase, agentId, legacyTier);
+  const contractedCosts = await contractCosts(supabase, agentId, products.map(p => p.product_id));
   const costResults: Array<{ cost: number } | { err: unknown } | null> = await Promise.all(
     products.map(async (p) => {
       const retail = Number(p.retail_price);
       if (!Number.isFinite(retail) || retail <= 0) return null;
       try {
-        return { cost: await computeCostWithContext(supabase, context, p.product_id) };
+        return { cost: contractedCosts.get(p.product_id) ?? await computeCostWithContext(supabase, context, p.product_id) };
       } catch (err) {
         return { err };
       }

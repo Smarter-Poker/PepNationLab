@@ -1,3 +1,4 @@
+import { contractCosts } from '@/lib/account-pricing';
 export const dynamic = 'force-dynamic';
 
 import { Suspense, cache } from 'react';
@@ -103,7 +104,7 @@ async function AgentStorefrontDataLoader({
         retail_price,
         is_on_sale,
         sale_price,
-        products (
+        products!inner (
           name,
           description,
           image_url,
@@ -121,6 +122,8 @@ async function AgentStorefrontDataLoader({
       `)
       .eq('agent_id', agent.id)
       .eq('is_visible', true)
+      .eq('products.is_active', true)
+      .eq('products.is_banned', false)
       .order('sort_order')
       .limit(250),
   ]);
@@ -227,6 +230,12 @@ async function AgentStorefrontDataLoader({
     }));
   }
 
+  productsWithCost = productsWithCost.map(row => {
+    const { base_cost, house_cost, ...publicProduct } = (row.products ?? {}) as Record<string, unknown>;
+    void base_cost; void house_cost;
+    return { ...row, products: publicProduct };
+  });
+
   const compoundsBySlug = await getCompoundsBySlugs(
     (products ?? []).map((p) => (p.products as { compound_slug?: string | null })?.compound_slug)
   );
@@ -238,7 +247,7 @@ async function AgentStorefrontDataLoader({
   // with the service client so cascade works for anonymous visitors regardless
   // of RLS on profiles.parent_agent_id. Member products are resolved against this
   // store's catalog inside the grid, which hides any bundle that loses too many.
-  let storeBundles: Array<{ id: string; name: string; tagline: string; description: string; image_url: string | null; product_ids: string[]; discount_percent: number; custom_price: number | null }> = [];
+  let storeBundles: Array<{ id: string; name: string; tagline: string; description: string; image_url: string | null; product_ids: string[]; discount_percent: number; custom_price: number | null; wholesale_costs?: Record<string, number> }> = [];
   try {
     const svcBundles = await createServiceClient();
     const effective = await getEffectiveBundlesForStore(svcBundles, agent.id);
@@ -253,6 +262,12 @@ async function AgentStorefrontDataLoader({
       discount_percent: b.discount_percent,
       custom_price: b.custom_price ?? null,
     }));
+    if (isStorefrontOwner) {
+      storeBundles = await Promise.all(storeBundles.map(async b => ({
+        ...b,
+        wholesale_costs: Object.fromEntries(await contractCosts(svcBundles, agent.id, b.product_ids, b.name)),
+      })));
+    }
   } catch {
     storeBundles = [];
   }

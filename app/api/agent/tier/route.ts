@@ -17,12 +17,23 @@ export async function GET() {
   const gate = await requireAgent();
   if (!gate.ok) return gate.response;
 
-  if (!isTierLadderV2()) {
-    return NextResponse.json({ enabled: false });
-  }
-
   const agentId = gate.user.id;
   const svc = await createServiceClient();
+  const { data: contracts, error: contractError } = await svc.rpc('fn_account_pricing_contract', { p_agent: agentId });
+  if (contractError) return NextResponse.json({ error: 'Pricing Configuration Unavailable.' }, { status: 503 });
+  const contract = contracts?.[0];
+  if (contract) {
+    const retail = contract.retail_factor != null;
+    const percentage = Number(retail ? contract.retail_factor : contract.house_cogs_multiplier) * 100;
+    return NextResponse.json({ enabled: true, contractPricing: {
+      percentage,
+      basis: retail ? 'Store Retail' : 'Pep Nation COGS',
+      description: retail
+        ? `You Pay ${percentage}% Of SavageBrands Listed Store Retail, Including Bundles.`
+        : `Your Cost Is ${percentage}% Of Pep Nation Actual COGS. Your Agents Pay 75% Of Your Listed Retail.`,
+    } });
+  }
+  if (!isTierLadderV2()) return NextResponse.json({ enabled: false });
 
   const [{ data: profile }, tiers, level, volRes] = await Promise.all([
     svc.from('profiles').select('fixed_scale_override, locked_tier_level, tier_grace_period_expires_at, parent_agent_id, commission_pct, is_sub_agent').eq('id', agentId).maybeSingle(),

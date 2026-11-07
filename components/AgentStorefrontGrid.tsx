@@ -70,6 +70,7 @@ import NotifyMeButton from './NotifyMeButton';
 const ProductModalEnhancements = dynamic(() => import('./storefront/ProductModalEnhancements'), { ssr: false });
 const StorefrontCompareDrawer = dynamic(() => import('./storefront/StorefrontCompareDrawer'), { ssr: false });
 export interface BundleConfig {
+  wholesale_costs?: Record<string, number>;
   id: string;
   name: string;
   tagline?: string;
@@ -2101,7 +2102,7 @@ export default function AgentStorefrontGrid({
       seen.add(key);
       members.push(item);
     }
-    if (members.length < 2) return null;
+    if (members.length < 2 || members.length !== new Set(bundle.product_ids).size) return null;
     const fullPrice = members.reduce((sum, m) => sum + (getEffectiveRetailPrice(m) || 0), 0);
     const discountPct = Math.min(Math.max(Math.round(Number(bundle.discount_percent) || 0), 0), 90);
     // A stored custom_price is a FIXED price the store owner set. It must never
@@ -2147,7 +2148,9 @@ export default function AgentStorefrontGrid({
           sku: m.product_id,
           quantity: 1,
           retailPrice: perVial * bundleFactor,
-          costPrice: costPerVial * bundleFactor,
+          costPrice: isStorefrontOwner
+            ? (bundle.wholesale_costs?.[m.product_id] ?? costPerVial)
+            : perVial * bundleFactor,
           weightOz: Number(m.products?.weight_oz) || 0.5,
           agentSelfBuy: isStorefrontOwner,
           bundleName: bundle.name,

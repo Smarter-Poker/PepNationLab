@@ -1,3 +1,4 @@
+import { revalidateTag } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgentOrAdmin } from '@/lib/admin-auth';
@@ -159,6 +160,7 @@ export async function PATCH(req: NextRequest) {
     let ceilingMultiplier = 1.0;
     let prRole: string | undefined;
     let prIsSuper: boolean | undefined;
+    let parentIsSuper = false;
 
     if (gate.isAdmin) {
       const rawBase = (check.products as any)?.house_cost ?? (check.products as any)?.base_cost;
@@ -184,9 +186,7 @@ export async function PATCH(req: NextRequest) {
       const parRole = (profData as any)?.parent?.role;
       const parIsSuper = (profData as any)?.parent?.is_super_agent;
 
-      if (prRole === 'super_agent' || prIsSuper || parRole === 'super_agent' || parIsSuper) {
-        ceilingMultiplier = 1.5;
-      }
+      parentIsSuper = parRole === 'super_agent' || Boolean(parIsSuper);
     }
 
     let resolvedRetailPrice: number | undefined;
@@ -209,7 +209,7 @@ export async function PATCH(req: NextRequest) {
       : null;
 
     let maxRetailPrice: number | null = rawMaxRetailPrice !== null ? rawMaxRetailPrice * ceilingMultiplier : null;
-    if (prRole === "super_agent" || prIsSuper) {
+    if (prRole === "super_agent" || prIsSuper || parentIsSuper) {
       maxRetailPrice = null;
       marginCapExempt = true;
     }
@@ -402,16 +402,13 @@ export async function PATCH(req: NextRequest) {
       updatePayload.margin_percent = resolvedMarginPercent;
     }
 
-    const { error } = await supabase
-      .from('agent_products')
-      .update(updatePayload)
-      .eq('id', id)
-      .eq('agent_id', gate.user.id);
+    const { error } = await supabase.rpc('edit_store_product', { p_agent: gate.user.id, p_id: id, p_patch: updatePayload });
 
     if (error) {
       return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
     }
 
+    revalidateTag('storefront-catalog', { expire: 0 });
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('[agent/products] PATCH error:', err);
