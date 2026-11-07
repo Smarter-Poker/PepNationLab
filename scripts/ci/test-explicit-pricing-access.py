@@ -26,7 +26,7 @@ try:
  CREATE TABLE orders(id uuid PRIMARY KEY,agent_id uuid,buyer_id uuid,created_at timestamptz,status text,is_wholesale_restock bool DEFAULT false,shipping_cost numeric DEFAULT 0,discount_amount numeric DEFAULT 0,credits_redeemed numeric DEFAULT 0,subtotal numeric,total numeric,agent_approved_at timestamptz,payment_confirmed_at timestamptz);
  CREATE TABLE order_items(id uuid PRIMARY KEY,order_id uuid,product_id uuid,product_name text,quantity int,unit_retail_price numeric,unit_cost_price numeric,unit_super_agent_cost numeric,unit_house_cost numeric);
  CREATE TABLE statement_orders(order_id uuid);
- CREATE TABLE internal_messages(id uuid DEFAULT gen_random_uuid(),sender_id uuid,receiver_id uuid,subject text,body text,type text);
+ CREATE TABLE internal_messages(id uuid DEFAULT gen_random_uuid(),sender_id uuid,receiver_id uuid,subject text,body text,type text,invoice_amount numeric,is_read boolean DEFAULT false,edited_at timestamptz);
  CREATE TABLE notifications(id bigserial,user_id uuid,type text,title text,body text,url text);
  CREATE TABLE balance_transactions(id uuid DEFAULT gen_random_uuid(),agent_id uuid,type text,amount numeric,balance_before numeric,balance_after numeric,description text,reference_id uuid,reference_type text);
  CREATE TABLE agent_invoices(id uuid PRIMARY KEY,super_agent_id uuid,agent_id uuid,week_start date,week_end date,total_cogs numeric,total_owed numeric,status text,updated_at timestamptz);
@@ -44,6 +44,7 @@ try:
  INSERT INTO orders(id,agent_id,buyer_id,created_at,status,subtotal,total,payment_confirmed_at) VALUES('{order}','{child}','{child}','2026-11-01','approved_pickup',20,20,'2026-11-02'),('{retailorder}','{child}','{other}','2026-11-01','approved_pickup',120,120,'2026-11-02');
  INSERT INTO order_items VALUES('{item1}','{order}','{p1}','P1 [Part of: Test Bundle]',1,10,10,10,10),('{item2}','{order}','{p2}','P2 [Part of: Test Bundle]',1,10,10,20,20),('{retailitem}','{retailorder}','{p1}','P1',1,120,10,10,10);
  INSERT INTO agent_invoices VALUES('{invoice}','{owner}','{child}','2026-10-26','2026-11-01',30,30,'open',now());
+ INSERT INTO internal_messages(sender_id,receiver_id,subject,body,type) VALUES('{owner}','{child}','Invoice For Week 2026-10-26','Total Owed: $30.00','invoice');
  INSERT INTO balance_transactions(agent_id,type,amount,balance_before,balance_after,reference_id) VALUES('{child}','order_charge',20,0,20,'{order}');""")
  for name in ['20261107192943_savage_store_retail_agent_contract.sql','20261107193225_savage_order_invoice_repricing.sql']:
   sql((root/'supabase/migrations'/name).read_text())
@@ -83,7 +84,8 @@ try:
  assert sql("SELECT has_function_privilege('anon','fn_agent_chain_cost(uuid,uuid)','EXECUTE')")=='f'
  assert sql(f"SELECT deliver_contract_invoice_copies('{owner}','test-batch-1')->>'copies_delivered'")=='2'
  assert sql(f"SELECT deliver_contract_invoice_copies('{owner}','test-batch-1')->>'copies_delivered'")=='0'
- assert sql('SELECT count(*) FROM internal_messages')=='2'
+ assert sql('SELECT count(*) FROM internal_messages')=='3'
+ assert sql("SELECT body LIKE '%119.98%' FROM internal_messages WHERE type='invoice'")=='t'
  assert sql('SELECT count(*) FROM notifications')=='2'
  assert Decimal(sql(f"SELECT credit_used FROM profiles WHERE id='{child}'"))==Decimal('74.98')
  print('Pricing native qualification: contract COG basis, 75% retail, exact bundle cents, private access, audited invoice correction, payment preservation and duplicate safety passed.')

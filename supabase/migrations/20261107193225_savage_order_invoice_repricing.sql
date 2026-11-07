@@ -9,7 +9,7 @@ GRANT SELECT,INSERT,UPDATE ON TABLE public.pricing_revision_records TO service_r
 
 CREATE FUNCTION public.reprice_contract_orders(p_owner uuid,p_start timestamptz,p_end timestamptz,p_batch text)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
-DECLARE o record; i record; inv record; tx record; c record; v_before jsonb; v_after jsonb;
+DECLARE o record; i record; inv record; tx record; msg record; c record; v_before jsonb; v_after jsonb;
  v_cost numeric; v_super numeric; v_subtotal numeric; v_old_cost numeric; v_new_cost numeric;
  v_delta numeric; v_balance numeric; v_account text; v_count int:=0; v_parent uuid;
  v_bundle text; v_bundle_price numeric; v_total_weight numeric; v_running numeric;
@@ -100,6 +100,18 @@ BEGIN
    UPDATE agent_invoices SET total_cogs=total_cogs+v_delta,total_owed=total_owed+v_delta,updated_at=now() WHERE id=inv.id;
    UPDATE pricing_revision_records SET after_state=(SELECT to_jsonb(a) FROM agent_invoices a WHERE id=inv.id)
      WHERE batch_key=p_batch AND entity_type='agent_invoice' AND entity_id=inv.id;
+   FOR msg IN SELECT * FROM internal_messages WHERE sender_id=inv.super_agent_id AND receiver_id=inv.agent_id
+     AND type='invoice' AND lower(subject)='invoice for week '||inv.week_start::text FOR UPDATE
+   LOOP
+     INSERT INTO pricing_revision_records(batch_key,entity_type,entity_id,before_state)
+       VALUES(p_batch,'invoice_message',msg.id,to_jsonb(msg));
+     UPDATE internal_messages SET body=format(E'Your Invoice For The Week Of %s Has Been Corrected.\nTotal Owed: $%s\nPrevious Total: $%s\n\nAgent Pricing Is 75%% Of SavageBrands Listed Store Retail, Including Bundles. Existing Payments Are Preserved.\nReview Invoice %s In Your Dashboard For The Current Payment Status.',
+       inv.week_start,to_char(inv.total_owed+v_delta,'FM999999990.00'),to_char(inv.total_owed,'FM999999990.00'),inv.id),
+       invoice_amount=CASE WHEN invoice_amount IS NOT NULL THEN inv.total_owed+v_delta ELSE NULL END,
+       is_read=false,edited_at=now() WHERE id=msg.id;
+     UPDATE pricing_revision_records SET after_state=(SELECT to_jsonb(m) FROM internal_messages m WHERE m.id=msg.id)
+       WHERE batch_key=p_batch AND entity_type='invoice_message' AND entity_id=msg.id;
+   END LOOP;
  END LOOP;
  PERFORM set_config('app.contract_order_reprice','',true);
  RETURN jsonb_build_object('orders_repriced',v_count,'batch',p_batch);
