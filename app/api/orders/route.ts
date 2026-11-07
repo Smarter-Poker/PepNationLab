@@ -1,3 +1,4 @@
+import { contractCosts } from '@/lib/account-pricing';
 import { after, NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { getEffectiveUser } from '@/lib/impersonation';
@@ -624,6 +625,32 @@ export async function POST(request: NextRequest) {
       volumeDiscountsEnabled = false;
     }
 
+    // Resolve complete bundle contract allocations from the authoritative store,
+    // not the downline's prices or client-supplied discounted costs.
+    const contractBundleCosts = new Map<string, Map<string, number>>();
+    if (agentProfile) {
+      for (const [name, members] of validBundleMembers) {
+        if (!items.some(i => i.bundleName?.trim().toLowerCase() === name)) continue;
+        const costs = await contractCosts(serviceSupabase, agentProfile.id, [...members], name);
+        if (costs.size) contractBundleCosts.set(name, costs);
+      }
+    }
+
+    // Reject incomplete bundles, including stale carts whose members were retired.
+    for (const [name, members] of validBundleMembers) {
+      const bundleLines = items.filter(i => i.bundleName?.trim().toLowerCase() === name);
+      if (!bundleLines.length) continue;
+      const quantities = [...members].map(id => bundleLines.filter(i => i.id === id).reduce((n, i) => n + i.quantity, 0));
+      if (quantities.some(q => q <= 0 || q !== quantities[0])) {
+        return NextResponse.json({ error: 'The Bundle Must Include Every Product In Equal Quantities. Refresh Your Cart.' }, { status: 422 });
+      }
+    }
+
+    const contractUnitCosts = agentProfile
+      ? await contractCosts(serviceSupabase, agentProfile.id, cartProductIds) : new Map<string, number>();
+    const contractSuperCosts = superAgentProfile
+      ? await contractCosts(serviceSupabase, superAgentProfile.id, cartProductIds) : new Map<string, number>();
+
     // 4c. Pre-calculate unit retail sums for custom-priced bundles in the cart
     const cartBundleUnitRetailSum = new Map<string, number>();
     const seenBundleProducts = new Set<string>();
@@ -804,6 +831,15 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      if (agentProfile && !isManufacturerStore) {
+        const contracted = contractUnitCosts.get(dbProduct.id);
+        if (contracted !== undefined) costPrice = contracted;
+        if (superAgentProfile) {
+          const upstream = contractSuperCosts.get(dbProduct.id);
+          if (upstream !== undefined) superAgentCost = upstream;
+        }
+      }
+
       // Minimum-margin fail-safe (platform rule): a researcher-facing sale
       // may never price below cost + 10%. Wholesale restocks are an agent
       // buying stock (margin 0 by design) and manufacturer stores compute
@@ -838,11 +874,10 @@ export async function POST(request: NextRequest) {
           const totalUnitRetail = cartBundleUnitRetailSum.get(key) || 1;
           const bundleFactor = customBundlePrice / Math.max(totalUnitRetail, 0.01);
           
-          // Apply the exact proportional factor derived from server-computed retail sums.
-          // Because retailPrice collapses to costPrice for wholesale buyers above,
-          // this correctly applies the equivalent % discount to their wholesale cost.
+          // Bundle discounts affect retail only. Contract wholesale allocations
+          // below come from the authoritative store bundle total.
           retailPrice = Math.max(0, retailPrice * bundleFactor);
-          costPrice = Math.max(0, costPrice * bundleFactor);
+
           
           // If the frontend supplied a bundleCustomPrice, we can trust it if it is 
           // essentially equal to what we just computed (avoiding tiny penny rounding mismatches).
@@ -855,8 +890,22 @@ export async function POST(request: NextRequest) {
         } else {
           const bundleFactor = bundleDiscountFactor(cartItem.bundleName);
           retailPrice = Math.max(0, retailPrice * bundleFactor);
-          costPrice = Math.max(0, costPrice * bundleFactor);
+
         }
+      }
+
+      const contractedBundleCost = isBundleLine
+        ? contractBundleCosts.get(cartItem.bundleName!.trim().toLowerCase())?.get(dbProduct.id)
+        : undefined;
+      if (contractedBundleCost !== undefined) {
+        costPrice = contractedBundleCost;
+        if (isWholesalePurchase) retailPrice = costPrice;
+      } else if (isBundleLine && isWholesalePurchase) {
+        // A bundle discount changes selling prices, never the supply cost.
+        retailPrice = costPrice;
+      }
+      if (!isWholesalePurchase && !isManufacturerStore && retailPrice < costPrice) {
+        return NextResponse.json({ error: 'Bundle Price Is Below The Supply Cost.' }, { status: 422 });
       }
 
       // "One offer at a time" (2026-07-12 audit): flash sale, quantity discount, and coupon

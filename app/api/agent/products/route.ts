@@ -159,6 +159,7 @@ export async function PATCH(req: NextRequest) {
     let ceilingMultiplier = 1.0;
     let prRole: string | undefined;
     let prIsSuper: boolean | undefined;
+    let parentIsSuper = false;
 
     if (gate.isAdmin) {
       const rawBase = (check.products as any)?.house_cost ?? (check.products as any)?.base_cost;
@@ -184,9 +185,7 @@ export async function PATCH(req: NextRequest) {
       const parRole = (profData as any)?.parent?.role;
       const parIsSuper = (profData as any)?.parent?.is_super_agent;
 
-      if (prRole === 'super_agent' || prIsSuper || parRole === 'super_agent' || parIsSuper) {
-        ceilingMultiplier = 1.5;
-      }
+      parentIsSuper = parRole === 'super_agent' || Boolean(parIsSuper);
     }
 
     let resolvedRetailPrice: number | undefined;
@@ -209,7 +208,7 @@ export async function PATCH(req: NextRequest) {
       : null;
 
     let maxRetailPrice: number | null = rawMaxRetailPrice !== null ? rawMaxRetailPrice * ceilingMultiplier : null;
-    if (prRole === "super_agent" || prIsSuper) {
+    if (prRole === "super_agent" || prIsSuper || parentIsSuper) {
       maxRetailPrice = null;
       marginCapExempt = true;
     }

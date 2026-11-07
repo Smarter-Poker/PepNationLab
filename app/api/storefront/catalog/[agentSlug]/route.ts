@@ -101,10 +101,9 @@ async function buildCatalogPayload(agentSlug: string): Promise<CatalogResult> {
         custom_description,
         custom_image_url,
         retail_price,
-        manufacturer_cost,
         is_on_sale,
         sale_price,
-        products (
+        products!inner (
           name,
           description,
           image_url,
@@ -182,8 +181,6 @@ async function buildCatalogPayload(agentSlug: string): Promise<CatalogResult> {
         ...ap,
         retail_price: clampedRetail,
         sale_price: clampedSale,
-        agent_cost: costPrice,
-        cost_price: costPrice,
         products: safeProducts,
       };
     });
@@ -264,7 +261,7 @@ async function buildCatalogPayload(agentSlug: string): Promise<CatalogResult> {
 function getCachedCatalog(agentSlug: string): Promise<CatalogResult> {
   return unstable_cache(
     () => buildCatalogPayload(agentSlug),
-    ['storefront-catalog', agentSlug],
+    ['storefront-catalog-v4', agentSlug],
     {
       revalidate: 120,
       tags: ['storefront-catalog', 'catalog:' + agentSlug],
