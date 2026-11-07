@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 /* -- Types -- */
 interface TierState {
   enabled: boolean;
+  contractPricing?: { percentage: number; basis: string; description: string };
   locked?: boolean;
   level?: number;
   levelName?: string;
@@ -95,7 +96,15 @@ export default function AgentTierWidget() {
   return (
     <div className="glass-panel" style={{ marginBottom: 'var(--space-6)' }}>
       <div className="" style={{ padding: 'var(--space-6)' }}>
-        {isChainPriced ? (
+        {tier.contractPricing ? (
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--space-6)' }}>
+            <ProgressRing progress={1} label={`${tier.contractPricing.percentage}%`} sub={tier.contractPricing.basis} />
+            <div style={{ flex: 1, minWidth: 220 }}>
+              <h3>Your Pricing</h3>
+              <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem' }}>{tier.contractPricing.description}</p>
+            </div>
+          </div>
+        ) : isChainPriced ? (
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--space-6)' }}>
             <ProgressRing progress={1} label={`${tier.markupPct ?? 50}%`} sub="Markup" />
             <div style={{ flex: 1, minWidth: 220 }}>

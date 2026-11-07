@@ -59,6 +59,10 @@ try:
  assert sql(f"SELECT payment_confirmed_at IS NOT NULL FROM orders WHERE id='{order}'")=='t'
  assert sql(f"SELECT reprice_contract_orders('{owner}','2026-10-07','2026-11-08','test-batch-1')->>'orders_repriced'")=='0'
  assert Decimal(sql(f"SELECT credit_used FROM profiles WHERE id='{child}'"))==Decimal('74.98')
+ new_product='00000000-0000-0000-0000-000000000012'
+ sql(f"ALTER TABLE products ADD COLUMN sku text; UPDATE products SET sku='LC216' WHERE id='{p1}'; INSERT INTO products(id,base_cost,house_cost,max_retail_price,is_banned,sku) VALUES('{new_product}',4,8,80,false,'LC600'); ALTER TABLE products ADD COLUMN is_active boolean DEFAULT true; UPDATE agent_profiles SET bundles_config=bundles_config || jsonb_build_array(jsonb_build_object('name','Savage Shredder','product_ids',jsonb_build_array('{p1}','{p2}'),'custom_price',249.97)) WHERE id='{owner}';")
+ sql((root/'supabase/migrations/20261107194439_savage_shredder_active_component.sql').read_text())
+ assert sql(f"SELECT bundles_config->1->'product_ids'->>0 FROM agent_profiles WHERE id='{owner}'")==new_product
  print('Pricing native qualification: contract COG basis, 75% retail, exact bundle cents, private access, audited invoice correction, payment preservation and duplicate safety passed.')
 finally:
  if (cluster/'data/postmaster.pid').exists():run([pg/'pg_ctl','-D',cluster/'data','-m','immediate','stop'])
