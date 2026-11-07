@@ -57,13 +57,21 @@
     {
       "table": "referral_attribution_events",
       "reason": "20260730125733 explicitly declares service-role-only append-only attribution audit, RLS with no policies and revoked browser table/sequence access; lib/attribution-log.ts owns writes."
+    },
+    {
+      "table": "account_pricing_contracts",
+      "reason": "Private pricing contracts: browser grants revoked; only service_role has SELECT/INSERT/UPDATE. Native pricing qualification verifies browser access is denied."
+    },
+    {
+      "table": "pricing_revision_records",
+      "reason": "Private before-and-after financial audit: browser grants revoked; only service_role has SELECT/INSERT/UPDATE. No public or authenticated policy is intended."
     }
   ],
   "permissive_policies": [
     {
       "table": "agent_storefront_events",
       "policy": "storefront_events_anon_insert",
-      "reason": "Anon storefront analytics — insert-only event log used by the storefront grid to record view/add-to-cart events for funnel analysis. Append-only; admins read."
+      "reason": "Anon storefront analytics \u2014 insert-only event log used by the storefront grid to record view/add-to-cart events for funnel analysis. Append-only; admins read."
     },
     {
       "table": "message_reactions",
@@ -83,7 +91,7 @@
     {
       "table": "compounds",
       "policy": "compounds_public_read",
-      "reason": "Public research knowledge base — compound monographs are the site's public catalog/SEO content. Read-only; writes gated by admin policies."
+      "reason": "Public research knowledge base \u2014 compound monographs are the site's public catalog/SEO content. Read-only; writes gated by admin policies."
     },
     {
       "table": "compound_references",
@@ -108,7 +116,7 @@
     {
       "table": "compound_fact_citations",
       "policy": "fact_public_read",
-      "reason": "Citation footnotes for monograph facts — public evidence layer. Writes require is_admin()."
+      "reason": "Citation footnotes for monograph facts \u2014 public evidence layer. Writes require is_admin()."
     },
     {
       "table": "compound_orthologs",
@@ -128,7 +136,7 @@
     {
       "table": "compound_recall_alerts",
       "policy": "recall_public_read",
-      "reason": "FDA recall/safety alerts — deliberately public safety information. Writes require is_admin()."
+      "reason": "FDA recall/safety alerts \u2014 deliberately public safety information. Writes require is_admin()."
     },
     {
       "table": "compound_pdb_structures",
