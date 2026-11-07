@@ -237,7 +237,7 @@ CREATE FUNCTION public.refresh_dependent_contract_margins() RETURNS trigger LANG
 BEGIN
  IF TG_TABLE_NAME='products' THEN
    UPDATE agent_products ap SET margin_percent=round((ap.retail_price/fn_contract_product_cost(ap.agent_id,ap.product_id)-1)*100,2)
-   WHERE ap.product_id=NEW.id AND NOT COALESCE(NEW.is_banned,false) AND EXISTS(SELECT 1 FROM fn_account_pricing_contract(ap.agent_id));
+   WHERE ap.product_id=NEW.id AND NOT COALESCE((SELECT is_banned FROM products WHERE id=NEW.id),false) AND EXISTS(SELECT 1 FROM fn_account_pricing_contract(ap.agent_id));
  ELSIF EXISTS(SELECT 1 FROM account_pricing_contracts WHERE agent_id=NEW.agent_id) THEN
    UPDATE agent_products ap SET margin_percent=round((ap.retail_price/fn_contract_product_cost(ap.agent_id,ap.product_id)-1)*100,2)
    WHERE ap.product_id=NEW.product_id AND ap.agent_id<>NEW.agent_id
