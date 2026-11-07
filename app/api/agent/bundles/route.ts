@@ -156,11 +156,7 @@ async function persist(
   bundles: StoredBundle[],
   slug: string | null,
 ): Promise<boolean> {
-  const { error } = await svc
-    .from('agent_profiles')
-    // bundles_config is untyped in the generated Database types.
-    .update({ bundles_config: bundles as unknown, updated_at: new Date().toISOString() } as never)
-    .eq('id', userId);
+  const { error } = await svc.rpc('edit_store_bundles', { p_agent: userId, p_bundles: bundles });
   if (error) return false;
   try {
     revalidateTag('storefront-catalog', { expire: 0 });

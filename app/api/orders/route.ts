@@ -1,4 +1,4 @@
-import { contractCosts } from '@/lib/account-pricing';
+import { contractCosts, allocateBundlePrice } from '@/lib/account-pricing';
 import { after, NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { getEffectiveUser } from '@/lib/impersonation';
@@ -84,6 +84,7 @@ export async function POST(request: NextRequest) {
       couponCode,
       idempotencyKey,
       wholesale: explicitWholesale,
+      expectedProductSubtotal,
 
       agentSlug,
     } = validation.data;
@@ -651,6 +652,18 @@ export async function POST(request: NextRequest) {
     const contractSuperCosts = superAgentProfile
       ? await contractCosts(serviceSupabase, superAgentProfile.id, cartProductIds) : new Map<string, number>();
 
+    if (contractUnitCosts.size) { volumeDiscountsEnabled = false; flashSaleDiscountPct = 0; }
+
+    const fixedBundleRetail = new Map<string, Map<string, number>>();
+    if (contractUnitCosts.size) {
+      for (const [name, members] of validBundleMembers) {
+        if (!items.some(i => i.bundleName?.trim().toLowerCase() === name)) continue;
+        const weights = [...members].map(id => ({ id, weight: agentCustomRetail[id] }));
+        const total = bundleCustomPriceByName.get(name) ?? weights.reduce((n,r) => n+r.weight,0)*bundleDiscountFactor(name);
+        fixedBundleRetail.set(name, allocateBundlePrice(total, weights));
+      }
+    }
+
     // 4c. Pre-calculate unit retail sums for custom-priced bundles in the cart
     const cartBundleUnitRetailSum = new Map<string, number>();
     const seenBundleProducts = new Set<string>();
@@ -851,9 +864,7 @@ export async function POST(request: NextRequest) {
         if (isStoreExempt) {
           minMarginRetail = costPrice;
         }
-        if (retailPrice < minMarginRetail) {
-          retailPrice = minMarginRetail;
-        }
+        if (retailPrice < minMarginRetail && !contractUnitCosts.size) retailPrice = minMarginRetail;
       }
 
       // Wholesale buyers always pay tier cost flat. retailPrice collapses to
@@ -884,7 +895,7 @@ export async function POST(request: NextRequest) {
           const clientCustomPrice = typeof (cartItem as any).bundleCustomPrice === 'number'
             ? Number((cartItem as any).bundleCustomPrice)
             : null;
-          if (clientCustomPrice != null && Math.abs(clientCustomPrice - retailPrice) <= 0.02) {
+          if (!contractUnitCosts.size && clientCustomPrice != null && Math.abs(clientCustomPrice - retailPrice) <= 0.02) {
             retailPrice = Math.max(0, clientCustomPrice);
           }
         } else {
@@ -894,6 +905,9 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      if (isBundleLine && contractUnitCosts.size) {
+        retailPrice = fixedBundleRetail.get(cartItem.bundleName!.trim().toLowerCase())!.get(dbProduct.id)!;
+      }
       const contractedBundleCost = isBundleLine
         ? contractBundleCosts.get(cartItem.bundleName!.trim().toLowerCase())?.get(dbProduct.id)
         : undefined;
@@ -986,6 +1000,15 @@ export async function POST(request: NextRequest) {
           isLocalFulfillment: false
         } as any);
       }
+    }
+
+    if (contractUnitCosts.size && computedItems.reduce((n,i) => n + (i.unit_cost_price-(i.unit_super_agent_cost??i.unit_cost_price))*i.quantity,0)<-0.001) {
+      return NextResponse.json({ error:'The Fixed Agent Price Is Below Supply Cost. An Explicit Retail Price Edit Is Required.' },{status:422});
+    }
+
+    if (contractUnitCosts.size &&
+        (expectedProductSubtotal == null || Math.abs(Math.round(expectedProductSubtotal*100)-Math.round(subtotal*100))>0)) {
+      return NextResponse.json({ error:'The Current Account Price Differs From Your Cart. Refresh The Prices Before Ordering.' }, {status:409});
     }
 
     // STEP A: ATOMIC INVENTORY RESERVATION

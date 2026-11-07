@@ -13,3 +13,13 @@ export async function contractCosts(client: ServiceClient, agentId: string, prod
     return [row.product_id, cost];
   }));
 }
+
+/** Allocate the exact listed bundle cents without per-component penny drift. */
+export function allocateBundlePrice(total: number, weights: Array<{ id: string; weight: number }>): Map<string, number> {
+  const ordered = [...weights].sort((a,b) => a.id.localeCompare(b.id));
+  const sum = ordered.reduce((n,r) => n+r.weight,0);
+  if (!Number.isFinite(total) || total <= 0 || sum <= 0 || ordered.some(r => !Number.isFinite(r.weight) || r.weight <= 0)) throw new Error('Invalid Bundle Price');
+  const cents = Math.round(total*100);
+  let running=0, prior=0;
+  return new Map(ordered.map(r => {running+=r.weight; const end=Math.round(cents*running/sum); const share=(end-prior)/100; prior=end; return [r.id,share];}));
+}

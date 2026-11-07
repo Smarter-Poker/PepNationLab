@@ -1,3 +1,4 @@
+import { revalidateTag } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgentOrAdmin } from '@/lib/admin-auth';
@@ -401,16 +402,13 @@ export async function PATCH(req: NextRequest) {
       updatePayload.margin_percent = resolvedMarginPercent;
     }
 
-    const { error } = await supabase
-      .from('agent_products')
-      .update(updatePayload)
-      .eq('id', id)
-      .eq('agent_id', gate.user.id);
+    const { error } = await supabase.rpc('edit_store_product', { p_agent: gate.user.id, p_id: id, p_patch: updatePayload });
 
     if (error) {
       return NextResponse.json({ error: 'An Unexpected Error Occurred.' }, { status: 500 });
     }
 
+    revalidateTag('storefront-catalog', { expire: 0 });
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('[agent/products] PATCH error:', err);

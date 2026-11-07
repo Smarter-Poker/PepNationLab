@@ -19,6 +19,7 @@ BEGIN
  SELECT * INTO c FROM account_pricing_contracts WHERE agent_id=p_owner;
  IF NOT FOUND THEN RAISE EXCEPTION 'Contract Not Found'; END IF;
  PERFORM pg_advisory_xact_lock(hashtextextended('contract-repricing:'||p_owner::text,0));
+ PERFORM set_config('app.contract_order_reprice',p_batch,true);
  FOR o IN
    WITH RECURSIVE n AS(SELECT p_owner id UNION SELECT p.id FROM profiles p JOIN n ON p.parent_agent_id=n.id)
    SELECT ord.* FROM orders ord WHERE (ord.agent_id IN(SELECT id FROM n) OR ord.buyer_id IN(SELECT id FROM n))
@@ -100,6 +101,7 @@ BEGIN
    UPDATE pricing_revision_records SET after_state=(SELECT to_jsonb(a) FROM agent_invoices a WHERE id=inv.id)
      WHERE batch_key=p_batch AND entity_type='agent_invoice' AND entity_id=inv.id;
  END LOOP;
+ PERFORM set_config('app.contract_order_reprice','',true);
  RETURN jsonb_build_object('orders_repriced',v_count,'batch',p_batch);
 END;
 $$;

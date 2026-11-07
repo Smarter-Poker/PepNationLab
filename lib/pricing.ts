@@ -76,6 +76,8 @@ export async function computeAgentCost(supabase: ServiceClient, productId: strin
 }
 
 export async function computeSubAgentBaselineCost(supabase: ServiceClient, productId: string, superAgentId: string): Promise<number> {
+  const contract = await contractCosts(supabase, superAgentId, [productId]);
+  if (contract.has(productId)) return contract.get(productId)!;
   const key = `superBaseline:${superAgentId}:${productId}`;
   const cached = getCached<number | null>(key);
   if (cached === undefined) {

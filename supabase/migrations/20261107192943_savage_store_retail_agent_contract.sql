@@ -180,6 +180,7 @@ AS $$
 DECLARE
   v_cost numeric;
 BEGIN
+  IF EXISTS(SELECT 1 FROM public.fn_account_pricing_contract(NEW.agent_id)) THEN RETURN NEW; END IF;
   IF TG_OP='UPDATE' AND NEW.retail_price IS NOT DISTINCT FROM OLD.retail_price THEN RETURN NEW; END IF;
   IF NEW.retail_price IS NOT NULL THEN
     -- Snap to .97
@@ -224,6 +225,10 @@ BEGIN
  v_cost:=fn_agent_chain_cost(NEW.agent_id,NEW.product_id);
  IF v_cost IS NULL OR v_cost<=0 THEN RETURN NEW; END IF;
  v_floor:=round(v_cost*1.10,2);
+ IF EXISTS(SELECT 1 FROM fn_account_pricing_contract(NEW.agent_id)) THEN
+   IF NEW.retail_price<v_floor OR NEW.sale_price<v_floor THEN RAISE EXCEPTION 'Listed Price Is Below The Cost Floor. An Explicit Price Edit Is Required.'; END IF;
+   RETURN NEW;
+ END IF;
  IF NOT EXISTS(SELECT 1 FROM fn_account_pricing_contract(NEW.agent_id)) THEN
    SELECT max_retail_price INTO v_max FROM products WHERE id=NEW.product_id;
    IF v_max IS NOT NULL THEN v_floor:=least(v_floor,v_max); END IF;

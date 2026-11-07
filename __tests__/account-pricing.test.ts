@@ -1,7 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { contractCosts } from '@/lib/account-pricing';
+import { contractCosts, allocateBundlePrice } from '@/lib/account-pricing';
 
 describe('account pricing contract', () => {
+ it('allocates a listed bundle total to exact cents',()=>{
+  const values=[...allocateBundlePrice(99.97,[{id:'a',weight:33},{id:'b',weight:33},{id:'c',weight:34}]).values()];
+  expect(values.map(n=>Math.round(n*100)).reduce((a,b)=>a+b,0)).toBe(9997);
+ });
  it('uses the exact server cost, including 75% retail and bundle allocations', async () => {
    const calls: unknown[]=[];
    const client={rpc:async(name:string,args:unknown)=>{calls.push([name,args]);return {data:[{product_id:'p',cost:'74.98'}],error:null};}};

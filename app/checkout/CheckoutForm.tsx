@@ -66,6 +66,7 @@ interface CheckoutFormProps {
   minOverallQty?: number;
   minOrderQty?: number;
   /** Per-Peptide Quantity Discounts (3+/5+/7+ Vials) -- Mirrors The Server */
+  fixedContractStore?: boolean;
   volumeDiscountsEnabled?: boolean;
   /** Manufacturer store: items trade in multiples of 10, no coupons ever. */
   manufacturerStore?: boolean;
@@ -97,7 +98,7 @@ interface ActiveFlashSale {
   ends_at: string;
 }
 
-export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, agentSlug, agentPaymentHandles, minOverallQty = 1, minOrderQty = 1, volumeDiscountsEnabled = true, manufacturerStore = false, missingCheckoutFields = [], profileInitialValues = { first_name: '', last_name: '', phone: '' } }: CheckoutFormProps) {
+export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, agentSlug, agentPaymentHandles, minOverallQty = 1, minOrderQty = 1, volumeDiscountsEnabled = true, fixedContractStore = false, manufacturerStore = false, missingCheckoutFields = [], profileInitialValues = { first_name: '', last_name: '', phone: '' } }: CheckoutFormProps) {
   // Brand-safe image resolver for the diluent upsell tiles: on a
   // Savage-network storefront (verdict persisted by the storefront grid),
   // never render a Pep Nation vial -- getProductImage swaps in the savage
@@ -172,6 +173,29 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   }, []);
 
   const cart = storefrontCart.length > 0 ? storefrontCart : contextCart;
+  const [fixedContractCart, setFixedContractCart] = useState(false);
+  const contractCartKey = JSON.stringify(cart.map(i => [i.id,i.quantity,i.bundleName]));
+  useEffect(() => {
+    if (!(isAgentSelfBuy || isSubAgent) || !storefrontLoaded || !cart.length) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/cart/contract-prices', { method:'POST', headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({items:cart.map(i => ({id:i.id,quantity:i.quantity,bundleName:i.bundleName}))}) });
+        if (!res.ok) throw new Error('Current Account Prices Could Not Be Loaded.');
+        const data = await res.json();
+        if (cancelled || !data.fixed) return;
+        setFixedContractCart(true);
+        setStorefrontCart(prev => prev.map(item => {
+          const price = data.prices.find((p: {id:string;bundleName?:string|null}) => p.id===item.id && (p.bundleName??null)===(item.bundleName??null));
+          return price ? {...item,costPrice:price.unitPrice} : item;
+        }));
+      } catch { if(!cancelled)setError('Current Account Prices Could Not Be Loaded. Refresh Before Ordering.'); }
+    })();
+    return () => {cancelled=true;};
+  // Price-only updates do not change the item key or restart this request.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[contractCartKey,isAgentSelfBuy,isSubAgent,storefrontLoaded]);
   const totalCartQty = cart.reduce((sum, item) => sum + item.quantity, 0);
   // Order minimums count PEPTIDES only: reconstitution supplies (BAC water,
   // acetic acid) are add-ons this checkout itself recommends, and letting
@@ -196,10 +220,12 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
       }, 0)
     : contextSubtotal;
 
-  const agentPricingDiscount = isAgentSelfBuy && storefrontCart.length > 0
+  const agentPricingDiscount = fixedContractCart
+    ? cartSubtotal - storefrontCart.reduce((sum,item) => sum + item.costPrice*item.quantity,0)
+    : isAgentSelfBuy && storefrontCart.length > 0
     ? storefrontCart.reduce((sum, item) => {
         const retail = item.retailPrice ?? item.costPrice;
-        const discountMultiplier = item.bundleName ? (1 - (item.bundleDiscountPercent ?? 10) / 100) : 1;
+        const discountMultiplier = !fixedContractCart && item.bundleName ? (1 - (item.bundleDiscountPercent ?? 10) / 100) : 1;
         return sum + Math.max(0, (retail * discountMultiplier) - (item.costPrice * discountMultiplier)) * item.quantity;
       }, 0)
     : 0;
@@ -858,13 +884,13 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
   const shippingCost = (agentSlug === 'researchstore' && cartSubtotal >= 100) ? 0 : calculateShippingCost();
   const discount = appliedCoupon?.discount ?? 0;
-  const flashDiscount = flashSale && cartSubtotal > 0
+  const flashDiscount = !fixedContractStore && !fixedContractCart && flashSale && cartSubtotal > 0
     ? Math.round(cartSubtotal * (flashSale.discount_pct / 100) * 100) / 100
     : 0;
   // Quantity Discount: 3-4 Vials 10%, 5-6 Vials 15%, 7+ Vials 20% Off -- Per
   // Specific Peptide Line. Mirrors The Server-Side Pricing In /api/orders.
   // Excludes Wholesale Buys, Stack Bundle Items, And Diluents.
-  const volumeDiscount = (volumeDiscountsEnabled && !isAgentSelfBuy && !isSubAgent)
+  const volumeDiscount = (!fixedContractStore && !fixedContractCart && volumeDiscountsEnabled && !isAgentSelfBuy && !isSubAgent)
     ? cart.reduce((sum, item) => {
         if (item.bundleName || isVolumeDiscountExcluded(item.name)) return sum;
         const pct = quantityDiscountPct(item.quantity, item.name);
@@ -1049,6 +1075,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
           paymentMethod,
           couponCode: couponDisabled ? null : (appliedCoupon?.code || null),
           idempotencyKey: getIdempotencyKey(),
+          expectedProductSubtotal: Math.round((cartSubtotal-agentPricingDiscount)*100)/100,
           agentSlug: agentSlug || null,
         })
       });

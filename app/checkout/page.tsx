@@ -66,6 +66,8 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
   let minOverallQty = 1;
   let minOrderQty = 1;
   let volumeDiscountsEnabled = true;
+  let fixedContractStore = false;
+  let pricingAgentId: string | null = null;
   let manufacturerStore = false;
   try {
 
@@ -75,6 +77,7 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
         .select('id, payment_handles, min_overall_qty, min_order_qty, volume_pricing_enabled, is_manufacturer_store')
         .eq('slug', agentSlug)
         .maybeSingle();
+      pricingAgentId = ap?.id ?? null;
       if (ap?.payment_handles) {
         if (typeof ap.payment_handles === 'string') {
           try { agentPaymentHandles = JSON.parse(ap.payment_handles); } catch {}
@@ -145,6 +148,15 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
     // Non-blocking - checkout still works without agent handles
   }
 
+  if (!pricingAgentId) pricingAgentId = profile.referring_agent_id ?? null;
+  if (pricingAgentId) {
+    const svc = await createServiceClient();
+    const {data,error} = await svc.rpc('fn_account_pricing_contract',{p_agent:pricingAgentId});
+    if(error) throw new Error('Current Store Pricing Could Not Be Loaded.');
+    fixedContractStore = Array.isArray(data) && data.length > 0;
+    if(fixedContractStore) volumeDiscountsEnabled = false;
+  }
+
   // Manufacturer stores never run quantity discounts, whatever the column says.
   if (manufacturerStore) {
     volumeDiscountsEnabled = false;
@@ -168,6 +180,7 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
       agentPaymentHandles={agentPaymentHandles}
       minOverallQty={minOverallQty}
       minOrderQty={minOrderQty}
+      fixedContractStore={fixedContractStore}
       volumeDiscountsEnabled={volumeDiscountsEnabled}
       manufacturerStore={manufacturerStore}
       missingCheckoutFields={missingCheckoutFields}

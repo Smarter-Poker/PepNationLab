@@ -13,6 +13,7 @@ import { PaymentMethodEnum } from '@/lib/schemas/payment';
  * price is recomputed server-side from the catalog.
  */
 export const CheckoutSchema = z.object({
+  expectedProductSubtotal: z.number().finite().nonnegative().optional(),
   items: z
     .array(
       z.object({
