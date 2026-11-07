@@ -4,6 +4,7 @@ import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { computeAgentCostForAgent, computeAgentCostsForAgent } from '@/lib/pricing';
 import type { AgentTier } from '@/lib/pricing';
+import { canEditStorePricing } from '@/lib/account-pricing';
 import { SubAgentPricingSchema } from '@/lib/schemas/product';
 
 export async function GET(req: NextRequest) {
@@ -96,6 +97,7 @@ export async function POST(req: NextRequest) {
 
     const supabase = createAdminClient();
     const superAgentId = gate.user.id;
+    if (!await canEditStorePricing(supabase, superAgentId)) return NextResponse.json({ error: 'Pricing Is Read Only For This Account.' }, { status: 403 });
 
     const rawBody: unknown = await req.json();
 

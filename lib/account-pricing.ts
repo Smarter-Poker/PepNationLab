@@ -23,3 +23,10 @@ export function allocateBundlePrice(total: number, weights: Array<{ id: string; 
   let running=0, prior=0;
   return new Map(ordered.map(r => {running+=r.weight; const end=Math.round(cents*running/sum); const share=(end-prior)/100; prior=end; return [r.id,share];}));
 }
+
+/** Resolve the authoritative account permission; unavailable permission fails closed. */
+export async function canEditStorePricing(client: ServiceClient, agentId: string): Promise<boolean> {
+  const { data, error } = await client.rpc('can_edit_store_pricing', { p_agent: agentId });
+  if (error || typeof data !== 'boolean') throw new Error('Pricing Permission Unavailable');
+  return data;
+}

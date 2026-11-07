@@ -30,7 +30,7 @@ export async function GET() {
       basis: retail ? 'Store Retail' : 'Pep Nation COGS',
       description: retail
         ? `You Pay ${percentage}% Of SavageBrands Listed Store Retail, Including Bundles.`
-        : `Your Cost Is ${percentage}% Of Pep Nation Actual COGS. Your Agents Pay 75% Of Your Listed Retail.`,
+        : `Your Cost Is ${percentage}% Of Pep Nation Actual COGS.`,
     } });
   }
   if (!isTierLadderV2()) return NextResponse.json({ enabled: false });

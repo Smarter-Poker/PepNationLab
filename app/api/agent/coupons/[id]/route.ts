@@ -1,3 +1,4 @@
+import { canEditStorePricing } from '@/lib/account-pricing';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgentOrAdmin } from '@/lib/admin-auth';
@@ -35,6 +36,7 @@ async function gateAndOwn(req: NextRequest, ctx: Ctx) {
     return { ok: false as const, response: bad('Invalid Coupon Id.') };
   }
   const svc = await createServiceClient();
+  if (!await canEditStorePricing(svc, gate.user.id)) return { ok: false as const, response: bad('Pricing Is Read Only For This Account.', 403) };
   const { data: row } = await svc.from('coupons').select('id, agent_id, deleted_at').eq('id', id).maybeSingle();
   if (!row) return { ok: false as const, response: bad('Coupon Not Found.', 404) };
 

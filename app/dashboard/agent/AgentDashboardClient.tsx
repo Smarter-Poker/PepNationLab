@@ -93,6 +93,7 @@ interface AgentDashboardClientProps {
   initialOrders: Order[];
   initialAgentsCount?: number;
   brandNetworkIsSavage?: boolean;
+  canEditPricing?: boolean;
 }
 
 
@@ -103,6 +104,7 @@ export default function AgentDashboardClient({
   initialOrders,
   initialAgentsCount = 0,
   brandNetworkIsSavage = false,
+  canEditPricing = false,
 }: AgentDashboardClientProps) {
   const supabase = useMemo(() => createClient(), []);
 
@@ -297,7 +299,7 @@ export default function AgentDashboardClient({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           researcherId: promoteResearcher.id,
-          markupPct: promoteCommission,
+          markupPct: canEditPricing ? promoteCommission : undefined,
           isSuperAgent: userProfile.is_super_agent ? promoteTargetRole === 'super_agent' : false,
           paymentModel: promotePaymentModel,
           creditLimit: promoteCreditLimit
@@ -746,11 +748,11 @@ export default function AgentDashboardClient({
                       </p>
                     )}
 
-                    <div className="form-group" style={{ marginBottom: 16 }}>
+                    {canEditPricing && <div className="form-group" style={{ marginBottom: 16 }}>
                       <label className="form-label" style={{ color: '#8a9ab0', fontSize: '0.8rem', fontWeight: 600 }}>Markup % On Your Base Cost (10–200%)</label>
                       <input type="number" className="form-input" min="10" max="200" step="5" value={promoteCommission} onChange={e => setPromoteCommission(e.target.value)} />
                       <div style={{ fontSize: '0.75rem', color: '#8a9ab0', marginTop: 4 }}>Agent pays your cost + this markup and sets their own retail price on top.</div>
-                    </div>
+                    </div>}
 
                     <div className="form-group" style={{ marginBottom: 16 }}>
                       <label className="form-label" style={{ color: '#8a9ab0', fontSize: '0.8rem', fontWeight: 600 }}>Account Type</label>
@@ -1176,19 +1178,19 @@ export default function AgentDashboardClient({
 
 
         {/* TAB: Discount Coupons */}
-        {activeTab === 'Coupons' && <AgentCoupons />}
+        {activeTab === 'Coupons' && (canEditPricing ? <AgentCoupons /> : <p>Pricing And Coupon Editing Are Disabled For This Account.</p>)}
 
         {/* TAB: My Sub-Agents (regular agents manage their promoted sub-agents) */}
         {activeTab === 'My Sub-Agents' && (
           <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <AgentSubAgents />
+            <AgentSubAgents canEditPricing={canEditPricing} />
           </div>
         )}
 
         {/* TAB: My Agent Accounts (super-agents create + manage their agent accounts) */}
         {activeTab === 'My Agent Accounts' && (
           <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <AgentDownline agentId={userProfile.id} />
+            <AgentDownline agentId={userProfile.id} canEditPricing={canEditPricing} />
             <AgentNetworkMap />
           </div>
         )}

@@ -130,6 +130,7 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
   const [products, setProducts] = useState<AgentProduct[]>([]);
   const [bundles, setBundles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [canEditPricing, setCanEditPricing] = useState(false);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState<FilterMode>('all');
   const [viewMode, setViewMode] = useState<'flat' | 'category'>('flat');
@@ -182,6 +183,7 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
       const res = await fetch('/api/agent/products');
       const json = await res.json();
       if (res.ok) {
+        setCanEditPricing(json.permissions?.canEditPricing === true);
         const sorted = (json.data || []).sort((a: AgentProduct, b: AgentProduct) => {
           const nameA = (a.products?.name || '').toLowerCase().trim();
           const nameB = (b.products?.name || '').toLowerCase().trim();
@@ -248,6 +250,7 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
   }
 
   function handleEdit(p: AgentProduct) {
+    if (!canEditPricing) return;
     setEditingId(p.id);
     const rowMargin = (p as AgentProduct & { margin_percent?: number | null }).margin_percent;
     const existingMargin = rowMargin != null
@@ -478,11 +481,11 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
                 Product Catalog Manager
               </h3>
               <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.82rem', margin: '4px 0 0' }}>
-                Toggle Products On/Off, Reorder Them, Set Custom Prices And Descriptions.
+                {canEditPricing ? 'Toggle Products On/Off, Reorder Them, Set Custom Prices And Descriptions.' : 'View Your Catalog And Manage Visibility. Pricing Is Read Only For This Account.'}
               </p>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-              <button 
+              {canEditPricing && <button
                 onClick={() => setShowBulkModal(true)}
                 className="btn-glass"
                 style={{
@@ -493,7 +496,7 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
                 }}
               >
                 Bulk Increase Pricing
-              </button>
+              </button>}
               <div className="agentprod-filter-chips" style={{ display: 'flex', gap: 4, background: 'rgba(0,0,0,0.5)', borderRadius: '4px', padding: 3, border: '1px solid rgba(255,255,255,0.05)' }}>
               {( [['all', `All (${products.length})`], ['active', `Active (${activeCount})`], ['hidden', `Hidden (${hiddenCount})`]] as [FilterMode, string][] ).map(([key, label]) => (
                 <button
@@ -515,7 +518,7 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
         </div>
       </div>
 
-      {showBulkModal && (
+      {canEditPricing && showBulkModal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 100000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}>
           <div className="glass-panel" style={{ width: 420, maxWidth: '90vw', padding: 'var(--space-6)', background: '#111' }}>
             <h3 style={{ color: '#00E5FF', margin: '0 0 var(--space-4) 0', fontSize: '1.25rem' }}>Bulk Increase Pricing</h3>
@@ -698,14 +701,14 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
                           <div style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.2)' }}>&rarr;</div>
                           {/* Listed Price — clickable like individual peptides */}
                           <div
-                            style={{ display: 'flex', flexDirection: 'column', cursor: 'pointer', padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)', transition: 'all 0.2s' }}
-                            onClick={() => { setEditingBundleId(b.id); setBundlePriceText(bList > 0 ? bList.toFixed(2) : ''); }}
-                            title="Click to edit bundle price"
+                            style={{ display: 'flex', flexDirection: 'column', cursor: canEditPricing ? 'pointer' : 'default', padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)', transition: 'all 0.2s' }}
+                            onClick={canEditPricing ? () => { setEditingBundleId(b.id); setBundlePriceText(bList > 0 ? bList.toFixed(2) : ''); } : undefined}
+                            title={canEditPricing ? 'Click To Edit Bundle Price' : 'Pricing Is Read Only'}
                             onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(0,229,255,0.3)'; }}
                             onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; }}
                           >
                             <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}>
-                              Listed Price <Edit2 size={10} color="#00E5FF" />
+                              Listed Price {canEditPricing && <Edit2 size={10} color="#00E5FF" />}
                             </span>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                               <span style={{ fontSize: '1.05rem', color: '#00E5FF', fontWeight: 800 }}>
@@ -913,9 +916,9 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
                             )}
                           </div>
                           <div style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.2)' }}>&rarr;</div>
-                          <div style={{ display: 'flex', flexDirection: 'column', cursor: 'pointer', padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)', transition: 'all 0.2s' }} onClick={() => handleEdit(p)} title="Click to edit price" onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(0,229,255,0.3)'; }} onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', cursor: canEditPricing ? 'pointer' : 'default', padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)', transition: 'all 0.2s' }} onClick={canEditPricing ? () => handleEdit(p) : undefined} title={canEditPricing ? 'Click To Edit Price' : 'Pricing Is Read Only'} onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(0,229,255,0.3)'; }} onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; }}>
                             <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}>
-                              Listed Price <Edit2 size={10} color="#00E5FF" />
+                              Listed Price {canEditPricing && <Edit2 size={10} color="#00E5FF" />}
                             </span>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                               <span style={{ fontSize: '1.05rem', color: '#00E5FF', fontWeight: 800 }}>${(Number(p.retail_price) ).toFixed(2)} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'rgba(255,255,255,0.4)' }}>/ Vial</span></span>
@@ -1134,9 +1137,9 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
                             )}
                           </div>
                           <div style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.2)' }}>&rarr;</div>
-                          <div style={{ display: 'flex', flexDirection: 'column', cursor: 'pointer', padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)', transition: 'all 0.2s' }} onClick={() => handleEdit(p)} title="Click to edit price" onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(0,229,255,0.3)'; }} onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', cursor: canEditPricing ? 'pointer' : 'default', padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)', transition: 'all 0.2s' }} onClick={canEditPricing ? () => handleEdit(p) : undefined} title={canEditPricing ? 'Click To Edit Price' : 'Pricing Is Read Only'} onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(0,229,255,0.3)'; }} onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; }}>
                             <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}>
-                              Listed Price <Edit2 size={10} color="#00E5FF" />
+                              Listed Price {canEditPricing && <Edit2 size={10} color="#00E5FF" />}
                             </span>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                               <span style={{ fontSize: '1.05rem', color: '#00E5FF', fontWeight: 800 }}>${(Number(p.retail_price) ).toFixed(2)} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'rgba(255,255,255,0.4)' }}>/ Vial</span></span>

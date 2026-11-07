@@ -13,6 +13,7 @@ import {
   clampDiscount,
   normalizeBundleList,
 } from '@/lib/bundles';
+import { canEditStorePricing } from '@/lib/account-pricing';
 import { computeAgentCostsForAgent } from '@/lib/pricing';
 import type { AgentTier } from '@/lib/pricing';
 
@@ -250,7 +251,7 @@ export async function GET() {
 
     return NextResponse.json({
       data: bundlesWithPricing,
-      permissions: { canDownline: caller.canDownline, canGlobal: caller.canGlobal },
+      permissions: { canDownline: caller.canDownline, canGlobal: caller.canGlobal, canEditPricing: await canEditStorePricing(svc, gate.user.id) },
     });
   } catch {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
@@ -283,6 +284,7 @@ export async function POST(req: NextRequest) {
   if (!gate.ok) return gate.response;
 
   const svc = await createServiceClient();
+  if (!await canEditStorePricing(svc, gate.user.id)) return NextResponse.json({ error: 'Bundle Configuration Is Read Only For This Account.' }, { status: 403 });
   const caller = await resolveCaller(svc, gate.user.id, gate.isAdmin);
   if (caller.isSubAgent) {
     return NextResponse.json(
@@ -346,6 +348,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   const svc = await createServiceClient();
+  if (!await canEditStorePricing(svc, gate.user.id)) return NextResponse.json({ error: 'Bundle Configuration Is Read Only For This Account.' }, { status: 403 });
   const caller = await resolveCaller(svc, gate.user.id, gate.isAdmin);
   const { bundles, slug } = await loadOwn(svc, gate.user.id);
   const idx = bundles.findIndex((b) => b.id === id);
@@ -425,6 +428,7 @@ export async function DELETE(req: NextRequest) {
   const { id } = body as { id?: unknown };
   if (typeof id !== 'string' || !id) return NextResponse.json({ error: 'Bundle ID Required' }, { status: 400 });
   const svc = await createServiceClient();
+  if (!await canEditStorePricing(svc, gate.user.id)) return NextResponse.json({ error: 'Bundle Configuration Is Read Only For This Account.' }, { status: 403 });
   const { bundles, slug } = await loadOwn(svc, gate.user.id);
   const updated = bundles.filter((b) => b.id !== id);
   const ok = await persist(svc, gate.user.id, updated, slug);

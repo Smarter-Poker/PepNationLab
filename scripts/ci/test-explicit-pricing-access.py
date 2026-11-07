@@ -18,6 +18,7 @@ try:
  with (cluster/'data/postgresql.conf').open('a') as f:f.write(f"\nlisten_addresses=''\nunix_socket_directories='{cluster/'socket'}'\nport=55447\nshared_buffers='16MB'\n")
  run([pg/'pg_ctl','-D',cluster/'data','-l',cluster/'server.log','-w','start'])
  sql('''CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;
+ CREATE SCHEMA auth; CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
  CREATE TABLE profiles(id uuid PRIMARY KEY,parent_agent_id uuid,role text,is_manufacturer bool DEFAULT false,is_super_agent bool,is_sub_agent bool DEFAULT false,custom_markup_override numeric,commission_pct numeric,account_type text,prepaid_balance numeric DEFAULT 0,credit_used numeric DEFAULT 0);
  CREATE TABLE products(id uuid PRIMARY KEY,base_cost numeric,house_cost numeric,max_retail_price numeric,is_banned bool DEFAULT false);
  CREATE TABLE agent_profiles(id uuid PRIMARY KEY,slug text,bundles_config jsonb DEFAULT '[]',enable_dynamic_pricing boolean,enable_bulk_discounts boolean,volume_pricing_enabled boolean,updated_at timestamptz);
@@ -88,7 +89,53 @@ try:
  assert sql("SELECT body LIKE '%119.98%' FROM internal_messages WHERE type='invoice'")=='t'
  assert sql('SELECT count(*) FROM notifications')=='2'
  assert Decimal(sql(f"SELECT credit_used FROM profiles WHERE id='{child}'"))==Decimal('74.98')
- print('Pricing native qualification: contract COG basis, 75% retail, exact bundle cents, private access, audited invoice correction, payment preservation and duplicate safety passed.')
+ # Qualify the authorized 75% -> 60% transition after a real prior correction
+ # and delivery. Preserve old evidence while applying difference-only refunds.
+ sql(f"UPDATE products SET house_cost=10 WHERE id='{p1}'; SELECT edit_store_product('{owner}',(SELECT id FROM agent_products WHERE agent_id='{owner}' AND product_id='{p1}'),jsonb_build_object('retail_price',60));")
+ sql((root/'supabase/migrations/20261107201845_savage_agent_sixty_percent.sql').read_text())
+ assert Decimal(sql(f"SELECT fn_contract_product_cost('{child}','{p1}')"))==Decimal('36.00')
+ assert Decimal(sql(f"SELECT fn_contract_product_cost('{owner}','{p1}')"))==Decimal('15.00')
+ assert Decimal(sql(f"SELECT sum(cost) FROM fn_contract_costs('{child}',ARRAY['{p1}','{p2}']::uuid[],'Test Bundle')"))==Decimal('59.98')
+ sql(f"SELECT reprice_contract_orders('{owner}','2026-10-07','2026-11-08','test-batch-2')")
+ assert Decimal(sql(f"SELECT total FROM orders WHERE id='{order}'"))==Decimal('59.98')
+ assert Decimal(sql(f"SELECT credit_used FROM profiles WHERE id='{child}'"))==Decimal('59.98')
+ assert Decimal(sql(f"SELECT total_owed FROM agent_invoices WHERE id='{invoice}'"))==Decimal('95.98')
+ assert sql(f"SELECT (after_state->'order'->>'total')::numeric=74.98 FROM pricing_revision_records WHERE batch_key='test-batch-1' AND entity_id='{order}' AND entity_type='order'")=='t'
+ assert sql(f"SELECT reprice_contract_orders('{owner}','2026-10-07','2026-11-08','test-batch-2')->>'orders_repriced'")=='0'
+ assert sql(f"SELECT deliver_contract_invoice_copies('{owner}','test-batch-2')->>'copies_delivered'")=='2'
+ assert sql(f"SELECT deliver_contract_invoice_copies('{owner}','test-batch-2')->>'copies_delivered'")=='0'
+ assert sql('SELECT count(*) FROM internal_messages')=='5'
+ assert sql('SELECT count(*) FROM notifications')=='4'
+ assert sql("SELECT body LIKE '%95.98%' AND body LIKE '%60%' FROM internal_messages WHERE type='invoice'")=='t'
+ assert sql("SELECT count(*) FROM internal_messages WHERE type='notification' AND body LIKE '%60%'")=='2'
+ assert sql(f"SELECT payment_confirmed_at IS NOT NULL FROM orders WHERE id='{order}'")=='t'
+ assert Decimal(sql(f"SELECT credit_used FROM profiles WHERE id='{child}'"))==Decimal('59.98')
+ refuses(f"UPDATE account_pricing_contracts SET downline_retail_factor=0.5 WHERE agent_id='{owner}'")
+ sql(f"CREATE TABLE coupons(id uuid DEFAULT gen_random_uuid(),agent_id uuid,discount_value numeric,uses_count int DEFAULT 0,updated_at timestamptz); CREATE TABLE super_agent_pricing(super_agent_id uuid,baseline_cost numeric); INSERT INTO coupons(agent_id,discount_value) VALUES('{owner}',10);")
+ sql((root/'supabase/migrations/20261107202134_savage_pricing_read_only.sql').read_text())
+ refuses(f"INSERT INTO coupons(agent_id,discount_value) VALUES('{owner}',20)")
+ refuses(f"UPDATE coupons SET discount_value=20 WHERE agent_id='{owner}'")
+ sql(f"UPDATE coupons SET uses_count=uses_count+1 WHERE agent_id='{owner}'")
+ assert sql(f"SELECT uses_count FROM coupons WHERE agent_id='{owner}'")=='1'
+ refuses(f"INSERT INTO super_agent_pricing(super_agent_id,baseline_cost) VALUES('{owner}',1)")
+ assert sql(f"SELECT can_edit_store_pricing('{owner}')")=='f'
+ assert sql(f"SELECT can_edit_store_pricing('{child}')")=='t'
+ refuses(f"SELECT edit_store_product('{owner}',(SELECT id FROM agent_products WHERE agent_id='{owner}' AND product_id='{p1}'),jsonb_build_object('retail_price',62))")
+ refuses(f"SELECT edit_store_product('{owner}',(SELECT id FROM agent_products WHERE agent_id='{owner}' AND product_id='{p1}'),jsonb_build_object('margin_percent',70))")
+ refuses(f"SELECT edit_store_bundles('{owner}','[]'::jsonb)")
+ refuses(f"UPDATE account_pricing_contracts SET owner_can_edit_prices=true WHERE agent_id='{owner}'")
+ refuses(f"SELECT set_config('app.contract_price_edit','{owner}',false); UPDATE agent_products SET retail_price=62 WHERE agent_id='{owner}'")
+ refuses(f"UPDATE agent_profiles SET bundles_config='[]' WHERE id='{owner}'")
+ sql(f"SELECT edit_store_product('{owner}',(SELECT id FROM agent_products WHERE agent_id='{owner}' AND product_id='{p1}'),jsonb_build_object('is_visible',false))")
+ assert sql(f"SELECT is_visible FROM agent_products WHERE agent_id='{owner}' AND product_id='{p1}'")=='f'
+ assert sql("SELECT has_function_privilege('anon','can_edit_store_pricing(uuid)','EXECUTE') OR has_function_privilege('authenticated','can_edit_store_pricing(uuid)','EXECUTE')")=='f'
+ sql(f"GRANT USAGE ON SCHEMA auth TO authenticated; GRANT SELECT,INSERT,DELETE ON agent_products TO authenticated; ALTER TABLE agent_products ENABLE ROW LEVEL SECURITY; CREATE POLICY fixture_owner_access ON agent_products TO authenticated USING(agent_id=auth.uid()) WITH CHECK(agent_id=auth.uid());")
+ assert sql(f"SET ROLE authenticated; SET request.jwt.claim.sub='{owner}'; SELECT can_self_edit_pricing()")=='f'
+ refuses(f"SET ROLE authenticated; SET request.jwt.claim.sub='{owner}'; INSERT INTO agent_products(agent_id,product_id,retail_price) VALUES('{owner}','{p1}',1)")
+ assert sql(f"SET ROLE authenticated; SET request.jwt.claim.sub='{owner}'; WITH removed AS(DELETE FROM agent_products WHERE agent_id='{owner}' RETURNING 1) SELECT count(*) FROM removed")=='0'
+ assert sql(f"SET ROLE authenticated; SET request.jwt.claim.sub='{owner}'; SELECT count(*) FROM agent_products")=='2'
+ assert sql(f"SET ROLE authenticated; SET request.jwt.claim.sub='{child}'; SELECT can_self_edit_pricing()")=='t'
+ print('Pricing native qualification: 75-to-60 percent transition, bundle cents, audited invoice rewrite, difference-only refunds, preserved payments/history, resend and duplicate safety passed.')
 finally:
  if (cluster/'data/postmaster.pid').exists():run([pg/'pg_ctl','-D',cluster/'data','-m','immediate','stop'])
  shutil.rmtree(cluster)
