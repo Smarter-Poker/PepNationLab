@@ -26,6 +26,8 @@ try:
  CREATE TABLE orders(id uuid PRIMARY KEY,agent_id uuid,buyer_id uuid,created_at timestamptz,status text,is_wholesale_restock bool DEFAULT false,shipping_cost numeric DEFAULT 0,discount_amount numeric DEFAULT 0,credits_redeemed numeric DEFAULT 0,subtotal numeric,total numeric,agent_approved_at timestamptz,payment_confirmed_at timestamptz);
  CREATE TABLE order_items(id uuid PRIMARY KEY,order_id uuid,product_id uuid,product_name text,quantity int,unit_retail_price numeric,unit_cost_price numeric,unit_super_agent_cost numeric,unit_house_cost numeric);
  CREATE TABLE statement_orders(order_id uuid);
+ CREATE TABLE internal_messages(id uuid DEFAULT gen_random_uuid(),sender_id uuid,receiver_id uuid,subject text,body text,type text);
+ CREATE TABLE notifications(id bigserial,user_id uuid,type text,title text,body text,url text);
  CREATE TABLE balance_transactions(id uuid DEFAULT gen_random_uuid(),agent_id uuid,type text,amount numeric,balance_before numeric,balance_after numeric,description text,reference_id uuid,reference_type text);
  CREATE TABLE agent_invoices(id uuid PRIMARY KEY,super_agent_id uuid,agent_id uuid,week_start date,week_end date,total_cogs numeric,total_owed numeric,status text,updated_at timestamptz);
  CREATE FUNCTION fn_agent_effective_markup(uuid) RETURNS numeric LANGUAGE sql AS $$ SELECT commission_pct FROM profiles WHERE id=$1 $$;
@@ -79,6 +81,11 @@ try:
  assert Decimal(sql(f"SELECT retail_price FROM agent_products WHERE agent_id='{owner}' AND product_id='{p1}'"))==Decimal('61.23')
  assert Decimal(sql(f"SELECT unit_cost_price FROM order_items WHERE id='{retailitem}'"))==Decimal('45.00')
  assert sql("SELECT has_function_privilege('anon','fn_agent_chain_cost(uuid,uuid)','EXECUTE')")=='f'
+ assert sql(f"SELECT deliver_contract_invoice_copies('{owner}','test-batch-1')->>'copies_delivered'")=='2'
+ assert sql(f"SELECT deliver_contract_invoice_copies('{owner}','test-batch-1')->>'copies_delivered'")=='0'
+ assert sql('SELECT count(*) FROM internal_messages')=='2'
+ assert sql('SELECT count(*) FROM notifications')=='2'
+ assert Decimal(sql(f"SELECT credit_used FROM profiles WHERE id='{child}'"))==Decimal('74.98')
  print('Pricing native qualification: contract COG basis, 75% retail, exact bundle cents, private access, audited invoice correction, payment preservation and duplicate safety passed.')
 finally:
  if (cluster/'data/postmaster.pid').exists():run([pg/'pg_ctl','-D',cluster/'data','-m','immediate','stop'])

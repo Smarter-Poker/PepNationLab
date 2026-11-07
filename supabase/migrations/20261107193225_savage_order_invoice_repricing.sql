@@ -107,3 +107,48 @@ END;
 $$;
 REVOKE ALL ON FUNCTION public.reprice_contract_orders(uuid,timestamptz,timestamptz,text) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.reprice_contract_orders(uuid,timestamptz,timestamptz,text) TO service_role;
+
+-- Explicit owner-invoked delivery of corrected copies through the existing
+-- PepNationLab inbox and bell. Copies reference the authoritative order; they
+-- do not create a second payable ledger or another weekly invoice.
+CREATE FUNCTION public.deliver_contract_invoice_copies(p_owner uuid,p_batch text)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
+DECLARE r record; o jsonb; v_body text; v_lines text; v_before numeric; v_after numeric;
+ v_message uuid; v_notification bigint; v_count int:=0; v_cancelled boolean;
+BEGIN
+ PERFORM pg_advisory_xact_lock(hashtextextended('contract-invoice-delivery:'||p_owner::text||p_batch,0));
+ FOR r IN SELECT * FROM pricing_revision_records rev WHERE rev.batch_key=p_batch AND rev.entity_type='order' AND rev.after_state IS NOT NULL
+   AND EXISTS(SELECT 1 FROM fn_account_pricing_contract((rev.after_state->'order'->>'agent_id')::uuid)c WHERE c.owner_id=p_owner)
+   ORDER BY rev.entity_id
+ LOOP
+   IF EXISTS(SELECT 1 FROM pricing_revision_records WHERE batch_key=p_batch AND entity_type='invoice_delivery' AND entity_id=r.entity_id) THEN CONTINUE; END IF;
+   o:=r.after_state->'order';
+   v_cancelled:=o->>'status'='cancelled';
+   SELECT sum((i->>'quantity')::int*(i->>'unit_cost_price')::numeric) INTO v_before FROM jsonb_array_elements(r.before_state->'items')i;
+   SELECT sum((i->>'quantity')::int*(i->>'unit_cost_price')::numeric),
+     string_agg(format('%s | Qty %s | Agent Unit $%s | Line $%s',i->>'product_name',i->>'quantity',
+       to_char((i->>'unit_cost_price')::numeric,'FM999999990.00'),
+       to_char((i->>'quantity')::int*(i->>'unit_cost_price')::numeric,'FM999999990.00')),E'\n' ORDER BY i->>'product_name')
+     INTO v_after,v_lines FROM jsonb_array_elements(r.after_state->'items')i;
+   v_body:=format(E'Corrected Agent Invoice Copy\nOrder: %s\nDate: %s\nStatus: %s\n\nAgent Pricing: 75%% Of SavageBrands Listed Store Retail, Including Bundles.\n\n%s\n\nPrevious Agent Product Total: $%s\nCorrected Agent Product Total: $%s\nDifference: $%s\n\n%s\n\nThis Copy Reflects The Corrected Order And Invoice Records. Existing Payments And Confirmations Are Preserved.\nView The Order: https://pepnationlab.com/orders/%s',
+     r.entity_id,o->>'created_at',o->>'status',v_lines,to_char(v_before,'FM999999990.00'),to_char(v_after,'FM999999990.00'),to_char(v_after-v_before,'FM999999990.00'),
+     CASE WHEN v_cancelled THEN 'CANCELLED: No Payment Is Requested. The Order Remains Cancelled.' ELSE 'Use The Existing Order And Account Invoice For Payment Status. This Copy Does Not Add Another Charge.' END,r.entity_id);
+   IF v_lines LIKE '%Savage Shredder%' THEN
+     v_body:=v_body||E'\n\nFulfillment Review: The Historical Shredder Order Recorded Five Of Six Configured Components. Quantities Have Been Preserved. Pricing Is 75% Of The Listed Bundle Total.';
+   END IF;
+   INSERT INTO internal_messages(sender_id,receiver_id,subject,body,type)
+     VALUES(p_owner,(o->>'agent_id')::uuid,CASE WHEN v_cancelled THEN 'Cancelled Order Pricing Copy: ' ELSE 'Corrected Agent Invoice: ' END||left(r.entity_id::text,8),v_body,'notification')
+     RETURNING id INTO v_message;
+   INSERT INTO notifications(user_id,type,title,body,url)
+     VALUES((o->>'agent_id')::uuid,'invoice',CASE WHEN v_cancelled THEN 'Cancelled Order Pricing Copy' ELSE 'Corrected Agent Invoice Available' END,
+       'Order '||left(r.entity_id::text,8)||' | Corrected Agent Product Total $'||to_char(v_after,'FM999999990.00')||CASE WHEN v_cancelled THEN ' | Cancelled, No Payment Requested.' ELSE ' | Full Copy In Your PepNationLab Inbox.' END,
+       '/orders/'||r.entity_id::text) RETURNING id INTO v_notification;
+   INSERT INTO pricing_revision_records(batch_key,entity_type,entity_id,before_state,after_state)
+     VALUES(p_batch,'invoice_delivery',r.entity_id,'{}',jsonb_build_object('recipient_id',o->>'agent_id','message_id',v_message,'notification_id',v_notification,'delivered_at',now()));
+   v_count:=v_count+1;
+ END LOOP;
+ RETURN jsonb_build_object('copies_delivered',v_count,'batch',p_batch);
+END;
+$$;
+REVOKE ALL ON FUNCTION public.deliver_contract_invoice_copies(uuid,text) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.deliver_contract_invoice_copies(uuid,text) TO service_role;
