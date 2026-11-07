@@ -576,7 +576,7 @@ export default function AgentStoreProducts({ agentId, agentSlug, costLabel = 'Yo
       />
 
       {/* Pricing & Discounts Configuration */}
-      <PricingConfig agentId={agentId} />
+      {canEditPricing && <PricingConfig agentId={agentId} />}
 
       {error && (
         <div className="glass-panel" style={{ border: '1px solid rgba(229,62,62,0.3)', padding: 'var(--space-3)', fontSize: '0.85rem', color: '#FC8181' }}>
